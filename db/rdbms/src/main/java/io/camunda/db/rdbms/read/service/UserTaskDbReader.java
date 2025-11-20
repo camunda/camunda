@@ -47,6 +47,7 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         UserTaskDbQuery.of(
             b ->
@@ -54,10 +55,15 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
     final var totalHits = userTaskMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(dbPage, totalHits)) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits =
         userTaskMapper.search(dbQuery).stream().map(UserTaskEntityMapper::toEntity).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);

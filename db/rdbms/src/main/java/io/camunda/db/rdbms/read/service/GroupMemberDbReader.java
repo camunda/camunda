@@ -41,17 +41,22 @@ public class GroupMemberDbReader extends AbstractEntityReader<GroupMemberEntity>
     }
 
     final var dbSort = convertSort(query.sort(), GroupMemberSearchColumn.ENTITY_ID);
-
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         GroupMemberDbQuery.of(
             b ->
                 b.filter(query.filter())
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for groups with filter {}", dbQuery);
     final var totalHits = groupMapper.countMembers(dbQuery);
+
+    if (shouldReturnEmptyPage(dbPage, totalHits)) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = groupMapper.searchMembers(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

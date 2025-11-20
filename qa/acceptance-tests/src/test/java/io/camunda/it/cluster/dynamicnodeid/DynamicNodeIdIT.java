@@ -138,7 +138,7 @@ public class DynamicNodeIdIT {
       final var payload = lease.readAllBytes();
       if (payload.length > 0) {
         final var parsed = Lease.fromJsonBytes(OBJECT_MAPPER, payload);
-        if (parsed.isStillValid(System.currentTimeMillis(), LEASE_DURATION)) {
+        if (parsed.isStillValid(System.currentTimeMillis())) {
           leases.add(parsed);
         }
       }

@@ -65,7 +65,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       queue.add(entry);
       metrics.recordEnqueuedStatement(entry.statementId());
-      checkQueueForFlush();
     }
   }
 
@@ -113,19 +112,17 @@ public class DefaultExecutionQueue implements ExecutionQueue {
    * queueItem will be replaced with a new, combined queueItem.
    */
   @Override
-  public boolean tryMergeWithExistingQueueItem(final QueueItemMerger... combiners) {
+  public boolean tryMergeWithExistingQueueItem(final QueueItemMerger merger) {
     synchronized (queue) {
       int index = queue.size() - 1;
       for (final Iterator<QueueItem> it = queue.descendingIterator(); it.hasNext(); ) {
         final QueueItem item = it.next();
 
-        for (final QueueItemMerger merger : combiners) {
-          if (merger.canBeMerged(item)) {
-            LOG.trace("Merging new item with item {}, {}", item.contextType(), item.id());
-            queue.set(index, merger.merge(item));
-            metrics.recordMergedQueueItem(item.contextType(), item.statementId());
-            return true;
-          }
+        if (merger.canBeMerged(item)) {
+          LOG.trace("Merging new item with item {}, {}", item.contextType(), item.id());
+          queue.set(index, merger.merge(item));
+          metrics.recordMergedQueueItem(item.contextType(), item.statementId());
+          return true;
         }
 
         index--;
@@ -133,6 +130,25 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       return false;
     }
+  }
+
+  @Override
+  public boolean checkQueueForFlush() {
+    if (queueFlushLimit <= 0) {
+      // no limits, exporter must take care of it
+      return false;
+    }
+
+    LOG.trace(
+        "[RDBMS ExecutionQueue, Partition {}] Checking if queue is flushed. Queue size: {}",
+        partitionId,
+        queue.size());
+    if (queue.size() >= queueFlushLimit) {
+      flush();
+      return true;
+    }
+
+    return false;
   }
 
   private int doFLush() {
@@ -236,21 +252,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
   LinkedList<QueueItem> getQueue() {
     return queue;
-  }
-
-  private void checkQueueForFlush() {
-    if (queueFlushLimit <= 0) {
-      // no limits, exporter must take care of it
-      return;
-    }
-
-    LOG.trace(
-        "[RDBMS ExecutionQueue, Partition {}] Checking if queue is flushed. Queue size: {}",
-        partitionId,
-        queue.size());
-    if (queue.size() >= queueFlushLimit) {
-      flush();
-    }
   }
 
   static boolean shouldIgnoreWhenNoRowsAffected(final String statementId) {

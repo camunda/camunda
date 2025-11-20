@@ -166,19 +166,19 @@ components:
           description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
           description: The process definition key associated to this incident.
         processInstanceKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The process instance key associated to this incident.
         elementInstanceKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The element instance key associated to this incident.
         jobKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/JobKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
           description: The job key, if exists, associated with this incident.
 
     IncidentErrorTypeFilterProperty:
@@ -189,37 +189,8 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
         - $ref: '#/components/schemas/AdvancedIncidentErrorTypeFilter'
-
-    AdvancedIncidentStateFilter:
-      title: Advanced filter
-      description: Advanced IncidentStateEnum filter
-      type: object
-      properties:
-        $eq:
-          description: Checks for equality with the provided value.
-          allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
-        $neq:
-          description: Checks for inequality with the provided value.
-          allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
-        $exists:
-          description: Checks if the current property exists.
-          type: boolean
-        $in:
-          description: Checks if the property matches any of the provided values.
-          type: array
-          items:
-            $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
-        $notIn:
-          description: Checks if the property does not match any of the provided values.
-          type: array
-          items:
-            $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
-        $like:
-          $ref: "filters.yaml#/components/schemas/LikeFilter"
 
     AdvancedIncidentErrorTypeFilter:
       title: Advanced filter
@@ -229,11 +200,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -241,14 +212,34 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+            $ref: "#/components/schemas/IncidentErrorTypeEnum"
         $notIn:
           description: Checks if the property does not match any of the provided values.
           type: array
           items:
-            $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+            $ref: "#/components/schemas/IncidentErrorTypeEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    IncidentErrorTypeEnum:
+      description: Incident error type with a defined set of values.
+      enum:
+        - AD_HOC_SUB_PROCESS_NO_RETRIES
+        - CALLED_DECISION_ERROR
+        - CALLED_ELEMENT_ERROR
+        - CONDITION_ERROR
+        - DECISION_EVALUATION_ERROR
+        - EXECUTION_LISTENER_NO_RETRIES
+        - EXTRACT_VALUE_ERROR
+        - FORM_NOT_FOUND
+        - IO_MAPPING_ERROR
+        - JOB_NO_RETRIES
+        - MESSAGE_SIZE_EXCEEDED
+        - RESOURCE_NOT_FOUND
+        - TASK_LISTENER_NO_RETRIES
+        - UNHANDLED_ERROR_EVENT
+        - UNKNOWN
+        - UNSPECIFIED
 
     IncidentStateFilterProperty:
       description: IncidentStateEnum with full advanced search capabilities.
@@ -258,8 +249,45 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+            - $ref: "#/components/schemas/IncidentStateEnum"
         - $ref: '#/components/schemas/AdvancedIncidentStateFilter'
+
+    AdvancedIncidentStateFilter:
+      title: Advanced filter
+      description: Advanced IncidentStateEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/IncidentStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/IncidentStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentStateEnum"
+        $notIn:
+          description: Checks if the property does not match any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentStateEnum"
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    IncidentStateEnum:
+      description: Incident states with a defined set of values.
+      enum:
+        - ACTIVE
+        - MIGRATED
+        - PENDING
+        - RESOLVED
 
     IncidentSearchQuerySortRequest:
       type: object
@@ -281,7 +309,7 @@ components:
             - jobKey
             - tenantId
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -305,7 +333,7 @@ components:
           description: The process definition ID associated to this incident.
         errorType:
           allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
@@ -318,7 +346,7 @@ components:
           format: date-time
         state:
           allOf:
-            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+            - $ref: "#/components/schemas/IncidentStateEnum"
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'

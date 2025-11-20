@@ -523,8 +523,6 @@ describe('<Filters />', () => {
 
     await groupedDecisionsStore.fetchDecisions();
 
-    vi.useFakeTimers();
-
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
         `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`,

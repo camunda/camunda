@@ -83,8 +83,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   public CompletableFuture<Boolean> isValid() {
     final var now = clock.millis();
     return CompletableFuture.supplyAsync(
-            () -> currentLease != null && currentLease.lease().isStillValid(now, leaseDuration),
-            executor)
+            () -> currentLease != null && currentLease.lease().isStillValid(now), executor)
         .orTimeout(leaseDuration.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS)
         .exceptionally(
             t -> {
@@ -160,7 +159,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     try {
       switch (lease) {
         case final Initialized initialized -> {
-          if (initialized.lease().isStillValid(clock.millis(), leaseDuration)) {
+          if (initialized.lease().isStillValid(clock.millis())) {
             LOG.debug("Lease {} is held by another process, skipping it", initialized);
             return null;
           } else {
@@ -216,8 +215,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       if (renewalTask != null) {
         renewalTask.cancel(true);
       }
-      if (currentLease != null
-          && currentLease.lease().isStillValid(clock.millis(), leaseDuration)) {
+      if (currentLease != null && currentLease.lease().isStillValid(clock.millis())) {
         nodeIdRepository.release(currentLease);
       }
     } finally {

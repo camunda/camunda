@@ -167,7 +167,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             <MultiIncidents
               count={incidentCount}
               onButtonClick={() => {
-                incidentsPanelStore.setPanelOpen(true);
+                incidentsPanelStore.showIncidentsForElementId(elementId);
               }}
             />
           </>

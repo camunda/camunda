@@ -8,11 +8,18 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.search.query.GroupQuery;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -34,5 +41,20 @@ class GroupDbReaderTest {
     // Then
     assertThat(result.total()).isZero();
     verifyNoInteractions(mapper);
+  }
+
+  @Test
+  void shouldReturnEmptyPageWhenPageSizeIsZero() {
+    when(mapper.count(any())).thenReturn(21L);
+
+    final GroupQuery query = GroupQuery.of(b -> b.page(p -> p.size(0)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    final var result = reader.search(query, resourceAccessChecks);
+
+    assertThat(result.total()).isEqualTo(21L);
+    assertThat(result.items()).isEmpty();
+    verify(mapper, times(0)).search(any());
   }
 }

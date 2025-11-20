@@ -17,6 +17,8 @@ import io.camunda.search.clients.reader.BatchOperationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
+import io.camunda.search.clients.reader.ClusterVariableDocumentReader;
+import io.camunda.search.clients.reader.ClusterVariableReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
@@ -78,6 +80,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -365,5 +368,11 @@ public class SearchClientReaderConfiguration {
   public VariableReader variableReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new VariableDocumentReader(executor, descriptors.get(VariableTemplate.class));
+  }
+
+  @Bean
+  public ClusterVariableReader clusterVariableReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new ClusterVariableDocumentReader(executor, descriptors.get(ClusterVariableIndex.class));
   }
 }

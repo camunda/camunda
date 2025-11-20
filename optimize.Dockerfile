@@ -1,5 +1,11 @@
-ARG BASE_IMAGE="alpine:3.22.2"
-ARG BASE_DIGEST="sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412"
+# hadolint global ignore=DL3006
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:1374fb954464843a022aa8087e5b21c7ea5c130371b6555e8d63e46b1c52e214"
+
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="alpine:3.22.2"
+#ARG BASE_DIGEST="sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412"
 
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
@@ -65,9 +71,10 @@ EXPOSE 8090 8091
 
 VOLUME /tmp
 
-RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
-    apk -U upgrade && \
-    curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
+# Switch to root to allow setting up our own user
+USER root
+RUN mkdir -p /usr/local/bin/ && \
+    wget -nv -O /usr/local/bin/wait-for-it.sh "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
     addgroup -S -g 1001 camunda && \
     adduser -S -g 1001 -u 1001 camunda && \
@@ -77,7 +84,6 @@ RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
 WORKDIR /optimize
 USER 1001:1001
 
-ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["./optimize.sh"]
 
 COPY --chown=1001:1001 --from=base /tmp/build .

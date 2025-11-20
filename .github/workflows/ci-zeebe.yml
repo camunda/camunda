@@ -46,7 +46,7 @@ jobs:
         arch: [ amd64 ]
         include:
           - os: macos
-            runner: macos-15-intel
+            runner: macos-latest-large
           - os: macos
             runner: macos-latest
             arch: arm64
@@ -67,6 +67,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -351,6 +352,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -431,6 +433,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:

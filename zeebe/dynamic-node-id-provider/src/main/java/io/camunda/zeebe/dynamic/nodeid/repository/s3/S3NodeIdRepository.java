@@ -93,7 +93,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(previousETag)).build();
     try {
-      if (!lease.isStillValid(clock.millis(), config.leaseDuration)) {
+      if (!lease.isStillValid(clock.millis())) {
         throw new IllegalArgumentException("The provided lease is not valid anymore: " + lease);
       }
       LOG.debug("Acquiring lease {}, previous ETag {}", lease, previousETag);

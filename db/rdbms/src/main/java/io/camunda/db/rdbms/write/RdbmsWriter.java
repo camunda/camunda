@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
@@ -26,6 +27,7 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
+import io.camunda.db.rdbms.write.service.ClusterVariableWriter;
 import io.camunda.db.rdbms.write.service.CorrelatedMessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
@@ -67,6 +69,7 @@ public class RdbmsWriter {
   private final ProcessInstanceWriter processInstanceWriter;
   private final TenantWriter tenantWriter;
   private final VariableWriter variableWriter;
+  private final ClusterVariableWriter clusterVariableWriter;
   private final RoleWriter roleWriter;
   private final UserWriter userWriter;
   private final UserTaskWriter userTaskWriter;
@@ -102,7 +105,8 @@ public class RdbmsWriter {
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
+      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
+      final ClusterVariableMapper clusterVariableMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
@@ -140,6 +144,7 @@ public class RdbmsWriter {
     correlatedMessageSubscriptionWriter =
         new CorrelatedMessageSubscriptionWriter(
             executionQueue, correlatedMessageSubscriptionMapper);
+    clusterVariableWriter = new ClusterVariableWriter(executionQueue, vendorDatabaseProperties);
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -202,6 +207,10 @@ public class RdbmsWriter {
 
   public VariableWriter getVariableWriter() {
     return variableWriter;
+  }
+
+  public ClusterVariableWriter getClusterVariableWriter() {
+    return clusterVariableWriter;
   }
 
   public RoleWriter getRoleWriter() {
@@ -269,6 +278,20 @@ public class RdbmsWriter {
   }
 
   public void flush() {
-    executionQueue.flush();
+    flush(true);
+  }
+
+  /**
+   * Flushes the execution queue based on the force parameter.
+   *
+   * @param force if true, forces an immediate flush; if false, only flushes if queue limits are
+   *     reached
+   */
+  public void flush(final boolean force) {
+    if (force) {
+      executionQueue.flush();
+    } else {
+      executionQueue.checkQueueForFlush();
+    }
   }
 }

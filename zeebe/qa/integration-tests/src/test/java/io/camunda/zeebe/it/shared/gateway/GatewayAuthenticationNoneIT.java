@@ -46,8 +46,8 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * This test is mostly a copy of {@link GatewayAuthenticationNoneIT} but with the authentication
  * mode set to none. It verifies that the gateway can be configured to not require authentication,
- * even when the {@link Profile#IDENTITY_AUTH} profile is active. In other words, users must be able
- * to override the security configuration with env vars.
+ * even when the {@link Profile#CONSOLIDATED_AUTH} profile is active. In other words, users must be
+ * able to override the security configuration with env vars.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -123,7 +123,7 @@ public class GatewayAuthenticationNoneIT {
   @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
-          .withAdditionalProfile(Profile.IDENTITY_AUTH)
+          .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
           .withProperty("zeebe.broker.gateway.security.authentication.mode", "none")
           .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
           .withProperty("camunda.identity.audience", ORCHESTRATION_CLIENT_AUDIENCE);

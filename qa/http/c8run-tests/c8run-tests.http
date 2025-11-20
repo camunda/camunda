@@ -1005,7 +1005,7 @@ X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
 Content-Type: application/pdf
 
 < ../test.pdf
---boundary123
+--boundary123--
 
 > {%
   client.test("Document upload should be successful", function () {
@@ -1029,6 +1029,10 @@ Content-Type: application/pdf
 
 ###
 # @name download-document-authorized
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
@@ -1045,6 +1049,7 @@ Accept: application/octet-stream
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
+Accept: */*
 
 > {%
   client.test("Document deletion should succeed", function () {

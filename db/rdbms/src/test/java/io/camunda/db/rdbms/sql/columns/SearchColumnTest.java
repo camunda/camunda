@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -126,7 +127,12 @@ public class SearchColumnTest {
           Map.entry(
               EntityType.class,
               List.of(
-                  Tuple.of(EntityType.USER, EntityType.USER), Tuple.of(EntityType.USER, "USER"))));
+                  Tuple.of(EntityType.USER, EntityType.USER), Tuple.of(EntityType.USER, "USER"))),
+          Map.entry(
+              ClusterVariableScope.class,
+              List.of(
+                  Tuple.of(ClusterVariableScope.GLOBAL, ClusterVariableScope.GLOBAL),
+                  Tuple.of(ClusterVariableScope.GLOBAL, "GLOBAL"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()

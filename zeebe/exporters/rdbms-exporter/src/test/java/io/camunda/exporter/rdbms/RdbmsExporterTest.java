@@ -9,6 +9,7 @@ package io.camunda.exporter.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -77,6 +78,51 @@ class RdbmsExporterTest {
     verify(jobHandler).export(record);
     verify(otherJobHandler, never()).export(record);
     verify(piHandler, never()).export(record);
+  }
+
+  @Test
+  void shouldCheckForFlushOnProcessedRecord() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+
+    // when
+    exporter.export(record);
+
+    // then
+    verify(rdbmsWriter).flush(anyBoolean());
+  }
+
+  @Test
+  void shouldNotCheckForFlushOnNotProcessedRecord() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB, false);
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+
+    // when
+    exporter.export(record);
+
+    // then
+    verify(rdbmsWriter, never()).flush(anyBoolean());
+  }
+
+  @Test
+  void shouldNotCheckForFlushOnNoHandler() {
+    // given
+    final var jobHandler = mockHandler(ValueType.PROCESS_INSTANCE);
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+
+    // when
+    exporter.export(record);
+
+    // then
+    verify(rdbmsWriter, never()).flush(anyBoolean());
   }
 
   @Test
@@ -277,7 +323,8 @@ class RdbmsExporterTest {
     when(rdbmsWriter.getExporterPositionService()).thenReturn(positionService);
     when(rdbmsWriter.getExecutionQueue()).thenReturn(executionQueue);
     when(rdbmsWriter.getRdbmsPurger()).thenReturn(rdbmsPurger);
-    doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriter).flush();
+    doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriter).flush(true);
+    doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriter).flush(false);
 
     final var builder =
         new RdbmsExporter.Builder()
@@ -318,7 +365,12 @@ class RdbmsExporterTest {
     }
 
     @Override
-    public boolean tryMergeWithExistingQueueItem(final QueueItemMerger... combiners) {
+    public boolean tryMergeWithExistingQueueItem(final QueueItemMerger combiners) {
+      return false;
+    }
+
+    @Override
+    public boolean checkQueueForFlush() {
       return false;
     }
   }

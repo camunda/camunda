@@ -11,11 +11,13 @@
   "org.opencontainers.image.description": "Workflow engine for microservice orchestration",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/zeebe-deployment/",
   "org.opencontainers.image.licenses": "(Apache-2.0 AND LicenseRef-Camunda-License-1.0)",
-  "org.opencontainers.image.ref.name": "ubuntu:noble",
+  "org.opencontainers.image.ref.name": "reg.mini.dev/1212/openjre-base:21-dev",
   "org.opencontainers.image.revision": $REVISION,
   "org.opencontainers.image.source": "https://github.com/camunda/camunda",
   "org.opencontainers.image.title": "Zeebe",
   "org.opencontainers.image.url": "https://zeebe.io",
   "org.opencontainers.image.vendor": "Camunda Services GmbH",
-  "org.opencontainers.image.version": $VERSION
+  "org.opencontainers.image.version": $VERSION,
+  "io.minimus.images.galleryURL": "https://images.minimus.io/gallery/images/1212/openjre-base",
+  "io.minimus.images.line": "21"
 }

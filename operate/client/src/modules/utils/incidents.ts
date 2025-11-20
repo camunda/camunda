@@ -52,9 +52,11 @@ const isSingleIncidentSelected = (
 
 const getIncidentsSearchFilter = (
   errorTypes: IncidentErrorType[],
+  elementId?: string,
 ): QueryIncidentsRequestBody['filter'] => {
   return {
     errorType: errorTypes.length > 0 ? {$in: errorTypes} : undefined,
+    elementId,
   };
 };
 
