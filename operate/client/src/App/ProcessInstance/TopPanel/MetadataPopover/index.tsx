@@ -13,27 +13,25 @@ import {flip, offset} from '@floating-ui/react-dom';
 import {Header} from './Header';
 import {Stack} from '@carbon/react';
 import {MultiIncidents} from './Incidents/multiIncidents';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useElementInstancesSearch} from 'modules/queries/elementInstances/useElementInstancesSearch';
-import {useElementInstance} from 'modules/queries/elementInstances/useElementInstance';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useMemo} from 'react';
 import {Details} from './Details';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
-import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Incidents} from './Incidents';
+import {useElementSelection} from 'modules/hooks/useElementSelection';
+import {useElementInstanceResolution} from 'modules/hooks/useElementInstanceResolution';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
 };
 
 const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
-  const {data: processInstance} = useProcessInstance();
+  const {elementId, elementInstanceKey} = useElementSelection();
+  const elementInstance = useElementInstanceResolution();
+
   const selection = flowNodeSelectionStore.state.selection;
-  const elementId = selection?.flowNodeId;
-  const elementInstanceKey = selection?.flowNodeInstanceId;
   const isMultiInstance = selection?.isMultiInstance ?? false;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
@@ -69,55 +67,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     statistics?.items.find((stat) => stat.elementId === elementId)?.incidents ??
     0;
 
-  const shouldFetchElementInstances =
-    instanceCount === 1 &&
-    !elementInstanceKey &&
-    !!processInstance?.processInstanceKey &&
-    !!elementId;
-
-  const {data: elementInstance, isLoading: isFetchingInstance} =
-    useElementInstance(elementInstanceKey ?? '', {
-      enabled: !!elementInstanceKey && !!elementId,
-    });
-
-  const {
-    data: elementInstancesSearchResult,
-    isLoading: isSearchingElementInstances,
-  } = useElementInstancesSearch(
-    elementId ?? '',
-    processInstance?.processInstanceKey ?? '',
-    convertBpmnJsTypeToAPIType(businessObject?.$type),
-    {
-      enabled: shouldFetchElementInstances,
-    },
-  );
-
-  const elementInstanceMetadata = useMemo(() => {
-    if (elementInstanceKey && elementInstance) {
-      return elementInstance;
-    }
-
-    if (
-      !elementInstanceKey &&
-      instanceCount === 1 &&
-      elementInstancesSearchResult?.items?.length === 1
-    ) {
-      return elementInstancesSearchResult.items[0];
-    }
-
-    return null;
-  }, [
-    elementInstanceKey,
-    elementInstance,
-    instanceCount,
-    elementInstancesSearchResult,
-  ]);
-
-  if (
-    elementId === undefined ||
-    (shouldFetchElementInstances && isSearchingElementInstances) ||
-    (!!elementInstanceKey && isFetchingInstance)
-  ) {
+  if (elementId === null) {
     return null;
   }
 
@@ -145,23 +95,23 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
           </>
         )}
 
-        {elementInstanceMetadata && (
+        {elementInstance && elementId && (
           <>
             <Details
-              elementInstance={elementInstanceMetadata}
+              elementInstance={elementInstance}
               businessObject={businessObject}
             />
-            {elementInstanceMetadata.hasIncident && (
+            {elementInstance.hasIncident && (
               <Incidents
-                elementInstanceKey={elementInstanceMetadata.elementInstanceKey}
-                elementName={elementInstanceMetadata.elementName}
+                elementInstanceKey={elementInstance.elementInstanceKey}
+                elementName={elementInstance.elementName}
                 elementId={elementId}
               />
             )}
           </>
         )}
 
-        {!elementInstanceMetadata && incidentCount > 0 && (
+        {!elementInstance && incidentCount > 0 && (
           <>
             <Divider />
             <MultiIncidents
