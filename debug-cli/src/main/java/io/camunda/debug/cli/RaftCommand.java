@@ -42,7 +42,7 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
 
   @Command(
       name = "configuration",
-      description = "Print content of raft configuration file (raft-partition-*.meta)")
+      description = "Print content of raft configuration file (raft-partition-*.conf)")
   public int configuration() throws Exception {
     spec.commandLine().getOut().println(convertToJson());
     return 0;
