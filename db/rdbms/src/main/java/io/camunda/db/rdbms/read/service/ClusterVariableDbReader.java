@@ -65,7 +65,7 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
 
   @Override
   public ClusterVariableEntity getTenantScopedClusterVariable(
-      final String tenant, final String name, final ResourceAccessChecks resourceAccessChecks) {
+      final String name, final String tenant, final ResourceAccessChecks resourceAccessChecks) {
     return clusterVariableMapper.get(
         ClusterVariableUtil.generateID(name, tenant, ClusterVariableScope.TENANT));
   }

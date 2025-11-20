@@ -15,7 +15,7 @@ public interface ClusterVariableReader
     extends SearchEntityReader<ClusterVariableEntity, ClusterVariableQuery> {
 
   ClusterVariableEntity getTenantScopedClusterVariable(
-      String tenant, String name, ResourceAccessChecks resourceAccessChecks);
+      String name, String tenant, ResourceAccessChecks resourceAccessChecks);
 
   ClusterVariableEntity getGloballyScopedClusterVariable(
       String name, ResourceAccessChecks resourceAccessChecks);
