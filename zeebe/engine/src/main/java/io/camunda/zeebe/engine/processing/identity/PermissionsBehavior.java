@@ -19,7 +19,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.HashSet;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
 
 public class PermissionsBehavior {
 
@@ -67,7 +69,24 @@ public class PermissionsBehavior {
 
   public Either<Rejection, AuthorizationRecord> permissionsAlreadyExist(
       final AuthorizationRecord record) {
-    for (final PermissionType permission : record.getPermissionTypes()) {
+    return verifyPermissionsDontExist(record, record.getPermissionTypes());
+  }
+
+  public Either<Rejection, AuthorizationRecord> permissionsAlreadyExistForUpdate(
+      final AuthorizationRecord record) {
+    final var key = record.getAuthorizationKey();
+    final PersistedAuthorization dbRecord = authorizationState.get(key).get();
+
+    // New permissions from update request that don't exist in persisted
+    final Set<PermissionType> permissionsToAdd = new HashSet<>(record.getPermissionTypes());
+    permissionsToAdd.removeAll(dbRecord.getPermissionTypes());
+
+    return verifyPermissionsDontExist(record, permissionsToAdd);
+  }
+
+  private @NotNull Either<Rejection, AuthorizationRecord> verifyPermissionsDontExist(
+      final AuthorizationRecord record, final Set<PermissionType> permissionsToAdd) {
+    for (final PermissionType permission : permissionsToAdd) {
       final var addedAuthorizationScope = AuthorizationScope.of(record.getResourceId());
       final var currentAuthorizationScopes =
           authCheckBehavior.getDirectAuthorizedAuthorizationScopes(
