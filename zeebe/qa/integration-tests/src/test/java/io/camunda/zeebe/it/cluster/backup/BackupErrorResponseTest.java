@@ -88,7 +88,8 @@ class BackupErrorResponseTest {
     void setup() {
       backupEndpoint =
           new BackupEndpoint(
-              clusteringRule.getGateway().getBrokerClient(), clusteringRule.getBrokerCfg(0));
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackupScheduler());
       createBucket();
     }
 
@@ -123,7 +124,8 @@ class BackupErrorResponseTest {
     void setup() {
       backupEndpoint =
           new BackupEndpoint(
-              clusteringRule.getGateway().getBrokerClient(), clusteringRule.getBrokerCfg(0));
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackupScheduler());
     }
 
     @Timeout(value = 60)
@@ -150,7 +152,8 @@ class BackupErrorResponseTest {
     void setup() {
       backupEndpoint =
           new BackupEndpoint(
-              clusteringRule.getGateway().getBrokerClient(), clusteringRule.getBrokerCfg(0));
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackupScheduler());
     }
 
     @Timeout(value = 60)
@@ -177,7 +180,8 @@ class BackupErrorResponseTest {
     void setup() {
       backupEndpoint =
           new BackupEndpoint(
-              clusteringRule.getGateway().getBrokerClient(), clusteringRule.getBrokerCfg(0));
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackupScheduler());
     }
 
     @Timeout(value = 60)
