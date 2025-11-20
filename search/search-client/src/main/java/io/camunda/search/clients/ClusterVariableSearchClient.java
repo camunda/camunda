@@ -18,7 +18,7 @@ public interface ClusterVariableSearchClient {
 
   ClusterVariableEntity getClusterVariable(final String name);
 
-  SearchQueryResult<ClusterVariableEntity> searchClusterVariables(ClusterVariableQuery filter);
+  SearchQueryResult<ClusterVariableEntity> searchClusterVariables(ClusterVariableQuery query);
 
   ClusterVariableSearchClient withSecurityContext(SecurityContext securityContext);
 }

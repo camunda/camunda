@@ -334,7 +334,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
-      final ClusterVariableQuery filter) {
+      final ClusterVariableQuery query) {
     return SearchQueryResult.empty();
   }
 

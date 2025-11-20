@@ -170,8 +170,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
-      final ClusterVariableQuery filter) {
-    return doSearchWithReader(readers.clusterVariableReader(), filter);
+      final ClusterVariableQuery query) {
+    return doSearchWithReader(readers.clusterVariableReader(), query);
   }
 
   @Override
