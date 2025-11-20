@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { Locator, Page } from '@playwright/test';
+import type {Locator, Page} from '@playwright/test';
 
 export class OperateDiagramPage {
   private page: Page;
@@ -47,16 +47,14 @@ export class OperateDiagramPage {
   }
 
   clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName)
-      .first()
-      .click({ timeout: 20000 });
+    return this.getFlowNode(flowNodeName).first().click({timeout: 20000});
   }
 
   clickSubProcess(subProcessName: string) {
     // Click on the top left corner of the sub process.
     // This avoids clicking on child elements inside the sub process.
     return this.getFlowNode(subProcessName).click({
-      position: { x: 5, y: 5 },
+      position: {x: 5, y: 5},
       force: true,
     });
   }
@@ -75,7 +73,7 @@ export class OperateDiagramPage {
   async getLabeledElement(eventName: string) {
     const eventLabel = this.diagram
       .locator('.djs-element')
-      .filter({ hasText: new RegExp(`${eventName}`, 'i') });
+      .filter({hasText: new RegExp(`${eventName}`, 'i')});
 
     const labelId = await eventLabel.getAttribute('data-element-id');
     const eventId = labelId?.split(/_label$/)[0];
@@ -84,20 +82,20 @@ export class OperateDiagramPage {
 
   showMetaData() {
     return this.popover
-      .getByRole('button', { name: 'show more metadata' })
+      .getByRole('button', {name: 'show more metadata'})
       .click();
   }
 
   getExecutionCount(elementId: string) {
     return this.diagram.evaluate(
-      (node, { elementId }) => {
+      (node, {elementId}) => {
         const completedOverlay: HTMLDivElement | null = node.querySelector(
           `[data-container-id="${elementId}"] [data-testid="state-overlay-completed"]`,
         );
 
         return completedOverlay?.innerText;
       },
-      { elementId },
+      {elementId},
     );
   }
 }

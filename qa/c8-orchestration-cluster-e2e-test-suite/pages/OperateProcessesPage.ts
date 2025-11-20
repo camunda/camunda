@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Page, Locator, expect } from '@playwright/test';
-import { OperateDiagramPage } from './OperateDiagramPage';
-import { sleep } from '../utils/sleep';
-import { checkUpdateOnVersion } from 'utils/zeebeClient';
+import {Page, Locator, expect} from '@playwright/test';
+import {OperateDiagramPage} from './OperateDiagramPage';
+import {sleep} from '../utils/sleep';
+import {checkUpdateOnVersion} from 'utils/zeebeClient';
 
 class OperateProcessesPage {
   private page: Page;
@@ -43,11 +43,11 @@ class OperateProcessesPage {
     this.processResultCount = page.getByTestId('result-count');
     this.processPageHeading = page
       .getByTestId('expanded-panel')
-      .getByRole('heading', { name: 'Process' });
+      .getByRole('heading', {name: 'Process'});
     this.noMatchingInstancesMessage = page.getByText(
       'There are no Instances matching this filter set',
     );
-    this.processNameFilter = page.getByRole('combobox', { name: 'name' });
+    this.processNameFilter = page.getByRole('combobox', {name: 'name'});
     this.processInstanceLink = page
       .getByRole('link', {
         name: 'view instance',
@@ -87,16 +87,16 @@ class OperateProcessesPage {
     );
     this.applyCancelBatchOperationDialogButton = page
       .getByRole('dialog')
-      .getByRole('button', { name: 'Apply' });
+      .getByRole('button', {name: 'Apply'});
     this.continueMigrationDialogButton = page
       .getByRole('dialog')
-      .getByRole('button', { name: 'Continue' });
+      .getByRole('button', {name: 'Continue'});
     this.cancelProcessInstanceButton = page
-      .getByRole('button', { name: 'Cancel Instance' })
+      .getByRole('button', {name: 'Cancel Instance'})
       .first();
     this.cancelProcessInstanceDialogButton = page
       .getByRole('dialog')
-      .getByRole('button', { name: 'Apply' });
+      .getByRole('button', {name: 'Apply'});
     this.singleCancellationSpinner = page.getByTestId('operation-spinner');
     this.tableLoadingSpinner = page.getByTestId('data-table-loader');
   }
@@ -105,7 +105,7 @@ class OperateProcessesPage {
     await this.processNameFilter.click();
     await this.processNameFilter.fill(name);
     await this.page.keyboard.press('Enter');
-    await this.page.getByRole('heading', { name }).waitFor({ state: 'visible' });
+    await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
   }
 
   async clickProcessInstanceLink(): Promise<void> {
@@ -225,9 +225,9 @@ class OperateProcessesPage {
       .filter({
         has: page
           .getByTestId('cell-processInstanceKey')
-          .filter({ hasText: keyStr }),
+          .filter({hasText: keyStr}),
       });
   }
 }
 
-export { OperateProcessesPage };
+export {OperateProcessesPage};
