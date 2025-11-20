@@ -17,25 +17,29 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {useQuery} from '@tanstack/react-query';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {useSelectedDecisionDefinition} from 'modules/hooks/decisionDefinition';
+import {useDecisionDefinitionSelection} from 'modules/hooks/decisionDefinition';
 
 const Decision: React.FC = observer(() => {
-  const [params, setParams] = useSearchParams();
-  const versionFilterValue = params.get('version');
+  const [_, setParams] = useSearchParams();
 
   const {
-    data: selectedDefinition,
+    data: definitionSelection = {kind: 'no-match'},
     status,
-    isFetching: isFetchingSelectedDecisionDefinition,
-    isEnabled: isSelectedDecisionDefinitionEnabled,
-    isError: isSelectedDecisionDefinitionError,
-  } = useSelectedDecisionDefinition();
-  const selectedDefinitionKey = selectedDefinition?.decisionDefinitionKey;
-  const selectedDefinitionName = selectedDefinition?.name ?? 'Decision';
-  const selectedDefinitionId = selectedDefinition?.decisionDefinitionId;
+    isFetching: isFetchingDefinitionSelection,
+    isEnabled: isDefinitionSelectionEnabled,
+    isError: isDefinitionSelectionError,
+  } = useDecisionDefinitionSelection();
+  const selectedDefinitionKey =
+    definitionSelection.kind === 'single-version'
+      ? definitionSelection.definition.decisionDefinitionKey
+      : undefined;
+  const selectedDefinitionName =
+    definitionSelection.kind !== 'no-match'
+      ? definitionSelection.definition.name
+      : 'Decision';
 
   useEffect(() => {
-    if (status === 'success' && !selectedDefinitionKey) {
+    if (status === 'success' && definitionSelection.kind === 'no-match') {
       setParams((p) => {
         p.delete('name');
         p.delete('version');
@@ -47,7 +51,7 @@ const Decision: React.FC = observer(() => {
         isDismissable: true,
       });
     }
-  }, [selectedDefinitionKey, status, setParams]);
+  }, [definitionSelection, status, setParams]);
 
   const {
     data: decisionDefinitionXml,
@@ -65,18 +69,21 @@ const Decision: React.FC = observer(() => {
   >(null);
 
   useEffect(() => {
-    if (isFetched && selectedDefinitionId) {
-      setRenderedDefinitionId(selectedDefinitionId);
+    if (isFetched && definitionSelection.kind === 'single-version') {
+      setRenderedDefinitionId(
+        definitionSelection.definition.decisionDefinitionId,
+      );
     }
-  }, [isFetched, selectedDefinitionId]);
+  }, [isFetched, definitionSelection]);
 
   const getDisplayStatus = () => {
     switch (true) {
-      case isFetching || isFetchingSelectedDecisionDefinition:
+      case isFetching || isFetchingDefinitionSelection:
         return 'loading';
-      case isError || isSelectedDecisionDefinitionError:
+      case isError || isDefinitionSelectionError:
         return 'error';
-      case !isSelectedDecisionDefinitionEnabled:
+      case !isDefinitionSelectionEnabled ||
+        definitionSelection.kind !== 'single-version':
         return 'empty';
       default:
         return 'content';
@@ -93,24 +100,26 @@ const Decision: React.FC = observer(() => {
             : 'panelOffset'
         }
       >
-        {selectedDefinition && (
-          <>
-            <CopiableContent
-              copyButtonDescription="Decision ID / Click to copy"
-              content={selectedDefinition.decisionDefinitionId}
-            />
-            <DecisionOperations
-              decisionDefinitionKey={selectedDefinition.decisionDefinitionKey}
-              decisionName={selectedDefinition.name}
-              decisionVersion={selectedDefinition.version}
-            />
-          </>
+        {definitionSelection.kind !== 'no-match' && (
+          <CopiableContent
+            copyButtonDescription="Decision ID / Click to copy"
+            content={definitionSelection.definition.decisionDefinitionId}
+          />
+        )}
+        {definitionSelection.kind === 'single-version' && (
+          <DecisionOperations
+            decisionDefinitionKey={
+              definitionSelection.definition.decisionDefinitionKey
+            }
+            decisionName={definitionSelection.definition.name}
+            decisionVersion={definitionSelection.definition.version}
+          />
         )}
       </PanelHeader>
       <DiagramShell
         status={getDisplayStatus()}
         emptyMessage={
-          versionFilterValue === 'all'
+          definitionSelection.kind === 'all-versions'
             ? {
                 message: `There is more than one Version selected for Decision "${selectedDefinitionName}"`,
                 additionalInfo:

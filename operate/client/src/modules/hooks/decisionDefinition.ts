@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
+import {useSearchParams} from 'react-router-dom';
 import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
-import {useDecisionInstancesSearchFilter} from './decisionInstancesSearch';
+import {parseDecisionDefinitionsSearchFilter} from 'modules/utils/filter/decisionInstancesSearch';
 import {useDecisionDefinitionsSearch} from 'modules/queries/decisionDefinitions/useDecisionDefinitionsSearch';
 import {DEFAULT_TENANT} from 'modules/constants';
 
@@ -15,6 +17,14 @@ interface DecisionDefinitionWithIdentifier extends DecisionDefinition {
   /** A `definitionId`--`tenantId` tuple that is almost unique but not unique across versions. */
   identifier: string;
 }
+
+type DecisionDefinitionSelection =
+  | {kind: 'no-match'}
+  | {kind: 'single-version'; definition: DecisionDefinition}
+  | {
+      kind: 'all-versions';
+      definition: Pick<DecisionDefinition, 'name' | 'decisionDefinitionId'>;
+    };
 
 function getDefinitionIdentifier(definitionId: string, tenantId?: string) {
   return `${definitionId}--${tenantId ?? DEFAULT_TENANT}`;
@@ -81,24 +91,51 @@ function useDecisionDefinitionVersions(
 
 /**
  * Returns the decision-definition that matches the selected decisions filters.
- * The query is disabled when the filter configuration is incomplete.
+ * The query is disabled when no `decisionDefinitionId` is provided.
+ *
+ * If no version filter (or 'all') is set, the selection state will be `all-versions`
+ * with reduced definition information. In this case, the query cache is shared with
+ * {@link useDecisionDefinitionVersions} by providing the same query payload.
  */
-function useSelectedDecisionDefinition() {
-  const filters = useDecisionInstancesSearchFilter();
-  const enabled =
-    !!filters?.decisionDefinitionId && !!filters.decisionDefinitionVersion;
+function useDecisionDefinitionSelection() {
+  const filters = useDecisionDefinitionsSearchFilter();
 
-  return useDecisionDefinitionsSearch({
-    enabled,
+  return useDecisionDefinitionsSearch<DecisionDefinitionSelection>({
+    enabled: !!filters.decisionDefinitionId,
     payload: {
       filter: {
-        decisionDefinitionId: filters?.decisionDefinitionId,
-        version: filters?.decisionDefinitionVersion,
-        tenantId: filters?.tenantId,
+        decisionDefinitionId: filters.decisionDefinitionId,
+        version: filters.version,
+        tenantId: filters.tenantId,
       },
+      sort: [{field: 'version', order: 'desc'}],
     },
-    select: (definitions) => definitions.at(0),
+    select: (definitions) => {
+      const definition = definitions.at(0);
+      switch (true) {
+        case !definition:
+          return {kind: 'no-match'};
+        case filters?.version === undefined:
+          return {
+            kind: 'all-versions',
+            definition: {
+              name: definition.name,
+              decisionDefinitionId: definition.decisionDefinitionId,
+            },
+          };
+        default:
+          return {kind: 'single-version', definition};
+      }
+    },
   });
+}
+
+function useDecisionDefinitionsSearchFilter() {
+  const [searchParams] = useSearchParams();
+  return useMemo(
+    () => parseDecisionDefinitionsSearchFilter(searchParams),
+    [searchParams],
+  );
 }
 
 export type {DecisionDefinitionWithIdentifier};
@@ -107,5 +144,5 @@ export {
   getDefinitionIdFromIdentifier,
   useDecisionDefinitionVersions,
   useDecisionDefinitions,
-  useSelectedDecisionDefinition,
+  useDecisionDefinitionSelection,
 };
