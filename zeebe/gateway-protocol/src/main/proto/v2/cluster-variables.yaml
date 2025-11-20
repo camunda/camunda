@@ -3,6 +3,7 @@
 paths:
   /cluster-variables:
     post:
+      operationId: createClusterVariable
       tags:
         - Cluster Variable
       summary: Create a new cluster variable
@@ -58,6 +59,7 @@ paths:
       x-eventually-consistent: true
   /cluster-variables/{name}/GLOBAL:
     delete:
+      operationId: deleteGlobalClusterVariable
       tags:
         - Cluster Variable
       summary: Delete a global-scoped cluster variable
@@ -82,6 +84,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
     get:
+      operationId: getGlobalClusterVariable
       tags:
         - Cluster Variable
       summary: Get a global-scoped cluster variable
@@ -111,6 +114,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
   /cluster-variables/{name}/TENANT/{tenantId}:
     delete:
+      operationId: deleteTenantClusterVariable
       tags:
         - Cluster Variable
       summary: Delete a tenant-scoped cluster variable
@@ -141,6 +145,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
     get:
+      operationId: getTenantClusterVariable
       tags:
         - Cluster Variable
       summary: Get a tenant-scoped cluster variable
