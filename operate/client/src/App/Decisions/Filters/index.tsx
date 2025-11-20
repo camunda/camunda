@@ -50,7 +50,17 @@ const Filters: React.FC = observer(() => {
   const location = useLocation() as LocationType;
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filters = parseDecisionInstancesFilter(location.search);
+  const filterValues = parseDecisionInstancesFilter(location.search);
+  if (filterValues.name && filterValues.tenant !== 'all') {
+    filterValues.name = getDefinitionIdentifier(
+      filterValues.name,
+      filterValues.tenant,
+    );
+  }
+  if (filterValues.tenant === 'all') {
+    delete filterValues.name;
+    delete filterValues.version;
+  }
 
   return (
     <Form<DecisionInstanceFilters>
@@ -62,17 +72,7 @@ const Filters: React.FC = observer(() => {
           }),
         });
       }}
-      initialValues={{
-        ...filters,
-        name:
-          filters.name && filters.tenant !== 'all'
-            ? getDefinitionIdentifier(filters.name, filters.tenant)
-            : undefined,
-        version:
-          filters.version && filters.tenant !== 'all'
-            ? filters.version
-            : undefined,
-      }}
+      initialValues={filterValues}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>

@@ -7,25 +7,22 @@
  */
 
 import type {Route} from '@playwright/test';
-import type {
-  DecisionDto,
-  DecisionInstancesDto,
-  BatchOperationDto,
-} from '@/types';
+import type {BatchOperationDto} from '@/types';
 import {
   type QueryBatchOperationsResponseBody,
+  type QueryDecisionDefinitionsResponseBody,
   type QueryDecisionInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
 function mockResponses({
   batchOperations,
-  groupedDecisions,
+  decisionDefinitions,
   decisionInstances,
   decisionXml,
   deleteDecision,
 }: {
   batchOperations?: QueryBatchOperationsResponseBody;
-  groupedDecisions?: DecisionDto[];
+  decisionDefinitions?: QueryDecisionDefinitionsResponseBody;
   decisionInstances?: QueryDecisionInstancesResponseBody;
   decisionXml?: string;
   deleteDecision?: BatchOperationDto;
@@ -58,10 +55,10 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('/api/decisions/grouped')) {
+    if (route.request().url().includes('/v2/decision-definitions/search')) {
       return route.fulfill({
-        status: groupedDecisions === undefined ? 400 : 200,
-        body: JSON.stringify(groupedDecisions),
+        status: decisionDefinitions === undefined ? 400 : 200,
+        body: JSON.stringify(decisionDefinitions),
         headers: {
           'content-type': 'application/json',
         },
@@ -110,57 +107,56 @@ function mockResponses({
   };
 }
 
-const mockGroupedDecisions: DecisionDto[] = [
-  {
-    decisionId: 'invoiceAssignApprover',
-    tenantId: '<default>',
-    name: 'Assign Approver Group',
-    permissions: [],
-    decisions: [
-      {
-        id: '2251799813687885',
-        version: 2,
-        decisionId: 'invoiceAssignApprover',
-      },
-      {
-        id: '2251799813687195',
-        version: 1,
-        decisionId: 'invoiceAssignApprover',
-      },
-    ],
-  },
-  {
-    decisionId: 'amountToString',
-    tenantId: '<default>',
-    name: 'Convert amount to string',
-    permissions: [],
-    decisions: [
-      {
-        id: '2251799813687887',
-        version: 1,
-        decisionId: 'amountToString',
-      },
-    ],
-  },
-  {
-    decisionId: 'invoiceClassification',
-    tenantId: '<default>',
-    name: 'Invoice Classification',
-    permissions: [],
-    decisions: [
-      {
-        id: '2251799813687886',
-        version: 2,
-        decisionId: 'invoiceClassification',
-      },
-      {
-        id: '2251799813687196',
-        version: 1,
-        decisionId: 'invoiceClassification',
-      },
-    ],
-  },
-];
+const mockedDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
+  items: [
+    {
+      decisionDefinitionId: 'invoiceClassification',
+      name: 'Invoice Classification',
+      version: 2,
+      decisionRequirementsId: 'invoiceBusinessDecisions',
+      tenantId: '<default>',
+      decisionDefinitionKey: '2251799813687886',
+      decisionRequirementsKey: 'drg-2251799813687886',
+    },
+    {
+      decisionDefinitionId: 'invoiceClassification',
+      name: 'Invoice Classification',
+      version: 1,
+      decisionRequirementsId: 'invoiceBusinessDecisions',
+      tenantId: '<default>',
+      decisionDefinitionKey: '2251799813687196',
+      decisionRequirementsKey: 'drg-2251799813687196',
+    },
+    {
+      decisionDefinitionId: 'invoiceAssignApprover',
+      name: 'Assign Approver Group',
+      version: 2,
+      decisionRequirementsId: 'invoiceBusinessDecisions',
+      tenantId: '<default>',
+      decisionDefinitionKey: '2251799813687885',
+      decisionRequirementsKey: 'drg-2251799813687885',
+    },
+    {
+      decisionDefinitionId: 'invoiceAssignApprover',
+      name: 'Assign Approver Group',
+      version: 1,
+      decisionRequirementsId: 'invoiceBusinessDecisions',
+      tenantId: '<default>',
+      decisionDefinitionKey: '2251799813687195',
+      decisionRequirementsKey: 'drg-2251799813687195',
+    },
+    {
+      decisionDefinitionId: 'amountToString',
+      name: 'Convert amount to string',
+      version: 1,
+      decisionRequirementsId: 'invoiceBusinessDecisions',
+      tenantId: '<default>',
+      decisionDefinitionKey: '2251799813687887',
+      decisionRequirementsKey: 'drg-2251799813687887',
+    },
+  ],
+  page: {totalItems: 5},
+};
 
 const mockBatchOperations: QueryBatchOperationsResponseBody = {
   items: [
@@ -1272,7 +1268,7 @@ const mockDeleteDecision = {
 } as const;
 
 export {
-  mockGroupedDecisions,
+  mockedDecisionDefinitions,
   mockBatchOperations,
   mockEmptyDecisionInstances,
   mockDecisionInstances,

@@ -9,7 +9,7 @@
 import {test} from '../visual-fixtures';
 import {
   mockDecisionInstances,
-  mockGroupedDecisions,
+  mockedDecisionDefinitions,
   mockBatchOperations,
   mockResponses,
   mockDecisionXml,
@@ -35,7 +35,7 @@ test.describe('decisions', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedDecisions: mockGroupedDecisions,
+        decisionDefinitions: mockedDecisionDefinitions,
         batchOperations: mockBatchOperations,
         decisionInstances: mockDecisionInstances,
       }),
@@ -58,7 +58,7 @@ test.describe('decisions', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedDecisions: mockGroupedDecisions,
+        decisionDefinitions: mockedDecisionDefinitions,
         batchOperations: mockBatchOperations,
         decisionInstances: mockDecisionInstances,
         decisionXml: mockDecisionXml,
