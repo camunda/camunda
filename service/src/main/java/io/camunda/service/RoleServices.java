@@ -32,9 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
-
+  private static final Logger LOG = LoggerFactory.getLogger(RoleServices.class);
   private final RoleSearchClient roleSearchClient;
 
   public RoleServices(
@@ -51,6 +53,13 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.roleSearchClient = roleSearchClient;
+    LOG.info(
+        "Initializing RoleServices: {} {} {} {} {}",
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override
@@ -75,6 +84,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public boolean hasMembersOfType(final String roleId, final EntityType entityType) {
+    LOG.info("hasMembersOfType {} {}", roleId, entityType);
     final var query =
         RoleMemberQuery.of(
             builder ->
@@ -98,6 +108,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   @Override
   public RoleServices withAuthentication(final CamundaAuthentication authentication) {
+    LOG.info("RoleServices.withAuthentication: {}", authentication);
     return new RoleServices(
         brokerClient,
         securityContextProvider,

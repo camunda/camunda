@@ -48,6 +48,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
     // Skip redirect logic for the setup page itself to prevent redirect loops
     // Skip redirect logic for loading assets, e.g., CSS and JS files
     final var requestURI = request.getRequestURI();
+    LOG.info("AdminUserCheckFilter URI: {}", requestURI);
     final String setupPath = request.getContextPath() + REDIRECT_PATH;
     if (requestURI.equals(setupPath) || requestURI.contains(ASSETS_PATH)) {
       filterChain.doFilter(request, response);
@@ -62,16 +63,18 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
             .getOrDefault(USER_MEMBERS, Set.of())
             .isEmpty();
 
+    LOG.info("AdminUserCheckFilter has configured admin user: {}", hasConfiguredAdminUser);
     if (hasConfiguredAdminUser) {
       filterChain.doFilter(request, response);
       return;
     }
 
     try {
+      LOG.info("Checking role series for admin role members.");
       if (!roleServices
           .withAuthentication(CamundaAuthentication.anonymous())
           .hasMembersOfType(ADMIN_ROLE_ID, EntityType.USER)) {
-        LOG.debug("No user with admin role exists. Redirecting to identity setup page.");
+        LOG.warn("No user with admin role exists. Redirecting to identity setup page.");
         final var redirectUrl = String.format("%s%s", request.getContextPath(), REDIRECT_PATH);
         response.sendRedirect(redirectUrl);
         return;
