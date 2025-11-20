@@ -9,14 +9,10 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {Decisions} from './';
-import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
-import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
-import {useEffect} from 'react';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -25,8 +21,7 @@ import {createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockEmptyDecisionInstancesSearchResult} from 'modules/mocks/mockDecisionInstanceSearch';
-
-const handleRefetchSpy = vi.spyOn(groupedDecisionsStore, 'handleRefetch');
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -36,11 +31,6 @@ vi.mock('modules/stores/notifications', () => ({
 
 function createWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return () => {
-        groupedDecisionsStore.reset();
-      };
-    }, []);
     return (
       <QueryClientProvider client={getMockQueryClient()}>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -57,37 +47,39 @@ function createWrapper(initialPath: string = Paths.decisions()) {
 describe('<Decisions />', () => {
   it('should show page title', async () => {
     mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
-    mockFetchGroupedDecisions().withSuccess([]);
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockMe().withSuccess(createUser());
 
     render(<Decisions />, {wrapper: createWrapper()});
 
     expect(document.title).toBe('Operate: Decision Instances');
-
-    await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched'),
-    );
   });
 
-  it.skip('should poll 3 times for grouped decisions and redirect to initial decisions page if decision name does not exist', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
-    const queryString =
-      '?evaluated=true&failed=true&name=non-existing-decision&version=all';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
+  it('should redirect to initial decisions page if decision name does not exist', async () => {
     mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchDecisionInstances().withSuccess(
+      mockEmptyDecisionInstancesSearchResult,
+    );
     mockSearchDecisionInstances().withSuccess(
       mockEmptyDecisionInstancesSearchResult,
     );
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
+    mockMe().withSuccess(createUser());
 
+    const queryString =
+      '?evaluated=true&failed=true&name=non-existing-decision&version=all';
     render(<Decisions />, {
       wrapper: createWrapper(`/decisions${queryString}`),
     });
@@ -96,40 +88,14 @@ describe('<Decisions />', () => {
 
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetching'),
-    );
-    expect(handleRefetchSpy).toHaveBeenCalledTimes(1);
-
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    vi.runOnlyPendingTimers();
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
-
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    vi.runOnlyPendingTimers();
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
-
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    mockSearchDecisionInstances().withSuccess(
-      mockEmptyDecisionInstancesSearchResult,
-    );
-
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    vi.runOnlyPendingTimers();
-
-    await waitFor(() => {
-      expect(groupedDecisionsStore.decisions.length).toBe(4);
-    });
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions/);
-    expect(screen.getByTestId('search').textContent).toBe(
-      '?evaluated=true&failed=true',
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        '?evaluated=true&failed=true',
+      ),
     );
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -137,8 +103,5 @@ describe('<Decisions />', () => {
       kind: 'error',
       title: 'Decision could not be found',
     });
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 });
