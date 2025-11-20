@@ -20,6 +20,7 @@ import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   Authorization,
   createAuthorization,
+  NewAuthorization,
   OwnerType,
   PermissionType,
   ResourcePropertyName,
@@ -145,9 +146,12 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 }) => {
   const { t, Translate } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, error }] = useApiCall(createAuthorization, {
-    suppressErrorNotification: true,
-  });
+  const [apiCall, { loading, error }] = useApiCall<undefined, NewAuthorization>(
+    createAuthorization,
+    {
+      suppressErrorNotification: true,
+    },
+  );
 
   const { DropdownAutoFocus } = useDropdownAutoFocus(open);
 
@@ -169,7 +173,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
     );
   }
 
-  const { control, handleSubmit, watch, setValue } = useForm<Authorization>({
+  const { control, handleSubmit, watch, setValue } = useForm<NewAuthorization>({
     defaultValues: createEmptyAuthorization(defaultResourceType),
     mode: "all",
   });
@@ -177,7 +181,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   const watchedOwnerType = watch("ownerType");
   const watchedResourceType = watch("resourceType");
 
-  const onSubmit = async (data: Authorization) => {
+  const onSubmit = async (data: NewAuthorization) => {
     const { success } = await apiCall(data);
 
     if (success) {
@@ -387,10 +391,11 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   );
 };
 
-function createEmptyAuthorization(resourceType: ResourceType): Authorization {
+function createEmptyAuthorization(
+  resourceType: ResourceType,
+): NewAuthorization {
   if (resourceType === ResourceType.USER_TASK) {
     return {
-      authorizationKey: "",
       ownerType: OwnerType.USER,
       ownerId: "",
       resourceType: ResourceType.USER_TASK,
@@ -399,7 +404,6 @@ function createEmptyAuthorization(resourceType: ResourceType): Authorization {
     };
   } else {
     return {
-      authorizationKey: "",
       ownerType: OwnerType.USER,
       ownerId: "",
       resourceType: ResourceType.USER,

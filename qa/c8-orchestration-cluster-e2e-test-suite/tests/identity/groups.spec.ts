@@ -144,8 +144,7 @@ test.describe('Groups functionalities', () => {
     }
   });
 
-  // Skipped due to bug 40968:  https://github.com/camunda/camunda/issues/40968
-  test.skip('As an Admin user can create a group with particular permissions and assign it to Test user', async ({
+  test('As an Admin user can create a group with particular permissions and assign it to Test user', async ({
     page,
     identityGroupsPage,
     identityAuthorizationsPage,
