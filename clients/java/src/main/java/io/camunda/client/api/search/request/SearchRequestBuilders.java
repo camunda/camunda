@@ -18,6 +18,7 @@ package io.camunda.client.api.search.request;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
+import io.camunda.client.api.search.filter.ClusterVariableFilter;
 import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
@@ -41,6 +42,7 @@ import io.camunda.client.api.search.sort.AuthorizationSort;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.api.search.sort.ClientSort;
+import io.camunda.client.api.search.sort.ClusterVariableSort;
 import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
@@ -67,6 +69,7 @@ import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
+import io.camunda.client.impl.search.filter.ClusterVariableFilterImpl;
 import io.camunda.client.impl.search.filter.CorrelatedMessageSubscriptionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
@@ -91,6 +94,7 @@ import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationSortImpl;
 import io.camunda.client.impl.search.sort.ClientSortImpl;
+import io.camunda.client.impl.search.sort.ClusterVariableSortImpl;
 import io.camunda.client.impl.search.sort.CorrelatedMessageSubscriptionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
@@ -239,6 +243,19 @@ public final class SearchRequestBuilders {
 
   public static VariableSort variableSort(final Consumer<VariableSort> fn) {
     final VariableSort sort = new VariableSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ClusterVariableFilter clusterVariableFilter(
+      final Consumer<ClusterVariableFilter> fn) {
+    final ClusterVariableFilter filter = new ClusterVariableFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ClusterVariableSort clusterVariableSort(final Consumer<ClusterVariableSort> fn) {
+    final ClusterVariableSort sort = new ClusterVariableSortImpl();
     fn.accept(sort);
     return sort;
   }

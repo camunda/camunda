@@ -22,6 +22,10 @@ public class RestGatewayPaths {
   private static final String URL_AUTHORIZATION = REST_API_PATH + "/authorizations/%s";
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
+  private static final String URL_CLUSTER_VARIABLES = REST_API_PATH + "/cluster-variables";
+  private static final String URL_CLUSTER_VARIABLES_GLOBAL = URL_CLUSTER_VARIABLES + "/%s/GLOBAL";
+  private static final String URL_CLUSTER_VARIABLES_TENANT =
+      URL_CLUSTER_VARIABLES + "/%s/TENANT/%s";
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
   private static final String URL_DECISION_DEFINITION = REST_API_PATH + "/decision-definitions/%s";
@@ -312,5 +316,17 @@ public class RestGatewayPaths {
 
   public static String getElementInstanceUrl(final long elementInstanceKey) {
     return String.format(URL_ELEMENT_INSTANCE, elementInstanceKey);
+  }
+
+  public static String getClusterVariablesUrl() {
+    return URL_CLUSTER_VARIABLES;
+  }
+
+  public static String getClusterVariablesUrl(final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GLOBAL, variableName);
+  }
+
+  public static String getClusterVariablesUrl(final String variableName, final String tenantId) {
+    return String.format(URL_CLUSTER_VARIABLES_TENANT, variableName, tenantId);
   }
 }

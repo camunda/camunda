@@ -25,6 +25,7 @@ import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionRequirementsResult;
@@ -346,6 +347,20 @@ public class RestGatewayService {
   public void onElementInstanceRequest(
       final long elementInstanceKey, final ElementInstanceResult response) {
     registerGet(RestGatewayPaths.getElementInstanceUrl(elementInstanceKey), response);
+  }
+
+  public void onCreateClusterVariableRequest(final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesUrl(), response);
+  }
+
+  public void onGetClusterVariableRequest(
+      final ClusterVariableResult response, final String variableName) {
+    registerGet(RestGatewayPaths.getClusterVariablesUrl(variableName), response);
+  }
+
+  public void onGetClusterVariableRequest(
+      final ClusterVariableResult response, final String variableName, final String tenantId) {
+    registerGet(RestGatewayPaths.getClusterVariablesUrl(variableName, tenantId), response);
   }
 
   public void onBroadcastSignalRequest(final SignalBroadcastResult response) {

@@ -135,6 +135,7 @@ import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
+import io.camunda.client.api.search.request.ClusterVariableSearchRequest;
 import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
@@ -190,6 +191,7 @@ import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.client.impl.command.CreateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.CreateBatchOperationCommandImpl.CreateBatchOperationCommandStep1Impl;
+import io.camunda.client.impl.command.CreateClusterVariableImpl;
 import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
@@ -200,6 +202,7 @@ import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
+import io.camunda.client.impl.command.DeleteClusterVariableImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteMappingRuleCommandImpl;
@@ -248,6 +251,7 @@ import io.camunda.client.impl.command.UpdateUserCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.client.impl.fetch.AuthorizationGetRequestImpl;
 import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
+import io.camunda.client.impl.fetch.ClusterVariableGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DecisionInstanceGetRequestImpl;
@@ -277,6 +281,7 @@ import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByTenantSearchRequestImpl;
+import io.camunda.client.impl.search.request.ClusterVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.CorrelatedMessageSubscriptionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
@@ -1141,6 +1146,26 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public VariableGetRequest newVariableGetRequest(final long variableKey) {
     return new VariableGetRequestImpl(httpClient, variableKey);
+  }
+
+  @Override
+  public CreateClusterVariableImpl newClusterVariableCreateRequest() {
+    return new CreateClusterVariableImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public DeleteClusterVariableImpl newClusterVariableDeleteRequest() {
+    return new DeleteClusterVariableImpl(httpClient);
+  }
+
+  @Override
+  public ClusterVariableGetRequestImpl newClusterVariableGetRequest() {
+    return new ClusterVariableGetRequestImpl(httpClient);
+  }
+
+  @Override
+  public ClusterVariableSearchRequest newClusterVariableSearchRequest() {
+    return new ClusterVariableSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

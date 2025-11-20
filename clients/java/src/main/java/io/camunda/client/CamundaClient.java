@@ -33,6 +33,8 @@ import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.ClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
@@ -95,6 +97,7 @@ import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.ClusterVariableGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -124,6 +127,7 @@ import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
+import io.camunda.client.api.search.request.ClusterVariableSearchRequest;
 import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
@@ -1887,6 +1891,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a variable
    */
   VariableGetRequest newVariableGetRequest(long variableKey);
+
+  ClusterVariableCreationCommandStep1 newClusterVariableCreateRequest();
+
+  ClusterVariableDeletionCommandStep1 newClusterVariableDeleteRequest();
+
+  ClusterVariableGetRequest newClusterVariableGetRequest();
+
+  ClusterVariableSearchRequest newClusterVariableSearchRequest();
 
   /**
    * Executes a search request to query variables related to a user task.
