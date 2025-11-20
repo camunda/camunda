@@ -360,4 +360,25 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.getByText(/"jobType"/)).toBeInTheDocument();
     expect(screen.getByText(/"jobWorker"/)).toBeInTheDocument();
   });
+
+  it('should display message subscription data fields', async () => {
+    const incidentMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        messageName: 'message',
+        correlationKey: '1',
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(screen.getByText(/"messageName"/)).toBeInTheDocument();
+    expect(screen.getByText(/"correlationKey"/)).toBeInTheDocument();
+  });
 });

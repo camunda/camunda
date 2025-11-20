@@ -43,6 +43,8 @@ type V2InstanceMetadata = {
   jobDeadline?: string | null;
   jobCustomHeaders: Record<string, unknown> | null;
   jobKey?: string | null;
+  messageName?: string | null;
+  correlationKey?: string | null;
 } & Partial<UserTask>;
 
 type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata' | 'incident'> & {
@@ -123,6 +125,8 @@ function createV2InstanceMetadata(
     flowNodeInstanceId: elementInstance.elementInstanceKey,
     flowNodeId: elementInstance.elementId,
     flowNodeType: oldMetadata?.flowNodeType,
+    messageName: oldMetadata?.messageName,
+    correlationKey: oldMetadata?.correlationKey,
 
     creationDate,
     completionDate,
