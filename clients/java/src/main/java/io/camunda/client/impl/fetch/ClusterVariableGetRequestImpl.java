@@ -53,6 +53,8 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
     final HttpCamundaFuture<ClusterVariable> result = new HttpCamundaFuture<>();
     ArgumentUtil.ensureNotNullNorEmpty("name", name);
     ArgumentUtil.ensureNotNull("scope", scope);
+    ArgumentUtil.ensureNotNullIf(
+        "tenantId", ClusterVariableScopeEnum.TENANT.equals(scope), tenantId);
     final StringJoiner path = new StringJoiner("/", "/cluster-variables/", "");
     path.add(name).add(scope.name());
     if (scope.equals(ClusterVariableScopeEnum.TENANT)) {

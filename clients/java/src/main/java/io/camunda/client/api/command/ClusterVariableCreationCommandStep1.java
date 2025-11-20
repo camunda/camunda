@@ -17,15 +17,67 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateClusterVariableResponse;
 
+/**
+ * Represents the first step of creating a cluster variable. At this step, you must specify the
+ * scope of the variable (either global or tenant-scoped).
+ *
+ * <p>Usage example:
+ *
+ * <pre>
+ *   CreateClusterVariableResponse response = camundaClient
+ *       .newClusterVariableCreateRequest()
+ *       .globalScoped()
+ *       .variable("myVariable", "myValue")
+ *       .send()
+ *       .join();
+ * </pre>
+ */
 public interface ClusterVariableCreationCommandStep1 {
 
+  /**
+   * Specifies that the cluster variable should be created with tenant scope.
+   *
+   * @param tenantId the ID of the tenant for which the variable is scoped. Must not be null or
+   *     empty.
+   * @return the next step in the command building process where you can specify the variable name
+   *     and value
+   */
   ClusterVariableCreationCommandStep2 tenantScoped(String tenantId);
 
+  /**
+   * Specifies that the cluster variable should be created with global scope, making it available to
+   * all tenants.
+   *
+   * @return the next step in the command building process where you can specify the variable name
+   *     and value
+   */
   ClusterVariableCreationCommandStep2 globalScoped();
 
-  public interface ClusterVariableCreationCommandStep2
+  /**
+   * Represents the second step of creating a cluster variable. At this step, you specify the
+   * variable name and value, then send the request.
+   */
+  interface ClusterVariableCreationCommandStep2
       extends FinalCommandStep<CreateClusterVariableResponse> {
 
+    /**
+     * Sets the name and value of the cluster variable.
+     *
+     * <p>The variable value will be serialized to JSON format.
+     *
+     * <pre>
+     *   camundaClient
+     *       .newClusterVariableCreateRequest()
+     *       .globalScoped()
+     *       .variable("myVariable", "myValue")  // for string values
+     *       .variable("myObject", new MyObject())  // for complex objects
+     *       .send();
+     * </pre>
+     *
+     * @param name the name of the variable. Must not be null or empty.
+     * @param value the value of the variable. Must not be null. Will be serialized to JSON.
+     * @return this builder for method chaining
+     */
     ClusterVariableCreationCommandStep2 variable(String name, Object value);
   }
 }

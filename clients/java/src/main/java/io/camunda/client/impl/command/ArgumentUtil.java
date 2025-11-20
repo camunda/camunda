@@ -88,4 +88,11 @@ public final class ArgumentUtil {
       throw new IllegalArgumentException(property + " must not be empty");
     }
   }
+
+  public static void ensureNotNullIf(
+      final String tenantId, final boolean equals, final String tenantId1) {
+    if (equals) {
+      ensureNotNull(tenantId, tenantId1);
+    }
+  }
 }

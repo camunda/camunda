@@ -18,9 +18,53 @@ package io.camunda.client.api.fetch;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.ClusterVariable;
 
+/**
+ * Represents a request to fetch a cluster variable by name and scope.
+ *
+ * <p>Cluster variables can be fetched with either global or tenant scope. You must specify the
+ * scope and variable name before sending the request.
+ *
+ * <p>Usage examples:
+ *
+ * <pre>
+ *   // Fetch a global-scoped variable
+ *   ClusterVariable response = camundaClient
+ *       .newClusterVariableGetRequest()
+ *       .atGlobalScope("myVariable")
+ *       .send()
+ *       .join();
+ *
+ *   // Fetch a tenant-scoped variable
+ *   ClusterVariable response = camundaClient
+ *       .newClusterVariableGetRequest()
+ *       .atTenantScope("myVariable", "my-tenant-id")
+ *       .send()
+ *       .join();
+ * </pre>
+ */
 public interface ClusterVariableGetRequest extends FinalCommandStep<ClusterVariable> {
 
+  /**
+   * Specifies that the cluster variable to fetch has tenant scope.
+   *
+   * <p>The variable will be fetched only if it exists with the specified name and tenant ID. If the
+   * variable does not exist, a 404 error will be returned.
+   *
+   * @param name the name of the variable to fetch. Must not be null or empty.
+   * @param tenantId the ID of the tenant for which the variable is scoped. Must not be null or
+   *     empty.
+   * @return this builder for method chaining
+   */
   ClusterVariableGetRequest atTenantScope(String name, String tenantId);
 
+  /**
+   * Specifies that the cluster variable to fetch has global scope.
+   *
+   * <p>The variable will be fetched only if it exists with the specified name and global scope. If
+   * the variable does not exist, a 404 error will be returned.
+   *
+   * @param name the name of the variable to fetch. Must not be null or empty.
+   * @return this builder for method chaining
+   */
   ClusterVariableGetRequest atGlobalScope(String name);
 }

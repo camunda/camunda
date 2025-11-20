@@ -74,6 +74,8 @@ public class DeleteClusterVariableImpl
   public CamundaFuture<DeleteClusterVariableResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("name", name);
     ArgumentUtil.ensureNotNull("scope", scope);
+    ArgumentUtil.ensureNotNullIf(
+        "tenantId", ClusterVariableScopeEnum.TENANT.equals(scope), tenantId);
     final HttpCamundaFuture<DeleteClusterVariableResponse> result = new HttpCamundaFuture<>();
     final StringJoiner path = new StringJoiner("/", "/cluster-variables/", "");
     path.add(name).add(scope.name());

@@ -32,6 +32,7 @@ tags:
   - name: Batch operation
   - name: Clock
   - name: Cluster
+  - name: Cluster Variable
   - name: Decision definition
   - name: Decision instance
   - name: Decision requirements

@@ -76,6 +76,10 @@ public class CreateClusterVariableImpl
     ArgumentUtil.ensureNotNullNorEmpty("name", createVariableRequest.getName());
     ArgumentUtil.ensureNotNull("value", createVariableRequest.getValue());
     ArgumentUtil.ensureNotNull("scope", createVariableRequest.getScope());
+    ArgumentUtil.ensureNotNullIf(
+        "tenantId",
+        ClusterVariableScopeEnum.TENANT.equals(createVariableRequest.getScope()),
+        createVariableRequest.getTenantId());
     final HttpCamundaFuture<CreateClusterVariableResponse> result = new HttpCamundaFuture<>();
     final CreateClusterVariableResponseImpl response = new CreateClusterVariableResponseImpl();
     httpClient.post(

@@ -1892,12 +1892,97 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   VariableGetRequest newVariableGetRequest(long variableKey);
 
+  /**
+   * Creates a request to create a new cluster variable.
+   *
+   * <p>Cluster variables can be created with either global or tenant scope:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newClusterVariableCreateRequest()
+   *       .globalScoped()
+   *       .variable("myVariable", "myValue")
+   *       .send();
+   *
+   *   // or for tenant-scoped variable
+   *   camundaClient
+   *       .newClusterVariableCreateRequest()
+   *       .tenantScoped("my-tenant-id")
+   *       .variable("myVariable", "myValue")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for creating a cluster variable
+   */
   ClusterVariableCreationCommandStep1 newClusterVariableCreateRequest();
 
+  /**
+   * Creates a request to delete an existing cluster variable.
+   *
+   * <p>Cluster variables can be deleted with either global or tenant scope:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newClusterVariableDeleteRequest()
+   *       .globalScoped()
+   *       .name("myVariable")
+   *       .send();
+   *
+   *   // or for tenant-scoped variable
+   *   camundaClient
+   *       .newClusterVariableDeleteRequest()
+   *       .tenantScoped("my-tenant-id")
+   *       .name("myVariable")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for deleting a cluster variable
+   */
   ClusterVariableDeletionCommandStep1 newClusterVariableDeleteRequest();
 
+  /**
+   * Creates a request to fetch a cluster variable by name and scope.
+   *
+   * <p>Cluster variables can be fetched with either global or tenant scope:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newClusterVariableGetRequest()
+   *       .atGlobalScope("myVariable")
+   *       .send();
+   *
+   *   // or for tenant-scoped variable
+   *   camundaClient
+   *       .newClusterVariableGetRequest()
+   *       .atTenantScope("myVariable", "my-tenant-id")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for fetching a cluster variable
+   */
   ClusterVariableGetRequest newClusterVariableGetRequest();
 
+  /**
+   * Creates a request to search for cluster variables.
+   *
+   * <p>Cluster variables can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newClusterVariableSearchRequest()
+   *       .filter(f -> f.scope(ClusterVariableScope.GLOBAL))
+   *       .sort(s -> s.name().asc())
+   *       .send();
+   *
+   *   // or for tenant-scoped variables
+   *   camundaClient
+   *       .newClusterVariableSearchRequest()
+   *       .filter(f -> f.scope(ClusterVariableScope.TENANT).tenantId("my-tenant-id"))
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching cluster variables
+   */
   ClusterVariableSearchRequest newClusterVariableSearchRequest();
 
   /**
