@@ -146,16 +146,23 @@ test.describe.serial('component authorizations CRUD', () => {
     });
   });
 
-  test('create component authorization for a role', async ({
+  // Skipped due to bug 40968:  https://github.com/camunda/camunda/issues/40968
+  test.skip('create component authorization for a role', async ({
     identityUsersPage,
     identityAuthorizationsPage,
     identityHeader,
     loginPage,
     page,
+    identityRolesPage,
   }) => {
-    await identityAuthorizationsPage.createAuthorization(
-      NEW_COMPONENT_AUTHORIZATION,
-    );
+    await identityHeader.navigateToRoles();
+    const role = NEW_AUTH_ROLE;
+    await identityRolesPage.createRole(role);
+    await identityHeader.navigateToAuthorizations();
+    await identityAuthorizationsPage.createAuthorization({
+      ...NEW_COMPONENT_AUTHORIZATION,
+      ownerId: role.name,
+    });
     await identityHeader.logout();
     await loginPage.login(NEW_USER.username, NEW_USER.password);
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
