@@ -37,7 +37,7 @@ paths:
         - Audit Log
       operationId: getAuditLog
       summary: Get audit log
-      description: Get an audit log by auditLogKey.
+      description: Get an audit log entry by auditLogKey.
       parameters:
         - name: auditLogKey
           in: path
@@ -47,7 +47,7 @@ paths:
             $ref: 'keys.yaml#/components/schemas/AuditLogKey'
       responses:
         "200":
-          description: The audit log is successfully returned.
+          description: The audit log entry is successfully returned.
           content:
             application/json:
               schema:
@@ -57,7 +57,7 @@ paths:
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
-          description: The audit log with the given operation key was not found.
+          description: The audit log with the given key was not found.
           content:
             application/problem+json:
               schema:
@@ -111,17 +111,17 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the audit log.
-        operationStatus:
+        result:
           allOf:
-            - $ref: '#/components/schemas/AuditLogOperationStatusEnum'
-          description: The status of the operation.
+            - $ref: '#/components/schemas/AuditLogResultEnum'
+          description: The result of the audit log.
         annotation:
           type: string
           description: Additional notes about the operation.
         category:
           allOf:
             - $ref: '#/components/schemas/AuditLogCategoryEnum'
-          description: The category of the operation.
+          description: The category of the audit log.
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -190,11 +190,11 @@ components:
             - entityKey
             - entityType
             - jobKey
-            - operationStatus
             - operationType
             - processDefinitionId
             - processDefinitionKey
             - processInstanceKey
+            - result
             - tenantId
             - timestamp
             - userTaskKey
@@ -244,10 +244,10 @@ components:
           description: The operation type search filter.
           allOf:
             - $ref: '#/components/schemas/OperationTypeFilterProperty'
-        operationStatus:
-          description: The operation status search filter.
+        result:
+          description: The result search filter.
           allOf:
-            - $ref: '#/components/schemas/OperationStatusFilterProperty'
+            - $ref: "#/components/schemas/AuditLogResultEnum"
         timestamp:
           description: The timestamp search filter.
           allOf:
@@ -259,7 +259,7 @@ components:
         actorType:
           description: The actor type search filter.
           allOf:
-            - $ref: '#/components/schemas/ActorTypeFilterProperty'
+            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
         entityType:
           description: The entity type search filter.
           allOf:
@@ -269,7 +269,7 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         category:
-          description: The operation category search filter.
+          description: The category search filter.
           allOf:
             - $ref: '#/components/schemas/CategoryFilterProperty'
 
@@ -290,23 +290,36 @@ components:
     AuditLogEntityTypeEnum:
       type: string
       enum:
-        - PROCESS
-        - PROCESS_INSTANCE
-        - INCIDENT
-        - USER_TASK
+        - AUTHORIZATION
         - BATCH
+        - DECISION
+        - GROUP
+        - INCIDENT
+        - MAPPING_RULE
+        - PROCESS_INSTANCE
+        - ROLE
+        - TENANT
+        - USER
+        - USER_TASK
+        - RESOURCE
         - VARIABLE
 
     AuditLogOperationTypeEnum:
       type: string
       enum:
-        - CREATE
-        - UPDATE
-        - MIGRATE
-        - DELETE
-        - SUSPEND
-        - RESUME
+        - ASSIGN
         - CANCEL
+        - COMPLETE
+        - CREATE
+        - DELETE
+        - EVALUATE
+        - MIGRATE
+        - MODIFY
+        - RESOLVE
+        - RESUME
+        - SUSPEND
+        - UNASSIGN
+        - UPDATE
 
     AuditLogActorTypeEnum:
       type: string
@@ -314,7 +327,7 @@ components:
         - USER
         - CLIENT
 
-    AuditLogOperationStatusEnum:
+    AuditLogResultEnum:
       type: string
       enum:
         - SUCCESS
@@ -328,41 +341,6 @@ components:
         - ADMIN
 
     ## Filters
-
-    ActorTypeFilterProperty:
-      description: AuditLogActorTypeEnum property with full advanced search capabilities.
-      type: object
-      oneOf:
-        - type: string
-          title: Exact match
-          description: Matches the value exactly.
-          allOf:
-            - $ref: "#/components/schemas/AuditLogActorTypeEnum"
-        - $ref: '#/components/schemas/AdvancedActorTypeFilter'
-
-    AdvancedActorTypeFilter:
-      title: Advanced filter
-      description: Advanced AuditLogActorTypeEnum filter.
-      type: object
-      properties:
-        $eq:
-          description: Checks for equality with the provided value.
-          allOf:
-            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
-        $neq:
-          description: Checks for inequality with the provided value.
-          allOf:
-            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
-        $exists:
-          description: Checks if the current property exists.
-          type: boolean
-        $in:
-          description: Checks if the property matches any of the provided values.
-          type: array
-          items:
-            $ref: '#/components/schemas/AuditLogActorTypeEnum'
-        $like:
-          $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
     EntityTypeFilterProperty:
       description: AuditLogEntityTypeEnum property with full advanced search capabilities.
@@ -431,41 +409,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditLogOperationTypeEnum'
-        $like:
-          $ref: 'filters.yaml#/components/schemas/LikeFilter'
-
-    OperationStatusFilterProperty:
-      description: AuditLogOperationStatusEnum property with full advanced search capabilities.
-      type: object
-      oneOf:
-        - type: string
-          title: Exact match
-          description: Matches the value exactly.
-          allOf:
-            - $ref: "#/components/schemas/AuditLogOperationStatusEnum"
-        - $ref: '#/components/schemas/AdvancedOperationStatusFilter'
-
-    AdvancedOperationStatusFilter:
-      title: Advanced filter
-      description: Advanced AuditLogOperationStatusEnum filter.
-      type: object
-      properties:
-        $eq:
-          description: Checks for equality with the provided value.
-          allOf:
-            - $ref: '#/components/schemas/AuditLogOperationStatusEnum'
-        $neq:
-          description: Checks for inequality with the provided value.
-          allOf:
-            - $ref: '#/components/schemas/AuditLogOperationStatusEnum'
-        $exists:
-          description: Checks if the current property exists.
-          type: boolean
-        $in:
-          description: Checks if the property matches any of the provided values.
-          type: array
-          items:
-            $ref: '#/components/schemas/AuditLogOperationStatusEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
