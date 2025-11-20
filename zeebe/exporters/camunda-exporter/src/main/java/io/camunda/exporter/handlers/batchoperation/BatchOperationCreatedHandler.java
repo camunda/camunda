@@ -74,7 +74,8 @@ public class BatchOperationCreatedHandler
     entity
         .setId(String.valueOf(value.getBatchOperationKey()))
         .setType(OperationType.valueOf(value.getBatchOperationType().name()))
-        .setState(BatchOperationState.CREATED);
+        .setState(BatchOperationState.CREATED)
+        .setAppliedBy(value.getAppliedBy());
 
     // update local cache so that the batch operation info is available immediately to operation
     // status handlers

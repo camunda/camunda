@@ -21,6 +21,7 @@ public record BatchOperationEntity(
     BatchOperationType operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
+    String appliedBy,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
     Integer operationsCompletedCount,

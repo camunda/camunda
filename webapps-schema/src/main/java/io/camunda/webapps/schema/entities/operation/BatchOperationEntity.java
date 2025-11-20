@@ -20,7 +20,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   private OperationType type;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
-  private String username;
+  @Deprecated private String username;
+  private String appliedBy;
 
   private Integer instancesCount = 0;
   private Integer operationsTotalCount = 0;
@@ -86,6 +87,18 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   public BatchOperationEntity setUsername(final String username) {
     this.username = username;
+    return this;
+  }
+
+  public String getAppliedBy() {
+    if (appliedBy == null) {
+      return username;
+    }
+    return appliedBy;
+  }
+
+  public BatchOperationEntity setAppliedBy(final String appliedBy) {
+    this.appliedBy = appliedBy;
     return this;
   }
 
@@ -165,6 +178,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (username != null ? username.hashCode() : 0);
+    result = 31 * result + (appliedBy != null ? appliedBy.hashCode() : 0);
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
@@ -204,6 +218,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
       return false;
     }
     if (username != null ? !username.equals(that.username) : that.username != null) {
+      return false;
+    }
+    if (appliedBy != null ? !appliedBy.equals(that.appliedBy) : that.appliedBy != null) {
       return false;
     }
     if (instancesCount != null
@@ -250,6 +267,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
         + endDate
         + ", username='"
         + username
+        + '\''
+        + ", appliedBy='"
+        + appliedBy
         + '\''
         + ", instancesCount="
         + instancesCount

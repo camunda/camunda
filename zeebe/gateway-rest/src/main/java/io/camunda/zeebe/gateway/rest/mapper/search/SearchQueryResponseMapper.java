@@ -675,6 +675,7 @@ public final class SearchQueryResponseMapper {
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
+        .appliedBy(entity.appliedBy())
         .operationsTotalCount(entity.operationsTotalCount())
         .operationsFailedCount(entity.operationsFailedCount())
         .operationsCompletedCount(entity.operationsCompletedCount())

@@ -31,6 +31,9 @@
 			"username": {
 				"type": "keyword"
       },
+      "appliedBy": {
+        "type": "keyword"
+      },
       "state": {
         "type": "keyword"
       },
