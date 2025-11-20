@@ -59,14 +59,11 @@ public class ProcessDefinitionInstanceStatisticsDbReader
 
     LOG.trace(
         "[RDBMS DB] Search for process definition instance statistics with query {}", dbQuery);
-    final var totalHits = processDefinitionMapper.processInstanceStatisticsCount(dbQuery);
 
-    if (shouldReturnEmptyPage(dbQuery.page(), totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var results = processDefinitionMapper.processInstanceStatistics(dbQuery);
-
-    return buildSearchQueryResult(totalHits, results, dbSort);
+    return executePagedQuery(
+        () -> processDefinitionMapper.processInstanceStatisticsCount(dbQuery),
+        () -> processDefinitionMapper.processInstanceStatistics(dbQuery),
+        dbQuery.page(),
+        dbSort);
   }
 }
