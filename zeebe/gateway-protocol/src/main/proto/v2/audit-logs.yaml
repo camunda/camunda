@@ -174,10 +174,30 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - timestamp
-            - operationType
+            - actorId
+            - actorType
+            - annotation
+            - auditLogKey
+            - batchOperationKey
+            - batchOperationType
+            - category
+            - decisionDefinitionId
+            - decisionDefinitionKey
+            - decisionEvaluationKey
+            - decisionRequirementsId
+            - decisionRequirementsKey
+            - elementInstanceKey
+            - entityKey
             - entityType
-            - status
+            - jobKey
+            - operationStatus
+            - operationType
+            - processDefinitionId
+            - processDefinitionKey
+            - processInstanceKey
+            - tenantId
+            - timestamp
+            - userTaskKey
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
