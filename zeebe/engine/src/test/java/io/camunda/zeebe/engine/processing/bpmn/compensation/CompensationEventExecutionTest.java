@@ -3435,6 +3435,7 @@ public class CompensationEventExecutionTest {
         .contains(tuple(CompensationSubscriptionIntent.TRIGGERED, "adhoc-subprocess"));
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId())
         .containsSubsequence(
