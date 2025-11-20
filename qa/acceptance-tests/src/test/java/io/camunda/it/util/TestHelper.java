@@ -1072,4 +1072,92 @@ public final class TestHelper {
     assertThat(items.stream().map(propertyExtractor).filter(Objects::nonNull).toList())
         .containsExactlyElementsOf(sorted);
   }
+
+  /**
+   * Waits for a cluster variable to be indexed in Elasticsearch/OpenSearch after creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param variableName the name of the cluster variable to retrieve
+   * @param expectedValue the expected value of the variable
+   */
+  public static void waitForClusterVariableToBeIndexed(
+      final CamundaClient camundaClient, final String variableName, final String expectedValue) {
+    Awaitility.await("should index cluster variable")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newClusterVariableGetRequest()
+                      .atGlobalScope(variableName)
+                      .send()
+                      .join();
+              assertThat(result).isNotNull();
+              assertThat(result.getValue()).contains(expectedValue);
+            });
+  }
+
+  /**
+   * Waits for a tenant-scoped cluster variable to be indexed in Elasticsearch/OpenSearch after
+   * creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param variableName the name of the cluster variable to retrieve
+   * @param tenantId the tenant ID of the variable
+   * @param expectedValue the expected value of the variable
+   */
+  public static void waitForClusterVariableToBeIndexed(
+      final CamundaClient camundaClient,
+      final String variableName,
+      final String tenantId,
+      final String expectedValue) {
+    Awaitility.await("should index tenant-scoped cluster variable")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newClusterVariableGetRequest()
+                      .atTenantScope(variableName, tenantId)
+                      .send()
+                      .join();
+              assertThat(result).isNotNull();
+              assertThat(result.getValue()).contains(expectedValue);
+            });
+  }
+
+  /**
+   * Waits for multiple cluster variables to be indexed using search requests. This method verifies
+   * that all variables in the provided map have been exported and indexed.
+   *
+   * @param camundaClient CamundaClient
+   * @param variablesToWaitFor a map of variable names to their expected values
+   */
+  public static void waitForClusterVariablesToBeIndexed(
+      final CamundaClient camundaClient, final Map<String, String> variablesToWaitFor) {
+    Awaitility.await("should index all cluster variables")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var response = camundaClient.newClusterVariableSearchRequest().send().join();
+              assertThat(response).isNotNull();
+              assertThat(response.items()).isNotEmpty();
+
+              // Verify each expected variable is present with correct value
+              for (final var entry : variablesToWaitFor.entrySet()) {
+                final var expectedName = entry.getKey();
+                final var expectedValue = entry.getValue();
+
+                assertThat(response.items())
+                    .anySatisfy(
+                        item -> {
+                          assertThat(item.getName()).isEqualTo(expectedName);
+                          assertThat(item.getValue()).contains(expectedValue);
+                        });
+              }
+            });
+  }
 }
