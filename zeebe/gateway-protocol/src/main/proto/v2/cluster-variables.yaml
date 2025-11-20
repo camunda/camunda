@@ -56,15 +56,11 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-eventually-consistent: true
-  /cluster-variables/{name}/{scope}/{tenantId}:
+  /cluster-variables/{name}/GLOBAL:
     delete:
       tags:
         - Cluster Variable
-      summary: Delete a cluster variable
-      description: |
-        Deletes a cluster variable by name and scope.
-        - If scope is GLOBAL, tenantId must be omitted or null.
-        - If scope is TENANT, tenantId is required.
+      summary: Delete a global-scoped cluster variable
       parameters:
         - name: name
           in: path
@@ -72,19 +68,6 @@ paths:
           schema:
             type: string
           description: The name of the cluster variable
-        - name: scope
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ClusterVariableScopeEnum'
-          description: The scope of the variable
-        - name: tenantId
-          in: path
-          required: false
-          schema:
-            type: string
-            nullable: true
-          description: Required if scope is TENANT, must be omitted or null for GLOBAL
       responses:
         '204':
           description: Cluster variable deleted successfully
@@ -101,11 +84,7 @@ paths:
     get:
       tags:
         - Cluster Variable
-      summary: Get a cluster variable
-      description: |
-        Retrieves a cluster variable by name and scope.
-        - If scope is GLOBAL, tenantId must be omitted or null.
-        - If scope is TENANT, tenantId is required.
+      summary: Get a global-scoped cluster variable
       parameters:
         - name: name
           in: path
@@ -113,19 +92,6 @@ paths:
           schema:
             type: string
           description: The name of the cluster variable
-        - name: scope
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ClusterVariableScopeEnum'
-          description: The scope of the variable
-        - name: tenantId
-          in: path
-          required: false
-          schema:
-            type: string
-            nullable: true
-          description: Required if scope is TENANT, must be omitted or null for GLOBAL
       responses:
         '200':
           description: Cluster variable found
@@ -143,6 +109,72 @@ paths:
           description: Cluster variable not found
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+  /cluster-variables/{name}/TENANT/{tenantId}:
+    delete:
+      tags:
+        - Cluster Variable
+      summary: Delete a tenant-scoped cluster variable
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The tenant ID
+      responses:
+        '204':
+          description: Cluster variable deleted successfully
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Cluster variable not found
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Cluster Variable
+      summary: Get a tenant-scoped cluster variable
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The tenant ID
+      responses:
+        '200':
+          description: Cluster variable found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterVariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Cluster variable not found
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
 components:
   schemas:
     ClusterVariableScopeEnum:

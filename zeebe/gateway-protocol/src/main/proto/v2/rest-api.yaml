@@ -374,8 +374,10 @@ paths:
   # Cluster variables endpoints
   /cluster-variables:
     $ref: 'cluster-variables.yaml#/paths/~1cluster-variables'
-  /cluster-variables/{name}/{scope}/{tenantId}:
-    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1{name}~1{scope}~1{tenantId}'
+  /cluster-variables/{name}/GLOBAL:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1{name}~1GLOBAL'
+  /cluster-variables/{name}/TENANT/{tenantId}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1{name}~1TENANT~1{tenantId}'
   /cluster-variables/search:
     $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1search'
 
