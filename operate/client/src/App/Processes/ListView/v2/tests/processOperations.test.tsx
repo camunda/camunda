@@ -21,7 +21,6 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
@@ -45,10 +44,6 @@ describe('<ListView /> - operations', () => {
       items: [],
     });
     mockMe().withSuccess(createUser());
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
   });
 
   it('should show delete button when version is selected', async () => {
@@ -129,7 +124,10 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should show delete button when user has resource based permissions', async () => {
-    mockSearchProcessInstances().withSuccess(mockSingleProcessInstanceV2);
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     const queryString = '?process=demoProcess&version=1';
 
@@ -153,7 +151,10 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {
-    mockSearchProcessInstances().withSuccess(mockSingleProcessInstanceV2);
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     const queryString = '?process=demoProcess&version=1';
 
