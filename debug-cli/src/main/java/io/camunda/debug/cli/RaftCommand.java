@@ -66,7 +66,7 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
 
     final byte[] irBytes;
     try (final var irFileResource =
-        getClass().getClassLoader().getResourceAsStream("raft-entry-schema.sbeir")) {
+        getClass().getClassLoader().getResourceAsStream("sbe/raft-entry-schema.sbeir")) {
       if (irFileResource == null) {
         throw new RuntimeException("Failed to get resource raft-entry-schema.sbeir");
       }
