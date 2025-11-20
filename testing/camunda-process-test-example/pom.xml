@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>camunda-library-parent</artifactId>
     <version>8.7.21-SNAPSHOT</version>
-    <relativePath>../../parent/pom.xml</relativePath>
+    <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>camunda-process-test-example</artifactId>
