@@ -27,10 +27,6 @@ on:
         type: string
         default: ""
         required: false
-      ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
-        default: 'stable/8.7'
-        required: false
       cluster:
         description: 'Specifies which cluster to deploy the load test on'
         default: 'zeebe-cluster'
@@ -72,11 +68,6 @@ on:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
         default: ""
-        required: false
-      ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
-        default: 'main'
-        type: string
         required: false
       cluster:
         description: 'Specifies which cluster to deploy the load test on'
