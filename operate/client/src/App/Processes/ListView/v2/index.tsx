@@ -9,24 +9,20 @@
 import {InstancesList} from '../../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from '../Filters';
-import {InstancesTable} from './InstancesTable';
+import {InstancesTableWrapper} from './InstancesTable/InstancesTableWrapper';
 import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {deleteSearchParams} from 'modules/utils/filter';
-import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
-import {variableFilterStore} from 'modules/stores/variableFilter';
-import {reaction} from 'mobx';
-import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
+import {useFilters} from 'modules/hooks/useFilters';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -35,12 +31,12 @@ type LocationType = Omit<Location, 'state'> & {
 const ListView: React.FC = observer(() => {
   const location = useLocation() as LocationType;
   const navigate = useNavigate();
+  const {getFilters} = useFilters();
 
-  const filters = getProcessInstanceFilters(location.search);
+  const filters = getFilters();
   const {process, tenant, version} = filters;
   const {
     state: {status: processesStatus},
-    isInitialLoadComplete,
   } = processesStore;
   const filtersJSON = JSON.stringify(filters);
 
@@ -55,13 +51,11 @@ const ListView: React.FC = observer(() => {
 
   useEffect(() => {
     processInstancesSelectionStore.init();
-    processInstancesStore.init();
     processesStore.fetchProcesses();
 
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
-      processInstancesStore.reset();
       processesStore.reset();
     };
   }, []);
@@ -69,36 +63,6 @@ const ListView: React.FC = observer(() => {
   useEffect(() => {
     processInstancesSelectionStore.resetState();
   }, [filtersJSON]);
-
-  useEffect(() => {
-    if (isInitialLoadComplete && !location.state?.refreshContent) {
-      processInstancesStore.fetchProcessInstancesFromFilters();
-    }
-  }, [location.search, isInitialLoadComplete, location.state]);
-
-  useEffect(() => {
-    if (isInitialLoadComplete && location.state?.refreshContent) {
-      processInstancesStore.fetchProcessInstancesFromFilters();
-    }
-  }, [isInitialLoadComplete, location.state]);
-
-  useEffect(() => {
-    const disposer = reaction(
-      () => variableFilterStore.state.variable,
-      () => {
-        if (processesStatus === 'fetched') {
-          tracking.track({
-            eventName: 'process-instances-filtered',
-            filterName: 'variable',
-            multipleValues: variableFilterStore.state.isInMultipleMode,
-          });
-          processInstancesStore.fetchProcessInstancesFromFilters();
-        }
-      },
-    );
-
-    return disposer;
-  }, [processesStatus]);
 
   useEffect(() => {
     if (processesStatus === 'fetched') {
@@ -132,7 +96,7 @@ const ListView: React.FC = observer(() => {
         type="process"
         leftPanel={<Filters />}
         topPanel={<DiagramPanel />}
-        bottomPanel={<InstancesTable />}
+        bottomPanel={<InstancesTableWrapper />}
         rightPanel={<OperationsPanel />}
         frame={{
           isVisible: batchModificationStore.state.isEnabled,
