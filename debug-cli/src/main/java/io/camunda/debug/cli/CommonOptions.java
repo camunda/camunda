@@ -15,7 +15,7 @@ abstract class CommonOptions {
   @Option(
       names = {"-r", "--root"},
       description = "Path of the root of the data folder")
-  protected Path root;
+  protected Path root = Path.of("data");
 
   @Option(
       names = {"-v", "--verbose"},
