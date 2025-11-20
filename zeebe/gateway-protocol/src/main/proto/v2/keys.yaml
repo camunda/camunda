@@ -149,12 +149,12 @@ components:
       format: int64
       minimum: 1
 
-    AuditLogOperationKey:
+    AuditLogKey:
       allOf:
         - $ref: '#/components/schemas/LongKey'
       description: System-generated key for an audit log entry.
-      format: AuditLogOperationKey
-      x-semantic-type: AuditLogOperationKey
+      format: AuditLogKey
+      x-semantic-type: AuditLogKey
       example: "22517998136843567"
       type: string
 
@@ -463,3 +463,42 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
+
+    AuditLogKeyFilterProperty:
+      description: AuditLogKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogKey"
+        - $ref: '#/components/schemas/AdvancedAuditLogKeyFilter'
+
+    AdvancedAuditLogKeyFilter:
+      title: Advanced filter
+      description: Advanced AuditLogKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLogKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLogKey"
+

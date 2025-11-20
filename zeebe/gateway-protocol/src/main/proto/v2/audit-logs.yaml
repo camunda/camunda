@@ -30,21 +30,21 @@ paths:
         "500":
           description: An internal error occurred while processing the request.
 
-  /audit-logs/{operationKey}:
+  /audit-logs/{auditLogKey}:
     get:
       x-eventually-consistent: true
       tags:
         - Audit Log
       operationId: getAuditLog
       summary: Get audit log
-      description: Get an audit log by operationKey.
+      description: Get an audit log by auditLogKey.
       parameters:
-        - name: operationKey
+        - name: auditLogKey
           in: path
           required: true
-          description: The audit log operation key.
+          description: The audit log key.
           schema:
-            $ref: 'keys.yaml#/components/schemas/AuditLogOperationKey'
+            $ref: 'keys.yaml#/components/schemas/AuditLogKey'
       responses:
         "200":
           description: The audit log is successfully returned.
@@ -73,10 +73,10 @@ components:
       description: Audit log item.
       type: object
       properties:
-        operationKey:
+        auditLogKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/AuditLogOperationKey'
-          description: The unique operation key of the audit log entry.
+            - $ref: 'keys.yaml#/components/schemas/AuditLogKey'
+          description: The unique key of the audit log entry.
         entityKey:
           type: string
           description: The key of the entity this audit log refers to.
@@ -94,12 +94,12 @@ components:
           description: Key of the batch operation.
         batchOperationType:
           allOf:
-            - $ref: '#/components/schemas/AuditLogBatchOperationTypeEnum'
+            - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationTypeEnum'
           description: The type of batch operation performed, if this is part of a batch.
         timestamp:
-          type: integer
-          format: int64
+          type: string
           description: The timestamp when the operation occurred.
+          format: date-time
         actorId:
           type: string
           description: The ID of the actor who performed the operation.
@@ -204,6 +204,10 @@ components:
       description: Audit log filter request
       type: object
       properties:
+        auditLogKey:
+          description: The audit log key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AuditLogKeyFilterProperty'
         processDefinitionKey:
           description: The process definition key search filter.
           allOf:
@@ -302,11 +306,3 @@ components:
         - OPERATOR
         - USER_TASK
         - ADMIN
-
-    AuditLogBatchOperationTypeEnum:
-      type: string
-      enum:
-        - CANCEL_PROCESS_INSTANCE
-        - MIGRATE_PROCESS_INSTANCE
-        - MODIFY_PROCESS_INSTANCE
-        - RESOLVE_INCIDENT
