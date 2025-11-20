@@ -268,10 +268,10 @@ components:
           description: The tenant ID search filter.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
-        operationCategory:
+        category:
           description: The operation category search filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: '#/components/schemas/CategoryFilterProperty'
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
@@ -466,5 +466,40 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditLogOperationStatusEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    CategoryFilterProperty:
+      description: AuditLogCategoryEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogCategoryEnum'
+        - $ref: '#/components/schemas/AdvancedCategoryFilter'
+
+    AdvancedCategoryFilter:
+      title: Advanced filter
+      description: Advanced AuditLogCategoryEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogCategoryEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogCategoryEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogCategoryEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
