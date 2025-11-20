@@ -26,16 +26,12 @@ final class GossipClusteringIT {
   private final TestCluster cluster =
       new TestClusterBuilder()
           .withBrokerConfig(
-              broker ->
-                  broker.withBrokerConfig(
-                      config ->
-                          config
-                              .getCluster()
-                              .getMembership()
-                              .setFailureTimeout(Duration.ofMillis(2000))
-                              .setGossipInterval(Duration.ofMillis(150))
-                              .setProbeInterval(Duration.ofMillis(250))
-                              .setProbeInterval(Duration.ofMillis(250))))
+              broker -> {
+                final var membership = broker.unifiedConfig().getCluster().getMembership();
+                membership.setFailureTimeout(Duration.ofMillis(2000));
+                membership.setGossipInterval(Duration.ofMillis(150));
+                membership.setProbeInterval(Duration.ofMillis(250));
+              })
           .withBrokersCount(3)
           .withReplicationFactor(3)
           .build();

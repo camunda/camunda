@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -35,6 +36,8 @@ public class NoAuthNoSecondaryStorageTest {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
+          .withUnifiedConfig(
+              cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none))
           .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
           .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
           .withProperty("spring.profiles.active", "broker");

@@ -48,13 +48,9 @@ public class UsageMetricsTest {
           .withBasicAuth()
           .withMultiTenancyEnabled()
           .withAuthenticatedAccess()
-          .withBrokerConfig(
-              brokerBasedProperties ->
-                  brokerBasedProperties
-                      .getExperimental()
-                      .getEngine()
-                      .getUsageMetrics()
-                      .setExportInterval(EXPORT_INTERVAL));
+          // set exportInterval via properties because it is not yet supported in unified config
+          .withProperty(
+              "zeebe.broker.experimental.engine.usageMetrics.exportInterval", EXPORT_INTERVAL);
 
   private static final String ADMIN = "admin";
   private static final String ASSIGNEE = "bar2";

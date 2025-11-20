@@ -48,13 +48,10 @@ public class BatchOperationLifecycleManagementTest {
   private static final TestStandaloneApplication<?> APPLICATION =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withBrokerConfig(
-              b -> {
-                b.getExperimental()
-                    .getEngine()
-                    .getBatchOperations()
-                    .setSchedulerInterval(Duration.ofDays(1));
-              });
+          // set schedulerInterval via properties because it is not yet supported in unified config
+          .withProperty(
+              "zeebe.broker.experimental.engine.batchOperations.schedulerInterval",
+              Duration.ofDays(1));
 
   String testScopeId;
 

@@ -15,6 +15,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -42,7 +43,11 @@ final class NoSecondaryStorageSmokeIT {
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
           .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
-          .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
+          .withUnifiedConfig(
+              cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none))
+          .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
+          .withUnifiedConfig(
+              cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none));
 
   @AutoClose private CamundaClient client;
 

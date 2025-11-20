@@ -42,7 +42,8 @@ public final class CreateDeploymentTest {
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withBrokerConfig(b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
+          .withUnifiedConfig(
+              b -> b.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
 
   ZeebeResourcesHelper resourcesHelper;
 

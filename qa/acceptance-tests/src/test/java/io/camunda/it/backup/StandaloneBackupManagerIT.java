@@ -93,8 +93,12 @@ final class StandaloneBackupManagerIT {
           .withUnauthenticatedAccess()
           .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
           .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
-          .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
-          .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
+          .withUnifiedConfig(
+              cfg -> {
+                cfg.getData().getSecondaryStorage().getElasticsearch().setUsername(APP_USER);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setPassword(APP_PASSWORD);
+                cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
+              })
           .withExporter(
               CamundaExporter.class.getSimpleName(),
               cfg -> {
@@ -161,7 +165,8 @@ final class StandaloneBackupManagerIT {
 
     // Connect to ES in Camunda
     camunda
-        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
+        .withUnifiedConfig(
+            cfg -> cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(esUrl))
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
             args -> ((Map) args.get("connect")).put("url", esUrl));
