@@ -84,7 +84,7 @@ public class ProcessService {
       final String tenantId,
       final boolean executeWithAuthentication) {
 
-    if (!executeWithAuthentication
+    if (executeWithAuthentication
         && !identityAuthorizationService.isAllowedToStartProcess(processDefinitionKey)) {
       throw new ForbiddenActionException(
           "User does not have the permission to start this process.");
