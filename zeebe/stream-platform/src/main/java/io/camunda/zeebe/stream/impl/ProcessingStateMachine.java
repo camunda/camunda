@@ -159,6 +159,7 @@ public final class ProcessingStateMachine {
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
   private final int maxCommandsInBatch;
+  private final long maxKeywordFieldSize;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
   private final ScheduledCommandCache scheduledCommandCache;
@@ -181,6 +182,7 @@ public final class ProcessingStateMachine {
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
     maxCommandsInBatch = context.getMaxCommandsInBatch();
+    maxKeywordFieldSize = context.getMaxKeywordFieldSize();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
@@ -345,7 +347,8 @@ public final class ProcessingStateMachine {
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents,
             initialCommand.getOperationReference(),
-            initialCommand.getBatchOperationReference());
+            initialCommand.getBatchOperationReference(),
+            maxKeywordFieldSize);
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -538,7 +541,8 @@ public final class ProcessingStateMachine {
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents,
             typedCommand.getOperationReference(),
-            typedCommand.getBatchOperationReference());
+            typedCommand.getBatchOperationReference(),
+            maxKeywordFieldSize);
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -582,7 +586,8 @@ public final class ProcessingStateMachine {
               new BufferedProcessingResultBuilder(
                   logStreamWriter::canWriteEvents,
                   typedCommand.getOperationReference(),
-                  typedCommand.getBatchOperationReference());
+                  typedCommand.getBatchOperationReference(),
+                  maxKeywordFieldSize);
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);

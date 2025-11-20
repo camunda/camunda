@@ -65,7 +65,10 @@ record MockProcessingResult(List<Event> records, Response response) implements P
 
     final @Override public Either<RuntimeException, ProcessingResultBuilder>
         appendRecordReturnEither(
-            final long key, final RecordValue value, final RecordMetadata metadata) {
+            final long key,
+            final RecordValue value,
+            final RecordMetadata metadata,
+            final boolean validateKeywordFieldSize) {
 
       final var record =
           new Event(

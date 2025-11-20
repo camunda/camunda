@@ -70,7 +70,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
             .operationReference(metadata.getOperationReference())
             .batchOperationReference(metadata.getBatchOperationReference());
 
-    resultBuilder().appendRecord(key, value, recordMetadata);
+    resultBuilder().appendRecord(key, value, recordMetadata, true);
     eventApplier.applyState(key, intent, value, recordVersion);
   }
 

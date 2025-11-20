@@ -45,23 +45,34 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final long operationReference;
   private boolean processInASeparateBatch = false;
   private final long batchOperationReference;
+  private final long maxKeywordFieldSize;
 
-  BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
-    this(predicate, operationReferenceNullValue(), batchOperationReferenceNullValue());
+  BufferedProcessingResultBuilder(
+      final RecordBatchSizePredicate predicate, final long maxKeywordFieldSize) {
+    this(
+        predicate,
+        operationReferenceNullValue(),
+        batchOperationReferenceNullValue(),
+        maxKeywordFieldSize);
   }
 
   BufferedProcessingResultBuilder(
       final RecordBatchSizePredicate predicate,
       final long operationReference,
-      final long batchOperationReference) {
+      final long batchOperationReference,
+      final long maxKeywordFieldSize) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.operationReference = operationReference;
     this.batchOperationReference = batchOperationReference;
+    this.maxKeywordFieldSize = maxKeywordFieldSize;
   }
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-      final long key, final RecordValue value, final RecordMetadata metadata) {
+      final long key,
+      final RecordValue value,
+      final RecordMetadata metadata,
+      final boolean validateKeywordFieldSize) {
 
     // `operationReference` from `metadata` should have a higher precedence
     if (metadata.getOperationReference() == operationReferenceNullValue()) {
@@ -80,18 +91,27 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
-      final var metadataWithValueType = metadata.valueType(valueType);
-      final var either =
-          mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
-      if (either.isLeft()) {
-        return Either.left(either.getLeft());
-      }
-    } else {
+    if (!(value instanceof UnifiedRecordValue)) {
       throw new IllegalStateException(
           String.format(
               "The record value %s is not a UnifiedRecordValue",
               StringUtil.limitString(value.toString(), 1024)));
+    }
+
+    // validate record keyword fields
+    if (validateKeywordFieldSize) {
+      final var validationResult =
+          ((UnifiedRecordValue) value).validateKeywordFields(maxKeywordFieldSize);
+      if (validationResult.isLeft()) {
+        return Either.left(validationResult.getLeft());
+      }
+    }
+
+    final var metadataWithValueType = metadata.valueType(valueType);
+    final var either =
+        mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, (UnifiedRecordValue) value);
+    if (either.isLeft()) {
+      return Either.left(either.getLeft());
     }
 
     return Either.right(this);

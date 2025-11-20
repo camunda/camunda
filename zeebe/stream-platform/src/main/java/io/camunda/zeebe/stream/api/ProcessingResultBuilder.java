@@ -28,9 +28,17 @@ public interface ProcessingResultBuilder {
    *     RecordBatch
    */
   default ProcessingResultBuilder appendRecord(
-      final long key, final RecordValue value, final RecordMetadata metadata)
+      final long key, final RecordValue value, final RecordMetadata metadata) {
+    return appendRecord(key, value, metadata, false);
+  }
+
+  default ProcessingResultBuilder appendRecord(
+      final long key,
+      final RecordValue value,
+      final RecordMetadata metadata,
+      final boolean validateKeywordFieldSize)
       throws RuntimeException {
-    final var either = appendRecordReturnEither(key, value, metadata);
+    final var either = appendRecordReturnEither(key, value, metadata, validateKeywordFieldSize);
 
     if (either.isLeft()) {
       // This is how we handled too big record batches as well, except that this is now a
@@ -50,8 +58,24 @@ public interface ProcessingResultBuilder {
    *
    * @return returns either a failure or itself for chaining
    */
+  default Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
+      final long key, final RecordValue value, final RecordMetadata metadata) {
+    return appendRecordReturnEither(key, value, metadata, false);
+  }
+
+  /**
+   * Appends a record to the result, returns an {@link Either<RuntimeException,
+   * ProcessingResultBuilder>} which indicates whether the appending was successful or not. This is
+   * useful in case were potentially we could reach the record batch limit size. The return either
+   * allows to handle such error case gracefully.
+   *
+   * @return returns either a failure or itself for chaining
+   */
   Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-      final long key, final RecordValue value, final RecordMetadata metadata);
+      final long key,
+      final RecordValue value,
+      final RecordMetadata metadata,
+      final boolean validateKeywordFieldSize);
 
   /**
    * Sets the response for the result; will be overwritten if called more than once

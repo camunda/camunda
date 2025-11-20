@@ -44,6 +44,14 @@ public final class PublishMessageClient {
                   .withCorrelationKey(message.correlationKey)
                   .getFirst();
 
+  private static final Function<Message, Record<MessageRecordValue>>
+      GENERAL_REJECTION_EXPECTATION_SUPPLIER =
+          (message) ->
+              RecordingExporter.messageRecords(MessageIntent.PUBLISH)
+                  .onlyCommandRejections()
+                  .withCorrelationKey(message.correlationKey)
+                  .getFirst();
+
   private final MessageRecord messageRecord;
   private final CommandWriter writer;
   private final int partitionCount;
@@ -110,6 +118,11 @@ public final class PublishMessageClient {
 
   public PublishMessageClient expectRejection() {
     expectation = REJECTION_EXPECTATION_SUPPLIER;
+    return this;
+  }
+
+  public PublishMessageClient expectGeneralRejection() {
+    expectation = GENERAL_REJECTION_EXPECTATION_SUPPLIER;
     return this;
   }
 

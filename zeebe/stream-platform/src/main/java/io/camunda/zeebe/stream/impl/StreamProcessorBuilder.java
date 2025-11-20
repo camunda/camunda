@@ -154,6 +154,11 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder maxKeywordFieldSize(final long maxKeywordFieldSize) {
+    streamProcessorContext.maxKeywordFieldSize(maxKeywordFieldSize);
+    return this;
+  }
+
   public StreamProcessorBuilder setEnableAsyncScheduledTasks(final boolean enabled) {
     streamProcessorContext.setEnableAsyncScheduledTasks(enabled);
     return this;

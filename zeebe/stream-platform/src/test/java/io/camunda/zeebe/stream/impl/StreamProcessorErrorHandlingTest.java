@@ -81,7 +81,7 @@ class StreamProcessorErrorHandlingTest {
   void shouldContinueProcessingEvenIfErrorHandlingFailedForUserCommand() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var successResult = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var successResult = new BufferedProcessingResultBuilder((c, s) -> true, 32 * 1024);
     successResult.appendRecordReturnEither(
         1,
         Records.processInstance(1),

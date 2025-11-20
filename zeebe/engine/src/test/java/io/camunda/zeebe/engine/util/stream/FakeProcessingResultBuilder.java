@@ -59,6 +59,15 @@ public class FakeProcessingResultBuilder<V extends UnifiedRecordValue>
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
+    return appendRecordReturnEither(key, value, metadata, false);
+  }
+
+  @Override
+  public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
+      final long key,
+      final RecordValue value,
+      final RecordMetadata metadata,
+      final boolean validateKeywordFieldSize) {
     final int partitionId = Protocol.decodePartitionId(key);
     final var copiedRecord = new CopiedRecord<>((V) value, metadata, key, partitionId, -1, -1, -1);
     followupRecords.add(copiedRecord.copyOf());

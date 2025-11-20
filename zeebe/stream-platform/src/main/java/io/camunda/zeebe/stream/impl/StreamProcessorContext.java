@@ -30,6 +30,8 @@ import java.util.function.BooleanSupplier;
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
+  public static final long DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE = 32 * 1024;
+
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private ActorControl actor;
   private LogStream logStream;
@@ -52,6 +54,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private long maxKeywordFieldSize = DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE;
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
   private ControllableStreamClock clock;
@@ -221,6 +224,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
+  }
+
+  public long getMaxKeywordFieldSize() {
+    return maxKeywordFieldSize;
+  }
+
+  public StreamProcessorContext maxKeywordFieldSize(final long maxKeywordFieldSize) {
+    this.maxKeywordFieldSize = maxKeywordFieldSize;
+    return this;
   }
 
   public StreamProcessorContext setEnableAsyncScheduledTasks(final boolean enabled) {
