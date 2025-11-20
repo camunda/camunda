@@ -20,11 +20,11 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
   private ClusterVariableScope scope;
   private String tenantId;
 
-  public boolean isPreview() {
+  public boolean getIsPreview() {
     return isPreview;
   }
 
-  public ClusterVariableEntity setPreview(final boolean preview) {
+  public ClusterVariableEntity setIsPreview(final boolean preview) {
     isPreview = preview;
     return this;
   }

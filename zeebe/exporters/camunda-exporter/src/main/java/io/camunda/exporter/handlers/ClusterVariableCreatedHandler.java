@@ -77,11 +77,11 @@ public class ClusterVariableCreatedHandler
     if (recordValue.getValue().length() > variableSizeThreshold) {
       entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
       entity.setFullValue(recordValue.getValue());
-      entity.setPreview(true);
+      entity.setIsPreview(true);
     } else {
       entity.setValue(recordValue.getValue());
       entity.setFullValue(null);
-      entity.setPreview(false);
+      entity.setIsPreview(false);
     }
   }
 
