@@ -223,11 +223,11 @@ components:
         operationType:
           description: The operation type search filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: '#/components/schemas/OperationTypeFilterProperty'
         operationStatus:
           description: The operation status search filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: '#/components/schemas/OperationStatusFilterProperty'
         timestamp:
           description: The timestamp search filter.
           allOf:
@@ -239,11 +239,11 @@ components:
         actorType:
           description: The actor type search filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: '#/components/schemas/ActorTypeFilterProperty'
         entityType:
           description: The entity type search filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: '#/components/schemas/EntityTypeFilterProperty'
         tenantId:
           description: The tenant ID search filter.
           allOf:
@@ -306,3 +306,145 @@ components:
         - OPERATOR
         - USER_TASK
         - ADMIN
+
+    ## Filters
+
+    ActorTypeFilterProperty:
+      description: AuditLogActorTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogActorTypeEnum"
+        - $ref: '#/components/schemas/AdvancedActorTypeFilter'
+
+    AdvancedActorTypeFilter:
+      title: Advanced filter
+      description: Advanced AuditLogActorTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    EntityTypeFilterProperty:
+      description: AuditLogEntityTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogEntityTypeEnum"
+        - $ref: '#/components/schemas/AdvancedEntityTypeFilter'
+
+    AdvancedEntityTypeFilter:
+      title: Advanced filter
+      description: Advanced AuditLogEntityTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEntityTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    OperationTypeFilterProperty:
+      description: AuditLogOperationTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogOperationTypeEnum"
+        - $ref: '#/components/schemas/AdvancedOperationTypeFilter'
+
+    AdvancedOperationTypeFilter:
+      title: Advanced filter
+      description: Advanced AuditLogOperationTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogOperationTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogOperationTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogOperationTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    OperationStatusFilterProperty:
+      description: AuditLogOperationStatusEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AuditLogOperationStatusEnum"
+        - $ref: '#/components/schemas/AdvancedOperationStatusFilter'
+
+    AdvancedOperationStatusFilter:
+      title: Advanced filter
+      description: Advanced AuditLogOperationStatusEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogOperationStatusEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogOperationStatusEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogOperationStatusEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
