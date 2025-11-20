@@ -102,12 +102,10 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
-    // diagram panel
     expect(
       screen.getByRole('region', {name: 'Diagram Panel'}),
     ).toBeInTheDocument();
 
-    // filters panel
     expect(
       screen.getByRole('heading', {name: 'Process', level: 3}),
     ).toBeInTheDocument();
@@ -121,10 +119,8 @@ describe('Instances', () => {
       ),
     ).toBeInTheDocument();
 
-    // filters panel
     expect(screen.getByRole('heading', {name: /Filter/})).toBeInTheDocument();
 
-    // instances table
     expect(
       await screen.findByRole('heading', {
         name: /process instances - 912 results/i,
@@ -237,7 +233,6 @@ describe('Instances', () => {
       }),
     );
 
-    // Wait for refetch to complete - loaders may appear briefly or not at all if data loads fast
     await waitFor(() =>
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
     );
@@ -265,7 +260,6 @@ describe('Instances', () => {
 
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    // First refetch attempt
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockQueryBatchOperations().withSuccess({
       items: [],
@@ -284,7 +278,6 @@ describe('Instances', () => {
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
-    // Second refetch attempt
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockQueryBatchOperations().withSuccess({
       items: [],
@@ -305,7 +298,6 @@ describe('Instances', () => {
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
-    // Third refetch attempt
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockQueryBatchOperations().withSuccess({
       items: [],
@@ -323,7 +315,6 @@ describe('Instances', () => {
     vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
-    // After 3 retries, final fetch with empty process list
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockQueryBatchOperations().withSuccess({
       items: [],
@@ -341,7 +332,6 @@ describe('Instances', () => {
 
     vi.runOnlyPendingTimers();
 
-    // Wait for redirect to happen
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);
     });
