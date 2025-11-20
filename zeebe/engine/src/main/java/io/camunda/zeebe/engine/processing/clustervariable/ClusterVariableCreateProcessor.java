@@ -44,7 +44,6 @@ public class ClusterVariableCreateProcessor
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
-
     clusterVariableRecordValidator
         .validateName(clusterVariableRecord)
         .flatMap(clusterVariableRecordValidator::ensureValidScope)
