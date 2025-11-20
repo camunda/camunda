@@ -34,6 +34,7 @@ const ListView: React.FC = observer(() => {
   const {getFilters} = useFilters();
 
   const filters = getFilters();
+
   const {process, tenant, version} = filters;
   const {
     state: {status: processesStatus},
