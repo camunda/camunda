@@ -17,6 +17,14 @@
       "bpmnProcessId": {
         "type": "keyword"
       },
+      "creationTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "lastUpdateTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
       "processDefinitionKey": {
         "type": "long"
       },

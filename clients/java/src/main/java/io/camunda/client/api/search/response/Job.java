@@ -64,4 +64,8 @@ public interface Job {
   Long getElementInstanceKey();
 
   String getTenantId();
+
+  OffsetDateTime getCreationTime();
+
+  OffsetDateTime getLastUpdateTime();
 }
