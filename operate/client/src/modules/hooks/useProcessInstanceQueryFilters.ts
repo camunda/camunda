@@ -22,10 +22,7 @@ function useProcessInstanceQueryFilters(
   const {getFilters} = useFilters();
   const filters = getFilters();
 
-  // Query endpoints support all fields, including processDefinitionVersionTag
-  const filter = buildProcessInstanceFilter(filters, options);
-
-  return {filter};
+  return {filter: buildProcessInstanceFilter(filters, options)};
 }
 
 export {useProcessInstanceQueryFilters};
