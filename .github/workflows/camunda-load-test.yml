@@ -191,7 +191,7 @@ jobs:
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
-          dockerfile: 'camunda.Dockerfile'
+          dockerfile: 'Dockerfile'
       - name: Observe build status
         if: always()
         continue-on-error: true
