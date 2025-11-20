@@ -252,6 +252,18 @@ public abstract class AbstractCatchEventBuilder<
     return myself;
   }
 
+  public B condition(final Consumer<ConditionalEventDefinitionBuilder> conditionalBuilderConsumer) {
+    final ConditionalEventDefinition conditionalEventDefinition =
+        createInstance(ConditionalEventDefinition.class);
+    element.getEventDefinitions().add(conditionalEventDefinition);
+
+    final ConditionalEventDefinitionBuilder builder =
+        new ConditionalEventDefinitionBuilder(modelInstance, conditionalEventDefinition);
+    conditionalBuilderConsumer.accept(builder);
+
+    return myself;
+  }
+
   /**
    * Sets a link event definition for the given link name.
    *

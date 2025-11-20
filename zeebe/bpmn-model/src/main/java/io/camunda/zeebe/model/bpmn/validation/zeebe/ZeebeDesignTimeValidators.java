@@ -150,6 +150,7 @@ public final class ZeebeDesignTimeValidators {
         ZeebeElementValidator.verifyThat(ZeebePriorityDefinition.class)
             .hasNonEmptyAttribute(
                 ZeebePriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
+    validators.add(new ZeebeConditionalFilterValidator());
     validators.addAll(ExtensionElementDuplicationValidators.VALIDATORS);
 
     VALIDATORS = Collections.unmodifiableList(validators);

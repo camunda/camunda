@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeConditionalFilter;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
@@ -209,6 +211,21 @@ public final class ZeebeRuntimeValidators {
                 expression -> expression.isOptional().isNonStatic())
             .hasValidExpression(
                 ZeebeAdHoc::getOutputElement, expression -> expression.isNonStatic().isOptional())
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(Condition.class)
+            .hasValidExpression(
+                Condition::getTextContent, expression -> expression.isNonStatic().isMandatory())
+            .build(expressionLanguage),
+        ZeebeExpressionValidator.verifyThat(ZeebeConditionalFilter.class)
+            .hasValidExpression(
+                ZeebeConditionalFilter::getVariableNames,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            ZeebeExpressionValidator::isListOfCsv,
+                            "be a list of comma-separated values, e.g. 'a,b,c'"))
             .build(expressionLanguage));
   }
 }
