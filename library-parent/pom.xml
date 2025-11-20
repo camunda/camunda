@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.7.21-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-library-parent</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Camunda SDK Library Parent</name>
+  <description>A parent pom for all SDK related artifacts such as clients as test tooling.</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <!-- The Spring Boot version is managed explicitly here to avoid inheriting
+    Spring Boot version from the parent pom.xml, which is the reference for internal modules.
+    This allows decoupled control of the Spring Boot version for this user facing artifact. -->
+    <version.spring-boot>3.4.12</version.spring-boot>
+  </properties>
+
+  <profiles>
+    <profile>
+      <id>spring-boot-3.5</id>
+      <properties>
+        <!-- For testing Spring Boot 3.5 compatibility -->
+        <version.spring-boot>3.5.8</version.spring-boot>
+      </properties>
+    </profile>
+  </profiles>
+</project>
