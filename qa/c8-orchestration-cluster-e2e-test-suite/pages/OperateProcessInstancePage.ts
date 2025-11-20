@@ -22,6 +22,7 @@ class OperateProcessInstancePage {
   readonly instanceHistory: Locator;
   readonly incidentsTable: Locator;
   readonly incidentsBanner: Locator;
+  readonly incidentIconsInHistory: Locator;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
   readonly saveVariableButton: Locator;
@@ -59,6 +60,9 @@ class OperateProcessInstancePage {
     this.instanceHistory = page.getByTestId('instance-history');
     this.incidentsTable = page.getByTestId('data-list');
     this.incidentsBanner = page.getByTestId('incidents-banner');
+    this.incidentIconsInHistory = this.instanceHistory
+      .getByRole('treeitem')
+      .getByTestId('INCIDENT-icon');
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single flow node instance in the instance history',
     );
@@ -206,8 +210,35 @@ class OperateProcessInstancePage {
   }
 
   async getProcessInstanceKey(): Promise<string> {
-    const processInstanceKey = this.page.locator('table tbody tr td').nth(1);
+    const processInstanceKey = this.page
+      .getByTestId('instance-header')
+      .locator('table tbody tr td')
+      .nth(1);
+    // this.page.getByTestId('instance-header').getByRole('table').getByRole('row').nth(1).getByRole('cell').nth(1);
     return (await processInstanceKey.textContent()) ?? '';
+  }
+
+  async getAllIncidentIconsAmountInHistory(): Promise<number> {
+    return await this.incidentIconsInHistory.count();
+  }
+
+  async clickIncidentsBanner(): Promise<void> {
+    await this.incidentsBanner.click();
+  }
+
+  async getIncidentRowByErrorMessage(errorMessage: string) {
+    return this.incidentsTable.getByRole('row').filter({
+      has: this.page
+        .getByTestId('cell-errorMessage')
+        .filter({hasText: errorMessage}),
+    });
+  }
+
+  async retryIncidentByErrorMessage(errorMessage: string) {
+    const incidentRow = await this.getIncidentRowByErrorMessage(errorMessage);
+    console.log(incidentRow.getByTestId('cell-flowNodeName').allInnerTexts());
+    const retryButton = incidentRow.getByText('Retry Incident');
+    await retryButton.click();
   }
 }
 
