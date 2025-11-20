@@ -217,12 +217,4 @@
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <id>spring-boot-3.5</id>
-      <properties>
-        <version.spring-boot>3.5.7</version.spring-boot>
-      </properties>
-    </profile>
-  </profiles>
 </project>
