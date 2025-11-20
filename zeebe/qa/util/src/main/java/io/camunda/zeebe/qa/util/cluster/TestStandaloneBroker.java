@@ -17,6 +17,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BackupSchedulerPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
@@ -70,6 +71,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         UnifiedConfiguration.class,
         NodeIdProviderConfiguration.class,
         GatewayRestPropertiesOverride.class,
+        BackupSchedulerPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class,
         SearchEngineRetentionPropertiesOverride.class);
