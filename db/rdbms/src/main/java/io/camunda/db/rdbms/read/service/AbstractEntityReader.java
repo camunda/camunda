@@ -173,4 +173,27 @@ abstract class AbstractEntityReader<T> {
   protected boolean shouldReturnEmptyPage(final DbQueryPage page, final long totalHits) {
     return page.size() == 0 || totalHits == 0;
   }
+
+  /**
+   * Executes a paged query using provided suppliers for count and results, handling empty page
+   * logic.
+   *
+   * @param countSupplier supplies the total count of hits
+   * @param resultsSupplier supplies the result list
+   * @param page the database query page
+   * @param dbSort the database query sorting
+   * @return a SearchQueryResult containing the results and total count
+   */
+  protected SearchQueryResult<T> executePagedQuery(
+      final java.util.function.Supplier<Long> countSupplier,
+      final java.util.function.Supplier<List<T>> resultsSupplier,
+      final DbQueryPage page,
+      final DbQuerySorting<T> dbSort) {
+    final long totalHits = countSupplier.get();
+    if (shouldReturnEmptyPage(page, totalHits)) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+    final List<T> results = resultsSupplier.get();
+    return buildSearchQueryResult(totalHits, results, dbSort);
+  }
 }
