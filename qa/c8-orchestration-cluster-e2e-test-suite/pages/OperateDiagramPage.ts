@@ -47,7 +47,7 @@ export class OperateDiagramPage {
   }
 
   clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).first().click();
+    return this.getFlowNode(flowNodeName).first().click({timeout: 20000});
   }
 
   clickSubProcess(subProcessName: string) {
@@ -61,8 +61,8 @@ export class OperateDiagramPage {
 
   getFlowNode(flowNodeName: string) {
     return this.diagram
-      .locator('.djs-element')
-      .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
+      .locator('.djs-group')
+      .locator(`[data-element-id="${flowNodeName}"]`);
   }
 
   async clickDiagramElement(elementName: string) {
