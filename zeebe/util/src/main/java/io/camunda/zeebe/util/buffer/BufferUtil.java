@@ -10,7 +10,9 @@ package io.camunda.zeebe.util.buffer;
 import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -237,5 +239,19 @@ public final class BufferUtil {
     }
 
     return true;
+  }
+
+  public static void fill(final ByteBuffer buffer, final byte value) {
+    final var startingPosition = buffer.position();
+    final var endPosition = buffer.limit();
+
+    final var filler = new byte[512];
+    Arrays.fill(filler, value);
+    while (buffer.position() < endPosition) {
+      final var remainder = endPosition - buffer.position();
+      final var length = Math.min(filler.length, remainder);
+      buffer.put(filler, 0, length);
+    }
+    buffer.position(startingPosition);
   }
 }

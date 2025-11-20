@@ -31,6 +31,7 @@ import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.BufferUnderflowException;
@@ -395,7 +396,8 @@ final class SegmentWriter {
 
     if (index < segment.index()) {
       buffer.position(descriptorLength);
-      invalidateNextEntry(descriptorLength);
+      // fill the rest of the segment with zeros
+      BufferUtil.fill(buffer, (byte) 0);
     } else {
       if (lastEntryPosition > 0) {
         // There can be race condition between truncating the segment, updating the descriptor, and
@@ -404,7 +406,7 @@ final class SegmentWriter {
         invalidateNextEntry(lastEntryPosition);
       }
       reset(index, true);
-      invalidateNextEntry(buffer.position());
+      BufferUtil.fill(buffer, (byte) 0);
     }
   }
 }
