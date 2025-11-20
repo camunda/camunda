@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
+import org.apache.commons.lang3.StringUtils;
 
 public class ClusterVariableRecordValidator {
 
@@ -85,7 +86,13 @@ public class ClusterVariableRecordValidator {
 
   public Either<Rejection, ClusterVariableRecord> ensureValidScope(
       final ClusterVariableRecord clusterVariableRecord) {
-    if (clusterVariableRecord.isTenantScoped() || clusterVariableRecord.isGloballyScoped()) {
+    if (clusterVariableRecord.isTenantScoped()
+        && StringUtils.isBlank(clusterVariableRecord.getTenantId())) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Invalid cluster variable scope. Tenant-scoped variables must have a non-blank tenant ID."));
+    } else if (clusterVariableRecord.isTenantScoped() || clusterVariableRecord.isGloballyScoped()) {
       return Either.right(clusterVariableRecord);
     } else {
       return Either.left(
