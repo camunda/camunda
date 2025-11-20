@@ -43,12 +43,12 @@ public record Lease(String taskId, long timestamp, NodeInstance nodeInstance) {
     return objectMapper.readValue(json, Lease.class);
   }
 
-  public boolean isStillValid(final long now, final Duration leaseDuration) {
-    return timestamp + leaseDuration.toMillis() > now;
+  public boolean isStillValid(final long now) {
+    return now <= timestamp;
   }
 
   public Lease renew(final long now, final Duration leaseDuration) {
-    if (!isStillValid(now, leaseDuration)) {
+    if (!isStillValid(now)) {
       throw new IllegalStateException(
           "Lease is not valid anymore("
               + Instant.ofEpochMilli(now)

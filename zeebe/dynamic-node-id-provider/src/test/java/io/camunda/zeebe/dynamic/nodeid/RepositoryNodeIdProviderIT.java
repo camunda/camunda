@@ -120,7 +120,11 @@ public class RepositoryNodeIdProviderIT {
     final var expiredLeaseTimestamp = clock.millis();
     final var expiredLease =
         repository.acquire(
-            new Lease(taskId + "old", expiredLeaseTimestamp, new NodeInstance(0)), previousEtag);
+            new Lease(
+                taskId + "old",
+                expiredLeaseTimestamp + EXPIRY_DURATION.toMillis(),
+                new NodeInstance(0)),
+            previousEtag);
     assertThat(expiredLease).isNotNull();
     clock.advance(EXPIRY_DURATION.plusSeconds(1));
 
