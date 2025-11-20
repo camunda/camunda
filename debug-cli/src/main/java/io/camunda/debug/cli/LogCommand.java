@@ -91,7 +91,6 @@ class LogCommand extends CommonOptions implements Callable<Integer> {
       try (final var metaStore = storage.openMetaStore();
           final var log =
               storage.openLog(metaStore, () -> new SingleThreadContext("log-truncate-%d"))) {
-        System.out.println("Current commit index: " + metaStore.commitIndex());
         System.out.println("Current log index: " + log.getLastIndex());
       }
       return 0;
@@ -133,9 +132,6 @@ class LogCommand extends CommonOptions implements Callable<Integer> {
           log.deleteAfter(index);
           System.out.printf("Truncated log index from %s to %s %n", lastIndex, index);
         }
-        System.out.printf(
-            "Set metastore commit index from %s to %s %n", metaStore.commitIndex(), index);
-        metaStore.storeCommitIndex(index);
       } catch (final Exception e) {
         e.printStackTrace(System.err);
         return 1;
