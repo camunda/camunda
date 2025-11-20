@@ -25,7 +25,7 @@ import java.util.zip.CRC32C;
  * a fixed-size header containing a version and a checksum, followed by the serialized
  * configuration.
  */
-final class PersistedClusterConfiguration {
+public final class PersistedClusterConfiguration {
   // Header is a single byte for the version, followed by a long for the checksum.
   // Constant version, to be incremented if the format changes.
   private static final byte VERSION = 1;
@@ -54,7 +54,7 @@ final class PersistedClusterConfiguration {
    * @throws ChecksumMismatch if the file exists but the checksum does not match.
    * @throws MissingHeader if the file exists but is too small to contain the header.
    */
-  static PersistedClusterConfiguration ofFile(
+  public static PersistedClusterConfiguration ofFile(
       final Path topologyFile, final ClusterConfigurationSerializer serializer) {
     final ClusterConfiguration currentlyPersisted;
     try {
@@ -69,7 +69,7 @@ final class PersistedClusterConfiguration {
     return clusterConfiguration;
   }
 
-  void update(final ClusterConfiguration clusterConfiguration) throws IOException {
+  public void update(final ClusterConfiguration clusterConfiguration) throws IOException {
     if (this.clusterConfiguration.equals(clusterConfiguration)) {
       return;
     }
