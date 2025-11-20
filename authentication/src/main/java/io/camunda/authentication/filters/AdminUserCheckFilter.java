@@ -84,6 +84,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
       LOG.error(
           "Error while searching for admin role members. This might indicate that secondary storage is down.",
           ex);
+      throw new RuntimeException(ex);
     }
 
     filterChain.doFilter(request, response);
