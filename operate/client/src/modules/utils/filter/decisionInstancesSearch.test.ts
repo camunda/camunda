@@ -7,6 +7,7 @@
  */
 
 import {
+  parseDecisionDefinitionsSearchFilter,
   parseDecisionInstancesSearchFilter,
   parseDecisionInstancesSearchSort,
 } from './decisionInstancesSearch';
@@ -72,6 +73,56 @@ describe('parseDecisionInstancesSearchFilter', () => {
     const filter = parseDecisionInstancesSearchFilter(searchParams);
 
     expect(filter).toEqual({state: {$in: ['EVALUATED']}});
+  });
+});
+
+describe('parseDecisionDefinitionsSearchFilter', () => {
+  it('should parse decision definitions search filter from search params', () => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('name', 'testName');
+    searchParams.append('version', '3');
+    searchParams.append('tenant', 'tenant-A');
+
+    const filter = parseDecisionDefinitionsSearchFilter(searchParams);
+
+    expect(filter).toEqual({
+      decisionDefinitionId: 'testName',
+      version: 3,
+      tenantId: 'tenant-A',
+    });
+  });
+
+  it('should return empty filters when no relevant param is set', () => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('someParam', 'someValue');
+
+    const filter = parseDecisionDefinitionsSearchFilter(searchParams);
+
+    expect(filter).toEqual({});
+  });
+
+  it('should not include a version in the filter when its value is all', () => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('name', 'testName');
+    searchParams.append('version', 'all');
+
+    const filter = parseDecisionDefinitionsSearchFilter(searchParams);
+
+    expect(filter).toEqual({
+      decisionDefinitionId: 'testName',
+    });
+  });
+
+  it('should not include a tenantId in the filter when its value is all', () => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('name', 'testName');
+    searchParams.append('tenant', 'all');
+
+    const filter = parseDecisionDefinitionsSearchFilter(searchParams);
+
+    expect(filter).toEqual({
+      decisionDefinitionId: 'testName',
+    });
   });
 });
 
