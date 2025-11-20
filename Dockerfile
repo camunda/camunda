@@ -93,6 +93,7 @@ COPY --link ${DISTBALL} zeebe.tar.gz
 
 RUN mkdir camunda-zeebe && \
     tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
+COPY --link "debug-cli/target/cdbg-*.jar" camunda-zeebe/bin/cdbg.jar
 
 ### Image containing the zeebe distribution ###
 # hadolint ignore=DL3006
