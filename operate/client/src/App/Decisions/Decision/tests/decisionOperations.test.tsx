@@ -8,9 +8,9 @@
 
 import {render, screen} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
-import {groupedDecisions} from 'modules/mocks/groupedDecisions';
-import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
+import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
 
@@ -20,9 +20,11 @@ vi.mock('modules/feature-flags', () => ({
 
 describe('<Decision /> - operations', () => {
   beforeEach(() => {
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
-    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [selectedDecisionDefinition],
+      page: {totalItems: 1},
+    });
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
   });
 
@@ -33,7 +35,7 @@ describe('<Decision /> - operations', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: /^delete decision definition "invoiceClassification - version 1"$/i,
+        name: 'Delete Decision Definition "invoiceClassification - Version 1"',
       }),
     ).toBeInTheDocument();
   });
