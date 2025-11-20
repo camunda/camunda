@@ -34,6 +34,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinal
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -118,6 +119,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   private final RestHighLevelClient esClient;
 
+  private final ElasticsearchClient es8Client;
+
   private final TenantAwareElasticsearchClient tenantAwareClient;
 
   private final OperateProperties operateProperties;
@@ -129,6 +132,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final OperateProperties operateProperties,
       final RestHighLevelClient esClient,
+      final ElasticsearchClient es8Client,
       final TenantAwareElasticsearchClient tenantAwareClient) {
     this.processIndex = processIndex;
     this.listViewTemplate = listViewTemplate;
@@ -136,6 +140,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     this.objectMapper = objectMapper;
     this.operateProperties = operateProperties;
     this.esClient = esClient;
+    this.es8Client = es8Client;
     this.tenantAwareClient = tenantAwareClient;
   }
 
@@ -522,6 +527,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
   @Override
   public void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
     final BulkRequest bulkRequest = new BulkRequest();
+    final co.elastic.clients.elasticsearch.core.BulkRequest.Builder es8BulkRequest =
+        new co.elastic.clients.elasticsearch.core.BulkRequest.Builder();
     // select process instance - get tree path
     final String treePath = getProcessInstanceTreePathById(processInstanceKey);
 
@@ -563,14 +570,22 @@ public class ElasticsearchProcessStore implements ProcessStore {
                                 .doc(updateFields)
                                 .retryOnConflict(UPDATE_RETRY_COUNT);
                             bulkRequest.add(updateRequest);
+                            es8BulkRequest.operations(
+                                op ->
+                                    op.update(
+                                        u ->
+                                            u.index(sh.getIndex())
+                                                .id(sh.getId())
+                                                .retryOnConflict(UPDATE_RETRY_COUNT)
+                                                .action(a -> a.doc(updateFields))));
                           });
                 },
                 esClient);
             return null;
           });
       ElasticsearchUtil.processBulkRequest(
-          esClient,
-          bulkRequest,
+          es8Client,
+          es8BulkRequest.build(),
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final Exception e) {
       throw new OperateRuntimeException(

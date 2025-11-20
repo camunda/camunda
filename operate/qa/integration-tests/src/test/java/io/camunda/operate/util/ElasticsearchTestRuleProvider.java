@@ -11,6 +11,9 @@ import static io.camunda.operate.property.OperateElasticsearchProperties.DEFAULT
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -46,8 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
@@ -55,7 +56,6 @@ import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.xcontent.XContentType;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +77,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
   @Autowired protected RestHighLevelClient esClient;
+  @Autowired protected ElasticsearchClient es8Client;
 
   @Autowired protected OperateProperties operateProperties;
   protected boolean failed = false;
@@ -194,29 +195,36 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void persistOperateEntitiesNew(final List<? extends ExporterEntity> operateEntities)
       throws PersistenceException {
     try {
-      final BulkRequest bulkRequest = new BulkRequest();
+      final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+
       for (final ExporterEntity entity : operateEntities) {
         final String alias = getEntityToAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
         }
-        final IndexRequest indexRequest =
-            new IndexRequest(alias)
-                .id(entity.getId())
-                .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-        if (entity instanceof FlowNodeInstanceForListViewEntity) {
-          indexRequest.routing(
-              ((FlowNodeInstanceForListViewEntity) entity).getProcessInstanceKey().toString());
-        }
-        if (entity instanceof VariableForListViewEntity) {
-          indexRequest.routing(
-              ((VariableForListViewEntity) entity).getProcessInstanceKey().toString());
-        }
-        bulkRequest.add(indexRequest);
+
+        bulkRequest.operations(
+            op -> {
+              final IndexOperation.Builder<Object> indexBuilder =
+                  new IndexOperation.Builder<>()
+                      .index(alias)
+                      .id(entity.getId())
+                      .document(entity); // no ObjectMapper required
+
+              // Set routing if needed
+              if (entity instanceof final FlowNodeInstanceForListViewEntity flow) {
+                indexBuilder.routing(flow.getProcessInstanceKey().toString());
+              } else if (entity instanceof final VariableForListViewEntity var) {
+                indexBuilder.routing(var.getProcessInstanceKey().toString());
+              }
+
+              return op.index(indexBuilder.build());
+            });
       }
+
       ElasticsearchUtil.processBulkRequest(
-          esClient,
-          bulkRequest,
+          es8Client,
+          bulkRequest.build(),
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final Exception ex) {
