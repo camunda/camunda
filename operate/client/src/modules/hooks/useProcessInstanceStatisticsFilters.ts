@@ -25,7 +25,7 @@ function useProcessInstanceStatisticsFilters(
   const fullFilter = buildProcessInstanceFilter(filters, options);
 
   // Exclude processDefinitionVersionTag - not supported by statistics endpoint
-  const {processDefinitionVersionTag, ...statisticsFilter} = fullFilter;
+  const {processDefinitionVersionTag: _, ...statisticsFilter} = fullFilter;
 
   return {
     filter: statisticsFilter,
