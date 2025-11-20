@@ -65,7 +65,7 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScope;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
@@ -1217,21 +1217,19 @@ public final class SearchQueryResponseMapper {
   public static ClusterVariableResult toClusterVariable(
       final ClusterVariableEntity clusterVariableEntity) {
 
-    final ClusterVariableScope scope = new ClusterVariableScope();
-    switch (clusterVariableEntity.scope()) {
-      case GLOBAL -> scope.setType(ClusterVariableScope.TypeEnum.GLOBAL);
-      case TENANT -> {
-        scope.setType(ClusterVariableScope.TypeEnum.TENANT);
-        scope.setTenantId(clusterVariableEntity.tenantId());
-      }
-      // This case should never happen, because we can not export a cluster variable
-      // with a scope that is not GLOBAL or TENANT. But we handle it gracefully
-      default -> {}
-    }
-    return new ClusterVariableResult()
-        .name(clusterVariableEntity.name())
-        .value(clusterVariableEntity.value())
-        .scope(scope);
+    ClusterVariableResult clusterVariableResult =
+        new ClusterVariableResult()
+            .name(clusterVariableEntity.name())
+            .value(clusterVariableEntity.value());
+    clusterVariableResult =
+        switch (clusterVariableEntity.scope()) {
+          case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
+          case TENANT ->
+              clusterVariableResult
+                  .scope(ClusterVariableScopeEnum.TENANT)
+                  .tenantId(clusterVariableEntity.tenantId());
+        };
+    return clusterVariableResult;
   }
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(

@@ -463,7 +463,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ClusterVariableQuery> toClusterVariableQuery(
-      final ClusterVariableSearchQuery request) {
+      final ClusterVariableSearchQueryRequest request) {
 
     if (request == null) {
       return Either.right(SearchQueryBuilders.clusterVariableSearchQuery().build());

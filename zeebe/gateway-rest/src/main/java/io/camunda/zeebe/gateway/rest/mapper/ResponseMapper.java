@@ -29,8 +29,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScope;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScope.TypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionResult;
@@ -751,18 +750,16 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toClusterVariableCreateResponse(
       final ClusterVariableRecord clusterVariableRecord) {
-
-    final ClusterVariableScope clusterVariableScope =
-        new ClusterVariableScope()
-            .type(TypeEnum.fromValue(clusterVariableRecord.getScope().name()));
-    if (clusterVariableRecord.isTenantScoped()) {
-      clusterVariableScope.setTenantId(clusterVariableRecord.getTenantId());
-    }
-    return ResponseEntity.ok(
+    final var response =
         new ClusterVariableResult()
             .name(clusterVariableRecord.getName())
-            .value(clusterVariableRecord.getValue())
-            .scope(clusterVariableScope));
+            .value(clusterVariableRecord.getValue());
+    if (clusterVariableRecord.isTenantScoped()) {
+      response.scope(ClusterVariableScopeEnum.TENANT).tenantId(clusterVariableRecord.getTenantId());
+    } else {
+      response.scope(ClusterVariableScopeEnum.GLOBAL);
+    }
+    return ResponseEntity.ok(response);
   }
 
   public static ResponseEntity<Object> toClusterVariableDeleteResponse(

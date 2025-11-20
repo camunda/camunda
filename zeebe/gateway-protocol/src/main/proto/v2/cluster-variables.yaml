@@ -39,7 +39,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClusterVariableSearchQuery'
+              $ref: '#/components/schemas/ClusterVariableSearchQueryRequest'
       responses:
         "200":
           description: The cluster variable search result.
@@ -76,8 +76,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            enum: [ GLOBAL, TENANT ]
+            $ref: '#/components/schemas/ClusterVariableScopeEnum'
           description: The scope of the variable
         - name: tenantId
           in: path
@@ -118,8 +117,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            enum: [ GLOBAL, TENANT ]
+            $ref: '#/components/schemas/ClusterVariableScopeEnum'
           description: The scope of the variable
         - name: tenantId
           in: path
@@ -147,18 +145,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 components:
   schemas:
-    ClusterVariableScope:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          enum: [ GLOBAL, TENANT ]
-        tenantId:
-          type: string
-          nullable: true
-          description: Required if type is TENANT, must be null or undefined for GLOBAL
+    ClusterVariableScopeEnum:
+      type: string
+      enum: [ GLOBAL, TENANT ]
+      description: The scope of a cluster variable - either GLOBAL or TENANT
     CreateClusterVariableRequest:
       type: object
       required:
@@ -169,11 +159,13 @@ components:
         name:
           type: string
         value:
-          oneOf:
-            - type: string
-            - type: object
+          type: object
         scope:
-          $ref: '#/components/schemas/ClusterVariableScope'
+          $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        tenantId:
+          type: string
+          nullable: true
+          description: Required if scope is TENANT, must be null or undefined for GLOBAL
     ClusterVariableResult:
       type: object
       properties:
@@ -182,8 +174,12 @@ components:
         value:
           type: string
         scope:
-          $ref: '#/components/schemas/ClusterVariableScope'
-    ClusterVariableSearchQuery:
+          $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        tenantId:
+          type: string
+          nullable: true
+          description: Required if scope is TENANT, must be null or undefined for GLOBAL
+    ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false
       type: object
@@ -198,7 +194,7 @@ components:
         filter:
           description: The cluster variable search filters.
           allOf:
-            - $ref: '#/components/schemas/ClusterVariableFilter'
+            - $ref: '#/components/schemas/ClusterVariableSearchQueryFilterRequest'
     ClusterVariableSearchQuerySortRequest:
       type: object
       properties:
@@ -211,10 +207,10 @@ components:
             - tenantId
             - scope
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
-    ClusterVariableFilter:
+    ClusterVariableSearchQueryFilterRequest:
       description: Cluster variable filter request.
       type: object
       properties:
@@ -229,17 +225,11 @@ components:
         scope:
           description: The scope filter for cluster variables.
           allOf:
-            - $ref: '#/components/schemas/ClusterVariableScopeFilter'
-    ClusterVariableScopeFilter:
-      type: object
-      properties:
-        type:
-          type: string
-          enum: [ GLOBAL, TENANT ]
+            - $ref: '#/components/schemas/ClusterVariableScopeEnum'
         tenantId:
-          description: Tenant identifier when type is TENANT.
+          description: Tenant ID of this variable.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
     ClusterVariableSearchQueryResult:
       description: Cluster variable search query response.
       type: object

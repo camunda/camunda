@@ -90,11 +90,9 @@ public final class ClusterVariableServices
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
-                // TODO : Uncomment and fix authorization once implemented
-                /*                .withSecurityContext(
-                securityContextProvider.provideSecurityContext(
-                    authentication,
-                    withAuthorization())*/
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        CamundaAuthentication.anonymous()))
                 .getClusterVariable(name));
   }
 
@@ -103,16 +101,20 @@ public final class ClusterVariableServices
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
-                // TODO : Uncomment and fix authorization once implemented
-                /*                .withSecurityContext(
-                securityContextProvider.provideSecurityContext(
-                    authentication,
-                    withAuthorization()))*/
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        CamundaAuthentication.anonymous()))
                 .getClusterVariable(name, tenantId));
   }
 
   @Override
   public SearchQueryResult<ClusterVariableEntity> search(final ClusterVariableQuery query) {
-    return null;
+    return executeSearchRequest(
+        () ->
+            clusterVariableSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        CamundaAuthentication.anonymous()))
+                .searchClusterVariables(query));
   }
 }

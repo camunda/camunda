@@ -42,7 +42,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BaseProcessInstanceFilterFields;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeFilter;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilter;
@@ -296,7 +296,7 @@ public class SearchQueryFilterMapper {
   }
 
   static ClusterVariableFilter toClusterVariableFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.ClusterVariableFilter filter) {
+      final ClusterVariableSearchQueryFilterRequest filter) {
 
     if (filter == null) {
       return FilterBuilders.clusterVariable().build();
@@ -310,15 +310,8 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getValue())
         .map(mapToOperations(String.class))
         .ifPresent(builder::valueOperations);
-    ofNullable(filter.getScope())
-        .map(ClusterVariableScopeFilter::getType)
-        .map(Enum::name)
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::scopeOperations);
-    ofNullable(filter.getScope())
-        .map(ClusterVariableScopeFilter::getTenantId)
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::tenantIdOperations);
+    ofNullable(filter.getScope()).map(Enum::name).ifPresent(builder::scopes);
+    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
 
     return builder.build();
   }
