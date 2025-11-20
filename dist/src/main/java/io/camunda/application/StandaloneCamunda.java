@@ -17,6 +17,7 @@ import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
+import io.camunda.configuration.beanoverrides.BackupSchedulerPropertiesOverride;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
@@ -63,6 +64,7 @@ public class StandaloneCamunda {
                 UnifiedConfigurationHelper.class,
                 TasklistPropertiesOverride.class,
                 OperatePropertiesOverride.class,
+                BackupSchedulerPropertiesOverride.class,
                 GatewayBasedPropertiesOverride.class,
                 BrokerBasedPropertiesOverride.class,
                 ActorClockControlledPropertiesOverride.class,

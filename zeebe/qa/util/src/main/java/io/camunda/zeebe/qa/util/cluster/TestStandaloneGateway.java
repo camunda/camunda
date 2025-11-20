@@ -14,6 +14,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
+import io.camunda.configuration.beanoverrides.BackupSchedulerPropertiesOverride;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
@@ -42,6 +43,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
         BrokerBasedPropertiesOverride.class,
+        BackupSchedulerPropertiesOverride.class,
         ActorClockControlledPropertiesOverride.class,
         GatewayRestPropertiesOverride.class,
         IdleStrategyPropertiesOverride.class,

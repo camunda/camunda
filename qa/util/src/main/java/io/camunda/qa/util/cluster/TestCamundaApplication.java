@@ -20,6 +20,7 @@ import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BackupSchedulerPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
@@ -77,6 +78,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         UnifiedConfigurationHelper.class,
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
+        BackupSchedulerPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class,
         SearchEngineRetentionPropertiesOverride.class,
