@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.PartitionBackupInfo;
@@ -51,8 +50,8 @@ public final class BackupEndpoint {
 
   @SuppressWarnings("unused") // used by Spring
   @Autowired
-  public BackupEndpoint(final BrokerClient client, final BrokerBasedProperties backupSchedulerCfg) {
-    this(new BackupRequestHandler(client), backupSchedulerCfg.getData().getBackupScheduler());
+  public BackupEndpoint(final BrokerClient client, final BackupSchedulerCfg backupSchedulerCfg) {
+    this(new BackupRequestHandler(client), backupSchedulerCfg);
   }
 
   BackupEndpoint(final BackupApi api, final BackupSchedulerCfg backupSchedulerCfg) {

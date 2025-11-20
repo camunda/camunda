@@ -170,7 +170,7 @@ final class BackupEndpointTest {
     }
 
     @Test
-    void backupIdShouldBeCloseToNowWhenContinuousBackupsEnabled() {
+    void backupIdShouldBeCloseToNowWhenContinuousBackupsEnabled() throws InterruptedException {
 
       // given
       final var api = mock(BackupApi.class);
@@ -182,6 +182,7 @@ final class BackupEndpointTest {
       // when
       final var now = Instant.now();
       final WebEndpointResponse<?> firstBackup = endpoint.take();
+      Thread.sleep(100);
       final WebEndpointResponse<?> secondBackup = endpoint.take();
 
       // then
