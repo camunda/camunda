@@ -14,7 +14,7 @@ public record Version(@JsonValue long version) {
 
   public Version {
     if (version < 0) {
-      throw new IllegalArgumentException("version must be positive");
+      throw new IllegalArgumentException("version must be non-negative");
     }
   }
 
@@ -22,7 +22,7 @@ public record Version(@JsonValue long version) {
     return ZERO;
   }
 
-  public static Version of(long version) {
+  public static Version of(final long version) {
     return new Version(version);
   }
 

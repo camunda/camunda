@@ -92,7 +92,7 @@ public record Lease(
   }
 
   /**
-   * Wrapper for mappings from NodeId -> Version A sorted map is used to the order of the keys is
+   * Wrapper for mappings from NodeId -> Version. A sorted map is used so the order of the keys is
    * stable
    *
    * @param mappingsByNodeId

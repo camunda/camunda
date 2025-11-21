@@ -88,7 +88,12 @@ public interface NodeIdRepository extends AutoCloseable {
       };
     }
 
-    /** Acquire the initial lease * */
+    /**
+     * Acquire the initial lease
+     *
+     * @return {@link Optional#empty()} if the lease should not be acquired, or the lease to acquire
+     *     *
+     */
     default Optional<Lease> acquireInitialLease(
         final String taskId, final InstantSource clock, final Duration leaseDuration) {
       if (isStillValid(clock.millis())) {
@@ -129,13 +134,12 @@ public interface NodeIdRepository extends AutoCloseable {
       }
 
       public Initialized {
+        Objects.requireNonNull(lease, "Lease cannot be null");
         Objects.requireNonNull(metadata, "metadata cannot be null");
-        Objects.requireNonNull(lease.nodeInstance(), "node cannot be null");
         Objects.requireNonNull(eTag, "eTag cannot be null");
         if (eTag.isEmpty()) {
           throw new IllegalArgumentException("eTag cannot be empty");
         }
-        Objects.requireNonNull(lease, "Lease cannot be null");
         if (!Objects.equals(metadata.task(), lease.taskId())) {
           throw new IllegalStateException(
               String.format(

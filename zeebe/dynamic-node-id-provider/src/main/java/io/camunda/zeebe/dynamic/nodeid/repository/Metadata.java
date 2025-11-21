@@ -20,7 +20,7 @@ public record Metadata(String task, long expiry, Version version) {
 
   public Metadata {
     Objects.requireNonNull(task, "task cannot be null");
-    Objects.requireNonNull(task, "version cannot be null");
+    Objects.requireNonNull(version, "version cannot be null");
     if (expiry <= 0) {
       throw new IllegalArgumentException("expiry must be greater than zero");
     }
