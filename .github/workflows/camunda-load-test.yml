@@ -381,7 +381,7 @@ jobs:
               --namespace ${{ inputs.name }} \
               --image=curlimages/curl:7.87.0 \
               --schedule="*/10 * * * *" \
-              -- curl -L -v -X POST http://camunda:9600/actuator/rebalance
+              -- curl -L -v -X POST http://zeebe-gateway:9600/actuator/rebalance
           else
             echo "Leader balancer cronjob already exists"
           fi
