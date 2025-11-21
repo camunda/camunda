@@ -72,7 +72,6 @@ public record Lease(
     return new Lease(taskId, expiry, nodeInstance, VersionMappings.of(nodeInstance));
   }
 
-
   public String toJson(final ObjectMapper objectMapper) {
     try {
       return objectMapper.writeValueAsString(this);

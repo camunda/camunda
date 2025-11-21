@@ -11,7 +11,6 @@ import static io.camunda.zeebe.dynamic.nodeid.Lease.OBJECT_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import java.time.Duration;
 import java.time.Instant;
