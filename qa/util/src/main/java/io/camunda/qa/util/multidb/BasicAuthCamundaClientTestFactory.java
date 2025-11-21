@@ -12,9 +12,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,9 +27,13 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
 
   private final Map<String, CamundaClient> cachedClients = new ConcurrentHashMap<>();
 
-  public BasicAuthCamundaClientTestFactory(final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final URI grpcAddress) {
+  public BasicAuthCamundaClientTestFactory(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress) {
     cachedClients.put(
-        InitializationConfiguration.DEFAULT_USER_USERNAME, createDefaultUserClient(camundaClientBuilder, restAddress, grpcAddress));
+        InitializationConfiguration.DEFAULT_USER_USERNAME,
+        createDefaultUserClient(camundaClientBuilder, restAddress, grpcAddress));
   }
 
   @Override
@@ -46,10 +48,11 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
 
   @Override
   public CamundaClient getCamundaClient(
-      final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final Authenticated authenticated) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final Authenticated authenticated) {
     if (authenticated == null) {
-      LOGGER.info(
-          "Creating unauthorized Camunda client for broker address '{}", restAddress);
+      LOGGER.info("Creating unauthorized Camunda client for broker address '{}", restAddress);
       return camundaClientBuilder.restAddress(restAddress).preferRestOverGrpc(true).build();
     }
 
@@ -60,16 +63,26 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
     final var username = authenticated.value();
     final var client = cachedClients.get(username);
     System.out.println("Returning client for: " + username);
-    System.out.println("Client hash: " + (client != null ? System.identityHashCode(client) : "null"));
+    System.out.println(
+        "Client hash: " + (client != null ? System.identityHashCode(client) : "null"));
     return client;
   }
 
-  public void createClientForUser(final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final URI grpcAddress, final TestUser user) {
-    final var client = createAuthenticatedClient(camundaClientBuilder, restAddress, grpcAddress, user.username(), user.password());
+  public void createClientForUser(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final TestUser user) {
+    final var client =
+        createAuthenticatedClient(
+            camundaClientBuilder, restAddress, grpcAddress, user.username(), user.password());
     cachedClients.put(user.username(), client);
   }
 
-  private CamundaClient createDefaultUserClient(final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final URI grpcAddress) {
+  private CamundaClient createDefaultUserClient(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress) {
     return createAuthenticatedClient(
         camundaClientBuilder,
         restAddress,
@@ -79,7 +92,11 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
   }
 
   private CamundaClient createAuthenticatedClient(
-      final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final URI grpcAddress, final String username, final String password) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final String username,
+      final String password) {
     return camundaClientBuilder
         .preferRestOverGrpc(true)
         .restAddress(restAddress)

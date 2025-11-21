@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.qa.util.versioned;
+package io.camunda.qa.util.compatibility;
 
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -18,10 +17,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * {@code @VersionedTest} is used to signal that the annotated test should run against a specific
- * Camunda version using Docker containers with configurable database backend.
+ * {@code @CompatibilityTest} is used to signal that the annotated test should run against a
+ * specific Camunda version using Docker containers with configurable database backend.
  *
- * <p>The annotation extends the test with {@link VersionedTestExtension}, which:
+ * <p>The annotation extends the test with {@link CompatibilityTestExtension}, which:
+ *
  * <ul>
  *   <li>Starts a database container (Elasticsearch by default)
  *   <li>Starts a Camunda container with the specified version
@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * </ul>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * @VersionedTest
  * final class MyVersionedTest {
@@ -48,24 +49,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * }</pre>
  *
  * <p>The version can be specified via:
+ *
  * <ul>
  *   <li>System property: {@code -Dcamunda.test.version=8.8.1}
- *   <li>Annotation parameter: {@code @VersionedTest(version = "8.8.1")}
+ *   <li>Annotation parameter: {@code @CompatibilityTest(version = "8.8.1")}
  * </ul>
  *
  * <p>The database can be specified via:
+ *
  * <ul>
  *   <li>System property: {@code -Dtest.integration.camunda.database.type=ES}
- *   <li>Annotation parameter: {@code @VersionedTest(database = DatabaseType.ES)}
+ *   <li>Annotation parameter: {@code @CompatibilityTest(database = DatabaseType.ES)}
  * </ul>
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Tag("versioned-test")
+@Tag("compatibility-test")
 @Documented
-@ExtendWith(VersionedTestExtension.class)
+@ExtendWith(CompatibilityTestExtension.class)
 @Inherited
-public @interface VersionedTest {
+public @interface CompatibilityTest {
 
   /**
    * The Camunda version to test against. System property {@code camunda.test.version} takes

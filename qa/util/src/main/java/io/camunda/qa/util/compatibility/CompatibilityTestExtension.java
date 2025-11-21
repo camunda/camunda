@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.qa.util.versioned;
+package io.camunda.qa.util.compatibility;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.KEYCLOAK_REALM;
 import static org.assertj.core.api.Fail.fail;
@@ -39,8 +39,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -66,10 +64,10 @@ import org.testcontainers.utility.DockerImageName;
  * JUnit extension that manages the lifecycle of a versioned Camunda container with database for
  * integration tests.
  */
-public class VersionedTestExtension
+public class CompatibilityTestExtension
     implements BeforeAllCallback, AfterAllCallback, ParameterResolver {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(VersionedTestExtension.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CompatibilityTestExtension.class);
   private static final int GRPC_PORT = 26500;
   private static final int REST_PORT = 8080;
   private static final int MANAGEMENT_PORT = 9600;
@@ -86,11 +84,11 @@ public class VersionedTestExtension
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
     final Class<?> testClass = context.getRequiredTestClass();
-    final VersionedTest annotation = testClass.getAnnotation(VersionedTest.class);
+    final CompatibilityTest annotation = testClass.getAnnotation(CompatibilityTest.class);
 
     if (annotation == null) {
       throw new IllegalStateException(
-          "@VersionedTest annotation not found on test class: " + testClass.getName());
+          "@CompatibilityTest annotation not found on test class: " + testClass.getName());
     }
 
     // Determine version and database type
@@ -128,7 +126,9 @@ public class VersionedTestExtension
                   + "/realms/camunda/protocol/openid-connect/token");
       injectStaticKeycloakContainerField(testClass, keycloakContainer);
     } else {
-      authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(CamundaClient.newClientBuilder(), getRestAddress(), getGrpcAddress());
+      authenticatedClientFactory =
+          new BasicAuthCamundaClientTestFactory(
+              CamundaClient.newClientBuilder(), getRestAddress(), getGrpcAddress());
     }
     // Setup entities
     entityManager = new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
@@ -143,12 +143,15 @@ public class VersionedTestExtension
   private void startDatabase() {
     switch (databaseType) {
       case LOCAL, ES -> startElasticsearch();
-      case OS -> throw new UnsupportedOperationException(
-          "OpenSearch support not yet implemented for versioned tests");
-      case RDBMS -> throw new UnsupportedOperationException(
-          "RDBMS is not supported for versioned container tests");
-      case AWS_OS -> throw new UnsupportedOperationException(
-          "AWS OpenSearch support not yet implemented for versioned tests");
+      case OS ->
+          throw new UnsupportedOperationException(
+              "OpenSearch support not yet implemented for versioned tests");
+      case RDBMS ->
+          throw new UnsupportedOperationException(
+              "RDBMS is not supported for versioned container tests");
+      case AWS_OS ->
+          throw new UnsupportedOperationException(
+              "AWS OpenSearch support not yet implemented for versioned tests");
       default -> throw new IllegalArgumentException("Unsupported database type: " + databaseType);
     }
   }
@@ -167,7 +170,7 @@ public class VersionedTestExtension
     LOGGER.info("Elasticsearch started at: {}", elasticsearchContainer.getHttpHostAddress());
   }
 
-  private void startCamundaContainer(final String version, final VersionedTest annotation) {
+  private void startCamundaContainer(final String version, final CompatibilityTest annotation) {
     final String imageName =
         "SNAPSHOT".equals(version) ? "camunda/camunda:SNAPSHOT" : "camunda/camunda:" + version;
 
@@ -186,26 +189,23 @@ public class VersionedTestExtension
 
     // Configure database connection using the configurator
     final String databaseUrl = getDatabaseUrl();
-    final VersionedTestDatabaseConfigurator dbConfigurator =
-        new VersionedTestDatabaseConfigurator(
-            testPrefix,
-            databaseType,
-            databaseUrl);
+    final CompatibilityTestDatabaseConfigurator dbConfigurator =
+        new CompatibilityTestDatabaseConfigurator(testPrefix, databaseType, databaseUrl);
 
     dbConfigurator.configureCamundaContainer(camundaContainer);
 
     // Enable Spring profiles
     camundaContainer.withEnv("SPRING_PROFILES_ACTIVE", "broker,consolidated-auth");
 
-// Configure authentication
-      if (annotation.enableAuthorization()) {
-        camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "basic"); // lowercase
-        camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false");
-        camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "true");
-      } else {
-        camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
-        camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
-      }
+    // Configure authentication
+    if (annotation.enableAuthorization()) {
+      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "basic"); // lowercase
+      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false");
+      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "true");
+    } else {
+      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
+      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
+    }
 
     // Configure initial user (required for basic auth)
     camundaContainer.withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo");
@@ -218,17 +218,19 @@ public class VersionedTestExtension
     // Configure security based on annotation
     if (annotation.setupKeycloak()) {
       setupKeycloak();
-      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUER_URI", keycloakContainer.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+      camundaContainer.withEnv(
+          "CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUER_URI",
+          keycloakContainer.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
       camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENT_ID", "example");
       camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECT_URI", "example.com");
     }
-//    if (annotation.authorizations()) {
-//      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "true");
-//    }
-//
-//    if (annotation.authentication()) {
-//      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "false");
-//    }
+    //    if (annotation.authorizations()) {
+    //      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "true");
+    //    }
+    //
+    //    if (annotation.authentication()) {
+    //      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "false");
+    //    }
 
     camundaContainer.start();
 
@@ -292,33 +294,36 @@ public class VersionedTestExtension
   }
 
   private void waitForCamundaReadiness() {
-    LOGGER.info("Waiting for Camunda to be fully ready (exporter, indexing, and user initialization)");
+    LOGGER.info(
+        "Waiting for Camunda to be fully ready (exporter, indexing, and user initialization)");
 
     // Wait for the demo user to be created and authentication to work
     Awaitility.await("Await Camunda readiness with authenticated access")
         .timeout(CamundaMultiDBExtension.TIMEOUT_DATABASE_EXPORTER_READINESS)
         .pollInterval(Duration.ofSeconds(2))
         .ignoreExceptions()
-        .untilAsserted(() -> {
-          // Try to create an authenticated client and make a simple request
-          final var testClient = CamundaClient.newClientBuilder()
-              .grpcAddress(getGrpcAddress())
-              .restAddress(getRestAddress())
-              .credentialsProvider(
-                  new BasicAuthCredentialsProviderBuilder()
-                      .username("demo")
-                      .password("demo")
-                      .build())
-              .build();
+        .untilAsserted(
+            () -> {
+              // Try to create an authenticated client and make a simple request
+              final var testClient =
+                  CamundaClient.newClientBuilder()
+                      .grpcAddress(getGrpcAddress())
+                      .restAddress(getRestAddress())
+                      .credentialsProvider(
+                          new BasicAuthCredentialsProviderBuilder()
+                              .username("demo")
+                              .password("demo")
+                              .build())
+                      .build();
 
-          try {
-            // Try a simple request that requires auth
-            testClient.newTopologyRequest().send().join();
-            LOGGER.debug("Camunda is ready and demo user can authenticate");
-          } finally {
-            testClient.close();
-          }
-        });
+              try {
+                // Try a simple request that requires auth
+                testClient.newTopologyRequest().send().join();
+                LOGGER.debug("Camunda is ready and demo user can authenticate");
+              } finally {
+                testClient.close();
+              }
+            });
 
     LOGGER.info("Camunda is ready");
   }
@@ -365,10 +370,7 @@ public class VersionedTestExtension
         user -> {
           final var clientFactory = (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
           clientFactory.createClientForUser(
-              CamundaClient.newClientBuilder(),
-              getRestAddress(),
-              getGrpcAddress(),
-              user);
+              CamundaClient.newClientBuilder(), getRestAddress(), getGrpcAddress(), user);
           LOGGER.debug("Created authenticated client for user: {}", user.username());
         });
 
@@ -376,7 +378,8 @@ public class VersionedTestExtension
         mappingRule -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForMappingRule(CamundaClient.newClientBuilder(), getRestAddress(), getGrpcAddress(), mappingRule);
+            clientFactory.createClientForMappingRule(
+                CamundaClient.newClientBuilder(), getRestAddress(), getGrpcAddress(), mappingRule);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for mapping rule, as the application is not configured for OIDC authentication",
@@ -392,7 +395,8 @@ public class VersionedTestExtension
         client -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForClient(CamundaClient.newClientBuilder(), getRestAddress(), getGrpcAddress(), client);
+            clientFactory.createClientForClient(
+                CamundaClient.newClientBuilder(), getRestAddress(), getGrpcAddress(), client);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for client, as the application is not configured for OIDC authentication",
@@ -502,7 +506,9 @@ public class VersionedTestExtension
               field.set(null, keycloakContainer);
               return;
             } else {
-              fail("Keycloak container field couldn't be injected. Make sure it is static: " + field);
+              fail(
+                  "Keycloak container field couldn't be injected. Make sure it is static: "
+                      + field);
             }
           }
         } catch (final Exception ex) {

@@ -22,6 +22,8 @@
   <name>Camunda QA Acceptance Tests</name>
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.4.0</version.maven-surefire-junit5-tree-reporter>
+    <!-- Allow overriding client version via -Dcamunda.client.version -->
+    <camunda.client.version>${project.version}</camunda.client.version>
   </properties>
 
   <dependencies>
@@ -58,6 +60,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
+      <version>${camunda.client.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -594,7 +597,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, compatibility-test</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -653,7 +656,28 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
-              <excludedGroups>rdbms</excludedGroups>
+              <excludedGroups>rdbms, compatibility-test</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+This profile will run all tests annotated with @Tag("compatibility-test").
+The profile is used to run tests against different versions of Camunda components.
+-->
+    <profile>
+      <id>compatibility-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>compatibility-test</groups>
+              <excludedGroups>rdbms, multi-db-test</excludedGroups>
             </configuration>
           </plugin>
         </plugins>

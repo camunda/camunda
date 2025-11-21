@@ -133,7 +133,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.client-version }}
           fetch-depth: 0
 
       - uses: ./.github/actions/setup-build
@@ -145,7 +144,8 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
 
-      # Run versioned tests with specified client and server versions
+      # Run compatibility tests using the compatibility-test profile
+      # Tests tagged with @CompatibilityTest will be executed against the specified versions
       - name: Test client ${{ matrix.client-version }} against server ${{ matrix.server-version }}
         shell: bash
         run: >
@@ -155,7 +155,8 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3
           -D camunda.test.version=${{ matrix.server-version }}
           -D camunda.client.version=${{ matrix.client-version }}
-          -pl 'qa/versioned-tests'
+          -P compatibility-test
+          -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
         continue-on-error: true

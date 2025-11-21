@@ -13,8 +13,6 @@ import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestMappingRule;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
@@ -71,10 +69,11 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
 
   @Override
   public CamundaClient getCamundaClient(
-      final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final Authenticated authenticated) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final Authenticated authenticated) {
     if (authenticated == null) {
-      LOGGER.info(
-          "Creating unauthorized Camunda client for broker address '{}", restAddress);
+      LOGGER.info("Creating unauthorized Camunda client for broker address '{}", restAddress);
       return camundaClientBuilder.restAddress(restAddress).preferRestOverGrpc(true).build();
     }
 
@@ -87,20 +86,37 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
   }
 
   public void createClientForMappingRule(
-      final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final URI grpcAddress, final TestMappingRule mappingRule) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final TestMappingRule mappingRule) {
     final var client =
-        createAuthenticatedClient(camundaClientBuilder, restAddress, grpcAddress, mappingRule.id(), mappingRule.claimValue());
+        createAuthenticatedClient(
+            camundaClientBuilder,
+            restAddress,
+            grpcAddress,
+            mappingRule.id(),
+            mappingRule.claimValue());
     cachedClients.put(mappingRule.id(), client);
   }
 
-  public void createClientForClient(final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final URI grpcAddress, final TestClient client) {
+  public void createClientForClient(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final TestClient client) {
     final var camundaClient =
-        createAuthenticatedClient(camundaClientBuilder, restAddress, grpcAddress, client.clientId(), client.clientId());
+        createAuthenticatedClient(
+            camundaClientBuilder, restAddress, grpcAddress, client.clientId(), client.clientId());
     cachedClients.put(client.clientId(), camundaClient);
   }
 
   private CamundaClient createAuthenticatedClient(
-      final CamundaClientBuilder camundaClientBuilder, final URI restAddress, final URI grpcAddress, final String mappingRuleId, final String claimValue) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final String mappingRuleId,
+      final String claimValue) {
     final var client =
         camundaClientBuilder
             .preferRestOverGrpc(true)

@@ -360,7 +360,11 @@ public class CamundaMultiDBExtension
                   + "/realms/camunda/protocol/openid-connect/token");
       injectStaticKeycloakContainerField(testClass, keycloakContainer);
     } else {
-      authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress());
+      authenticatedClientFactory =
+          new BasicAuthCamundaClientTestFactory(
+              applicationUnderTest.application.newClientBuilder(),
+              applicationUnderTest.application.restAddress(),
+              applicationUnderTest.application.grpcAddress());
     }
 
     if (applicationUnderTest.shouldBeManaged) {
@@ -412,7 +416,11 @@ public class CamundaMultiDBExtension
           try {
             final var clientFactory =
                 (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForUser(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress(), user);
+            clientFactory.createClientForUser(
+                applicationUnderTest.application.newClientBuilder(),
+                applicationUnderTest.application.restAddress(),
+                applicationUnderTest.application.grpcAddress(),
+                user);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for user, as the application is not configured for basic authentication: %s",
@@ -424,7 +432,11 @@ public class CamundaMultiDBExtension
         mappingRule -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForMappingRule(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress(), mappingRule);
+            clientFactory.createClientForMappingRule(
+                applicationUnderTest.application.newClientBuilder(),
+                applicationUnderTest.application.restAddress(),
+                applicationUnderTest.application.grpcAddress(),
+                mappingRule);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for mapping rule, as the application is not configured for OIDC authentication",
@@ -440,7 +452,11 @@ public class CamundaMultiDBExtension
         client -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForClient(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress(), client);
+            clientFactory.createClientForClient(
+                applicationUnderTest.application.newClientBuilder(),
+                applicationUnderTest.application.restAddress(),
+                applicationUnderTest.application.grpcAddress(),
+                client);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for client, as the application is not configured for OIDC authentication",
@@ -574,8 +590,10 @@ public class CamundaMultiDBExtension
       final Class<? extends Annotation> definitionClass) {
 
     final List<T> instances = new ArrayList<>();
-    predicate = predicate.and(field ->
-        field.getType() == entityClass && field.getAnnotation(definitionClass) != null);
+    predicate =
+        predicate.and(
+            field ->
+                field.getType() == entityClass && field.getAnnotation(definitionClass) != null);
 
     Class<?> current = testClass;
     while (current != null && current != Object.class) {
@@ -583,7 +601,8 @@ public class CamundaMultiDBExtension
         try {
           if (predicate.test(field)) {
             field.setAccessible(true);
-            @SuppressWarnings("unchecked") final T instance = (T) field.get(testInstance);
+            @SuppressWarnings("unchecked")
+            final T instance = (T) field.get(testInstance);
             instances.add(instance);
           }
         } catch (final Exception ex) {
@@ -632,7 +651,9 @@ public class CamundaMultiDBExtension
               field.set(null, keycloakContainer);
               return;
             } else {
-              fail("Keycloak container field couldn't be injected. Make sure it is static: " + field);
+              fail(
+                  "Keycloak container field couldn't be injected. Make sure it is static: "
+                      + field);
             }
           }
         } catch (final Exception ex) {
@@ -667,7 +688,9 @@ public class CamundaMultiDBExtension
 
   private CamundaClient getCamundaClient(final Authenticated authenticated) {
     return authenticatedClientFactory.getCamundaClient(
-        applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), authenticated);
+        applicationUnderTest.application.newClientBuilder(),
+        applicationUnderTest.application.restAddress(),
+        authenticated);
   }
 
   public record ApplicationUnderTest(

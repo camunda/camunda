@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.qa.util.versioned;
+package io.camunda.qa.util.compatibility;
 
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
@@ -17,7 +17,7 @@ import org.testcontainers.containers.GenericContainer;
  * Helper class to configure Camunda container environment variables for different database types.
  * This mimics the behavior of MultiDbConfigurator but for containerized deployments.
  */
-public class VersionedTestDatabaseConfigurator {
+public class CompatibilityTestDatabaseConfigurator {
 
   private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
 
@@ -25,10 +25,8 @@ public class VersionedTestDatabaseConfigurator {
   private final DatabaseType databaseType;
   private final String databaseUrl;
 
-  public VersionedTestDatabaseConfigurator(
-      final String testPrefix,
-      final DatabaseType databaseType,
-      final String databaseUrl) {
+  public CompatibilityTestDatabaseConfigurator(
+      final String testPrefix, final DatabaseType databaseType, final String databaseUrl) {
     this.testPrefix = testPrefix;
     this.databaseType = databaseType;
     this.databaseUrl = databaseUrl;
@@ -74,7 +72,8 @@ public class VersionedTestDatabaseConfigurator {
 
     /* Camunda */
     env.put("CAMUNDA_DATABASE_RETENTION_ENABLED", Boolean.toString(true));
-    env.put("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_HISTORY_POLICY_NAME", testPrefix + "-ilm");
+    env.put(
+        "CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_HISTORY_POLICY_NAME", testPrefix + "-ilm");
     env.put("CAMUNDA_DATABASE_RETENTION_MINIMUMAGE", "0s");
     env.put("CAMUNDA_DATABASE_SCHEMA_CREATE", Boolean.toString(true));
 
