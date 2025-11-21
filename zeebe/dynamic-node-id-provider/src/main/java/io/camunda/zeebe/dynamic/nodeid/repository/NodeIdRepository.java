@@ -89,11 +89,11 @@ public interface NodeIdRepository extends AutoCloseable {
     }
 
     /** Acquire the initial lease * */
-    default Lease acquireInitialLease(String taskId, InstantSource clock, Duration leaseDuration) {
+    default Optional<Lease> acquireInitialLease(String taskId, InstantSource clock, Duration leaseDuration) {
       if (isStillValid(clock.millis())) {
-        return null;
+        return Optional.empty();
       } else {
-        return Lease.from(taskId, clock.millis() + leaseDuration.toMillis(), node());
+        return Optional.of(Lease.from(taskId, clock.millis() + leaseDuration.toMillis(), node()));
       }
     }
 

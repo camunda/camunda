@@ -53,10 +53,15 @@ public class StoredLeaseTest {
 
       // then
       assertThat(toAcquire)
-          .returns(nodeInstance.nextVersion(), Lease::nodeInstance)
-          .returns(taskId, Lease::taskId)
-          .returns(VersionMappings.of(nodeInstance.nextVersion()), Lease::versionMappings)
-          .returns(expiryFromNow(), Lease::timestamp);
+          .isPresent()
+          .hasValueSatisfying(
+              lease ->
+                  assertThat(lease)
+                      .returns(nodeInstance.nextVersion(), Lease::nodeInstance)
+                      .returns(taskId, Lease::taskId)
+                      .returns(
+                          VersionMappings.of(nodeInstance.nextVersion()), Lease::versionMappings)
+                      .returns(expiryFromNow(), Lease::timestamp));
     }
   }
 
@@ -100,7 +105,7 @@ public class StoredLeaseTest {
       var acquired = stored.acquireInitialLease(newTaskId, clock, expiryDuration);
 
       // then
-      assertThat(acquired).isNull();
+      assertThat(acquired).isEmpty();
     }
 
     @Test
@@ -119,10 +124,15 @@ public class StoredLeaseTest {
 
       // then
       assertThat(acquired)
-          .returns(nodeInstance.nextVersion(), Lease::nodeInstance)
-          .returns(newTaskId, Lease::taskId)
-          .returns(VersionMappings.of(nodeInstance.nextVersion()), Lease::versionMappings)
-          .returns(expiryFromNow(), Lease::timestamp);
+          .isPresent()
+          .hasValueSatisfying(
+              lease ->
+                  assertThat(lease)
+                      .returns(nodeInstance.nextVersion(), Lease::nodeInstance)
+                      .returns(newTaskId, Lease::taskId)
+                      .returns(
+                          VersionMappings.of(nodeInstance.nextVersion()), Lease::versionMappings)
+                      .returns(expiryFromNow(), Lease::timestamp));
     }
   }
 

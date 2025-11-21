@@ -157,7 +157,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private StoredLease.Initialized tryAcquireInitialLease(final StoredLease lease) {
     try {
       var newLease = lease.acquireInitialLease(taskId, clock, leaseDuration);
-      return nodeIdRepository.acquire(newLease, lease.eTag());
+      return newLease.map(value -> nodeIdRepository.acquire(value, lease.eTag())).orElse(null);
     } catch (final Exception e) {
       LOG.warn("Failed to acquire the lease {}", lease, e);
       return null;
