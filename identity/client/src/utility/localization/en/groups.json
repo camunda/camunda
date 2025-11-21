@@ -25,6 +25,7 @@
   "assignUsersToGroup": "Assign users to this Group",
   "userId": "User ID",
   "searchByUsername": "Search by Username",
+  "usernameDescription": "Check the documentation for <2>how to reference users</2>.",
   "searchAndAssignUserToGroup": "Search and assign user to group",
   "searchByNameOrEmail": "Search by full name or email address",
   "usersCouldNotLoad": "Users could not be loaded.",

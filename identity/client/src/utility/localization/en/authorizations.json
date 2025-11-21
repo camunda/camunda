@@ -28,6 +28,7 @@
   "createAuthorizationIntroduction": "Grant an owner access to a resource with specific permissions. <2>Learn more</2>.",
   "selectPermission": "Select at least one permission. All available resource permissions can be found <2>here</2>.",
   "enterUsername": "Enter username",
+  "usernameDescription": "Check the documentation for <2>how to reference users</2>.",
   "pleaseEnterValidUsername": "Please enter a valid username (only characters, numbers and _ ~ @ . + - and max 256 characters)",
   "ownerRequired": "Owner is required",
   "usernameRequired": "Username is required",
