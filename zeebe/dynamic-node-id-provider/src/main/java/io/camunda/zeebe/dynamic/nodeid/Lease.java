@@ -22,6 +22,8 @@ import java.util.TreeMap;
 public record Lease(
     String taskId, long timestamp, NodeInstance nodeInstance, VersionMappings versionMappings) {
 
+  public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   public Lease {
     Objects.requireNonNull(taskId, "taskId cannot be null");
     if (taskId.isEmpty()) {
@@ -31,44 +33,16 @@ public record Lease(
     Objects.requireNonNull(versionMappings, "versionMappings cannot be null");
   }
 
-  public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-  /**
-   * Wrapper for mappings from NodeId -> Version A sorted map is used to the order of the keys is
-   * stable
-   *
-   * @param mappingsByNodeId
-   */
-  public record VersionMappings(SortedMap<Integer, Version> mappingsByNodeId) {
-
-    public static VersionMappings of(NodeInstance... nodeInstance) {
-      var map = new TreeMap<Integer, Version>();
-      for (var node : nodeInstance) {
-        map.put(node.id(), node.version());
-      }
-      return new VersionMappings(Collections.unmodifiableSortedMap(map));
-    }
-
-    public VersionMappings(Map<Integer, Version> mappingsByNodeId) {
-      this(Collections.unmodifiableSortedMap(new TreeMap<>(mappingsByNodeId)));
-    }
-
-    private static final VersionMappings EMPTY = new VersionMappings(Collections.emptySortedMap());
-
-    public static VersionMappings empty() {
-      return EMPTY;
-    }
-  }
-
-  public static Lease fromMetadata(Metadata metadata, int nodeId) {
+  public static Lease fromMetadata(final Metadata metadata, final int nodeId) {
     Objects.requireNonNull(metadata, "metadata cannot be null");
-    var nodeInstance = new NodeInstance(nodeId, metadata.version());
+    final var nodeInstance = new NodeInstance(nodeId, metadata.version());
     return new Lease(
         metadata.task(), metadata.expiry(), nodeInstance, VersionMappings.of(nodeInstance));
   }
 
-  public static Lease from(String taskId, long expiry, NodeInstance currentNodeInstance) {
-    var nodeInstance = currentNodeInstance.nextVersion();
+  public static Lease from(
+      final String taskId, final long expiry, final NodeInstance currentNodeInstance) {
+    final var nodeInstance = currentNodeInstance.nextVersion();
     return new Lease(taskId, expiry, nodeInstance, VersionMappings.of(nodeInstance));
   }
 
@@ -115,5 +89,32 @@ public record Lease(
     }
     final var millis = leaseDuration.toMillis();
     return new Lease(taskId, now + millis, nodeInstance, versionMappings);
+  }
+
+  /**
+   * Wrapper for mappings from NodeId -> Version A sorted map is used to the order of the keys is
+   * stable
+   *
+   * @param mappingsByNodeId
+   */
+  public record VersionMappings(SortedMap<Integer, Version> mappingsByNodeId) {
+
+    private static final VersionMappings EMPTY = new VersionMappings(Collections.emptySortedMap());
+
+    public VersionMappings(final Map<Integer, Version> mappingsByNodeId) {
+      this(Collections.unmodifiableSortedMap(new TreeMap<>(mappingsByNodeId)));
+    }
+
+    public static VersionMappings of(final NodeInstance... nodeInstance) {
+      final var map = new TreeMap<Integer, Version>();
+      for (final var node : nodeInstance) {
+        map.put(node.id(), node.version());
+      }
+      return new VersionMappings(Collections.unmodifiableSortedMap(map));
+    }
+
+    public static VersionMappings empty() {
+      return EMPTY;
+    }
   }
 }

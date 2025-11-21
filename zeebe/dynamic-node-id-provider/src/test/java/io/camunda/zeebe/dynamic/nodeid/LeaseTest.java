@@ -58,7 +58,7 @@ public class LeaseTest {
     assertThat(lease.isStillValid(currentTime)).isFalse();
 
     // when/then
-    var expectedMessage =
+    final var expectedMessage =
         String.format(
             "Lease is not valid anymore(%s), it expired at %s",
             Instant.ofEpochMilli(currentTime), Instant.ofEpochMilli(lease.timestamp()));
@@ -73,7 +73,7 @@ public class LeaseTest {
     final var serialized = lease.toJson(OBJECT_MAPPER);
 
     // then
-    var expectedJson =
+    final var expectedJson =
         """
         {"taskId":"task1","timestamp":1000,"nodeInstance":{"id":1,"version":117},"versionMappings":{"mappingsByNodeId":{"1":117,"2":119,"3":3}}}""";
     assertThat(serialized).isEqualTo(expectedJson);

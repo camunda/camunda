@@ -81,7 +81,7 @@ public interface NodeIdRepository extends AutoCloseable {
       };
     }
 
-    default boolean isStillValid(long now) {
+    default boolean isStillValid(final long now) {
       return switch (this) {
         case final Uninitialized u -> false;
         case final Initialized i -> i.lease().isStillValid(now);
@@ -90,7 +90,7 @@ public interface NodeIdRepository extends AutoCloseable {
 
     /** Acquire the initial lease * */
     default Optional<Lease> acquireInitialLease(
-        String taskId, InstantSource clock, Duration leaseDuration) {
+        final String taskId, final InstantSource clock, final Duration leaseDuration) {
       if (isStillValid(clock.millis())) {
         return Optional.empty();
       } else {
@@ -104,7 +104,8 @@ public interface NodeIdRepository extends AutoCloseable {
         throw new IllegalArgumentException("eTag cannot be null or empty:" + eTag);
       }
       if (lease == null) {
-        var version = Optional.ofNullable(metadata).map(Metadata::version).orElse(new Version(0));
+        final var version =
+            Optional.ofNullable(metadata).map(Metadata::version).orElse(new Version(0));
         return new StoredLease.Uninitialized(new NodeInstance(nodeId, version), eTag);
       } else {
         return new StoredLease.Initialized(metadata, lease, eTag);
@@ -123,7 +124,7 @@ public interface NodeIdRepository extends AutoCloseable {
 
     record Initialized(Metadata metadata, Lease lease, String eTag) implements StoredLease {
 
-      public Initialized(Metadata metadata, int nodeId, String eTag) {
+      public Initialized(final Metadata metadata, final int nodeId, final String eTag) {
         this(metadata, Lease.fromMetadata(metadata, nodeId), eTag);
       }
 

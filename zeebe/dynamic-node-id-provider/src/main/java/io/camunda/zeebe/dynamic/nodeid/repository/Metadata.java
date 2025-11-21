@@ -13,6 +13,11 @@ import java.util.Map;
 import java.util.Objects;
 
 public record Metadata(String task, long expiry, Version version) {
+  // KEYS MUST BE LOWERCASE
+  private static final String TASK_ID_KEY = "taskid";
+  private static final String EXPIRY_KEY = "expiry";
+  private static final String VERSION_KEY = "version";
+
   public Metadata {
     Objects.requireNonNull(task, "task cannot be null");
     Objects.requireNonNull(task, "version cannot be null");
@@ -20,11 +25,6 @@ public record Metadata(String task, long expiry, Version version) {
       throw new IllegalArgumentException("expiry must be greater than zero");
     }
   }
-
-  // KEYS MUST BE LOWERCASE
-  private static final String TASK_ID_KEY = "taskid";
-  private static final String EXPIRY_KEY = "expiry";
-  private static final String VERSION_KEY = "version";
 
   public static Metadata fromLease(final Lease lease) {
     return new Metadata(lease.taskId(), lease.timestamp(), lease.nodeInstance().version());
@@ -45,11 +45,11 @@ public record Metadata(String task, long expiry, Version version) {
       return null;
     }
     try {
-      var taskId = map.get(TASK_ID_KEY);
-      var expiry = Long.parseLong(map.get(EXPIRY_KEY));
-      var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
+      final var taskId = map.get(TASK_ID_KEY);
+      final var expiry = Long.parseLong(map.get(EXPIRY_KEY));
+      final var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
       return new Metadata(taskId, expiry, version);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new IllegalArgumentException("Failed to deserialize metadata, map is " + map, e);
     }
   }

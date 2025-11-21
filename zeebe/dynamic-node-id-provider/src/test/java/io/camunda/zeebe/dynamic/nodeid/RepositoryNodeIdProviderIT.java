@@ -117,7 +117,7 @@ public class RepositoryNodeIdProviderIT {
     clusterSize = 3;
     repository.initialize(clusterSize);
     // acquire a lease in the past
-    var lease = repository.getLease(0);
+    final var lease = repository.getLease(0);
     final var previousEtag = lease.eTag();
     final var expiredLeaseTimestamp = clock.millis();
     final var expiredLease =

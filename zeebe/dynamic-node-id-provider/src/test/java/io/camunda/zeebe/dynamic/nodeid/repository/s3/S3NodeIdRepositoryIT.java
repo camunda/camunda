@@ -99,7 +99,7 @@ public class S3NodeIdRepositoryIT {
     repository = fixed(millis);
     repository.initialize(clusterSize);
     final var initial = repository.getLease(0);
-    var firstAcquired = initial.acquireInitialLease(taskId, clock, EXPIRY_DURATION);
+    final var firstAcquired = initial.acquireInitialLease(taskId, clock, EXPIRY_DURATION);
     assertThat(firstAcquired).isPresent();
     final var acquired = repository.acquire(firstAcquired.get(), initial.eTag());
     assertThat(acquired).isInstanceOf(StoredLease.Initialized.class);
@@ -184,7 +184,7 @@ public class S3NodeIdRepositoryIT {
     final var now = Clock.systemUTC().millis();
     repository = fixed(now);
     repository.initialize(3);
-    var id = 2;
+    final var id = 2;
     final var lease = repository.getLease(id);
     final var toAcquire = lease.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
     final var acquired = repository.acquire(toAcquire, lease.eTag());

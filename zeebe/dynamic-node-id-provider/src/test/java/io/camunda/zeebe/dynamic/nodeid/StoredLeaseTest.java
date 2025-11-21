@@ -25,6 +25,10 @@ public class StoredLeaseTest {
   private final String taskId = "newTaskId";
   private final Duration expiryDuration = Duration.ofSeconds(15);
 
+  long expiryFromNow() {
+    return clock.millis() + expiryDuration.toMillis();
+  }
+
   @Nested
   class Uninitialized {
     @Test
@@ -46,10 +50,10 @@ public class StoredLeaseTest {
     @Test
     void canBeAcquired() {
       // given
-      var stored = new StoredLease.Uninitialized(nodeInstance, "eTagExample");
+      final var stored = new StoredLease.Uninitialized(nodeInstance, "eTagExample");
 
       // when
-      var toAcquire = stored.acquireInitialLease(taskId, clock, expiryDuration);
+      final var toAcquire = stored.acquireInitialLease(taskId, clock, expiryDuration);
 
       // then
       assertThat(toAcquire)
@@ -95,14 +99,14 @@ public class StoredLeaseTest {
     @Test
     void shouldNotAcquireAValidLease() {
       // given
-      var stored =
+      final var stored =
           new StoredLease.Initialized(
               new Metadata(taskId, expiryFromNow(), nodeInstance.version()),
               nodeInstance.id(),
               "eTagExample");
 
-      var newTaskId = "newTaskId";
-      var acquired = stored.acquireInitialLease(newTaskId, clock, expiryDuration);
+      final var newTaskId = "newTaskId";
+      final var acquired = stored.acquireInitialLease(newTaskId, clock, expiryDuration);
 
       // then
       assertThat(acquired).isEmpty();
@@ -111,7 +115,7 @@ public class StoredLeaseTest {
     @Test
     void shouldAcquireWithANewVersionWhenExpired() {
       // given
-      var stored =
+      final var stored =
           new StoredLease.Initialized(
               new Metadata(taskId, expiryFromNow(), nodeInstance.version()),
               nodeInstance.id(),
@@ -119,8 +123,8 @@ public class StoredLeaseTest {
 
       // when
       clock.advance(expiryDuration.plusMillis(1));
-      var newTaskId = "newTaskId";
-      var acquired = stored.acquireInitialLease(newTaskId, clock, expiryDuration);
+      final var newTaskId = "newTaskId";
+      final var acquired = stored.acquireInitialLease(newTaskId, clock, expiryDuration);
 
       // then
       assertThat(acquired)
@@ -134,9 +138,5 @@ public class StoredLeaseTest {
                           VersionMappings.of(nodeInstance.nextVersion()), Lease::versionMappings)
                       .returns(expiryFromNow(), Lease::timestamp));
     }
-  }
-
-  long expiryFromNow() {
-    return clock.millis() + expiryDuration.toMillis();
   }
 }

@@ -12,18 +12,18 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public record Version(@JsonValue long version) {
   private static final Version ZERO = new Version(0L);
 
+  public Version {
+    if (version < 0) {
+      throw new IllegalArgumentException("version must be positive");
+    }
+  }
+
   public static Version zero() {
     return ZERO;
   }
 
   public static Version of(long version) {
     return new Version(version);
-  }
-
-  public Version {
-    if (version < 0) {
-      throw new IllegalArgumentException("version must be positive");
-    }
   }
 
   public Version next() {
