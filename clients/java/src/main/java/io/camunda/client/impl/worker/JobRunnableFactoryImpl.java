@@ -21,7 +21,10 @@ import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobExceptionHandler.JobExceptionHandlerContext;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 
 public final class JobRunnableFactoryImpl implements JobRunnableFactory {
 
@@ -47,11 +50,22 @@ public final class JobRunnableFactoryImpl implements JobRunnableFactory {
 
   private void executeJob(final ActivatedJob job, final Runnable doneCallback) {
     try {
+      MDC.setContextMap(createContextMap(job));
       handler.handle(jobClient, job);
     } catch (final Exception e) {
       jobExceptionHandler.handleJobException(new JobExceptionHandlerContext(jobClient, job, e));
     } finally {
+      MDC.clear();
       doneCallback.run();
     }
+  }
+
+  private Map<String, String> createContextMap(final ActivatedJob job) {
+    final Map<String, String> contextMap = new HashMap<>();
+    contextMap.put("processDefinitionKey", String.valueOf(job.getProcessDefinitionKey()));
+    contextMap.put("processInstanceKey", String.valueOf(job.getProcessInstanceKey()));
+    contextMap.put("elementInstanceKey", String.valueOf(job.getElementInstanceKey()));
+    contextMap.put("jobKey", String.valueOf(job.getKey()));
+    return contextMap;
   }
 }
