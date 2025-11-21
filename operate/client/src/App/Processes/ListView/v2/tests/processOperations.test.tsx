@@ -31,6 +31,14 @@ describe('<ListView /> - operations', () => {
         totalItems: 0,
       },
     });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });
@@ -118,7 +126,6 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should show delete button when user has resource based permissions', async () => {
-    // Mock for useRunningInstancesCount - returns 0 to enable delete button
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -146,7 +153,6 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {
-    // Mock for useRunningInstancesCount
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},

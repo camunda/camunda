@@ -28,6 +28,7 @@ import {useLocation} from 'react-router-dom';
 import {BatchModificationFooter} from '../../InstancesTable/BatchModificationFooter';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import type {InstanceEntityState} from 'modules/types/operate';
+import {InstanceOperations} from './InstanceOperations';
 
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
@@ -169,6 +170,15 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                   )}
                 </>
               ),
+              operations: (
+                <InstanceOperations
+                  processInstanceKey={instance.processInstanceKey}
+                  isInstanceActive={
+                    instance.state === 'ACTIVE' || instance.hasIncident
+                  }
+                  hasIncident={instance.hasIncident}
+                />
+              ),
             };
           })}
           headerColumns={[
@@ -220,6 +230,11 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               header: 'Parent Process Instance Key',
               key: 'parentInstanceId',
               sortKey: 'parentProcessInstanceKey',
+            },
+            {
+              header: 'Operations',
+              key: 'operations',
+              isDisabled: true,
             },
           ]}
           batchOperationId={batchOperationId}
