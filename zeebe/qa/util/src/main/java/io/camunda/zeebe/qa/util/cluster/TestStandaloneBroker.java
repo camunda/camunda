@@ -37,7 +37,6 @@ import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -215,7 +214,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return brokerHealth();
   }
 
-  // TODO KPO add gateway enabled to unified configuration?
   @Override
   public boolean isGateway() {
     // Gateway enable flag is set via property (not fully in unified config yet)
@@ -258,21 +256,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public GatewayHealthActuator gatewayHealth() {
     throw new UnsupportedOperationException("Brokers do not support the gateway health indicators");
-  }
-
-  @Override
-  public TestStandaloneBroker withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    throw new UnsupportedOperationException(
-        "Gateway configuration via withGatewayConfig is not supported. "
-            + "Gateway is not yet fully migrated to unified configuration. "
-            + "Use withProperty() to set zeebe.broker.gateway.* properties instead.");
-  }
-
-  @Override
-  public GatewayCfg gatewayConfig() {
-    throw new UnsupportedOperationException(
-        "Gateway configuration access via gatewayConfig() is not supported. "
-            + "Gateway is not yet fully migrated to unified configuration.");
   }
 
   /**
@@ -350,23 +333,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
           unifiedExporter.setArgs(tempExporterCfg.getArgs());
         });
-  }
-
-  /**
-   * Modifies the broker configuration.
-   *
-   * @deprecated BrokerBasedProperties is no longer the primary configuration object. Use {@link
-   *     #withUnifiedConfig(Consumer)} or convenience methods like {@link
-   *     #withClusterConfig(Consumer)}, {@link #withDataConfig(Consumer)}, etc. instead.
-   *     BrokerBasedProperties will be created from UnifiedConfiguration at Spring startup.
-   */
-  @Deprecated
-  @Override
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    throw new UnsupportedOperationException(
-        "withBrokerConfig() is no longer supported. "
-            + "Use withUnifiedConfig() or convenience methods like withClusterConfig(), withDataConfig(), etc. "
-            + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
   }
 
   /**
@@ -457,22 +423,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
       final Consumer<CamundaSecurityProperties> modifier) {
     modifier.accept(securityConfig);
     return this;
-  }
-
-  /**
-   * Returns the broker configuration.
-   *
-   * @deprecated BrokerBasedProperties is no longer maintained in TestStandaloneBroker. Use {@link
-   *     #unifiedConfig()} instead. BrokerBasedProperties will be created from UnifiedConfiguration
-   *     at Spring startup.
-   */
-  @Deprecated
-  @Override
-  public BrokerBasedProperties brokerConfig() {
-    throw new UnsupportedOperationException(
-        "brokerConfig() is no longer supported. "
-            + "Use unifiedConfig() instead. "
-            + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
   }
 
   @Override

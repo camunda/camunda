@@ -25,7 +25,6 @@ import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverrid
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
 
@@ -82,7 +81,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     return this;
   }
 
-  // TODO KPO memeberId does not exist in UC, add?
   @Override
   public MemberId nodeId() {
     // Gateway member ID via property
@@ -99,23 +97,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     return true;
   }
 
-  @Override
-  public int mappedPort(final TestZeebePort port) {
-    return switch (port) {
-      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
-      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
-      default -> super.mappedPort(port);
-    };
-  }
-
-  @Override
-  public TestStandaloneGateway withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    throw new UnsupportedOperationException(
-        "Gateway configuration via withGatewayConfig is not supported. "
-            + "Gateway is not yet fully migrated to unified configuration. "
-            + "Use withProperty() to set zeebe.gateway.* properties instead.");
-  }
-
   /**
    * Modifies the unified configuration (camunda.* properties).
    *
@@ -129,10 +110,12 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   }
 
   @Override
-  public GatewayCfg gatewayConfig() {
-    throw new UnsupportedOperationException(
-        "Gateway configuration access via gatewayConfig() is not supported. "
-            + "Gateway is not yet fully migrated to unified configuration.");
+  public int mappedPort(final TestZeebePort port) {
+    return switch (port) {
+      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
+      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
+      default -> super.mappedPort(port);
+    };
   }
 
   /**

@@ -361,7 +361,6 @@ public final class TestClusterBuilder {
                   uc.getSystem().setIoThreadCount(replicas);
                   uc.getSystem().setCpuThreadCount(replicas);
                 })
-            // TODO KPO can we remove setAutoconfigureCamundaExporter?
             .withUnifiedConfig(
                 uc -> uc.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false))
             .withGatewayEnabled(useEmbeddedGateway)
@@ -389,7 +388,6 @@ public final class TestClusterBuilder {
                   cluster.setName(name);
                   cluster.setInitialContactPoints(getInitialContactPoints());
                 })
-            // TODO KPO not available in UC
             .withProperty("zeebe.gateway.cluster.memberId", id);
     return gateway;
   }

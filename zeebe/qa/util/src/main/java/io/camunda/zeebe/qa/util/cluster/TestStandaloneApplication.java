@@ -20,7 +20,6 @@ import io.camunda.configuration.Data;
 import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;
@@ -43,12 +42,6 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * @return itself for chaining
    */
   T withExporter(final String id, final Consumer<ExporterCfg> modifier);
-
-  /**
-   * Modifies the broker configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
-   */
-  T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
 
   /**
    * Sets the secondary storage type to use.
@@ -162,8 +155,6 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * started, but likely has no effect until it's restarted.
    */
   T withSecurityConfig(final Consumer<CamundaSecurityProperties> modifier);
-
-  BrokerBasedProperties brokerConfig();
 
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();

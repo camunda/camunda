@@ -10,8 +10,6 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -90,12 +88,6 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
   }
 
   /**
-   * Allows modifying the gateway configuration. Changes will not take effect until the node is
-   * restarted.
-   */
-  T withGatewayConfig(final Consumer<GatewayCfg> modifier);
-
-  /**
    * Modifies the unified configuration (camunda.* properties). This is the recommended way to
    * configure test gateways going forward.
    *
@@ -105,9 +97,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
   @Override
   T withUnifiedConfig(final Consumer<Camunda> modifier);
 
-  /** Returns the gateway configuration for this node. */
-  GatewayCfg gatewayConfig();
-
+  /** Returns the unified configuration for this node */
   Camunda unifiedConfig();
 
   /** Returns a new pre-configured client builder for this gateway */
@@ -175,42 +165,6 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    */
   default T awaitCompleteTopology() {
     return awaitCompleteTopology(1, 1, 1, Duration.ofSeconds(30));
-  }
-
-  /**
-   * Method to await the complete topology of a cluster with the given configuration.
-   *
-   * @return itself for chaining
-   * @deprecated Use {@link #awaitCompleteTopology(Camunda)} instead. BrokerBasedProperties is
-   *     deprecated in favor of unified configuration.
-   */
-  @Deprecated
-  default T awaitCompleteTopology(final BrokerBasedProperties brokerBasedProperties) {
-    final var clusterCfg = brokerBasedProperties.getCluster();
-    return awaitCompleteTopology(
-        clusterCfg.getClusterSize(),
-        clusterCfg.getPartitionsCount(),
-        clusterCfg.getReplicationFactor(),
-        Duration.ofSeconds(30));
-  }
-
-  /**
-   * Method to await the complete topology of a cluster with the given configuration.
-   *
-   * @return itself for chaining
-   * @deprecated Use {@link #awaitCompleteTopology(Camunda, CamundaClient)} instead.
-   *     BrokerBasedProperties is deprecated in favor of unified configuration.
-   */
-  @Deprecated
-  default T awaitCompleteTopology(
-      final BrokerBasedProperties brokerBasedProperties, final CamundaClient camundaClient) {
-    final var clusterCfg = brokerBasedProperties.getCluster();
-    return awaitCompleteTopology(
-        clusterCfg.getClusterSize(),
-        clusterCfg.getPartitionsCount(),
-        clusterCfg.getReplicationFactor(),
-        Duration.ofSeconds(30),
-        camundaClient);
   }
 
   /**

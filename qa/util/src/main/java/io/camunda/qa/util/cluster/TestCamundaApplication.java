@@ -29,7 +29,6 @@ import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverr
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
-import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredMappingRule;
@@ -40,7 +39,6 @@ import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -261,10 +259,15 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     return BrokerHealthActuator.of(monitoringUri().toString());
   }
 
-  // TODO KPO add gateway enabled to unified configuration?
   @Override
   public boolean isGateway() {
     return isGatewayEnabled;
+  }
+
+  @Override
+  public TestCamundaApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
+    return this;
   }
 
   @Override
@@ -280,27 +283,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public GatewayHealthActuator gatewayHealth() {
     throw new UnsupportedOperationException("Brokers do not support the gateway health indicators");
-  }
-
-  @Override
-  public TestCamundaApplication withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    throw new UnsupportedOperationException(
-        "Gateway configuration via withGatewayConfig is not supported. "
-            + "Gateway is not yet fully migrated to unified configuration. "
-            + "Use withProperty() to set zeebe.broker.gateway.* properties instead.");
-  }
-
-  @Override
-  public TestCamundaApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
-  @Override
-  public GatewayCfg gatewayConfig() {
-    throw new UnsupportedOperationException(
-        "Gateway configuration access via gatewayConfig() is not supported. "
-            + "Gateway is not yet fully migrated to unified configuration.");
   }
 
   /**
@@ -343,15 +325,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         });
   }
 
-  @Deprecated
-  @Override
-  public TestCamundaApplication withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    throw new UnsupportedOperationException(
-        "withBrokerConfig() is no longer supported. "
-            + "Use withUnifiedConfig() or convenience methods like withClusterConfig(), withDataConfig(), etc. "
-            + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
-  }
-
   @Override
   public TestCamundaApplication withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
@@ -368,15 +341,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
       final Consumer<CamundaSecurityProperties> modifier) {
     modifier.accept(securityConfig);
     return this;
-  }
-
-  @Deprecated
-  @Override
-  public BrokerBasedProperties brokerConfig() {
-    throw new UnsupportedOperationException(
-        "brokerConfig() is no longer supported. "
-            + "Use unifiedConfig() instead. "
-            + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
   }
 
   @Override

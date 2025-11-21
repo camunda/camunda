@@ -25,7 +25,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 
-// TODO KPO check test
 @ZeebeIntegration
 public final class CreateLargeDeploymentTest {
 
