@@ -481,7 +481,8 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
     }
 
-    final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
+    final String zeebeContactPoint =
+        String.format("host.testcontainers.internal:%d", broker.mappedPort(TestZeebePort.GATEWAY));
     if (zeebeContactPoint != null) {
       tasklistContainer.withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebeContactPoint);
     }
@@ -499,14 +500,12 @@ public class TestContainerUtil {
                     final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
                     cfg.getInitialization().setUsers(List.of(user));
                   });
-      LOGGER.info("************ Starting StandaloneBroker ************");
+      LOGGER.info("************ Starting StandaloneBroker {} ************");
       addConfig(broker, testContext);
       broker.start();
       LOGGER.info("************ StandaloneBroker started  ************");
 
-      testContext.setInternalZeebeContactPoint(
-          String.format(
-              "host.testcontainers.internal:%d", broker.mappedPort(TestZeebePort.GATEWAY)));
+      testContext.setInternalZeebeContactPoint(broker.address(TestZeebePort.GATEWAY));
       testContext.setZeebeGrpcAddress(broker.grpcAddress());
     } else {
       throw new IllegalStateException("Broker is already started. Call stopZeebe first.");
@@ -562,6 +561,29 @@ public class TestContainerUtil {
       zeebeBroker.withProperty(
           "camunda.data.secondary-storage." + type + ".index-prefix", testContext.getIndexPrefix());
     }
+
+    /*    zeebeBroker
+        // Unified Configuration: DB URL + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_" + type.toUpperCase() + "_URL", url)
+        .withEnv("CAMUNDA_DATABASE_URL", url)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", url)
+        .withEnv("CAMUNDA_OPERATE_" + type.toUpperCase() + "_URL", url)
+        .withEnv("CAMUNDA_TASKLIST_" + type.toUpperCase() + "_URL", url)
+        // Unified Configuration: DB type + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", type)
+        .withEnv("CAMUNDA_DATABASE_TYPE", type)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", type)
+        .withEnv("CAMUNDA_OPERATE_DATABASE", type)
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", type)
+        // ---
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME", exporterClassName)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s");
+    if (testContext.getIndexPrefix() != null) {
+      zeebeBroker.withEnv(
+          "CAMUNDA_DATA_SECONDARY_STORAGE_" + type.toUpperCase() + "_INDEX_PREFIX",
+          testContext.getIndexPrefix());
+    }*/
   }
 
   public void stopZeebeAndTasklist(final TestContext testContext) {

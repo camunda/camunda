@@ -75,7 +75,8 @@ public abstract class TasklistZeebeExtension
                     "zeebe.log.level", "ERROR",
                     "atomix.log.level", "ERROR",
                     "zeebe.clock.controlled", "true",
-                    "zeebe.broker.gateway.enable", "true"))
+                    "zeebe.broker.gateway.enable", "true",
+                    "management.endpoint.health.group.readiness.include", "readinessState"))
             .withExporter(
                 CamundaExporter.class.getSimpleName().toLowerCase(),
                 cfg -> {
