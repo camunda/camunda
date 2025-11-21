@@ -41,7 +41,6 @@ const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
 
 const ElementInstanceLog: React.FC = observer(() => {
   const {data: processInstance, status} = useProcessInstance();
-  const elementInstanceRowRef = useRef<HTMLDivElement>(null);
   const instanceHistoryRef = useRef<HTMLDivElement>(null);
 
   if (status === 'pending') {
@@ -71,7 +70,6 @@ const ElementInstanceLog: React.FC = observer(() => {
           <TreeView label={`${name} instance history`} hideLabel>
             <ElementInstancesTree
               processInstance={processInstance}
-              rowRef={elementInstanceRowRef}
               scrollableContainerRef={instanceHistoryRef}
             />
           </TreeView>

@@ -36,7 +36,6 @@ const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
 
 const ElementInstanceHistoryTree = createContext<{
   processInstance: ProcessInstance;
-  rowRef: React.Ref<HTMLDivElement>;
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
   businessObjects: BusinessObjects;
 } | null>(null);
@@ -375,13 +374,13 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer((props) => {
 
 type ElementInstancesTreeProps = {
   processInstance: ProcessInstance;
-  rowRef: React.Ref<HTMLDivElement>;
+
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
 };
 
 const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
-    const {processInstance, scrollableContainerRef, rowRef, ...rest} = props;
+    const {processInstance, scrollableContainerRef, ...rest} = props;
 
     const {data: businessObjects} = useBusinessObjects();
 
@@ -395,7 +394,6 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       <ElementInstanceHistoryTree.Provider
         value={{
           processInstance,
-          rowRef,
           scrollableContainerRef,
           businessObjects,
         }}
