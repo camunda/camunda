@@ -48,7 +48,7 @@ public interface NodeIdProvider extends AutoCloseable {
 
       @Override
       public NodeInstance currentNodeInstance() {
-        return new NodeInstance(nodeId);
+        return new NodeInstance(nodeId, Version.zero());
       }
 
       @Override

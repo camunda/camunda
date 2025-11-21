@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.nodeid.repository.s3;
 
+import static io.camunda.zeebe.dynamic.nodeid.Lease.OBJECT_MAPPER;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
@@ -33,7 +35,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class S3NodeIdRepository implements NodeIdRepository {
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final Logger LOG = LoggerFactory.getLogger(S3NodeIdRepository.class);
   private final S3Client client;

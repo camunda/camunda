@@ -8,28 +8,43 @@
 package io.camunda.zeebe.dynamic.nodeid.repository;
 
 import io.camunda.zeebe.dynamic.nodeid.Lease;
+import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.util.Map;
+import java.util.Objects;
 
-public record Metadata(String task, long expiry) {
+public record Metadata(String task, long expiry, Version version) {
+  public Metadata{
+    Objects.requireNonNull(task, "task cannot be null");
+    Objects.requireNonNull(task, "version cannot be null");
+    if (expiry <= 0) {
+      throw new IllegalArgumentException("expiry must be greater than zero");
+    }
+  }
 
   // KEYS MUST BE LOWERCASE
   private static final String TASK_ID_KEY = "taskid";
   private static final String EXPIRY_KEY = "expiry";
-
-  //    private static final String NODE_VERSIONKEY = "nodeversion";
+  private static final String VERSION_KEY = "version";
 
   public static Metadata fromLease(final Lease lease) {
-    return new Metadata(lease.taskId(), lease.timestamp());
+    return new Metadata(lease.taskId(), lease.timestamp(), lease.nodeInstance().version());
   }
 
   public Map<String, String> asMap() {
-    return Map.of(TASK_ID_KEY, task, EXPIRY_KEY, String.valueOf(expiry));
+    return Map.of(TASK_ID_KEY, task, EXPIRY_KEY, String.valueOf(expiry),  VERSION_KEY, Long.toString(version.version()));
   }
 
   public static Metadata fromMap(final Map<String, String> map) {
     if (map.isEmpty()) {
       return null;
     }
-    return new Metadata(map.get(TASK_ID_KEY), Long.parseLong(map.get(EXPIRY_KEY)));
+    try{
+    var taskId = map.get(TASK_ID_KEY);
+    var expiry = Long.parseLong(map.get(EXPIRY_KEY));
+    var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
+    return new Metadata(taskId, expiry, version);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Failed to deserialize metadata, map is " + map, e);
+    }
   }
 }
