@@ -115,6 +115,7 @@ const MigrateAction: React.FC = observer(() => {
           localStorageKey={localStorageKey}
           onSubmit={handleSubmit}
         >
+          {/* @ts-expect-error - Carbon types are wrong */}
           <Stack as={OrderedList} nested gap={5}>
             <ListItem>
               Migrate is used to migrate running process instances to a
