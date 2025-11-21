@@ -212,6 +212,7 @@
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
             <camunda.tasklist.database>${tasklistDatabase}</camunda.tasklist.database>
+            <camunda.data.secondary-storage.type>${tasklistDatabase}</camunda.data.secondary-storage.type>
           </systemPropertyVariables>
         </configuration>
       </plugin>
