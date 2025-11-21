@@ -31,7 +31,7 @@ const IncidentsFilter: React.FC = observer(() => {
             titleText="Filter by Incident Type"
             hideLabel
             onChange={({selectedItems}) => {
-              incidentsPanelStore.setErrorTypeSelection(selectedItems);
+              incidentsPanelStore.setErrorTypeSelection(selectedItems ?? []);
             }}
             size="sm"
           />
