@@ -13,7 +13,6 @@ describe('ElementInstanceIcon', () => {
   it('should render default icon', () => {
     render(
       <ElementInstanceIcon
-        elementInstanceType="UNSPECIFIED"
         diagramBusinessObject={{
           id: 'unknown',
           name: 'Unknown',
@@ -26,12 +25,7 @@ describe('ElementInstanceIcon', () => {
   });
 
   it('should render default icon for deleted element', () => {
-    render(
-      <ElementInstanceIcon
-        elementInstanceType="UNSPECIFIED"
-        diagramBusinessObject={undefined}
-      />,
-    );
+    render(<ElementInstanceIcon diagramBusinessObject={undefined} />);
 
     expect(screen.getByTestId('element-instance-icon')).toBeInTheDocument();
   });
@@ -39,7 +33,6 @@ describe('ElementInstanceIcon', () => {
   it('should render parallel multi instance body', () => {
     render(
       <ElementInstanceIcon
-        elementInstanceType="MULTI_INSTANCE_BODY"
         diagramBusinessObject={{
           id: 'subProcess',
           name: 'Sub Process',
@@ -58,7 +51,6 @@ describe('ElementInstanceIcon', () => {
   it('should render sequential multi instance body', () => {
     render(
       <ElementInstanceIcon
-        elementInstanceType="MULTI_INSTANCE_BODY"
         diagramBusinessObject={{
           id: 'subProcess',
           name: 'Sub Process',
@@ -77,7 +69,6 @@ describe('ElementInstanceIcon', () => {
   it('should render intermediate timer event', () => {
     render(
       <ElementInstanceIcon
-        elementInstanceType="INTERMEDIATE_CATCH_EVENT"
         diagramBusinessObject={{
           id: 'event1',
           name: 'Event',
@@ -97,7 +88,6 @@ describe('ElementInstanceIcon', () => {
   it('should render message boundary event', () => {
     render(
       <ElementInstanceIcon
-        elementInstanceType="BOUNDARY_EVENT"
         diagramBusinessObject={{
           id: 'event1',
           name: 'Event',
@@ -118,7 +108,6 @@ describe('ElementInstanceIcon', () => {
   it('should render event sub process', () => {
     render(
       <ElementInstanceIcon
-        elementInstanceType="EVENT_SUB_PROCESS"
         diagramBusinessObject={{
           id: 'eventSubProcess1',
           name: 'Event Sub Process 1',
@@ -134,7 +123,6 @@ describe('ElementInstanceIcon', () => {
   it('should render compensation end event', () => {
     render(
       <ElementInstanceIcon
-        elementInstanceType="END_EVENT"
         diagramBusinessObject={{
           id: 'compensationEndEvent',
           name: 'Compensation End Event',
