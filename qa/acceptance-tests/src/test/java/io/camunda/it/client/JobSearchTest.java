@@ -1113,6 +1113,38 @@ public class JobSearchTest {
         .isEqualTo(firstJobKey);
   }
 
+  @Test
+  void shouldSearchByCreationTime() {
+    // when
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.creationTime(taskABpmnJob.getCreationTime()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getCreationTime())
+        .isEqualTo(taskABpmnJob.getCreationTime());
+  }
+
+  @Test
+  void shouldSearchByLastUpdateTime() {
+    // when
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.lastUpdateTime(taskABpmnJob.getLastUpdateTime()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getLastUpdateTime())
+        .isEqualTo(taskABpmnJob.getLastUpdateTime());
+  }
+
   private static void waitUntilNewJobHasBeenCreated(final int expectedCount) {
     Awaitility.await("should wait until job has been created")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
