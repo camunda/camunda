@@ -67,7 +67,7 @@ public class RaftCommandTest {
     assertThat(output).isNotBlank();
 
     final var expected =
-        """
+"""
 {
     "index": 88,
     "term": 70,
