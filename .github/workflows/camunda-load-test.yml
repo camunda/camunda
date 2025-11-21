@@ -9,6 +9,11 @@ name: Camunda load test
 on:
   workflow_dispatch:
     inputs:
+      ref:
+        description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is build and used to run the load test against'
+        default: 'stable/8.7'
+        type: string
+        required: false
       name:
         description: 'Specifies the name of the load test'
         required: true
@@ -45,6 +50,11 @@ on:
         default: false
   workflow_call:
     inputs:
+      ref:
+        description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is build and used to run the load test against'
+        default: 'stable/8.7'
+        type: string
+        required: false
       name:
         description: 'Specifies the name of the load test'
         type: string
@@ -107,7 +117,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.ref }}
       - name: Get image tag
         id: image-tag
         run: |
@@ -134,7 +144,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -177,11 +187,11 @@ jobs:
         name: Build Camunda Docker Image
         with:
           repository: 'gcr.io/zeebe-io/zeebe'
-          revision: ${{ github.ref }}
+          revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
-          dockerfile: 'camunda.Dockerfile'
+          dockerfile: 'Dockerfile'
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -204,7 +214,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.ref }}
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         id: auth
@@ -287,9 +297,10 @@ jobs:
           --reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set orchestration.image.registry=gcr.io
-          --set orchestration.image.repository=zeebe-io/zeebe
-          --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set zeebe.image.repository=gcr.io/zeebe-io/zeebe
+          --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
+          --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
@@ -345,7 +356,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
