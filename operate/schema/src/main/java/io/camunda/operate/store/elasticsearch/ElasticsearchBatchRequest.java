@@ -13,6 +13,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.json.JsonData;
+import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -21,12 +22,9 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -259,36 +257,32 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public void execute() throws PersistenceException {
-    final var builtBulkRequest = bulkRequest.build();
-    LOGGER.debug("Execute batchRequest with {} requests", builtBulkRequest.operations().size());
-    ElasticsearchUtil.processBulkRequest(
-        es8Client,
-        builtBulkRequest,
-        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+    try {
+      final var builtBulkRequest = bulkRequest.build();
+      LOGGER.debug("Execute batchRequest with {} requests", builtBulkRequest.operations().size());
+      ElasticsearchUtil.processBulkRequest(
+          es8Client,
+          builtBulkRequest,
+          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+    } catch (final MissingRequiredPropertyException ignored) {
+      // empty bulk request
+    }
   }
 
   @Override
-  public void executeWithRefresh() throws PersistenceException {
-    final var builtBulkRequest = bulkRequest.build();
-    LOGGER.debug(
-        "Execute batchRequest with {} requests and refresh", builtBulkRequest.operations().size());
-    ElasticsearchUtil.processBulkRequest(
-        es8Client,
-        builtBulkRequest,
-        true,
-        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-  }
-
-  private Script getScriptWithParameters(final String script, final Map<String, Object> parameters)
-      throws PersistenceException {
+  public void executeWithRefresh() {
     try {
-      return new Script(
-          ScriptType.INLINE,
-          Script.DEFAULT_SCRIPT_LANG,
-          script,
-          objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
-    } catch (final IOException e) {
-      throw new PersistenceException(e);
+      final var builtBulkRequest = bulkRequest.build();
+      LOGGER.debug(
+          "Execute batchRequest with {} requests and refresh",
+          builtBulkRequest.operations().size());
+      ElasticsearchUtil.processBulkRequest(
+          es8Client,
+          builtBulkRequest,
+          true,
+          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+    } catch (final MissingRequiredPropertyException ignored) {
+      // empty bulk request
     }
   }
 }
