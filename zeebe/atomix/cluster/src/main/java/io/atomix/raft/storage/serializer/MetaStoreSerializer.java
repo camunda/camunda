@@ -23,6 +23,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.system.Configuration;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.ArrayList;
 import org.agrona.DirectBuffer;
@@ -31,6 +32,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class MetaStoreSerializer {
 
+  public static final ByteOrder ENDIANESS = ByteOrder.LITTLE_ENDIAN;
   public static final int VERSION_LENGTH = Byte.BYTES;
   private static final byte VERSION = 1;
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
