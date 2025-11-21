@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.ElasticsearchProperties;
@@ -133,8 +134,11 @@ public class ElasticsearchConnector {
           configCallback -> setTimeouts(configCallback, elsConfig));
     }
 
+    final var mapper = new JacksonJsonpMapper();
+    mapper.objectMapper().registerModule(new JavaTimeModule());
+
     final RestClientTransport transport =
-        new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper());
+        new RestClientTransport(restClientBuilder.build(), mapper);
 
     final var client = new ElasticsearchClient(transport);
 
