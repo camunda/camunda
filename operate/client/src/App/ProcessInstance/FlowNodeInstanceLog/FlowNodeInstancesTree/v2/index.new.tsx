@@ -204,7 +204,7 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
         label: (
           <VirtualBar
             elementInstanceKey={scopeKey}
-            elementId={elementId!}
+            elementId={elementId}
             elementName={elementName}
             ref={rowRef}
           />
