@@ -238,7 +238,9 @@ public class JobIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("endTime", "deadline")
+        // date fields are ignored because different engines produce different precisions
+        // e.g., date may look like 2025-11-21T16:02:57.376Z or 2025-11-21T16:02:57.376207580Z
+        .ignoringFields("endTime", "deadline", "creationTime", "lastUpdateTime")
         .isEqualTo(original);
     assertThat(instance.jobKey()).isEqualTo(original.jobKey());
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());
@@ -288,57 +290,5 @@ public class JobIT {
     assertThat(searchResult.items()).hasSize(2);
     assertThat(searchResult.items().stream().map(JobEntity::jobKey))
         .containsExactlyInAnyOrder(item1.jobKey(), item3.jobKey());
-  }
-
-  @TestTemplate
-  public void shouldFindJobByCreationTime(final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
-
-    final var original = JobFixtures.createRandomized(b -> b);
-    createAndSaveJob(rdbmsWriter, original);
-
-    final var searchResult =
-        processInstanceReader.search(
-            JobQuery.of(
-                b ->
-                    b.filter(f -> f.creationTimes(original.creationTime()))
-                        .sort(s -> s)
-                        .page(p -> p.from(0).size(10))));
-
-    assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.items()).hasSize(1);
-
-    final var instance = searchResult.items().getFirst();
-
-    compareJob(instance, original);
-  }
-
-  @TestTemplate
-  public void shouldFindJobByLastUpdateTime(final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
-
-    final var original = JobFixtures.createRandomized(b -> b);
-    createAndSaveJob(rdbmsWriter, original);
-
-    final var searchResult =
-        processInstanceReader.search(
-            JobQuery.of(
-                b ->
-                    b.filter(f -> f.lastUpdateTimes(original.lastUpdateTime()))
-                        .sort(s -> s)
-                        .page(p -> p.from(0).size(10))));
-
-    assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.items()).hasSize(1);
-
-    final var instance = searchResult.items().getFirst();
-
-    compareJob(instance, original);
   }
 }

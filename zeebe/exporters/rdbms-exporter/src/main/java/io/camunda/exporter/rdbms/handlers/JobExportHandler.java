@@ -79,9 +79,16 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
             .kind(JobKind.valueOf(value.getJobKind().name()))
             .elementId(value.getElementId());
 
+    final var recordTimestampAsOffsetDateTime =
+        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+    if (record.getIntent().equals(JobIntent.CREATED)) {
+      builder.creationTime(recordTimestampAsOffsetDateTime);
+    }
+    builder.lastUpdateTime(recordTimestampAsOffsetDateTime);
+
     if (record.getIntent().equals(JobIntent.COMPLETED)
         || record.getIntent().equals(JobIntent.CANCELED)) {
-      builder.endTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      builder.endTime(recordTimestampAsOffsetDateTime);
     }
 
     final Intent intent = record.getIntent();

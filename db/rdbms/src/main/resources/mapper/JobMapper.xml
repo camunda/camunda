@@ -47,7 +47,9 @@
         LISTENER_EVENT_TYPE,
         DEADLINE,
         HAS_FAILED_WITH_RETRIES_LEFT,
-        HISTORY_CLEANUP_DATE
+        HISTORY_CLEANUP_DATE,
+        CREATION_TIME,
+        LAST_UPDATE_TIME
       FROM ${prefix}JOB
 
     <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
@@ -199,6 +201,18 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.creationTimeOperations != null and !filter.creationTimeOperations.isEmpty()">
+        <foreach collection="filter.creationTimeOperations" item="operation">
+          AND CREATION_TIME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.lastUpdateTimeOperations != null and !filter.lastUpdateTimeOperations.isEmpty()">
+        <foreach collection="filter.lastUpdateTimeOperations" item="operation">
+          AND LAST_UPDATE_TIME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
     </where>
   </sql>
 
@@ -228,16 +242,18 @@
     <result column="DEADLINE" property="deadline" javaType="java.time.OffsetDateTime" />
     <result column="HAS_FAILED_WITH_RETRIES_LEFT" property="hasFailedWithRetriesLeft" javaType="java.lang.Boolean" />
     <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" />
+    <result column="CREATION_TIME" property="creationTime" javaType="java.time.OffsetDateTime" />
+    <result column="LAST_UPDATE_TIME" property="lastUpdateTime" javaType="java.time.OffsetDateTime" />
   </resultMap>
 
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
     INSERT INTO ${prefix}JOB (JOB_KEY, PARTITION_ID, PROCESS_INSTANCE_KEY, ELEMENT_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY,
     TENANT_ID, TYPE, WORKER, STATE, RETRIES, ERROR_MESSAGE, ERROR_CODE, END_TIME, CUSTOM_HEADERS, KIND, ELEMENT_ID, IS_DENIED, DENIED_REASON, LISTENER_EVENT_TYPE,
-    DEADLINE, HAS_FAILED_WITH_RETRIES_LEFT, HISTORY_CLEANUP_DATE)
+    DEADLINE, HAS_FAILED_WITH_RETRIES_LEFT, HISTORY_CLEANUP_DATE, CREATION_TIME, LAST_UPDATE_TIME)
     VALUES (#{jobKey}, #{partitionId}, #{processInstanceKey}, #{elementInstanceKey}, #{processDefinitionId},
     #{processDefinitionKey}, #{tenantId}, #{type}, #{worker}, #{state}, #{retries}, #{errorMessage}, #{errorCode}, #{endTime}, #{serializedCustomHeaders}, #{kind}, #{elementId}, #{isDenied},
-    #{deniedReason}, #{listenerEventType}, #{deadline}, #{hasFailedWithRetriesLeft}, #{historyCleanupDate, jdbcType=TIMESTAMP})
+    #{deniedReason}, #{listenerEventType}, #{deadline}, #{hasFailedWithRetriesLeft}, #{historyCleanupDate, jdbcType=TIMESTAMP}, #{creationTime, jdbcType=TIMESTAMP}, #{lastUpdateTime, jdbcType=TIMESTAMP})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
@@ -262,7 +278,8 @@
         DENIED_REASON = #{deniedReason},
         LISTENER_EVENT_TYPE = #{listenerEventType},
         DEADLINE = #{deadline},
-        HAS_FAILED_WITH_RETRIES_LEFT = #{hasFailedWithRetriesLeft}
+        HAS_FAILED_WITH_RETRIES_LEFT = #{hasFailedWithRetriesLeft},
+        LAST_UPDATE_TIME = #{lastUpdateTime, jdbcType=TIMESTAMP}
     WHERE JOB_KEY = #{jobKey}
   </update>
 

@@ -1115,11 +1115,14 @@ public class JobSearchTest {
 
   @Test
   void shouldSearchByCreationTime() {
+    // given
+    final var creationTime = taskABpmnJob.getCreationTime();
+
     // when
     final var result =
         camundaClient
             .newJobSearchRequest()
-            .filter(f -> f.creationTime(taskABpmnJob.getCreationTime()))
+            .filter(f -> f.creationTime(o -> o.eq(creationTime)))
             .send()
             .join();
 
@@ -1131,11 +1134,14 @@ public class JobSearchTest {
 
   @Test
   void shouldSearchByLastUpdateTime() {
+    // given
+    final var lastUpdateTime = taskABpmnJob.getLastUpdateTime();
+
     // when
     final var result =
         camundaClient
             .newJobSearchRequest()
-            .filter(f -> f.lastUpdateTime(taskABpmnJob.getLastUpdateTime()))
+            .filter(f -> f.lastUpdateTime(o -> o.eq(lastUpdateTime)))
             .send()
             .join();
 
