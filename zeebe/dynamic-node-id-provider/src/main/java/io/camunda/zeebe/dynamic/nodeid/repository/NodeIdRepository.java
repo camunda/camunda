@@ -134,6 +134,15 @@ public interface NodeIdRepository extends AutoCloseable {
           throw new IllegalArgumentException("eTag cannot be empty");
         }
         Objects.requireNonNull(lease, "Lease cannot be null");
+        if (!Objects.equals(metadata.task(),lease.taskId())) {
+          throw new IllegalStateException(String.format("TaskId in metadata(%s) and in lease(%s) do not match!", metadata.task(), lease.taskId()));
+        }
+        if (!Objects.equals(metadata.version(),lease.nodeInstance().version())) {
+          throw new IllegalStateException(String.format("Version in metadata(%s) and in lease(%s) do not match!", metadata.version(), lease.nodeInstance().version()));
+        }
+        if (metadata.expiry() !=lease.timestamp()) {
+          throw new IllegalStateException(String.format("Expire timestamp in metadata(%s) and in lease(%s) do not match!", metadata.expiry(), lease.timestamp()));
+        }
       }
 
       @Override
