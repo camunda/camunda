@@ -291,7 +291,11 @@ public class StaticEntities {
             AuthorizationOwnerType.CLIENT,
             "*",
             AuthorizationResourceType.RESOURCE,
-            Set.of(PermissionType.READ, PermissionType.DELETE_PROCESS, PermissionType.DELETE_DRD)),
+            Set.of(
+                PermissionType.READ,
+                PermissionType.DELETE_PROCESS,
+                PermissionType.DELETE_DRD,
+                PermissionType.DELETE_FORM)),
         new CreateAuthorizationRequest(
             clientId,
             AuthorizationOwnerType.CLIENT,
