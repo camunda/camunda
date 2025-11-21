@@ -68,6 +68,7 @@ public class ZeebeConnectorSecureIT {
                       .setPrivateKeyPath(privateKeyFile)
                       .setEnabled(true);
                 })
+            .withProperty("management.endpoint.health.group.readiness.include", "readinessState")
             .withSecurityConfig(cfg -> cfg.getAuthentication().setUnprotectedApi(true));
     broker.start();
 
