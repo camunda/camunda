@@ -3059,6 +3059,99 @@ const mockOrderProcessV2Instances: ProcessInstancesDto = {
     }),
 };
 
+const mockAhspGroupedProcesses = [
+  {
+    bpmnProcessId: 'migration-ahsp-process_v1',
+    name: 'Ad Hoc Subprocess Source',
+    tenantId: '<default>',
+    permissions: [],
+    processes: [
+      {
+        id: '2251799813685249',
+        name: 'Ad Hoc Subprocess Source',
+        version: 1,
+        bpmnProcessId: 'migration-ahsp-process_v1',
+        versionTag: null,
+      },
+    ],
+  },
+  {
+    bpmnProcessId: 'migration-ahsp-process_v2',
+    name: 'Ad Hoc Subprocess Target',
+    tenantId: '<default>',
+    permissions: [],
+    processes: [
+      {
+        id: '2251799813685250',
+        name: 'Ad Hoc Subprocess Target',
+        version: 2,
+        bpmnProcessId: 'migration-ahsp-process_v2',
+        versionTag: null,
+      },
+    ],
+  },
+];
+
+const mockAhspProcessInstances: ProcessInstancesDto = {
+  totalCount: 3,
+  processInstances: [
+    {
+      id: '2251799813685251',
+      processId: '2251799813685249',
+      processName: 'Ad Hoc Subprocess Source',
+      processVersion: 1,
+      startDate: '2023-10-10T08:30:00.000+0000',
+      endDate: null,
+      state: 'ACTIVE' as InstanceEntityState,
+      bpmnProcessId: 'migration-ahsp-process_v1',
+      hasActiveOperation: false,
+      operations: [],
+      parentInstanceId: null,
+      rootInstanceId: null,
+      callHierarchy: [],
+      sortValues: ['', ''],
+      permissions: [],
+      tenantId: '<default>',
+    },
+    {
+      id: '2251799813685252',
+      processId: '2251799813685249',
+      processName: 'Ad Hoc Subprocess Source',
+      processVersion: 1,
+      startDate: '2023-10-10T08:31:00.000+0000',
+      endDate: null,
+      state: 'ACTIVE' as InstanceEntityState,
+      bpmnProcessId: 'migration-ahsp-process_v1',
+      hasActiveOperation: false,
+      operations: [],
+      parentInstanceId: null,
+      rootInstanceId: null,
+      callHierarchy: [],
+      sortValues: ['', ''],
+      permissions: [],
+      tenantId: '<default>',
+    },
+    {
+      id: '2251799813685253',
+      processId: '2251799813685249',
+      processName: 'Ad Hoc Subprocess Source',
+      processVersion: 1,
+      startDate: '2023-10-10T08:32:00.000+0000',
+      endDate: null,
+      state: 'ACTIVE' as InstanceEntityState,
+      bpmnProcessId: 'migration-ahsp-process_v1',
+      hasActiveOperation: false,
+      operations: [],
+      parentInstanceId: null,
+      rootInstanceId: null,
+      callHierarchy: [],
+      sortValues: ['', ''],
+      permissions: [],
+      tenantId: '<default>',
+    },
+  ],
+};
+
 const mockStatistics = [
   {
     activityId: 'eventSubprocess',
@@ -3345,4 +3438,6 @@ export {
   mockOrderProcessInstancesWithFailedOperations,
   mockOrderProcessV2Instances,
   mockMigrationOperation,
+  mockAhspGroupedProcesses,
+  mockAhspProcessInstances,
 };
