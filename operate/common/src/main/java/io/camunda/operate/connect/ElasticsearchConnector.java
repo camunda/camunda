@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.ElasticsearchProperties;
@@ -52,6 +52,8 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -61,6 +63,10 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   private PluginRepository esClientRepository = new PluginRepository();
   private final OperateProperties operateProperties;
@@ -134,11 +140,8 @@ public class ElasticsearchConnector {
           configCallback -> setTimeouts(configCallback, elsConfig));
     }
 
-    final var mapper = new JacksonJsonpMapper();
-    mapper.objectMapper().registerModule(new JavaTimeModule());
-
     final RestClientTransport transport =
-        new RestClientTransport(restClientBuilder.build(), mapper);
+        new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper(objectMapper));
 
     final var client = new ElasticsearchClient(transport);
 
