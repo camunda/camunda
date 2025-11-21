@@ -10,9 +10,9 @@ package io.camunda.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -36,7 +36,7 @@ public class StartupIT {
   //  values for local test:
   // private static final String TASKLIST_TEST_DOCKER_IMAGE = "camunda/tasklist:SNAPSHOT";
   //  public static final String VERSION = "8.1.2";
-  private static final String TASKLIST_TEST_DOCKER_IMAGE = "localhost:5000/camunda/tasklist";
+  private static final String TASKLIST_TEST_DOCKER_IMAGE = "camunda/tasklist";
   private static final String VERSION = "current-test";
   public TestRestTemplate restTemplate = new TestRestTemplate();
   private final TestContainerUtil testContainerUtil = new TestContainerUtil();
@@ -48,14 +48,15 @@ public class StartupIT {
     testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(
-        ContainerVersionsUtil.readProperty(
-            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME),
-        testContext);
+    new TestStandaloneBroker()
+        .withCreateSchema(false)
+        .withProperty("management.endpoint.health.group.readiness.include", "readinessState")
+        .start();
 
     tasklistContainer =
         testContainerUtil
             .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
+            .withAccessToHost(true)
             .withCreateContainerCmdModifier(
                 cmd -> ((CreateContainerCmd) cmd).withUser("1000620000:0"))
             .withLogConsumer(new Slf4jLogConsumer(LOGGER));

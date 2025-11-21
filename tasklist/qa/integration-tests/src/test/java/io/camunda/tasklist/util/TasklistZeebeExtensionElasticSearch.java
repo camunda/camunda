@@ -9,6 +9,7 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.qa.util.TestUtil;
 import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -40,40 +41,28 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   }
 
   @Override
-  protected void setZeebeIndexesPrefix(final String prefix) {
-    tasklistProperties.getZeebeElasticsearch().setPrefix(prefix);
-  }
-
-  @Override
-  protected String getZeebeExporterIndexPrefixConfigParameterName() {
-    return "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX";
+  protected DatabaseType getDatabaseType() {
+    return DatabaseType.ELASTICSEARCH;
   }
 
   @Override
   protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
     final String dbUrl = "http://host.testcontainers.internal:9200";
-    final String dbType = "elasticsearch";
-    final String exporterClassName = "io.camunda.exporter.CamundaExporter";
 
     return Map.ofEntries(
         // Unified Configuration: DB URL + compatibility
-        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", dbUrl),
-        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", dbUrl),
-        Map.entry("CAMUNDA_DATABASE_URL", dbUrl),
-        Map.entry("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", dbUrl),
-        Map.entry("CAMUNDA_OPERATE_ELASTICSEARCH_URL", dbUrl),
+        Map.entry("camunda.data.secondary-storage.elasticsearch.url", dbUrl),
+        Map.entry("camunda.database.url", dbUrl),
+        Map.entry("camunda.tasklist.elasticsearch.url", dbUrl),
+        Map.entry("camunda.operate.elasticsearch.url", dbUrl),
         // Unified Configuration: DB type + compatibility
-        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType),
-        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", dbType),
-        Map.entry("CAMUNDA_OPERATE_DATABASE", dbType),
-        Map.entry("CAMUNDA_TASKLIST_DATABASE", dbType),
-        Map.entry("CAMUNDA_DATABASE_TYPE", dbType),
-        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", indexPrefix),
+        Map.entry("camunda.data.secondary-storage.type", getDatabaseType().toString()),
+        Map.entry("camunda.operate.database", getDatabaseType().toString()),
+        Map.entry("camunda.tasklist.database", getDatabaseType().toString()),
+        Map.entry("camunda.database.type", getDatabaseType().toString()),
+        Map.entry("camunda.data.secondary-storage.elasticsearch.index-prefix", indexPrefix),
         // ---
-        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1"),
-        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX", indexPrefix),
-        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME", exporterClassName),
-        Map.entry("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix));
+        Map.entry("camunda.database.index-prefix", indexPrefix));
   }
 
   @Override

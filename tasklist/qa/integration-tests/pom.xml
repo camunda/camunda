@@ -93,11 +93,6 @@
 
     <!-- TEST CONTAINERS -->
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-elasticsearch</artifactId>
       <scope>test</scope>
@@ -500,6 +495,26 @@
       <artifactId>configuration</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-qa-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -523,6 +538,7 @@
             <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
             <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
             <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
+            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -538,6 +554,7 @@
             <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
             <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
             <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
+            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
           </systemPropertyVariables>
         </configuration>
       </plugin>

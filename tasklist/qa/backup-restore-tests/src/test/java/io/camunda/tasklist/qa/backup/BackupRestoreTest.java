@@ -140,7 +140,7 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createElsSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(IMAGE_REPO, VERSION, testContext);
+    testContainerUtil.startStandaloneBroker(testContext);
     createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 
@@ -164,7 +164,7 @@ public class BackupRestoreTest {
     testContext.setOsClient(osClient);
     createOsSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(IMAGE_REPO, VERSION, testContext);
+    testContainerUtil.startStandaloneBroker(testContext);
     createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 

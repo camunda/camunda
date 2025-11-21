@@ -18,14 +18,10 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.service.CamundaClientBasedAdapter;
 import io.camunda.tasklist.webapp.service.OrganizationService;
-import io.camunda.tasklist.webapp.service.ProcessService;
-import io.camunda.tasklist.webapp.service.TaskService;
-import io.camunda.tasklist.zeebe.PartitionHolder;
-import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
-import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -57,22 +53,17 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   @Order(2)
   public TasklistZeebeExtension zeebeExtension;
 
-  public ZeebeContainer zeebeContainer;
+  public TestStandaloneBroker zeebeBroker;
 
   @MockitoBean protected OrganizationService organizationService;
   @MockitoBean protected CamundaClient mockedCamundaClient;
   // we don't want to create CamundaClient, we will rather use the one from
   // test rule
   protected CamundaClient camundaClient;
-  @Autowired protected PartitionHolder partitionHolder;
-  @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected TasklistProperties tasklistProperties;
   protected TasklistTester tester;
-  @Autowired private StandalonePartitionSupplier partitionSupplier;
   @Autowired private CamundaClientBasedAdapter tasklistServicesAdapter;
   @Autowired private ProcessCache processCache;
-  @Autowired private TaskService taskService;
-  @Autowired private ProcessService processService;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
 
@@ -85,8 +76,8 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   public void before() {
     super.before();
 
-    zeebeContainer = zeebeExtension.getZeebeContainer();
-    assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
+    zeebeBroker = zeebeExtension.getZeebeBroker();
+    assertThat(zeebeBroker).as("zeebeBroker is not null").isNotNull();
 
     camundaClient = getClient();
     workerName = TestUtil.createRandomString(10);
@@ -94,18 +85,12 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     tester = beanFactory.getBean(TasklistTester.class, camundaClient, databaseTestExtension);
 
     processCache.clearCache();
-    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
-    importPositionHolder.clearCache();
-    importPositionHolder.scheduleImportPositionUpdateTask();
-    ReflectionTestUtils.setField(partitionSupplier, "camundaClient", getClient());
     ReflectionTestUtils.setField(tasklistServicesAdapter, "camundaClient", getClient());
   }
 
   @AfterEach
   public void after() {
     processCache.clearCache();
-    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
-    importPositionHolder.clearCache();
   }
 
   public CamundaClient getClient() {
@@ -161,7 +146,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
       throws IOException, InterruptedException {
     final var fullEndpoint =
         URI.create(
-            String.format("http://%s/%s", zeebeContainer.getExternalAddress(9600), endpoint));
+            String.format("http://%s/%s", zeebeBroker.address(TestZeebePort.MONITORING), endpoint));
     final var httpRequest =
         HttpRequest.newBuilder(fullEndpoint)
             .method(method, bodyPublisher)
