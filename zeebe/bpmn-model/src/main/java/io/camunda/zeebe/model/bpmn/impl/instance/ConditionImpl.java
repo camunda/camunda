@@ -60,10 +60,12 @@ public class ConditionImpl extends FormalExpressionImpl implements Condition {
     typeBuilder.build();
   }
 
+  @Override
   public String getType() {
     return typeAttribute.getValue(this);
   }
 
+  @Override
   public void setType(final String type) {
     typeAttribute.setValue(this, type);
   }
