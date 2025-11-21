@@ -22,6 +22,15 @@ import java.util.TreeMap;
 public record Lease(
     String taskId, long timestamp, NodeInstance nodeInstance, VersionMappings versionMappings) {
 
+  public Lease {
+    Objects.requireNonNull(taskId, "taskId cannot be null");
+    if (taskId.isEmpty()) {
+      throw new IllegalArgumentException("taskId cannot be empty");
+    }
+    Objects.requireNonNull(nodeInstance, "nodeInstance cannot be null");
+    Objects.requireNonNull(versionMappings, "versionMappings cannot be null");
+  }
+
   public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
@@ -63,14 +72,6 @@ public record Lease(
     return new Lease(taskId, expiry, nodeInstance, VersionMappings.of(nodeInstance));
   }
 
-  public Lease {
-    Objects.requireNonNull(taskId, "taskId cannot be null");
-    if (taskId.isEmpty()) {
-      throw new IllegalArgumentException("taskId cannot be empty");
-    }
-    Objects.requireNonNull(nodeInstance, "nodeInstance cannot be null");
-    Objects.requireNonNull(versionMappings, "versionMappings cannot be null");
-  }
 
   public String toJson(final ObjectMapper objectMapper) {
     try {
