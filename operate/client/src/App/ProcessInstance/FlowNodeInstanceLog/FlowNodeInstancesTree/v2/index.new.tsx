@@ -107,7 +107,7 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
         label: (
           <Bar
             elementInstanceKey={scopeKey}
-            elementId={elementId!}
+            elementId={elementId}
             elementName={elementName}
             elementInstanceState={elementInstanceState}
             hasIncident={hasIncident}
