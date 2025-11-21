@@ -17,6 +17,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
@@ -88,6 +89,9 @@ public class S3NodeIdRepository implements NodeIdRepository {
 
   @Override
   public StoredLease.Initialized acquire(final Lease lease, final String previousETag) {
+    if (lease == null){
+      throw new IllegalArgumentException("lease is null");
+    }
     final var nodeId = lease.nodeInstance().id();
     final var metadata = Metadata.fromLease(lease);
     final PutObjectRequest putRequest =
