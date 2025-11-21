@@ -23,9 +23,15 @@ public class RestGatewayPaths {
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
   private static final String URL_CLUSTER_VARIABLES = REST_API_PATH + "/cluster-variables";
-  private static final String URL_CLUSTER_VARIABLES_GLOBAL = URL_CLUSTER_VARIABLES + "/%s/GLOBAL";
-  private static final String URL_CLUSTER_VARIABLES_TENANT =
-      URL_CLUSTER_VARIABLES + "/%s/TENANT/%s";
+  private static final String URL_CLUSTER_VARIABLES_CREATE_GLOBAL =
+      URL_CLUSTER_VARIABLES + "/global";
+  private static final String URL_CLUSTER_VARIABLES_CREATE_TENANT =
+      URL_CLUSTER_VARIABLES + "/tenants/%s";
+  private static final String URL_CLUSTER_VARIABLES_GET_GLOBAL =
+      URL_CLUSTER_VARIABLES + "/global/%s";
+  private static final String URL_CLUSTER_VARIABLES_GET_TENANT =
+      URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
+  private static final String URL_CLUSTER_VARIABLES_SEARCH = URL_CLUSTER_VARIABLES + "/search";
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
   private static final String URL_DECISION_DEFINITION = REST_API_PATH + "/decision-definitions/%s";
@@ -322,11 +328,34 @@ public class RestGatewayPaths {
     return URL_CLUSTER_VARIABLES;
   }
 
-  public static String getClusterVariablesUrl(final String variableName) {
-    return String.format(URL_CLUSTER_VARIABLES_GLOBAL, variableName);
+  public static String getClusterVariablesCreateGlobalUrl() {
+    return URL_CLUSTER_VARIABLES_CREATE_GLOBAL;
   }
 
+  public static String getClusterVariablesCreateTenantUrl(final String tenantId) {
+    return String.format(URL_CLUSTER_VARIABLES_CREATE_TENANT, tenantId);
+  }
+
+  public static String getClusterVariablesGetGlobalUrl(final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_GLOBAL, variableName);
+  }
+
+  public static String getClusterVariablesGetTenantUrl(
+      final String tenantId, final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_TENANT, tenantId, variableName);
+  }
+
+  public static String getClusterVariablesSearchUrl() {
+    return URL_CLUSTER_VARIABLES_SEARCH;
+  }
+
+  @Deprecated
+  public static String getClusterVariablesUrl(final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_GLOBAL, variableName);
+  }
+
+  @Deprecated
   public static String getClusterVariablesUrl(final String variableName, final String tenantId) {
-    return String.format(URL_CLUSTER_VARIABLES_TENANT, variableName, tenantId);
+    return String.format(URL_CLUSTER_VARIABLES_GET_TENANT, tenantId, variableName);
   }
 }

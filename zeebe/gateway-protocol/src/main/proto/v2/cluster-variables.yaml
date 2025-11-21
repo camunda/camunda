@@ -1,12 +1,48 @@
 ## Endpoint definitions
 
 paths:
-  /cluster-variables:
+  /cluster-variables/global:
     post:
-      operationId: createClusterVariable
+      operationId: createGlobalClusterVariable
+      x-eventually-consistent: false
       tags:
         - Cluster Variable
-      summary: Create a new cluster variable
+      summary: Create a global-scoped cluster variable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClusterVariableRequest'
+      responses:
+        '200':
+          description: Cluster variable created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterVariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+  /cluster-variables/tenants/{tenantId}:
+    post:
+      operationId: createTenantClusterVariable
+      x-eventually-consistent: false
+      tags:
+        - Cluster Variable
+      summary: Create a tenant-scoped cluster variable
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The tenant ID
       requestBody:
         required: true
         content:
@@ -33,7 +69,7 @@ paths:
       tags:
         - Cluster Variable
       operationId: searchClusterVariables
-      summary: Search cluster variables
+      x-eventually-consistent: true
       description: Search for cluster variables based on given criteria.
       requestBody:
         required: false
@@ -56,35 +92,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
-  /cluster-variables/{name}/GLOBAL:
-    delete:
-      operationId: deleteGlobalClusterVariable
-      tags:
-        - Cluster Variable
-      summary: Delete a global-scoped cluster variable
-      parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The name of the cluster variable
-      responses:
-        '204':
-          description: Cluster variable deleted successfully
-        "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
-        "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-        "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
-        "404":
-          description: Cluster variable not found
-        "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+  /cluster-variables/global/{name}:
     get:
       operationId: getGlobalClusterVariable
+      x-eventually-consistent: true
       tags:
         - Cluster Variable
       summary: Get a global-scoped cluster variable
@@ -112,12 +123,12 @@ paths:
           description: Cluster variable not found
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-  /cluster-variables/{name}/TENANT/{tenantId}:
     delete:
-      operationId: deleteTenantClusterVariable
+      operationId: deleteGlobalClusterVariable
+      x-eventually-consistent: false
       tags:
         - Cluster Variable
-      summary: Delete a tenant-scoped cluster variable
+      summary: Delete a global-scoped cluster variable
       parameters:
         - name: name
           in: path
@@ -125,12 +136,6 @@ paths:
           schema:
             type: string
           description: The name of the cluster variable
-        - name: tenantId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The tenant ID
       responses:
         '204':
           description: Cluster variable deleted successfully
@@ -144,24 +149,26 @@ paths:
           description: Cluster variable not found
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+  /cluster-variables/tenants/{tenantId}/{name}:
     get:
       operationId: getTenantClusterVariable
+      x-eventually-consistent: true
       tags:
         - Cluster Variable
       summary: Get a tenant-scoped cluster variable
       parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The name of the cluster variable
         - name: tenantId
           in: path
           required: true
           schema:
             type: string
           description: The tenant ID
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
       responses:
         '200':
           description: Cluster variable found
@@ -169,6 +176,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClusterVariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Cluster variable not found
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteTenantClusterVariable
+      x-eventually-consistent: false
+      tags:
+        - Cluster Variable
+      summary: Delete a tenant-scoped cluster variable
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The tenant ID
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
+      responses:
+        '204':
+          description: Cluster variable deleted successfully
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -191,18 +230,13 @@ components:
       required:
         - name
         - value
-        - scope
       properties:
         name:
           type: string
+          description: The name of the cluster variable
         value:
           type: object
-        scope:
-          $ref: '#/components/schemas/ClusterVariableScopeEnum'
-        tenantId:
-          type: string
-          nullable: true
-          description: Required if scope is TENANT, must be null or undefined for GLOBAL
+          description: The value of the cluster variable
     ClusterVariableResult:
       type: object
       properties:

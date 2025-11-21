@@ -96,6 +96,18 @@ paths:
   /clock/reset:
     $ref: 'clock.yaml#/paths/~1clock~1reset'
 
+  # Cluster variables endpoints
+  /cluster-variables/global:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1global'
+  /cluster-variables/global/{name}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1global~1{name}'
+  /cluster-variables/search:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1search'
+  /cluster-variables/tenants/{tenantId}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1tenants~1{tenantId}'
+  /cluster-variables/tenants/{tenantId}/{name}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1tenants~1{tenantId}~1{name}'
+
   # Message endpoints
   /correlated-message-subscriptions/search:
     $ref: 'messages.yaml#/paths/~1correlated-message-subscriptions~1search'
@@ -371,17 +383,6 @@ paths:
     $ref: 'variables.yaml#/paths/~1variables~1search'
   /variables/{variableKey}:
     $ref: 'variables.yaml#/paths/~1variables~1{variableKey}'
-
-  # Cluster variables endpoints
-  /cluster-variables:
-    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables'
-  /cluster-variables/{name}/GLOBAL:
-    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1{name}~1GLOBAL'
-  /cluster-variables/{name}/TENANT/{tenantId}:
-    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1{name}~1TENANT~1{tenantId}'
-  /cluster-variables/search:
-    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1search'
-
 
 components:
   securitySchemes:

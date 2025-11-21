@@ -21,11 +21,11 @@ import io.camunda.client.api.command.ClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.ClusterVariableCreationCommandStep1.ClusterVariableCreationCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateClusterVariableResponse;
+import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateClusterVariableResponseImpl;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
-import io.camunda.client.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.client.protocol.rest.CreateClusterVariableRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +38,8 @@ public class CreateClusterVariableImpl
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
+  private String tenantId;
+  private ClusterVariableScope scope;
 
   public CreateClusterVariableImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
@@ -47,19 +49,20 @@ public class CreateClusterVariableImpl
   }
 
   @Override
-  public ClusterVariableCreationCommandStep2 tenantScoped(final String tenantId) {
-    createVariableRequest.scope(ClusterVariableScopeEnum.TENANT).tenantId(tenantId);
+  public ClusterVariableCreationCommandStep2 atTenantScoped(final String tenantId) {
+    this.tenantId = tenantId;
+    scope = ClusterVariableScope.TENANT;
     return this;
   }
 
   @Override
-  public ClusterVariableCreationCommandStep2 globalScoped() {
-    createVariableRequest.scope(ClusterVariableScopeEnum.GLOBAL);
+  public ClusterVariableCreationCommandStep2 atGlobalScoped() {
+    scope = ClusterVariableScope.GLOBAL;
     return this;
   }
 
   @Override
-  public ClusterVariableCreationCommandStep2 variable(final String name, final Object value) {
+  public ClusterVariableCreationCommandStep2 create(final String name, final Object value) {
     createVariableRequest.name(name).value(value);
     return this;
   }
@@ -75,15 +78,18 @@ public class CreateClusterVariableImpl
   public CamundaFuture<CreateClusterVariableResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("name", createVariableRequest.getName());
     ArgumentUtil.ensureNotNull("value", createVariableRequest.getValue());
-    ArgumentUtil.ensureNotNull("scope", createVariableRequest.getScope());
-    ArgumentUtil.ensureNotNullIf(
-        "tenantId",
-        ClusterVariableScopeEnum.TENANT.equals(createVariableRequest.getScope()),
-        createVariableRequest.getTenantId());
+    ArgumentUtil.ensureNotNull("scope", scope);
+    ArgumentUtil.ensureNotNullIf("tenantId", ClusterVariableScope.TENANT.equals(scope), tenantId);
     final HttpCamundaFuture<CreateClusterVariableResponse> result = new HttpCamundaFuture<>();
     final CreateClusterVariableResponseImpl response = new CreateClusterVariableResponseImpl();
+    final String path;
+    if (ClusterVariableScope.TENANT.equals(scope)) {
+      path = "/cluster-variables/tenants/" + tenantId;
+    } else {
+      path = "/cluster-variables/global";
+    }
     httpClient.post(
-        "/cluster-variables",
+        path,
         jsonMapper.toJson(createVariableRequest),
         httpRequestConfig.build(),
         ClusterVariableResult.class,

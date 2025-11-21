@@ -17,15 +17,14 @@ package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.ClusterVariableGetRequest;
+import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.ClusterVariableImpl;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
-import io.camunda.client.protocol.rest.ClusterVariableScopeEnum;
 import java.time.Duration;
-import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -34,7 +33,7 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String name;
-  private ClusterVariableScopeEnum scope;
+  private ClusterVariableScope scope;
   private String tenantId;
 
   public ClusterVariableGetRequestImpl(final HttpClient httpClient) {
@@ -53,15 +52,15 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
     final HttpCamundaFuture<ClusterVariable> result = new HttpCamundaFuture<>();
     ArgumentUtil.ensureNotNullNorEmpty("name", name);
     ArgumentUtil.ensureNotNull("scope", scope);
-    ArgumentUtil.ensureNotNullIf(
-        "tenantId", ClusterVariableScopeEnum.TENANT.equals(scope), tenantId);
-    final StringJoiner path = new StringJoiner("/", "/cluster-variables/", "");
-    path.add(name).add(scope.name());
-    if (scope.equals(ClusterVariableScopeEnum.TENANT)) {
-      path.add(tenantId);
+    ArgumentUtil.ensureNotNullIf("tenantId", ClusterVariableScope.TENANT.equals(scope), tenantId);
+    final String path;
+    if (ClusterVariableScope.TENANT.equals(scope)) {
+      path = "/cluster-variables/tenants/" + tenantId + "/" + name;
+    } else {
+      path = "/cluster-variables/global/" + name;
     }
     httpClient.get(
-        path.toString(),
+        path,
         httpRequestConfig.build(),
         ClusterVariableResult.class,
         ClusterVariableImpl::new,
@@ -72,7 +71,7 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
   @Override
   public ClusterVariableGetRequest atTenantScope(final String name, final String tenantId) {
     this.name = name;
-    scope = ClusterVariableScopeEnum.TENANT;
+    scope = ClusterVariableScope.TENANT;
     this.tenantId = tenantId;
     return this;
   }
@@ -80,7 +79,7 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
   @Override
   public ClusterVariableGetRequest atGlobalScope(final String name) {
     this.name = name;
-    scope = ClusterVariableScopeEnum.GLOBAL;
+    scope = ClusterVariableScope.GLOBAL;
     tenantId = null;
     return this;
   }

@@ -353,14 +353,37 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getClusterVariablesUrl(), response);
   }
 
+  public void onCreateGlobalClusterVariableRequest(final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesCreateGlobalUrl(), response);
+  }
+
+  public void onCreateTenantClusterVariableRequest(
+      final String tenantId, final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesCreateTenantUrl(tenantId), response);
+  }
+
   public void onGetClusterVariableRequest(
       final ClusterVariableResult response, final String variableName) {
-    registerGet(RestGatewayPaths.getClusterVariablesUrl(variableName), response);
+    registerGet(RestGatewayPaths.getClusterVariablesGetGlobalUrl(variableName), response);
   }
 
   public void onGetClusterVariableRequest(
       final ClusterVariableResult response, final String variableName, final String tenantId) {
-    registerGet(RestGatewayPaths.getClusterVariablesUrl(variableName, tenantId), response);
+    registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
+  }
+
+  public void onGetGlobalClusterVariableRequest(
+      final String variableName, final ClusterVariableResult response) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetGlobalUrl(variableName), response);
+  }
+
+  public void onGetTenantClusterVariableRequest(
+      final String tenantId, final String variableName, final ClusterVariableResult response) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
+  }
+
+  public void onSearchClusterVariableRequest(final SearchQueryResponse response) {
+    registerPost(RestGatewayPaths.getClusterVariablesSearchUrl(), response);
   }
 
   public void onBroadcastSignalRequest(final SignalBroadcastResult response) {

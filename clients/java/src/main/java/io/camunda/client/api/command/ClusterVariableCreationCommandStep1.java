@@ -26,8 +26,8 @@ import io.camunda.client.api.response.CreateClusterVariableResponse;
  * <pre>
  *   CreateClusterVariableResponse response = camundaClient
  *       .newClusterVariableCreateRequest()
- *       .globalScoped()
- *       .variable("myVariable", "myValue")
+ *       .atGlobalScoped()
+ *       .create("myVariable", "myValue")
  *       .send()
  *       .join();
  * </pre>
@@ -42,7 +42,7 @@ public interface ClusterVariableCreationCommandStep1 {
    * @return the next step in the command building process where you can specify the variable name
    *     and value
    */
-  ClusterVariableCreationCommandStep2 tenantScoped(String tenantId);
+  ClusterVariableCreationCommandStep2 atTenantScoped(String tenantId);
 
   /**
    * Specifies that the cluster variable should be created with global scope, making it available to
@@ -51,7 +51,7 @@ public interface ClusterVariableCreationCommandStep1 {
    * @return the next step in the command building process where you can specify the variable name
    *     and value
    */
-  ClusterVariableCreationCommandStep2 globalScoped();
+  ClusterVariableCreationCommandStep2 atGlobalScoped();
 
   /**
    * Represents the second step of creating a cluster variable. At this step, you specify the
@@ -68,9 +68,8 @@ public interface ClusterVariableCreationCommandStep1 {
      * <pre>
      *   camundaClient
      *       .newClusterVariableCreateRequest()
-     *       .globalScoped()
-     *       .variable("myVariable", "myValue")  // for string values
-     *       .variable("myObject", new MyObject())  // for complex objects
+     *       .atGlobalScoped()
+     *       .create("myVariable", "myValue")  // for string values
      *       .send();
      * </pre>
      *
@@ -78,6 +77,6 @@ public interface ClusterVariableCreationCommandStep1 {
      * @param value the value of the variable. Must not be null. Will be serialized to JSON.
      * @return this builder for method chaining
      */
-    ClusterVariableCreationCommandStep2 variable(String name, Object value);
+    ClusterVariableCreationCommandStep2 create(String name, Object value);
   }
 }

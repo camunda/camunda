@@ -26,8 +26,8 @@ import io.camunda.client.api.response.DeleteClusterVariableResponse;
  * <pre>
  *   camundaClient
  *       .newClusterVariableDeleteRequest()
- *       .globalScoped()
- *       .name("myVariable")
+ *       .atGlobalScoped()
+ *       .delete("myVariable")
  *       .send()
  *       .join();
  * </pre>
@@ -41,14 +41,14 @@ public interface ClusterVariableDeletionCommandStep1 {
    *     empty.
    * @return the next step in the command building process where you can specify the variable name
    */
-  ClusterVariableDeletionCommandStep2 tenantScoped(String tenantId);
+  ClusterVariableDeletionCommandStep2 atTenantScoped(String tenantId);
 
   /**
    * Specifies that the cluster variable to delete has global scope.
    *
    * @return the next step in the command building process where you can specify the variable name
    */
-  ClusterVariableDeletionCommandStep2 globalScoped();
+  ClusterVariableDeletionCommandStep2 atGlobalScoped();
 
   /**
    * Represents the second step of deleting a cluster variable. At this step, you specify the
@@ -66,8 +66,8 @@ public interface ClusterVariableDeletionCommandStep1 {
      * <pre>
      *   camundaClient
      *       .newClusterVariableDeleteRequest()
-     *       .globalScoped()
-     *       .name("myVariable")
+     *       .atGlobalScoped()
+     *       .delete("myVariable")
      *       .send()
      *       .join();
      * </pre>
@@ -75,6 +75,6 @@ public interface ClusterVariableDeletionCommandStep1 {
      * @param name the name of the variable to delete. Must not be null or empty.
      * @return this builder for method chaining
      */
-    ClusterVariableDeletionCommandStep2 name(String name);
+    ClusterVariableDeletionCommandStep2 delete(String name);
   }
 }

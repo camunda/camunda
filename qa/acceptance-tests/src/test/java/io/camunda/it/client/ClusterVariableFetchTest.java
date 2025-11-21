@@ -33,8 +33,8 @@ public class ClusterVariableFetchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .globalScoped()
-        .variable(variableName, variableValue)
+        .atGlobalScoped()
+        .create(variableName, variableValue)
         .send()
         .join();
 
@@ -60,8 +60,8 @@ public class ClusterVariableFetchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .tenantScoped(tenantId)
-        .variable(variableName, variableValue)
+        .atTenantScoped(tenantId)
+        .create(variableName, variableValue)
         .send()
         .join();
 
@@ -139,8 +139,8 @@ public class ClusterVariableFetchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .globalScoped()
-        .variable(variableName, variableValue)
+        .atGlobalScoped()
+        .create(variableName, variableValue)
         .send()
         .join();
 
@@ -167,8 +167,8 @@ public class ClusterVariableFetchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .tenantScoped(tenantId)
-        .variable(variableName, variableValue)
+        .atTenantScoped(tenantId)
+        .create(variableName, variableValue)
         .send()
         .join();
 

@@ -33,12 +33,12 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   @Test
   void shouldDeleteGlobalScopedClusterVariable() {
     // when
-    client.newClusterVariableDeleteRequest().globalScoped().name(VARIABLE_NAME).send().join();
+    client.newClusterVariableDeleteRequest().atGlobalScoped().delete(VARIABLE_NAME).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/" + VARIABLE_NAME + "/GLOBAL");
+        .isEqualTo(RestGatewayPaths.getClusterVariablesGetGlobalUrl(VARIABLE_NAME));
   }
 
   @Test
@@ -46,27 +46,22 @@ public class DeleteClusterVariableTest extends ClientRestTest {
     // when
     client
         .newClusterVariableDeleteRequest()
-        .tenantScoped(TENANT_ID)
-        .name(VARIABLE_NAME)
+        .atTenantScoped(TENANT_ID)
+        .delete(VARIABLE_NAME)
         .send()
         .join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(
-            RestGatewayPaths.getClusterVariablesUrl()
-                + "/"
-                + VARIABLE_NAME
-                + "/TENANT/"
-                + TENANT_ID);
+        .isEqualTo(RestGatewayPaths.getClusterVariablesGetTenantUrl(TENANT_ID, VARIABLE_NAME));
   }
 
   @Test
   void shouldRaiseExceptionOnNotFound() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getClusterVariablesUrl() + "/" + VARIABLE_NAME + "/GLOBAL",
+        RestGatewayPaths.getClusterVariablesGetGlobalUrl(VARIABLE_NAME),
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
@@ -74,8 +69,8 @@ public class DeleteClusterVariableTest extends ClientRestTest {
             () ->
                 client
                     .newClusterVariableDeleteRequest()
-                    .globalScoped()
-                    .name(VARIABLE_NAME)
+                    .atGlobalScoped()
+                    .delete(VARIABLE_NAME)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -86,7 +81,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnServerError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getClusterVariablesUrl() + "/" + VARIABLE_NAME + "/GLOBAL",
+        RestGatewayPaths.getClusterVariablesGetGlobalUrl(VARIABLE_NAME),
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
@@ -94,8 +89,8 @@ public class DeleteClusterVariableTest extends ClientRestTest {
             () ->
                 client
                     .newClusterVariableDeleteRequest()
-                    .globalScoped()
-                    .name(VARIABLE_NAME)
+                    .atGlobalScoped()
+                    .delete(VARIABLE_NAME)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -106,7 +101,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getClusterVariablesUrl() + "/" + VARIABLE_NAME + "/GLOBAL",
+        RestGatewayPaths.getClusterVariablesGetGlobalUrl(VARIABLE_NAME),
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
@@ -114,8 +109,8 @@ public class DeleteClusterVariableTest extends ClientRestTest {
             () ->
                 client
                     .newClusterVariableDeleteRequest()
-                    .globalScoped()
-                    .name(VARIABLE_NAME)
+                    .atGlobalScoped()
+                    .delete(VARIABLE_NAME)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -126,7 +121,13 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullVariableName() {
     // when / then
     assertThatThrownBy(
-            () -> client.newClusterVariableDeleteRequest().globalScoped().name(null).send().join())
+            () ->
+                client
+                    .newClusterVariableDeleteRequest()
+                    .atGlobalScoped()
+                    .delete(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }
@@ -135,7 +136,8 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnEmptyVariableName() {
     // when / then
     assertThatThrownBy(
-            () -> client.newClusterVariableDeleteRequest().globalScoped().name("").send().join())
+            () ->
+                client.newClusterVariableDeleteRequest().atGlobalScoped().delete("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be empty");
   }

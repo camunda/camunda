@@ -1895,20 +1895,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   /**
    * Creates a request to create a new cluster variable.
    *
+   * <p>Cluster variables can be created with either global or tenant scope: /** Creates a request
+   * to create a new cluster variable.
+   *
    * <p>Cluster variables can be created with either global or tenant scope:
    *
    * <pre>
    *   camundaClient
    *       .newClusterVariableCreateRequest()
-   *       .globalScoped()
-   *       .variable("myVariable", "myValue")
+   *       .atGlobalScoped()
+   *       .create("myVariable", "myValue")
    *       .send();
    *
    *   // or for tenant-scoped variable
    *   camundaClient
    *       .newClusterVariableCreateRequest()
-   *       .tenantScoped("my-tenant-id")
-   *       .variable("myVariable", "myValue")
+   *       .atTenantScoped("my-tenant-id")
+   *       .create("myVariable", "myValue")
    *       .send();
    * </pre>
    *
@@ -1917,22 +1920,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ClusterVariableCreationCommandStep1 newClusterVariableCreateRequest();
 
   /**
-   * Creates a request to delete an existing cluster variable.
+   * Creates a request to delete an existing cluster variable. /** Creates a request to delete an
+   * existing cluster variable.
    *
    * <p>Cluster variables can be deleted with either global or tenant scope:
    *
    * <pre>
    *   camundaClient
    *       .newClusterVariableDeleteRequest()
-   *       .globalScoped()
-   *       .name("myVariable")
+   *       .atGlobalScoped()
+   *       .delete("myVariable")
    *       .send();
    *
    *   // or for tenant-scoped variable
    *   camundaClient
    *       .newClusterVariableDeleteRequest()
-   *       .tenantScoped("my-tenant-id")
-   *       .name("myVariable")
+   *       .atTenantScoped("my-tenant-id")
+   *       .delete("myVariable")
    *       .send();
    * </pre>
    *

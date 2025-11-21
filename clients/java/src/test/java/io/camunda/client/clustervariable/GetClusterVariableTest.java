@@ -38,16 +38,16 @@ public class GetClusterVariableTest extends ClientRestTest {
   @Test
   void shouldGetGlobalScopedClusterVariable() {
     // given
-    gatewayService.onGetClusterVariableRequest(
-        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.GLOBAL),
-        VARIABLE_NAME);
+    gatewayService.onGetGlobalClusterVariableRequest(
+        VARIABLE_NAME,
+        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.GLOBAL));
     // when
     client.newClusterVariableGetRequest().atGlobalScope(VARIABLE_NAME).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl())
-        .isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/" + VARIABLE_NAME + "/GLOBAL");
+        .isEqualTo(RestGatewayPaths.getClusterVariablesGetGlobalUrl(VARIABLE_NAME));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 
@@ -55,10 +55,10 @@ public class GetClusterVariableTest extends ClientRestTest {
   void shouldGetTenantScopedClusterVariable() {
 
     // given
-    gatewayService.onGetClusterVariableRequest(
-        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.TENANT),
+    gatewayService.onGetTenantClusterVariableRequest(
+        TENANT_ID,
         VARIABLE_NAME,
-        TENANT_ID);
+        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.TENANT));
 
     // when
     client.newClusterVariableGetRequest().atTenantScope(VARIABLE_NAME, TENANT_ID).send().join();
@@ -66,12 +66,7 @@ public class GetClusterVariableTest extends ClientRestTest {
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl())
-        .isEqualTo(
-            RestGatewayPaths.getClusterVariablesUrl()
-                + "/"
-                + VARIABLE_NAME
-                + "/TENANT/"
-                + TENANT_ID);
+        .isEqualTo(RestGatewayPaths.getClusterVariablesGetTenantUrl(TENANT_ID, VARIABLE_NAME));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 
@@ -79,7 +74,7 @@ public class GetClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFound() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getClusterVariablesUrl() + "/" + VARIABLE_NAME + "/GLOBAL",
+        RestGatewayPaths.getClusterVariablesGetGlobalUrl(VARIABLE_NAME),
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
@@ -93,7 +88,7 @@ public class GetClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnServerError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getClusterVariablesUrl() + "/" + VARIABLE_NAME + "/GLOBAL",
+        RestGatewayPaths.getClusterVariablesGetGlobalUrl(VARIABLE_NAME),
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then

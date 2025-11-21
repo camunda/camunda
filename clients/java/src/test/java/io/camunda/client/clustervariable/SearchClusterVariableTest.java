@@ -34,7 +34,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 
@@ -45,7 +45,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 
@@ -60,7 +60,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
   }
 
   @Test
@@ -70,7 +70,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
   }
 
   @Test
@@ -84,7 +84,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
   }
 
   @Test
@@ -94,7 +94,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
   }
 
   @Test
@@ -108,7 +108,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 
@@ -119,7 +119,7 @@ public class SearchClusterVariableTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl() + "/search");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 }

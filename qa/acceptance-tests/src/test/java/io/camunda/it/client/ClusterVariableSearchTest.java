@@ -64,15 +64,15 @@ public class ClusterVariableSearchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .globalScoped()
-        .variable(globalVarName1, globalVarValue1)
+        .atGlobalScoped()
+        .create(globalVarName1, globalVarValue1)
         .send()
         .join();
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .globalScoped()
-        .variable(globalVarName2, globalVarValue2)
+        .atGlobalScoped()
+        .create(globalVarName2, globalVarValue2)
         .send()
         .join();
 
@@ -85,15 +85,15 @@ public class ClusterVariableSearchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .tenantScoped(tenantId)
-        .variable(tenantVarName1, tenantVarValue1)
+        .atTenantScoped(tenantId)
+        .create(tenantVarName1, tenantVarValue1)
         .send()
         .join();
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .tenantScoped(tenantId)
-        .variable(tenantVarName2, tenantVarValue2)
+        .atTenantScoped(tenantId)
+        .create(tenantVarName2, tenantVarValue2)
         .send()
         .join();
 
@@ -106,15 +106,15 @@ public class ClusterVariableSearchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .globalScoped()
-        .variable(globalVarNameMixed, globalVarValueMixed)
+        .atGlobalScoped()
+        .create(globalVarNameMixed, globalVarValueMixed)
         .send()
         .join();
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .tenantScoped(tenantIdMixed)
-        .variable(tenantVarNameMixed, tenantVarValueMixed)
+        .atTenantScoped(tenantIdMixed)
+        .create(tenantVarNameMixed, tenantVarValueMixed)
         .send()
         .join();
 
@@ -127,15 +127,15 @@ public class ClusterVariableSearchTest {
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .globalScoped()
-        .variable(globalVarNameTenantOnly, globalVarValueTenantOnly)
+        .atGlobalScoped()
+        .create(globalVarNameTenantOnly, globalVarValueTenantOnly)
         .send()
         .join();
 
     camundaClient
         .newClusterVariableCreateRequest()
-        .tenantScoped(tenantIdTenantOnly)
-        .variable(tenantVarNameTenantOnly, tenantVarValueTenantOnly)
+        .atTenantScoped(tenantIdTenantOnly)
+        .create(tenantVarNameTenantOnly, tenantVarValueTenantOnly)
         .send()
         .join();
 

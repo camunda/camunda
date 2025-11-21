@@ -17,5 +17,5 @@ package io.camunda.client.api.search.enums;
 
 public enum ClusterVariableScope {
   GLOBAL,
-  TENANT
+  TENANT;
 }

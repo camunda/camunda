@@ -39,40 +39,42 @@ public class CreateClusterVariableTest extends ClientRestTest {
   @Test
   void shouldCreateGlobalScopedClusterVariable() {
     // given
-    gatewayService.onCreateClusterVariableRequest(
+    gatewayService.onCreateGlobalClusterVariableRequest(
         Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.GLOBAL));
 
     // when
     client
         .newClusterVariableCreateRequest()
-        .globalScoped()
-        .variable(VARIABLE_NAME, VARIABLE_VALUE)
+        .atGlobalScoped()
+        .create(VARIABLE_NAME, VARIABLE_VALUE)
         .send()
         .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl());
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesCreateGlobalUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 
   @Test
   void shouldCreateTenantScopedClusterVariable() {
     // given
-    gatewayService.onCreateClusterVariableRequest(
+    gatewayService.onCreateTenantClusterVariableRequest(
+        TENANT_ID,
         Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.TENANT));
 
     // when
     client
         .newClusterVariableCreateRequest()
-        .tenantScoped(TENANT_ID)
-        .variable(VARIABLE_NAME, VARIABLE_VALUE)
+        .atTenantScoped(TENANT_ID)
+        .create(VARIABLE_NAME, VARIABLE_VALUE)
         .send()
         .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesUrl());
+    assertThat(request.getUrl())
+        .isEqualTo(RestGatewayPaths.getClusterVariablesCreateTenantUrl(TENANT_ID));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 
@@ -80,7 +82,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnRequestError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getClusterVariablesUrl(),
+        RestGatewayPaths.getClusterVariablesCreateGlobalUrl(),
         () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
@@ -88,8 +90,8 @@ public class CreateClusterVariableTest extends ClientRestTest {
             () ->
                 client
                     .newClusterVariableCreateRequest()
-                    .globalScoped()
-                    .variable(VARIABLE_NAME, VARIABLE_VALUE)
+                    .atGlobalScoped()
+                    .create(VARIABLE_NAME, VARIABLE_VALUE)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -100,7 +102,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnServerError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getClusterVariablesUrl(),
+        RestGatewayPaths.getClusterVariablesCreateGlobalUrl(),
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
@@ -108,8 +110,8 @@ public class CreateClusterVariableTest extends ClientRestTest {
             () ->
                 client
                     .newClusterVariableCreateRequest()
-                    .globalScoped()
-                    .variable(VARIABLE_NAME, VARIABLE_VALUE)
+                    .atGlobalScoped()
+                    .create(VARIABLE_NAME, VARIABLE_VALUE)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -123,8 +125,8 @@ public class CreateClusterVariableTest extends ClientRestTest {
             () ->
                 client
                     .newClusterVariableCreateRequest()
-                    .globalScoped()
-                    .variable(null, VARIABLE_VALUE)
+                    .atGlobalScoped()
+                    .create(null, VARIABLE_VALUE)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -138,8 +140,8 @@ public class CreateClusterVariableTest extends ClientRestTest {
             () ->
                 client
                     .newClusterVariableCreateRequest()
-                    .globalScoped()
-                    .variable("", VARIABLE_VALUE)
+                    .atGlobalScoped()
+                    .create("", VARIABLE_VALUE)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
