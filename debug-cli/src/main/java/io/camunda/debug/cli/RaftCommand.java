@@ -71,6 +71,10 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
       }
       metadataContentBuffer.flip();
 
+      final var version = metadataContentBuffer.get();
+      if (version != MetaStoreSerializer.VERSION) {
+        throw new RuntimeException("Invalid version encoded in the metadata file: " + version);
+      }
       final UnsafeBuffer metadataWithoutVersion = new UnsafeBuffer();
       metadataWithoutVersion.wrap(
           metadataContentBuffer,
