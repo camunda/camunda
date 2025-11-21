@@ -26,6 +26,7 @@ public class ControlledInstantSource implements InstantSource {
   public void advance(final Duration duration) {
     instant = instant.plus(duration);
   }
+
   public void advance(final long millis) {
     instant = instant.plusMillis(millis);
   }

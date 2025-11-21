@@ -8,8 +8,8 @@
 package io.camunda.zeebe.dynamic.nodeid.repository;
 
 import io.camunda.zeebe.dynamic.nodeid.Lease;
-import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
+import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Objects;
@@ -81,7 +81,7 @@ public interface NodeIdRepository extends AutoCloseable {
       };
     }
 
-    default boolean isStillValid(long now){
+    default boolean isStillValid(long now) {
       return switch (this) {
         case final Uninitialized u -> false;
         case final Initialized i -> i.lease().isStillValid(now);
@@ -90,7 +90,7 @@ public interface NodeIdRepository extends AutoCloseable {
 
     /** Acquire the initial lease * */
     default Lease acquireInitialLease(String taskId, InstantSource clock, Duration leaseDuration) {
-      if (isStillValid(clock.millis())){
+      if (isStillValid(clock.millis())) {
         return null;
       } else {
         return Lease.from(taskId, clock.millis() + leaseDuration.toMillis(), node());

@@ -125,7 +125,8 @@ public class RepositoryNodeIdProviderIT {
             new Lease(
                 taskId + "old",
                 expiredLeaseTimestamp + EXPIRY_DURATION.toMillis(),
-                 new NodeInstance(0, lease.version().next()), VersionMappings.empty()),
+                new NodeInstance(0, lease.version().next()),
+                VersionMappings.empty()),
             previousEtag);
     assertThat(expiredLease).isNotNull();
     clock.advance(EXPIRY_DURATION.plusSeconds(1));
@@ -160,7 +161,12 @@ public class RepositoryNodeIdProviderIT {
                 i -> {
                   final var lease = repository.getLease(i);
                   return repository.acquire(
-                      new Lease(taskId, clock.millis() + 2000L,  new NodeInstance(i, lease.version().next()), VersionMappings.empty()), lease.eTag());
+                      new Lease(
+                          taskId,
+                          clock.millis() + 2000L,
+                          new NodeInstance(i, lease.version().next()),
+                          VersionMappings.empty()),
+                      lease.eTag());
                 })
             .toList();
     assertThat(acquiredLeases)

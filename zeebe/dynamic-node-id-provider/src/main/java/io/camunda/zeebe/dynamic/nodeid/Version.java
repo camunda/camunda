@@ -8,21 +8,23 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 public record Version(long version) {
-  private  static final Version ZERO = new Version(0L);
+  private static final Version ZERO = new Version(0L);
 
-  public static Version zero(){
+  public static Version zero() {
     return ZERO;
   }
+
   public static Version of(long version) {
     return new Version(version);
   }
-  public Version{
+
+  public Version {
     if (version < 0) {
       throw new IllegalArgumentException("version must be positive");
     }
   }
 
-  public Version next(){
+  public Version next() {
     return new Version(version + 1);
   }
 }

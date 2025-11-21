@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public record Metadata(String task, long expiry, Version version) {
-  public Metadata{
+  public Metadata {
     Objects.requireNonNull(task, "task cannot be null");
     Objects.requireNonNull(task, "version cannot be null");
     if (expiry <= 0) {
@@ -31,18 +31,24 @@ public record Metadata(String task, long expiry, Version version) {
   }
 
   public Map<String, String> asMap() {
-    return Map.of(TASK_ID_KEY, task, EXPIRY_KEY, String.valueOf(expiry),  VERSION_KEY, Long.toString(version.version()));
+    return Map.of(
+        TASK_ID_KEY,
+        task,
+        EXPIRY_KEY,
+        String.valueOf(expiry),
+        VERSION_KEY,
+        Long.toString(version.version()));
   }
 
   public static Metadata fromMap(final Map<String, String> map) {
     if (map.isEmpty()) {
       return null;
     }
-    try{
-    var taskId = map.get(TASK_ID_KEY);
-    var expiry = Long.parseLong(map.get(EXPIRY_KEY));
-    var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
-    return new Metadata(taskId, expiry, version);
+    try {
+      var taskId = map.get(TASK_ID_KEY);
+      var expiry = Long.parseLong(map.get(EXPIRY_KEY));
+      var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
+      return new Metadata(taskId, expiry, version);
     } catch (Exception e) {
       throw new IllegalArgumentException("Failed to deserialize metadata, map is " + map, e);
     }

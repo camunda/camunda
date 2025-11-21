@@ -20,22 +20,19 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 public record Lease(
-    String taskId,
-    long timestamp,
-    NodeInstance nodeInstance,
-    VersionMappings versionMappings) {
+    String taskId, long timestamp, NodeInstance nodeInstance, VersionMappings versionMappings) {
 
   public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
-   * Wrapper for mappings from NodeId -> Version
-   * A sorted map is used to the order of the keys is stable
+   * Wrapper for mappings from NodeId -> Version A sorted map is used to the order of the keys is
+   * stable
+   *
    * @param mappingsByNodeId
    */
-  public record VersionMappings (
-      SortedMap<Integer, Version> mappingsByNodeId) {
+  public record VersionMappings(SortedMap<Integer, Version> mappingsByNodeId) {
 
-    public static VersionMappings of(NodeInstance ...nodeInstance) {
+    public static VersionMappings of(NodeInstance... nodeInstance) {
       var map = new TreeMap<Integer, Version>();
       for (var node : nodeInstance) {
         map.put(node.id(), node.version());
@@ -43,7 +40,7 @@ public record Lease(
       return new VersionMappings(Collections.unmodifiableSortedMap(map));
     }
 
-    public VersionMappings(Map<Integer,Version> mappingsByNodeId){
+    public VersionMappings(Map<Integer, Version> mappingsByNodeId) {
       this(Collections.unmodifiableSortedMap(new TreeMap<>(mappingsByNodeId)));
     }
 
@@ -57,17 +54,14 @@ public record Lease(
   public static Lease fromMetadata(Metadata metadata, int nodeId) {
     Objects.requireNonNull(metadata, "metadata cannot be null");
     var nodeInstance = new NodeInstance(nodeId, metadata.version());
-    return new Lease(metadata.task(), metadata.expiry(), nodeInstance, VersionMappings.of(nodeInstance));
-  }
-  public static Lease from(String taskId, long expiry, NodeInstance currentNodeInstance){
-    var nodeInstance = currentNodeInstance.nextVersion();
     return new Lease(
-        taskId,
-        expiry,
-        nodeInstance,
-        VersionMappings.of(nodeInstance));
+        metadata.task(), metadata.expiry(), nodeInstance, VersionMappings.of(nodeInstance));
   }
 
+  public static Lease from(String taskId, long expiry, NodeInstance currentNodeInstance) {
+    var nodeInstance = currentNodeInstance.nextVersion();
+    return new Lease(taskId, expiry, nodeInstance, VersionMappings.of(nodeInstance));
+  }
 
   public Lease {
     Objects.requireNonNull(taskId, "taskId cannot be null");

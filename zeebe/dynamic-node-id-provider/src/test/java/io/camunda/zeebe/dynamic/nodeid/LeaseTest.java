@@ -62,8 +62,7 @@ public class LeaseTest {
     var expectedMessage =
         String.format(
             "Lease is not valid anymore(%s), it expired at %s",
-            Instant.ofEpochMilli(currentTime),
-            Instant.ofEpochMilli(lease.timestamp()));
+            Instant.ofEpochMilli(currentTime), Instant.ofEpochMilli(lease.timestamp()));
     assertThatThrownBy(() -> lease.renew(currentTime, renewalDuration))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(expectedMessage);

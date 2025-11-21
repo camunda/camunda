@@ -101,11 +101,7 @@ public class S3NodeIdRepositoryIT {
     final var initial = repository.getLease(0);
     final var acquired =
         repository.acquire(
-            initial.acquireInitialLease(
-                taskId,
-                clock,
-            EXPIRY_DURATION),
-            initial.eTag());
+            initial.acquireInitialLease(taskId, clock, EXPIRY_DURATION), initial.eTag());
     assertThat(acquired).isInstanceOf(StoredLease.Initialized.class);
 
     // when
@@ -156,7 +152,9 @@ public class S3NodeIdRepositoryIT {
     // when
     final var lease = repository.getLease(id);
 
-    final var toAcquire = new Lease(taskId, now - 10000L, new NodeInstance(id, Version.of(1)), VersionMappings.empty());
+    final var toAcquire =
+        new Lease(
+            taskId, now - 10000L, new NodeInstance(id, Version.of(1)), VersionMappings.empty());
     assertThatThrownBy(() -> repository.acquire(toAcquire, lease.eTag()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("not valid anymore");

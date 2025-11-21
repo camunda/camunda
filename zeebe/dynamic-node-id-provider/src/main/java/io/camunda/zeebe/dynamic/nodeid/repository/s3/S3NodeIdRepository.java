@@ -9,7 +9,6 @@ package io.camunda.zeebe.dynamic.nodeid.repository.s3;
 
 import static io.camunda.zeebe.dynamic.nodeid.Lease.OBJECT_MAPPER;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
