@@ -50,7 +50,7 @@ const useElementInstanceHistoryTree = () => {
   return context;
 };
 
-type UnfoldableElementInstancesNodeProps = {
+type NonFoldableElementInstancesNodeProps = {
   scopeKey: string;
   elementId: string;
   elementName: string;
@@ -61,7 +61,7 @@ type UnfoldableElementInstancesNodeProps = {
   renderIcon: () => React.ReactNode | null;
 };
 
-const UnfoldableElementInstancesNode: React.FC<UnfoldableElementInstancesNodeProps> =
+const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeProps> =
   observer(
     ({
       scopeKey,
@@ -356,7 +356,7 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer((props) => {
   }
 
   return (
-    <UnfoldableElementInstancesNode
+    <NonFoldableElementInstancesNode
       {...rest}
       scopeKey={scopeKey}
       elementType={elementType}
