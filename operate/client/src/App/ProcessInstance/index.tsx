@@ -22,7 +22,7 @@ import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
-import {FlowNodeInstanceLog as FlowNodeInstanceLogV2} from './FlowNodeInstanceLog/v2';
+import {ElementInstanceLog} from './FlowNodeInstanceLog/v2';
 import {IS_ELEMENT_INSTANCE_HISTORY_V2} from 'modules/feature-flags';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
@@ -208,7 +208,7 @@ const ProcessInstance: React.FC = observer(() => {
             bottomPanel={
               <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
                 {IS_ELEMENT_INSTANCE_HISTORY_V2 ? (
-                  <FlowNodeInstanceLogV2 />
+                  <ElementInstanceLog />
                 ) : (
                   <FlowNodeInstanceLog />
                 )}
