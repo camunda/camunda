@@ -13,7 +13,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {ElementInstanceIcon} from './styled';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
@@ -24,6 +23,7 @@ import {Bar} from './Bar';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
 import {notificationsStore} from 'modules/stores/notifications';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const TREE_NODE_HEIGHT = 32;
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
@@ -50,15 +50,6 @@ const useElementInstanceHistoryTree = () => {
   }
   return context;
 };
-
-function useElementBusinessObjects(params: {processDefinitionKey: string}) {
-  const {processDefinitionKey} = params;
-  const {data: processInstanceXmlData} = useProcessInstanceXml({
-    processDefinitionKey,
-  });
-
-  return processInstanceXmlData?.businessObjects;
-}
 
 type UnfoldableElementInstancesNodeProps = {
   scopeKey: string;
@@ -392,9 +383,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
     const {processInstance, scrollableContainerRef, rowRef, ...rest} = props;
 
-    const businessObjects = useElementBusinessObjects({
-      processDefinitionKey: processInstance.processDefinitionKey,
-    });
+    const {data: businessObjects} = useBusinessObjects();
 
     elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey);
 
