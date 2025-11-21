@@ -10,13 +10,21 @@ import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {hasType} from './hasType';
 
 function isAdHocSubProcessInnerInstance(businessObject?: BusinessObject) {
-  return (
-    businessObject !== undefined &&
-    hasType({businessObject, types: ['bpmn:AdHocSubProcess']}) &&
-    businessObject.extensionElements?.values?.find(
-      (value) => value?.type === 'io.camunda.agenticai:aiagent-job-worker',
-    )
+  if (businessObject === undefined) {
+    return false;
+  }
+
+  if (!hasType({businessObject, types: ['bpmn:AdHocSubProcess']})) {
+    return false;
+  }
+
+  const extensionElement = businessObject.extensionElements?.values.find(
+    (value) =>
+      value?.$type === 'zeebe:taskDefinition' &&
+      value?.type?.startsWith('io.camunda.agenticai:aiagent-job-worker'),
   );
+
+  return extensionElement !== undefined;
 }
 
 export {isAdHocSubProcessInnerInstance};
