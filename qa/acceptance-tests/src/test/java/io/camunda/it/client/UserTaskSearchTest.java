@@ -8,6 +8,9 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.assertSorted;
+import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static io.camunda.search.schema.config.IndexConfiguration.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,22 +51,24 @@ class UserTaskSearchTest {
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
-    delpoyProcessFromResourcePath("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
-    delpoyProcessFromResourcePath(
+    deployProcessFromResourcePath("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
+    deployProcessFromResourcePath(
         "/process/bpmn_subprocess_case.bpmn", "bpmn_subprocess_case.bpmn");
 
-    deployForm("form/form.form");
-    delpoyProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
-    delpoyProcessFromResourcePath("/process/job_worker_process.bpmn", "job_worker_process.bpmn");
+    deployResource(camundaClient, "form/form.form");
+    deployProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
+    deployProcessFromResourcePath("/process/job_worker_process.bpmn", "job_worker_process.bpmn");
 
-    startProcessInstance("process");
-    startProcessInstance("process-2");
-    startProcessInstance("process");
-    startProcessInstance("process-3");
-    startProcessInstance("bpmProcessVariable");
-    startProcessInstance("processWithForm");
-    startProcessInstanceWithVariables("processWithSubProcess", Map.of(LARGE_VAR_NAME, LARGE_VALUE));
+    startProcessInstance(camundaClient, "process");
+    startProcessInstance(camundaClient, "process-2");
+    startProcessInstance(camundaClient, "process");
+    startProcessInstance(camundaClient, "process-3");
+    startProcessInstance(camundaClient, "bpmProcessVariable");
+    startProcessInstance(camundaClient, "processWithForm");
     startProcessInstance(
+        camundaClient, "processWithSubProcess", Map.of(LARGE_VAR_NAME, LARGE_VALUE));
+    startProcessInstance(
+        camundaClient,
         "jobWorkerProcess"); // Start a Job Worker instance in order to validate if User Tasks
     // queries has the same result
 
@@ -82,7 +87,7 @@ class UserTaskSearchTest {
             .filter(f -> f.localVariables(Map.of("task02", "1")))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
 
     // Validate that names "P1" and "P2" exist in the result
     assertThat(result.items().stream().map(UserTask::getName))
@@ -98,7 +103,7 @@ class UserTaskSearchTest {
             .filter(f -> f.localVariables(Map.of("task02", 1)))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
 
     // Validate that names "P1" and "P2" exist in the result
     assertThat(result.items().stream().map(UserTask::getName))
@@ -185,8 +190,8 @@ class UserTaskSearchTest {
             .send()
             .join();
     // then
-    assertThat(result.items()).hasSize(0);
-    assertThat(result.page().totalItems()).isEqualTo(1);
+    assertThat(result.items()).isEmpty();
+    assertThat(result.page().totalItems()).isOne();
   }
 
   @Test
@@ -213,7 +218,7 @@ class UserTaskSearchTest {
 
     final var resultVariableQuery =
         camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
-    assertThat(resultVariableQuery.items().size()).isEqualTo(2);
+    assertThat(resultVariableQuery.items()).hasSize(2);
   }
 
   @Test
@@ -339,7 +344,7 @@ class UserTaskSearchTest {
             .filter(f -> f.processInstanceVariables(Map.of("process01", "\"pVariable\"")))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(0);
+    assertThat(result.items()).isEmpty();
   }
 
   @Test
@@ -356,7 +361,7 @@ class UserTaskSearchTest {
   @Test
   public void shouldRetrieveAllTasks() {
     final var result = camundaClient.newUserTaskSearchRequest().send().join();
-    assertThat(result.items().size()).isEqualTo(8);
+    assertThat(result.items()).hasSize(8);
   }
 
   @Test
@@ -371,7 +376,7 @@ class UserTaskSearchTest {
                         List.of(vf -> vf.name("task01").value(v -> v.like("\"te*\"")))))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
   }
 
   @Test
@@ -385,14 +390,14 @@ class UserTaskSearchTest {
                     f.localVariables(List.of(vf -> vf.name("task01").value(v -> v.in("\"test\"")))))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
   }
 
   @Test
   public void shouldRetrieveTaskByAssignee() {
     final var result =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.assignee("demo")).send().join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getAssignee()).isEqualTo("demo");
     assertThat(result.items().getFirst().getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
   }
@@ -422,7 +427,7 @@ class UserTaskSearchTest {
             .filter(f -> f.state(UserTaskState.CREATED))
             .send()
             .join();
-    assertThat(resultCreated.items().size()).isEqualTo(7);
+    assertThat(resultCreated.items()).hasSize(7);
     resultCreated
         .items()
         .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskState.CREATED));
@@ -433,7 +438,7 @@ class UserTaskSearchTest {
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .send()
             .join();
-    assertThat(resultCompleted.items().size()).isEqualTo(1);
+    assertThat(resultCompleted.items()).hasSize(1);
     resultCompleted
         .items()
         .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskState.COMPLETED));
@@ -443,7 +448,7 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByTaskDefinitionId() {
     final var result =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("test-2")).send().join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     result.items().forEach(item -> assertThat(item.getElementId()).isEqualTo("test-2"));
   }
 
@@ -455,7 +460,7 @@ class UserTaskSearchTest {
             .filter(f -> f.bpmnProcessId("process"))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).hasSize(2);
     result.items().forEach(item -> assertThat(item.getBpmnProcessId()).isEqualTo("process"));
   }
 
@@ -463,7 +468,7 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByName() {
     final var result =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.name("P2")).send().join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     result.items().forEach(item -> assertThat(item.getName()).isEqualTo("P2"));
   }
 
@@ -476,7 +481,7 @@ class UserTaskSearchTest {
             .filter(f -> f.candidateGroup("group"))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
 
     result.items().forEach(item -> assertThat(item.getCandidateGroups()).isEqualTo(expectedGroup));
   }
@@ -501,7 +506,7 @@ class UserTaskSearchTest {
     final var expectedUser = List.of("user");
     final var result =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.candidateUser("user")).send().join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
 
     result.items().forEach(item -> assertThat(item.getCandidateUsers()).isEqualTo(expectedUser));
   }
@@ -524,7 +529,7 @@ class UserTaskSearchTest {
   @Test
   public void shouldValidatePagination() {
     final var result = camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     final var key = result.items().getFirst().getUserTaskKey();
     // apply searchAfter
     final var resultAfter =
@@ -534,8 +539,7 @@ class UserTaskSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(7);
-    final var keyAfter = resultAfter.items().getFirst().getUserTaskKey();
+    assertThat(resultAfter.items()).hasSize(7);
     // apply searchBefore
     final var resultBefore =
         camundaClient
@@ -543,7 +547,7 @@ class UserTaskSearchTest {
             .page(p -> p.before(resultAfter.page().startCursor()))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(resultBefore.items().getFirst().getUserTaskKey()).isEqualTo(key);
   }
 
@@ -552,11 +556,10 @@ class UserTaskSearchTest {
     final var result =
         camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().asc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(8);
+    assertThat(result.items()).hasSize(8);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
     final UserTask firstItem = result.items().get(0);
-    final UserTask lastItem = result.items().get(7);
     assertThat(firstItem.getCreationDate()).isBefore(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
         .isBefore(result.items().get(2).getCreationDate());
@@ -567,7 +570,7 @@ class UserTaskSearchTest {
     final var result =
         camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().desc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(8);
+    assertThat(result.items()).hasSize(8);
 
     assertThat(result.items().get(0).getCreationDate())
         .isAfterOrEqualTo(result.items().get(1).getCreationDate());
@@ -591,7 +594,7 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.tenantId("<default>")).send().join();
-    assertThat(resultDefaultTenant.items().size()).isEqualTo(8);
+    assertThat(resultDefaultTenant.items()).hasSize(8);
     resultDefaultTenant
         .items()
         .forEach(item -> assertThat(item.getTenantId()).isEqualTo("<default>"));
@@ -602,7 +605,7 @@ class UserTaskSearchTest {
             .filter(f -> f.tenantId("<default123>"))
             .send()
             .join();
-    assertThat(resultNonExistent.items().size()).isEqualTo(0);
+    assertThat(resultNonExistent.items()).isEmpty();
   }
 
   @Test
@@ -613,7 +616,7 @@ class UserTaskSearchTest {
             .filter(f -> f.bpmnProcessId("process-2"))
             .send()
             .join();
-    assertThat(resultDefaultPriority.items().size()).isEqualTo(1);
+    assertThat(resultDefaultPriority.items()).hasSize(1);
     assertThat(resultDefaultPriority.items().getFirst().getPriority()).isEqualTo(50);
 
     final var resultDefinedPriority =
@@ -622,7 +625,7 @@ class UserTaskSearchTest {
             .filter(f -> f.bpmnProcessId("process-3"))
             .send()
             .join();
-    assertThat(resultDefinedPriority.items().size()).isEqualTo(1);
+    assertThat(resultDefinedPriority.items()).hasSize(1);
     assertThat(resultDefinedPriority.items().getFirst().getPriority()).isEqualTo(30);
   }
 
@@ -698,7 +701,7 @@ class UserTaskSearchTest {
             .send()
             .join();
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getElementInstanceKey())
         .isEqualTo(userTaskElementInstanceKey);
   }
@@ -713,7 +716,7 @@ class UserTaskSearchTest {
             .send()
             .join();
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items()).hasSize(4);
     assertThat(result.items().get(0).getName()).isEqualTo(LARGE_VAR_NAME);
     assertThat(result.items().get(1).getName()).isEqualTo("localVariable");
     assertThat(result.items().get(2).getName()).isEqualTo("processVariable");
@@ -730,7 +733,7 @@ class UserTaskSearchTest {
             .send()
             .join();
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getName()).isEqualTo("localVariable");
   }
 
@@ -814,7 +817,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(8);
+    assertThat(result.items()).hasSize(8);
   }
 
   @Test
@@ -834,7 +837,7 @@ class UserTaskSearchTest {
             .join();
 
     // then all items the creation Date is greater than userTaskCreationDateExample - 1 second
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -861,7 +864,7 @@ class UserTaskSearchTest {
             .join();
 
     // then all items the creation Date is less than userTaskCreationDateExample + 1 second
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -889,7 +892,7 @@ class UserTaskSearchTest {
 
     // then all items the creation Date is greater than or equal to userTaskCreationDateExample - 1
     // second
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -918,7 +921,7 @@ class UserTaskSearchTest {
 
     // then all items the creation Date is less than or equal to userTaskCreationDateExample + 1
     // second
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -946,7 +949,7 @@ class UserTaskSearchTest {
             .join();
 
     // then all items have the exact creation Date
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -980,7 +983,7 @@ class UserTaskSearchTest {
 
     // then all items the completion Date is greater than or equal to userTaskCompletionDateExample
     // - 1 second
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1014,7 +1017,7 @@ class UserTaskSearchTest {
 
     // then all items the completion Date is less than or equal to userTaskCompletionDateExample + 1
     // second
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1052,7 +1055,7 @@ class UserTaskSearchTest {
             .join();
 
     // then all items have the completion Date within the range
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1092,14 +1095,15 @@ class UserTaskSearchTest {
             .join();
 
     // then all items have the completion Date strictly within the range (exclusive)
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
             item -> {
               final var completionDate = item.getCompletionDate();
-              assertThat(completionDate).isAfter(userTaskCompletionDateExample.minusDays(1));
-              assertThat(completionDate).isBefore(userTaskCompletionDateExample.plusDays(1));
+              assertThat(completionDate)
+                  .isAfter(userTaskCompletionDateExample.minusDays(1))
+                  .isBefore(userTaskCompletionDateExample.plusDays(1));
             });
   }
 
@@ -1114,7 +1118,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1135,7 +1139,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result.items().forEach(item -> assertThat(item.getCompletionDate()).isNull());
   }
 
@@ -1161,7 +1165,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1193,7 +1197,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1225,7 +1229,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1245,7 +1249,7 @@ class UserTaskSearchTest {
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(2).from(2)).send().join();
 
     // then
-    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items()).hasSize(2);
     assertThat(resultSearchFrom.items().stream().findFirst().get().getUserTaskKey())
         .isEqualTo(thirdKey);
   }
@@ -1262,14 +1266,13 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
             item -> {
               final var dueDate = item.getDueDate();
-              assertThat(dueDate).isAfter(now.minusDays(2));
-              assertThat(dueDate).isBefore(now.plusDays(2));
+              assertThat(dueDate).isAfter(now.minusDays(2)).isBefore(now.plusDays(2));
             });
   }
 
@@ -1278,7 +1281,7 @@ class UserTaskSearchTest {
     // when
     final var userTaskList =
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
-    final var dueDateExample = userTaskList.items().get(0).getDueDate();
+    final var dueDateExample = userTaskList.items().getFirst().getDueDate();
 
     final var result =
         camundaClient
@@ -1288,7 +1291,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1313,7 +1316,7 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
@@ -1335,14 +1338,15 @@ class UserTaskSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThan(0);
+    assertThat(result.items()).isNotEmpty();
     result
         .items()
         .forEach(
             item -> {
               final var followUpDate = item.getFollowUpDate();
-              assertThat(followUpDate).isAfterOrEqualTo(now.minusDays(5));
-              assertThat(followUpDate).isBeforeOrEqualTo(now.plusDays(5));
+              assertThat(followUpDate)
+                  .isAfterOrEqualTo(now.minusDays(5))
+                  .isBeforeOrEqualTo(now.plusDays(5));
             });
   }
 
@@ -1410,34 +1414,10 @@ class UserTaskSearchTest {
         .join();
   }
 
-  private static void delpoyProcessFromResourcePath(
+  private static void deployProcessFromResourcePath(
       final String resource, final String resourceName) {
     final InputStream process = UserTaskSearchTest.class.getResourceAsStream(resource);
-
-    camundaClient
-        .newDeployResourceCommand()
-        .addProcessModel(Bpmn.readModelFromStream(process), resourceName)
-        .send()
-        .join();
-  }
-
-  private static void deployForm(final String resource) {
-    camundaClient.newDeployResourceCommand().addResourceFromClasspath(resource).send().join();
-  }
-
-  private static void startProcessInstance(final String processId) {
-    camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
-  }
-
-  private static void startProcessInstanceWithVariables(
-      final String processId, final Map<String, Object> variables) {
-    camundaClient
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .variables(variables)
-        .send()
-        .join();
+    deployProcessAndWaitForIt(camundaClient, Bpmn.readModelFromStream(process), resourceName);
   }
 
   private static void waitForTasksBeingExported() {
@@ -1447,7 +1427,7 @@ class UserTaskSearchTest {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskSearchRequest().send().join();
-              assertThat(result.items().size()).isEqualTo(8);
+              assertThat(result.items()).hasSize(8);
               userTaskKeyTaskAssigned = result.items().getFirst().getUserTaskKey();
             });
 
@@ -1471,14 +1451,14 @@ class UserTaskSearchTest {
                       .filter(f -> f.assignee("demo"))
                       .send()
                       .join();
-              assertThat(result.items().size()).isEqualTo(1);
+              assertThat(result.items()).hasSize(1);
               final var resultComplete =
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.state(UserTaskState.COMPLETED))
                       .send()
                       .join();
-              assertThat(resultComplete.items().size()).isEqualTo(1);
+              assertThat(resultComplete.items()).hasSize(1);
             });
   }
 
