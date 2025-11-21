@@ -134,6 +134,7 @@ public class ExporterConfiguration {
     final var historyConfig =
         new HistoryConfig.Builder()
             .defaultHistoryTTL(history.getDefaultHistoryTTL())
+            .decisionInstanceTTL(history.getDecisionInstanceTTL())
             .batchOperationCancelProcessInstanceHistoryTTL(
                 history.getBatchOperationCancelProcessInstanceHistoryTTL())
             .batchOperationMigrateProcessInstanceHistoryTTL(
@@ -180,6 +181,7 @@ public class ExporterConfiguration {
   public static class HistoryConfiguration {
     // history cleanup configuration
     private Duration defaultHistoryTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
+    private Duration decisionInstanceTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
     private Duration defaultBatchOperationHistoryTTL =
         RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
     // specific history TTLs for batch operations
@@ -206,6 +208,14 @@ public class ExporterConfiguration {
 
     public void setDefaultHistoryTTL(final Duration defaultHistoryTTL) {
       this.defaultHistoryTTL = defaultHistoryTTL;
+    }
+
+    public Duration getDecisionInstanceTTL() {
+      return decisionInstanceTTL;
+    }
+
+    public void setDecisionInstanceTTL(final Duration decisionInstanceTTL) {
+      this.decisionInstanceTTL = decisionInstanceTTL;
     }
 
     public Duration getDefaultBatchOperationHistoryTTL() {
