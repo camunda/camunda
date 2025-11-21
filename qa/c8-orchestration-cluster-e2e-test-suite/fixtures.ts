@@ -6,33 +6,34 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base} from '@playwright/test';
+import { test as base } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {OperateHomePage} from '@pages/OperateHomePage';
-import {TaskPanelPage} from '@pages/TaskPanelPage';
-import {LoginPage} from '@pages/LoginPage';
-import {OperateProcessesPage} from '@pages/OperateProcessesPage';
-import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
-import {OperateFiltersPanelPage} from '@pages/OperateFiltersPanelPage';
-import {OperateDashboardPage} from '@pages/OperateDashboardPage';
-import {OperateDiagramPage} from '@pages/OperateDiagramPage';
-import {OperateProcessMigrationModePage} from '@pages/OperateProcessMigrationModePage';
-import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
-import {TaskDetailsPage} from '@pages/TaskDetailsPage';
-import {TasklistHeader} from '@pages/TasklistHeader';
-import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
-import {PublicFormsPage} from '@pages/PublicFormsPage';
-import {IdentityHeader} from '@pages/IdentityHeader';
-import {IdentityAuthorizationsPage} from '@pages/IdentityAuthorizationsPage';
-import {IdentityGroupsPage} from '@pages/IdentityGroupsPage';
-import {IdentityUsersPage} from '@pages/IdentityUsersPage';
-import {IdentityMappingRulesPage} from '@pages/IdentityMappingRulesPage';
-import {IdentityRolesPage} from '@pages/IdentityRolesPage';
-import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
-import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
-import {AccessDeniedPage} from '@pages/AccessDeniedPage';
+import { OperateHomePage } from '@pages/OperateHomePage';
+import { TaskPanelPage } from '@pages/TaskPanelPage';
+import { LoginPage } from '@pages/LoginPage';
+import { OperateProcessesPage } from '@pages/OperateProcessesPage';
+import { OperateProcessInstancePage } from '@pages/OperateProcessInstancePage';
+import { OperateFiltersPanelPage } from '@pages/OperateFiltersPanelPage';
+import { OperateDashboardPage } from '@pages/OperateDashboardPage';
+import { OperateDiagramPage } from '@pages/OperateDiagramPage';
+import { OperateProcessMigrationModePage } from '@pages/OperateProcessMigrationModePage';
+import { OperateProcessModificationModePage } from '@pages/OperateProcessModificationModePage';
+import { OperateOperationPanelPage } from '@pages/OperateOperationPanelPage';
+import { TaskDetailsPage } from '@pages/TaskDetailsPage';
+import { TasklistHeader } from '@pages/TasklistHeader';
+import { TasklistProcessesPage } from '@pages/TasklistProcessesPage';
+import { PublicFormsPage } from '@pages/PublicFormsPage';
+import { IdentityHeader } from '@pages/IdentityHeader';
+import { IdentityAuthorizationsPage } from '@pages/IdentityAuthorizationsPage';
+import { IdentityGroupsPage } from '@pages/IdentityGroupsPage';
+import { IdentityUsersPage } from '@pages/IdentityUsersPage';
+import { IdentityMappingRulesPage } from '@pages/IdentityMappingRulesPage';
+import { IdentityRolesPage } from '@pages/IdentityRolesPage';
+import { IdentityTenantsPage } from '@pages/IdentityTenantsPage';
+import { IdentityRolesDetailsPage } from '@pages/IdentityRolesDetailsPage';
+import { AccessDeniedPage } from '@pages/AccessDeniedPage';
 
-import {sleep} from 'utils/sleep';
+import { sleep } from 'utils/sleep';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -43,6 +44,7 @@ type PlaywrightFixtures = {
   operateProcessInstancePage: OperateProcessInstancePage;
   operateFiltersPanelPage: OperateFiltersPanelPage;
   operateProcessMigrationModePage: OperateProcessMigrationModePage;
+  operateProcessModificationModePage: OperateProcessModificationModePage;
   operateOperationPanelPage: OperateOperationPanelPage;
   operateDashboardPage: OperateDashboardPage;
   operateDiagramPage: OperateDiagramPage;
@@ -63,9 +65,9 @@ type PlaywrightFixtures = {
 };
 
 const test = base.extend<PlaywrightFixtures>({
-  makeAxeBuilder: async ({page}, use) => {
+  makeAxeBuilder: async ({ page }, use) => {
     const makeAxeBuilder = () =>
-      new AxeBuilder({page}).withTags([
+      new AxeBuilder({ page }).withTags([
         'best-practice',
         'wcag2a',
         'wcag2aa',
@@ -75,46 +77,49 @@ const test = base.extend<PlaywrightFixtures>({
 
     await use(makeAxeBuilder);
   },
-  operateHomePage: async ({page}, use) => {
+  operateHomePage: async ({ page }, use) => {
     await use(new OperateHomePage(page));
   },
-  operateDashboardPage: async ({page}, use) => {
+  operateDashboardPage: async ({ page }, use) => {
     await use(new OperateDashboardPage(page));
   },
-  operateDiagramPage: async ({page}, use) => {
+  operateDiagramPage: async ({ page }, use) => {
     await use(new OperateDiagramPage(page));
   },
-  loginPage: async ({page}, use) => {
+  loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
   },
-  taskPanelPage: async ({page}, use) => {
+  taskPanelPage: async ({ page }, use) => {
     await use(new TaskPanelPage(page));
   },
-  operateProcessesPage: async ({page}, use) => {
+  operateProcessesPage: async ({ page }, use) => {
     await use(new OperateProcessesPage(page));
   },
-  operateProcessInstancePage: async ({page}, use) => {
+  operateProcessInstancePage: async ({ page }, use) => {
     await use(new OperateProcessInstancePage(page));
   },
-  operateFiltersPanelPage: async ({page}, use) => {
+  operateFiltersPanelPage: async ({ page }, use) => {
     await use(new OperateFiltersPanelPage(page));
   },
-  operateProcessMigrationModePage: async ({page}, use) => {
+  operateProcessMigrationModePage: async ({ page }, use) => {
     await use(new OperateProcessMigrationModePage(page));
   },
-  operateOperationPanelPage: async ({page}, use) => {
+  operateProcessModificationModePage: async ({ page }, use) => {
+    await use(new OperateProcessModificationModePage(page));
+  },
+  operateOperationPanelPage: async ({ page }, use) => {
     await use(new OperateOperationPanelPage(page));
   },
-  taskDetailsPage: async ({page}, use) => {
+  taskDetailsPage: async ({ page }, use) => {
     await use(new TaskDetailsPage(page));
   },
-  tasklistHeader: async ({page}, use) => {
+  tasklistHeader: async ({ page }, use) => {
     await use(new TasklistHeader(page));
   },
-  tasklistProcessesPage: async ({page}, use) => {
+  tasklistProcessesPage: async ({ page }, use) => {
     await use(new TasklistProcessesPage(page));
   },
-  resetData: async ({baseURL}, use) => {
+  resetData: async ({ baseURL }, use) => {
     await use(async () => {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -139,44 +144,44 @@ const test = base.extend<PlaywrightFixtures>({
     });
   },
 
-  publicFormsPage: async ({page}, use) => {
+  publicFormsPage: async ({ page }, use) => {
     await use(new PublicFormsPage(page));
   },
 
-  identityHeader: async ({page}, use) => {
+  identityHeader: async ({ page }, use) => {
     await use(new IdentityHeader(page));
   },
-  identityMappingRulesPage: async ({page}, use) => {
+  identityMappingRulesPage: async ({ page }, use) => {
     await use(new IdentityMappingRulesPage(page));
   },
 
-  identityUsersPage: async ({page}, use) => {
+  identityUsersPage: async ({ page }, use) => {
     await use(new IdentityUsersPage(page));
   },
 
-  identityGroupsPage: async ({page}, use) => {
+  identityGroupsPage: async ({ page }, use) => {
     await use(new IdentityGroupsPage(page));
   },
 
-  identityAuthorizationsPage: async ({page}, use) => {
+  identityAuthorizationsPage: async ({ page }, use) => {
     await use(new IdentityAuthorizationsPage(page));
   },
 
-  identityRolesPage: async ({page}, use) => {
+  identityRolesPage: async ({ page }, use) => {
     await use(new IdentityRolesPage(page));
   },
 
-  identityTenantsPage: async ({page}, use) => {
+  identityTenantsPage: async ({ page }, use) => {
     await use(new IdentityTenantsPage(page));
   },
 
-  identityRolesDetailsPage: async ({page}, use) => {
+  identityRolesDetailsPage: async ({ page }, use) => {
     await use(new IdentityRolesDetailsPage(page));
   },
 
-  accessDeniedPage: async ({page}, use) => {
+  accessDeniedPage: async ({ page }, use) => {
     await use(new AccessDeniedPage(page));
   },
 });
 
-export {test};
+export { test };

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="9c8db14" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="123df11" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
   <bpmn:process id="Process_EmbeddedSubprocess" name="EmbeddedSubprocess" isExecutable="true">
     <bpmn:startEvent id="StartEvent_StartGlobal" name="Start Global">
       <bpmn:outgoing>Flow_0g7rbn8</bpmn:outgoing>
@@ -55,8 +55,8 @@
       <bpmn:startEvent id="Event_StartSecondSubProcess">
         <bpmn:outgoing>Flow_1l6c623</bpmn:outgoing>
       </bpmn:startEvent>
-      <bpmn:sequenceFlow id="Flow_1l6c623" sourceRef="Event_StartSecondSubProcess" targetRef="Activity_0i7bhn2" />
-      <bpmn:userTask id="Activity_0i7bhn2" name="Send items">
+      <bpmn:sequenceFlow id="Flow_1l6c623" sourceRef="Event_StartSecondSubProcess" targetRef="Activity_SendItems" />
+      <bpmn:userTask id="Activity_SendItems" name="Send items">
         <bpmn:extensionElements>
           <zeebe:userTask />
         </bpmn:extensionElements>
@@ -66,7 +66,7 @@
       <bpmn:endEvent id="Event_EndSecondSubProcess">
         <bpmn:incoming>Flow_09o62lp</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_09o62lp" sourceRef="Activity_0i7bhn2" targetRef="Event_EndSecondSubProcess" />
+      <bpmn:sequenceFlow id="Flow_09o62lp" sourceRef="Activity_SendItems" targetRef="Event_EndSecondSubProcess" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_1reshi7" sourceRef="Activity_SecondSubprocess" targetRef="Event_EndGlobal" />
     <bpmn:endEvent id="Event_EndGlobal" name="End Global">
@@ -127,7 +127,7 @@
       <bpmndi:BPMNShape id="Event_0qn7lba_di" bpmnElement="Event_StartSecondSubProcess">
         <dc:Bounds x="960" y="100" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1d0nwks_di" bpmnElement="Activity_0i7bhn2">
+      <bpmndi:BPMNShape id="Activity_1d0nwks_di" bpmnElement="Activity_SendItems">
         <dc:Bounds x="1050" y="78" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>

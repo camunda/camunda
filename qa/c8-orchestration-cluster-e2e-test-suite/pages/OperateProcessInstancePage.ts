@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
-import {sleep} from 'utils/sleep';
+import { Page, Locator, expect } from '@playwright/test';
+import { sleep } from 'utils/sleep';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -40,6 +40,8 @@ class OperateProcessInstancePage {
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
   readonly migratedTag: Locator;
+  readonly modifyDialog: Locator;
+  readonly modifyDialogContinueButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -66,11 +68,11 @@ class OperateProcessInstancePage {
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single flow node instance in the instance history',
     );
-    this.addVariableButton = page.getByRole('button', {name: 'Add variable'});
-    this.saveVariableButton = page.getByRole('button', {name: 'Save variable'});
-    this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
-    this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
-    this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
+    this.addVariableButton = page.getByRole('button', { name: 'Add variable' });
+    this.saveVariableButton = page.getByRole('button', { name: 'Save variable' });
+    this.newVariableNameField = page.getByRole('textbox', { name: 'Name' });
+    this.newVariableValueField = page.getByRole('textbox', { name: 'Value' });
+    this.editVariableValueField = page.getByRole('textbox', { name: 'Value' });
     this.variableSpinner = page.getByTestId('full-variable-loader');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(
@@ -85,6 +87,14 @@ class OperateProcessInstancePage {
     this.variableAddedBanner = this.page.getByText('Variable added');
     this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
       hasText: /^Migrated/,
+    });
+    this.metadataModal = this.page.getByRole('dialog', { name: 'metadata' });
+    this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
+    this.listenerTypeFilter = page.getByTestId('listener-type-filter');
+    this.variableAddedBanner = this.page.getByText('Variable added');
+    this.modifyDialog = this.page.getByLabel('Process Instance Modification Mode');
+    this.modifyDialogContinueButton = this.modifyDialog.getByRole('button', {
+      name: 'Continue',
     });
   }
 
@@ -158,7 +168,7 @@ class OperateProcessInstancePage {
   getListenerTypeFilterOption = (
     option: 'Execution listeners' | 'User task listeners' | 'All listeners',
   ) => {
-    return this.listenerTypeFilter.getByText(option, {exact: true});
+    return this.listenerTypeFilter.getByText(option, { exact: true });
   };
 
   async undoModification() {
@@ -230,7 +240,7 @@ class OperateProcessInstancePage {
     return this.incidentsTable.getByRole('row').filter({
       has: this.page
         .getByTestId('cell-errorMessage')
-        .filter({hasText: errorMessage}),
+        .filter({ hasText: errorMessage }),
     });
   }
 
@@ -240,6 +250,31 @@ class OperateProcessInstancePage {
     const retryButton = incidentRow.getByText('Retry Incident');
     await retryButton.click();
   }
+
+  async clickModifyInstanceButton(): Promise<void> {
+    await this.modifyInstanceButton.click();
+  }
+
+  async clickModifyDialogContinueButton(): Promise<void> {
+    await this.modifyDialogContinueButton.click();
+  }
+
+  async getInstanceHistoryItems() {
+    return this.instanceHistory.getByRole('treeitem');
+  }
+
+  async checkIfInstanceHistoryelementIsExpandable(elementTestId: string) {
+    const element = this.page.getByTestId(elementTestId);
+    const expandButton = element.locator('.cds--tree-parent-node__toggle-icon')
+    return await expandButton.isVisible();
+  }
+
+  async checkIfPresentExpandeingElementsInHistory() {
+    const expandingElements = this.instanceHistory.locator('.cds--tree-parent-node__toggle-icon');
+    return await expandingElements.count();
+  }
+
+  // class="cds--tree-parent-node__toggle-icon cds--tree-parent-node__toggle-icon--expanded"
 }
 
-export {OperateProcessInstancePage};
+export { OperateProcessInstancePage };

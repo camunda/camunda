@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Locator, Page} from '@playwright/test';
-import {expect} from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class OperateDiagramPage {
   private page: Page;
@@ -29,7 +29,7 @@ export class OperateDiagramPage {
     });
     this.diagramSpinner = page.getByTestId('diagram-spinner');
     this.monacoAriaContainer = page.locator('.monaco-aria-container');
-    this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
+    this.metadataModal = this.page.getByRole('dialog', { name: 'metadata' });
     this.metadataModalCloseButton = this.metadataModal.getByRole('button', {
       name: /close/i,
     });
@@ -60,14 +60,14 @@ export class OperateDiagramPage {
   }
 
   clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).first().click({timeout: 20000});
+    return this.getFlowNode(flowNodeName).first().click({ timeout: 20000 });
   }
 
   clickSubProcess(subProcessName: string) {
     // Click on the top left corner of the sub process.
     // This avoids clicking on child elements inside the sub process.
     return this.getFlowNode(subProcessName).click({
-      position: {x: 5, y: 5},
+      position: { x: 5, y: 5 },
       force: true,
     });
   }
@@ -86,7 +86,7 @@ export class OperateDiagramPage {
   async getLabeledElement(eventName: string) {
     const eventLabel = this.diagram
       .locator('.djs-element')
-      .filter({hasText: new RegExp(`${eventName}`, 'i')});
+      .filter({ hasText: new RegExp(`${eventName}`, 'i') });
 
     const labelId = await eventLabel.getAttribute('data-element-id');
     const eventId = labelId?.split(/_label$/)[0];
@@ -95,20 +95,20 @@ export class OperateDiagramPage {
 
   showMetaData() {
     return this.popover
-      .getByRole('button', {name: 'show more metadata'})
+      .getByRole('button', { name: 'show more metadata' })
       .click();
   }
 
   getExecutionCount(elementId: string) {
     return this.diagram.evaluate(
-      (node, {elementId}) => {
+      (node, { elementId }) => {
         const completedOverlay: HTMLDivElement | null = node.querySelector(
           `[data-container-id="${elementId}"] [data-testid="state-overlay-completed"]`,
         );
 
         return completedOverlay?.innerText;
       },
-      {elementId},
+      { elementId },
     );
   }
 
@@ -133,7 +133,7 @@ export class OperateDiagramPage {
     }
     await this.showMetaData();
 
-    await this.monacoAriaContainer.waitFor({state: 'visible'});
+    await this.monacoAriaContainer.waitFor({ state: 'visible' });
 
     // Scroll to the bottom of the editor
     await this.monacoScrollableElement.evaluate((el) => {
@@ -146,7 +146,7 @@ export class OperateDiagramPage {
         : [options.expectedText];
       for (const text of expectedTexts) {
         await expect(
-          this.metadataModal.getByText(text, {exact: false}),
+          this.metadataModal.getByText(text, { exact: false }),
         ).toBeVisible();
       }
     }
@@ -157,7 +157,7 @@ export class OperateDiagramPage {
         : [options.hiddenText];
       for (const text of hiddenTexts) {
         await expect(
-          this.metadataModal.getByText(text, {exact: false}),
+          this.metadataModal.getByText(text, { exact: false }),
         ).toBeHidden();
       }
     }
@@ -184,5 +184,15 @@ export class OperateDiagramPage {
 
   async closeMetadataModal(): Promise<void> {
     await this.metadataModalCloseButton.click();
+  }
+
+  /**
+   * 
+   * @param elementName corresponding element
+   * @param state active or incidents
+   * @returns locator to the state-overlay element
+   */
+  async getStateOverlayByElementNameAndState(elementName: string, state: string) {
+    return this.page.locator(`[data-container-id=${elementName}]`).getByTestId(`state-overlay-${state}`);
   }
 }
