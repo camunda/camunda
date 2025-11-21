@@ -21,7 +21,6 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
 
 public class PermissionsBehavior {
 
@@ -84,7 +83,7 @@ public class PermissionsBehavior {
     return verifyPermissionsDontExist(record, permissionsToAdd);
   }
 
-  private @NotNull Either<Rejection, AuthorizationRecord> verifyPermissionsDontExist(
+  private Either<Rejection, AuthorizationRecord> verifyPermissionsDontExist(
       final AuthorizationRecord record, final Set<PermissionType> permissionsToAdd) {
     for (final PermissionType permission : permissionsToAdd) {
       final var addedAuthorizationScope = AuthorizationScope.of(record.getResourceId());
