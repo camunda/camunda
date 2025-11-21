@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.nodeid;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Initialized;
-import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Uninitialized;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -145,7 +144,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       }
       final var nodeId = i++ % clusterSize;
       final var storedLease = nodeIdRepository.getLease(nodeId);
-      currentLease = tryAcquire(storedLease);
+      currentLease = tryAcquireInitialLease(storedLease);
     }
     if (currentLease != null) {
       LOG.info(
@@ -155,33 +154,10 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     }
   }
 
-  private StoredLease.Initialized tryAcquire(final StoredLease lease) {
+  private StoredLease.Initialized tryAcquireInitialLease(final StoredLease lease) {
     try {
-      switch (lease) {
-        case final Initialized initialized -> {
-          if (initialized.lease().isStillValid(clock.millis())) {
-            LOG.debug("Lease {} is held by another process, skipping it", initialized);
-            return null;
-          } else {
-            LOG.debug("Trying to acquire an expired lease {}", initialized);
-            final var newLease =
-                (initialized.metadata().task().equals(taskId))
-                    ? initialized.lease().renew(clock.millis(), leaseDuration)
-                    : new Lease(
-                        taskId,
-                        clock.millis() + leaseDuration.toMillis(),
-                        initialized.lease().nodeInstance());
-            return nodeIdRepository.acquire(newLease, initialized.eTag());
-          }
-        }
-        case final Uninitialized uninitialized -> {
-          final var newLease =
-              new Lease(taskId, clock.millis() + leaseDuration.toMillis(), uninitialized.node());
-          LOG.debug(
-              "Trying to take uninitialized lease: {} with new lease {}", uninitialized, newLease);
-          return nodeIdRepository.acquire(newLease, uninitialized.eTag());
-        }
-      }
+      var newLease = lease.acquireInitialLease(taskId, clock, leaseDuration);
+      return nodeIdRepository.acquire(newLease, lease.eTag());
     } catch (final Exception e) {
       LOG.warn("Failed to acquire the lease {}", lease, e);
       return null;
