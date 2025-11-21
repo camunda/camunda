@@ -7,27 +7,22 @@
  */
 
 import {useFilters} from 'modules/hooks/useFilters';
-import {type GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   buildProcessInstanceFilter,
   type BuildProcessInstanceFilterOptions,
 } from 'modules/utils/filter/v2/processInstanceFilterBuilder';
 
-function useProcessInstanceFilters(
+function useProcessInstanceQueryFilters(
   options: Omit<
     BuildProcessInstanceFilterOptions,
     'includeIds' | 'excludeIds'
   > = {},
-): GetProcessDefinitionStatisticsRequestBody {
+): Pick<QueryProcessInstancesRequestBody, 'filter'> {
   const {getFilters} = useFilters();
   const filters = getFilters();
-  const filter = buildProcessInstanceFilter(filters, options);
 
-  return {
-    filter,
-  } satisfies NonNullable<
-    Pick<GetProcessDefinitionStatisticsRequestBody, 'filter'>
-  >;
+  return {filter: buildProcessInstanceFilter(filters, options)};
 }
 
-export {useProcessInstanceFilters};
+export {useProcessInstanceQueryFilters};

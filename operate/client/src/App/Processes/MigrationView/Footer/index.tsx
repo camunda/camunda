@@ -17,13 +17,13 @@ import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
-import {handleOperationError} from 'modules/utils/notifications';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
+import {useProcessInstanceQueryFilters} from 'modules/hooks/useProcessInstanceQueryFilters';
+import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {handleOperationError} from 'modules/utils/notifications';
 
 const Footer: React.FC = observer(() => {
-  const baseFilter = useProcessInstanceFilters().filter;
+  const baseFilter = useProcessInstanceQueryFilters().filter;
 
   const navigate = useNavigate();
 
