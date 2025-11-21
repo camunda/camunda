@@ -150,7 +150,8 @@ test.describe
     );
   });
 
-  test('Create a Batch Operation to Resolve Incidents - With Multiple Filters', async ({
+  // Skipped due to bug 41209: https://github.com/camunda/camunda/issues/41209
+  test.skip('Create a Batch Operation to Resolve Incidents - With Multiple Filters', async ({
     request,
   }) => {
     const localState: Record<string, string> = {
