@@ -16,10 +16,10 @@
 package io.camunda.client.spring.actuator;
 
 import io.camunda.client.health.HealthCheck;
-import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
 
-public class CamundaClientHealthIndicator extends AbstractHealthIndicator {
+public class CamundaClientHealthIndicator implements HealthIndicator {
 
   private final HealthCheck healthCheck;
 
@@ -28,11 +28,10 @@ public class CamundaClientHealthIndicator extends AbstractHealthIndicator {
   }
 
   @Override
-  protected void doHealthCheck(final Health.Builder builder) {
-    switch (healthCheck.health()) {
-      case UP -> builder.up();
-      case DOWN -> builder.down();
-      default -> throw new IllegalStateException("Unexpected value: " + healthCheck.health());
-    }
+  public Health health() {
+    return switch (healthCheck.health()) {
+      case UP -> Health.up().build();
+      case DOWN -> Health.down().build();
+    };
   }
 }
