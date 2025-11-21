@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
-public record Version(long version) {
+import com.fasterxml.jackson.annotation.JsonValue;
+
+public record Version(@JsonValue long version) {
   private static final Version ZERO = new Version(0L);
 
   public static Version zero() {

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
+import static io.camunda.zeebe.dynamic.nodeid.Lease.OBJECT_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -18,7 +19,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class LeaseTest {
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   final NodeInstance nodeInstance = new NodeInstance(1, new Version(117L));
   final long originalTimestamp = 1000L;
   final Lease lease =
@@ -76,7 +76,7 @@ public class LeaseTest {
     // then
     var expectedJson =
         """
-        {"taskId":"task1","timestamp":1000,"nodeInstance":{"id":1,"version":{"version":117}},"versionMappings":{"mappingsByNodeId":{"1":{"version":117},"2":{"version":119},"3":{"version":3}}}}""";
+        {"taskId":"task1","timestamp":1000,"nodeInstance":{"id":1,"version":117},"versionMappings":{"mappingsByNodeId":{"1":117,"2":119,"3":3}}}""";
     assertThat(serialized).isEqualTo(expectedJson);
     final var deserialized = Lease.fromJson(OBJECT_MAPPER, serialized);
     assertThat(deserialized).isEqualTo(lease);
