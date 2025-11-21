@@ -183,9 +183,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.ERROR_THROWN, job);
       responseWriter.writeEventOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
       jobMetrics.countJobEvent(JobAction.ERROR_THROWN, job.getJobKind(), job.getType());
+      eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
     }
-
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
   }
 
   private boolean serviceTaskInstanceIsActive(final ElementInstance serviceTaskInstance) {
