@@ -92,7 +92,7 @@ public final class ArgumentUtil {
   public static void ensureNotNullIf(
       final String tenantId, final boolean equals, final String tenantId1) {
     if (equals) {
-      ensureNotNull(tenantId, tenantId1);
+      ensureNotNullNorEmpty(tenantId, tenantId1);
     }
   }
 }

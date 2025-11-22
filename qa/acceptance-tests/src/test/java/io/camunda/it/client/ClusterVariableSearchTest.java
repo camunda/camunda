@@ -323,4 +323,453 @@ public class ClusterVariableSearchTest {
     final var sortedNames = names.stream().sorted(Comparator.reverseOrder()).toList();
     assertThat(names).containsExactlyElementsOf(sortedNames);
   }
+
+  // ============ ADVANCED FILTER TESTS ============
+
+  @Test
+  void shouldSearchClusterVariablesByNameWithLike() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.like("globalVarSearch*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items()).anyMatch(item -> item.getName().contains("globalVarSearch"));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByNameWithExactMatch() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.eq(globalVarName1)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anySatisfy(
+            item -> {
+              assertThat(item.getName()).isEqualTo(globalVarName1);
+              assertThat(item.getValue()).isEqualTo(VALUE_RESULT.formatted(globalVarValue1));
+            });
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByNameNotEqual() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.neq(globalVarName1)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .noneSatisfy(item -> assertThat(item.getName()).isEqualTo(globalVarName1));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByNameExists() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.exists(true)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(item -> assertThat(item.getName()).isNotNull().isNotEmpty());
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByNameWithMultipleValues() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.in(globalVarName1, globalVarName2)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anySatisfy(item -> assertThat(item.getName()).isEqualTo(globalVarName1))
+        .anySatisfy(item -> assertThat(item.getName()).isEqualTo(globalVarName2));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByValueWithLike() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.value(v -> v.like("*testValue*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items()).anyMatch(item -> item.getValue().contains("testValue"));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByValueWithExactMatch() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.value(v -> v.eq(VALUE_RESULT.formatted(globalVarValue1))))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anySatisfy(
+            item -> {
+              assertThat(item.getName()).isEqualTo(globalVarName1);
+              assertThat(item.getValue()).isEqualTo(VALUE_RESULT.formatted(globalVarValue1));
+            });
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByValueNotEqual() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.value(v -> v.neq(VALUE_RESULT.formatted(globalVarValue1))))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .noneSatisfy(
+            item -> assertThat(item.getValue()).isEqualTo(VALUE_RESULT.formatted(globalVarValue1)));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByValueWithMultipleValues() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(
+                f ->
+                    f.value(
+                        v ->
+                            v.in(
+                                VALUE_RESULT.formatted(globalVarValue1),
+                                VALUE_RESULT.formatted(globalVarValue2))))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anySatisfy(
+            item -> assertThat(item.getValue()).isEqualTo(VALUE_RESULT.formatted(globalVarValue1)))
+        .anySatisfy(
+            item -> assertThat(item.getValue()).isEqualTo(VALUE_RESULT.formatted(globalVarValue2)));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByValueExists() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.value(v -> v.exists(true)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(item -> assertThat(item.getValue()).isNotNull().isNotEmpty());
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByScopeWithLike() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.scope(s -> s.like("GLOBAL")))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anySatisfy(item -> assertThat(item.getScope()).isEqualTo(ClusterVariableScope.GLOBAL));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByScopeWithEquality() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.scope(s -> s.eq(ClusterVariableScope.GLOBAL)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(item -> assertThat(item.getScope()).isEqualTo(ClusterVariableScope.GLOBAL));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByScopeWithNotEqual() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.scope(s -> s.neq(ClusterVariableScope.GLOBAL)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    // Should return only TENANT scoped variables or empty
+    assertThat(response.items())
+        .noneSatisfy(item -> assertThat(item.getScope()).isEqualTo(ClusterVariableScope.GLOBAL));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByScopeExists() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.scope(s -> s.exists(true)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items()).allSatisfy(item -> assertThat(item.getScope()).isNotNull());
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByScopeWithMultipleValues() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(
+                f -> f.scope(s -> s.in(ClusterVariableScope.GLOBAL, ClusterVariableScope.TENANT)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(
+            item ->
+                assertThat(item.getScope())
+                    .isIn(ClusterVariableScope.GLOBAL, ClusterVariableScope.TENANT));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByTenantIdWithLike() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.tenantId(t -> t.like("tenant_*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items())
+        .anyMatch(item -> item.getTenantId() != null && item.getTenantId().startsWith("tenant_"));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByTenantIdWithExactMatch() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.tenantId(t -> t.eq(tenantId)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(item -> assertThat(item.getTenantId()).isEqualTo(tenantId));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByTenantIdNotEqual() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.tenantId(t -> t.neq(tenantId)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items())
+        .noneSatisfy(item -> assertThat(item.getTenantId()).isEqualTo(tenantId));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByTenantIdExists() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.tenantId(t -> t.exists(true)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).allSatisfy(item -> assertThat(item.getTenantId()).isNotNull());
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByTenantIdWithMultipleValues() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.tenantId(t -> t.in(tenantId, tenantIdMixed)))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(item -> assertThat(item.getTenantId()).isIn(tenantId, tenantIdMixed));
+  }
+
+  @Test
+  void shouldSearchClusterVariablesWithCombinedFilters() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.scope(ClusterVariableScope.GLOBAL).name(n -> n.like("globalVarSearch*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(
+            item -> {
+              assertThat(item.getScope()).isEqualTo(ClusterVariableScope.GLOBAL);
+              assertThat(item.getName()).contains("globalVarSearch");
+            });
+  }
+
+  @Test
+  void shouldSearchClusterVariablesWithMultipleCombinedFilters() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(
+                f ->
+                    f.scope(s -> s.eq(ClusterVariableScope.TENANT))
+                        .tenantId(t -> t.eq(tenantIdMixed))
+                        .name(n -> n.like("tenantVarSearchOnly*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(
+            item -> {
+              assertThat(item.getScope()).isEqualTo(ClusterVariableScope.TENANT);
+              assertThat(item.getTenantId()).isEqualTo(tenantIdMixed);
+              assertThat(item.getName()).contains("tenantVarSearchOnly");
+            });
+  }
+
+  @Test
+  void shouldSearchClusterVariablesWithValueAndNameFilters() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.like("globalVarSearch*")).value(v -> v.like("*testValue*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(
+            item -> {
+              assertThat(item.getName()).contains("globalVarSearch");
+              assertThat(item.getValue()).contains("testValue");
+            });
+  }
+
+  @Test
+  void shouldSearchClusterVariablesSortByScopeAndFilter() {
+    // when
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.scope(s -> s.eq(ClusterVariableScope.GLOBAL)))
+            .sort(s -> s.name().asc())
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .allSatisfy(item -> assertThat(item.getScope()).isEqualTo(ClusterVariableScope.GLOBAL));
+
+    // Verify sorting
+    final var names = response.items().stream().map(ClusterVariable::getName).toList();
+    final var sortedNames = names.stream().sorted().toList();
+    assertThat(names).containsExactlyElementsOf(sortedNames);
+  }
 }

@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.ClusterVariableScope;
+import io.camunda.client.api.search.filter.builder.ClusterVariableScopeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
@@ -63,10 +64,26 @@ public interface ClusterVariableFilter extends SearchRequestFilter {
   ClusterVariableFilter tenantId(final String tenantId);
 
   /**
+   * Filters cluster variables by the specified tenantId using {@link StringProperty} consumer.
+   *
+   * @param fn the tenantId {@link StringProperty} consumer of the variable
+   * @return the updated filter
+   */
+  ClusterVariableFilter tenantId(Consumer<StringProperty> fn);
+
+  /**
    * Filters cluster variables by the specified scope.
    *
    * @param scope the scope of the variable (GLOBAL or TENANT)
    * @return the updated filter
    */
   ClusterVariableFilter scope(final ClusterVariableScope scope);
+
+  /**
+   * Filters jobs by the specified kind using {@link ClusterVariableScope} consumer.
+   *
+   * @param fn the kind {@link ClusterVariableScope} consumer of the job
+   * @return the updated filter
+   */
+  ClusterVariableFilter scope(final Consumer<ClusterVariableScopeProperty> fn);
 }

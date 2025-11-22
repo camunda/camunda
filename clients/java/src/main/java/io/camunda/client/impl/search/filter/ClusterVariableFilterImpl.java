@@ -17,10 +17,11 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.filter.ClusterVariableFilter;
+import io.camunda.client.api.search.filter.builder.ClusterVariableScopeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.ClusterVariableScopePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.client.protocol.rest.ClusterVariableSearchQueryFilterRequest;
 import java.util.function.Consumer;
 
@@ -64,13 +65,29 @@ public class ClusterVariableFilterImpl
 
   @Override
   public ClusterVariableFilter tenantId(final String tenantId) {
-    filter.setTenantId(tenantId);
+    tenantId(b -> b.eq(tenantId));
+    return this;
+  }
+
+  @Override
+  public ClusterVariableFilter tenantId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTenantId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public ClusterVariableFilter scope(final ClusterVariableScope scope) {
-    filter.setScope(ClusterVariableScopeEnum.valueOf(scope.name()));
+    scope(b -> b.eq(scope));
+    return this;
+  }
+
+  @Override
+  public ClusterVariableFilter scope(final Consumer<ClusterVariableScopeProperty> fn) {
+    final ClusterVariableScopeProperty property = new ClusterVariableScopePropertyImpl();
+    fn.accept(property);
+    filter.setScope(provideSearchRequestProperty(property));
     return this;
   }
 

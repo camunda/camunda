@@ -110,9 +110,8 @@ public class ClusterVariableCommandTest {
                     .create("variableName", "value")
                     .send()
                     .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining(
-            "Invalid cluster variable scope. Tenant-scoped variables must have a non-blank tenant ID.");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be empty");
   }
 
   @Test
