@@ -370,6 +370,20 @@ class VariableSearchTest {
         .isEqualTo(thirdKey);
   }
 
+  @Test
+  void shouldSearchAllWhereValueExists() {
+    // when
+    final var resultSearchFrom =
+        camundaClient
+            .newVariableSearchRequest()
+            .filter(f -> f.value(v -> v.exists(true)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchFrom.items().size()).isEqualTo(5);
+  }
+
   private static void waitForTasksBeingExported() {
     Awaitility.await("should receive data from ES")
         .atMost(TIMEOUT_DATA_AVAILABILITY)

@@ -158,6 +158,12 @@
         OR VAR_FULL_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
           ESCAPE ${escapeChar}
       </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        VAR_VALUE IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        VAR_VALUE IS NULL
+      </when>
     </choose>
   </sql>
 
