@@ -41,7 +41,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID
       requestBody:
         required: true
@@ -121,6 +121,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
           description: Cluster variable not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
     delete:
@@ -147,6 +151,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
           description: Cluster variable not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
   /cluster-variables/tenants/{tenantId}/{name}:
@@ -161,7 +169,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID
         - name: name
           in: path
@@ -184,6 +192,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
           description: Cluster variable not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
     delete:
@@ -197,7 +209,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID
         - name: name
           in: path
@@ -216,6 +228,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
           description: Cluster variable not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
@@ -224,7 +240,7 @@ components:
     ClusterVariableScopeEnum:
       type: string
       enum: [ GLOBAL, TENANT ]
-      description: The scope of a cluster variable - either GLOBAL or TENANT
+      description: The scope of a cluster variable.
     CreateClusterVariableRequest:
       type: object
       required:
@@ -233,23 +249,28 @@ components:
       properties:
         name:
           type: string
-          description: The name of the cluster variable
+          description: The name of the cluster variable. Must be unique within its scope (global or tenant-specific).
         value:
           type: object
-          description: The value of the cluster variable
+          description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
     ClusterVariableResult:
       type: object
+      required:
+        - name
+        - value
+        - scope
       properties:
         name:
           type: string
+          description: The name of the cluster variable. Unique within its scope (global or tenant-specific).
         value:
           type: string
+          description: The value of the cluster variable as a JSON-serialized string. Regardless of the input type during creation, values are returned as strings.
         scope:
           $ref: '#/components/schemas/ClusterVariableScopeEnum'
         tenantId:
           type: string
-          nullable: true
-          description: Required if scope is TENANT, must be null or undefined for GLOBAL
+          description: Only provided if the cluster variable scope is TENANT.
     ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false
@@ -296,11 +317,44 @@ components:
         scope:
           description: The scope filter for cluster variables.
           allOf:
-            - $ref: '#/components/schemas/ClusterVariableScopeEnum'
+            - $ref: '#/components/schemas/ClusterVariableScopeFilterProperty'
         tenantId:
           description: Tenant ID of this variable.
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+    ClusterVariableScopeFilterProperty:
+      description: JobKindEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        - $ref: '#/components/schemas/AdvancedClusterVariableScopeFilter'
+    AdvancedClusterVariableScopeFilter:
+      title: Advanced filter
+      description: Advanced ClusterVariableScopeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
     ClusterVariableSearchQueryResult:
       description: Cluster variable search query response.
       type: object

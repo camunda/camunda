@@ -310,8 +310,12 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getValue())
         .map(mapToOperations(String.class))
         .ifPresent(builder::valueOperations);
-    ofNullable(filter.getScope()).map(Enum::name).ifPresent(builder::scopes);
-    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    ofNullable(filter.getScope())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::scopeOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
 
     return builder.build();
   }
