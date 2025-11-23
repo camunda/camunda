@@ -311,7 +311,8 @@ class DocumentResourceAccessControllerTest {
     // when - then
     assertThatExceptionOfType(TenantAccessDeniedException.class)
         .isThrownBy(() -> controller.doGet(securityContext, doGetAccessCheckApplier(document)))
-        .withMessage("Tenant access was denied");
+        .withMessage("Tenant access was denied")
+        .satisfies(err -> assertThat(err.getReason()).isEqualTo(Reason.FORBIDDEN));
   }
 
   private static <T> Function<ResourceAccessChecks, T> doGetAccessCheckApplier(final T document) {
