@@ -7,19 +7,23 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_ID;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.tenant.TenantCheckApplier;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -30,10 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -46,6 +48,10 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
   @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
+  @Autowired private TenantCheckApplier<Query> es8TenantCheckApplier;
+
+  @Autowired private ElasticsearchClient es8Client;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -60,20 +66,24 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
             : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-    final QueryBuilder query =
+    final Query query =
         joinWithAnd(
-            termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
-            termQuery(ListViewTemplate.ID, flowNodeInstanceId));
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
-            .source(new SearchSourceBuilder().query(query).fetchSource(ACTIVITY_ID, null));
-    final SearchResponse response;
+            ElasticsearchUtil.termsQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
+            ElasticsearchUtil.termsQuery(ID, flowNodeInstanceId));
+    final var tenantAwareQuery = es8TenantCheckApplier.apply(query);
+    final var request =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(listViewTemplate, queryType))
+            .query(tenantAwareQuery)
+            .source(s -> s.filter(f -> f.includes(ACTIVITY_ID)))
+            .build();
+
     try {
-      response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value != 1) {
+      final var res = es8Client.search(request, MAP_CLASS);
+      if (res.hits().total().value() != 1) {
         throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
       } else {
-        return String.valueOf(response.getHits().getAt(0).getSourceAsMap().get(ACTIVITY_ID));
+        return String.valueOf(res.hits().hits().getFirst().source().get(ACTIVITY_ID));
       }
     } catch (final IOException e) {
       throw new OperateRuntimeException(
@@ -134,16 +144,24 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
             : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate, queryType)
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey))
-                    .fetchSource(FlowNodeInstanceTemplate.TREE_PATH, null));
+    final var query =
+        ElasticsearchUtil.termsQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey);
+    final var tenantAwareQuery = es8TenantCheckApplier.apply(query);
+    final var request =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, queryType))
+            .query(tenantAwareQuery)
+            .source(s -> s.filter(f -> f.includes(FlowNodeInstanceTemplate.TREE_PATH)))
+            .build();
     try {
-      final SearchHits hits = tenantAwareClient.search(searchRequest).getHits();
-      if (hits.getTotalHits().value > 0) {
-        return (String) hits.getHits()[0].getSourceAsMap().get(FlowNodeInstanceTemplate.TREE_PATH);
+      final var res = es8Client.search(request, MAP_CLASS);
+      if (res.hits().total().value() > 0) {
+        return res.hits()
+            .hits()
+            .getFirst()
+            .source()
+            .get(FlowNodeInstanceTemplate.TREE_PATH)
+            .toString();
       } else if (attemptCount < 1 && operateProperties.getImporter().isRetryReadingParents()) {
         // retry for the case, when ELS has not yet refreshed the indices
         ThreadUtil.sleepFor(2000L);
