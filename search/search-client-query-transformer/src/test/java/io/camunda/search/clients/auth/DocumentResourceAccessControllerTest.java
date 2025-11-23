@@ -8,10 +8,15 @@
 package io.camunda.search.clients.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.exception.CamundaSearchException.Reason;
+import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.exception.ResourceAccessDeniedException.MissingAuthorization;
+import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -21,8 +26,11 @@ import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -234,5 +242,82 @@ class DocumentResourceAccessControllerTest {
     final var result = reference.get();
     assertThat(result.tenantCheck().enabled()).isFalse();
     assertThat(result.tenantCheck().tenantIds()).isNull();
+  }
+
+  @Test
+  void shouldReturnResourceOnGetWhenAccessAllowed() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+    final var document = "document";
+
+    when(resourceAccessProvider.hasResourceAccess(authentication, authorization, document))
+        .thenReturn(ResourceAccess.allowed(authorization));
+    when(tenantAccessProvider.hasTenantAccess(authentication, document))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when
+    final var result = controller.doGet(securityContext, doGetAccessCheckApplier(document));
+
+    // then
+    assertThat(result).isEqualTo(document);
+  }
+
+  @Test
+  void shouldThrowResourceAccessDeniedOnGetWhenAccessDenied() {
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+    final var document = "document";
+
+    when(resourceAccessProvider.hasResourceAccess(authentication, authorization, document))
+        .thenReturn(ResourceAccess.denied(authorization));
+    when(tenantAccessProvider.hasTenantAccess(authentication, document))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when - then
+    assertThatExceptionOfType(ResourceAccessDeniedException.class)
+        .isThrownBy(() -> controller.doGet(securityContext, doGetAccessCheckApplier(document)))
+        .withMessageContaining(
+            "Unauthorized to perform operation 'READ_PROCESS_DEFINITION' on resource 'PROCESS_DEFINITION'")
+        .satisfies(
+            err -> {
+              assertThat(err.getReason()).isEqualTo(Reason.FORBIDDEN);
+              assertThat(err.getMissingAuthorization())
+                  .isEqualTo(
+                      new MissingAuthorization(
+                          AuthorizationResourceType.PROCESS_DEFINITION,
+                          PermissionType.READ_PROCESS_DEFINITION));
+            });
+  }
+
+  @Test
+  void shouldThrowTenantAccessDeniedOnGetWhenNoTenantAccess() {
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+    final var document = "document";
+
+    when(tenantAccessProvider.hasTenantAccess(authentication, document))
+        .thenReturn(TenantAccess.denied(List.of("deniedTenant")));
+
+    // when - then
+    assertThatExceptionOfType(TenantAccessDeniedException.class)
+        .isThrownBy(() -> controller.doGet(securityContext, doGetAccessCheckApplier(document)))
+        .withMessage("Tenant access was denied");
+  }
+
+  private static <T> Function<ResourceAccessChecks, T> doGetAccessCheckApplier(final T document) {
+    return checks -> {
+      assertThat(checks).isEqualTo(ResourceAccessChecks.disabled());
+      return document;
+    };
   }
 }
