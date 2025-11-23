@@ -13,7 +13,11 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.databind.JavaType;
@@ -24,13 +28,10 @@ import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -59,6 +60,8 @@ public abstract class ElasticsearchUtil {
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
   public static RequestOptions requestOptions = RequestOptions.DEFAULT;
+  public static final Class<Map<String, Object>> MAP_CLASS =
+      (Class<Map<String, Object>>) (Class<?>) Map.class;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static void setRequestOptions(final RequestOptions newRequestOptions) {
@@ -77,7 +80,7 @@ public abstract class ElasticsearchUtil {
     return searchRequest;
   }
 
-  private static String whereToSearch(
+  public static String whereToSearch(
       final IndexTemplateDescriptor template, final QueryType queryType) {
     switch (queryType) {
       case ONLY_RUNTIME:
@@ -149,8 +152,31 @@ public abstract class ElasticsearchUtil {
     }
   }
 
+  /**
+   * Join queries with AND clause. If 0 queries are passed for wrapping, then null is returned. If 1
+   * parameter is passed, it will be returned back as is. Otherwise, a new BoolQuery will be created
+   * and returned.
+   *
+   * @param queries Variable number of Query objects to join
+   * @return A single Query combining all inputs with AND logic, or null if no queries provided
+   */
+  public static Query joinWithAnd(final Query... queries) {
+    final List<Query> notNullQueries = throwAwayNullElements(queries);
+
+    return switch (notNullQueries.size()) {
+      case 0 -> null;
+      case 1 -> notNullQueries.get(0);
+      default -> Query.of(q -> q.bool(b -> b.must(notNullQueries)));
+    };
+  }
+
   public static BoolQueryBuilder createMatchNoneQuery() {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
+  }
+
+  public static BoolQuery.Builder createMatchNoneQueryEs8() {
+    return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.bool()
+        .must(m -> m.matchNone(mn -> mn));
   }
 
   public static void processBulkRequest(
@@ -467,18 +493,6 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static Set<String> scrollIdsToSet(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final Set<String> result = new HashSet<>();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
-        };
-    scrollWith(request, esClient, collectIds, null, collectIds);
-    return result;
-  }
-
   public static Map<String, String> getIndexNames(
       final String aliasName, final Collection<String> ids, final RestHighLevelClient esClient) {
 
@@ -601,27 +615,19 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  private static final class DelegatingActionListener<Response>
-      implements ActionListener<Response> {
+  public static Query termsQuery(final String name, final Collection<?> values) {
+    return Query.of(
+        q ->
+            q.terms(
+                t ->
+                    t.field(name)
+                        .terms(
+                            TermsQueryField.of(
+                                tf -> tf.value(values.stream().map(FieldValue::of).toList())))));
+  }
 
-    private final CompletableFuture<Response> future;
-    private final Executor executorDelegate;
-
-    private DelegatingActionListener(
-        final CompletableFuture<Response> future, final Executor executor) {
-      this.future = future;
-      executorDelegate = executor;
-    }
-
-    @Override
-    public void onResponse(final Response response) {
-      executorDelegate.execute(() -> future.complete(response));
-    }
-
-    @Override
-    public void onFailure(final Exception e) {
-      executorDelegate.execute(() -> future.completeExceptionally(e));
-    }
+  public static <T> Query termsQuery(final String name, final T value) {
+    return termsQuery(name, Collections.singletonList(value));
   }
 
   public enum QueryType {
