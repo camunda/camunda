@@ -10,7 +10,6 @@ package io.camunda.security.impl;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -53,7 +52,7 @@ public class AuthorizationCheckerTest {
     // given
     final var result =
         authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
+            CamundaAuthentication.of(a -> a), Authorization.of(a -> a));
 
     // then
     Assertions.assertThat(result).isEmpty();
@@ -78,8 +77,7 @@ public class AuthorizationCheckerTest {
     // when
     final var result =
         authorizationChecker.isAuthorized(
-            authScope,
-            SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
+            authScope, CamundaAuthentication.of(a -> a), Authorization.of(a -> a));
 
     // then
     Assertions.assertThat(result).isFalse();
@@ -180,14 +178,9 @@ public class AuthorizationCheckerTest {
         final Authorization<?> authorization,
         final AuthorizationScope attemptedScope,
         final Expected expected) {
-      // given
-      final var securityContext =
-          SecurityContext.of(
-              c -> c.withAuthentication(authentication).withAuthorization(authorization));
-
       // when
       final boolean isAuthorized =
-          authorizationChecker.isAuthorized(attemptedScope, securityContext);
+          authorizationChecker.isAuthorized(attemptedScope, authentication, authorization);
 
       // then
       Assertions.assertThat(isAuthorized)
@@ -251,14 +244,9 @@ public class AuthorizationCheckerTest {
         final Authorization<?> authorization,
         final AuthorizationScope attemptedScope,
         final Expected expected) {
-      // given
-      final var securityContext =
-          SecurityContext.of(
-              c -> c.withAuthentication(authentication).withAuthorization(authorization));
-
       // when
       final boolean isAuthorized =
-          authorizationChecker.isAuthorized(attemptedScope, securityContext);
+          authorizationChecker.isAuthorized(attemptedScope, authentication, authorization);
 
       // then
       Assertions.assertThat(isAuthorized)
@@ -946,18 +934,16 @@ public class AuthorizationCheckerTest {
           reader.create(entity);
         }
         final var checker = new AuthorizationChecker(reader);
-        final var securityContext =
-            SecurityContext.of(
-                c ->
-                    c.withAuthentication(scenario.authentication())
-                        .withAuthorization(
-                            a ->
-                                a.resourceType(scenario.resourceType())
-                                    .permissionType(scenario.permissionType())
-                                    .resourceId(WILDCARD_RESOURCE_ID)));
 
         // when
-        final var actual = checker.retrieveAuthorizedAuthorizationScopes(securityContext);
+        final var actual =
+            checker.retrieveAuthorizedAuthorizationScopes(
+                scenario.authentication(),
+                Authorization.of(
+                    a ->
+                        a.resourceType(scenario.resourceType())
+                            .permissionType(scenario.permissionType())
+                            .resourceId(WILDCARD_RESOURCE_ID)));
 
         // then
         Assertions.assertThat(actual)
