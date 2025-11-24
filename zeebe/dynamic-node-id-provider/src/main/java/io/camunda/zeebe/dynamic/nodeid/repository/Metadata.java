@@ -11,6 +11,7 @@ import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public record Metadata(Optional<String> task, Version version) {
   // KEYS MUST BE LOWERCASE
@@ -23,6 +24,10 @@ public record Metadata(Optional<String> task, Version version) {
       throw new IllegalArgumentException("task cannot be empty");
     }
     Objects.requireNonNull(version, "version cannot be null");
+  }
+
+  public Metadata forRelease() {
+    return new Metadata(Optional.empty(), version);
   }
 
   public static Metadata fromLease(final Lease lease) {

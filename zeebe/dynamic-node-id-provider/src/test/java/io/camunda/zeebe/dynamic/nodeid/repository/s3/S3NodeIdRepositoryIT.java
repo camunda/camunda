@@ -195,7 +195,9 @@ public class S3NodeIdRepositoryIT {
 
     // then
     final var afterRelease = repository.getLease(id);
-    assertThat(afterRelease).isInstanceOf(StoredLease.Uninitialized.class);
+    assertThat(afterRelease)
+        .isInstanceOf(StoredLease.Uninitialized.class)
+        .returns(acquired.node(), StoredLease::node);
   }
 
   @Test

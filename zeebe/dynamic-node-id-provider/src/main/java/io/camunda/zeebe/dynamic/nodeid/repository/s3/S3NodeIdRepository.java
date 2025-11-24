@@ -115,7 +115,9 @@ public class S3NodeIdRepository implements NodeIdRepository {
   public void release(final StoredLease.Initialized lease) {
     final var nodeId = lease.lease().nodeInstance().id();
     final PutObjectRequest putRequest =
-        createPutObjectRequest(nodeId, Optional.empty(), Optional.of(lease.eTag())).build();
+        createPutObjectRequest(
+                nodeId, Optional.of(lease.metadata().forRelease()), Optional.of(lease.eTag()))
+            .build();
     try {
       LOG.info("Release lease {}", lease);
       client.putObject(putRequest, RequestBody.empty());
