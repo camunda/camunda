@@ -24,9 +24,9 @@ type DecisionDefinitionsSearchFilter = NonNullable<
   QueryDecisionDefinitionsRequestBody['filter']
 >;
 
-type DecisionInstanceFiltersField = keyof DecisionInstanceFilters;
-type DecisionInstanceFilters = z.infer<typeof DecisionInstancesFilterSchema>;
-const DecisionInstancesFilterSchema = z
+type DecisionsFilterField = keyof DecisionsFilter;
+type DecisionsFilter = z.infer<typeof DecisionsFilterSchema>;
+const DecisionsFilterSchema = z
   .object({
     name: z.string().optional(),
     version: z.string().optional(),
@@ -40,6 +40,14 @@ const DecisionInstancesFilterSchema = z
   })
   .catch({});
 
+/** Parses a {@linkcode DecisionsFilter} from URL search params. */
+function parseDecisionsFilter(search: URLSearchParams | string) {
+  if (typeof search === 'string') {
+    search = new URLSearchParams(search);
+  }
+  return DecisionsFilterSchema.parse(Object.fromEntries(search));
+}
+
 /**
  * Parses filter arguments for a decision-instances search from the given {@linkcode URLSearchParams}.
  * Returns `undefined` when no decision-instance-state filter is selected.
@@ -47,7 +55,7 @@ const DecisionInstancesFilterSchema = z
 function parseDecisionInstancesSearchFilter(
   search: URLSearchParams,
 ): DecisionInstancesSearchFilter | undefined {
-  const filter = parseDecisionInstancesFilter(search);
+  const filter = parseDecisionsFilter(search);
   if (!filter.failed && !filter.evaluated) {
     return;
   }
@@ -70,7 +78,7 @@ function parseDecisionInstancesSearchFilter(
 function parseDecisionDefinitionsSearchFilter(
   search: URLSearchParams,
 ): DecisionDefinitionsSearchFilter {
-  const filter = parseDecisionInstancesFilter(search);
+  const filter = parseDecisionsFilter(search);
 
   return {
     decisionDefinitionId: filter.name,
@@ -79,15 +87,8 @@ function parseDecisionDefinitionsSearchFilter(
   };
 }
 
-function parseDecisionInstancesFilter(search: URLSearchParams | string) {
-  if (typeof search === 'string') {
-    search = new URLSearchParams(search);
-  }
-  return DecisionInstancesFilterSchema.parse(Object.fromEntries(search));
-}
-
 function mapDecisionEvaluationInstanceKeyFilter(
-  filter: DecisionInstanceFilters,
+  filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['decisionEvaluationInstanceKey'] {
   const keys = filter.decisionInstanceIds
     ? parseIds(filter.decisionInstanceIds)
@@ -99,7 +100,7 @@ function mapDecisionEvaluationInstanceKeyFilter(
 }
 
 function mapDecisionDefinitionVersionFilter(
-  filter: DecisionInstanceFilters,
+  filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['decisionDefinitionVersion'] {
   if (filter.version && filter.version !== 'all') {
     return parseInt(filter.version);
@@ -107,7 +108,7 @@ function mapDecisionDefinitionVersionFilter(
 }
 
 function mapStateFilter(
-  filter: DecisionInstanceFilters,
+  filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['state'] {
   const states: DecisionInstanceState[] = [];
 
@@ -122,7 +123,7 @@ function mapStateFilter(
 }
 
 function mapEvaluationDateFilter(
-  filter: DecisionInstanceFilters,
+  filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['evaluationDate'] {
   if (filter.evaluationDateBefore || filter.evaluationDateAfter) {
     return {
@@ -149,19 +150,18 @@ function parseDecisionInstancesSearchSort(
   });
 }
 
-const DECISION_INSTANCE_FILTER_FIELDS = z.keyof(
-  DecisionInstancesFilterSchema.unwrap(),
-).def.values;
+const DECISION_INSTANCE_FILTER_FIELDS = z.keyof(DecisionsFilterSchema.unwrap())
+  .def.values;
 
 const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS = z.keyof(
-  DecisionInstancesFilterSchema.unwrap().pick({failed: true, evaluated: true}),
+  DecisionsFilterSchema.unwrap().pick({failed: true, evaluated: true}),
 ).def.values;
 
-function updateDecisionsFiltersSearchString(
+function updateDecisionsFilterSearchString(
   currentSearch: string,
-  newFilters: DecisionInstanceFilters,
+  newFilters: DecisionsFilter,
 ) {
-  return updateFiltersSearchString<DecisionInstanceFilters>(
+  return updateFiltersSearchString<DecisionsFilter>(
     currentSearch,
     newFilters,
     DECISION_INSTANCE_FILTER_FIELDS,
@@ -172,8 +172,8 @@ function updateDecisionsFiltersSearchString(
 export {
   parseDecisionInstancesSearchFilter,
   parseDecisionDefinitionsSearchFilter,
-  parseDecisionInstancesFilter,
+  parseDecisionsFilter,
   parseDecisionInstancesSearchSort,
-  updateDecisionsFiltersSearchString,
+  updateDecisionsFilterSearchString,
 };
-export type {DecisionInstanceFilters, DecisionInstanceFiltersField};
+export type {DecisionsFilter, DecisionsFilterField};
