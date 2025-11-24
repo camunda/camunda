@@ -890,13 +890,13 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class))
         .ifPresent(builder::auditLogKeyOperations);
     ofNullable(filter.getProcessDefinitionKey())
-        .map(mapToOperations(String.class))
+        .map(mapToOperations(Long.class))
         .ifPresent(builder::processDefinitionKeyOperations);
     ofNullable(filter.getProcessInstanceKey())
-        .map(mapToOperations(String.class))
+        .map(mapToOperations(Long.class))
         .ifPresent(builder::processInstanceKeyOperations);
     ofNullable(filter.getElementInstanceKey())
-        .map(mapToOperations(String.class))
+        .map(mapToOperations(Long.class))
         .ifPresent(builder::elementInstanceKeyOperations);
     ofNullable(filter.getOperationType())
         .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
@@ -904,8 +904,7 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getResult())
         .map(io.camunda.zeebe.gateway.protocol.rest.AuditLogResultEnum::getValue)
         .map(String::toUpperCase)
-        .map(io.camunda.search.entities.AuditLogEntity.AuditLogResult::valueOf)
-        .ifPresent(builder::result);
+        .ifPresent(builder::results);
     ofNullable(filter.getTimestamp())
         .map(mapToOperations(OffsetDateTime.class))
         .ifPresent(builder::timestampOperations);
@@ -915,8 +914,7 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getActorType())
         .map(io.camunda.zeebe.gateway.protocol.rest.AuditLogActorTypeEnum::getValue)
         .map(String::toUpperCase)
-        .map(io.camunda.search.entities.AuditLogEntity.AuditLogActorType::valueOf)
-        .ifPresent(builder::actorType);
+        .ifPresent(builder::actorTypes);
     ofNullable(filter.getEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);

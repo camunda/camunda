@@ -16,6 +16,7 @@ public class RdbmsPurger {
   /** Do not change the order here !! */
   private static final List<String> TABLE_NAMES =
       List.of(
+          "AUDIT_LOG",
           "AUTHORIZATIONS",
           "BATCH_OPERATION_ITEM",
           "BATCH_OPERATION_ERROR",
