@@ -252,4 +252,37 @@ describe('VariablePanel', () => {
       ).not.toBeInTheDocument();
     },
   );
+
+  it.each([true, false])(
+    'should show failed placeholder if network error occurs while fetching process instance flow-node metadata - modification mode: %p',
+    async (enableModificationMode) => {
+      if (enableModificationMode) {
+        modificationsStore.enableModificationMode();
+      }
+
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+        wrapper: getWrapper(),
+      });
+
+      expect(
+        await screen.findByRole('button', {name: /add variable/i}),
+      ).toBeInTheDocument();
+
+      mockFetchFlowNodeMetadata().withNetworkError();
+
+      act(() => {
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+          flowNodeInstanceId: '2',
+        });
+      });
+
+      expect(
+        await screen.findByText('Variables could not be fetched'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument();
+    },
+  );
 });
