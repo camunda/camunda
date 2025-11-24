@@ -42,7 +42,7 @@ public class ProcessDefinitionInstanceVersionStatisticsDbReader
     final var dbSort =
         convertSort(
             query.sort(),
-            ProcessDefinitionInstanceVersionStatisticsSearchColumn.PROCESS_DEFINITION_ID);
+            ProcessDefinitionInstanceVersionStatisticsSearchColumn.PROCESS_DEFINITION_VERSION);
 
     if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
