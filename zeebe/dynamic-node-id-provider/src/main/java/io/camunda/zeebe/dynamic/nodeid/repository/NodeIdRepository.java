@@ -110,7 +110,7 @@ public interface NodeIdRepository extends AutoCloseable {
       }
       if (lease == null) {
         final var version =
-            Optional.ofNullable(metadata).map(Metadata::version).orElse(new Version(0));
+            Optional.ofNullable(metadata).map(Metadata::version).orElse(Version.zero());
         return new StoredLease.Uninitialized(new NodeInstance(nodeId, version), eTag);
       } else {
         return new StoredLease.Initialized(metadata, lease, eTag);

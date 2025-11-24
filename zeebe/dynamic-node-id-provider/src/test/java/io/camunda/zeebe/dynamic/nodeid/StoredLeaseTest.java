@@ -40,11 +40,9 @@ public class StoredLeaseTest {
 
     @Test
     void shouldAlwaysContainETag() {
-      assertThatThrownBy(
-              () -> new StoredLease.Uninitialized(new NodeInstance(2, Version.of(2L)), ""))
+      assertThatThrownBy(() -> new StoredLease.Uninitialized(nodeInstance, ""))
           .hasMessageContaining("eTag cannot be empty");
-      assertThatThrownBy(
-              () -> new StoredLease.Uninitialized(new NodeInstance(2, Version.of(2L)), null))
+      assertThatThrownBy(() -> new StoredLease.Uninitialized(nodeInstance, null))
           .hasMessageContaining("eTag cannot be null");
     }
 
@@ -62,7 +60,7 @@ public class StoredLeaseTest {
           .hasValueSatisfying(
               lease ->
                   assertThat(lease)
-                      .returns(nodeInstance.nextVersion(), Lease::nodeInstance)
+                      .returns(new NodeInstance(2, Version.of(3L)), Lease::nodeInstance)
                       .returns(taskId, Lease::taskId)
                       .returns(
                           VersionMappings.of(nodeInstance.nextVersion()),
