@@ -29,6 +29,7 @@ import {
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {modificationsStore} from 'modules/stores/modifications';
 import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {VirtualBar} from './VirtualBar';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
@@ -159,7 +160,9 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
               elementInstanceState={elementInstanceState}
               hasIncident={hasIncident}
               endDate={endDate}
-              isTimestampLabelVisible={false}
+              isTimestampLabelVisible={
+                !modificationsStore.isModificationModeEnabled
+              }
               isRoot={isRoot}
               latestMigrationDate={latestMigrationDate}
               scopeKeyHierarchy={scopeKeyHierarchy}
@@ -527,7 +530,9 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
             elementInstanceState={elementInstanceState}
             hasIncident={hasIncident}
             endDate={endDate}
-            isTimestampLabelVisible={false}
+            isTimestampLabelVisible={
+              !modificationsStore.isModificationModeEnabled
+            }
             isRoot={isRoot}
             latestMigrationDate={latestMigrationDate}
             scopeKeyHierarchy={scopeKeyHierarchy}
