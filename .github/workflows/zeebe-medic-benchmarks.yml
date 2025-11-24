@@ -67,7 +67,7 @@ jobs:
       ttl: 28
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      realistic: 'true'
+      realistic: true
   setup-latency-benchmark:
     name: Latency Benchmark
     uses: ./.github/workflows/camunda-load-test.yml
