@@ -128,34 +128,35 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
         });
       };
 
-      const elementProps = {
-        ...rest,
-        'data-testid': `tree-node-${scopeKey}`,
-        selected: isSelected ? [scopeKey] : [],
-        active: isSelected ? scopeKey : undefined,
-        id: scopeKey,
-        value: scopeKey,
-        'aria-label': elementName,
-        renderIcon,
-        isExpanded: false,
-        onSelect: handleSelect,
-        label: (
-          <Bar
-            elementInstanceKey={scopeKey}
-            elementId={elementId}
-            elementName={elementName}
-            elementInstanceState={elementInstanceState}
-            hasIncident={hasIncident}
-            endDate={endDate}
-            isTimestampLabelVisible={false}
-            isRoot={isRoot}
-            latestMigrationDate={latestMigrationDate}
-            ref={rowRef}
-          />
-        ),
-      };
-
-      return <TreeNode {...elementProps} key={scopeKey} />;
+      return (
+        <TreeNode
+          {...rest}
+          key={scopeKey}
+          data-testid={`tree-node-${scopeKey}`}
+          selected={isSelected ? [scopeKey] : []}
+          active={isSelected ? scopeKey : undefined}
+          id={scopeKey}
+          value={scopeKey}
+          aria-label={elementName}
+          renderIcon={renderIcon}
+          isExpanded={false}
+          onSelect={handleSelect}
+          label={
+            <Bar
+              elementInstanceKey={scopeKey}
+              elementId={elementId}
+              elementName={elementName}
+              elementInstanceState={elementInstanceState}
+              hasIncident={hasIncident}
+              endDate={endDate}
+              isTimestampLabelVisible={false}
+              isRoot={isRoot}
+              latestMigrationDate={latestMigrationDate}
+              ref={rowRef}
+            />
+          }
+        />
+      );
     },
   );
 
@@ -190,28 +191,29 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
         });
       };
 
-      const elementProps = {
-        ...rest,
-        'data-testid': `tree-node-${scopeKey}`,
-        selected: isSelected ? [scopeKey] : [],
-        active: isSelected ? scopeKey : undefined,
-        id: scopeKey,
-        value: scopeKey,
-        'aria-label': elementName,
-        renderIcon,
-        isExpanded: false,
-        onSelect: handleSelect,
-        label: (
-          <VirtualBar
-            elementInstanceKey={scopeKey}
-            elementId={elementId}
-            elementName={elementName}
-            ref={rowRef}
-          />
-        ),
-      };
-
-      return <TreeNode {...elementProps} key={scopeKey} />;
+      return (
+        <TreeNode
+          {...rest}
+          key={scopeKey}
+          data-testid={`tree-node-${scopeKey}`}
+          selected={isSelected ? [scopeKey] : []}
+          active={isSelected ? scopeKey : undefined}
+          id={scopeKey}
+          value={scopeKey}
+          aria-label={elementName}
+          renderIcon={renderIcon}
+          isExpanded={false}
+          onSelect={handleSelect}
+          label={
+            <VirtualBar
+              elementInstanceKey={scopeKey}
+              elementId={elementId}
+              elementName={elementName}
+              ref={rowRef}
+            />
+          }
+        />
+      );
     },
   );
 
