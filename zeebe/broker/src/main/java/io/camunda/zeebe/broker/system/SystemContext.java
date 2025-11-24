@@ -39,7 +39,11 @@ import io.camunda.zeebe.broker.system.configuration.engine.BatchOperationCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
+import io.camunda.zeebe.engine.processing.identity.initialize.IdentityInitializationException;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -49,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -163,6 +168,8 @@ public final class SystemContext {
     if (security.isEnabled()) {
       validateNetworkSecurityConfig(security);
     }
+
+    validateInitializationConfig();
   }
 
   private void validClusterConfigs(final ClusterCfg cluster) {
@@ -435,6 +442,26 @@ public final class SystemContext {
     }
 
     return members;
+  }
+
+  // actually initializing the entities will be done in IdentitySetupInitializer.
+  // Validation is done here, only to be able to stop the application on error.
+  private void validateInitializationConfig() {
+    final AuthorizationConfigurer authorizationConfigurer =
+        new AuthorizationConfigurer(securityConfiguration.getCompiledIdValidationPattern());
+
+    final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
+        authorizationConfigurer.configureEntities(
+            securityConfiguration.getInitialization().getAuthorizations());
+
+    // TODO: after adding more entity types, change this, so it accounts for all violations all
+    //   together.
+    configuredAuthorizations.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Cannot initialize configured entities: \n- %s"
+                  .formatted(String.join("\n- ", violations)));
+        });
   }
 
   private void validateNetworkSecurityConfig(final SecurityCfg security) {
