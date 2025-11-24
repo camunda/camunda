@@ -263,18 +263,11 @@ class OperateProcessInstancePage {
     return this.instanceHistory.getByRole('treeitem');
   }
 
-  async checkIfInstanceHistoryelementIsExpandable(elementTestId: string) {
-    const element = this.page.getByTestId(elementTestId);
-    const expandButton = element.locator('.cds--tree-parent-node__toggle-icon')
-    return await expandButton.isVisible();
-  }
-
   async checkIfPresentExpandeingElementsInHistory() {
     const expandingElements = this.instanceHistory.locator('.cds--tree-parent-node__toggle-icon');
     return await expandingElements.count();
   }
 
-  // class="cds--tree-parent-node__toggle-icon cds--tree-parent-node__toggle-icon--expanded"
 }
 
 export { OperateProcessInstancePage };

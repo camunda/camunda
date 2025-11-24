@@ -155,7 +155,6 @@ test.describe('Process Instance History', () => {
 
         await test.step('Verify Instance History Tab has no nested element', async () => {
             const expandingElementsPresent = await operateProcessInstancePage.checkIfPresentExpandeingElementsInHistory();
-            console.log('EXPANDING ELEMENTS COUNT:', expandingElementsPresent);
             expect(expandingElementsPresent).toBe(1);
         });
 
