@@ -25,7 +25,6 @@ import io.camunda.client.api.search.filter.ClusterVariableFilter;
 import io.camunda.client.api.search.request.ClusterVariableSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ClusterVariableSort;
@@ -69,7 +68,9 @@ public class ClusterVariableSearchRequestImpl
   public CamundaFuture<SearchResponse<ClusterVariable>> send() {
     final HttpCamundaFuture<SearchResponse<ClusterVariable>> result = new HttpCamundaFuture<>();
     final Map<String, String> queryParams = new HashMap<>();
-    queryParams.put("truncateValues", String.valueOf(!withFullValues));
+    if (withFullValues) {
+      queryParams.put("truncateValues", String.valueOf(false));
+    }
     httpClient.post(
         "/cluster-variables/search",
         queryParams,
@@ -122,8 +123,8 @@ public class ClusterVariableSearchRequestImpl
   }
 
   @Override
-  public VariableSearchRequest withFullValues() {
+  public ClusterVariableSearchRequest withFullValues() {
     withFullValues = true;
-    return null;
+    return this;
   }
 }

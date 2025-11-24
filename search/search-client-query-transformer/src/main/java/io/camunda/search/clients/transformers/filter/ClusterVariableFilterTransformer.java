@@ -13,6 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ClusterVariableFilter;
@@ -42,6 +43,7 @@ public final class ClusterVariableFilterTransformer
     queries.addAll(getValuesQuery(filter.valueOperations()));
     queries.addAll(getScopeQuery(filter.scopeOperations()));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
+    ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
     return and(queries);
   }
 
@@ -80,5 +82,12 @@ public final class ClusterVariableFilterTransformer
 
   private List<SearchQuery> getValuesQuery(final List<UntypedOperation> variableFilters) {
     return variableOperations(ClusterVariableIndex.VALUE, variableFilters);
+  }
+
+  private SearchQuery getIsTruncatedQuery(final Boolean isTruncated) {
+    if (isTruncated == null) {
+      return null;
+    }
+    return term(ClusterVariableIndex.IS_PREVIEW, isTruncated);
   }
 }

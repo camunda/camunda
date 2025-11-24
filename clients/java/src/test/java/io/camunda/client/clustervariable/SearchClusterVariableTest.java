@@ -17,6 +17,7 @@ package io.camunda.client.clustervariable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
@@ -36,6 +37,29 @@ public class SearchClusterVariableTest extends ClientRestTest {
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  void shouldSearchClusterVariablesWithoutParamsByDefault() {
+    // when
+    client.newClusterVariableSearchRequest().send().join();
+
+    // then
+    final QueryParameter param =
+        RestGatewayService.getLastRequest().getQueryParams().get("truncateValues");
+    assertThat(param).isNull();
+  }
+
+  @Test
+  void shouldSearchClusterVariablesWithoutTruncating() {
+    // when
+    client.newClusterVariableSearchRequest().withFullValues().send().join();
+
+    // then
+    final QueryParameter param =
+        RestGatewayService.getLastRequest().getQueryParams().get("truncateValues");
+    assertThat(param.isSingleValued()).isTrue();
+    assertThat(param.firstValue()).isEqualTo("false");
   }
 
   @Test
@@ -98,6 +122,16 @@ public class SearchClusterVariableTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchClusterVariablesByIsTruncated() {
+    // when
+    client.newClusterVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
+  }
+
+  @Test
   void shouldSearchClusterVariablesWithMultipleFilters() {
     // when
     client
@@ -121,5 +155,59 @@ public class SearchClusterVariableTest extends ClientRestTest {
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  void shouldSearchClusterVariablesWithFullValuesAndFilter() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.name("myVariable"))
+        .withFullValues()
+        .send()
+        .join();
+
+    // then
+    final QueryParameter param =
+        RestGatewayService.getLastRequest().getQueryParams().get("truncateValues");
+    assertThat(param.isSingleValued()).isTrue();
+    assertThat(param.firstValue()).isEqualTo("false");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesFilterByIsTruncatedTrue() {
+    // when
+    client.newClusterVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
+  }
+
+  @Test
+  void shouldSearchClusterVariablesFilterByIsTruncatedFalse() {
+    // when
+    client.newClusterVariableSearchRequest().filter(f -> f.isTruncated(false)).send().join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
+  }
+
+  @Test
+  void shouldChainWithFullValuesMethodCall() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .withFullValues()
+        .filter(f -> f.name("test"))
+        .send()
+        .join();
+
+    // then
+    final QueryParameter param =
+        RestGatewayService.getLastRequest().getQueryParams().get("truncateValues");
+    assertThat(param.isSingleValued()).isTrue();
+    assertThat(param.firstValue()).isEqualTo("false");
   }
 }

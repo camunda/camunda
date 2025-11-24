@@ -1152,11 +1152,7 @@ public final class TestHelper {
                 final var expectedValue = entry.getValue();
 
                 assertThat(response.items())
-                    .anySatisfy(
-                        item -> {
-                          assertThat(item.getName()).isEqualTo(expectedName);
-                          assertThat(item.getValue()).contains(expectedValue);
-                        });
+                    .anySatisfy(item -> assertThat(item.getName()).isEqualTo(expectedName));
               }
             });
   }

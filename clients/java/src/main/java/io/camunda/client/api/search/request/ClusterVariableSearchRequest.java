@@ -33,5 +33,5 @@ public interface ClusterVariableSearchRequest
    *
    * @return this search request with full values enabled
    */
-  VariableSearchRequest withFullValues();
+  ClusterVariableSearchRequest withFullValues();
 }
