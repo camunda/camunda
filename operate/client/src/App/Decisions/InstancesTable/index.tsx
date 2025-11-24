@@ -49,7 +49,7 @@ const InstancesTable: React.FC = observer(() => {
       tracking.track({
         eventName: 'decisions-loaded',
         filters: Object.keys(filter ?? {}),
-        ...sort[0],
+        sort,
       });
       return {
         decisionInstances: data.pages.flatMap((page) => page.items),
