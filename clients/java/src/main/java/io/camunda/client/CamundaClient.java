@@ -1961,7 +1961,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *   camundaClient
    *       .newGloballyScopedClusterVariableGetRequest()
-   *       .atScope("myVariable")
+   *       .withName("myVariable")
    *       .send();
    * </pre>
    *
@@ -1975,7 +1975,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *   camundaClient
    *       .newTenantScopedClusterVariableGetRequest("my-tenant-id")
-   *       .atScope("myVariable")
+   *       .withName("myVariable")
    *       .send();
    * </pre>
    *
