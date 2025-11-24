@@ -54,7 +54,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldEnableAuthorizationCheck() {
+  void shouldEnableAuthorizationCheckOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
@@ -89,7 +89,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldDisableAuthorizationCheckWithWildcardResourceAccess() {
+  void shouldDisableAuthorizationCheckWithWildcardResourceAccessOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
@@ -122,7 +122,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldEnableResourceAccessCheckEvenWhenNoResourceIdsProvided() {
+  void shouldEnableResourceAccessCheckOnSearchEvenWhenNoResourceIdsProvided() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
@@ -155,7 +155,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldEnableTenantCheck() {
+  void shouldEnableTenantCheckOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo").tenants(List.of("bar")));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
@@ -186,7 +186,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldEnableTenantCheckEvenWhenTenantAccessDenied() {
+  void shouldEnableTenantCheckOnSearchEvenWhenTenantAccessDenied() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
@@ -217,7 +217,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldDisableTenantCheckWithWildcardTenantAccess() {
+  void shouldDisableTenantCheckWithWildcardTenantAccessOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
