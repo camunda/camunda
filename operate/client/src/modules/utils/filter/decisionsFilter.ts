@@ -41,7 +41,7 @@ const DecisionsFilterSchema = z
   .catch({});
 
 /** Parses a {@linkcode DecisionsFilter} from URL search params. */
-function parseDecisionsFilter(search: URLSearchParams | string) {
+function parseDecisionsFilter(search: URLSearchParams) {
   if (typeof search === 'string') {
     search = new URLSearchParams(search);
   }
@@ -158,7 +158,7 @@ const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS = z.keyof(
 ).def.values;
 
 function updateDecisionsFilterSearchString(
-  currentSearch: string,
+  currentSearch: URLSearchParams,
   newFilters: DecisionsFilter,
 ) {
   return updateFiltersSearchString<DecisionsFilter>(

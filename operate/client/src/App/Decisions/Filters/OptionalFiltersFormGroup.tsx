@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {useLocation, type Location} from 'react-router-dom';
+import {useLocation, useSearchParams, type Location} from 'react-router-dom';
 import type {FieldValidator} from 'final-form';
 import {
   parseDecisionsFilter,
@@ -98,6 +98,7 @@ type Props = {
 const OptionalFiltersFormGroup: React.FC<Props> = observer(
   ({visibleFilters, onVisibleFilterChange}) => {
     const location = useLocation() as LocationType;
+    const [params] = useSearchParams();
     const form = useForm();
 
     useEffect(() => {
@@ -107,19 +108,17 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
     }, [location.state, onVisibleFilterChange]);
 
     useEffect(() => {
-      const params = Array.from(
-        new URLSearchParams(location.search).keys(),
-      ).filter((param) =>
+      const optionalParams = Array.from(params.keys()).filter((param) =>
         (optionalFilters as string[]).includes(param),
       ) as OptionalFilter[];
 
-      const filters = parseDecisionsFilter(location.search);
+      const filters = parseDecisionsFilter(params);
 
       onVisibleFilterChange((currentVisibleFilters) =>
         Array.from(
           new Set([
             ...currentVisibleFilters,
-            ...params,
+            ...optionalParams,
             ...('evaluationDateAfter' in filters &&
             'evaluationDateBefore' in filters
               ? ['evaluationDateRange']
@@ -127,7 +126,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
           ] as OptionalFilter[]),
         ),
       );
-    }, [location.search, onVisibleFilterChange]);
+    }, [params, onVisibleFilterChange]);
 
     const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
       useState<boolean>(false);

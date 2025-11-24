@@ -12,7 +12,7 @@ import {
   type DecisionsFilter,
 } from 'modules/utils/filter/decisionsFilter';
 import {Form} from 'react-final-form';
-import {useLocation, useNavigate, type Location} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {
   Container,
   Form as StyledForm,
@@ -42,15 +42,11 @@ const initialValues: DecisionsFilter = {
   failed: true,
 };
 
-type LocationType = Omit<Location, 'state'> & {
-  state: {hideOptionalFilters?: boolean};
-};
-
 const Filters: React.FC = observer(() => {
-  const location = useLocation() as LocationType;
+  const [params] = useSearchParams();
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filterValues = parseDecisionsFilter(location.search);
+  const filterValues = parseDecisionsFilter(params);
   if (filterValues.name && filterValues.tenant !== 'all') {
     filterValues.name = getDefinitionIdentifier(
       filterValues.name,
@@ -66,7 +62,7 @@ const Filters: React.FC = observer(() => {
     <Form<DecisionsFilter>
       onSubmit={(values) => {
         navigate({
-          search: updateDecisionsFilterSearchString(location.search, {
+          search: updateDecisionsFilterSearchString(params, {
             ...values,
             name: getDefinitionIdFromIdentifier(values.name),
           }),
