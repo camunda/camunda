@@ -27,6 +27,7 @@ import {DetailsModal} from './DetailsModal';
 import {StatusIndicator} from './StatusIndicator';
 import type {MockAuditLogEntry} from 'modules/mocks/auditLog';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
+import {FiltersPanel} from 'modules/components/FiltersPanel';
 
 type DetailsModalState = {
   open: boolean;
@@ -146,8 +147,8 @@ const AuditLog: React.FC = () => {
 
   const headers = [
     {key: 'operationType', header: 'Operation'},
-    {key: 'processes', header: 'Reference'},
     {key: 'operationState', header: 'Status'},
+    {key: 'processes', header: 'Applied to'},
     {key: 'user', header: 'Applied by'},
     {key: 'startTimestamp', header: 'Time'},
     {key: 'actions', header: ' '},
@@ -165,7 +166,7 @@ const AuditLog: React.FC = () => {
           // For batch operations, show "Batch operation" text and batch key as link
           processesDisplay = (
             <div>
-              <div>Multiple instances</div>
+              <div>Multiple process instances</div>
               {mockEntry.batchOperationId && (
                 <Link
                   href="#"
@@ -345,40 +346,33 @@ const AuditLog: React.FC = () => {
       <VisuallyHiddenH1>Audit Log</VisuallyHiddenH1>
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: '320px 1fr',
+          display: 'flex',
           height: '100%',
           overflow: 'hidden',
         }}
       >
         {/* Left Panel - Filters */}
-        <div
-          style={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: 'var(--cds-spacing-05)',
-            borderRight: '1px solid var(--cds-border-subtle)',
-            backgroundColor: 'var(--cds-layer-01)',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            minWidth: 0,
+        <FiltersPanel
+          localStorageKey="isFiltersCollapsed"
+          isResetButtonDisabled={Object.values(filtersFromUrl).every(
+            (value) => value === undefined,
+          )}
+          onResetClick={() => {
+            updateFilters({});
           }}
         >
-          <h6 style={{marginBottom: 'var(--cds-spacing-05)'}}>Filter</h6>
-          <div style={{width: '100%', minWidth: 0}}>
-            <AuditLogFilters
-              filters={filtersFromUrl}
-              onFiltersChange={(newFilters) => {
-                updateFilters(newFilters);
-              }}
-            />
-          </div>
-        </div>
+          <AuditLogFilters
+            filters={filtersFromUrl}
+            onFiltersChange={(newFilters) => {
+              updateFilters(newFilters);
+            }}
+          />
+        </FiltersPanel>
 
         {/* Right Panel - Table */}
         <div
           style={{
+            flex: 1,
             height: '100%',
             display: 'flex',
             flexDirection: 'column',

@@ -18,6 +18,7 @@ import {
   StructuredListCell,
   StructuredListBody,
   ActionableNotification,
+  InlineNotification,
 } from '@carbon/react';
 import {DataTable} from 'modules/components/DataTable';
 import {formatDate} from 'modules/utils/date';
@@ -102,7 +103,7 @@ const renderUserTaskDetails = (
 
   return (
     <div>
-      <Title>Details</Title>
+      <Title>Operation changes</Title>
       <DataTable headers={headers} rows={rows} />
     </div>
   );
@@ -173,7 +174,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
 
     return (
       <div>
-        <Title>Details</Title>
+        <Subtitle>Operation changes:</Subtitle>
         {detailsContent}
       </div>
     );
@@ -190,7 +191,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           <Stack gap={1}>
             <StructuredListWrapper isCondensed isFlush>
               <StructuredListBody>
-                <VerticallyAlignedRow head>
+                <VerticallyAlignedRow>
                   <FirstColumn noWrap>
                     <div
                       style={{
@@ -243,14 +244,13 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             </StructuredListWrapper>
           </Stack>
           {entry.operationState === 'fail' && entry.errorMessage && (
-            <>
-            <Stack gap={1}>
-              <Subtitle>Error Message</Subtitle>
-              <div>
-                {entry.errorMessage}
-              </div>
-            </Stack>
-            </>
+            <InlineNotification
+              kind="error"
+              title="Failure reason:"
+              subtitle={entry.errorMessage}
+              hideCloseButton
+              lowContrast
+            />
           )}
           {entry.isMultiInstanceOperation && (
             <Stack gap={2}>

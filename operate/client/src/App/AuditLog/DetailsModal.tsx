@@ -17,12 +17,19 @@ import {
   StructuredListWrapper,
   StructuredListCell,
   StructuredListBody,
-  ActionableNotification,
+  CodeSnippet,
+  InlineNotification,
 } from '@carbon/react';
 import {DataTable} from 'modules/components/DataTable';
 import {formatDate} from 'modules/utils/date';
 import type {MockAuditLogEntry} from 'modules/mocks/auditLog';
-import {CheckmarkOutline, EventSchedule, UserAvatar} from '@carbon/icons-react';
+import {
+  CheckmarkOutline,
+  EventSchedule,
+  UserAvatar,
+  ArrowRight,
+  ClassicBatch,
+} from '@carbon/icons-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {StatusIndicator} from './StatusIndicator';
 
@@ -56,7 +63,7 @@ const FirstColumn: any = ({children, noWrap, ...props}: any) => (
     {...props}
     head
     style={{
-      fontWeight: 600,
+      fontWeight: 400,
       whiteSpace: noWrap ? 'nowrap' : 'normal',
       width: '180px',
     }}
@@ -66,13 +73,13 @@ const FirstColumn: any = ({children, noWrap, ...props}: any) => (
 );
 
 const Title: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <h5 style={{marginBottom: 'var(--cds-spacing-03)', fontWeight: 600}}>
+  <h4 style={{marginBottom: 'var(--cds-spacing-03)', fontWeight: 600}}>
     {children}
-  </h5>
+  </h4>
 );
 
 const Subtitle: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <h6 style={{fontWeight: 600}}>{children}</h6>
+  <h5 style={{fontWeight: 600, marginBottom: 'var(--cds-spacing-03)'}}>{children}</h5>
 );
 
 type Props = {
@@ -143,56 +150,160 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
 
     return (
       <div>
-        <Title>Details</Title>
+        <Subtitle>Operation changes:</Subtitle>
         {detailsContent}
       </div>
     );
   };
 
-  const renderProcessReference = () => {
-    if (!entry.processInstanceKey) {
-      return null;
+  const renderReference = () => {
+    // For batch operations
+    if (entry.isMultiInstanceOperation && entry.batchOperationId) {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 'var(--cds-spacing-03)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+            }}
+          >
+            <ClassicBatch size={16} />
+            <div style={{display: 'flex', gap: 'var(--cds-spacing-03)'}}>
+              <span>Multiple process instances</span>
+              <CodeSnippet
+                type="inline"
+                title={"Batch operation key / Click to copy"}
+                aria-label={"Batch operation key / Click to copy"}
+                feedback="Copied to clipboard"
+              >
+                {entry.batchOperationId}
+              </CodeSnippet>
+            </div>
+          </div>
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={ArrowRight}
+            iconDescription="View batch operation details"
+            onClick={() => {
+              // TODO: Navigate to batch operation
+              console.log('Navigate to batch:', entry.batchOperationId);
+            }}
+          >
+            View batch operation details
+          </Button>
+        </div>
+      );
     }
 
-    return (
-      <Stack gap={1}>
-        <ActionableNotification
-          kind="info"
-          lowContrast
-          inline
-          hideCloseButton
-          title={`The operation is applied to the ${entry.processDefinitionName || 'Process'}`}
-          actionButtonLabel="View process instance"
-          onActionButtonClick={() => {
-            // TODO: Navigate to process instance
-            console.log('Navigate to process instance', entry.processInstanceKey);
+    // For resource operations
+    if (entry.details?.resourceKey) {
+      const resourceKey = entry.details.resourceKey;
+      const resourceType = entry.details.resourceType || 'Resource';
+      const isDelete = entry.operationType === 'DELETE_RESOURCE';
+      const isForm = resourceType?.toLowerCase().includes('form');
+      
+      return (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 'var(--cds-spacing-03)',
           }}
-        />
-      </Stack>
-    );
-  };
-
-  const renderBatchReference = () => {
-    if (!entry.isMultiInstanceOperation) {
-      return null;
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+              marginTop: isDelete || isForm ? 'var(--cds-spacing-02)' : '0',
+              marginBottom: isDelete || isForm ? 'var(--cds-spacing-02)' : '0',
+            }}
+          >
+            {entry.processDefinitionName && (
+              <>
+                <span>{entry.processDefinitionName}</span>
+                <CodeSnippet
+                  type="inline"
+                  title={"Resource key / Click to copy"}
+                  aria-label={"Resource key / Click to copy"}
+                  feedback="Copied to clipboard"
+                >
+                  {resourceKey}
+                </CodeSnippet>
+              </>
+            )}
+          </div>
+          {!isDelete && !isForm && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={ArrowRight}
+              iconDescription="View process instance details"
+              onClick={() => {
+                // TODO: Navigate to process instance
+                console.log('Navigate to process:', entry.processInstanceKey);
+              }}
+            >
+              View process instance details
+            </Button>
+          )}
+        </div>
+      );
     }
 
-    return (
-      <Stack gap={1}>
-        <ActionableNotification
-          kind="info"
-          lowContrast
-          inline
-          hideCloseButton
-          title="The operation is applied to multiple process instances"
-          actionButtonLabel="View batch operation details"
-          onActionButtonClick={() => {
-            // TODO: Navigate to batch operation
-            console.log('Navigate to batch operation');
+    // For single process operations
+    if (entry.processDefinitionName) {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 'var(--cds-spacing-03)',
           }}
-        />
-      </Stack>
-    );
+        >
+          <div style={{display: 'flex', gap: 'var(--cds-spacing-03)'}}>
+            <span>{entry.processDefinitionName}</span>
+            {entry.processInstanceKey && (
+              <CodeSnippet
+                type="inline"
+                title={"Process instance key / Click to copy"}
+                aria-label={"Process instance key / Click to copy"}
+                feedback="Copied to clipboard"
+              >
+                {entry.processInstanceKey}
+              </CodeSnippet>
+            )}
+          </div>
+          {entry.processInstanceKey && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={ArrowRight}
+              iconDescription="View process instance details"
+              onClick={() => {
+                // TODO: Navigate to process instance
+                console.log('Navigate to process:', entry.processInstanceKey);
+              }}
+            >
+              View process instance details
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -206,7 +317,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           <Stack gap={1}>
             <StructuredListWrapper isCondensed isFlush>
               <StructuredListBody>
-                <VerticallyAlignedRow head>
+                <VerticallyAlignedRow>
                   <FirstColumn noWrap>
                     <div
                       style={{
@@ -232,13 +343,11 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                         gap: 'var(--cds-spacing-03)',
                       }}
                     >
-                      <EventSchedule />
-                      Time
+                      <UserAvatar />
+                      Applied by
                     </div>
                   </FirstColumn>
-                  <StructuredListCell>
-                    {formatDate(entry.startTimestamp)}
-                  </StructuredListCell>
+                  <StructuredListCell>{entry.user}</StructuredListCell>
                 </VerticallyAlignedRow>
                 <VerticallyAlignedRow>
                   <FirstColumn noWrap>
@@ -249,23 +358,40 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                         gap: 'var(--cds-spacing-03)',
                       }}
                     >
-                      <UserAvatar />
-                      Applied by
+                      <EventSchedule />
+                      Time
                     </div>
                   </FirstColumn>
-                  <StructuredListCell>{entry.user}</StructuredListCell>
+                  <StructuredListCell>
+                    {formatDate(entry.startTimestamp)}
+                  </StructuredListCell>
                 </VerticallyAlignedRow>
               </StructuredListBody>
             </StructuredListWrapper>
           </Stack>
           {entry.operationState === 'fail' && entry.errorMessage && (
+            <InlineNotification
+              kind="error"
+              title="Failure reason:"
+              subtitle={entry.errorMessage}
+              hideCloseButton
+              lowContrast
+            />
+          )}
+          {renderReference() && (
             <Stack gap={1}>
-              <Subtitle>Error Message</Subtitle>
-              <div>{entry.errorMessage}</div>
+              <Subtitle>Applied to:</Subtitle>
+              <div
+                style={{
+                  borderTop: '1px solid var(--cds-border-subtle)',
+                  borderBottom: '1px solid var(--cds-border-subtle)',
+                  padding: 'var(--cds-spacing-03)',
+                }}
+              >
+                {renderReference()}
+              </div>
             </Stack>
           )}
-          {renderBatchReference()}
-          {renderProcessReference()}
           {renderDetails()}
         </Stack>
       </ModalBody>

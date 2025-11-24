@@ -22,6 +22,7 @@ import type {
   AuditLogSearchFilters,
 } from 'modules/api/v2/auditLog/searchAuditLog';
 import {observer} from 'mobx-react';
+import { Title } from 'modules/components/FiltersPanel/styled';
 
 const OPERATION_TYPES: {id: OperationType; label: string}[] = [
   {id: 'CREATE_PROCESS_INSTANCE', label: 'Create process instance'},
@@ -127,25 +128,28 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
 
     return (
       <Layer>
-        <Stack gap={8} orientation="vertical" style={{width: '100%'}}>
-          <Stack gap={5} orientation="vertical" style={{width: '100%'}}>
-            <ComboBox
-              id="process-definition-name"
-              titleText="Process definition"
-              placeholder="Search by process definition"
-              items={PROCESS_DEFINITIONS}
-              selectedItem={filters.processDefinitionName || null}
-              onChange={({selectedItem}) =>
-                handleProcessDefinitionChange(selectedItem ?? null)
-              }
-              size="sm"
-              style={{width: '100%'}}
+        <div style={{padding: 'var(--cds-spacing-05)'}}>
+          <Stack gap={8} orientation="vertical" style={{width: '100%'}}>
+            <Stack gap={5} orientation="vertical" style={{width: '100%'}}>
+              <Title style={{paddingBottom: '0'}}>Process</Title>
+              <ComboBox
+                id="process-definition-name"
+                titleText="Process definition"
+                placeholder="Search by process definition"
+                items={PROCESS_DEFINITIONS}
+                selectedItem={filters.processDefinitionName || null}
+                onChange={({selectedItem}) =>
+                  handleProcessDefinitionChange(selectedItem ?? null)
+                }
+                light={true}
+                size="sm"
+                style={{width: '100%'}}
             />
             <ComboBox
               id="process-definition-version"
               titleText="Version"
               placeholder={
-                filters.processDefinitionName ? 'Select version' : 'Select a process first'
+                filters.processDefinitionName ? 'Select version' : 'Select a process version'
               }
               items={availableVersions}
               selectedItem={
@@ -157,6 +161,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 handleFilterChange('processDefinitionVersion', selectedItem ?? undefined)
               }
               disabled={!filters.processDefinitionName}
+              light={true}
               size="sm"
               style={{width: '100%'}}
             />
@@ -168,11 +173,13 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               onChange={(e) =>
                 handleFilterChange('processInstanceKey', e.target.value)
               }
+              light={true}
               size="sm"
               style={{width: '100%'}}
             />
           </Stack>
           <Stack gap={5} orientation="vertical" style={{width: '100%'}}>
+            <Title style={{paddingBottom: '0'}}>Operation</Title>
             <div style={{width: '100%'}}>
               <FilterableMultiSelect
                 id="operation-type"
@@ -181,6 +188,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 items={OPERATION_TYPES}
                 itemToString={(item) => item?.label ?? ''}
                 selectedItems={selectedOperationTypes}
+                light={true}
                 onChange={({selectedItems}) =>
                   handleFilterChange(
                     'operationType',
@@ -198,6 +206,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 items={OPERATION_STATES}
                 itemToString={(item) => item?.label ?? ''}
                 selectedItems={selectedOperationStates}
+                light={true}
                 onChange={({selectedItems}) =>
                   handleFilterChange(
                     'operationState',
@@ -215,6 +224,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 handleFilterChange('startDateFrom', startDate?.toISOString() || '');
                 handleFilterChange('startDateTo', endDate?.toISOString() || '');
               }}
+              light={true}
               style={{width: '100%'}}
             >
               <DatePickerInput
@@ -233,14 +243,16 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
             <TextInput
               id="user"
               labelText="Applied by"
-              placeholder="Filter by user or client"
+              placeholder="Username or client ID"
               value={filters.user || ''}
               onChange={(e) => handleFilterChange('user', e.target.value)}
+              light={true}
               size="sm"
               style={{width: '100%'}}
             />
           </Stack>
         </Stack>
+        </div>
       </Layer>
     );
   },
