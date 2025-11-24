@@ -7,9 +7,6 @@
  */
 package io.camunda.search.clients.auth;
 
-import static io.camunda.search.exception.ErrorMessages.ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION;
-
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.exception.TenantAccessDeniedException;
@@ -86,18 +83,11 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
   }
 
   protected AuthorizationCheck createAuthorizationCheck(final ResourceAccess resourceAccess) {
-    return Optional.of(resourceAccess)
-        .filter(f -> !f.wildcard())
-        .map(
-            r ->
-                Optional.ofNullable(r.authorization())
-                    .map(AuthorizationCheck::enabled)
-                    .orElseThrow(
-                        () ->
-                            new CamundaSearchException(
-                                ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION.formatted(
-                                    resourceAccess))))
-        .orElseGet(AuthorizationCheck::disabled);
+    if (resourceAccess.wildcard()) {
+      return AuthorizationCheck.disabled();
+    }
+
+    return AuthorizationCheck.enabled(resourceAccess.authorization());
   }
 
   protected TenantCheck determineTenantCheck(final CamundaAuthentication authentication) {
