@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
@@ -45,6 +46,7 @@ import java.util.function.Consumer;
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
+  private final AuditLogDbReader auditLogReader;
   private final AuthorizationDbReader authorizationReader;
   private final DecisionDefinitionDbReader decisionDefinitionReader;
   private final DecisionInstanceDbReader decisionInstanceReader;
@@ -76,6 +78,7 @@ public class RdbmsService {
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
+      final AuditLogDbReader auditLogReader,
       final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionDbReader decisionDefinitionReader,
       final DecisionInstanceDbReader decisionInstanceReader,
@@ -105,6 +108,7 @@ public class RdbmsService {
       final MessageSubscriptionDbReader messageSubscriptionReader,
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
+    this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
     this.decisionDefinitionReader = decisionDefinitionReader;
@@ -137,6 +141,10 @@ public class RdbmsService {
 
   public AuthorizationDbReader getAuthorizationReader() {
     return authorizationReader;
+  }
+
+  public AuditLogDbReader getAuditLogReader() {
+    return auditLogReader;
   }
 
   public DecisionDefinitionDbReader getDecisionDefinitionReader() {

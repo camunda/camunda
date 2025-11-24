@@ -802,4 +802,51 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_audit_log_table" author="camunda">
+    <createTable tableName="${prefix}AUDIT_LOG">
+      <column name="AUDIT_LOG_KEY" type="VARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="ENTITY_KEY" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="ENTITY_TYPE" type="VARCHAR(50)"/>
+      <column name="OPERATION_TYPE" type="VARCHAR(50)"/>
+      <column name="ENTITY_VERSION" type="INT"/>
+      <column name="ENTITY_VALUE_TYPE" type="SMALLINT"/>
+      <column name="ENTITY_OPERATION_INTENT" type="SMALLINT"/>
+      <column name="BATCH_OPERATION_KEY" type="BIGINT"/>
+      <column name="BATCH_OPERATION_TYPE" type="VARCHAR(50)"/>
+      <column name="TIMESTAMP" type="TIMESTAMP WITH TIME ZONE(3)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="ACTOR_TYPE" type="VARCHAR(50)"/>
+      <column name="ACTOR_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_SCOPE" type="VARCHAR(50)"/>
+      <column name="RESULT" type="VARCHAR(50)"/>
+      <column name="ANNOTATION" type="VARCHAR(4000)"/>
+      <column name="CATEGORY" type="VARCHAR(50)"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DECISION_REQUIREMENTS_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DECISION_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
+      <column name="JOB_KEY" type="BIGINT"/>
+      <column name="USER_TASK_KEY" type="BIGINT"/>
+      <column name="DECISION_REQUIREMENTS_KEY" type="BIGINT"/>
+      <column name="DECISION_DEFINITION_KEY" type="BIGINT"/>
+      <column name="DECISION_EVALUATION_KEY" type="BIGINT"/>
+      <column name="DEPLOYMENT_KEY" type="BIGINT"/>
+      <column name="FORM_KEY" type="BIGINT"/>
+      <column name="RESOURCE_KEY" type="BIGINT"/>
+    </createTable>
+
+    <modifySql dbms="mariadb,mysql">
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+    <modifySql dbms="mssql">
+      <replace replace="datetime2" with="DATETIMEOFFSET"/>
+    </modifySql>
+  </changeSet>
+
 </databaseChangeLog>

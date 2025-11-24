@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
-import io.camunda.search.entities.AuditLogEntity.AuditLogCategory;
+import io.camunda.search.entities.AuditLogOperationCategory;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogCategoryEnum;
 
 public final class AuditLogCategoryConverter implements CustomConverter<String> {
@@ -34,14 +34,15 @@ public final class AuditLogCategoryConverter implements CustomConverter<String> 
   }
 
   public static String toInternalCategoryAsString(final AuditLogCategoryEnum categoryEnum) {
-    final AuditLogCategory internalType = toInternalCategory(categoryEnum);
+    final AuditLogOperationCategory internalType = toInternalCategory(categoryEnum);
     return internalType == null ? null : internalType.name();
   }
 
-  public static AuditLogCategory toInternalCategory(final AuditLogCategoryEnum categoryEnum) {
+  public static AuditLogOperationCategory toInternalCategory(
+      final AuditLogCategoryEnum categoryEnum) {
     if (categoryEnum == null) {
       return null;
     }
-    return AuditLogCategory.valueOf(categoryEnum.name());
+    return AuditLogOperationCategory.valueOf(categoryEnum.name());
   }
 }

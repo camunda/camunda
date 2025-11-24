@@ -5,71 +5,128 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+package io.camunda.db.rdbms.write.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.search.entities.AuditLogActorType;
+import io.camunda.search.entities.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogOperationType;
+import io.camunda.search.entities.AuditLogTenantScope;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.function.Function;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record AuditLogEntity(
+public record AuditLogDbModel(
     String auditLogKey,
     String entityKey,
     AuditLogEntityType entityType,
     AuditLogOperationType operationType,
+    Integer entityVersion,
+    Short entityValueType,
+    Short entityOperationIntent,
     Long batchOperationKey,
     BatchOperationType batchOperationType,
     OffsetDateTime timestamp,
-    String actorId,
     AuditLogActorType actorType,
+    String actorId,
     String tenantId,
+    AuditLogTenantScope tenantScope,
     AuditLogOperationResult result,
     String annotation,
     AuditLogOperationCategory category,
     String processDefinitionId,
+    String decisionRequirementsId,
+    String decisionDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
     Long elementInstanceKey,
     Long jobKey,
     Long userTaskKey,
-    String decisionRequirementsId,
     Long decisionRequirementsKey,
-    String decisionDefinitionId,
     Long decisionDefinitionKey,
     Long decisionEvaluationKey,
     Long deploymentKey,
     Long formKey,
     Long resourceKey)
-    implements TenantOwnedEntity {
+    implements DbModel<AuditLogDbModel> {
 
-  public static class Builder implements ObjectBuilder<AuditLogEntity> {
+  @Override
+  public AuditLogDbModel copy(
+      final Function<ObjectBuilder<AuditLogDbModel>, ObjectBuilder<AuditLogDbModel>> copyFunction) {
+    return copyFunction
+        .apply(
+            new Builder()
+                .auditLogKey(auditLogKey)
+                .entityKey(entityKey)
+                .entityType(entityType)
+                .operationType(operationType)
+                .entityVersion(entityVersion)
+                .entityValueType(entityValueType)
+                .entityOperationIntent(entityOperationIntent)
+                .batchOperationKey(batchOperationKey)
+                .batchOperationType(batchOperationType)
+                .timestamp(timestamp)
+                .actorType(actorType)
+                .actorId(actorId)
+                .tenantId(tenantId)
+                .tenantScope(tenantScope)
+                .result(result)
+                .annotation(annotation)
+                .category(category)
+                .processDefinitionId(processDefinitionId)
+                .decisionRequirementsId(decisionRequirementsId)
+                .decisionDefinitionId(decisionDefinitionId)
+                .processDefinitionKey(processDefinitionKey)
+                .processInstanceKey(processInstanceKey)
+                .elementInstanceKey(elementInstanceKey)
+                .jobKey(jobKey)
+                .userTaskKey(userTaskKey)
+                .decisionRequirementsKey(decisionRequirementsKey)
+                .decisionDefinitionKey(decisionDefinitionKey)
+                .decisionEvaluationKey(decisionEvaluationKey)
+                .deploymentKey(deploymentKey)
+                .formKey(formKey)
+                .resourceKey(resourceKey))
+        .build();
+  }
+
+  public static class Builder implements ObjectBuilder<AuditLogDbModel> {
+
     private String auditLogKey;
     private String entityKey;
     private AuditLogEntityType entityType;
     private AuditLogOperationType operationType;
+    private Integer entityVersion;
+    private Short entityValueType;
+    private Short entityOperationIntent;
     private Long batchOperationKey;
     private BatchOperationType batchOperationType;
     private OffsetDateTime timestamp;
-    private String actorId;
     private AuditLogActorType actorType;
+    private String actorId;
     private String tenantId;
+    private AuditLogTenantScope tenantScope;
     private AuditLogOperationResult result;
     private String annotation;
     private AuditLogOperationCategory category;
     private String processDefinitionId;
+    private String decisionRequirementsId;
+    private String decisionDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private Long elementInstanceKey;
     private Long jobKey;
     private Long userTaskKey;
-    private String decisionRequirementsId;
     private Long decisionRequirementsKey;
-    private String decisionDefinitionId;
     private Long decisionDefinitionKey;
     private Long decisionEvaluationKey;
     private Long deploymentKey;
     private Long formKey;
     private Long resourceKey;
+
+    public Builder() {}
 
     public Builder auditLogKey(final String auditLogKey) {
       this.auditLogKey = auditLogKey;
@@ -88,6 +145,21 @@ public record AuditLogEntity(
 
     public Builder operationType(final AuditLogOperationType operationType) {
       this.operationType = operationType;
+      return this;
+    }
+
+    public Builder entityVersion(final Integer entityVersion) {
+      this.entityVersion = entityVersion;
+      return this;
+    }
+
+    public Builder entityValueType(final Short entityValueType) {
+      this.entityValueType = entityValueType;
+      return this;
+    }
+
+    public Builder entityOperationIntent(final Short entityOperationIntent) {
+      this.entityOperationIntent = entityOperationIntent;
       return this;
     }
 
@@ -121,6 +193,11 @@ public record AuditLogEntity(
       return this;
     }
 
+    public Builder tenantScope(final AuditLogTenantScope tenantScope) {
+      this.tenantScope = tenantScope;
+      return this;
+    }
+
     public Builder result(final AuditLogOperationResult result) {
       this.result = result;
       return this;
@@ -138,6 +215,16 @@ public record AuditLogEntity(
 
     public Builder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
+      return this;
+    }
+
+    public Builder decisionRequirementsId(final String decisionRequirementsId) {
+      this.decisionRequirementsId = decisionRequirementsId;
+      return this;
+    }
+
+    public Builder decisionDefinitionId(final String decisionDefinitionId) {
+      this.decisionDefinitionId = decisionDefinitionId;
       return this;
     }
 
@@ -166,18 +253,8 @@ public record AuditLogEntity(
       return this;
     }
 
-    public Builder decisionRequirementsId(final String decisionRequirementsId) {
-      this.decisionRequirementsId = decisionRequirementsId;
-      return this;
-    }
-
     public Builder decisionRequirementsKey(final Long decisionRequirementsKey) {
       this.decisionRequirementsKey = decisionRequirementsKey;
-      return this;
-    }
-
-    public Builder decisionDefinitionId(final String decisionDefinitionId) {
-      this.decisionDefinitionId = decisionDefinitionId;
       return this;
     }
 
@@ -207,30 +284,34 @@ public record AuditLogEntity(
     }
 
     @Override
-    public AuditLogEntity build() {
-      return new AuditLogEntity(
+    public AuditLogDbModel build() {
+      return new AuditLogDbModel(
           auditLogKey,
           entityKey,
           entityType,
           operationType,
+          entityVersion,
+          entityValueType,
+          entityOperationIntent,
           batchOperationKey,
           batchOperationType,
           timestamp,
-          actorId,
           actorType,
+          actorId,
           tenantId,
+          tenantScope,
           result,
           annotation,
           category,
           processDefinitionId,
+          decisionRequirementsId,
+          decisionDefinitionId,
           processDefinitionKey,
           processInstanceKey,
           elementInstanceKey,
           jobKey,
           userTaskKey,
-          decisionRequirementsId,
           decisionRequirementsKey,
-          decisionDefinitionId,
           decisionDefinitionKey,
           decisionEvaluationKey,
           deploymentKey,

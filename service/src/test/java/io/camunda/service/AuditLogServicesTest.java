@@ -12,12 +12,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.AuditLogSearchClient;
+import io.camunda.search.entities.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity;
-import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogCategory;
-import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogResult;
+import io.camunda.search.entities.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogOperationType;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -26,6 +26,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -36,19 +37,19 @@ class AuditLogServicesTest {
 
   private static final AuditLogEntity AUDIT_LOG_ENTITY =
       new AuditLogEntity.Builder()
-          .auditLogKey(123L)
+          .auditLogKey("auditLogKey")
           .entityKey("entityKey")
           .entityType(AuditLogEntityType.USER)
           .operationType(AuditLogOperationType.CREATE)
           .batchOperationKey(456L)
           .batchOperationType(BatchOperationType.ADD_VARIABLE)
-          .timestamp("2024-01-01T00:00:00Z")
+          .timestamp(OffsetDateTime.now())
           .actorId("actorId")
           .actorType(AuditLogActorType.USER)
           .tenantId("tenant-1")
-          .result(AuditLogResult.SUCCESS)
+          .result(AuditLogOperationResult.SUCCESS)
           .annotation("annotation")
-          .category(AuditLogCategory.OPERATOR)
+          .category(AuditLogOperationCategory.OPERATOR)
           .processDefinitionId("processDefinitionId")
           .processDefinitionKey(789L)
           .processInstanceKey(987L)

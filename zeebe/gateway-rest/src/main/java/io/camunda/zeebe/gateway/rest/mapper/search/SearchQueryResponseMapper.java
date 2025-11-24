@@ -163,6 +163,7 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -1312,7 +1313,7 @@ public final class SearchQueryResponseMapper {
 
   public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
     return new AuditLogResult()
-        .auditLogKey(KeyUtil.keyToString(auditLog.auditLogKey()))
+        .auditLogKey(auditLog.auditLogKey())
         .entityKey(auditLog.entityKey())
         .entityType(
             ofNullable(auditLog.entityType())
@@ -1330,7 +1331,10 @@ public final class SearchQueryResponseMapper {
                 .map(Enum::name)
                 .map(BatchOperationTypeEnum::fromValue)
                 .orElse(null))
-        .timestamp(auditLog.timestamp())
+        .timestamp(
+            ofNullable(auditLog.timestamp())
+                .map(ts -> ts.format(DateTimeFormatter.ISO_INSTANT))
+                .orElse(null))
         .actorId(auditLog.actorId())
         .actorType(
             ofNullable(auditLog.actorType())

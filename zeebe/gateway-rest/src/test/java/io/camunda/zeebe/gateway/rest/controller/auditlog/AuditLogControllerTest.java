@@ -13,12 +13,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity;
-import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogCategory;
-import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogResult;
+import io.camunda.search.entities.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogOperationType;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.query.AuditLogQuery;
@@ -34,6 +34,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.AuditLogCategoryConverter;
 import io.camunda.zeebe.gateway.rest.util.AuditLogEntityTypeConverter;
 import io.camunda.zeebe.gateway.rest.util.AuditLogOperationTypeConverter;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -118,19 +119,19 @@ public class AuditLogControllerTest extends RestControllerTest {
 
   private static final AuditLogEntity AUDIT_LOG_ENTITY =
       new AuditLogEntity.Builder()
-          .auditLogKey(123L)
+          .auditLogKey("123")
           .entityKey("entityKey")
           .entityType(AuditLogEntityType.USER)
           .operationType(AuditLogOperationType.CREATE)
           .batchOperationKey(456L)
           .batchOperationType(BatchOperationType.ADD_VARIABLE)
-          .timestamp("2024-01-01T00:00:00Z")
+          .timestamp(OffsetDateTime.parse("2024-01-01T00:00:00Z"))
           .actorId("actor")
           .actorType(AuditLogActorType.USER)
           .tenantId("tenant")
-          .result(AuditLogResult.SUCCESS)
+          .result(AuditLogOperationResult.SUCCESS)
           .annotation("annotation")
-          .category(AuditLogCategory.OPERATOR)
+          .category(AuditLogOperationCategory.OPERATOR)
           .processDefinitionId("processDefinitionId")
           .processDefinitionKey(789L)
           .processInstanceKey(987L)
@@ -229,16 +230,16 @@ public class AuditLogControllerTest extends RestControllerTest {
 
     final var filter =
         new AuditLogFilter.Builder()
-            .actorId("actor")
-            .operationType(
+            .actorIds("actor")
+            .operationTypes(
                 AuditLogOperationTypeConverter.toInternalOperationTypeAsString(
                     AuditLogOperationTypeEnum.CREATE))
-            .entityType(
+            .entityTypes(
                 AuditLogEntityTypeConverter.toInternalEntityTypeAsString(
                     AuditLogEntityTypeEnum.USER))
-            .category(
+            .categories(
                 AuditLogCategoryConverter.toInternalCategoryAsString(AuditLogCategoryEnum.OPERATOR))
-            .result(AuditLogResult.SUCCESS)
+            .results(AuditLogOperationResult.SUCCESS.name())
             .build();
     verify(auditLogServices).search(new AuditLogQuery.Builder().filter(filter).build());
   }
