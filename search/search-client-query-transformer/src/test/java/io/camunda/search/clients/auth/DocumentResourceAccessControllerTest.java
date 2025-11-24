@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -165,7 +166,7 @@ class DocumentResourceAccessControllerTest {
 
     // required authorization
     when(resourceAccessProvider.resolveResourceAccess(any(), any()))
-        .thenReturn(ResourceAccess.wildcard(null));
+        .thenReturn(ResourceAccess.wildcard(mock(Authorization.class)));
     when(tenantAccessProvider.resolveTenantAccess(eq(authentication)))
         .thenReturn(TenantAccess.allowed(List.of("bar")));
 
@@ -196,7 +197,7 @@ class DocumentResourceAccessControllerTest {
 
     // required authorization
     when(resourceAccessProvider.resolveResourceAccess(any(), any()))
-        .thenReturn(ResourceAccess.wildcard(null));
+        .thenReturn(ResourceAccess.wildcard(mock(Authorization.class)));
     when(tenantAccessProvider.resolveTenantAccess(eq(authentication)))
         .thenReturn(TenantAccess.denied(null));
 
@@ -227,7 +228,7 @@ class DocumentResourceAccessControllerTest {
 
     // required authorization
     when(resourceAccessProvider.resolveResourceAccess(any(), any()))
-        .thenReturn(ResourceAccess.wildcard(null));
+        .thenReturn(ResourceAccess.wildcard(mock(Authorization.class)));
     when(tenantAccessProvider.resolveTenantAccess(eq(authentication)))
         .thenReturn(TenantAccess.wildcard(null));
 
