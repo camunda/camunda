@@ -23,7 +23,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
-import io.camunda.operate.tenant.TenantCheckApplier;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -49,7 +49,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
-  @Autowired private TenantCheckApplier<Query> es8TenantCheckApplier;
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Autowired private ElasticsearchClient es8Client;
 
@@ -70,7 +70,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
         joinWithAnd(
             ElasticsearchUtil.termsQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
             ElasticsearchUtil.termsQuery(ListViewTemplate.ID, flowNodeInstanceId));
-    final var tenantAwareQuery = es8TenantCheckApplier.apply(query);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
     final var request =
         new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
             .index(whereToSearch(listViewTemplate, queryType))
@@ -146,7 +146,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
             : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
     final var query =
         ElasticsearchUtil.termsQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey);
-    final var tenantAwareQuery = es8TenantCheckApplier.apply(query);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
     final var request =
         new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
             .index(whereToSearch(flowNodeInstanceTemplate, queryType))
