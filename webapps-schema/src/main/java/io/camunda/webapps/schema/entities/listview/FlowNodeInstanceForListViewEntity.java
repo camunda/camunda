@@ -9,9 +9,9 @@ package io.camunda.webapps.schema.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
-import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -24,32 +24,32 @@ public class FlowNodeInstanceForListViewEntity
         PartitionedEntity<FlowNodeInstanceForListViewEntity>,
         TenantOwned {
 
-  @SinceVersion880 private String id;
-  @SinceVersion880 private long key;
-  @SinceVersion880 private int partitionId;
-  @SinceVersion880 private Long processInstanceKey;
-  @SinceVersion880 private String activityId;
-  @SinceVersion880 private FlowNodeState activityState;
-  @SinceVersion880 private FlowNodeType activityType;
-  @SinceVersion880 @Deprecated @JsonIgnore private List<Long> incidentKeys = new ArrayList<>();
-  @SinceVersion880 private String errorMessage;
-  @SinceVersion880 private boolean incident;
-  @SinceVersion880 private boolean jobFailedWithRetriesLeft = false;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private String activityId;
+  @BeforeVersion880 private FlowNodeState activityState;
+  @BeforeVersion880 private FlowNodeType activityType;
+  @Deprecated @JsonIgnore private List<Long> incidentKeys = new ArrayList<>();
+  @BeforeVersion880 private String errorMessage;
+  @BeforeVersion880 private boolean incident;
+  @BeforeVersion880 private boolean jobFailedWithRetriesLeft = false;
 
-  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  @SinceVersion880 @Deprecated @JsonIgnore private boolean pendingIncident;
+  @Deprecated @JsonIgnore private boolean pendingIncident;
 
-  @SinceVersion880 private Long position;
-  @SinceVersion880 private Long positionIncident;
-  @SinceVersion880 private Long positionJob;
+  @BeforeVersion880 private Long position;
+  @BeforeVersion880 private Long positionIncident;
+  @BeforeVersion880 private Long positionJob;
 
-  @SinceVersion880
+  @BeforeVersion880
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
-  @SinceVersion880 @JsonIgnore private Long startTime;
-  @SinceVersion880 @JsonIgnore private Long endTime;
+  @JsonIgnore private Long startTime;
+  @JsonIgnore private Long endTime;
 
   @Override
   public String getId() {

@@ -30,7 +30,7 @@ import java.lang.annotation.Target;
  *    {@literal @SinceVersion("8.8.0")}
  *     private String newField = "bar" // This will pass
  *
- *    {@literal @SinceVersion(value = "8.8.0", nullable = true)}
+ *    {@literal @SinceVersion(value = "8.8.0", requireDefault = true)}
  *     private String newField; // This will pass
  *   }
  * </code></pre>
@@ -40,5 +40,5 @@ import java.lang.annotation.Target;
 public @interface SinceVersion {
   String value();
 
-  boolean nullable() default false;
+  boolean requireDefault() default true;
 }

@@ -10,9 +10,9 @@ package io.camunda.webapps.schema.entities.listview;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
-import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -24,40 +24,40 @@ public class ProcessInstanceForListViewEntity
         PartitionedEntity<ProcessInstanceForListViewEntity>,
         TenantOwned {
 
-  @SinceVersion880 private String id;
-  @SinceVersion880 private long key;
-  @SinceVersion880 private int partitionId;
-  @SinceVersion880 private Long processDefinitionKey;
-  @SinceVersion880 private String processName;
-  @SinceVersion880 private Integer processVersion;
-  @SinceVersion880 private String processVersionTag;
-  @SinceVersion880 private String bpmnProcessId;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long processDefinitionKey;
+  @BeforeVersion880 private String processName;
+  @BeforeVersion880 private Integer processVersion;
+  @BeforeVersion880 private String processVersionTag;
+  @BeforeVersion880 private String bpmnProcessId;
 
-  @SinceVersion880 private OffsetDateTime startDate;
-  @SinceVersion880 private OffsetDateTime endDate;
+  @BeforeVersion880 private OffsetDateTime startDate;
+  @BeforeVersion880 private OffsetDateTime endDate;
 
-  @SinceVersion880 private ProcessInstanceState state;
+  @BeforeVersion880 private ProcessInstanceState state;
 
-  @SinceVersion880 private List<String> batchOperationIds;
+  @BeforeVersion880 private List<String> batchOperationIds;
 
-  @SinceVersion880 private Long parentProcessInstanceKey;
+  @BeforeVersion880 private Long parentProcessInstanceKey;
 
-  @SinceVersion880 private Long parentFlowNodeInstanceKey;
+  @BeforeVersion880 private Long parentFlowNodeInstanceKey;
 
-  @SinceVersion880 private String treePath;
+  @BeforeVersion880 private String treePath;
 
-  @SinceVersion880 private boolean incident;
+  @BeforeVersion880 private boolean incident;
 
-  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  @SinceVersion880
+  @BeforeVersion880
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);
 
-  @SinceVersion880 private Long position;
-  @SinceVersion880 private Set<String> tags;
+  @BeforeVersion880 private Long position;
+  @BeforeVersion880 private Set<String> tags;
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {

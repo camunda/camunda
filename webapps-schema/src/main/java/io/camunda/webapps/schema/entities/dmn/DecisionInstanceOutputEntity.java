@@ -7,16 +7,16 @@
  */
 package io.camunda.webapps.schema.entities.dmn;
 
-import io.camunda.webapps.schema.entities.SinceVersion880;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import java.util.Objects;
 
 public class DecisionInstanceOutputEntity {
 
-  @SinceVersion880 private String id;
-  @SinceVersion880 private String name;
-  @SinceVersion880 private String value;
-  @SinceVersion880 private String ruleId;
-  @SinceVersion880 private int ruleIndex;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private String name;
+  @BeforeVersion880 private String value;
+  @BeforeVersion880 private String ruleId;
+  @BeforeVersion880 private int ruleIndex;
 
   public String getId() {
     return id;

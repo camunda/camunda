@@ -8,9 +8,9 @@
 package io.camunda.webapps.schema.entities.dmn;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
-import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -23,50 +23,39 @@ public class DecisionInstanceEntity
         PartitionedEntity<DecisionInstanceEntity>,
         TenantOwned {
 
-  @SinceVersion880 private String id;
-
-  @SinceVersion880 private long key;
-
-  @SinceVersion880 private int partitionId;
-
-  @SinceVersion880 private Integer executionIndex;
-
-  @SinceVersion880 private DecisionInstanceState state;
-
-  @SinceVersion880 private OffsetDateTime evaluationDate;
-  @SinceVersion880 @Deprecated private String evaluationFailure;
-
-  @SinceVersion880 private String evaluationFailureMessage;
-
-  @SinceVersion880 private Long position;
-
-  @SinceVersion880 private long decisionRequirementsKey;
-
-  @SinceVersion880 private String decisionRequirementsId;
-
-  @SinceVersion880 private long processDefinitionKey;
-
-  @SinceVersion880 private long processInstanceKey;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Integer executionIndex;
+  @BeforeVersion880 private DecisionInstanceState state;
+  @BeforeVersion880 private OffsetDateTime evaluationDate;
+  @BeforeVersion880 @Deprecated private String evaluationFailure;
+  @BeforeVersion880 private String evaluationFailureMessage;
+  @BeforeVersion880 private Long position;
+  @BeforeVersion880 private long decisionRequirementsKey;
+  @BeforeVersion880 private String decisionRequirementsId;
+  @BeforeVersion880 private long processDefinitionKey;
+  @BeforeVersion880 private long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  @SinceVersion880 private String bpmnProcessId;
+  @BeforeVersion880 private String bpmnProcessId;
 
-  @SinceVersion880 private long elementInstanceKey;
-  @SinceVersion880 private String elementId;
-  @SinceVersion880 private String decisionId;
-  @SinceVersion880 private String decisionDefinitionId;
-  @SinceVersion880 private String decisionName;
-  @SinceVersion880 private int decisionVersion;
-  @SinceVersion880 private String rootDecisionName;
-  @SinceVersion880 private String rootDecisionId;
-  @SinceVersion880 private String rootDecisionDefinitionId;
-  @SinceVersion880 private DecisionType decisionType;
-  @SinceVersion880 private String result;
-  @SinceVersion880 private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
-  @SinceVersion880 private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
-  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private long elementInstanceKey;
+  @BeforeVersion880 private String elementId;
+  @BeforeVersion880 private String decisionId;
+  @BeforeVersion880 private String decisionDefinitionId;
+  @BeforeVersion880 private String decisionName;
+  @BeforeVersion880 private int decisionVersion;
+  @BeforeVersion880 private String rootDecisionName;
+  @BeforeVersion880 private String rootDecisionId;
+  @BeforeVersion880 private String rootDecisionDefinitionId;
+  @BeforeVersion880 private DecisionType decisionType;
+  @BeforeVersion880 private String result;
+  @BeforeVersion880 private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
+  @BeforeVersion880 private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {

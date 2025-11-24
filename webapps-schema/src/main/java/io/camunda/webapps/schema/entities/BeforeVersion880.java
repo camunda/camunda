@@ -14,5 +14,5 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-@SinceVersion(value = "8.8.0", nullable = true)
-public @interface SinceVersion880 {}
+@SinceVersion(value = "before-8.8.0", requireDefault = false)
+public @interface BeforeVersion880 {}

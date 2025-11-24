@@ -9,7 +9,7 @@ package io.camunda.webapps.schema.entities.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import io.camunda.webapps.schema.entities.SinceVersion880;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -17,27 +17,27 @@ import java.util.UUID;
 
 public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationEntity> {
 
-  @SinceVersion880 private String name;
-  @SinceVersion880 private OperationType type;
-  @SinceVersion880 private OffsetDateTime startDate;
-  @SinceVersion880 private OffsetDateTime endDate;
-  @SinceVersion880 private String username;
+  @BeforeVersion880 private String name;
+  @BeforeVersion880 private OperationType type;
+  @BeforeVersion880 private OffsetDateTime startDate;
+  @BeforeVersion880 private OffsetDateTime endDate;
+  @BeforeVersion880 private String username;
 
-  @SinceVersion880 private Integer instancesCount = 0;
-  @SinceVersion880 private Integer operationsTotalCount = 0;
+  @BeforeVersion880 private Integer instancesCount = 0;
+  @BeforeVersion880 private Integer operationsTotalCount = 0;
   // Legacy - Contains all operations (completed + failed)
-  @SinceVersion880 private Integer operationsFinishedCount = 0;
+  @BeforeVersion880 private Integer operationsFinishedCount = 0;
 
   // new fields for batch operation in zeebe engine
-  @SinceVersion880 private BatchOperationState state;
-  @SinceVersion880 private Integer operationsFailedCount = 0; // Just failed / rejected operations
+  @BeforeVersion880 private BatchOperationState state;
+  @BeforeVersion880 private Integer operationsFailedCount = 0; // Just failed / rejected operations
 
-  @SinceVersion880
+  @BeforeVersion880
   private Integer operationsCompletedCount = 0; // Just successfully completed operations
 
-  @SinceVersion880 private List<BatchOperationErrorEntity> errors = List.of();
+  @BeforeVersion880 private List<BatchOperationErrorEntity> errors = List.of();
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   public String getName() {
     return name;
