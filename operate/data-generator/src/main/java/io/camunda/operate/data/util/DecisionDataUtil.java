@@ -8,14 +8,9 @@
 package io.camunda.operate.data.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
-import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity;
@@ -26,7 +21,6 @@ import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntit
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -60,12 +54,6 @@ public class DecisionDataUtil {
   @Autowired
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
-
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-
-  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
-
-  @Autowired private DecisionIndex decisionIndex;
 
   @Autowired private PayloadUtil payloadUtil;
 
@@ -314,34 +302,5 @@ public class DecisionDataUtil {
         .setProcessInstanceKey(processInstanceKey)
         .setResult("{\"total\": 100.0}")
         .setTenantId(tenantId);
-  }
-
-  public void persistOperateEntities(final List<? extends ExporterEntity> operateEntities)
-      throws PersistenceException {
-    try {
-      final BatchRequest batchRequest = decisionStore.newBatchRequest();
-      for (final ExporterEntity<?> entity : operateEntities) {
-        final String alias = getEntityToESAliasMap().get(entity.getClass());
-        if (alias == null) {
-          throw new RuntimeException("Index not configured for " + entity.getClass().getName());
-        }
-        batchRequest.add(alias, entity);
-      }
-      batchRequest.execute();
-    } catch (final Exception ex) {
-      throw new PersistenceException(ex);
-    }
-  }
-
-  public Map<Class<? extends ExporterEntity>, String> getEntityToESAliasMap() {
-    if (entityToESAliasMap == null) {
-      entityToESAliasMap = new HashMap<>();
-      entityToESAliasMap.put(
-          DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(
-          DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
-    }
-    return entityToESAliasMap;
   }
 }

@@ -7,26 +7,15 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
-
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import java.io.IOException;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.search.aggregations.metrics.Cardinality;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -41,29 +30,27 @@ public class ElasticsearchDecisionStore implements DecisionStore {
 
   @Autowired private DecisionIndex decisionIndex;
 
-  @Autowired private BeanFactory beanFactory;
-
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired private ElasticsearchClient es8Client;
 
   @Override
   public Optional<Long> getDistinctCountFor(final String fieldName) {
     final String indexAlias = decisionIndex.getAlias();
     LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
-    final SearchRequest searchRequest =
-        new SearchRequest(indexAlias)
-            .source(
-                new SearchSourceBuilder()
-                    .query(QueryBuilders.matchAllQuery())
-                    .size(0)
-                    .aggregation(
-                        cardinality(DISTINCT_FIELD_COUNTS)
-                            .precisionThreshold(1_000)
-                            .field(fieldName)));
+
+    final var searchRequest =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(indexAlias)
+            .query(q -> q.matchAll(m -> m))
+            .size(0)
+            .aggregations(
+                DISTINCT_FIELD_COUNTS,
+                a -> a.cardinality(c -> c.precisionThreshold(1_000).field(fieldName)))
+            .build();
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Cardinality distinctFieldCounts =
-          searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
-      return Optional.of(distinctFieldCounts.getValue());
+      final var res = es8Client.search(searchRequest, Void.class);
+      final var distinctFieldCounts = res.aggregations().get(DISTINCT_FIELD_COUNTS).cardinality();
+
+      return Optional.of(distinctFieldCounts.value());
     } catch (final Exception e) {
       LOGGER.error(
           String.format(
@@ -74,17 +61,14 @@ public class ElasticsearchDecisionStore implements DecisionStore {
   }
 
   @Override
-  public BatchRequest newBatchRequest() {
-    return beanFactory.getBean(BatchRequest.class);
-  }
-
-  @Override
   public long deleteDocuments(final String indexName, final String idField, final String id)
       throws IOException {
-    final DeleteByQueryRequest query =
-        new DeleteByQueryRequest(indexName).setQuery(QueryBuilders.termsQuery(idField, id));
-    final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
-    LOGGER.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
-    return response.getDeleted();
+
+    final var res =
+        es8Client.deleteByQuery(
+            d -> d.index(indexName).query(ElasticsearchUtil.termsQuery(idField, id)));
+
+    LOGGER.debug("Delete document {} in {} response: {}", id, indexName, res.deleted());
+    return res.deleted() != null ? res.deleted() : 0L;
   }
 }
