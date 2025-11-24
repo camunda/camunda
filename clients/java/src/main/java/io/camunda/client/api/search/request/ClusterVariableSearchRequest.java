@@ -22,4 +22,16 @@ import io.camunda.client.api.search.sort.ClusterVariableSort;
 public interface ClusterVariableSearchRequest
     extends TypedSearchRequest<
             ClusterVariableFilter, ClusterVariableSort, ClusterVariableSearchRequest>,
-        FinalSearchRequestStep<ClusterVariable> {}
+        FinalSearchRequestStep<ClusterVariable> {
+
+  /**
+   * Requests that full variable values be returned in the search results.
+   *
+   * <p>By default, long variable values in search results are truncated. This method allows you to
+   * retrieve the complete, untruncated values of all cluster variables matching the search
+   * criteria.
+   *
+   * @return this search request with full values enabled
+   */
+  VariableSearchRequest withFullValues();
+}

@@ -19,6 +19,7 @@ import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
+import io.camunda.client.protocol.rest.ClusterVariableSearchResult;
 
 public class ClusterVariableImpl implements ClusterVariable {
 
@@ -26,12 +27,22 @@ public class ClusterVariableImpl implements ClusterVariable {
   private final String value;
   private final String tenantId;
   private final ClusterVariableScope scope;
+  private final Boolean isTruncated;
 
-  public ClusterVariableImpl(final ClusterVariableResult item) {
-    name = item.getName();
-    value = item.getValue();
-    tenantId = item.getTenantId();
-    scope = EnumUtil.convert(item.getScope(), ClusterVariableScope.class);
+  public ClusterVariableImpl(final ClusterVariableResult clusterVariableResult) {
+    name = clusterVariableResult.getName();
+    value = clusterVariableResult.getValue();
+    tenantId = clusterVariableResult.getTenantId();
+    scope = EnumUtil.convert(clusterVariableResult.getScope(), ClusterVariableScope.class);
+    isTruncated = false;
+  }
+
+  public ClusterVariableImpl(final ClusterVariableSearchResult clusterVariableSearchResult) {
+    name = clusterVariableSearchResult.getName();
+    value = clusterVariableSearchResult.getValue();
+    tenantId = clusterVariableSearchResult.getTenantId();
+    scope = EnumUtil.convert(clusterVariableSearchResult.getScope(), ClusterVariableScope.class);
+    isTruncated = clusterVariableSearchResult.getIsTruncated();
   }
 
   @Override
@@ -52,5 +63,10 @@ public class ClusterVariableImpl implements ClusterVariable {
   @Override
   public ClusterVariableScope getScope() {
     return scope;
+  }
+
+  @Override
+  public Boolean isTruncated() {
+    return isTruncated;
   }
 }

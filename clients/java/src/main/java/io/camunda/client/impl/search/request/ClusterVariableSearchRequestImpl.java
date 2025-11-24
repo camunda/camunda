@@ -25,6 +25,7 @@ import io.camunda.client.api.search.filter.ClusterVariableFilter;
 import io.camunda.client.api.search.request.ClusterVariableSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ClusterVariableSort;
@@ -34,6 +35,8 @@ import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest;
 import io.camunda.client.protocol.rest.ClusterVariableSearchQueryResult;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -46,6 +49,7 @@ public class ClusterVariableSearchRequestImpl
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
+  private boolean withFullValues = false;
 
   public ClusterVariableSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
@@ -64,8 +68,11 @@ public class ClusterVariableSearchRequestImpl
   @Override
   public CamundaFuture<SearchResponse<ClusterVariable>> send() {
     final HttpCamundaFuture<SearchResponse<ClusterVariable>> result = new HttpCamundaFuture<>();
+    final Map<String, String> queryParams = new HashMap<>();
+    queryParams.put("truncateValues", String.valueOf(!withFullValues));
     httpClient.post(
         "/cluster-variables/search",
+        queryParams,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ClusterVariableSearchQueryResult.class,
@@ -112,5 +119,11 @@ public class ClusterVariableSearchRequestImpl
   @Override
   protected ClusterVariableSearchQueryRequest getSearchRequestProperty() {
     return request;
+  }
+
+  @Override
+  public VariableSearchRequest withFullValues() {
+    withFullValues = true;
+    return null;
   }
 }

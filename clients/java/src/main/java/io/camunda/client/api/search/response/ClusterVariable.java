@@ -19,15 +19,18 @@ import io.camunda.client.api.search.enums.ClusterVariableScope;
 
 public interface ClusterVariable {
 
-  /* The name of the variable */
+  /* The name of the cluster variable */
   String getName();
 
-  /* The value of the variable */
+  /* The value of the cluster variable */
   String getValue();
 
-  /* The tenant id of the variable */
+  /* The tenant id of the cluster variable */
   String getTenantId();
 
-  /* The scope of the variable */
+  /* The scope of the cluster variable */
   ClusterVariableScope getScope();
+
+  /* Check if the cluster variable is truncated */
+  Boolean isTruncated();
 }

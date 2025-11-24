@@ -70,7 +70,14 @@ paths:
         - Cluster Variable
       operationId: searchClusterVariables
       x-eventually-consistent: true
-      description: Search for cluster variables based on given criteria.
+      description: Search for cluster variables based on given criteria. By default, long variable values in the response are truncated.
+      parameters:
+        - name: truncateValues
+          in: query
+          required: false
+          description: When true (default), long variable values in the response are truncated. When false, full variable values are returned.
+          schema:
+            type: boolean
       requestBody:
         required: false
         content:
@@ -255,6 +262,27 @@ components:
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
     ClusterVariableResult:
       type: object
+      allOf:
+        - $ref: '#/components/schemas/ClusterVariableResultBase'
+      properties:
+        value:
+          description: Full value of this cluster variable.
+          type: string
+    ClusterVariableSearchResult:
+      description: Cluster variable search response item.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ClusterVariableResultBase'
+      properties:
+        value:
+          description: Value of this cluster variable. Can be truncated.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+    ClusterVariableResultBase:
+      description: Cluster variable response item.
+      type: object
       required:
         - name
         - value
@@ -263,9 +291,6 @@ components:
         name:
           type: string
           description: The name of the cluster variable. Unique within its scope (global or tenant-specific).
-        value:
-          type: string
-          description: The value of the cluster variable as a JSON-serialized string. Regardless of the input type during creation, values are returned as strings.
         scope:
           $ref: '#/components/schemas/ClusterVariableScopeEnum'
         tenantId:
@@ -322,6 +347,9 @@ components:
           description: Tenant ID of this variable.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
     ClusterVariableScopeFilterProperty:
       description: ClusterVariableScopeEnum property with full advanced search capabilities.
       type: object
@@ -365,4 +393,4 @@ components:
           description: The matching cluster variables.
           type: array
           items:
-            $ref: '#/components/schemas/ClusterVariableResult'
+            $ref: '#/components/schemas/ClusterVariableSearchResult'
