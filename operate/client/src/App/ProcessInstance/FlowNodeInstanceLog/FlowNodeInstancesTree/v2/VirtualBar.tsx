@@ -9,19 +9,27 @@
 import {forwardRef} from 'react';
 import {NodeName, Container} from '../Bar/styled';
 import {Stack} from '@carbon/react';
+import {ModificationIcons} from './ModificationIcons';
 
 type Props = {
   elementInstanceKey: string;
   elementName: string;
+  elementId: string;
+  instanceKeyHierarchy: string[];
 };
 
 const VirtualBar = forwardRef<HTMLDivElement, Props>(
-  ({elementInstanceKey, elementName}, ref) => {
+  ({elementInstanceKey, elementId, elementName, instanceKeyHierarchy}, ref) => {
     return (
       <Container ref={ref} data-testid={`node-details-${elementInstanceKey}`}>
         <Stack orientation="horizontal" gap={5}>
           <NodeName>{elementName}</NodeName>
         </Stack>
+        <ModificationIcons
+          elementId={elementId}
+          isPlaceholder
+          instanceKeyHierarchy={instanceKeyHierarchy}
+        />
       </Container>
     );
   },
