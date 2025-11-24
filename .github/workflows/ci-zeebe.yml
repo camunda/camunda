@@ -47,10 +47,9 @@ jobs:
         include:
           - os: macos
             runner: macos-latest-large
-          # TODO: reactivate once https://camunda.slack.com/archives/C071KP5BTHB/p1763975893969429 has been resolved
-          # - os: macos
-          #   runner: macos-latest
-          #   arch: arm64
+          - os: macos
+            runner: macos-latest
+            arch: arm64
           - os: windows
             runner: windows-latest
           - os: linux
