@@ -9,6 +9,7 @@
 import type {
   ElementInstance,
   ProcessInstance,
+  QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstancesRequestBody,
@@ -129,6 +130,12 @@ const queryKeys = {
       'processInstances',
       'search',
       'paginated',
+      payload,
+    ],
+  },
+  batchOperations: {
+    query: (payload: QueryBatchOperationsRequestBody) => [
+      'batchOperations',
       payload,
     ],
   },
