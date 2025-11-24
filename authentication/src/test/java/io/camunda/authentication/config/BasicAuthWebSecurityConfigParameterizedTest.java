@@ -92,7 +92,6 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
 
   private Map<String, Object> getBasicProperties() {
     final Map<String, Object> properties = new HashMap<>();
-    properties.put("spring.profiles.active", "consolidated-auth");
     properties.put("spring.main.allow-bean-definition-overriding", true);
     properties.put("camunda.security.authentication.unprotected-api", false);
     properties.put("camunda.security.authentication.method", "basic");

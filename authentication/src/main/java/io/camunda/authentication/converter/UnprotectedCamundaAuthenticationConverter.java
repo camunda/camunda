@@ -17,7 +17,7 @@ public class UnprotectedCamundaAuthenticationConverter
 
   @Override
   public boolean supports(final Authentication authentication) {
-    // 1) apiProtection == false and consolidated-auth profile used => authentication == null
+    // 1) apiProtection == false => authentication == null
     // 2) apiProtection == false and no auth profile used => authentication ==
     // AnonymousAuthenticationToken
     return authentication == null || authentication instanceof AnonymousAuthenticationToken;

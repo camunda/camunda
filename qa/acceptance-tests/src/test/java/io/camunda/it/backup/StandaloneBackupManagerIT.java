@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.application.Profile;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -88,7 +87,6 @@ final class StandaloneBackupManagerIT {
   @TestZeebe(autoStart = false)
   final TestCamundaApplication camunda =
       new TestCamundaApplication()
-          .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
           .withCreateSchema(false)
           .withUnauthenticatedAccess()
           .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")

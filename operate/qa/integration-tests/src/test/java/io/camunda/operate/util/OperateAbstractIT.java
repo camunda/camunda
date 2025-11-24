@@ -43,7 +43,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false",
-      "spring.profiles.active=test,consolidated-auth",
+      "spring.profiles.active=test",
       "camunda.security.authorizations.enabled=false"
     })
 @WebAppConfiguration

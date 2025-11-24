@@ -25,7 +25,6 @@ class SaasTokenControllerTest {
 
   @Nested
   @WebMvcTest(SaaSTokenController.class)
-  @TestPropertySource(properties = "spring.profiles.active=consolidated-auth")
   public class SaasNotConfiguredTest extends RestControllerTest {
 
     @MockitoBean private CamundaUserService camundaUserService;
@@ -48,7 +47,6 @@ class SaasTokenControllerTest {
   @WebMvcTest(SaaSTokenController.class)
   @TestPropertySource(
       properties = {
-        "spring.profiles.active=consolidated-auth",
         "camunda.security.saas.organizationId=test-org-id",
         "camunda.security.saas.clusterId=test-cluster-id"
       })

@@ -26,12 +26,12 @@ env-h2-up:
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=tasklist,broker,dev,dev-data,identity,consolidated-auth
+	  -Dspring.profiles.active=tasklist,broker,dev,dev-data,identity
 
 .PHONY: env-up
 env-up: $(DATABASE) setup-maven-context
 	$(eval SERVICES := elasticsearch)
-	$(eval SPRING_PROFILES_ACTIVE = tasklist,broker,dev,dev-data,consolidated-auth)
+	$(eval SPRING_PROFILES_ACTIVE = tasklist,broker,dev,dev-data)
 	$(eval MAIN_CLASS = io.camunda.application.StandaloneCamunda)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
 		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_NETWORK_HOST "localhost" $(MAVEN_CONTEXT) && \

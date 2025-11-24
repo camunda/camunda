@@ -41,7 +41,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "management.endpoints.web.exposure.include = usage-metrics",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      "spring.profiles.active=test,consolidated-auth"
+      "spring.profiles.active=test"
     })
 @TestExecutionListeners(
     listeners = DependencyInjectionTestExecutionListener.class,

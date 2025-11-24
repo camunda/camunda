@@ -25,11 +25,7 @@ final class CamundaApplicationSpringDependenciesTest extends AbstractSpringDepen
       new TestCamundaApplication()
           .withProperty("management.endpoint.beans.access", "unrestricted")
           .withAdditionalProfiles(
-              Profile.CONSOLIDATED_AUTH,
-              Profile.BROKER,
-              Profile.OPERATE,
-              Profile.TASKLIST,
-              Profile.IDENTITY);
+              Profile.BROKER, Profile.OPERATE, Profile.TASKLIST, Profile.IDENTITY);
 
   @BeforeEach
   void setUp() {

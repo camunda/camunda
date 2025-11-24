@@ -9,6 +9,6 @@ package io.camunda.tasklist.webapp.controllers;
 
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({"tasklist", "standalone", "test", "consolidated-auth"})
+@ActiveProfiles({"tasklist", "standalone", "test"})
 public class OldRoutesRedirectionControllerConsolidatedAuthIT
     extends OldRoutesRedirectionControllerIT {}
