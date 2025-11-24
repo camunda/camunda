@@ -162,8 +162,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
     if (foundCatchEvent.isLeft()) {
       job.setElementId(NO_CATCH_EVENT_FOUND);
-      stateWriter.appendFollowUpEvent(jobKey, JobIntent.ERROR_THROWN, job);
-      responseWriter.writeEventOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
+      writeThrowErrorEvent(jobKey, job, command);
       raiseIncident(jobKey, job, foundCatchEvent.getLeft());
     } else if (!serviceTaskInstanceIsActive(serviceTaskInstance)) {
       final var errorMessage =
@@ -180,15 +179,20 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
     } else {
-      stateWriter.appendFollowUpEvent(jobKey, JobIntent.ERROR_THROWN, job);
-      responseWriter.writeEventOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
-      jobMetrics.countJobEvent(JobAction.ERROR_THROWN, job.getJobKind(), job.getType());
+      writeThrowErrorEvent(jobKey, job, command);
       eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
     }
   }
 
   private boolean serviceTaskInstanceIsActive(final ElementInstance serviceTaskInstance) {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
+  }
+
+  private void writeThrowErrorEvent(
+      final long jobKey, final JobRecord job, final TypedRecord<JobRecord> command) {
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.ERROR_THROWN, job);
+    responseWriter.writeEventOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
+    jobMetrics.countJobEvent(JobAction.ERROR_THROWN, job.getJobKind(), job.getType());
   }
 
   private void raiseIncident(final long key, final JobRecord job, final Failure failure) {
