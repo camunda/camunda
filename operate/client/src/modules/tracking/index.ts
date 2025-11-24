@@ -75,8 +75,7 @@ type Events =
   | {
       eventName: 'decisions-loaded';
       filters: string[];
-      sortBy?: string;
-      sortOrder?: 'desc' | 'asc';
+      sort?: {field: string; order?: 'desc' | 'asc'}[];
     }
   | {
       eventName: 'variables-panel-used';

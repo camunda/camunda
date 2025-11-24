@@ -23,6 +23,11 @@ import {
   BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
   type ProcessInstanceFilters,
 } from './shared';
+import type z from 'zod';
+import {
+  querySortOrderSchema,
+  type QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type DecisionInstanceFilterField =
   | 'tenant'
@@ -510,6 +515,28 @@ function getSortParams(search?: string): {
   return null;
 }
 
+type QuerySortItem<F extends string> = {field: F; order: QuerySortOrder};
+
+/**
+ * Parses sort options from the given {@linkcode URLSearchParams} for
+ * search APIs. The given {@linkcode fieldSchema} is used to validate the sort
+ * field. If no sort param is found, the given {@linkcode fallback} is returned.
+ */
+function parseSortParamsV2<F extends string>(
+  search: URLSearchParams,
+  fieldSchema: z.ZodEnum<Record<F, F>>,
+  fallback: QuerySortItem<F>,
+): QuerySortItem<F>[] {
+  const sortParam = search.get('sort');
+  if (sortParam === null) {
+    return [fallback];
+  }
+  const [unsafeField, unsafeOrder] = sortParam.split('+');
+  const field = fieldSchema.catch(fallback.field).parse(unsafeField);
+  const order = querySortOrderSchema.catch(fallback.order).parse(unsafeOrder);
+  return [{field, order}];
+}
+
 export {
   getProcessInstanceFilters,
   parseIds,
@@ -520,6 +547,7 @@ export {
   updateDecisionsFiltersSearchString,
   deleteSearchParams,
   getSortParams,
+  parseSortParamsV2,
   getDecisionInstanceFilters,
 };
 export type {
