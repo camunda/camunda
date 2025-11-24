@@ -26,15 +26,19 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
+  private static final Set<IncidentIntent> SUPPORTED_INTENTS =
+      EnumSet.of(IncidentIntent.CREATED, IncidentIntent.MIGRATED);
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
@@ -56,8 +60,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    final var intent = record.getIntent();
-    return !intent.equals(IncidentIntent.RESOLVED);
+    return SUPPORTED_INTENTS.contains((IncidentIntent) record.getIntent());
   }
 
   @Override
