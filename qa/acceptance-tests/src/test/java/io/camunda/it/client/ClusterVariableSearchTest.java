@@ -63,15 +63,13 @@ public class ClusterVariableSearchTest {
     globalVarValue2 = "testValue2_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(globalVarName1, globalVarValue1)
         .send()
         .join();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(globalVarName2, globalVarValue2)
         .send()
         .join();
@@ -84,15 +82,13 @@ public class ClusterVariableSearchTest {
     tenantId = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantId)
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
         .create(tenantVarName1, tenantVarValue1)
         .send()
         .join();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantId)
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
         .create(tenantVarName2, tenantVarValue2)
         .send()
         .join();
@@ -105,15 +101,13 @@ public class ClusterVariableSearchTest {
     tenantIdMixed = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(globalVarNameMixed, globalVarValueMixed)
         .send()
         .join();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantIdMixed)
+        .newTenantScopedClusterVariableCreateRequest(tenantIdMixed)
         .create(tenantVarNameMixed, tenantVarValueMixed)
         .send()
         .join();
@@ -126,15 +120,13 @@ public class ClusterVariableSearchTest {
     tenantIdTenantOnly = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(globalVarNameTenantOnly, globalVarValueTenantOnly)
         .send()
         .join();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantIdTenantOnly)
+        .newTenantScopedClusterVariableCreateRequest(tenantIdTenantOnly)
         .create(tenantVarNameTenantOnly, tenantVarValueTenantOnly)
         .send()
         .join();

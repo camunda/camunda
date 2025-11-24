@@ -1089,8 +1089,8 @@ public final class TestHelper {
             () -> {
               final var result =
                   camundaClient
-                      .newClusterVariableGetRequest()
-                      .atGlobalScope(variableName)
+                      .newGloballyScopedClusterVariableGetRequest()
+                      .withName(variableName)
                       .send()
                       .join();
               assertThat(result).isNotNull();
@@ -1119,8 +1119,8 @@ public final class TestHelper {
             () -> {
               final var result =
                   camundaClient
-                      .newClusterVariableGetRequest()
-                      .atTenantScope(variableName, tenantId)
+                      .newTenantScopedClusterVariableGetRequest(tenantId)
+                      .withName(variableName)
                       .send()
                       .join();
               assertThat(result).isNotNull();

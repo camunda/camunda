@@ -35,8 +35,7 @@ public class ClusterVariableCommandTest {
     // when
     final var response =
         camundaClient
-            .newClusterVariableCreateRequest()
-            .atGlobalScoped()
+            .newGloballyScopedClusterVariableCreateRequest()
             .create(variableName, variableValue)
             .send()
             .join();
@@ -57,8 +56,7 @@ public class ClusterVariableCommandTest {
     // when
     final var response =
         camundaClient
-            .newClusterVariableCreateRequest()
-            .atTenantScoped(tenantId)
+            .newTenantScopedClusterVariableCreateRequest(tenantId)
             .create(variableName, variableValue)
             .send()
             .join();
@@ -75,8 +73,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create(null, "value")
                     .send()
                     .join())
@@ -90,8 +87,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create("", "value")
                     .send()
                     .join())
@@ -105,8 +101,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableCreateRequest()
-                    .atTenantScoped("")
+                    .newTenantScopedClusterVariableCreateRequest("")
                     .create("variableName", "value")
                     .send()
                     .join())
@@ -121,8 +116,7 @@ public class ClusterVariableCommandTest {
     final var variableValue = "testValue_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(variableName, variableValue)
         .send()
         .join();
@@ -131,8 +125,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create(variableName, "newValue")
                     .send()
                     .join())
@@ -148,8 +141,7 @@ public class ClusterVariableCommandTest {
     final var tenantId = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantId)
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
         .create(variableName, variableValue)
         .send()
         .join();
@@ -158,8 +150,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableCreateRequest()
-                    .atTenantScoped(tenantId)
+                    .newTenantScopedClusterVariableCreateRequest(tenantId)
                     .create(variableName, "newValue")
                     .send()
                     .join())
@@ -178,8 +169,7 @@ public class ClusterVariableCommandTest {
     // when - create in global scope
     final var response1 =
         camundaClient
-            .newClusterVariableCreateRequest()
-            .atGlobalScoped()
+            .newGloballyScopedClusterVariableCreateRequest()
             .create(variableName, globalValue)
             .send()
             .join();
@@ -187,8 +177,7 @@ public class ClusterVariableCommandTest {
     // then - should be able to create same name in tenant scope
     final var response2 =
         camundaClient
-            .newClusterVariableCreateRequest()
-            .atTenantScoped(tenantId)
+            .newTenantScopedClusterVariableCreateRequest(tenantId)
             .create(variableName, tenantValue)
             .send()
             .join();
@@ -211,16 +200,14 @@ public class ClusterVariableCommandTest {
     final var variableValue = "testValue_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(variableName, variableValue)
         .send()
         .join();
 
     // when
     camundaClient
-        .newClusterVariableDeleteRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableDeleteRequest()
         .delete(variableName)
         .send()
         .join();
@@ -229,8 +216,7 @@ public class ClusterVariableCommandTest {
     assertThatCode(
             () ->
                 camundaClient
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create(variableName, variableValue)
                     .send()
                     .join())
@@ -245,8 +231,7 @@ public class ClusterVariableCommandTest {
     final var tenantId = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantId)
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
         .create(variableName, variableValue)
         .send()
         .join();
@@ -255,8 +240,7 @@ public class ClusterVariableCommandTest {
     assertThatCode(
             () ->
                 camundaClient
-                    .newClusterVariableDeleteRequest()
-                    .atTenantScoped(tenantId)
+                    .newTenantScopedClusterVariableDeleteRequest(tenantId)
                     .delete(variableName)
                     .send()
                     .join())
@@ -269,8 +253,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableDeleteRequest()
                     .delete(null)
                     .send()
                     .join())
@@ -284,8 +267,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableDeleteRequest()
                     .delete("")
                     .send()
                     .join())
@@ -299,8 +281,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableDeleteRequest()
                     .delete("nonExistentVar_" + UUID.randomUUID())
                     .send()
                     .join())
@@ -314,8 +295,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableDeleteRequest()
-                    .atTenantScoped("tenant_" + UUID.randomUUID())
+                    .newTenantScopedClusterVariableDeleteRequest("tenant_" + UUID.randomUUID())
                     .delete("nonExistentVar_" + UUID.randomUUID())
                     .send()
                     .join())
@@ -330,8 +310,7 @@ public class ClusterVariableCommandTest {
     final var variableValue = "testValue_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(variableName, variableValue)
         .send()
         .join();
@@ -342,8 +321,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableDeleteRequest()
-                    .atTenantScoped(tenantId)
+                    .newTenantScopedClusterVariableDeleteRequest(tenantId)
                     .delete(variableName)
                     .send()
                     .join())
@@ -359,8 +337,7 @@ public class ClusterVariableCommandTest {
     final var tenantId = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantId)
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
         .create(variableName, variableValue)
         .send()
         .join();
@@ -369,8 +346,7 @@ public class ClusterVariableCommandTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableDeleteRequest()
                     .delete(variableName)
                     .send()
                     .join())
