@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -548,7 +547,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(listViewTemplate)
             .source(new SearchSourceBuilder().query(query).fetchSource(TREE_PATH, null));
-    final AtomicBoolean es8BulkRequestEmpty = new AtomicBoolean(true);
     try {
       tenantAwareClient.search(
           request,
@@ -572,7 +570,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
                                 .doc(updateFields)
                                 .retryOnConflict(UPDATE_RETRY_COUNT);
                             bulkRequest.add(updateRequest);
-                            es8BulkRequestEmpty.set(false);
                             es8BulkRequest.operations(
                                 op ->
                                     op.update(
@@ -586,12 +583,10 @@ public class ElasticsearchProcessStore implements ProcessStore {
                 esClient);
             return null;
           });
-      if (!es8BulkRequestEmpty.get()) {
-        ElasticsearchUtil.processBulkRequest(
-            es8Client,
-            es8BulkRequest.build(),
-            operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-      }
+      ElasticsearchUtil.processBulkRequest(
+          es8Client,
+          es8BulkRequest,
+          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final Exception e) {
       throw new OperateRuntimeException(
           String.format(

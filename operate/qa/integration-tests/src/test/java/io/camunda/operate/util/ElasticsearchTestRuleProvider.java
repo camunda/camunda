@@ -224,7 +224,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
       ElasticsearchUtil.processBulkRequest(
           es8Client,
-          bulkRequest.build(),
+          bulkRequest,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final Exception ex) {

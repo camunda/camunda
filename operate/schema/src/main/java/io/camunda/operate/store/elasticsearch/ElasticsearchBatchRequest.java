@@ -258,11 +258,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public void execute() throws PersistenceException {
     try {
-      final var builtBulkRequest = bulkRequest.build();
-      LOGGER.debug("Execute batchRequest with {} requests", builtBulkRequest.operations().size());
       ElasticsearchUtil.processBulkRequest(
           es8Client,
-          builtBulkRequest,
+          bulkRequest,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final MissingRequiredPropertyException ignored) {
       // empty bulk request
@@ -272,13 +270,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public void executeWithRefresh() {
     try {
-      final var builtBulkRequest = bulkRequest.build();
-      LOGGER.debug(
-          "Execute batchRequest with {} requests and refresh",
-          builtBulkRequest.operations().size());
       ElasticsearchUtil.processBulkRequest(
           es8Client,
-          builtBulkRequest,
+          bulkRequest,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final MissingRequiredPropertyException ignored) {

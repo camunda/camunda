@@ -14,6 +14,8 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
@@ -153,22 +155,30 @@ public abstract class ElasticsearchUtil {
 
   public static void processBulkRequest(
       final ElasticsearchClient esClient,
-      final co.elastic.clients.elasticsearch.core.BulkRequest bulkRequest,
+      final BulkRequest.Builder bulkRequestBuilder,
       final long maxBulkRequestSizeInBytes) {
-    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
+    processBulkRequest(esClient, bulkRequestBuilder, false, maxBulkRequestSizeInBytes);
   }
 
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
       final ElasticsearchClient esClient,
-      final co.elastic.clients.elasticsearch.core.BulkRequest bulkRequest,
+      final BulkRequest.Builder bulkRequestBuilder,
       final boolean refreshImmediately,
       final long maxBulkRequestSizeInBytes) {
-    final var bulkIngester =
-        createBulkIngester(esClient, maxBulkRequestSizeInBytes, refreshImmediately);
-    bulkRequest.operations().forEach(bulkIngester::add);
-    bulkIngester.close();
+    try {
+      final var bulkRequest = bulkRequestBuilder.build();
+      LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.operations().size());
+
+      final var bulkIngester =
+          createBulkIngester(esClient, maxBulkRequestSizeInBytes, refreshImmediately);
+      bulkRequest.operations().forEach(bulkIngester::add);
+      bulkIngester.close();
+    } catch (final MissingRequiredPropertyException ignored) {
+      // if bulk request has no operations calling .build() will throw an exception, we suppress
+      // this as it is a no op.
+    }
   }
 
   private static BulkIngester<Void> createBulkIngester(
