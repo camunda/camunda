@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.0.19
+
+### 🩹 Fixes
+
+- always send truncateValues when defineds ([#41390](https://github.com/camunda/camunda/pull/41390))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.18
+
+### 🚀 Enhancements
+
+- add full variable config to fetch variables typedefs ([#41390](https://github.com/camunda/camunda/pull/41390))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.17
 
 ### 🚀 Enhancements
