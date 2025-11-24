@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.mapper.search;
 import static io.camunda.zeebe.gateway.rest.mapper.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -1249,17 +1250,13 @@ public final class SearchQueryResponseMapper {
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .resourceId(nullIfEmpty(authorization.resourceId()))
-        .resourcePropertyName(nullIfEmpty(authorization.resourcePropertyName()))
+        .resourceId(defaultIfEmpty(authorization.resourceId(), null))
+        .resourcePropertyName(defaultIfEmpty(authorization.resourcePropertyName(), null))
         .permissionTypes(
             authorization.permissionTypes().stream()
                 .map(PermissionType::name)
                 .map(PermissionTypeEnum::fromValue)
                 .toList());
-  }
-
-  private static String nullIfEmpty(final String value) {
-    return StringUtils.defaultIfEmpty(value, null);
   }
 
   private static ProcessInstanceStateEnum toProtocolState(
