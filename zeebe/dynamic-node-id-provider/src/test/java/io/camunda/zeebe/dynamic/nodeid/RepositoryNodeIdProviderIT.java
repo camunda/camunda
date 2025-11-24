@@ -16,6 +16,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
@@ -103,8 +104,8 @@ public class RepositoryNodeIdProviderIT {
     final var acquiredLease = nodeIdProvider.getCurrentLease();
     final var nodeId = acquiredLease.lease().nodeInstance().id();
     assertThat(nodeId).isEqualTo(0);
-    assertThat(acquiredLease.metadata().task()).isEqualTo(taskId);
-    assertThat(acquiredLease.metadata().expiry())
+    assertThat(acquiredLease.metadata().task()).isEqualTo(Optional.of(taskId));
+    assertThat(acquiredLease.lease().timestamp())
         .isEqualTo(clock.instant().plus(EXPIRY_DURATION).toEpochMilli());
     assertThat(repository.getLease(nodeId)).isEqualTo(acquiredLease);
   }
@@ -116,14 +117,16 @@ public class RepositoryNodeIdProviderIT {
     clusterSize = 3;
     repository.initialize(clusterSize);
     // acquire a lease in the past
-    final var previousEtag = repository.getLease(0).eTag();
+    final var lease = repository.getLease(0);
+    final var previousEtag = lease.eTag();
     final var expiredLeaseTimestamp = clock.millis();
     final var expiredLease =
         repository.acquire(
             new Lease(
                 taskId + "old",
                 expiredLeaseTimestamp + EXPIRY_DURATION.toMillis(),
-                new NodeInstance(0)),
+                new NodeInstance(0, lease.version().next()),
+                VersionMappings.empty()),
             previousEtag);
     assertThat(expiredLease).isNotNull();
     clock.advance(EXPIRY_DURATION.plusSeconds(1));
@@ -141,8 +144,7 @@ public class RepositoryNodeIdProviderIT {
     assertThat(currentLease)
         .asInstanceOf(type(StoredLease.Initialized.class))
         .isEqualTo(acquiredLease)
-        .isNotEqualTo(expiredLease)
-        .satisfies(l -> assertThat(l.metadata().expiry()).isGreaterThan(expiredLeaseTimestamp));
+        .isNotEqualTo(expiredLease);
   }
 
   @Test
@@ -158,7 +160,12 @@ public class RepositoryNodeIdProviderIT {
                 i -> {
                   final var lease = repository.getLease(i);
                   return repository.acquire(
-                      new Lease(taskId, clock.millis() + 2000L, new NodeInstance(i)), lease.eTag());
+                      new Lease(
+                          taskId,
+                          clock.millis() + 2000L,
+                          new NodeInstance(i, lease.version().next()),
+                          VersionMappings.empty()),
+                      lease.eTag());
                 })
             .toList();
     assertThat(acquiredLeases)
@@ -201,6 +208,7 @@ public class RepositoryNodeIdProviderIT {
     final var renewedLease = nodeIdProvider.getCurrentLease();
     assertThat(renewedLease).isNotEqualTo(firstLease);
     assertThat(renewedLease.lease().timestamp()).isGreaterThan(firstLease.lease().timestamp());
+    assertThat(renewedLease.node()).isEqualTo(firstLease.node());
   }
 
   @Test
@@ -240,10 +248,11 @@ public class RepositoryNodeIdProviderIT {
     // clock is not moved, so the lease can only be acquired if released
     final var releasedLease = repository.getLease(lease.lease().nodeInstance().id());
     assertThat(releasedLease).isInstanceOf(StoredLease.Uninitialized.class);
+    assertThat(releasedLease.node()).isEqualTo(lease.node());
     nodeIdProvider = ofSize(clusterSize);
     assertLeaseIsReady();
-    assertThat(nodeIdProvider.getCurrentLease().lease().nodeInstance().id())
-        .isEqualTo(lease.lease().nodeInstance().id());
+    assertThat(nodeIdProvider.getCurrentLease().lease().nodeInstance())
+        .isEqualTo(lease.lease().nodeInstance().nextVersion());
   }
 
   public void assertLeaseIsReady() {

@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.nodeid.repository.s3;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static io.camunda.zeebe.dynamic.nodeid.Lease.OBJECT_MAPPER;
+
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
@@ -33,7 +34,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class S3NodeIdRepository implements NodeIdRepository {
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final Logger LOG = LoggerFactory.getLogger(S3NodeIdRepository.class);
   private final S3Client client;
@@ -88,6 +88,9 @@ public class S3NodeIdRepository implements NodeIdRepository {
 
   @Override
   public StoredLease.Initialized acquire(final Lease lease, final String previousETag) {
+    if (lease == null) {
+      throw new IllegalArgumentException("lease is null");
+    }
     final var nodeId = lease.nodeInstance().id();
     final var metadata = Metadata.fromLease(lease);
     final PutObjectRequest putRequest =
@@ -112,7 +115,9 @@ public class S3NodeIdRepository implements NodeIdRepository {
   public void release(final StoredLease.Initialized lease) {
     final var nodeId = lease.lease().nodeInstance().id();
     final PutObjectRequest putRequest =
-        createPutObjectRequest(nodeId, Optional.empty(), Optional.of(lease.eTag())).build();
+        createPutObjectRequest(
+                nodeId, Optional.of(lease.metadata().forRelease()), Optional.of(lease.eTag()))
+            .build();
     try {
       LOG.info("Release lease {}", lease);
       client.putObject(putRequest, RequestBody.empty());

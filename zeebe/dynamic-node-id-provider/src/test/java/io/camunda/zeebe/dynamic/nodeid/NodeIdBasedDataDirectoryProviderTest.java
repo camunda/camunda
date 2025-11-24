@@ -26,7 +26,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     // given
     final int nodeId = 5;
     final NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId));
+    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(3L)));
 
     final Path baseDirectory = tempDir.resolve("base");
     final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);

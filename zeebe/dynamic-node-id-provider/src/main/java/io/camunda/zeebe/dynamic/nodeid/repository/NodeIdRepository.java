@@ -9,7 +9,11 @@ package io.camunda.zeebe.dynamic.nodeid.repository;
 
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
+import io.camunda.zeebe.dynamic.nodeid.Version;
+import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Objects;
+import java.util.Optional;
 
 public interface NodeIdRepository extends AutoCloseable {
 
@@ -50,7 +54,26 @@ public interface NodeIdRepository extends AutoCloseable {
    */
   void release(StoredLease.Initialized lease);
 
+  /**
+   * A StoredLease represents the Lease stored in a Repository such as S3. It can be
+   *
+   * <ul>
+   *   <li>{@link Uninitialized} when it's first created or when it's gracefully released by the
+   *       node holding it
+   *   <li>{@link Initialized} when it's held by another node. Note that Initialized does not
+   *       guarantee validity, since a node can expire. This can happen if the lease is failed to be
+   *       renewed in time, either due to the node crashing or failing in some way.
+   * </ul>
+   */
   sealed interface StoredLease {
+    NodeInstance node();
+
+    String eTag();
+
+    default Version version() {
+      return node().version();
+    }
+
     default boolean isInitialized() {
       return switch (this) {
         case final Uninitialized u -> false;
@@ -58,23 +81,46 @@ public interface NodeIdRepository extends AutoCloseable {
       };
     }
 
+    default boolean isStillValid(final long now) {
+      return switch (this) {
+        case final Uninitialized u -> false;
+        case final Initialized i -> i.lease().isStillValid(now);
+      };
+    }
+
+    /**
+     * Acquire the initial lease
+     *
+     * @return {@link Optional#empty()} if the lease should not be acquired, or the lease to acquire
+     *     *
+     */
+    default Optional<Lease> acquireInitialLease(
+        final String taskId, final InstantSource clock, final Duration leaseDuration) {
+      if (isStillValid(clock.millis())) {
+        return Optional.empty();
+      } else {
+        return Optional.of(Lease.from(taskId, clock.millis() + leaseDuration.toMillis(), node()));
+      }
+    }
+
     static StoredLease of(
         final int nodeId, final Lease lease, final Metadata metadata, final String eTag) {
       if (eTag == null || eTag.isEmpty()) {
         throw new IllegalArgumentException("eTag cannot be null or empty:" + eTag);
       }
-      if (lease == null || metadata == null) {
-        return new StoredLease.Uninitialized(new NodeInstance(nodeId), eTag);
+      if (lease == null) {
+        final var version =
+            Optional.ofNullable(metadata).map(Metadata::version).orElse(Version.zero());
+        return new StoredLease.Uninitialized(new NodeInstance(nodeId, version), eTag);
       } else {
         return new StoredLease.Initialized(metadata, lease, eTag);
       }
     }
 
-    String eTag();
-
     record Uninitialized(NodeInstance node, String eTag) implements StoredLease {
       public Uninitialized {
-        Objects.requireNonNull(eTag, "ETag cannot be null");
+        Objects.requireNonNull(node, "node cannot be null");
+        Objects.requireNonNull(eTag, "eTag cannot be null");
         if (eTag.isEmpty()) {
           throw new IllegalArgumentException("eTag cannot be empty");
         }
@@ -82,13 +128,36 @@ public interface NodeIdRepository extends AutoCloseable {
     }
 
     record Initialized(Metadata metadata, Lease lease, String eTag) implements StoredLease {
+
+      public Initialized(
+          final Metadata metadata, final long expireAt, final int nodeId, final String eTag) {
+        this(metadata, Lease.fromMetadata(metadata, expireAt, nodeId), eTag);
+      }
+
       public Initialized {
-        Objects.requireNonNull(metadata, "Metadata cannot be null");
         Objects.requireNonNull(lease, "Lease cannot be null");
-        Objects.requireNonNull(eTag, "ETag cannot be null");
+        Objects.requireNonNull(metadata, "metadata cannot be null");
+        Objects.requireNonNull(eTag, "eTag cannot be null");
         if (eTag.isEmpty()) {
           throw new IllegalArgumentException("eTag cannot be empty");
         }
+        if (!Objects.equals(metadata.task(), Optional.of(lease.taskId()))) {
+          throw new IllegalStateException(
+              String.format(
+                  "TaskId in metadata(%s) and in lease(%s) do not match!",
+                  metadata.task(), lease.taskId()));
+        }
+        if (!Objects.equals(metadata.version(), lease.nodeInstance().version())) {
+          throw new IllegalStateException(
+              String.format(
+                  "Version in metadata(%s) and in lease(%s) do not match!",
+                  metadata.version(), lease.nodeInstance().version()));
+        }
+      }
+
+      @Override
+      public NodeInstance node() {
+        return lease.nodeInstance();
       }
     }
   }
