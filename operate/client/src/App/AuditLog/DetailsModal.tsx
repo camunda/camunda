@@ -248,13 +248,13 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
               kind="ghost"
               size="sm"
               renderIcon={ArrowRight}
-              iconDescription="View process instance details"
+              iconDescription="View process definition"
               onClick={() => {
                 // TODO: Navigate to process instance
                 console.log('Navigate to process:', entry.processInstanceKey);
               }}
             >
-              View process instance details
+              View process definition
             </Button>
           )}
         </div>
@@ -290,13 +290,13 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
               kind="ghost"
               size="sm"
               renderIcon={ArrowRight}
-              iconDescription="View process instance details"
+              iconDescription="View process instance"
               onClick={() => {
                 // TODO: Navigate to process instance
                 console.log('Navigate to process:', entry.processInstanceKey);
               }}
             >
-              View process instance details
+              View process instance
             </Button>
           )}
         </div>

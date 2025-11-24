@@ -134,8 +134,8 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               <Title style={{paddingBottom: '0'}}>Process</Title>
               <ComboBox
                 id="process-definition-name"
-                titleText="Process definition"
-                placeholder="Search by process definition"
+                titleText="Name"
+                placeholder="Search by process name"
                 items={PROCESS_DEFINITIONS}
                 selectedItem={filters.processDefinitionName || null}
                 onChange={({selectedItem}) =>
