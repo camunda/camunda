@@ -327,13 +327,10 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return result;
   }
 
-  // TODO check unused
-  public boolean documentExistsWithGivenRetries(final String name, final String id) {
-    return executeWithGivenRetries(
-        10,
+  public boolean documentExistsWithRetries(final String name, final String id) {
+    return executeWithRetries(
         format("Exists document from %s with id %s", name, id),
-        () -> openSearchClient.exists(e -> e.index(name).id(id)).value(),
-        null);
+        () -> openSearchClient.exists(e -> e.index(name).id(id)).value());
   }
 
   public <R> Optional<R> getWithRetries(
