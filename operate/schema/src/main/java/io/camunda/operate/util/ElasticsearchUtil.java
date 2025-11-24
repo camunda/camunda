@@ -186,6 +186,17 @@ public abstract class ElasticsearchUtil {
     processBulkRequest(esClient, bulkRequestBuilder, false, maxBulkRequestSizeInBytes);
   }
 
+  public static String getFieldFromResponseObject(
+      final co.elastic.clients.elasticsearch.core.SearchResponse<Map<String, Object>> response,
+      final String fieldName) {
+    if (response.hits().total().value() != 1) {
+      throw new IllegalArgumentException(
+          "Expected exactly one document in response object " + response);
+    }
+
+    return String.valueOf(response.hits().hits().getFirst().source().get(fieldName));
+  }
+
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
