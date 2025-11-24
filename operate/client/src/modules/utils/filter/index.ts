@@ -330,13 +330,16 @@ function parseSortParamsV2<F extends string>(
   fallback: QuerySortItem<F>,
 ): QuerySortItem<F>[] {
   const sortParam = search.get('sort');
-  if (sortParam === null) {
+  if (sortParam === null || sortParam === '') {
     return [fallback];
   }
   const [unsafeField, unsafeOrder] = sortParam.split('+');
-  const field = fieldSchema.catch(fallback.field).parse(unsafeField);
-  const order = querySortOrderSchema.catch(fallback.order).parse(unsafeOrder);
-  return [{field, order}];
+  const fieldResult = fieldSchema.safeParse(unsafeField);
+  const orderResult = querySortOrderSchema.safeParse(unsafeOrder);
+  if (!fieldResult.success || !orderResult.success) {
+    return [fallback];
+  }
+  return [{field: fieldResult.data, order: orderResult.data}];
 }
 
 export {
