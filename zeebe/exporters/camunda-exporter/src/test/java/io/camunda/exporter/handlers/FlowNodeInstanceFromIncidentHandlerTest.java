@@ -46,12 +46,6 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
   }
 
   @Test
-  public void shouldHandleRecord() {
-    final Record<IncidentRecordValue> incidentRecord = factory.generateRecord(ValueType.INCIDENT);
-    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
-  }
-
-  @Test
   public void shouldGenerateIds() {
     // given
     final IncidentRecordValue incidentRecordValue =

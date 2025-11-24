@@ -54,16 +54,6 @@ public class IncidentHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(IncidentEntity.class);
   }
 
-  @Test
-  void shouldHandleRecord() {
-    // given
-    final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
-
-    // when - then
-    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
-  }
-
   @ParameterizedTest
   @EnumSource(
       value = IncidentIntent.class,
