@@ -32,15 +32,21 @@ public class OpensearchMetadataStore implements MetadataStore {
   @Override
   public String getSchemaVersion() {
     // Check if metadata index exists
-    if (!richOpenSearchClient.index().indexExists(metadataIndex.getFullQualifiedName())) {
+    final String metaDataIndexName = metadataIndex.getFullQualifiedName();
+    if (!richOpenSearchClient.index().indexExists(metaDataIndexName)) {
       LOG.debug("Metadata index does not exist");
+      return null;
+    }
+    if (!richOpenSearchClient
+        .doc()
+        .documentExistsWithRetries(metaDataIndexName, SCHEMA_VERSION_METADATA_ID)) {
+      LOG.debug("Schema version metadata document cannot be found");
       return null;
     }
     final var schemaVersionDoc =
         richOpenSearchClient
             .doc()
-            .getWithRetries(
-                metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID, Map.class);
+            .getWithRetries(metaDataIndexName, SCHEMA_VERSION_METADATA_ID, Map.class);
     if (schemaVersionDoc.isEmpty()) {
       LOG.debug("Schema version metadata document cannot be found");
       return null;
