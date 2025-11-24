@@ -153,9 +153,11 @@ test.describe('Process Instance History', () => {
             await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
         });
 
-        await test.step('Verify Instance History Tab has no nested element', async () => {
-            const expandingElementsPresent = await operateProcessInstancePage.checkIfPresentExpandeingElementsInHistory();
-            expect(expandingElementsPresent).toBe(1);
+        const mainProcessName = 'EmbeddedSubprocess';
+        let expandingElementsInMainProcess;
+        await test.step('Verify Main process has no nested element', async () => {
+            expandingElementsInMainProcess = await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(mainProcessName);
+            expect(expandingElementsInMainProcess).toBe(0);
         });
 
         await test.step('Add modification to activate task flow node process in first subprocess and verify results', async () => {
@@ -166,7 +168,7 @@ test.describe('Process Instance History', () => {
             await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
 
             const activeStateOverlayTask = await operateDiagramPage
-                .getStateOverlayByElementNameAndState(firstSubprocessTaskElement, 'active');
+                .getStateOverlayLocatorByElementNameAndState(firstSubprocessTaskElement, 'active');
 
             await waitForAssertion({
                 assertion: async () => {
@@ -178,9 +180,9 @@ test.describe('Process Instance History', () => {
             });
         });
 
-        await test.step('Verify Instance History Tab has nested subprocess element and verify results', async () => {
-            const expandingElementsPresent = await operateProcessInstancePage.checkIfPresentExpandeingElementsInHistory();
-            expect(expandingElementsPresent).toBe(2);
+        await test.step('Verify Instance History Tab has 1 nested element', async () => {
+            expandingElementsInMainProcess = await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(mainProcessName);
+            expect(expandingElementsInMainProcess).toBe(1);
         });
 
         await test.step('Enter modification mode and assert results', async () => {
@@ -197,7 +199,7 @@ test.describe('Process Instance History', () => {
             await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
 
             const activeStateOverlayTask = await operateDiagramPage
-                .getStateOverlayByElementNameAndState(secondSubprocessTaskElement, 'active');
+                .getStateOverlayLocatorByElementNameAndState(secondSubprocessTaskElement, 'active');
 
             await waitForAssertion({
                 assertion: async () => {
@@ -210,8 +212,48 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Verify Instance History Tab has nested subprocess element and verify results', async () => {
-            const expandingElementsPresent = await operateProcessInstancePage.checkIfPresentExpandeingElementsInHistory();
-            expect(expandingElementsPresent).toBe(3);
+            expandingElementsInMainProcess = await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(mainProcessName);
+            expect(expandingElementsInMainProcess).toBe(2);
+        });
+    })
+
+    test('Verify process Instance modification', async ({
+        page,
+        operateProcessesPage,
+        operateFiltersPanelPage,
+        operateProcessInstancePage,
+        operateProcessModificationModePage,
+        operateDiagramPage, }) => {
+
+        const embeddedSubprocesModificationInstance = {
+            processInstanceKey: Number(
+                (await createSingleInstance('Process_EmbeddedSubprocess', 1, {
+                    meow: 0,
+                    test: 101,
+                })).processInstanceKey,
+            ),
+        };
+
+        const embeddedProcessInstanceModificationPIK =
+            embeddedSubprocesModificationInstance.processInstanceKey;
+        await test.step('Open Process Instances Page and verify results', async () => {
+            await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
+            await operateFiltersPanelPage.selectVersion('1');
+            await waitForAssertion({
+                assertion: async () => {
+                    await operateFiltersPanelPage.displayOptionalFilter('Variable');
+                    await operateFiltersPanelPage.fillVariableNameFilter('test');
+                    await operateFiltersPanelPage.fillVariableValueFilter('101');
+                    await expect(page.getByText('1 result')).toBeVisible();
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+
+            await operateProcessesPage.clickProcessInstanceLink();
+            const key = await operateProcessInstancePage.getProcessInstanceKey();
+            expect(key).toContain(`${embeddedProcessInstanceModificationPIK}`);
         });
     })
 

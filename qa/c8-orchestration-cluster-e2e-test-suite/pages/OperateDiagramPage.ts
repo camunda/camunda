@@ -189,10 +189,10 @@ export class OperateDiagramPage {
   /**
    * 
    * @param elementName corresponding element
-   * @param state active or incidents
+   * @param state active/incidents/cancelled/completedEndEvents
    * @returns locator to the state-overlay element
    */
-  async getStateOverlayByElementNameAndState(elementName: string, state: string) {
+  async getStateOverlayLocatorByElementNameAndState(elementName: string, state: string) {
     return this.page.locator(`[data-container-id=${elementName}]`).getByTestId(`state-overlay-${state}`);
   }
 }

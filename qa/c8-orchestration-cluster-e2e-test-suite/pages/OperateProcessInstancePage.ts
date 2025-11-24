@@ -260,14 +260,16 @@ class OperateProcessInstancePage {
   }
 
   async getInstanceHistoryItems() {
-    return this.instanceHistory.getByRole('treeitem');
+    return this.instanceHistory.getByRole('treeitem').getByTestId(/^node-details-/).all();
   }
 
-  async checkIfPresentExpandeingElementsInHistory() {
-    const expandingElements = this.instanceHistory.locator('.cds--tree-parent-node__toggle-icon');
+  async checkIfPresentExpandeingElementsInMainProcess(mainProcessName: string) {
+    const expandingElements = this.instanceHistory
+      .getByLabel(mainProcessName, { exact: true })
+      .getByRole('group')
+      .locator('.cds--tree-parent-node__toggle-icon');
     return await expandingElements.count();
   }
-
 }
 
 export { OperateProcessInstancePage };
