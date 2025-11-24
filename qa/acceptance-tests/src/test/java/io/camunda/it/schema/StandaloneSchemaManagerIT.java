@@ -41,7 +41,7 @@ final class StandaloneSchemaManagerIT {
   @MethodSource("strategies")
   void canUseCamunda(final SearchBackendStrategy strategy) throws Exception {
     try (strategy) {
-      strategy.initialize(schemaManager, camunda);
+      initialize(strategy);
 
       final long processInstanceKey;
       try (final var client = camunda.newClientBuilder().build()) {
@@ -110,7 +110,7 @@ final class StandaloneSchemaManagerIT {
   @MethodSource("strategies")
   void canArchiveProcessInstances(final SearchBackendStrategy strategy) throws Exception {
     try (strategy) {
-      strategy.initialize(schemaManager, camunda);
+      initialize(strategy);
       final long processInstanceKey;
       try (final var client = camunda.newClientBuilder().build()) {
         client
@@ -147,5 +147,15 @@ final class StandaloneSchemaManagerIT {
                     .isEqualTo(0);
               });
     }
+  }
+
+  private void initialize(final SearchBackendStrategy strategy) throws Exception {
+    strategy.startContainer();
+    strategy.createAdminClient();
+    strategy.createSchema();
+    strategy.configureStandaloneSchemaManager(schemaManager);
+    strategy.configureCamundaApplication(camunda);
+    schemaManager.start();
+    camunda.start();
   }
 }

@@ -17,8 +17,7 @@ Provide a uniform contract so tests can:
 
 ### `SearchBackendStrategy`
 
-Interface that defines the lifecycle and interaction contract. It provides default methods
-(`initialize(...)` and `close()`) and extends `AutoCloseable` so tests can use try-with-resources to
+Interface that defines the lifecycle and interaction contract. It extends `AutoCloseable` so tests can use try-with-resources to
 guarantee container shutdown.
 
 Lifecycle executed by `initialize(...)` in the following order:
@@ -54,7 +53,7 @@ long searchByKey(String indexPattern, long key) throws Exception;
 
 ### Responsibilities
 
-- A concrete strategy MUST be self‑sufficient: after `initialize(...)` returns, the backend must be
+- A concrete strategy MUST be self‑sufficient: The backend must be
   ready for test interaction (indices, templates, credentials valid).
 - `startContainer()` MUST be idempotent per instance; throw if called twice.
 - Where backend role assignment is eventually consistent (e.g. Elasticsearch), the strategy SHOULD
@@ -68,7 +67,12 @@ long searchByKey(String indexPattern, long key) throws Exception;
 @MethodSource("strategies")
 void canUseCamunda(SearchBackendStrategy strategy) throws Exception {
   try (strategy) { // ensures container stop
-    strategy.initialize(schemaManager, camunda);
+    strategy.startContainer();
+    strategy.createAdminClient();
+    strategy.configureStandaloneSchemaManager(schemaManager);
+    strategy.configureCamundaApplication(camunda);
+    schemaManager.start();
+    camunda.start();
     // ... perform test actions & assertions using strategy helpers
     assertThat(strategy.countDocuments("zeebe-record*")) .isGreaterThan(0);
   }
@@ -152,9 +156,6 @@ public final class NewBackendStrategy implements SearchBackendStrategy {
 - Provide an interface for mapping index/version expectations to assertions.
 
 ## FAQ
-
-**Why not start containers directly in tests?**
-To centralize backend-specific wiring and reduce duplication; tests focus on behavior, not infra.
 
 **Why use try-with-resources?**
 `SearchBackendStrategy` implements `AutoCloseable`, ensuring containers are always stopped even if

@@ -11,18 +11,23 @@ import static io.camunda.application.commons.search.SearchEngineDatabaseConfigur
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import io.camunda.application.Profile;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.cluster.TestStandaloneBackupManager;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterSchemaManager;
+import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -60,6 +65,10 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
                     .withTag(SUPPORTED_ELASTICSEARCH_VERSION))
             .withStartupTimeout(Duration.ofMinutes(5))
             .withEnv("xpack.security.enabled", "true")
+            // Configure with allowed repository storage path
+            .withEnv("path.repo", "~/")
+            // to be able to delete indices with wildcards
+            .withEnv("action.destructive_requires_name", "false")
             .withStartupAttempts(3)
             .withCopyToContainer(
                 Transferable.of(APP_ROLE_DEFINITION), "/usr/share/elasticsearch/config/roles.yml");
@@ -115,6 +124,14 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
             "zeebe.broker.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
         .withProperty(
             "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD);
+  }
+
+  @Override
+  public void configureStandaloneBackupManager(final TestStandaloneBackupManager backupManager) {
+    backupManager
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", url)
+        .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
+        .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD);
   }
 
   @Override
@@ -177,6 +194,54 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
             s -> s.index(indexPattern).query(q -> q.term(t -> t.field("key").value(key))),
             Object.class);
     return resp.hits().total() == null ? 0 : resp.hits().total().value();
+  }
+
+  @Override
+  public void deleteIndices(final String indexName, final String... indexNames) throws IOException {
+    adminClient.indices().delete(r -> r.index(indexName, indexNames).ignoreUnavailable(true));
+  }
+
+  @Override
+  public boolean indicesExist(final String indexName, final String... indexNames) throws Exception {
+    return adminClient
+        .indices()
+        .exists(r -> r.index(indexName, indexNames).allowNoIndices(false))
+        .value();
+  }
+
+  @Override
+  public List<String> getSuccessSnapshots(
+      final String repositoryName, final String snapshotNamePrefix) throws Exception {
+    return adminClient
+        .snapshot()
+        .get(r -> r.repository(repositoryName).snapshot(snapshotNamePrefix + "*"))
+        .snapshots()
+        .stream()
+        .filter(info -> Objects.equals(info.state(), "SUCCESS"))
+        .map(SnapshotInfo::snapshot)
+        .toList();
+  }
+
+  /**
+   * As documented in
+   *
+   * <p>https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/#restore
+   */
+  @Override
+  public void restoreBackup(final String repositoryName, final String snapshot) throws IOException {
+    adminClient
+        .snapshot()
+        .restore(r -> r.repository(repositoryName).snapshot(snapshot).waitForCompletion(true));
+  }
+
+  @Override
+  public void createSnapshotRepository(final String repositoryName) throws IOException {
+    adminClient
+        .snapshot()
+        .createRepository(
+            q ->
+                q.name(repositoryName)
+                    .repository(r -> r.fs(fs -> fs.settings(s -> s.location(repositoryName)))));
   }
 
   private ElasticsearchExporterConfiguration exporterAdminConfig() {
