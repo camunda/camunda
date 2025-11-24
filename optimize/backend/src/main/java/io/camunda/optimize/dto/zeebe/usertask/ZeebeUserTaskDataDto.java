@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.slf4j.Logger;
 
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
@@ -39,6 +40,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   private String externalFormReference;
   private Map<String, String> customHeaders;
   private long creationTimestamp;
+  private Set<String> tags;
 
   public ZeebeUserTaskDataDto() {}
 
@@ -142,6 +144,15 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   @Override
   public int getPriority() {
     throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return tags;
+  }
+
+  public void setTags(final Set<String> tags) {
+    this.tags = tags;
   }
 
   public void setProcessDefinitionKey(final long processDefinitionKey) {
@@ -268,7 +279,8 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(action, that.action)
         && Objects.equals(externalFormReference, that.externalFormReference)
-        && Objects.equals(customHeaders, that.customHeaders);
+        && Objects.equals(customHeaders, that.customHeaders)
+        && Objects.equals(tags, that.tags);
   }
 
   @Override
@@ -293,7 +305,8 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
         action,
         externalFormReference,
         customHeaders,
-        creationTimestamp);
+        creationTimestamp,
+        tags);
   }
 
   @Override
@@ -338,6 +351,8 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
         + getCustomHeaders()
         + ", creationTimestamp="
         + getCreationTimestamp()
+        + ", tags="
+        + getTags()
         + ")";
   }
 
@@ -364,5 +379,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     public static final String externalFormReference = "externalFormReference";
     public static final String customHeaders = "customHeaders";
     public static final String creationTimestamp = "creationTimestamp";
+    public static final String tags = "tags";
   }
 }

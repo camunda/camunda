@@ -713,6 +713,15 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getFollowUpDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::followUpDateOperations);
+
+      if (!CollectionUtils.isEmpty(filter.getTags())) {
+        final var tagErrors = TagsValidator.validate(filter.getTags());
+        if (tagErrors.isEmpty()) {
+          ofNullable(filter.getTags()).ifPresent(builder::tags);
+        } else {
+          validationErrors.addAll(tagErrors);
+        }
+      }
     }
 
     return validationErrors.isEmpty()

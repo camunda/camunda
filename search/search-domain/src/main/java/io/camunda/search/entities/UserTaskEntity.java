@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -36,7 +37,8 @@ public record UserTaskEntity(
     String externalFormReference,
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
-    Integer priority)
+    Integer priority,
+    Set<String> tags)
     implements TenantOwnedEntity {
 
   public UserTaskEntity withName(final String newName) {
@@ -62,7 +64,8 @@ public record UserTaskEntity(
         externalFormReference,
         processDefinitionVersion,
         customHeaders,
-        priority);
+        priority,
+        tags);
   }
 
   public UserTaskEntity withProcessName(final String newProcessName) {
@@ -88,7 +91,8 @@ public record UserTaskEntity(
         externalFormReference,
         processDefinitionVersion,
         customHeaders,
-        priority);
+        priority,
+        tags);
   }
 
   public boolean hasName() {

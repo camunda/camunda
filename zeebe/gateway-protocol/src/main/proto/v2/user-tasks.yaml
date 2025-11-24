@@ -441,6 +441,8 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The key of the element instance.
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
     UserTaskSearchQueryResult:
       description: User task search query response.
@@ -542,6 +544,8 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
           description: The key of the form.
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
     UserTaskCompletionRequest:
       type: object

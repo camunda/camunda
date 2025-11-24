@@ -23,6 +23,7 @@ import io.camunda.client.protocol.rest.UserTaskResult;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class UserTaskImpl implements UserTask {
 
@@ -47,6 +48,7 @@ public class UserTaskImpl implements UserTask {
   private final Integer processDefinitionVersion;
   private final Map<String, String> customHeaders;
   private final Integer priority;
+  private final Set<String> tags;
 
   public UserTaskImpl(final UserTaskResult item) {
     userTaskKey = ParseUtil.parseLongOrNull(item.getUserTaskKey());
@@ -70,6 +72,7 @@ public class UserTaskImpl implements UserTask {
     processDefinitionVersion = item.getProcessDefinitionVersion();
     customHeaders = item.getCustomHeaders();
     priority = item.getPriority();
+    tags = item.getTags();
   }
 
   @Override
@@ -175,5 +178,10 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Integer getPriority() {
     return priority;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return tags;
   }
 }

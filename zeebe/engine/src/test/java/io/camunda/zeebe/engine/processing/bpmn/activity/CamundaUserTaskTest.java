@@ -1182,6 +1182,29 @@ public final class CamundaUserTaskTest {
             tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
   }
 
+  @Test
+  public void shouldInheritTagsFromProcessInstance() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when - create process instance with tags
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withTags("vip", "region-eu", "priority-high")
+            .create();
+
+    // then - user task should inherit the tags from process instance
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(userTask.getValue().getTags())
+        .containsExactlyInAnyOrder("vip", "region-eu", "priority-high");
+  }
+
   private static Predicate<Record<?>> isTaskTransitionRelatedRecord(
       final UserTaskRecordValue userTaskRecordValue) {
     final var userTaskElementInstanceKey = userTaskRecordValue.getElementInstanceKey();

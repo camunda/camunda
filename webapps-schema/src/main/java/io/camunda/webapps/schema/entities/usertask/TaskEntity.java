@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TaskEntity
     implements ExporterEntity<TaskEntity>, PartitionedEntity<TaskEntity>, TenantOwned {
@@ -95,6 +96,9 @@ public class TaskEntity
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer priority;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Set<String> tags;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String action;
@@ -358,6 +362,15 @@ public class TaskEntity
     return this;
   }
 
+  public Set<String> getTags() {
+    return tags;
+  }
+
+  public TaskEntity setTags(final Set<String> tags) {
+    this.tags = tags;
+    return this;
+  }
+
   public String getAction() {
     return action;
   }
@@ -377,10 +390,10 @@ public class TaskEntity
   }
 
   public TaskEntity addChangedAttribute(final String changedAttribute) {
-    if (this.changedAttributes == null) {
-      this.changedAttributes = new ArrayList<>();
+    if (changedAttributes == null) {
+      changedAttributes = new ArrayList<>();
     }
-    this.changedAttributes.add(changedAttribute);
+    changedAttributes.add(changedAttribute);
     return this;
   }
 

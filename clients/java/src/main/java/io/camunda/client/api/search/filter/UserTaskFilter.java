@@ -24,6 +24,7 @@ import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequest
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /** Interface for defining user task filters in search queries. */
@@ -101,6 +102,28 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter name(final String name);
+
+  /**
+   * Filters user tasks by tags associated with the process instance. Matches user tasks where the
+   * process instance has ALL of the provided tags (AND logic).
+   *
+   * <p>Example: {@code .tags(Set.of("tag1", "tag2"))} matches process instances with tag1 AND tag2.
+   *
+   * @param tags the Set of tag values to filter by (AND logic)
+   * @return the updated filter
+   */
+  UserTaskFilter tags(final Set<String> tags);
+
+  /**
+   * Filters user tasks by tags associated with the process instance. Matches user tasks where the
+   * process instance has ALL of the provided tags (AND logic).
+   *
+   * <p>Example: {@code .tags("tag1", "tag2")} matches process instances with tag1 AND tag2.
+   *
+   * @param tags the tag values to filter by (AND logic)
+   * @return the updated filter
+   */
+  UserTaskFilter tags(final String... tags);
 
   /**
    * Filters user tasks by the specified candidate group.
