@@ -207,7 +207,6 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
           label={
             <VirtualBar
               elementInstanceKey={scopeKey}
-              elementId={elementId}
               elementName={elementName}
               ref={rowRef}
             />
@@ -317,7 +316,6 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         label: (
           <VirtualBar
             elementInstanceKey={scopeKey}
-            elementId={elementId}
             elementName={elementName}
             ref={rowRef}
           />
