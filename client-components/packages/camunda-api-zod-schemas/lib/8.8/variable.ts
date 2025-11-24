@@ -56,7 +56,7 @@ type QueryVariablesResponseBody = z.infer<typeof queryVariablesResponseBodySchem
 const queryVariables: Endpoint<{truncateValues?: boolean}> = {
 	method: 'POST',
 	getUrl: ({truncateValues} = {}) =>
-		`/${API_VERSION}/variables/search${truncateValues === true ? `?truncateValues=${truncateValues}` : ''}`,
+		`/${API_VERSION}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
 };
 
 export {getVariable, queryVariables, variableSchema, queryVariablesRequestBodySchema, queryVariablesResponseBodySchema};

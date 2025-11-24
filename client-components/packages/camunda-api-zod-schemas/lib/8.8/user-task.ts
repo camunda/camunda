@@ -191,7 +191,7 @@ type QueryVariablesByUserTaskResponseBody = z.infer<typeof queryVariablesByUserT
 const queryVariablesByUserTask: Endpoint<Pick<UserTask, 'userTaskKey'> & {truncateValues?: boolean}> = {
 	method: 'POST',
 	getUrl: ({userTaskKey, truncateValues}) =>
-		`/${API_VERSION}/user-tasks/${userTaskKey}/variables/search${truncateValues === true ? `?truncateValues=${truncateValues}` : ''}`,
+		`/${API_VERSION}/user-tasks/${userTaskKey}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
 };
 
 export {
