@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.exception.CamundaSearchException.Reason;
@@ -20,6 +22,7 @@ import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
@@ -245,7 +248,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldReturnResourceOnGetWhenAccessAllowed() {
+  void shouldReturnResourceOnGetWhenAccessAllowedBySingleAuthorization() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
@@ -267,7 +270,71 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldThrowResourceAccessDeniedOnGetWhenAccessDenied() {
+  void shouldReturnResourceOnGetWhenAccessAllowedByFirstAnyOfAuthorization() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var processDefinitionReadAuth =
+        Authorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+    final var securityContext =
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationCondition(
+                        AuthorizationConditions.anyOf(
+                            processDefinitionReadAuth, userTaskReadAuth)));
+    final var document = "document";
+
+    when(resourceAccessProvider.hasResourceAccess(
+            authentication, processDefinitionReadAuth, document))
+        .thenReturn(ResourceAccess.allowed(processDefinitionReadAuth));
+    when(tenantAccessProvider.hasTenantAccess(authentication, document))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when
+    final var result = controller.doGet(securityContext, doGetAccessCheckApplier(document));
+
+    // then
+    assertThat(result).isEqualTo(document);
+    // verify that the check for the second authorization was not performed,
+    // as access was already granted by the first
+    verify(resourceAccessProvider, never())
+        .hasResourceAccess(authentication, userTaskReadAuth, document);
+  }
+
+  @Test
+  void shouldReturnResourceOnGetWhenAccessAllowedByLastAnyOfAuthorization() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var processDefinitionReadAuth =
+        Authorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+    final var securityContext =
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationCondition(
+                        AuthorizationConditions.anyOf(
+                            processDefinitionReadAuth, userTaskReadAuth)));
+    final var document = "document";
+
+    when(resourceAccessProvider.hasResourceAccess(
+            authentication, processDefinitionReadAuth, document))
+        .thenReturn(ResourceAccess.denied(processDefinitionReadAuth));
+    when(resourceAccessProvider.hasResourceAccess(authentication, userTaskReadAuth, document))
+        .thenReturn(ResourceAccess.allowed(userTaskReadAuth));
+    when(tenantAccessProvider.hasTenantAccess(authentication, document))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when
+    final var result = controller.doGet(securityContext, doGetAccessCheckApplier(document));
+
+    // then
+    assertThat(result).isEqualTo(document);
+  }
+
+  @Test
+  void shouldThrowResourceAccessDeniedOnGetWhenAccessDeniedForSingleAuthorization() {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
@@ -293,6 +360,47 @@ class DocumentResourceAccessControllerTest {
                       new MissingAuthorization(
                           AuthorizationResourceType.PROCESS_DEFINITION,
                           PermissionType.READ_PROCESS_DEFINITION));
+            });
+  }
+
+  @Test
+  void shouldThrowResourceAccessDeniedOnGetWhenAccessDeniedForAnyOfAuthorizations() {
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var processDefinitionReadAuth =
+        Authorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+    final var securityContext =
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationCondition(
+                        AuthorizationConditions.anyOf(
+                            processDefinitionReadAuth, userTaskReadAuth)));
+    final var document = "document";
+
+    when(resourceAccessProvider.hasResourceAccess(
+            authentication, processDefinitionReadAuth, document))
+        .thenReturn(ResourceAccess.denied(processDefinitionReadAuth));
+    when(resourceAccessProvider.hasResourceAccess(authentication, userTaskReadAuth, document))
+        .thenReturn(ResourceAccess.denied(userTaskReadAuth));
+    when(tenantAccessProvider.hasTenantAccess(authentication, document))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when - then
+    assertThatExceptionOfType(ResourceAccessDeniedException.class)
+        .isThrownBy(() -> controller.doGet(securityContext, doGetAccessCheckApplier(document)))
+        .withMessageContaining(
+            "Unauthorized to perform any of the operations ('READ_USER_TASK' on 'PROCESS_DEFINITION'), ('READ' on 'USER_TASK')")
+        .satisfies(
+            err -> {
+              assertThat(err.getReason()).isEqualTo(Reason.FORBIDDEN);
+              assertThat(err.getMissingAuthorizations())
+                  .containsExactly(
+                      new MissingAuthorization(
+                          AuthorizationResourceType.PROCESS_DEFINITION,
+                          PermissionType.READ_USER_TASK),
+                      new MissingAuthorization(
+                          AuthorizationResourceType.USER_TASK, PermissionType.READ));
             });
   }
 
