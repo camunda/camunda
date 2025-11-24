@@ -68,6 +68,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    volumes:
+      - keycloak-data:/opt/keycloak/data
     networks:
       - localhost
   identity:
@@ -143,8 +145,7 @@ services:
     ports:
       - "8082:8080"
     environment:
-      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - camunda.data.secondary-storage.elasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
       - JAVA_OPTS=-XX:UseSVE=0
@@ -161,8 +162,7 @@ services:
     container_name: operate
     environment:
         - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-        - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-        - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+        - CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
         - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
         - SPRING_PROFILES_ACTIVE=dev-data
         - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
@@ -282,3 +282,6 @@ services:
     restart: always
 networks:
   localhost: { }
+
+volumes:
+  keycloak-data:

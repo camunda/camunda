@@ -13,7 +13,8 @@ services:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8081/
+#      User to be CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8081/
+      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://localhost:8081/
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
@@ -82,10 +83,12 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
     healthcheck:
-      test: bash -c "echo -e 'GET /auth HTTP/1.0\r\n\r\n' >/dev/tcp/127.0.0.1/8080 || exit 1"
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
       interval: 30s
       timeout: 5s
       retries: 3
+    volumes:
+      - keycloak-data:/opt/keycloak/data
     networks:
       - identity-network
   identity:
@@ -145,6 +148,7 @@ services:
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - "JAVA_OPTS=-XX:UseSVE=0"
+      - "CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200"
     ports:
       - "26500:26500"
       - "9600:9600"
@@ -162,8 +166,7 @@ services:
     ports:
       - "8082:8080"
     environment:
-      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - camunda.data.secondary-storage.elasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
       - JAVA_OPTS=-XX:UseSVE=0
@@ -180,8 +183,7 @@ services:
     container_name: operate
     environment:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
       - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
