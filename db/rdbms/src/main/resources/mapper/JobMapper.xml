@@ -252,8 +252,8 @@
     TENANT_ID, TYPE, WORKER, STATE, RETRIES, ERROR_MESSAGE, ERROR_CODE, END_TIME, CUSTOM_HEADERS, KIND, ELEMENT_ID, IS_DENIED, DENIED_REASON, LISTENER_EVENT_TYPE,
     DEADLINE, HAS_FAILED_WITH_RETRIES_LEFT, HISTORY_CLEANUP_DATE, CREATION_TIME, LAST_UPDATE_TIME)
     VALUES (#{jobKey}, #{partitionId}, #{processInstanceKey}, #{elementInstanceKey}, #{processDefinitionId},
-    #{processDefinitionKey}, #{tenantId}, #{type}, #{worker}, #{state}, #{retries}, #{errorMessage}, #{errorCode}, #{endTime}, #{serializedCustomHeaders}, #{kind}, #{elementId}, #{isDenied},
-    #{deniedReason}, #{listenerEventType}, #{deadline}, #{hasFailedWithRetriesLeft}, #{historyCleanupDate, jdbcType=TIMESTAMP}, #{creationTime, jdbcType=TIMESTAMP}, #{lastUpdateTime, jdbcType=TIMESTAMP})
+    #{processDefinitionKey}, #{tenantId}, #{type}, #{worker}, #{state}, #{retries}, #{errorMessage}, #{errorCode}, #{endTime, jdbcType=TIMESTAMP}, #{serializedCustomHeaders}, #{kind}, #{elementId}, #{isDenied},
+    #{deniedReason}, #{listenerEventType}, #{deadline, jdbcType=TIMESTAMP}, #{hasFailedWithRetriesLeft}, #{historyCleanupDate, jdbcType=TIMESTAMP}, #{creationTime, jdbcType=TIMESTAMP}, #{lastUpdateTime, jdbcType=TIMESTAMP})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
