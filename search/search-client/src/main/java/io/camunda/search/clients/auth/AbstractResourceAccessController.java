@@ -16,6 +16,8 @@ import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
+import io.camunda.security.auth.condition.SingleAuthorizationCondition;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -37,9 +39,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
   public <T> T doGet(
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {
-    final var authentication = securityContext.authentication();
-    final var authorization = (Authorization<T>) securityContext.authorization();
-    return doPostFiltering(authentication, authorization, resourceChecksApplier);
+    return doPostFiltering(securityContext, resourceChecksApplier);
   }
 
   @Override
@@ -47,14 +47,17 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {
     final var authentication = securityContext.authentication();
-    final var authorization = securityContext.authorization();
+    // FIXME: Temporarily only support single authorization condition,
+    //  support for multiple authorizations will be added in upcoming commits
+    final var authorization = securityContext.authorizationCondition().authorizations().getFirst();
     return doPreFiltering(authentication, authorization, resourceChecksApplier);
   }
 
   @Override
   public boolean supports(final SecurityContext securityContext) {
     return Optional.of(securityContext)
-            .filter(c -> c.authentication() != null && c.authorization() != null)
+            .filter(c -> c.authentication() != null)
+            .filter(c -> c.authorizationCondition() != null)
             .isPresent()
         && !isAnonymousAuthentication(securityContext.authentication());
   }
@@ -118,9 +121,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
   }
 
   protected <T> T doPostFiltering(
-      final CamundaAuthentication authentication,
-      final Authorization<T> authorization,
-      final Function<ResourceAccessChecks, T> applier) {
+      final SecurityContext securityContext, final Function<ResourceAccessChecks, T> applier) {
     // read without any resource access check
     final T resource = applier.apply(ResourceAccessChecks.disabled());
 
@@ -129,21 +130,58 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     }
 
     // now ensure access to resource
-    ensureTenantAccessOrThrow(authentication, resource);
-    ensureResourceAccessOrThrow(authentication, authorization, resource);
+    ensureTenantAccessOrThrow(securityContext.authentication(), resource);
+    ensureResourceAccessOrThrow(securityContext, resource);
 
     return resource;
   }
 
   protected <T> void ensureResourceAccessOrThrow(
-      final CamundaAuthentication authentication,
-      final Authorization<T> authorization,
-      final T document) {
+      final SecurityContext securityContext, final T document) {
+
+    final var condition = securityContext.authorizationCondition();
+
+    switch (condition) {
+      case SingleAuthorizationCondition single ->
+          ensureSingleAuthorizationAccessOrThrow(securityContext, document, single);
+      case AnyOfAuthorizationCondition anyOf ->
+          ensureAnyOfAuthorizationAccessOrThrow(securityContext, document, anyOf);
+      default ->
+          throw new IllegalStateException(
+              "Unsupported AuthorizationCondition type: " + condition.getClass().getSimpleName());
+    }
+  }
+
+  private <T> void ensureSingleAuthorizationAccessOrThrow(
+      final SecurityContext securityContext,
+      final T document,
+      final SingleAuthorizationCondition single) {
+    final Authorization authorization = single.authorization();
     final var resourceAccess =
-        getResourceAccessProvider().hasResourceAccess(authentication, authorization, document);
+        getResourceAccessProvider()
+            .hasResourceAccess(securityContext.authentication(), authorization, document);
     if (resourceAccess.denied()) {
       throw new ResourceAccessDeniedException(authorization);
     }
+  }
+
+  private <T> void ensureAnyOfAuthorizationAccessOrThrow(
+      final SecurityContext securityContext,
+      final T document,
+      final AnyOfAuthorizationCondition anyOf) {
+    final var authorizations = anyOf.authorizations();
+    for (final Authorization authorization : authorizations) {
+      final var resourceAccess =
+          getResourceAccessProvider()
+              .hasResourceAccess(securityContext.authentication(), authorization, document);
+      if (resourceAccess.allowed()) {
+        // at least one authorization allowed access, no need to check further
+        return;
+      }
+    }
+
+    // none of the authorizations allowed access
+    throw new ResourceAccessDeniedException(authorizations);
   }
 
   protected <T> void ensureTenantAccessOrThrow(
