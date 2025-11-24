@@ -11,16 +11,10 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
-import io.camunda.zeebe.engine.processing.identity.initialize.IdentityInitializationException;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
-import java.util.List;
 import java.util.regex.PatternSyntaxException;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -86,28 +80,6 @@ public class CamundaSecurityConfiguration {
           "The configured identifier pattern (%s=%s) is invalid. Please use a different pattern."
               .formatted("camunda.security.id-validation-pattern", idRegex));
     }
-
-    validateInitializationConfig();
-  }
-
-  // actually initializing the entities will be done in IdentitySetupInitializer.
-  // Validation is done here, only to be able to stop the application on error.
-  private void validateInitializationConfig() {
-    final AuthorizationConfigurer authorizationConfigurer =
-        new AuthorizationConfigurer(camundaSecurityProperties.getCompiledIdValidationPattern());
-
-    final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
-        authorizationConfigurer.configureEntities(
-            camundaSecurityProperties.getInitialization().getAuthorizations());
-
-    // TODO: after adding more entity types, change this, so it accounts for all violations all
-    //   together.
-    configuredAuthorizations.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured entities: \n- %s"
-                  .formatted(StringUtils.join(violations, "\n- ")));
-        });
   }
 
   @ConfigurationProperties("camunda.security")
