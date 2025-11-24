@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
+import static java.util.Collections.emptyList;
+
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
@@ -27,8 +29,8 @@ public record ProcessDefinitionInstanceStatisticsDbQuery(
   public static final class Builder
       implements ObjectBuilder<ProcessDefinitionInstanceStatisticsDbQuery> {
 
-    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
-    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
+    private List<String> authorizedResourceIds = emptyList();
+    private List<String> authorizedTenantIds = emptyList();
     private DbQuerySorting<ProcessDefinitionInstanceStatisticsEntity> sort;
     private DbQueryPage page;
 

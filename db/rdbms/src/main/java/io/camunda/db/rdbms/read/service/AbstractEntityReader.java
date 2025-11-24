@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -190,8 +191,8 @@ abstract class AbstractEntityReader<T> {
    * @return a SearchQueryResult containing the results and total count
    */
   protected SearchQueryResult<T> executePagedQuery(
-      final java.util.function.Supplier<Long> countSupplier,
-      final java.util.function.Supplier<List<T>> resultsSupplier,
+      final Supplier<Long> countSupplier,
+      final Supplier<List<T>> resultsSupplier,
       final DbQueryPage page,
       final DbQuerySorting<T> dbSort) {
     final long totalHits = countSupplier.get();
