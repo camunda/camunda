@@ -19,6 +19,13 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+/**
+ * @param taskId the taskId that acquired this lease
+ * @param timestamp the timestamp at which the lease expires
+ * @param nodeInstance the nodeInstance this lease refers to
+ * @param knownVersionMappings contains the versions of the other nodes that the node holding the
+ *     lease is aware of.
+ */
 public record Lease(
     String taskId,
     long timestamp,
