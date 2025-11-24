@@ -381,7 +381,7 @@ class VariableSearchTest {
             .join();
 
     // then
-    assertThat(resultSearchFrom.items().size()).isEqualTo(5);
+    assertThat(resultSearchFrom.items().size()).isEqualTo(6);
   }
 
   private static void waitForTasksBeingExported() {
