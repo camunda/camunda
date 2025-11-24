@@ -50,6 +50,7 @@ public class CreateClusterVariableImpl
 
   @Override
   public ClusterVariableCreationCommandStep2 atTenantScoped(final String tenantId) {
+    ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
     this.tenantId = tenantId;
     scope = ClusterVariableScope.TENANT;
     return this;
@@ -63,6 +64,8 @@ public class CreateClusterVariableImpl
 
   @Override
   public ClusterVariableCreationCommandStep2 create(final String name, final Object value) {
+    ArgumentUtil.ensureNotNullNorEmpty("name", name);
+    ArgumentUtil.ensureNotNull("value", value);
     createVariableRequest.name(name).value(value);
     return this;
   }
@@ -76,10 +79,6 @@ public class CreateClusterVariableImpl
 
   @Override
   public CamundaFuture<CreateClusterVariableResponse> send() {
-    ArgumentUtil.ensureNotNullNorEmpty("name", createVariableRequest.getName());
-    ArgumentUtil.ensureNotNull("value", createVariableRequest.getValue());
-    ArgumentUtil.ensureNotNull("scope", scope);
-    ArgumentUtil.ensureNotNullIf("tenantId", ClusterVariableScope.TENANT.equals(scope), tenantId);
     final HttpCamundaFuture<CreateClusterVariableResponse> result = new HttpCamundaFuture<>();
     final CreateClusterVariableResponseImpl response = new CreateClusterVariableResponseImpl();
     final String path;

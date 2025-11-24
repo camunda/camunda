@@ -50,9 +50,6 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
   @Override
   public CamundaFuture<ClusterVariable> send() {
     final HttpCamundaFuture<ClusterVariable> result = new HttpCamundaFuture<>();
-    ArgumentUtil.ensureNotNullNorEmpty("name", name);
-    ArgumentUtil.ensureNotNull("scope", scope);
-    ArgumentUtil.ensureNotNullIf("tenantId", ClusterVariableScope.TENANT.equals(scope), tenantId);
     final String path;
     if (ClusterVariableScope.TENANT.equals(scope)) {
       path = "/cluster-variables/tenants/" + tenantId + "/" + name;
@@ -70,6 +67,8 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
 
   @Override
   public ClusterVariableGetRequest atTenantScope(final String name, final String tenantId) {
+    ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
+    ArgumentUtil.ensureNotNullNorEmpty("name", tenantId);
     this.name = name;
     scope = ClusterVariableScope.TENANT;
     this.tenantId = tenantId;
@@ -78,6 +77,7 @@ public class ClusterVariableGetRequestImpl implements ClusterVariableGetRequest 
 
   @Override
   public ClusterVariableGetRequest atGlobalScope(final String name) {
+    ArgumentUtil.ensureNotNullNorEmpty("name", name);
     this.name = name;
     scope = ClusterVariableScope.GLOBAL;
     tenantId = null;

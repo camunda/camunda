@@ -45,6 +45,7 @@ public class DeleteClusterVariableImpl
 
   @Override
   public ClusterVariableDeletionCommandStep2 atTenantScoped(final String tenantId) {
+    ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
     scope = ClusterVariableScope.TENANT;
     this.tenantId = tenantId;
     return this;
@@ -58,6 +59,7 @@ public class DeleteClusterVariableImpl
 
   @Override
   public ClusterVariableDeletionCommandStep2 delete(final String name) {
+    ArgumentUtil.ensureNotNullNorEmpty("name", name);
     this.name = name;
     return this;
   }
@@ -71,9 +73,6 @@ public class DeleteClusterVariableImpl
 
   @Override
   public CamundaFuture<DeleteClusterVariableResponse> send() {
-    ArgumentUtil.ensureNotNullNorEmpty("name", name);
-    ArgumentUtil.ensureNotNull("scope", scope);
-    ArgumentUtil.ensureNotNullIf("tenantId", ClusterVariableScope.TENANT.equals(scope), tenantId);
     final HttpCamundaFuture<DeleteClusterVariableResponse> result = new HttpCamundaFuture<>();
     final String path;
     if (ClusterVariableScope.TENANT.equals(scope)) {

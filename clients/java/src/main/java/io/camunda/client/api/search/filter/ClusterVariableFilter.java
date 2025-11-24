@@ -80,9 +80,9 @@ public interface ClusterVariableFilter extends SearchRequestFilter {
   ClusterVariableFilter scope(final ClusterVariableScope scope);
 
   /**
-   * Filters jobs by the specified kind using {@link ClusterVariableScope} consumer.
+   * Filters cluster variables by the specified scope using {@link ClusterVariableScope} consumer.
    *
-   * @param fn the kind {@link ClusterVariableScope} consumer of the job
+   * @param fn the scope {@link ClusterVariableScope} consumer of the variable
    * @return the updated filter
    */
   ClusterVariableFilter scope(final Consumer<ClusterVariableScopeProperty> fn);

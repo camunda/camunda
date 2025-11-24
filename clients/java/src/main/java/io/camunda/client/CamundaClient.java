@@ -1895,9 +1895,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   /**
    * Creates a request to create a new cluster variable.
    *
-   * <p>Cluster variables can be created with either global or tenant scope: /** Creates a request
-   * to create a new cluster variable.
-   *
    * <p>Cluster variables can be created with either global or tenant scope:
    *
    * <pre>
@@ -1920,8 +1917,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ClusterVariableCreationCommandStep1 newClusterVariableCreateRequest();
 
   /**
-   * Creates a request to delete an existing cluster variable. /** Creates a request to delete an
-   * existing cluster variable.
+   * Creates a request to delete an existing cluster variable.
    *
    * <p>Cluster variables can be deleted with either global or tenant scope:
    *

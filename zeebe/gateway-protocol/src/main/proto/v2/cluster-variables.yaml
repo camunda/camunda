@@ -323,7 +323,7 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
     ClusterVariableScopeFilterProperty:
-      description: JobKindEnum property with full advanced search capabilities.
+      description: ClusterVariableScopeEnum property with full advanced search capabilities.
       type: object
       oneOf:
         - type: string
