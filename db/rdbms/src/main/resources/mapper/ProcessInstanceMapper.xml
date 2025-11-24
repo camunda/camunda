@@ -439,11 +439,11 @@
     WHERE PROCESS_INSTANCE_KEY = #{id}
   </update>
 
-  <insert id="insertTags" parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$ProcessInstanceTagsDto">
+  <insert id="insertTags" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
     INSERT INTO ${prefix}PROCESS_INSTANCE_TAG (PROCESS_INSTANCE_KEY, TAG_VALUE)
     VALUES
-      <foreach collection="tags" item="item" separator=",">
-        (#{processInstanceKey}, #{item.tagValue})
+      <foreach collection="tags" item="tag" separator=",">
+        (#{processInstanceKey}, #{tag})
       </foreach>
   </insert>
 
