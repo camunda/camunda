@@ -288,8 +288,8 @@ class DocumentResourceAccessControllerTest {
         .satisfies(
             err -> {
               assertThat(err.getReason()).isEqualTo(Reason.FORBIDDEN);
-              assertThat(err.getMissingAuthorization())
-                  .isEqualTo(
+              assertThat(err.getMissingAuthorizations())
+                  .containsExactly(
                       new MissingAuthorization(
                           AuthorizationResourceType.PROCESS_DEFINITION,
                           PermissionType.READ_PROCESS_DEFINITION));
