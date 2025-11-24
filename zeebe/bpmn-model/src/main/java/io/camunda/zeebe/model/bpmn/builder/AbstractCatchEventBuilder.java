@@ -253,12 +253,7 @@ public abstract class AbstractCatchEventBuilder<
   }
 
   public B condition(final Consumer<ConditionalEventDefinitionBuilder> conditionalBuilderConsumer) {
-    final ConditionalEventDefinition conditionalEventDefinition =
-        createInstance(ConditionalEventDefinition.class);
-    element.getEventDefinitions().add(conditionalEventDefinition);
-
-    final ConditionalEventDefinitionBuilder builder =
-        new ConditionalEventDefinitionBuilder(modelInstance, conditionalEventDefinition);
+    final ConditionalEventDefinitionBuilder builder = conditionalEventDefinition();
     conditionalBuilderConsumer.accept(builder);
 
     return myself;

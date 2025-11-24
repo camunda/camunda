@@ -26,6 +26,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private ExecutableEscalation escalation;
   private ExecutableSignal signal;
   private ExecutableCompensation compensation;
+  private ExecutableConditional conditional;
   private boolean interrupting;
   private TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> timerFactory;
 
@@ -75,6 +76,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
+  public boolean isConditional() {
+    return conditional != null;
+  }
+
+  @Override
   public ExecutableMessage getMessage() {
     return message;
   }
@@ -114,6 +120,15 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public ExecutableSignal getSignal() {
     return signal;
+  }
+
+  @Override
+  public ExecutableConditional getConditional() {
+    return conditional;
+  }
+
+  public void setConditional(final ExecutableConditional conditional) {
+    this.conditional = conditional;
   }
 
   public void setSignal(final ExecutableSignal signal) {

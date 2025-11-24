@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
@@ -51,6 +52,8 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
       startEvent.setEventType(BpmnEventType.SIGNAL);
     } else if (startEvent.isCompensation()) {
       startEvent.setEventType(BpmnEventType.COMPENSATION);
+    } else if (startEvent.isConditional()) {
+      startEvent.setEventType(BpmnEventType.CONDITIONAL);
     }
 
     if (element.getScope() instanceof FlowNode) {
@@ -70,6 +73,45 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
 
     if (startEvent.isSignal() && element.getScope() instanceof Process) {
       evaluateSignalNameExpression(startEvent, context);
+    }
+
+    if (startEvent.isConditional() && element.getScope() instanceof Process) {
+      evaluateConditionalVariableNames(startEvent, context);
+    }
+  }
+
+  /*
+   * Evaluates the variable names expression of the conditional. For start events, there are no
+   * variables available, so only static expressions or expressions based on literals are valid
+   *
+   * @param startEvent the start event; must not be {@code null}
+   * @param context the transformation context; must not be {@code null}
+   * @throws IllegalStateException thrown if either the evaluation failed or the result of the
+   */
+  private void evaluateConditionalVariableNames(
+      final ExecutableStartEvent startEvent, final TransformContext context) {
+    final var conditional = startEvent.getConditional();
+    if (conditional.getVariableNames() == null
+        && conditional.getVariableNamesExpression() != null) {
+      final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
+      final Expression variableNamesExpression = conditional.getVariableNamesExpression();
+
+      final EvaluationResult variableNamesResult =
+          expressionLanguage.evaluateExpression(variableNamesExpression, variable -> null);
+
+      if (variableNamesResult.isFailure()) {
+        throw new IllegalStateException(
+            String.format(
+                "Error while evaluating '%s': %s",
+                variableNamesExpression, variableNamesResult.getFailureMessage()));
+      } else if (variableNamesResult.getType() == ResultType.ARRAY) {
+        conditional.setVariableNames(variableNamesResult.getListOfStrings());
+      } else {
+        throw new IllegalStateException(
+            String.format(
+                "Expected FEEL expression or static value of '%s' of type ARRAY, but was: %s",
+                variableNamesResult.getExpression(), variableNamesResult.getType().name()));
+      }
     }
   }
 
