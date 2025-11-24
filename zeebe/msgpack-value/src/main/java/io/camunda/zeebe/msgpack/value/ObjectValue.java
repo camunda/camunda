@@ -128,14 +128,7 @@ public class ObjectValue extends BaseValue {
       }
     }
 
-    // verify that all required properties are set
-    for (int p = 0; p < declaredProperties.size(); p++) {
-      final BaseProperty<?> prop = declaredProperties.get(p);
-      if (!prop.hasValue()) {
-        throw new RuntimeException(
-            String.format("Property '%s' has no valid value", prop.getKey()));
-      }
-    }
+    verifyAllDeclaredPropertiesAreSet();
   }
 
   @Override
@@ -159,6 +152,15 @@ public class ObjectValue extends BaseValue {
 
     builder.append("}");
     return builder.toString();
+  }
+
+  private void verifyAllDeclaredPropertiesAreSet() {
+    for (final BaseProperty<?> prop : declaredProperties) {
+      if (!prop.hasValue()) {
+        throw new RuntimeException(
+            String.format("Property '%s' has no valid value", prop.getKey()));
+      }
+    }
   }
 
   private <T extends BaseProperty<?>> void writeJson(
