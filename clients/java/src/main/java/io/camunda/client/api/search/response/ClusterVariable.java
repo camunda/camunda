@@ -33,11 +33,11 @@ public interface ClusterVariable {
 
   /**
    * Indicates whether the returned value has been truncated.
-   * <p>
-   * Returns {@code true} when the variable value is large and truncation was requested
-   * (default search behavior). Returns {@code false} when full values are requested via
-   * {@code withFullValues()} or the value is not large enough to require truncation.
-   * Always returns {@code false} for get-by-name operations, which always return full values.
+   *
+   * <p>Returns {@code true} when the variable value is large and truncation was requested (default
+   * search behavior). Returns {@code false} when full values are requested via {@code
+   * withFullValues()} or the value is not large enough to require truncation. Always returns {@code
+   * false} for get-by-name operations, which always return full values.
    */
   Boolean isTruncated();
 }
