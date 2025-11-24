@@ -19,15 +19,25 @@ import io.camunda.client.api.search.enums.ClusterVariableScope;
 
 public interface ClusterVariable {
 
-  /* The name of the variable */
+  /* The name of the cluster variable */
   String getName();
 
-  /* The value of the variable */
+  /* The value of the cluster variable */
   String getValue();
 
-  /* The tenant id of the variable */
+  /* The tenant id of the cluster variable */
   String getTenantId();
 
-  /* The scope of the variable */
+  /* The scope of the cluster variable */
   ClusterVariableScope getScope();
+
+  /**
+   * Indicates whether the returned value has been truncated.
+   *
+   * <p>Returns {@code true} when the variable value is large and truncation was requested (default
+   * search behavior). Returns {@code false} when full values are requested via {@code
+   * withFullValues()} or the value is not large enough to require truncation. Always returns {@code
+   * false} for get-by-name operations, which always return full values.
+   */
+  Boolean isTruncated();
 }

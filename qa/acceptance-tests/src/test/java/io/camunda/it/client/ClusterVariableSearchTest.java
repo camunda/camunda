@@ -54,6 +54,11 @@ public class ClusterVariableSearchTest {
   private static String tenantVarValueTenantOnly;
   private static String tenantIdTenantOnly;
 
+  // Test data - Large variables for truncation testing
+  private static String largeVarName;
+  private static String largeVarValue;
+  private static final int LARGE_VALUE_SIZE = 10000; // Create a large value to trigger truncation
+
   @BeforeAll
   static void setupClusterVariables() {
     // Setup global scoped variables
@@ -131,6 +136,16 @@ public class ClusterVariableSearchTest {
         .send()
         .join();
 
+    // Setup large variable for truncation testing
+    largeVarName = "largeVar_" + UUID.randomUUID();
+    largeVarValue = "x".repeat(LARGE_VALUE_SIZE);
+
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(largeVarName, largeVarValue)
+        .send()
+        .join();
+
     // Wait for all variables to be indexed
     TestHelper.waitForClusterVariablesToBeIndexed(
         camundaClient,
@@ -142,7 +157,8 @@ public class ClusterVariableSearchTest {
             globalVarNameMixed, globalVarValueMixed,
             tenantVarNameMixed, tenantVarValueMixed,
             globalVarNameTenantOnly, globalVarValueTenantOnly,
-            tenantVarNameTenantOnly, tenantVarValueTenantOnly));
+            tenantVarNameTenantOnly, tenantVarValueTenantOnly,
+            largeVarName, largeVarValue));
   }
 
   // ============ SEARCH TESTS ============
@@ -763,5 +779,141 @@ public class ClusterVariableSearchTest {
     final var names = response.items().stream().map(ClusterVariable::getName).toList();
     final var sortedNames = names.stream().sorted().toList();
     assertThat(names).containsExactlyElementsOf(sortedNames);
+  }
+
+  // ============ TRUNCATION AND FULL VALUES TESTS ============
+
+  @Test
+  void shouldSearchClusterVariablesWithTruncatedValues() {
+    // when - search without withFullValues (default truncation)
+    final var response =
+        camundaClient.newClusterVariableSearchRequest().sort(s -> s.name().asc()).send().join();
+
+    // then - verify the large variable is returned but truncated
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anyMatch(
+            item -> {
+              if (item.getName().equals(largeVarName)) {
+                // The value should be truncated (shorter than the original)
+                final String truncatedValue = item.getValue();
+                assertThat(truncatedValue).isNotNull();
+                // When truncated, it should be significantly shorter than the original
+                return truncatedValue.length() < largeVarValue.length() + 100; // +100 for JSON
+                // encoding
+              }
+              return false;
+            });
+  }
+
+  @Test
+  void shouldSearchClusterVariablesWithFullValuesReturnsCompleteValue() {
+    // when - search with withFullValues() to get untruncated values
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .withFullValues()
+            .sort(s -> s.name().asc())
+            .send()
+            .join();
+
+    // then - verify the large variable is returned with full value
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anyMatch(
+            item -> {
+              if (item.getName().equals(largeVarName)) {
+                // The value should contain the full large value (in JSON string format: "xxx...")
+                final String fullValue = item.getValue();
+                assertThat(fullValue).isNotNull();
+                // Verify it contains most of the repeated characters (accounting for JSON encoding)
+                return fullValue.contains("xxx")
+                    && fullValue.length() > largeVarValue.length() - 100;
+              }
+              return false;
+            });
+  }
+
+  @Test
+  void shouldFilterClusterVariablesByIsTruncatedTrue() {
+    // when - filter by isTruncated = true (only truncated values)
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.isTruncated(true))
+            .sort(s -> s.name().asc())
+            .send()
+            .join();
+
+    // then - should return the large variable which will be truncated
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        .anyMatch(item -> item.getName().equals(largeVarName) && item.isTruncated());
+  }
+
+  @Test
+  void shouldFilterClusterVariablesByIsTruncatedFalse() {
+    // when - filter by isTruncated = false (only non-truncated values)
+    final var response =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.isTruncated(false))
+            .sort(s -> s.name().asc())
+            .send()
+            .join();
+
+    // then - should NOT return the large variable, only small variables
+    assertThat(response).isNotNull();
+    assertThat(response.items()).isNotEmpty();
+    assertThat(response.items())
+        // Verify that the large variable is not in the results
+        .noneMatch(item -> item.getName().equals(largeVarName));
+    // Verify all returned items are not truncated
+    assertThat(response.items())
+        .allSatisfy(
+            item -> {
+              if (item.isTruncated() != null) {
+                assertThat(item.isTruncated()).isFalse();
+              }
+            });
+  }
+
+  @Test
+  void shouldCompareFullValuesWithTruncatedValues() {
+    // when - search with default truncation
+    final var truncatedResponse =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.eq(largeVarName)))
+            .send()
+            .join();
+
+    // when - search with full values
+    final var fullResponse =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(n -> n.eq(largeVarName)))
+            .withFullValues()
+            .send()
+            .join();
+
+    // then - verify both searches return the variable
+    assertThat(truncatedResponse.items()).isNotEmpty();
+    assertThat(fullResponse.items()).isNotEmpty();
+
+    final var truncatedVar = truncatedResponse.items().getFirst();
+    final var fullVar = fullResponse.items().getFirst();
+
+    // Verify both have the same name
+    assertThat(truncatedVar.getName()).isEqualTo(fullVar.getName()).isEqualTo(largeVarName);
+
+    // Verify the full value is longer than the truncated value
+    assertThat(fullVar.getValue().length()).isGreaterThan(truncatedVar.getValue().length());
+
+    // Verify the full value contains the original repeated characters
+    assertThat(fullVar.getValue()).contains("xxx");
   }
 }

@@ -126,6 +126,10 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
         </foreach>
       </if>
+
+      <if test="filter.isTruncated != null">
+        AND IS_PREVIEW = #{filter.isTruncated}
+      </if>
     </where>
   </sql>
 

@@ -67,6 +67,7 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -1198,29 +1199,37 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ClusterVariableSearchQueryResult toClusterVariableSearchQueryResponse(
-      final SearchQueryResult<ClusterVariableEntity> result) {
+      final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
     final var page = toSearchQueryPageResponse(result);
     return new ClusterVariableSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toClusterVariables)
+                .map(
+                    clusterVariableEntities ->
+                        toClusterVariablesSearchResult(clusterVariableEntities, truncateValues))
                 .orElseGet(Collections::emptyList));
   }
 
-  private static List<ClusterVariableResult> toClusterVariables(
-      final List<ClusterVariableEntity> clusterVariableEntities) {
+  private static List<ClusterVariableSearchResult> toClusterVariablesSearchResult(
+      final List<ClusterVariableEntity> clusterVariableEntities, final boolean truncateValues) {
     return clusterVariableEntities.stream()
-        .map(SearchQueryResponseMapper::toClusterVariable)
+        .map(
+            clusterVariableEntity ->
+                toClusterVariableSearchResult(clusterVariableEntity, truncateValues))
         .toList();
   }
 
-  public static ClusterVariableResult toClusterVariable(
-      final ClusterVariableEntity clusterVariableEntity) {
+  public static ClusterVariableSearchResult toClusterVariableSearchResult(
+      final ClusterVariableEntity clusterVariableEntity, final boolean truncateValues) {
     final var clusterVariableResult =
-        new ClusterVariableResult()
+        new ClusterVariableSearchResult()
             .name(clusterVariableEntity.name())
-            .value(clusterVariableEntity.value());
+            .value(
+                !truncateValues
+                    ? getFullValueIfPresent(clusterVariableEntity)
+                    : clusterVariableEntity.value())
+            .isTruncated(truncateValues && clusterVariableEntity.isPreview());
     return switch (clusterVariableEntity.scope()) {
       case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
       case TENANT ->
@@ -1228,6 +1237,28 @@ public final class SearchQueryResponseMapper {
               .scope(ClusterVariableScopeEnum.TENANT)
               .tenantId(clusterVariableEntity.tenantId());
     };
+  }
+
+  public static ClusterVariableResult toClusterVariableResult(
+      final ClusterVariableEntity clusterVariableEntity) {
+
+    final var clusterVariableResult =
+        new ClusterVariableResult()
+            .name(clusterVariableEntity.name())
+            .value(getFullValueIfPresent(clusterVariableEntity));
+    return switch (clusterVariableEntity.scope()) {
+      case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
+      case TENANT ->
+          clusterVariableResult
+              .scope(ClusterVariableScopeEnum.TENANT)
+              .tenantId(clusterVariableEntity.tenantId());
+    };
+  }
+
+  private static String getFullValueIfPresent(final ClusterVariableEntity clusterVariableEntity) {
+    return clusterVariableEntity.isPreview()
+        ? clusterVariableEntity.fullValue()
+        : clusterVariableEntity.value();
   }
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(

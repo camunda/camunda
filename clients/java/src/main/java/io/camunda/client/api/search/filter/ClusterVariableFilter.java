@@ -86,4 +86,15 @@ public interface ClusterVariableFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ClusterVariableFilter scope(final Consumer<ClusterVariableScopeProperty> fn);
+
+  /**
+   * Filters cluster variables by truncation status in storage. When true, returns only variables
+   * whose stored values are truncated (i.e., their values exceed the storage size limit and are not
+   * fully persisted). When false, returns only variables with non-truncated stored values. This
+   * filter is based on the underlying storage characteristic, not the response format.
+   *
+   * @param isTruncated true to filter for truncated values, false for non-truncated values
+   * @return the updated filter
+   */
+  ClusterVariableFilter isTruncated(final Boolean isTruncated);
 }

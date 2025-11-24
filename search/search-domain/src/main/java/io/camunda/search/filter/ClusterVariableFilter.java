@@ -20,7 +20,8 @@ public record ClusterVariableFilter(
     List<Operation<String>> nameOperations,
     List<UntypedOperation> valueOperations,
     List<Operation<String>> scopeOperations,
-    List<Operation<String>> tenantIdOperations)
+    List<Operation<String>> tenantIdOperations,
+    Boolean isTruncated)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ClusterVariableFilter> {
@@ -28,6 +29,7 @@ public record ClusterVariableFilter(
     List<UntypedOperation> valueOperations;
     List<Operation<String>> scopeOperations;
     List<Operation<String>> tenantIdOperations;
+    Boolean isTruncated;
 
     public Builder nameOperations(final List<Operation<String>> operations) {
       nameOperations = addValuesToList(nameOperations, operations);
@@ -118,13 +120,19 @@ public record ClusterVariableFilter(
       return tenantIdOperations(collectValues(operation, operations));
     }
 
+    public Builder isTruncated(final Boolean value) {
+      isTruncated = value;
+      return this;
+    }
+
     @Override
     public ClusterVariableFilter build() {
       return new ClusterVariableFilter(
           Objects.requireNonNullElseGet(nameOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(valueOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(scopeOperations, Collections::emptyList),
-          Objects.requireNonNullElseGet(tenantIdOperations, Collections::emptyList));
+          Objects.requireNonNullElseGet(tenantIdOperations, Collections::emptyList),
+          isTruncated);
     }
   }
 }

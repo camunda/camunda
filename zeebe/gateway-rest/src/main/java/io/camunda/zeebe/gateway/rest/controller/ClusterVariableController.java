@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequiresSecondaryStorage
@@ -96,19 +97,22 @@ public class ClusterVariableController {
 
   @CamundaPostMapping(path = "/search")
   private ResponseEntity<Object> search(
-      @RequestBody final ClusterVariableSearchQueryRequest query) {
+      @RequestBody final ClusterVariableSearchQueryRequest query,
+      @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
+          final boolean truncateValues) {
     return SearchQueryRequestMapper.toClusterVariableQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, truncateValues));
   }
 
-  private ResponseEntity<Object> search(final ClusterVariableQuery query) {
+  private ResponseEntity<Object> search(
+      final ClusterVariableQuery query, final boolean truncateValues) {
     try {
       final var result =
           clusterVariableServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toClusterVariableSearchQueryResponse(result));
+          SearchQueryResponseMapper.toClusterVariableSearchQueryResponse(result, truncateValues));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -119,7 +123,7 @@ public class ClusterVariableController {
     try {
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toClusterVariable(
+              SearchQueryResponseMapper.toClusterVariableResult(
                   clusterVariableServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getGloballyScopedClusterVariable(name)));
@@ -134,7 +138,7 @@ public class ClusterVariableController {
     try {
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toClusterVariable(
+              SearchQueryResponseMapper.toClusterVariableResult(
                   clusterVariableServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getTenantScopedClusterVariable(name, tenantId)));

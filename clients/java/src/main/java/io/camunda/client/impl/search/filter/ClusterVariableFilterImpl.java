@@ -92,6 +92,12 @@ public class ClusterVariableFilterImpl
   }
 
   @Override
+  public ClusterVariableFilter isTruncated(final Boolean isTruncated) {
+    filter.setIsTruncated(isTruncated);
+    return this;
+  }
+
+  @Override
   protected ClusterVariableSearchQueryFilterRequest getSearchRequestProperty() {
     return filter;
   }
