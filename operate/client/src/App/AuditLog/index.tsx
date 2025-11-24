@@ -376,13 +376,29 @@ const AuditLog: React.FC = () => {
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            padding: 'var(--cds-spacing-05)',
             backgroundColor: 'var(--cds-layer)',
             overflow: 'hidden',
           }}
         >
-          <h3 style={{marginBottom: 'var(--cds-spacing-06)'}}>Operations Log</h3>
-          <div style={{flex: 1, overflow: 'hidden'}}>
+          <div style={{padding: 'var(--cds-spacing-05)', paddingBottom: 0}}>
+            <h3 style={{marginBottom: 'var(--cds-spacing-06)'}}>Operations Log</h3>
+          </div>
+          <div 
+            style={{
+              flex: 1, 
+              overflow: 'auto', 
+              padding: '0 var(--cds-spacing-05) var(--cds-spacing-05)'
+            }}
+            className="audit-log-table-container"
+          >
+            <style>{`
+              .audit-log-table-container thead {
+                position: sticky;
+                top: 0;
+                z-index: 1;
+                background-color: var(--cds-layer);
+              }
+            `}</style>
             <SortableTable
               state={isLoading ? 'skeleton' : error ? 'error' : 'content'}
               headerColumns={headers}
