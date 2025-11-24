@@ -81,11 +81,18 @@ const api = {
     });
   },
   queryVariablesByUserTask: (
-    params: Pick<UserTask, 'userTaskKey'> & QueryVariablesByUserTaskRequestBody,
+    params: Pick<UserTask, 'userTaskKey'> &
+      QueryVariablesByUserTaskRequestBody & {truncateValues?: boolean},
   ) => {
-    const {userTaskKey, ...body} = params;
+    const {userTaskKey, truncateValues, ...body} = params;
+
     return new Request(
-      getFullURL(endpoints.queryVariablesByUserTask.getUrl({userTaskKey})),
+      getFullURL(
+        endpoints.queryVariablesByUserTask.getUrl({
+          userTaskKey,
+          truncateValues,
+        }),
+      ),
       {
         ...BASE_REQUEST_OPTIONS,
         method: endpoints.queryVariablesByUserTask.method,
