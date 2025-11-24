@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,9 +49,9 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
-  static OpensearchContainer opensearch =
-      (OpensearchContainer)
-          new OpensearchContainer("opensearchproject/opensearch:2.17.0")
+  static OpenSearchContainer opensearch =
+      (OpenSearchContainer)
+          new OpenSearchContainer("opensearchproject/opensearch:2.17.0")
               .withCopyFileToContainer(
                   MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
                   "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")

@@ -58,7 +58,7 @@ public class GatewayAuthenticationNoneIT {
   // with authentication enabled, the first grpc response includes the warmup of the identity sdk
   public static final Duration FIRST_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   public static final String SNAPSHOT_TAG = "SNAPSHOT";
-  private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
+  private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "realms/camunda-platform";
   private static final String ORCHESTRATION_CLIENT_ID = "orchestration";
   private static final String ORCHESTRATION_CLIENT_NAME = "Orchestration";
   private static final String ORCHESTRATION_CLIENT_AUDIENCE = "orchestration-api";
