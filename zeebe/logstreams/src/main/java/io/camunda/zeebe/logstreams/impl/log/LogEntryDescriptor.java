@@ -174,6 +174,10 @@ public final class LogEntryDescriptor {
     buffer.putByte(flagsOffset(offset), (byte) (shouldSkip ? 1 : 0));
   }
 
+  public static void zeroReserved(final MutableDirectBuffer buffer, final int offset) {
+    buffer.putByte(flagsOffset(offset) + 1, (byte) 0);
+  }
+
   public static int timestampOffset(final int offset) {
     return TIMESTAMP_OFFSET + offset;
   }
