@@ -32,7 +32,7 @@ public interface ProcessDefinitionMapper {
   Long processInstanceStatisticsCount(ProcessDefinitionInstanceStatisticsDbQuery filter);
 
   List<ProcessDefinitionInstanceStatisticsEntity> processInstanceStatistics(
-      ProcessDefinitionInstanceStatisticsDbQuery filter);
+      ProcessDefinitionInstanceStatisticsDbQuery query);
 
   Long processInstanceVersionStatisticsCount(
       ProcessDefinitionInstanceVersionStatisticsDbQuery filter);

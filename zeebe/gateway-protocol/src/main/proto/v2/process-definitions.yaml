@@ -444,10 +444,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsQuerySortRequest'
-        filter:
-          description: The process definition instance statistics filters.
-          allOf:
-            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
 
     ProcessDefinitionInstanceStatisticsQueryResult:
       type: object
