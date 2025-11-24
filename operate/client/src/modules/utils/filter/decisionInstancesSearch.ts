@@ -13,7 +13,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import z from 'zod';
 import {formatToISO} from '../date/formatDate';
-import {parseIds, parseSortParamsV2} from '.';
+import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '.';
 
 type DecisionInstancesSearchFilter = NonNullable<
   QueryDecisionInstancesRequestBody['filter']
@@ -42,9 +42,7 @@ const DecisionInstancesFilterSchema = z
 function parseDecisionInstancesSearchFilter(
   search: URLSearchParams,
 ): DecisionInstancesSearchFilter | undefined {
-  const filter = DecisionInstancesFilterSchema.parse(
-    Object.fromEntries(search),
-  );
+  const filter = parseDecisionInstancesFilter(search);
   if (!filter.failed && !filter.evaluated) {
     return;
   }
@@ -59,6 +57,13 @@ function parseDecisionInstancesSearchFilter(
     tenantId: filter.tenant === 'all' ? undefined : filter.tenant,
     evaluationDate: mapEvaluationDateFilter(filter),
   };
+}
+
+function parseDecisionInstancesFilter(search: URLSearchParams | string) {
+  if (typeof search === 'string') {
+    search = new URLSearchParams(search);
+  }
+  return DecisionInstancesFilterSchema.parse(Object.fromEntries(search));
 }
 
 function mapDecisionEvaluationInstanceKeyFilter(
@@ -112,7 +117,7 @@ type DecisionInstancesSearchSort = NonNullable<
 >;
 
 const DecisionInstancesSearchSortFieldSchema =
-  queryDecisionInstancesRequestBodySchema.shape.sort.def.innerType.def.element
+  queryDecisionInstancesRequestBodySchema.shape.sort.unwrap().unwrap()
     .shape.field;
 
 function parseDecisionInstancesSearchSort(
@@ -124,10 +129,30 @@ function parseDecisionInstancesSearchSort(
   });
 }
 
-export {parseDecisionInstancesSearchFilter, parseDecisionInstancesSearchSort};
-export type {
-  DecisionInstanceFilters,
-  DecisionInstanceFiltersField,
-  DecisionInstancesSearchFilter,
-  DecisionInstancesSearchSort,
+const DECISION_INSTANCE_FILTER_FIELDS = z.keyof(
+  DecisionInstancesFilterSchema.unwrap(),
+).def.values;
+
+const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS = z.keyof(
+  DecisionInstancesFilterSchema.unwrap().pick({failed: true, evaluated: true}),
+).def.values;
+
+function updateDecisionsFiltersSearchString(
+  currentSearch: string,
+  newFilters: DecisionInstanceFilters,
+) {
+  return updateFiltersSearchString<DecisionInstanceFilters>(
+    currentSearch,
+    newFilters,
+    DECISION_INSTANCE_FILTER_FIELDS,
+    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS,
+  );
+}
+
+export {
+  parseDecisionInstancesSearchFilter,
+  parseDecisionInstancesFilter,
+  parseDecisionInstancesSearchSort,
+  updateDecisionsFiltersSearchString,
 };
+export type {DecisionInstanceFilters, DecisionInstanceFiltersField};
