@@ -69,7 +69,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
     final Query query =
         joinWithAnd(
             ElasticsearchUtil.termsQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
-            ElasticsearchUtil.termsQuery(ID, flowNodeInstanceId));
+            ElasticsearchUtil.termsQuery(ListViewTemplate.ID, flowNodeInstanceId));
     final var tenantAwareQuery = es8TenantCheckApplier.apply(query);
     final var request =
         new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
@@ -83,7 +83,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
       if (res.hits().total().value() != 1) {
         throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
       } else {
-        return String.valueOf(res.hits().hits().getFirst().source().get(ACTIVITY_ID));
+        return ElasticsearchUtil.getFieldFromResponseObject(res, ACTIVITY_ID);
       }
     } catch (final IOException e) {
       throw new OperateRuntimeException(
@@ -156,12 +156,8 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
     try {
       final var res = es8Client.search(request, MAP_CLASS);
       if (res.hits().total().value() > 0) {
-        return res.hits()
-            .hits()
-            .getFirst()
-            .source()
-            .get(FlowNodeInstanceTemplate.TREE_PATH)
-            .toString();
+        return ElasticsearchUtil.getFieldFromResponseObject(
+            res, FlowNodeInstanceTemplate.TREE_PATH);
       } else if (attemptCount < 1 && operateProperties.getImporter().isRetryReadingParents()) {
         // retry for the case, when ELS has not yet refreshed the indices
         ThreadUtil.sleepFor(2000L);
