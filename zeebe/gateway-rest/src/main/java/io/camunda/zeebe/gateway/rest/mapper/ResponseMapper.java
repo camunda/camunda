@@ -28,6 +28,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionResult;
@@ -71,6 +73,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
@@ -743,6 +746,25 @@ public final class ResponseMapper {
                     .inputName(evaluatedInputValue.getInputName())
                     .inputValue(evaluatedInputValue.getInputValue()))
         .toList();
+  }
+
+  public static ResponseEntity<Object> toClusterVariableCreateResponse(
+      final ClusterVariableRecord clusterVariableRecord) {
+    final var response =
+        new ClusterVariableResult()
+            .name(clusterVariableRecord.getName())
+            .value(clusterVariableRecord.getValue());
+    if (clusterVariableRecord.isTenantScoped()) {
+      response.scope(ClusterVariableScopeEnum.TENANT).tenantId(clusterVariableRecord.getTenantId());
+    } else {
+      response.scope(ClusterVariableScopeEnum.GLOBAL);
+    }
+    return ResponseEntity.ok(response);
+  }
+
+  public static ResponseEntity<Object> toClusterVariableDeleteResponse(
+      final ClusterVariableRecord unused) {
+    return ResponseEntity.noContent().build();
   }
 
   static class RestJobActivationResult

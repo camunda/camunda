@@ -24,7 +24,7 @@ public class ClusterVariableEntityTransformer
         value.getName(),
         value.getValue(),
         value.getFullValue(),
-        value.isPreview(),
+        value.getIsPreview(),
         ClusterVariableScope.valueOf(value.getScope().name()),
         value.getTenantId());
   }

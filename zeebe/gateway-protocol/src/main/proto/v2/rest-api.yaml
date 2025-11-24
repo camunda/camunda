@@ -32,6 +32,7 @@ tags:
   - name: Batch operation
   - name: Clock
   - name: Cluster
+  - name: Cluster Variable
   - name: Decision definition
   - name: Decision instance
   - name: Decision requirements
@@ -94,6 +95,18 @@ paths:
     $ref: 'clock.yaml#/paths/~1clock'
   /clock/reset:
     $ref: 'clock.yaml#/paths/~1clock~1reset'
+
+  # Cluster variables endpoints
+  /cluster-variables/global:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1global'
+  /cluster-variables/global/{name}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1global~1{name}'
+  /cluster-variables/search:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1search'
+  /cluster-variables/tenants/{tenantId}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1tenants~1{tenantId}'
+  /cluster-variables/tenants/{tenantId}/{name}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1tenants~1{tenantId}~1{name}'
 
   # Message endpoints
   /correlated-message-subscriptions/search:

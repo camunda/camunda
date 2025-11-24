@@ -175,7 +175,7 @@ public class ClusterVariableCreatedHandlerTest {
             io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
                 clusterVariableRecordValue.getScope()));
     assertThat(clusterVariableEntity.getValue()).isEqualTo(clusterVariableRecordValue.getValue());
-    assertThat(clusterVariableEntity.isPreview()).isFalse();
+    assertThat(clusterVariableEntity.getIsPreview()).isFalse();
     assertThat(clusterVariableEntity.getFullValue()).isNull();
   }
 
@@ -208,7 +208,7 @@ public class ClusterVariableCreatedHandlerTest {
             io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
                 clusterVariableRecordValue.getScope()));
     assertThat(clusterVariableEntity.getValue()).isEqualTo(clusterVariableRecordValue.getValue());
-    assertThat(clusterVariableEntity.isPreview()).isFalse();
+    assertThat(clusterVariableEntity.getIsPreview()).isFalse();
     assertThat(clusterVariableEntity.getFullValue()).isNull();
   }
 
@@ -236,6 +236,6 @@ public class ClusterVariableCreatedHandlerTest {
     assertThat(clusterVariableEntity.getValue()).isEqualTo("v".repeat(variableSizeThreshold));
     assertThat(clusterVariableEntity.getFullValue())
         .isEqualTo("v".repeat(variableSizeThreshold + 1));
-    assertThat(clusterVariableEntity.isPreview()).isTrue();
+    assertThat(clusterVariableEntity.getIsPreview()).isTrue();
   }
 }

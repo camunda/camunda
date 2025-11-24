@@ -50,8 +50,8 @@ public class ClusterVariableIT {
             .getRdbmsService()
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                randomizedVariable.tenantId(),
                 randomizedVariable.name(),
+                randomizedVariable.tenantId(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
@@ -94,8 +94,8 @@ public class ClusterVariableIT {
         rdbmsService
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                randomizedVariable.tenantId(),
                 randomizedVariable.name(),
+                randomizedVariable.tenantId(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
 
     assertThat(instance).isNotNull();

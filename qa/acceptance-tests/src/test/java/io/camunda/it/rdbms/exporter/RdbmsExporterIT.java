@@ -259,8 +259,8 @@ class RdbmsExporterIT {
         rdbmsService
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                clusterVariableRecordValue.getTenantId(),
                 clusterVariableRecordValue.getName(),
+                clusterVariableRecordValue.getTenantId(),
                 ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     assertThat(variable).isNotNull();

@@ -25,6 +25,7 @@ import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionRequirementsResult;
@@ -346,6 +347,43 @@ public class RestGatewayService {
   public void onElementInstanceRequest(
       final long elementInstanceKey, final ElementInstanceResult response) {
     registerGet(RestGatewayPaths.getElementInstanceUrl(elementInstanceKey), response);
+  }
+
+  public void onCreateClusterVariableRequest(final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesUrl(), response);
+  }
+
+  public void onCreateGlobalClusterVariableRequest(final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesCreateGlobalUrl(), response);
+  }
+
+  public void onCreateTenantClusterVariableRequest(
+      final String tenantId, final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesCreateTenantUrl(tenantId), response);
+  }
+
+  public void onGetClusterVariableRequest(
+      final ClusterVariableResult response, final String variableName) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetGlobalUrl(variableName), response);
+  }
+
+  public void onGetClusterVariableRequest(
+      final ClusterVariableResult response, final String variableName, final String tenantId) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
+  }
+
+  public void onGetGlobalClusterVariableRequest(
+      final String variableName, final ClusterVariableResult response) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetGlobalUrl(variableName), response);
+  }
+
+  public void onGetTenantClusterVariableRequest(
+      final String tenantId, final String variableName, final ClusterVariableResult response) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
+  }
+
+  public void onSearchClusterVariableRequest(final SearchQueryResponse response) {
+    registerPost(RestGatewayPaths.getClusterVariablesSearchUrl(), response);
   }
 
   public void onBroadcastSignalRequest(final SignalBroadcastResult response) {

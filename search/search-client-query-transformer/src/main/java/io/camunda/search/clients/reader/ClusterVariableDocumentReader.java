@@ -35,7 +35,7 @@ public class ClusterVariableDocumentReader extends DocumentBasedReader
 
   @Override
   public ClusterVariableEntity getTenantScopedClusterVariable(
-      final String tenant, final String name, final ResourceAccessChecks resourceAccessChecks) {
+      final String name, final String tenant, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .getById(
             ClusterVariableUtil.generateID(

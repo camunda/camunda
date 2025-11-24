@@ -332,7 +332,7 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
-      final ClusterVariableQuery filter) {
+      final ClusterVariableQuery query) {
     throw new NoSecondaryStorageException();
   }
 

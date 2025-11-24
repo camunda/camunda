@@ -14,11 +14,11 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface ClusterVariableSearchClient {
 
-  ClusterVariableEntity getClusterVariable(final String tenant, final String name);
+  ClusterVariableEntity getClusterVariable(final String name, final String tenant);
 
   ClusterVariableEntity getClusterVariable(final String name);
 
-  SearchQueryResult<ClusterVariableEntity> searchClusterVariables(ClusterVariableQuery filter);
+  SearchQueryResult<ClusterVariableEntity> searchClusterVariables(ClusterVariableQuery query);
 
   ClusterVariableSearchClient withSecurityContext(SecurityContext securityContext);
 }

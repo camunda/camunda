@@ -11,6 +11,7 @@ import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
+import io.camunda.search.clients.ClusterVariableSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
@@ -38,6 +39,7 @@ import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
@@ -356,6 +358,22 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         variableSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public ClusterVariableServices clusterVariableServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ClusterVariableSearchClient clusterVariableSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ClusterVariableServices(
+        brokerClient,
+        securityContextProvider,
+        clusterVariableSearchClient,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);

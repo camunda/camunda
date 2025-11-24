@@ -18,6 +18,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -41,6 +42,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BaseProcessInstanceFilterFields;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilter;
@@ -295,6 +297,31 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getValue())
         .map(mapToOperations(String.class))
         .ifPresent(builder::valueOperations);
+
+    return builder.build();
+  }
+
+  static ClusterVariableFilter toClusterVariableFilter(
+      final ClusterVariableSearchQueryFilterRequest filter) {
+
+    if (filter == null) {
+      return FilterBuilders.clusterVariable().build();
+    }
+
+    final var builder = FilterBuilders.clusterVariable();
+
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getValue())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::valueOperations);
+    ofNullable(filter.getScope())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::scopeOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
 
     return builder.build();
   }
