@@ -51,7 +51,6 @@ public class ProcessDefinitionInstanceStatisticsDbReader
         ProcessDefinitionInstanceStatisticsDbQuery.of(
             builder ->
                 builder
-                    .filter(query.filter())
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)

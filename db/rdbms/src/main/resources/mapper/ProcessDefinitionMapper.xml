@@ -321,100 +321,67 @@
             #{tenantId}, #{versionTag}, #{version}, #{formId})
   </insert>
 
-  <select id="processInstanceStatisticsCount" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery" resultType="long">
+  <select id="processInstanceStatisticsCount" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
+    resultType="long">
     SELECT COUNT(*)
-    FROM
-    (SELECT
-    pd.PROCESS_DEFINITION_ID
-    FROM ${prefix}PROCESS_DEFINITION pd
-    LEFT JOIN ${prefix}PROCESS_INSTANCE pi ON pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY
-    <where>
-      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        pd.PROCESS_DEFINITION_ID IN
-        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
-          #{resourceId}
-        </foreach>
-      </if>
-      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND pd.TENANT_ID IN
-        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
-          #{tenantId}
-        </foreach>
-      </if>
-      <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
-      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
-        AND (
-        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
-          <trim prefix="(" suffix=")">
-            <trim prefixOverrides="AND">
-              <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
-            </trim>
-          </trim>
-        </foreach>
-        )
-      </if>
-    </where>
-    GROUP BY pd.PROCESS_DEFINITION_ID
-    HAVING
-    SUM(CASE WHEN pi.STATE = 'ACTIVE' AND (pi.NUM_INCIDENTS = 0 OR pi.NUM_INCIDENTS IS NULL) THEN 1 ELSE 0 END) > 0
-    OR
-    SUM(CASE WHEN pi.STATE = 'ACTIVE' AND pi.NUM_INCIDENTS > 0 THEN 1 ELSE 0 END) > 0
-    ) t
+    FROM (
+      SELECT pi.PROCESS_DEFINITION_ID
+      FROM ${prefix}PROCESS_INSTANCE pi
+      <where>
+        pi.STATE = 'ACTIVE'
+        <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+          AND pi.PROCESS_DEFINITION_ID IN
+          <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+            #{resourceId}
+          </foreach>
+        </if>
+        <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+          AND pi.TENANT_ID IN
+          <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+            #{tenantId}
+          </foreach>
+        </if>
+      </where>
+      GROUP BY pi.PROCESS_DEFINITION_ID, pi.TENANT_ID
+    )
   </select>
 
-  <select id="processInstanceStatistics"
-    parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
+  <select id="processInstanceStatistics" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
     resultType="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
-    SELECT * FROM
-    (SELECT
-      pd.PROCESS_DEFINITION_ID,
-      (
-        SELECT pd2.NAME
-        FROM ${prefix}PROCESS_DEFINITION pd2
-        WHERE pd2.PROCESS_DEFINITION_ID = pd.PROCESS_DEFINITION_ID
-        ORDER BY pd2.VERSION DESC
-        LIMIT 1
-      ) AS LATEST_PROCESS_DEFINITION_NAME,
-      CASE WHEN COUNT(DISTINCT pd.VERSION) > 1 THEN TRUE ELSE FALSE END AS HAS_MULTIPLE_VERSIONS,
-      SUM(CASE WHEN pi.STATE = 'ACTIVE' AND (pi.NUM_INCIDENTS = 0 OR pi.NUM_INCIDENTS IS NULL) THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT,
-      SUM(CASE WHEN pi.STATE = 'ACTIVE' AND pi.NUM_INCIDENTS > 0 THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITH_INCIDENT_COUNT
-    FROM ${prefix}PROCESS_DEFINITION pd
-    LEFT JOIN ${prefix}PROCESS_INSTANCE pi ON pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY
+    SELECT pi.PROCESS_DEFINITION_ID,
+    (SELECT pd.NAME
+      FROM ${prefix}PROCESS_INSTANCE pi2
+      LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON pd.PROCESS_DEFINITION_KEY = pi2.PROCESS_DEFINITION_KEY
+      <where>
+        pi2.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID
+        <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+          AND pi2.TENANT_ID IN
+          <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+            #{tenantId}
+          </foreach>
+        </if>
+      </where>
+      ORDER BY pi2.VERSION DESC LIMIT 1) AS LATEST_PROCESS_DEFINITION_NAME,
+    CASE WHEN COUNT(DISTINCT pi.VERSION) > 1 THEN TRUE ELSE FALSE END AS HAS_MULTIPLE_VERSIONS,
+    SUM(CASE WHEN pi.NUM_INCIDENTS = 0 OR pi.NUM_INCIDENTS IS NULL THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT,
+    SUM(CASE WHEN pi.NUM_INCIDENTS > 0 THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITH_INCIDENT_COUNT
+    FROM ${prefix}PROCESS_INSTANCE pi
     <where>
+      pi.STATE = 'ACTIVE'
       <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        pd.PROCESS_DEFINITION_ID IN
+        AND pi.PROCESS_DEFINITION_ID IN
         <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
           #{resourceId}
         </foreach>
       </if>
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND pd.TENANT_ID IN
+        AND pi.TENANT_ID IN
         <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
           #{tenantId}
         </foreach>
       </if>
-      <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
-      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
-        AND (
-        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
-          <trim prefix="(" suffix=")">
-            <trim prefixOverrides="AND">
-              <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
-            </trim>
-          </trim>
-        </foreach>
-        )
-      </if>
     </where>
-    GROUP BY pd.PROCESS_DEFINITION_ID
-    HAVING
-    SUM(CASE WHEN pi.STATE = 'ACTIVE' AND (pi.NUM_INCIDENTS = 0 OR pi.NUM_INCIDENTS IS NULL) THEN 1 ELSE 0 END) > 0
-    OR
-    SUM(CASE WHEN pi.STATE = 'ACTIVE' AND pi.NUM_INCIDENTS > 0 THEN 1 ELSE 0 END) > 0
-    ) t
-    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy" />
-    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    GROUP BY pi.PROCESS_DEFINITION_ID, pi.TENANT_ID
   </select>
 
   <select id="processInstanceVersionStatisticsCount" parameterType="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity" resultType="long">

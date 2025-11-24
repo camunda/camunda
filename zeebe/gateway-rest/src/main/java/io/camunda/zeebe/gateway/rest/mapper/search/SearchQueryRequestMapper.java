@@ -627,7 +627,7 @@ public final class SearchQueryRequestMapper {
                 request.getSort()),
             SortOptionBuilders::processDefinitionInstanceStatistics,
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceStatisticsSortField);
-    final var filter = toProcessInstanceFilter(request.getFilter());
+    final var filter = FilterBuilders.processInstance().build();
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceStatisticsQuery);
   }

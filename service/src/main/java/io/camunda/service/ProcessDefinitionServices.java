@@ -105,13 +105,21 @@ public class ProcessDefinitionServices
 
   public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
       getProcessDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
+
+    final var filter =
+        query.filter().toBuilder().states(ProcessInstanceState.ACTIVE.name()).build();
+
+    final var updatedQuery =
+        ProcessDefinitionInstanceStatisticsQuery.of(
+            b -> b.filter(filter).sort(query.sort()).page(query.page()));
+
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
-                .processDefinitionInstanceStatistics(query));
+                .processDefinitionInstanceStatistics(updatedQuery));
   }
 
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
