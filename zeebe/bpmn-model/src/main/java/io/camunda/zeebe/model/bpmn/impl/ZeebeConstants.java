@@ -72,6 +72,7 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_VARIABLE_NAMES = "variableNames";
   public static final String ATTRIBUTE_VARIABLE_EVENTS = "variableEvents";
+  public static final String ATTRIBUTE_CONDITION = "condition";
 
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";

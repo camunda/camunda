@@ -19,6 +19,7 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeConditionalFilter;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -30,6 +31,11 @@ public class ZeebeConditionalEventValidationTest extends AbstractZeebeValidation
       // -----------------------------------------------------------------------
       // Root level conditional start event tests
       // -----------------------------------------------------------------------
+      {
+        Bpmn.createExecutableProcess("process").startEvent().condition(c -> c.condition("")).done(),
+        singletonList(
+            expect(Condition.class, "Attribute 'condition' must be present and not empty"))
+      },
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -89,6 +95,20 @@ public class ZeebeConditionalEventValidationTest extends AbstractZeebeValidation
       // -----------------------------------------------------------------------
       // Conditional boundary catch event tests
       // -----------------------------------------------------------------------
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task")
+            .zeebeJobType("task")
+            .boundaryEvent()
+            .condition(c -> c.condition(""))
+            .endEvent()
+            .moveToActivity("task")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(Condition.class, "Attribute 'condition' must be present and not empty"))
+      },
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -194,6 +214,16 @@ public class ZeebeConditionalEventValidationTest extends AbstractZeebeValidation
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent()
+            .condition(c -> c.condition(""))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(Condition.class, "Attribute 'condition' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent()
             .condition(c -> c.condition("x > 1"))
             .endEvent()
             .done(),
@@ -263,6 +293,20 @@ public class ZeebeConditionalEventValidationTest extends AbstractZeebeValidation
       // -----------------------------------------------------------------------
       // Conditional event subprocess start event tests
       // -----------------------------------------------------------------------
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent()
+            .moveToProcess("process")
+            .eventSubProcess()
+            .startEvent()
+            .condition(c -> c.condition(""))
+            .endEvent()
+            .subProcessDone()
+            .done(),
+        singletonList(
+            expect(Condition.class, "Attribute 'condition' must be present and not empty"))
+      },
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
