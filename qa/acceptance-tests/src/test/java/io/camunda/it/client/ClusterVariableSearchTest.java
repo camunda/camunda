@@ -870,10 +870,7 @@ public class ClusterVariableSearchTest {
     assertThat(response.items()).isNotEmpty();
     assertThat(response.items())
         // Verify that the large variable is not in the results
-        .noneSatisfy(
-            item -> {
-              assertThat(item.getName()).isEqualTo(largeVarName);
-            });
+        .noneMatch(item -> item.getName().equals(largeVarName));
     // Verify all returned items are not truncated
     assertThat(response.items())
         .allSatisfy(
