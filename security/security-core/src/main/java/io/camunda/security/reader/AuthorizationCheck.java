@@ -8,15 +8,21 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.condition.AuthorizationCondition;
+import io.camunda.security.auth.condition.AuthorizationConditions;
 
 /**
- * Enables or disables a {@link AuthorizationCheck}. If enabled, then the authorization to be
- * checked must be provided.
+ * Enables or disables a {@link AuthorizationCheck}. If enabled, then the {@code
+ * authorizationCondition} to be checked must be provided.
  */
-public record AuthorizationCheck(boolean enabled, Authorization<?> authorization) {
+public record AuthorizationCheck(boolean enabled, AuthorizationCondition authorizationCondition) {
 
   public static AuthorizationCheck enabled(final Authorization<?> authorization) {
-    return new AuthorizationCheck(true, authorization);
+    return enabled(AuthorizationConditions.single(authorization));
+  }
+
+  public static AuthorizationCheck enabled(final AuthorizationCondition authorizationCondition) {
+    return new AuthorizationCheck(true, authorizationCondition);
   }
 
   public static AuthorizationCheck disabled() {

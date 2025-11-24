@@ -8,6 +8,7 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.condition.AuthorizationCondition;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +29,11 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
     }
 
     return Optional.of(authorizationCheck)
-        .map(AuthorizationCheck::authorization)
+        // FIXME: this currently only supports a single (fist) authorization
+        //  will be extended to support multiple authorizations in the following commits
+        .map(AuthorizationCheck::authorizationCondition)
+        .map(AuthorizationCondition::authorizations)
+        .map(List::getFirst)
         .map(Authorization::resourceIds)
         .orElse(List.of());
   }
