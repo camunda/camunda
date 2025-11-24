@@ -32,8 +32,7 @@ public class ClusterVariableFetchTest {
     final var variableValue = "testValue_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(variableName, variableValue)
         .send()
         .join();
@@ -43,7 +42,11 @@ public class ClusterVariableFetchTest {
 
     // when
     final var response =
-        camundaClient.newClusterVariableGetRequest().atGlobalScope(variableName).send().join();
+        camundaClient
+            .newGloballyScopedClusterVariableGetRequest()
+            .withName(variableName)
+            .send()
+            .join();
 
     // then
     assertThat(response).isNotNull();
@@ -59,8 +62,7 @@ public class ClusterVariableFetchTest {
     final var tenantId = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantId)
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
         .create(variableName, variableValue)
         .send()
         .join();
@@ -72,8 +74,8 @@ public class ClusterVariableFetchTest {
     // when
     final var response =
         camundaClient
-            .newClusterVariableGetRequest()
-            .atTenantScope(variableName, tenantId)
+            .newTenantScopedClusterVariableGetRequest(tenantId)
+            .withName(variableName)
             .send()
             .join();
 
@@ -88,7 +90,12 @@ public class ClusterVariableFetchTest {
   void shouldRejectGetIfVariableNameIsNull() {
     // when / then
     assertThatThrownBy(
-            () -> camundaClient.newClusterVariableGetRequest().atGlobalScope(null).send().join())
+            () ->
+                camundaClient
+                    .newGloballyScopedClusterVariableGetRequest()
+                    .withName(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }
@@ -97,7 +104,12 @@ public class ClusterVariableFetchTest {
   void shouldRejectGetIfVariableNameIsEmpty() {
     // when / then
     assertThatThrownBy(
-            () -> camundaClient.newClusterVariableGetRequest().atGlobalScope("").send().join())
+            () ->
+                camundaClient
+                    .newGloballyScopedClusterVariableGetRequest()
+                    .withName("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be empty");
   }
@@ -108,8 +120,8 @@ public class ClusterVariableFetchTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableGetRequest()
-                    .atGlobalScope("nonExistentVar_" + UUID.randomUUID())
+                    .newGloballyScopedClusterVariableGetRequest()
+                    .withName("nonExistentVar_" + UUID.randomUUID())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -122,9 +134,8 @@ public class ClusterVariableFetchTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableGetRequest()
-                    .atTenantScope(
-                        "nonExistentVar_" + UUID.randomUUID(), "tenant_" + UUID.randomUUID())
+                    .newTenantScopedClusterVariableGetRequest("tenant_" + UUID.randomUUID())
+                    .withName("nonExistentVar_" + UUID.randomUUID())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -138,8 +149,7 @@ public class ClusterVariableFetchTest {
     final var variableValue = "testValue_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(variableName, variableValue)
         .send()
         .join();
@@ -150,8 +160,8 @@ public class ClusterVariableFetchTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableGetRequest()
-                    .atTenantScope(variableName, tenantId)
+                    .newTenantScopedClusterVariableGetRequest(tenantId)
+                    .withName(variableName)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -166,8 +176,7 @@ public class ClusterVariableFetchTest {
     final var tenantId = "tenant_" + UUID.randomUUID();
 
     camundaClient
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(tenantId)
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
         .create(variableName, variableValue)
         .send()
         .join();
@@ -176,8 +185,8 @@ public class ClusterVariableFetchTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newClusterVariableGetRequest()
-                    .atGlobalScope(variableName)
+                    .newGloballyScopedClusterVariableGetRequest()
+                    .withName(variableName)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

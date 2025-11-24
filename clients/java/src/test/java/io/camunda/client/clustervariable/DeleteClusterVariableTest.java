@@ -33,7 +33,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   @Test
   void shouldDeleteGlobalScopedClusterVariable() {
     // when
-    client.newClusterVariableDeleteRequest().atGlobalScoped().delete(VARIABLE_NAME).send().join();
+    client.newGloballyScopedClusterVariableDeleteRequest().delete(VARIABLE_NAME).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -45,8 +45,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   void shouldDeleteTenantScopedClusterVariable() {
     // when
     client
-        .newClusterVariableDeleteRequest()
-        .atTenantScoped(TENANT_ID)
+        .newTenantScopedClusterVariableDeleteRequest(TENANT_ID)
         .delete(VARIABLE_NAME)
         .send()
         .join();
@@ -68,8 +67,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableDeleteRequest()
                     .delete(VARIABLE_NAME)
                     .send()
                     .join())
@@ -88,8 +86,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableDeleteRequest()
                     .delete(VARIABLE_NAME)
                     .send()
                     .join())
@@ -108,8 +105,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableDeleteRequest()
                     .delete(VARIABLE_NAME)
                     .send()
                     .join())
@@ -121,13 +117,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullVariableName() {
     // when / then
     assertThatThrownBy(
-            () ->
-                client
-                    .newClusterVariableDeleteRequest()
-                    .atGlobalScoped()
-                    .delete(null)
-                    .send()
-                    .join())
+            () -> client.newGloballyScopedClusterVariableDeleteRequest().delete(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }
@@ -136,8 +126,7 @@ public class DeleteClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnEmptyVariableName() {
     // when / then
     assertThatThrownBy(
-            () ->
-                client.newClusterVariableDeleteRequest().atGlobalScoped().delete("").send().join())
+            () -> client.newGloballyScopedClusterVariableDeleteRequest().delete("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be empty");
   }

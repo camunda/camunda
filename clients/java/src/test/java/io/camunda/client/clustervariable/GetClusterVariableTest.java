@@ -42,7 +42,7 @@ public class GetClusterVariableTest extends ClientRestTest {
         VARIABLE_NAME,
         Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.GLOBAL));
     // when
-    client.newClusterVariableGetRequest().atGlobalScope(VARIABLE_NAME).send().join();
+    client.newGloballyScopedClusterVariableGetRequest().withName(VARIABLE_NAME).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -61,7 +61,11 @@ public class GetClusterVariableTest extends ClientRestTest {
         Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.TENANT));
 
     // when
-    client.newClusterVariableGetRequest().atTenantScope(VARIABLE_NAME, TENANT_ID).send().join();
+    client
+        .newTenantScopedClusterVariableGetRequest(TENANT_ID)
+        .withName(VARIABLE_NAME)
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -79,7 +83,12 @@ public class GetClusterVariableTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newClusterVariableGetRequest().atGlobalScope(VARIABLE_NAME).send().join())
+            () ->
+                client
+                    .newGloballyScopedClusterVariableGetRequest()
+                    .withName(VARIABLE_NAME)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -93,7 +102,12 @@ public class GetClusterVariableTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newClusterVariableGetRequest().atGlobalScope(VARIABLE_NAME).send().join())
+            () ->
+                client
+                    .newGloballyScopedClusterVariableGetRequest()
+                    .withName(VARIABLE_NAME)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -102,7 +116,7 @@ public class GetClusterVariableTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullVariableName() {
     // when / then
     assertThatThrownBy(
-            () -> client.newClusterVariableGetRequest().atGlobalScope(null).send().join())
+            () -> client.newGloballyScopedClusterVariableGetRequest().withName(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }
@@ -110,7 +124,8 @@ public class GetClusterVariableTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyVariableName() {
     // when / then
-    assertThatThrownBy(() -> client.newClusterVariableGetRequest().atGlobalScope("").send().join())
+    assertThatThrownBy(
+            () -> client.newGloballyScopedClusterVariableGetRequest().withName("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be empty");
   }

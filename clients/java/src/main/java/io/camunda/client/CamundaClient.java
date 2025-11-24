@@ -33,8 +33,6 @@ import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
-import io.camunda.client.api.command.ClusterVariableCreationCommandStep1;
-import io.camunda.client.api.command.ClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
@@ -59,6 +57,8 @@ import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -70,6 +70,8 @@ import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
@@ -97,7 +99,6 @@ import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
-import io.camunda.client.api.fetch.ClusterVariableGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -105,6 +106,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.MappingRuleGetRequest;
@@ -116,6 +118,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
+import io.camunda.client.api.fetch.TenantScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
@@ -1893,74 +1896,93 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   VariableGetRequest newVariableGetRequest(long variableKey);
 
   /**
-   * Creates a request to create a new cluster variable.
-   *
-   * <p>Cluster variables can be created with either global or tenant scope:
+   * Creates a request to create a new globally-scoped cluster variable.
    *
    * <pre>
    *   camundaClient
-   *       .newClusterVariableCreateRequest()
-   *       .atGlobalScoped()
-   *       .create("myVariable", "myValue")
-   *       .send();
-   *
-   *   // or for tenant-scoped variable
-   *   camundaClient
-   *       .newClusterVariableCreateRequest()
-   *       .atTenantScoped("my-tenant-id")
+   *       .newGloballyScopedClusterVariableCreateRequest()
    *       .create("myVariable", "myValue")
    *       .send();
    * </pre>
    *
-   * @return a builder for creating a cluster variable
+   * @return a builder for creating a globally-scoped cluster variable
    */
-  ClusterVariableCreationCommandStep1 newClusterVariableCreateRequest();
+  GloballyScopedClusterVariableCreationCommandStep1 newGloballyScopedClusterVariableCreateRequest();
 
   /**
-   * Creates a request to delete an existing cluster variable.
-   *
-   * <p>Cluster variables can be deleted with either global or tenant scope:
+   * Creates a request to create a new tenant-scoped cluster variable.
    *
    * <pre>
    *   camundaClient
-   *       .newClusterVariableDeleteRequest()
-   *       .atGlobalScoped()
-   *       .delete("myVariable")
+   *       .newTenantScopedClusterVariableCreateRequest("my-tenant-id")
+   *       .create("myVariable", "myValue")
    *       .send();
+   * </pre>
    *
-   *   // or for tenant-scoped variable
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for creating a tenant-scoped cluster variable
+   */
+  TenantScopedClusterVariableCreationCommandStep1 newTenantScopedClusterVariableCreateRequest(
+      String tenantId);
+
+  /**
+   * Creates a request to delete a globally-scoped cluster variable.
+   *
+   * <pre>
    *   camundaClient
-   *       .newClusterVariableDeleteRequest()
-   *       .atTenantScoped("my-tenant-id")
+   *       .newGloballyScopedClusterVariableDeleteRequest()
    *       .delete("myVariable")
    *       .send();
    * </pre>
    *
-   * @return a builder for deleting a cluster variable
+   * @return a builder for deleting a globally-scoped cluster variable
    */
-  ClusterVariableDeletionCommandStep1 newClusterVariableDeleteRequest();
+  GloballyScopedClusterVariableDeletionCommandStep1 newGloballyScopedClusterVariableDeleteRequest();
 
   /**
-   * Creates a request to fetch a cluster variable by name and scope.
-   *
-   * <p>Cluster variables can be fetched with either global or tenant scope:
+   * Creates a request to delete a tenant-scoped cluster variable.
    *
    * <pre>
    *   camundaClient
-   *       .newClusterVariableGetRequest()
-   *       .atGlobalScope("myVariable")
-   *       .send();
-   *
-   *   // or for tenant-scoped variable
-   *   camundaClient
-   *       .newClusterVariableGetRequest()
-   *       .atTenantScope("myVariable", "my-tenant-id")
+   *       .newTenantScopedClusterVariableDeleteRequest("my-tenant-id")
+   *       .delete("myVariable")
    *       .send();
    * </pre>
    *
-   * @return a builder for fetching a cluster variable
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for deleting a tenant-scoped cluster variable
    */
-  ClusterVariableGetRequest newClusterVariableGetRequest();
+  TenantScopedClusterVariableDeletionCommandStep1 newTenantScopedClusterVariableDeleteRequest(
+      String tenantId);
+
+  /**
+   * Creates a request to fetch a globally-scoped cluster variable by name.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGloballyScopedClusterVariableGetRequest()
+   *       .withName("myVariable")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for fetching a globally-scoped cluster variable
+   */
+  GloballyScopedClusterVariableGetRequest newGloballyScopedClusterVariableGetRequest();
+
+  /**
+   * Creates a request to fetch a tenant-scoped cluster variable by name.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newTenantScopedClusterVariableGetRequest("my-tenant-id")
+   *       .withName("myVariable")
+   *       .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for fetching a tenant-scoped cluster variable
+   */
+  TenantScopedClusterVariableGetRequest newTenantScopedClusterVariableGetRequest(String tenantId);
 
   /**
    * Creates a request to search for cluster variables.
