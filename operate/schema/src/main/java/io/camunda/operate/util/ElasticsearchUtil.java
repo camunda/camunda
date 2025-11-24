@@ -197,6 +197,20 @@ public abstract class ElasticsearchUtil {
     return String.valueOf(response.hits().hits().getFirst().source().get(fieldName));
   }
 
+  public static Query idsQuery(final String... ids) {
+    return Query.of(q -> q.ids(i -> i.values(Arrays.asList(ids))));
+  }
+
+  /**
+   * A query that wraps another query and simply returns a constant score equal to the query boost
+   * for every document in the query.
+   *
+   * @param query The query to wrap in a constant score query
+   */
+  public static Query constantScoreQuery(final Query query) {
+    return Query.of(q -> q.constantScore(cs -> cs.filter(query)));
+  }
+
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
@@ -513,7 +527,7 @@ public abstract class ElasticsearchUtil {
         new SearchRequest(aliasName)
             .source(
                 new SearchSourceBuilder()
-                    .query(idsQuery().addIds(ids.toArray(String[]::new)))
+                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
                     .fetchSource(false));
     try {
       scrollWith(
@@ -548,7 +562,7 @@ public abstract class ElasticsearchUtil {
         ElasticsearchUtil.createSearchRequest(template)
             .source(
                 new SearchSourceBuilder()
-                    .query(idsQuery().addIds(ids.toArray(String[]::new)))
+                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
                     .fetchSource(false));
     try {
       scrollWith(
@@ -583,7 +597,7 @@ public abstract class ElasticsearchUtil {
         ElasticsearchUtil.createSearchRequest(template)
             .source(
                 new SearchSourceBuilder()
-                    .query(idsQuery().addIds(ids.toArray(String[]::new)))
+                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
                     .fetchSource(false));
     try {
       scrollWith(
