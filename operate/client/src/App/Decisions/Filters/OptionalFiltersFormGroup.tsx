@@ -11,9 +11,9 @@ import {useEffect, useState} from 'react';
 import {useLocation, type Location} from 'react-router-dom';
 import type {FieldValidator} from 'final-form';
 import {
-  parseDecisionInstancesFilter,
-  type DecisionInstanceFiltersField,
-} from 'modules/utils/filter/decisionInstancesSearch';
+  parseDecisionsFilter,
+  type DecisionsFilterField,
+} from 'modules/utils/filter/decisionsFilter';
 import {
   validateDecisionIdsCharacters,
   validateDecisionIdsLength,
@@ -55,7 +55,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     type?: 'multiline' | 'text';
     rows?: number;
     validate?: FieldValidator<string | undefined>;
-    keys: DecisionInstanceFiltersField[];
+    keys: DecisionsFilterField[];
   }
 > = {
   decisionInstanceIds: {
@@ -113,7 +113,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
         (optionalFilters as string[]).includes(param),
       ) as OptionalFilter[];
 
-      const filters = parseDecisionInstancesFilter(location.search);
+      const filters = parseDecisionsFilter(location.search);
 
       onVisibleFilterChange((currentVisibleFilters) =>
         Array.from(

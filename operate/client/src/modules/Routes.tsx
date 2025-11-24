@@ -7,7 +7,7 @@
  */
 
 import type {To} from 'react-router-dom';
-import type {DecisionInstanceFilters} from 'modules/utils/filter/decisionInstancesSearch';
+import type {DecisionsFilter} from 'modules/utils/filter/decisionsFilter';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 const Paths = {
@@ -52,7 +52,7 @@ const Locations = {
       search: params.toString(),
     };
   },
-  decisions(filters?: DecisionInstanceFilters): To {
+  decisions(filters?: DecisionsFilter): To {
     const params = new URLSearchParams();
 
     if (filters !== undefined) {

@@ -10,7 +10,7 @@ import {
   parseDecisionDefinitionsSearchFilter,
   parseDecisionInstancesSearchFilter,
   parseDecisionInstancesSearchSort,
-} from './decisionInstancesSearch';
+} from './decisionsFilter';
 
 describe('parseDecisionInstancesSearchFilter', () => {
   it('should parse decision instances search filter from search params', () => {

@@ -9,7 +9,7 @@
 import {
   parseDecisionInstancesSearchFilter,
   parseDecisionInstancesSearchSort,
-} from 'modules/utils/filter/decisionInstancesSearch';
+} from 'modules/utils/filter/decisionsFilter';
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 
