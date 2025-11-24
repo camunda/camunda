@@ -18,8 +18,8 @@ import {useFilters} from 'modules/hooks/useFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {InstancesTable} from './index';
-import {getSortFromUrl} from 'modules/utils/filter/v2/getSortFromUrl';
-import {useLocation} from 'react-router-dom';
+import {parseProcessInstancesSearchSort} from 'modules/utils/filter/v2/processInstancesSearchSort';
+import {useSearchParams} from 'react-router-dom';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -37,12 +37,12 @@ type ProcessInstancesHandle = {
 };
 
 const InstancesTableWrapper: React.FC = observer(() => {
-  const location = useLocation();
+  const [params] = useSearchParams();
   const {getFilters} = useFilters();
   const filters = getFilters();
 
   const {process, tenant, version, active, incidents} = filters;
-  const sort = getSortFromUrl(location.search);
+  const sort = parseProcessInstancesSearchSort(params);
 
   const processDefinitionKey = processesStore.getProcessId({
     process,
