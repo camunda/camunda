@@ -137,8 +137,9 @@ public class S3NodeIdRepositoryIT {
     assertThat(acquired.eTag()).isNotEmpty();
     final var metadata = acquired.metadata();
     assertThat(metadata.asMap()).isNotEmpty();
-    assertThat(metadata.expiry()).isEqualTo(toAcquire.timestamp());
-    assertThat(metadata.task()).isEqualTo(taskId);
+    assertThat(metadata.task())
+        .isPresent()
+        .hasValueSatisfying(t -> assertThat(t).isEqualTo(taskId));
   }
 
   @Test

@@ -129,8 +129,9 @@ public interface NodeIdRepository extends AutoCloseable {
 
     record Initialized(Metadata metadata, Lease lease, String eTag) implements StoredLease {
 
-      public Initialized(final Metadata metadata, final int nodeId, final String eTag) {
-        this(metadata, Lease.fromMetadata(metadata, nodeId), eTag);
+      public Initialized(
+          final Metadata metadata, final long expireAt, final int nodeId, final String eTag) {
+        this(metadata, Lease.fromMetadata(metadata, expireAt, nodeId), eTag);
       }
 
       public Initialized {
@@ -140,7 +141,7 @@ public interface NodeIdRepository extends AutoCloseable {
         if (eTag.isEmpty()) {
           throw new IllegalArgumentException("eTag cannot be empty");
         }
-        if (!Objects.equals(metadata.task(), lease.taskId())) {
+        if (!Objects.equals(metadata.task(), Optional.of(lease.taskId()))) {
           throw new IllegalStateException(
               String.format(
                   "TaskId in metadata(%s) and in lease(%s) do not match!",
@@ -151,12 +152,6 @@ public interface NodeIdRepository extends AutoCloseable {
               String.format(
                   "Version in metadata(%s) and in lease(%s) do not match!",
                   metadata.version(), lease.nodeInstance().version()));
-        }
-        if (metadata.expiry() != lease.timestamp()) {
-          throw new IllegalStateException(
-              String.format(
-                  "Expire timestamp in metadata(%s) and in lease(%s) do not match!",
-                  metadata.expiry(), lease.timestamp()));
         }
       }
 

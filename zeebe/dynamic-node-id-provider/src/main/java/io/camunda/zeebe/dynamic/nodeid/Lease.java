@@ -33,11 +33,14 @@ public record Lease(
     Objects.requireNonNull(versionMappings, "versionMappings cannot be null");
   }
 
-  public static Lease fromMetadata(final Metadata metadata, final int nodeId) {
+  public static Lease fromMetadata(final Metadata metadata, final long expireAt, final int nodeId) {
     Objects.requireNonNull(metadata, "metadata cannot be null");
+    if (metadata.task().isEmpty()) {
+      throw new IllegalArgumentException("task cannot be empty");
+    }
     final var nodeInstance = new NodeInstance(nodeId, metadata.version());
     return new Lease(
-        metadata.task(), metadata.expiry(), nodeInstance, VersionMappings.of(nodeInstance));
+        metadata.task().get(), expireAt, nodeInstance, VersionMappings.of(nodeInstance));
   }
 
   public static Lease from(

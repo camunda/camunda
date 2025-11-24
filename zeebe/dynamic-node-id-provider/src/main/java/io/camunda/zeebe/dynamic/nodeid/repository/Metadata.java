@@ -12,32 +12,25 @@ import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.util.Map;
 import java.util.Objects;
 
-public record Metadata(String task, long expiry, Version version) {
+public record Metadata(Optional<String> task, Version version) {
   // KEYS MUST BE LOWERCASE
   private static final String TASK_ID_KEY = "taskid";
-  private static final String EXPIRY_KEY = "expiry";
   private static final String VERSION_KEY = "version";
 
   public Metadata {
     Objects.requireNonNull(task, "task cannot be null");
-    Objects.requireNonNull(version, "version cannot be null");
-    if (expiry <= 0) {
-      throw new IllegalArgumentException("expiry must be greater than zero");
+    if (task.isPresent() && task.get().isEmpty()) {
+      throw new IllegalArgumentException("task cannot be empty");
     }
+    Objects.requireNonNull(version, "version cannot be null");
   }
 
   public static Metadata fromLease(final Lease lease) {
-    return new Metadata(lease.taskId(), lease.timestamp(), lease.nodeInstance().version());
+    return new Metadata(Optional.of(lease.taskId()), lease.nodeInstance().version());
   }
 
   public Map<String, String> asMap() {
-    return Map.of(
-        TASK_ID_KEY,
-        task,
-        EXPIRY_KEY,
-        String.valueOf(expiry),
-        VERSION_KEY,
-        Long.toString(version.version()));
+    return Map.of(TASK_ID_KEY, task.orElse(""), VERSION_KEY, Long.toString(version.version()));
   }
 
   public static Metadata fromMap(final Map<String, String> map) {
@@ -45,10 +38,11 @@ public record Metadata(String task, long expiry, Version version) {
       return null;
     }
     try {
-      final var taskId = map.get(TASK_ID_KEY);
-      final var expiry = Long.parseLong(map.get(EXPIRY_KEY));
+      final var taskIdOpt = map.get(TASK_ID_KEY);
+      final Optional<String> taskId =
+          taskIdOpt != null && !taskIdOpt.isEmpty() ? Optional.of(taskIdOpt) : Optional.empty();
       final var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
-      return new Metadata(taskId, expiry, version);
+      return new Metadata(taskId, version);
     } catch (final Exception e) {
       throw new IllegalArgumentException("Failed to deserialize metadata, map is " + map, e);
     }

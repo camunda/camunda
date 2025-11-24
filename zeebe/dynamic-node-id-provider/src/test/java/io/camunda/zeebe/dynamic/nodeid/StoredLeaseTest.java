@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -74,7 +75,7 @@ public class StoredLeaseTest {
 
     @Test
     void shouldAlwaysContainMetadata() {
-      assertThatThrownBy(() -> new StoredLease.Initialized(null, 0, "asd"))
+      assertThatThrownBy(() -> new StoredLease.Initialized(null, 0L, 0, "asd"))
           .hasMessageContaining("metadata cannot be null");
       assertThatThrownBy(
               () ->
@@ -92,7 +93,9 @@ public class StoredLeaseTest {
     @Test
     void shouldAlwaysContainETag() {
       assertThatThrownBy(
-              () -> new StoredLease.Initialized(new Metadata("asd", 123, Version.of(1)), 0, null))
+              () ->
+                  new StoredLease.Initialized(
+                      new Metadata(Optional.of("asd"), Version.of(1)), 1L, 0, null))
           .hasMessageContaining("eTag cannot be null");
     }
 
@@ -101,7 +104,8 @@ public class StoredLeaseTest {
       // given
       final var stored =
           new StoredLease.Initialized(
-              new Metadata(taskId, expiryFromNow(), nodeInstance.version()),
+              new Metadata(Optional.of(taskId), nodeInstance.version()),
+              expiryFromNow(),
               nodeInstance.id(),
               "eTagExample");
 
@@ -117,7 +121,8 @@ public class StoredLeaseTest {
       // given
       final var stored =
           new StoredLease.Initialized(
-              new Metadata(taskId, expiryFromNow(), nodeInstance.version()),
+              new Metadata(Optional.of(taskId), nodeInstance.version()),
+              expiryFromNow(),
               nodeInstance.id(),
               "eTagExample");
 

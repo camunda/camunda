@@ -104,8 +104,8 @@ public class RepositoryNodeIdProviderIT {
     final var acquiredLease = nodeIdProvider.getCurrentLease();
     final var nodeId = acquiredLease.lease().nodeInstance().id();
     assertThat(nodeId).isEqualTo(0);
-    assertThat(acquiredLease.metadata().task()).isEqualTo(taskId);
-    assertThat(acquiredLease.metadata().expiry())
+    assertThat(acquiredLease.metadata().task()).isEqualTo(Optional.of(taskId));
+    assertThat(acquiredLease.lease().timestamp())
         .isEqualTo(clock.instant().plus(EXPIRY_DURATION).toEpochMilli());
     assertThat(repository.getLease(nodeId)).isEqualTo(acquiredLease);
   }
@@ -144,8 +144,7 @@ public class RepositoryNodeIdProviderIT {
     assertThat(currentLease)
         .asInstanceOf(type(StoredLease.Initialized.class))
         .isEqualTo(acquiredLease)
-        .isNotEqualTo(expiredLease)
-        .satisfies(l -> assertThat(l.metadata().expiry()).isGreaterThan(expiredLeaseTimestamp));
+        .isNotEqualTo(expiredLease);
   }
 
   @Test
