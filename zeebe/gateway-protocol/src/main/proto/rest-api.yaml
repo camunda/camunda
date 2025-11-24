@@ -1406,7 +1406,7 @@ paths:
       operationId: searchUserTaskVariables
       summary: Search user task variables
       description: |
-        Search for user task variables based on given criteria.
+        Search for user task variables based on given criteria. By default, long variable values in the response are truncated.
       parameters:
         - name: userTaskKey
           in: path
@@ -1414,6 +1414,12 @@ paths:
           description: The key of the user task.
           schema:
             $ref: "#/components/schemas/UserTaskKey"
+        - name: truncateValues
+          in: query
+          required: false
+          description: When true (default), long variable values in the response are truncated. When false, full variable values are returned.
+          schema:
+            type: boolean
       requestBody:
         required: false
         content:
@@ -1439,7 +1445,14 @@ paths:
       operationId: searchVariables
       summary: Search variables
       description: |
-        Search for process and local variables based on given criteria.
+        Search for process and local variables based on given criteria. By default, long variable values in the response are truncated.
+      parameters:
+        - name: truncateValues
+          in: query
+          required: false
+          description: When true (default), long variable values in the response are truncated. When false, full variable values are returned.
+          schema:
+            type: boolean
       requestBody:
         required: false
         content:
