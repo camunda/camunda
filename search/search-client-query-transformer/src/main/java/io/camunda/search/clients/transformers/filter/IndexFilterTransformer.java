@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_AUTH_CHECK_MISSING;
 import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_TENANT_CHECK_MISSING;
@@ -21,6 +22,8 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
+import io.camunda.security.auth.condition.SingleAuthorizationCondition;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -82,10 +85,19 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     if (!authorizationCheck.enabled()) {
       return matchAll();
     }
-    // FIXME: this currently only supports a single (fist) authorization
-    //  will be extended to support multiple authorizations in the following commits
-    final var authorization =
-        authorizationCheck.authorizationCondition().authorizations().getFirst();
+
+    final var condition = authorizationCheck.authorizationCondition();
+    return switch (condition) {
+      case SingleAuthorizationCondition single -> applySingleAuthorizationCheck(single);
+      case AnyOfAuthorizationCondition anyOf -> applyAnyOfAuthorizationCheck(anyOf);
+      default ->
+          throw new IllegalStateException(
+              "Unsupported AuthorizationCondition type: " + condition.getClass().getSimpleName());
+    };
+  }
+
+  private SearchQuery applySingleAuthorizationCheck(final SingleAuthorizationCondition single) {
+    final var authorization = single.authorization();
     final var resourceIds = authorization.resourceIds();
 
     if (resourceIds == null || resourceIds.isEmpty()) {
@@ -93,6 +105,21 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     }
 
     return toAuthorizationCheckSearchQuery(authorization);
+  }
+
+  private SearchQuery applyAnyOfAuthorizationCheck(final AnyOfAuthorizationCondition anyOf) {
+    final var queries =
+        anyOf.authorizations().stream()
+            .filter(a -> a.resourceIds() != null && !a.resourceIds().isEmpty())
+            .map(this::toAuthorizationCheckSearchQuery)
+            .filter(Objects::nonNull)
+            .toList();
+
+    if (queries.isEmpty()) {
+      return matchNone();
+    }
+
+    return or(queries);
   }
 
   private SearchQuery applyTenantChecks(final TenantCheck tenantCheck) {
