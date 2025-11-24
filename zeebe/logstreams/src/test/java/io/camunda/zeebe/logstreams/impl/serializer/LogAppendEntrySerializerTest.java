@@ -19,8 +19,10 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 final class LogAppendEntrySerializerTest {
@@ -128,6 +130,64 @@ final class LogAppendEntrySerializerTest {
     assertThat(serializedLength).isGreaterThan(Short.MAX_VALUE);
     assertThat(metadata.getRejectionReason()).isEqualTo(rejection);
     assertThat(value.getFoo()).isEqualTo("bar");
+  }
+
+  @Test
+  void shouldOverwriteEveryUsedByte() {
+    // given - create an entry to serialize
+    final var entry = TestEntry.ofKey(42);
+    final var position = 100L;
+    final var sourcePosition = 50L;
+    final var timestamp = 1000L;
+    final var framedLength = LogAppendEntrySerializer.framedLength(entry);
+
+    // Create two buffers filled with different magic bytes
+    final var buffer1 = new UnsafeBuffer(new byte[framedLength]);
+    final var buffer2 = new UnsafeBuffer(new byte[framedLength]);
+    for (int i = 0; i < framedLength; i++) {
+      buffer1.putByte(i, (byte) 0xFF);
+      buffer2.putByte(i, (byte) 0x00);
+    }
+
+    // when - serialize the same entry to both buffers
+    LogAppendEntrySerializer.serialize(buffer1, 0, entry, position, sourcePosition, timestamp);
+    LogAppendEntrySerializer.serialize(buffer2, 0, entry, position, sourcePosition, timestamp);
+
+    // then - both buffers should have the same contents
+    for (int i = 0; i < framedLength; i++) {
+      if (i >= 4 && i < 12) {
+        assertThat(buffer1.getByte(i))
+            .as(
+                "Byte %d should be an unused part of the DataFrameDescriptor and show original buffer content",
+                i)
+            .isEqualTo((byte) 0xFF);
+        assertThat(buffer2.getByte(i))
+            .as(
+                "Byte %d should be an unused part of the DataFrameDescriptor and show original buffer content",
+                i)
+            .isEqualTo((byte) 0x00);
+      } else if (i == 15) {
+        assertThat(buffer1.getByte(i))
+            .as(
+                "Byte %d should be an unused reserved byte of the LoggedEventImpl and show original buffer content",
+                i)
+            .isEqualTo((byte) 0xFF);
+        assertThat(buffer2.getByte(i))
+            .as(
+                "Byte %d should be an unused reserved byte of the LoggedEventImpl and show original buffer content",
+                i)
+            .isEqualTo((byte) 0x00);
+      } else {
+        assertThat(buffer1.getByte(i))
+            .as(
+                """
+                    Byte %d shows original buffer content, even though it is used and should be overwritten
+                    Buffer 1: %s
+                    Buffer 2: %s""",
+                i, Arrays.toString(buffer1.byteArray()), Arrays.toString(buffer2.byteArray()))
+            .isEqualTo(buffer2.getByte(i));
+      }
+    }
   }
 
   private static final class TestValue extends UnifiedRecordValue {
