@@ -16,11 +16,8 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.ClusterVariableDeletionCommandStep1;
-import io.camunda.client.api.command.ClusterVariableDeletionCommandStep1.ClusterVariableDeletionCommandStep2;
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.response.DeleteClusterVariableResponse;
-import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DeleteClusterVariableResponseImpl;
@@ -28,44 +25,27 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class DeleteClusterVariableImpl
-    implements ClusterVariableDeletionCommandStep1, ClusterVariableDeletionCommandStep2 {
+public class GloballyScopedDeleteClusterVariableImpl
+    implements GloballyScopedClusterVariableDeletionCommandStep1 {
 
   private String name;
-  private ClusterVariableScope scope;
-  private String tenantId;
-
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public DeleteClusterVariableImpl(final HttpClient httpClient) {
+  public GloballyScopedDeleteClusterVariableImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public ClusterVariableDeletionCommandStep2 atTenantScoped(final String tenantId) {
-    ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
-    scope = ClusterVariableScope.TENANT;
-    this.tenantId = tenantId;
-    return this;
-  }
-
-  @Override
-  public ClusterVariableDeletionCommandStep2 atGlobalScoped() {
-    scope = ClusterVariableScope.GLOBAL;
-    return this;
-  }
-
-  @Override
-  public ClusterVariableDeletionCommandStep2 delete(final String name) {
+  public GloballyScopedClusterVariableDeletionCommandStep1 delete(final String name) {
     ArgumentUtil.ensureNotNullNorEmpty("name", name);
     this.name = name;
     return this;
   }
 
   @Override
-  public FinalCommandStep<DeleteClusterVariableResponse> requestTimeout(
+  public GloballyScopedClusterVariableDeletionCommandStep1 requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -74,12 +54,7 @@ public class DeleteClusterVariableImpl
   @Override
   public CamundaFuture<DeleteClusterVariableResponse> send() {
     final HttpCamundaFuture<DeleteClusterVariableResponse> result = new HttpCamundaFuture<>();
-    final String path;
-    if (ClusterVariableScope.TENANT.equals(scope)) {
-      path = "/cluster-variables/tenants/" + tenantId + "/" + name;
-    } else {
-      path = "/cluster-variables/global/" + name;
-    }
+    final String path = "/cluster-variables/global/" + name;
     httpClient.delete(
         path, httpRequestConfig.build(), DeleteClusterVariableResponseImpl::new, result);
     return result;

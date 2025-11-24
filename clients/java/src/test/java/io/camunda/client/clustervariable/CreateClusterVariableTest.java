@@ -44,8 +44,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
 
     // when
     client
-        .newClusterVariableCreateRequest()
-        .atGlobalScoped()
+        .newGloballyScopedClusterVariableCreateRequest()
         .create(VARIABLE_NAME, VARIABLE_VALUE)
         .send()
         .join();
@@ -65,8 +64,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
 
     // when
     client
-        .newClusterVariableCreateRequest()
-        .atTenantScoped(TENANT_ID)
+        .newTenantScopedClusterVariableCreateRequest(TENANT_ID)
         .create(VARIABLE_NAME, VARIABLE_VALUE)
         .send()
         .join();
@@ -89,8 +87,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create(VARIABLE_NAME, VARIABLE_VALUE)
                     .send()
                     .join())
@@ -109,8 +106,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create(VARIABLE_NAME, VARIABLE_VALUE)
                     .send()
                     .join())
@@ -124,8 +120,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create(null, VARIABLE_VALUE)
                     .send()
                     .join())
@@ -139,8 +134,7 @@ public class CreateClusterVariableTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newClusterVariableCreateRequest()
-                    .atGlobalScoped()
+                    .newGloballyScopedClusterVariableCreateRequest()
                     .create("", VARIABLE_VALUE)
                     .send()
                     .join())
