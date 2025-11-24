@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,29 +91,29 @@ public class S3NodeIdRepositoryIT {
   }
 
   @Test
-  public void shouldNotInitializeAcquiredLease() {
+  public void shouldAcquireFirstLease() {
     // given
-    final var clusterSize = 2;
-    final var millis = Clock.systemUTC().millis();
-    repository = fixed(millis);
-    repository.initialize(clusterSize);
-    final var initial = repository.getLease(0);
-    final var firstAcquired = initial.acquireInitialLease(taskId, clock, EXPIRY_DURATION);
-    assertThat(firstAcquired).isPresent();
-    final var acquired = repository.acquire(firstAcquired.get(), initial.eTag());
-    assertThat(acquired).isInstanceOf(StoredLease.Initialized.class);
+    repository = fixed(Clock.systemUTC().millis());
+    repository.initialize(2);
 
     // when
-    // if the reposiotry is initialized again
-    final var leases = IntStream.range(0, clusterSize).mapToObj(repository::getLease).toList();
-    repository.initialize(clusterSize);
+    final var uninitialized = repository.getLease(0);
+    final var toAcquire = uninitialized.acquireInitialLease(taskId, clock, EXPIRY_DURATION);
+    assertThat(toAcquire).isPresent();
+    assertThat(uninitialized.eTag()).isNotEmpty();
+    final var acquired = repository.acquire(toAcquire.get(), uninitialized.eTag());
 
     // then
-    // lease are unchanged
-    for (int i = 0; i < clusterSize; i++) {
-      final var lease = repository.getLease(i);
-      assertThat(lease).isEqualTo(leases.get(i));
-    }
+    final var expectedNodeInstance = new NodeInstance(0, Version.of(1));
+    assertThat(acquired.node()).isEqualTo(expectedNodeInstance);
+    assertThat(acquired.eTag()).isNotEqualTo(uninitialized.eTag());
+    assertThat(acquired.lease())
+        .isEqualTo(
+            new Lease(
+                taskId,
+                clock.millis() + EXPIRY_DURATION.toMillis(),
+                expectedNodeInstance,
+                VersionMappings.of(expectedNodeInstance)));
   }
 
   @Test
@@ -134,12 +133,22 @@ public class S3NodeIdRepositoryIT {
     // then
     assertThat(fromGet).isEqualTo(acquired);
     assertThat(acquired.lease()).isEqualTo(toAcquire);
+    final var expectedNodeInstance = new NodeInstance(0, Version.of(1));
+    assertThat(acquired.node()).isEqualTo(expectedNodeInstance);
+    assertThat(acquired.lease())
+        .isEqualTo(
+            new Lease(
+                taskId,
+                clock.millis() + EXPIRY_DURATION.toMillis(),
+                expectedNodeInstance,
+                VersionMappings.of(expectedNodeInstance)));
     assertThat(acquired.eTag()).isNotEmpty();
     final var metadata = acquired.metadata();
     assertThat(metadata.asMap()).isNotEmpty();
     assertThat(metadata.task())
         .isPresent()
         .hasValueSatisfying(t -> assertThat(t).isEqualTo(taskId));
+    assertThat(metadata.version()).isEqualTo(Version.of(1));
   }
 
   @Test

@@ -208,6 +208,7 @@ public class RepositoryNodeIdProviderIT {
     final var renewedLease = nodeIdProvider.getCurrentLease();
     assertThat(renewedLease).isNotEqualTo(firstLease);
     assertThat(renewedLease.lease().timestamp()).isGreaterThan(firstLease.lease().timestamp());
+    assertThat(renewedLease.node()).isEqualTo(firstLease.node());
   }
 
   @Test
@@ -247,10 +248,11 @@ public class RepositoryNodeIdProviderIT {
     // clock is not moved, so the lease can only be acquired if released
     final var releasedLease = repository.getLease(lease.lease().nodeInstance().id());
     assertThat(releasedLease).isInstanceOf(StoredLease.Uninitialized.class);
+    assertThat(releasedLease.node()).isEqualTo(lease.node());
     nodeIdProvider = ofSize(clusterSize);
     assertLeaseIsReady();
-    assertThat(nodeIdProvider.getCurrentLease().lease().nodeInstance().id())
-        .isEqualTo(lease.lease().nodeInstance().id());
+    assertThat(nodeIdProvider.getCurrentLease().lease().nodeInstance())
+        .isEqualTo(lease.lease().nodeInstance().nextVersion());
   }
 
   public void assertLeaseIsReady() {
