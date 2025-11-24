@@ -199,7 +199,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
     <ComposedModal size="md" open={open} onClose={onClose}>
       <ModalHeader
         title={formatOperationType(entry.operationType)}
-        label="Operation Details"
         closeModal={onClose}
       />
       <ModalBody>

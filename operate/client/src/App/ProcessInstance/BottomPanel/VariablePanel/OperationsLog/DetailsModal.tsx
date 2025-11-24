@@ -14,7 +14,6 @@ import {
   ModalFooter,
   Button,
   Stack,
-  Tag,
   StructuredListWrapper,
   StructuredListCell,
   StructuredListBody,
@@ -31,13 +30,9 @@ import {
 } from './styled';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {CheckmarkOutline} from '@carbon/react/icons';
-import {
-  EventSchedule,
-  UserAvatar,
-  Calendar,
-  Launch,
-} from '@carbon/icons-react';
+import {EventSchedule, UserAvatar} from '@carbon/icons-react';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {StatusIndicator} from 'App/AuditLog/StatusIndicator';
 
 const JSONEditor = lazy(async () => {
   const [{loadMonaco}, {JSONEditor}] = await Promise.all([
@@ -52,155 +47,63 @@ const JSONEditor = lazy(async () => {
 
 const renderUserTaskDetails = (
   entry: MockAuditLogEntry,
-  onClose: () => void,
 ): React.ReactNode | null => {
   if (!entry.details?.userTask) {
     return null;
   }
 
-  const {assignee, oldAssignee, dueDate, oldDueDate, name, elementId} =
-    entry.details.userTask;
+  const {assignee, oldAssignee, dueDate, oldDueDate} = entry.details.userTask;
 
-  // Check if there's a user task name to show
-  if (!name) {
+  // Build table rows based on operation type
+  const rows: Array<{
+    id: string;
+    property: string;
+    new?: string;
+    previous?: string;
+  }> = [];
+
+  if (entry.operationType === 'ASSIGN_USER_TASK') {
+    rows.push({
+      id: 'assignee',
+      property: 'Assignee',
+      new: assignee,
+      previous: oldAssignee,
+    });
+  } else if (entry.operationType === 'UNASSIGN_USER_TASK') {
+    rows.push({
+      id: 'assignee',
+      property: 'Assignee',
+      previous: oldAssignee,
+    });
+  } else if (entry.operationType === 'UPDATE_USER_TASK') {
+    rows.push({
+      id: 'dueDate',
+      property: 'Due date',
+      new: dueDate ? formatDate(dueDate, '--', 'PPP') ?? undefined : undefined,
+      previous: oldDueDate
+        ? formatDate(oldDueDate, '--', 'PPP') ?? undefined
+        : undefined,
+    });
+  }
+
+  if (rows.length === 0) {
     return null;
   }
+
+  // Build headers dynamically based on whether we have new/previous values
+  const hasNew = rows.some((row) => row.new !== undefined);
+  const hasPrevious = rows.some((row) => row.previous !== undefined);
+
+  const headers = [
+    {header: 'Property', key: 'property'},
+    ...(hasNew ? [{header: 'New value', key: 'new'}] : []),
+    ...(hasPrevious ? [{header: 'Previous value', key: 'previous'}] : []),
+  ];
 
   return (
     <div>
       <Title>Details</Title>
-      <StructuredListWrapper isCondensed isFlush>
-        <StructuredListBody>
-          {/* User task reference - always shown */}
-          <VerticallyAlignedRow head>
-            <FirstColumn noWrap>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--cds-spacing-03)',
-                }}
-              >
-                User task instance
-              </div>
-            </FirstColumn>
-            <StructuredListCell>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 'var(--cds-spacing-02)',
-                  cursor: 'pointer',
-                }}
-                onClick={() => {
-                  if (elementId) {
-                    instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
-                      elementId,
-                    );
-                  }
-                  onClose();
-                }}
-              >
-                <span>{name}</span>
-                <Launch size={14} />
-              </div>
-            </StructuredListCell>
-          </VerticallyAlignedRow>
-          {/* Assign user task: show new assignee and previous assignee */}
-          {entry.operationType === 'ASSIGN_USER_TASK' && (
-            <>
-              {oldAssignee && (
-                <VerticallyAlignedRow>
-                  <FirstColumn noWrap>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--cds-spacing-03)',
-                      }}
-                    >
-                      Previous assignee
-                    </div>
-                  </FirstColumn>
-                  <StructuredListCell>{oldAssignee}</StructuredListCell>
-                </VerticallyAlignedRow>
-              )}
-              {assignee && (
-                <VerticallyAlignedRow>
-                  <FirstColumn noWrap>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--cds-spacing-03)',
-                      }}
-                    >
-                      New assignee
-                    </div>
-                  </FirstColumn>
-                  <StructuredListCell>{assignee}</StructuredListCell>
-                </VerticallyAlignedRow>
-              )}
-            </>
-          )}
-          {/* Unassign user task: show previous assignee only */}
-          {entry.operationType === 'UNASSIGN_USER_TASK' && oldAssignee && (
-            <VerticallyAlignedRow>
-              <FirstColumn noWrap>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--cds-spacing-03)',
-                  }}
-                >
-                  Previous assignee
-                </div>
-              </FirstColumn>
-              <StructuredListCell>{oldAssignee}</StructuredListCell>
-            </VerticallyAlignedRow>
-          )}
-          {/* Update user task: show property with old and new values */}
-          {entry.operationType === 'UPDATE_USER_TASK' && (
-            <>
-              {oldDueDate && (
-                <VerticallyAlignedRow>
-                  <FirstColumn noWrap>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--cds-spacing-03)',
-                      }}
-                    >
-                      <Calendar />
-                      Previous due date
-                    </div>
-                  </FirstColumn>
-                  <StructuredListCell>{formatDate(oldDueDate, '--', 'PPP')}</StructuredListCell>
-                </VerticallyAlignedRow>
-              )}
-              {dueDate && (
-                <VerticallyAlignedRow>
-                  <FirstColumn noWrap>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--cds-spacing-03)',
-                      }}
-                    >
-                      <Calendar />
-                      New due date
-                    </div>
-                  </FirstColumn>
-                  <StructuredListCell>{formatDate(dueDate, '--', 'PPP')}</StructuredListCell>
-                </VerticallyAlignedRow>
-              )}
-            </>
-          )}
-        </StructuredListBody>
-      </StructuredListWrapper>
+      <DataTable headers={headers} rows={rows} />
     </div>
   );
 };
@@ -221,33 +124,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
       .split('_')
       .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
       .join(' ');
-  };
-
-  const formatOperationState = (state: string) => {
-    switch (state) {
-      case 'success':
-        return 'Success';
-      case 'fail':
-        return 'Failed';
-      default:
-        return state
-          .split('_')
-          .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-          .join(' ');
-    }
-  };
-
-  const getOperationStateType = (
-    state: string,
-  ): 'green' | 'red' => {
-    switch (state) {
-      case 'success':
-        return 'green';
-      case 'fail':
-        return 'red';
-      default:
-        return 'green';
-    }
   };
 
   const renderDetails = () => {
@@ -275,34 +151,12 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             headers={[
               {header: 'Variable name', key: 'name'},
               {header: 'New value', key: 'newValue'},
-              {header: 'Element scope', key: 'scope'},
             ]}
             rows={([
               {
                 id: variable.name,
                 name: variable.name,
                 newValue: JSON.stringify(variable.newValue),
-                scope: (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--cds-spacing-02)',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      if (variable.scope) {
-                        instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
-                          variable.scope.id,
-                        );
-                      }
-                      onClose();
-                    }}
-                  >
-                    {variable.scope?.name ?? ''}
-                    <Launch size={14} />
-                  </div>
-                ),
               },
             ] as any)}
           />
@@ -329,7 +183,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
     <ComposedModal size="md" open={open} onClose={onClose}>
       <ModalHeader
         title={formatOperationType(entry.operationType)}
-        label="Operation Details"
         closeModal={onClose}
       />
       <ModalBody>
@@ -351,12 +204,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                     </div>
                   </FirstColumn>
                   <StructuredListCell>
-                    <Tag
-                      type={getOperationStateType(entry.operationState)}
-                      size="md"
-                    >
-                      {formatOperationState(entry.operationState)}
-                    </Tag>
+                    <StatusIndicator status={entry.operationState} />
                   </StructuredListCell>
                 </VerticallyAlignedRow>
                 <VerticallyAlignedRow>
@@ -417,7 +265,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             </Stack>
           )}
           {renderDetails()}
-          {renderUserTaskDetails(entry, onClose)}
+          {renderUserTaskDetails(entry)}
         </Stack>
       </ModalBody>
       <ModalFooter>

@@ -19,7 +19,7 @@ import {
   TableCell,
   Dropdown,
 } from '@carbon/react';
-import {Information, CheckmarkFilled, ErrorFilled} from '@carbon/react/icons';
+import {Information} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
 import {DetailsModal} from './DetailsModal';
 import {mockOperationLog} from './mocks';
@@ -29,36 +29,11 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {EmptyMessageContainer} from '../styled';
+import {StatusIndicator} from 'App/AuditLog/StatusIndicator';
 
 type DetailsModalState = {
   open: boolean;
   entry: MockAuditLogEntry | null;
-};
-
-const getOperationStateIcon = (state: string) => {
-  switch (state) {
-    case 'success':
-      return (
-        <CheckmarkFilled
-          size={16}
-          style={{color: 'var(--cds-support-success)'}}
-        />
-      );
-    case 'fail':
-      return (
-        <ErrorFilled
-          size={16}
-          style={{color: 'var(--cds-support-error)'}}
-        />
-      );
-    default:
-      return (
-        <CheckmarkFilled
-          size={16}
-          style={{color: 'var(--cds-support-success)'}}
-        />
-      );
-  }
 };
 
 const OperationsLogTable: React.FC = observer(() => {
@@ -106,6 +81,7 @@ const OperationsLogTable: React.FC = observer(() => {
 
   const headers = [
     {key: 'operationType', header: 'Operation'},
+    {key: 'operationState', header: 'Status'},
     {key: 'user', header: 'Applied by'},
     {key: 'startTimestamp', header: 'Time'},
     {key: 'actions', header: ' '},
@@ -225,19 +201,10 @@ const OperationsLogTable: React.FC = observer(() => {
                   return (
                     <TableRow {...rowProps} key={key}>
                       {row.cells.map((cell) => {
-                        if (cell.info.header === 'operationType') {
+                        if (cell.info.header === 'operationState') {
                           return (
                             <TableCell key={cell.id}>
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 'var(--cds-spacing-03)',
-                                }}
-                              >
-                                {rowData && getOperationStateIcon(rowData.entry.operationState)}
-                                <span>{cell.value}</span>
-                              </div>
+                              {rowData && <StatusIndicator status={rowData.entry.operationState} />}
                             </TableCell>
                           );
                         }

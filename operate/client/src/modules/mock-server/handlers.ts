@@ -14,9 +14,9 @@ import type {
   AuditLogEntry,
 } from 'modules/api/v2/auditLog/searchAuditLog';
 import type {
-  UpsertCommentRequest,
-  UpsertCommentResponse,
-} from 'modules/api/v2/auditLog/upsertComment';
+  UpsertNoteRequest,
+  UpsertNoteResponse,
+} from 'modules/api/v2/auditLog/upsertNote';
 
 // In-memory storage for comments
 let auditLogData = [...mockAuditLogEntries];
@@ -143,7 +143,7 @@ const handlers: RequestHandler[] = [
 
   // Upsert comment
   http.post('/api/v2/audit-log', async ({request}) => {
-    const body = (await request.json()) as UpsertCommentRequest;
+    const body = (await request.json()) as UpsertNoteRequest;
 
     const entryIndex = auditLogData.findIndex((entry) => entry.id === body.id);
 
@@ -153,7 +153,7 @@ const handlers: RequestHandler[] = [
         comment: body.comment,
       };
 
-      const response: UpsertCommentResponse = {
+      const response: UpsertNoteResponse = {
         id: body.id,
         comment: body.comment,
       };
