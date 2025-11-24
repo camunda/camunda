@@ -9,7 +9,7 @@ package io.camunda.zeebe.test.util.testcontainers;
 
 import java.time.Duration;
 import java.util.Objects;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.containers.MariaDBContainer;
@@ -60,8 +60,8 @@ public final class TestSearchContainers {
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
-  public static OpensearchContainer<?> createDefaultOpensearchContainer() {
-    return new OpensearchContainer<>(OPENSEARCH_IMAGE)
+  public static OpenSearchContainer<?> createDefaultOpensearchContainer() {
+    return new OpenSearchContainer<>(OPENSEARCH_IMAGE)
         .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.destructive_requires_name", "false")
         .withEnv("action.auto_create_index", "true");

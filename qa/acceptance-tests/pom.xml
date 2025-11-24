@@ -303,38 +303,38 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>1.21.3</version>
+      <artifactId>testcontainers-postgresql</artifactId>
+      <version>2.0.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>mssqlserver</artifactId>
-      <version>1.21.3</version>
+      <artifactId>testcontainers-mssqlserver</artifactId>
+      <version>2.0.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>mysql</artifactId>
-      <version>1.21.3</version>
+      <artifactId>testcontainers-mysql</artifactId>
+      <version>2.0.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>mariadb</artifactId>
-      <version>1.21.3</version>
+      <artifactId>testcontainers-mariadb</artifactId>
+      <version>2.0.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>oracle-free</artifactId>
-      <version>1.21.3</version>
+      <artifactId>testcontainers-oracle-free</artifactId>
+      <version>2.0.2</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>elasticsearch</artifactId>
+      <artifactId>testcontainers-elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -356,7 +356,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>jdbc</artifactId>
+      <artifactId>testcontainers-jdbc</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -441,7 +441,7 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -535,7 +535,7 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>localstack</artifactId>
+      <artifactId>testcontainers-localstack</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -545,7 +545,7 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>toxiproxy</artifactId>
+      <artifactId>testcontainers-toxiproxy</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
