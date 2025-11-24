@@ -9,6 +9,7 @@
 import type {
   ElementInstance,
   ProcessInstance,
+  QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstancesRequestBody,
@@ -134,6 +135,10 @@ const queryKeys = {
   },
   batchOperations: {
     get: (batchOperationKey: string) => ['batchOperation', batchOperationKey],
+    query: (payload: QueryBatchOperationsRequestBody) => [
+      'batchOperations',
+      payload,
+    ],
   },
 };
 
