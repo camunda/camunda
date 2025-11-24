@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -212,6 +213,11 @@ public class CamundaMultiDBExtension
       "test.integration.opensearch.aws.url";
   public static final String PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT =
       "test.integration.opensearch.aws.timeout.seconds";
+  public static final String TEST_INTEGRATION_AURORA_AWS_URL = "test.integration.aurora.aws.url";
+  public static final String TEST_INTEGRATION_AURORA_AWS_USERNAME =
+      "test.integration.aurora.aws.username";
+  public static final String TEST_INTEGRATION_AURORA_AWS_PASSWORD =
+      "test.integration.aurora.aws.password";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
@@ -310,7 +316,20 @@ public class CamundaMultiDBExtension
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
-      case RDBMS -> multiDbConfigurator.configureRDBMSSupport(isHistoryRelatedTest);
+      case RDBMS ->
+          multiDbConfigurator.configureRDBMSSupport(
+              isHistoryRelatedTest,
+              "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+              "sa",
+              "",
+              "org.h2.Driver");
+      case RDBMS_AURORA ->
+          multiDbConfigurator.configureRDBMSSupport(
+              isHistoryRelatedTest,
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_URL),
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_USERNAME),
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD),
+              "org.postgresql.Driver");
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(
@@ -669,6 +688,7 @@ public class CamundaMultiDBExtension
     ES,
     OS,
     RDBMS,
+    RDBMS_AURORA,
     AWS_OS
   }
 }
