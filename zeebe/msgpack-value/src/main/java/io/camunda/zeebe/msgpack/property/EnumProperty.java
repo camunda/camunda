@@ -35,4 +35,9 @@ public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValu
     this.value.setValue(value);
     isSet = true;
   }
+
+  @Override
+  public boolean isRequired() {
+    return true;
+  }
 }
