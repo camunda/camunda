@@ -155,38 +155,14 @@ final class LogAppendEntrySerializerTest {
 
     // then - both buffers should have the same contents
     for (int i = 0; i < framedLength; i++) {
-      if (i >= 4 && i < 12) {
-        assertThat(buffer1.getByte(i))
-            .as(
-                "Byte %d should be an unused part of the DataFrameDescriptor and show original buffer content",
-                i)
-            .isEqualTo((byte) 0xFF);
-        assertThat(buffer2.getByte(i))
-            .as(
-                "Byte %d should be an unused part of the DataFrameDescriptor and show original buffer content",
-                i)
-            .isEqualTo((byte) 0x00);
-      } else if (i == 15) {
-        assertThat(buffer1.getByte(i))
-            .as(
-                "Byte %d should be an unused reserved byte of the LoggedEventImpl and show original buffer content",
-                i)
-            .isEqualTo((byte) 0xFF);
-        assertThat(buffer2.getByte(i))
-            .as(
-                "Byte %d should be an unused reserved byte of the LoggedEventImpl and show original buffer content",
-                i)
-            .isEqualTo((byte) 0x00);
-      } else {
-        assertThat(buffer1.getByte(i))
-            .as(
-                """
-                    Byte %d shows original buffer content, even though it is used and should be overwritten
-                    Buffer 1: %s
-                    Buffer 2: %s""",
-                i, Arrays.toString(buffer1.byteArray()), Arrays.toString(buffer2.byteArray()))
-            .isEqualTo(buffer2.getByte(i));
-      }
+      assertThat(buffer1.getByte(i))
+          .as(
+              """
+                  Byte %d shows original buffer content, even though it is used and should be overwritten
+                  Buffer 1: %s
+                  Buffer 2: %s""",
+              i, Arrays.toString(buffer1.byteArray()), Arrays.toString(buffer2.byteArray()))
+          .isEqualTo(buffer2.getByte(i));
     }
   }
 

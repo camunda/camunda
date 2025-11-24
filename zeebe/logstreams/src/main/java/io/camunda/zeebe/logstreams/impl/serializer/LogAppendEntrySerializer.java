@@ -16,6 +16,7 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimesta
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setVersion;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.skipProcessing;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.zeroReserved;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -85,12 +86,13 @@ final class LogAppendEntrySerializer {
     final var framedEntryLength = framedLength(entry);
 
     // Write the dispatcher framing
-    DataFrameDescriptor.setFramedLength(writeBuffer, writeBufferOffset, framedEntryLength);
+    DataFrameDescriptor.write(writeBuffer, writeBufferOffset, framedEntryLength);
     final var entryOffset = writeBufferOffset + DataFrameDescriptor.HEADER_LENGTH;
 
     // Write the entry
     setVersion(writeBuffer, entryOffset);
     skipProcessing(writeBuffer, entryOffset, entry.isProcessed());
+    zeroReserved(writeBuffer, entryOffset);
     setPosition(writeBuffer, entryOffset, position);
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
     setKey(writeBuffer, entryOffset, key);
