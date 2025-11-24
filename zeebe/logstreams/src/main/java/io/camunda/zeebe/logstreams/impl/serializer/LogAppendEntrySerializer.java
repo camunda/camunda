@@ -90,9 +90,7 @@ final class LogAppendEntrySerializer {
 
     // Write the entry
     setVersion(writeBuffer, entryOffset);
-    if (entry.isProcessed()) {
-      skipProcessing(writeBuffer, entryOffset);
-    }
+    skipProcessing(writeBuffer, entryOffset, entry.isProcessed());
     setPosition(writeBuffer, entryOffset, position);
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
     setKey(writeBuffer, entryOffset, key);
