@@ -90,6 +90,47 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
+  void shouldEnableAuthorizationCheckOnSearchWithAnyOfAuthorizationCondition() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var processDefinitionReadAuth =
+        Authorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+    final var securityContext =
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationCondition(
+                        AuthorizationConditions.anyOf(
+                            processDefinitionReadAuth, userTaskReadAuth)));
+
+    final var resolvedProcessDefinitionAuth =
+        Authorization.of(
+            a -> a.processDefinition().readUserTask().resourceIds(List.of("pd-1", "pd-2")));
+    final var resolvedUserTaskAuth =
+        Authorization.of(a -> a.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
+
+    when(resourceAccessProvider.resolveResourceAccess(authentication, processDefinitionReadAuth))
+        .thenReturn(ResourceAccess.allowed(resolvedProcessDefinitionAuth));
+    when(resourceAccessProvider.resolveResourceAccess(authentication, userTaskReadAuth))
+        .thenReturn(ResourceAccess.allowed(resolvedUserTaskAuth));
+    when(tenantAccessProvider.resolveTenantAccess(authentication))
+        .thenReturn(TenantAccess.wildcard(null));
+
+    // when - then
+    controller.doSearch(
+        securityContext,
+        checks -> {
+          assertThat(checks.authorizationCheck().enabled()).isTrue();
+          assertThat(checks.authorizationCheck().authorizationCondition())
+              .isEqualTo(
+                  AuthorizationConditions.anyOf(
+                      resolvedProcessDefinitionAuth, resolvedUserTaskAuth));
+          return null;
+        });
+  }
+
+  @Test
   void shouldDisableAuthorizationCheckWithWildcardResourceAccessOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
@@ -120,6 +161,43 @@ class DocumentResourceAccessControllerTest {
     final var result = reference.get();
     assertThat(result.authorizationCheck().enabled()).isFalse();
     assertThat(result.authorizationCheck().authorizationCondition()).isNull();
+  }
+
+  @Test
+  void shouldDisableAuthorizationCheckOnSearchWithAnyOfAuthorizationConditionWhenWildcardAccess() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var processDefinitionReadAuth =
+        Authorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+    final var securityContext =
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationCondition(
+                        AuthorizationConditions.anyOf(
+                            processDefinitionReadAuth, userTaskReadAuth)));
+
+    final var wildcardAuthorization =
+        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("*")));
+
+    when(resourceAccessProvider.resolveResourceAccess(authentication, processDefinitionReadAuth))
+        .thenReturn(ResourceAccess.wildcard(wildcardAuthorization));
+    when(tenantAccessProvider.resolveTenantAccess(authentication))
+        .thenReturn(TenantAccess.wildcard(null));
+
+    // when - then
+    controller.doSearch(
+        securityContext,
+        checks -> {
+          assertThat(checks.authorizationCheck().enabled()).isFalse();
+          assertThat(checks.authorizationCheck().authorizationCondition()).isNull();
+          return null;
+        });
+
+    // verify that second authorization was not resolved,
+    // as wildcard access was already granted by the first
+    verify(resourceAccessProvider, never()).resolveResourceAccess(authentication, userTaskReadAuth);
   }
 
   @Test
