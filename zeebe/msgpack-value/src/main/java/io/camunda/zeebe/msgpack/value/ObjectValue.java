@@ -103,8 +103,10 @@ public class ObjectValue extends BaseValue {
       BaseProperty<? extends BaseValue> prop = null;
 
       for (int k = 0; k < declaredProperties.size(); ++k) {
-        // optimistically start from the same index as the map
-        // we serialize the keys in order, it's our best guess
+        // Cycle on all declared properties, but start iterating through them
+        // by starting on i:
+        // keys are serialized in the same order, so in most cases we can find the right
+        // key without having to iterate on declaredProperties at all.
         final var index = (i + k) % declaredProperties.size();
         final BaseProperty<?> declaredProperty = declaredProperties.get(index);
         final StringValue declaredKey = declaredProperty.getKey();
