@@ -14,7 +14,7 @@ The last points are especially interesting, as they allow for identifying issues
 
 Reliability testing consists of several sub-testing practices (depending on the context/area, company, this might vary).
 
-While several resources ([1], [2]) cover feature or regression testing as one part of reliability testing, we see this as part of our automated acceptance testing done by Engineers and/or QA. See also related documentation about this here.
+While several resources ([1], [2]) cover feature or regression testing as one part of reliability testing, we see this as part of our automated acceptance testing done by Engineers and/or QA. See also related documentation about this [here](https://github.com/camunda/camunda/blob/main/docs/testing/acceptance.md).
 
 We focus as part of the reliability testing on topics like load testing (stress and endurance testing), and recovery testing (done by chaos experiments)
 
