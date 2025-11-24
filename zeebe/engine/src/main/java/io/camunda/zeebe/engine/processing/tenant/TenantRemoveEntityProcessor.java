@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -40,7 +39,6 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   private final TenantState tenantState;
   private final MappingRuleState mappingRuleState;
-  private final GroupState groupState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -58,7 +56,6 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
-    groupState = state.getGroupState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;

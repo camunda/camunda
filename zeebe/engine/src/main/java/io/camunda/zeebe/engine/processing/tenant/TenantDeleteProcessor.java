@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -42,7 +41,6 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       "Expected to delete tenant with id '%s', but no tenant with this id exists.";
   private final TenantState tenantState;
   private final AuthorizationState authorizationState;
-  private final UserState userState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -60,7 +58,6 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
-    userState = state.getUserState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
