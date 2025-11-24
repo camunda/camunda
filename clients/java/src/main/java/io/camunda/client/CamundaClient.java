@@ -1868,7 +1868,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .filter((f) -> f.variableKey(variableKey))
    *  .sort((s) -> s.value().asc())
    *  .page((p) -> p.limit(100))
-   *  .truncateValues(false)
+   *  .withFullValues()
    *  .send();
    * </pre>
    *
@@ -1995,7 +1995,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .newUserTaskVariableSearchRequest(userTaskKey)
    *   .sort((s) -> s.value().asc())
    *   .page((p) -> p.limit(100))
-   *   .truncateValues(false)
+   *   .withFullValues()
    *   .send();
    * </pre>
    *
