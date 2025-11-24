@@ -85,8 +85,8 @@ class DocumentResourceAccessControllerTest {
     final var result = reference.get();
     assertThat(result.authorizationCheck().enabled()).isTrue();
 
-    final var authorizationToBeChecked = result.authorizationCheck().authorization();
-    assertThat(authorizationToBeChecked).isEqualTo(requiredAuthorization);
+    assertThat(result.authorizationCheck().authorizationCondition())
+        .isEqualTo(AuthorizationConditions.single(requiredAuthorization));
   }
 
   @Test
@@ -119,7 +119,7 @@ class DocumentResourceAccessControllerTest {
     // then
     final var result = reference.get();
     assertThat(result.authorizationCheck().enabled()).isFalse();
-    assertThat(result.authorizationCheck().authorization()).isNull();
+    assertThat(result.authorizationCheck().authorizationCondition()).isNull();
   }
 
   @Test
@@ -152,7 +152,8 @@ class DocumentResourceAccessControllerTest {
     // then
     final var result = reference.get();
     assertThat(result.authorizationCheck().enabled()).isTrue();
-    assertThat(result.authorizationCheck().authorization()).isEqualTo(requiredAuthorization);
+    assertThat(result.authorizationCheck().authorizationCondition())
+        .isEqualTo(AuthorizationConditions.single(requiredAuthorization));
   }
 
   @Test

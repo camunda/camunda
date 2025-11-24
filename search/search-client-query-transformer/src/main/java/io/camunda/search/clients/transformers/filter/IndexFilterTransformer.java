@@ -82,7 +82,10 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     if (!authorizationCheck.enabled()) {
       return matchAll();
     }
-    final var authorization = authorizationCheck.authorization();
+    // FIXME: this currently only supports a single (fist) authorization
+    //  will be extended to support multiple authorizations in the following commits
+    final var authorization =
+        authorizationCheck.authorizationCondition().authorizations().getFirst();
     final var resourceIds = authorization.resourceIds();
 
     if (resourceIds == null || resourceIds.isEmpty()) {
