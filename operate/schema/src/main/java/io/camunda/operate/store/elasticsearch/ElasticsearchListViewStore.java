@@ -9,16 +9,20 @@ package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
+import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.io.IOException;
@@ -30,7 +34,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -44,9 +47,13 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
   @Autowired private RestHighLevelClient esClient;
 
+  @Autowired private ElasticsearchClient es8Client;
+
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired private OperateProperties operateProperties;
+
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Override
   public Map<Long, String> getListViewIndicesForProcessInstances(
@@ -89,16 +96,18 @@ public class ElasticsearchListViewStore implements ListViewStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
             : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(ListViewTemplate.KEY, processInstanceKey))
-                    .fetchSource(ListViewTemplate.TREE_PATH, null));
+    final var query = ElasticsearchUtil.termsQuery(ListViewTemplate.KEY, processInstanceKey);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+    final var searchRequest =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(listViewTemplate, queryType))
+            .query(tenantAwareQuery)
+            .source(s -> s.filter(f -> f.includes(ListViewTemplate.TREE_PATH)))
+            .build();
     try {
-      final SearchHits hits = tenantAwareClient.search(searchRequest).getHits();
-      if (hits.getTotalHits().value > 0) {
-        return (String) hits.getHits()[0].getSourceAsMap().get(ListViewTemplate.TREE_PATH);
+      final var res = es8Client.search(searchRequest, MAP_CLASS);
+      if (res.hits().total().value() > 0) {
+        return res.hits().hits().getFirst().source().get(ListViewTemplate.TREE_PATH).toString();
       }
       return null;
     } catch (final IOException e) {
