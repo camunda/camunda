@@ -20,7 +20,10 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 public record Lease(
-    String taskId, long timestamp, NodeInstance nodeInstance, VersionMappings versionMappings) {
+    String taskId,
+    long timestamp,
+    NodeInstance nodeInstance,
+    VersionMappings knownVersionMappings) {
 
   public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -30,7 +33,7 @@ public record Lease(
       throw new IllegalArgumentException("taskId cannot be empty");
     }
     Objects.requireNonNull(nodeInstance, "nodeInstance cannot be null");
-    Objects.requireNonNull(versionMappings, "versionMappings cannot be null");
+    Objects.requireNonNull(knownVersionMappings, "knownVersionMappings cannot be null");
   }
 
   public static Lease fromMetadata(final Metadata metadata, final long expireAt, final int nodeId) {
@@ -91,7 +94,7 @@ public record Lease(
               + Instant.ofEpochMilli(timestamp));
     }
     final var millis = leaseDuration.toMillis();
-    return new Lease(taskId, now + millis, nodeInstance, versionMappings);
+    return new Lease(taskId, now + millis, nodeInstance, knownVersionMappings);
   }
 
   /**

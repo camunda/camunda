@@ -133,7 +133,7 @@ public class S3NodeIdRepositoryIT {
     // then
     assertThat(fromGet).isEqualTo(acquired);
     assertThat(acquired.lease()).isEqualTo(toAcquire);
-    final var expectedNodeInstance = new NodeInstance(0, Version.of(1));
+    final var expectedNodeInstance = new NodeInstance(id, Version.of(1));
     assertThat(acquired.node()).isEqualTo(expectedNodeInstance);
     assertThat(acquired.lease())
         .isEqualTo(

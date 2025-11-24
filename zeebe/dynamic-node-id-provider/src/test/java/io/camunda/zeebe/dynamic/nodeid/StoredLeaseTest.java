@@ -65,7 +65,8 @@ public class StoredLeaseTest {
                       .returns(nodeInstance.nextVersion(), Lease::nodeInstance)
                       .returns(taskId, Lease::taskId)
                       .returns(
-                          VersionMappings.of(nodeInstance.nextVersion()), Lease::versionMappings)
+                          VersionMappings.of(nodeInstance.nextVersion()),
+                          Lease::knownVersionMappings)
                       .returns(expiryFromNow(), Lease::timestamp));
     }
   }
@@ -140,7 +141,8 @@ public class StoredLeaseTest {
                       .returns(nodeInstance.nextVersion(), Lease::nodeInstance)
                       .returns(newTaskId, Lease::taskId)
                       .returns(
-                          VersionMappings.of(nodeInstance.nextVersion()), Lease::versionMappings)
+                          VersionMappings.of(nodeInstance.nextVersion()),
+                          Lease::knownVersionMappings)
                       .returns(expiryFromNow(), Lease::timestamp));
     }
   }

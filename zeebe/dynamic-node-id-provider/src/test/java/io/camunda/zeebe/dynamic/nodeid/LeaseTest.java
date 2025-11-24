@@ -75,7 +75,7 @@ public class LeaseTest {
     // then
     final var expectedJson =
         """
-        {"taskId":"task1","timestamp":1000,"nodeInstance":{"id":1,"version":117},"versionMappings":{"mappingsByNodeId":{"1":117,"2":119,"3":3}}}""";
+        {"taskId":"task1","timestamp":1000,"nodeInstance":{"id":1,"version":117},"knownVersionMappings":{"mappingsByNodeId":{"1":117,"2":119,"3":3}}}""";
     assertThat(serialized).isEqualTo(expectedJson);
     final var deserialized = Lease.fromJson(OBJECT_MAPPER, serialized);
     assertThat(deserialized).isEqualTo(lease);
