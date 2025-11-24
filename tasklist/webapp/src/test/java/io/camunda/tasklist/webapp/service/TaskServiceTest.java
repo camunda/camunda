@@ -437,6 +437,8 @@ class TaskServiceTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedClientId())
+        .thenReturn("testclientid");
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var completedTask =
@@ -455,6 +457,7 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
+    verify(metrics).recordCounts(eq("completed.tasks"), eq(1L), any(String[].class));
     verify(variableService).persistTaskVariables(taskId, variables, List.of(runtimeVariable), true);
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
@@ -468,6 +471,8 @@ class TaskServiceTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedClientId())
+        .thenReturn("testclientid");
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var completedTask =
@@ -486,6 +491,7 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
+    verify(metrics).recordCounts(eq("completed.tasks"), eq(1L), any(String[].class));
     verify(variableService).persistTaskVariables(taskId, variables, List.of(runtimeVariable), true);
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
