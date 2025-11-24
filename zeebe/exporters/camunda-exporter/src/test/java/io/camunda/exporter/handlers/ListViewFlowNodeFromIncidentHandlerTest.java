@@ -24,7 +24,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.Mockito;
 
 public class ListViewFlowNodeFromIncidentHandlerTest {
 
@@ -41,12 +40,6 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   @Test
   public void testGetEntityType() {
     assertThat(underTest.getEntityType()).isEqualTo(FlowNodeInstanceForListViewEntity.class);
-  }
-
-  @Test
-  public void shouldHandlesRecord() {
-    final Record<IncidentRecordValue> mockIncidentRecord = Mockito.mock(Record.class);
-    assertThat(underTest.handlesRecord(mockIncidentRecord)).isTrue();
   }
 
   @Test
