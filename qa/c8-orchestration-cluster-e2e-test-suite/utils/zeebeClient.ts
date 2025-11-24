@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import { Camunda8 } from '@camunda8/sdk';
+import { JSONDoc } from '@camunda8/sdk/dist/zeebe/types.js';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -70,29 +70,25 @@ const createSingleInstance = async (
   return zeebe.createProcessInstance({
     processDefinitionId,
     processDefinitionVersion,
-    variables: {...(variables ?? {})},
+    variables: { ...(variables ?? {}) },
   });
 };
 
 const cancelProcessInstance = async (processInstanceKey: string) => {
-  return zeebe.cancelProcessInstance({processInstanceKey});
+  return zeebe.cancelProcessInstance({ processInstanceKey });
 };
 
 async function searchByProcessInstanceKey(processInstanceKey: string) {
-  return zeebe.searchProcessInstances({filter: {processInstanceKey}});
+  return zeebe.searchProcessInstances({ filter: { processInstanceKey } });
 }
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
 ) {
   const res = await zeebe.searchProcessInstances({
-    filter: {processInstanceKey},
+    filter: { processInstanceKey },
   });
   const item = res?.items?.[0];
-  console.log(
-    `Target Version ${targetVersion}, Current Version ${item?.processDefinitionVersion}`,
-  );
-  console.log(!!item, item?.processDefinitionVersion == targetVersion);
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 

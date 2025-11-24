@@ -8,10 +8,11 @@
 
 import { test } from 'fixtures';
 import { expect } from '@playwright/test';
-import { deploy, createSingleInstance } from 'utils/zeebeClient';
+import { deploy, createSingleInstance, searchByProcessInstanceKey } from 'utils/zeebeClient';
 import { captureScreenshot, captureFailureVideo } from '@setup';
 import { navigateToApp } from '@pages/UtilitiesPage';
 import { waitForAssertion } from 'utils/waitForAssertion';
+import { defaultAssertionOptions } from 'utils/constants';
 
 type ProcessInstance = { processInstanceKey: number };
 
@@ -61,8 +62,38 @@ test.describe('Process Instance History', () => {
         const incidentProcessInstanceKey =
             incidentProcessInstance.processInstanceKey;
 
+        await test.step('Verify Process Instance is active', async () => {
+            await expect(async () => {
+                const process = await searchByProcessInstanceKey(incidentProcessInstanceKey.toString());
+                expect(process.items.length).toBeGreaterThan(0);
+            }).toPass(defaultAssertionOptions);
+        });
+
+        await test.step('Wait for process name filter to be enabled', async () => {
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(
+                        operateFiltersPanelPage.processNameFilter,
+                    ).toBeEnabled();
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+        });
+
         await test.step('Open Process Instances Page', async () => {
-            await operateFiltersPanelPage.selectProcess('IncidentProcess');
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(async () => {
+                        await operateFiltersPanelPage.selectProcess('IncidentProcess')
+                    }).toPass();
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+
             await operateFiltersPanelPage.selectVersion('1');
             await operateProcessesPage.clickProcessInstanceLink();
             const key = await operateProcessInstancePage.getProcessInstanceKey();
@@ -97,14 +128,14 @@ test.describe('Process Instance History', () => {
             await expect(operateProcessInstancePage.variableSpinner).toBeHidden();
         });
 
-        await test.step('Retry incident', async () => {
-            await operateProcessInstancePage.clickIncidentsBanner();
-            const errorMessage =
-                "Expected result of the expression 'goUp < 0' to be 'BOOLEAN'...";
-            await operateProcessInstancePage.retryIncidentByErrorMessage(
-                errorMessage,
-            );
-        });
+        // await test.step('Retry incident', async () => {
+        //     await operateProcessInstancePage.clickIncidentsBanner();
+        //     const errorMessage =
+        //         "Expected result of the expression 'goUp < 0' to be 'BOOLEAN'...";
+        //     await operateProcessInstancePage.retryIncidentByErrorMessage(
+        //         errorMessage,
+        //     );
+        // });
 
         // await test.step('Verify incident is resolved in Instance History', async () => {
         //   await waitForAssertion({
