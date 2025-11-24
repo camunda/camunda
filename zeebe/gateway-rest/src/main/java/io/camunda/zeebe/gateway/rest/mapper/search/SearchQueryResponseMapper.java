@@ -1216,20 +1216,17 @@ public final class SearchQueryResponseMapper {
 
   public static ClusterVariableResult toClusterVariable(
       final ClusterVariableEntity clusterVariableEntity) {
-
-    ClusterVariableResult clusterVariableResult =
+    final var clusterVariableResult =
         new ClusterVariableResult()
             .name(clusterVariableEntity.name())
             .value(clusterVariableEntity.value());
-    clusterVariableResult =
-        switch (clusterVariableEntity.scope()) {
-          case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
-          case TENANT ->
-              clusterVariableResult
-                  .scope(ClusterVariableScopeEnum.TENANT)
-                  .tenantId(clusterVariableEntity.tenantId());
-        };
-    return clusterVariableResult;
+    return switch (clusterVariableEntity.scope()) {
+      case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
+      case TENANT ->
+          clusterVariableResult
+              .scope(ClusterVariableScopeEnum.TENANT)
+              .tenantId(clusterVariableEntity.tenantId());
+    };
   }
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
