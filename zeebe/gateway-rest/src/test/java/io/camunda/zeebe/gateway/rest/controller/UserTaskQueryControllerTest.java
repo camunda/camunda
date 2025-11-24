@@ -123,6 +123,38 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       }
       """;
 
+  private static final String EXPECTED_UNTRUNCATED_VARIABLE_RESULT_JSON =
+      """
+      {
+        "items": [
+          {
+              "variableKey":"0",
+              "name":"name",
+              "value":"value",
+              "scopeKey":"1",
+              "processInstanceKey":"2",
+              "tenantId":"<default>",
+              "isTruncated":false
+          },
+          {
+              "variableKey":"1",
+              "name":"name2",
+              "value":"valueLong",
+              "scopeKey":"1",
+              "processInstanceKey":"2",
+              "tenantId":"<default>",
+              "isTruncated":false
+          }
+        ],
+        "page": {
+          "totalItems": 2,
+          "startCursor": "0",
+          "endCursor": "1",
+          "hasMoreTotalItems": false
+        }
+      }
+      """;
+
   private static final String USER_TASK_ITEM_JSON =
       """
           {
@@ -826,6 +858,41 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .isOk()
         .expectBody()
         .json(EXPECTED_VARIABLE_RESULT_JSON, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .searchUserTaskVariables(
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build());
+  }
+
+  @Test
+  public void shouldReturnVariablesWithFullValues() {
+    final var request =
+        """
+            {
+                "filter":
+                    {
+                        "name": "varName"
+                    }
+
+            }""";
+
+    when(userTaskServices.searchUserTaskVariables(
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build()))
+        .thenReturn(SEARCH_VAR_QUERY_RESULT);
+    // when and then
+    webClient
+        .post()
+        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables/search?truncateValues=false")
+        .accept(APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_UNTRUNCATED_VARIABLE_RESULT_JSON, JsonCompareMode.STRICT);
 
     verify(userTaskServices)
         .searchUserTaskVariables(
