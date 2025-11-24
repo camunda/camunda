@@ -12,7 +12,6 @@ import {Stack} from '@carbon/react';
 
 type Props = {
   elementInstanceKey: string;
-  elementId: string;
   elementName: string;
 };
 
