@@ -209,6 +209,12 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getRetries())
           .map(mapToOperations(Integer.class))
           .ifPresent(builder::retriesOperations);
+      ofNullable(filter.getCreationTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::creationTimeOperations);
+      ofNullable(filter.getLastUpdateTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::lastUpdateTimeOperations);
     }
 
     return builder.build();

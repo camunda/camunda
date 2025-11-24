@@ -238,7 +238,9 @@ public class JobIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("endTime", "deadline")
+        // date fields are ignored because different engines produce different precisions
+        // e.g., date may look like 2025-11-21T16:02:57.376Z or 2025-11-21T16:02:57.376207580Z
+        .ignoringFields("endTime", "deadline", "creationTime", "lastUpdateTime")
         .isEqualTo(original);
     assertThat(instance.jobKey()).isEqualTo(original.jobKey());
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());

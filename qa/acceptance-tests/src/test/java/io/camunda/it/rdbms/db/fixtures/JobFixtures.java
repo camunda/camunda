@@ -41,6 +41,8 @@ public final class JobFixtures extends CommonFixtures {
             .errorCode("error-code-" + generateRandomString(20))
             .deniedReason("denied-reason-" + generateRandomString(20))
             .listenerEventType(randomEnum(ListenerEventType.class))
+            .creationTime(NOW)
+            .lastUpdateTime(NOW)
             .kind(randomEnum(JobKind.class));
 
     return builderFunction.apply(builder).build();
