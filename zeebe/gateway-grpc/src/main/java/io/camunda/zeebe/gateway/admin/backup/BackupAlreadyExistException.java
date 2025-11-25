@@ -11,7 +11,9 @@ public class BackupAlreadyExistException extends RuntimeException {
 
   public BackupAlreadyExistException(final long expectedBackupId, final long latestBackupId) {
     super(
-        "Requested backup has id %d. The latest backup has id %d. A backupId is an integer and must be greater than the ID of previous backups that are completed, failed, or deleted. Zeebe does not take two backups with the same ids."
+        ("Requested backup has ID %d. The latest backup has ID %d. The "
+                + "backup ID must be greater than the ID of previous backups "
+                + "that are completed, failed, or deleted.")
             .formatted(expectedBackupId, latestBackupId));
   }
 }
