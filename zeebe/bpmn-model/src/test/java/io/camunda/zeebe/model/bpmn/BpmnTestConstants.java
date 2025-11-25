@@ -87,7 +87,7 @@ public final class BpmnTestConstants {
   public static final Boolean TEST_STARTABLE_IN_TASKLIST = false;
   public static final String TEST_VERSION_TAG = "v1.0.0";
 
-  public static final String TEST_CONDITION = "${true}";
+  public static final String TEST_CONDITION = "=true";
   public static final String TEST_CONDITIONAL_VARIABLE_NAME = "variable";
   public static final String TEST_CONDITIONAL_VARIABLE_EVENTS = "create, update";
   public static final List<String> TEST_CONDITIONAL_VARIABLE_EVENTS_LIST =

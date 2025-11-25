@@ -22,7 +22,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
-import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -70,7 +69,7 @@ class EventSubprocessValidationTest {
         process,
         expect(
             SUBPROCESS_ID,
-            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"),
+            "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or conditional"),
         expect(
             SUBPROCESS_ID, "A compensation event subprocess is not allowed on the process level"));
   }
@@ -102,28 +101,7 @@ class EventSubprocessValidationTest {
         process,
         expect(
             SUBPROCESS_ID,
-            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"));
-  }
-
-  @Test
-  @DisplayName("An event subprocess with a conditional start event should not be valid")
-  void conditionalStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .eventSubProcess(
-                SUBPROCESS_ID, eventSubprocess -> eventSubprocess.startEvent().condition("true"))
-            .startEvent()
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect(
-            SUBPROCESS_ID,
-            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"),
-        expect(ConditionalEventDefinition.class, "Event definition of this type is not supported"));
+            "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or conditional"));
   }
 
   @Test
@@ -189,6 +167,8 @@ class EventSubprocessValidationTest {
         BpmnElementBuilder.of(
             "signal start event", builder -> withEventSubprocess(builder).signal("signal")),
         BpmnElementBuilder.of(
-            "escalation start event", builder -> withEventSubprocess(builder).escalation()));
+            "escalation start event", builder -> withEventSubprocess(builder).escalation()),
+        BpmnElementBuilder.of(
+            "conditional start event", builder -> withEventSubprocess(builder).condition("x > 1")));
   }
 }

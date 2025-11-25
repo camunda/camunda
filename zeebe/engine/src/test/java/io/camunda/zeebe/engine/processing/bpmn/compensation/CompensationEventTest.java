@@ -162,7 +162,7 @@ public class CompensationEventTest {
         process,
         ExpectedValidationResult.expect(
             SubProcess.class,
-            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"));
+            "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or conditional"));
   }
 
   @Test

@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
-package io.camunda.zeebe.model.bpmn.instance;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
-/**
- * The BPMN condition element of the BPMN tConditionalEventDefinition type
- *
- * @author Sebastian Menski
- */
-public interface Condition extends FormalExpression {
-  String getType();
+public interface ZeebeConditionalFilter extends BpmnModelElementInstance {
 
-  void setType(String type);
+  String getVariableNames();
+
+  void setVariableNames(String variableNames);
+
+  String getVariableEvents();
+
+  void setVariableEvents(String variableEvents);
 }
