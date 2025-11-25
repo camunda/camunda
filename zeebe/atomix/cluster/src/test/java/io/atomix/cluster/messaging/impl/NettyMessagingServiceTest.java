@@ -21,7 +21,10 @@ import static org.assertj.core.api.Assertions.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.sun.security.auth.module.UnixSystem;
+import io.atomix.cluster.messaging.HeartbeatRequestDecoder;
+import io.atomix.cluster.messaging.HeartbeatResponseDecoder;
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.MessageHeaderDecoder;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
@@ -52,8 +55,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.agrona.collections.MutableReference;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +69,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** Netty messaging service test. */
 final class NettyMessagingServiceTest {
@@ -120,6 +130,97 @@ final class NettyMessagingServiceTest {
               return Long.parseLong(columns[UID_COLUMN]) == uid;
             })
         .count();
+  }
+
+  @Nested
+  final class HeartbeatPayloadTest {
+
+    static Stream<Arguments> sendPayloadArguments() {
+      final Supplier<Stream<Boolean>> booleans = () -> Stream.of(true, false);
+      return booleans.get().flatMap(b1 -> booleans.get().map(b2 -> Arguments.of(b1, b2)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("sendPayloadArguments")
+    void shouldSendHeartbeatPayloadIfConfigured(
+        final boolean clientSupportsPayload, final boolean serverSupportsPayload) throws Exception {
+      try (final var clientNetty = newMessagingService();
+          final var serverNetty = newMessagingService()) {
+        clientNetty.enableHeartbeatsForwarding();
+        serverNetty.enableHeartbeatsForwarding();
+        if (!clientSupportsPayload) {
+          clientNetty.noHeartbeatPayload();
+        }
+        if (!serverSupportsPayload) {
+          serverNetty.noHeartbeatPayload();
+        }
+        clientNetty.start().join();
+        serverNetty.start().join();
+        final var heartbeatFromClient = new MutableReference<HeartbeatRequestDecoder>(null);
+        serverNetty.registerHandler(
+            HeartbeatHandler.HEARTBEAT_SUBJECT,
+            (BiConsumer<Address, byte[]>)
+                (addr, payload) -> {
+                  if (payload != null && payload.length > 0) {
+                    heartbeatFromClient.set(
+                        new HeartbeatRequestDecoder()
+                            .wrapAndApplyHeader(
+                                new UnsafeBuffer(payload), 0, new MessageHeaderDecoder()));
+                  }
+                },
+            Runnable::run);
+
+        // when - connect and intercept heartbeat responses from server
+        final var heartbeatResponseFromServer =
+            new MutableReference<HeartbeatResponseDecoder>(null);
+        final var clientChannel =
+            clientNetty.getChannelPool().getChannel(serverNetty.address(), "test").join();
+
+        // Wait for heartbeat handler to be installed (after setup completes)
+        Awaitility.await("Until heartbeat handler is installed")
+            .until(
+                () ->
+                    clientChannel.pipeline().get(HeartbeatHandler.HEARTBEAT_HANDLER_NAME) != null);
+
+        // add interceptor before heartbeat handler to capture ProtocolReply
+        final var interceptingHandler =
+            new ChannelInboundHandlerAdapter() {
+              @Override
+              public void channelRead(final ChannelHandlerContext ctx, final Object msg)
+                  throws Exception {
+                if (msg instanceof final ProtocolReply reply
+                    && reply.payload() != null
+                    && reply.payload().length > 0) {
+                  heartbeatResponseFromServer.set(
+                      new HeartbeatResponseDecoder()
+                          .wrapAndApplyHeader(
+                              new UnsafeBuffer(reply.payload()), 0, new MessageHeaderDecoder()));
+                }
+                ctx.fireChannelRead(msg);
+              }
+            };
+        clientChannel
+            .pipeline()
+            .addBefore(
+                HeartbeatHandler.HEARTBEAT_HANDLER_NAME, "test-interceptor", interceptingHandler);
+
+        // then - payload should have content only when both client and server support
+        // it
+        Awaitility.await("Until heartbeats payloads are received")
+            .atMost(Duration.ofSeconds(2))
+            .untilAsserted(
+                () -> {
+                  if (clientSupportsPayload && serverSupportsPayload) {
+                    assertThat(heartbeatFromClient.get())
+                        .isNotNull()
+                        .satisfies(heartbeat -> assertThat(heartbeat.sentAt()).isPositive());
+                    assertThat(heartbeatResponseFromServer.get())
+                        .isNotNull()
+                        .satisfies(heartbeat -> assertThat(heartbeat.receivedAt()).isPositive());
+                  }
+                });
+      }
+    }
   }
 
   @Nested

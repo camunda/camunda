@@ -1158,7 +1158,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 "heartbeat-setup",
                 new HeartbeatSetupHandler.Client(
                     "decoder",
-                    log,
                     messageIdGenerator,
                     advertisedAddress,
                     config.getHeartbeatTimeout(),
@@ -1214,7 +1213,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 MESSAGE_DISPATCHER_NAME,
                 "heartbeat-setup",
                 new HeartbeatSetupHandler.Server(
-                    "decoder", log, forwardHeartbeats, sendHeartbeatPayload));
+                    "decoder", forwardHeartbeats, sendHeartbeatPayload));
       }
     }
   }

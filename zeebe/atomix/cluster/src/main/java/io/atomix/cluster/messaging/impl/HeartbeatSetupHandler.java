@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler {
 
@@ -54,6 +55,7 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
    */
   public static final class Client extends HeartbeatSetupHandler {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     final AtomicLong messageIdGenerator;
     private final Address advertisedAddress;
     private final Duration heartbeatTimeout;
@@ -65,14 +67,13 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
 
     public Client(
         final String afterHandler,
-        final Logger log,
         final AtomicLong messageIdGenerator,
         final Address advertisedAddress,
         final Duration heartbeatTimeout,
         final Duration heartbeatInterval,
         final boolean forwardHeartbeats,
         final boolean sendHeartbeatPayload) {
-      super(afterHandler, log, forwardHeartbeats, sendHeartbeatPayload);
+      super(afterHandler, LOG, forwardHeartbeats, sendHeartbeatPayload);
       this.messageIdGenerator = messageIdGenerator;
       this.advertisedAddress = advertisedAddress;
       this.heartbeatTimeout = heartbeatTimeout;
@@ -162,16 +163,16 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
    * a {@link HeartbeatHandler.Server}
    */
   public static final class Server extends HeartbeatSetupHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private final HeartbeatSetupRequestDecoder requestDecoder = new HeartbeatSetupRequestDecoder();
     private final HeartbeatSetupResponseEncoder responseEncoder =
         new HeartbeatSetupResponseEncoder();
 
     public Server(
         final String afterHandler,
-        final Logger log,
         final boolean forwardHeartbeats,
         final boolean sendHeartbeatPayload) {
-      super(afterHandler, log, forwardHeartbeats, sendHeartbeatPayload);
+      super(afterHandler, LOG, forwardHeartbeats, sendHeartbeatPayload);
       log.debug(
           "Creating HeartbeatSetupHandler.Server with sendHeartbeatPayload={}",
           sendHeartbeatPayload);
