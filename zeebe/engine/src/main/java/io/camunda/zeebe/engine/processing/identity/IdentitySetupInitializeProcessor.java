@@ -15,12 +15,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -55,6 +57,8 @@ public final class IdentitySetupInitializeProcessor
     createRoleMembers(initializationKey, setupRecord.getRoleMembers());
     createTenantMembers(initializationKey, setupRecord.getTenantMembers());
     createAuthorizations(initializationKey, setupRecord.getAuthorizations());
+    createGroups(initializationKey, setupRecord.getGroups());
+    createGroupMembers(initializationKey, setupRecord.getGroupMembers());
 
     stateWriter.appendFollowUpEvent(
         initializationKey, IdentitySetupIntent.INITIALIZED, setupRecord);
@@ -63,6 +67,16 @@ public final class IdentitySetupInitializeProcessor
   @Override
   public boolean shouldProcessResultsInSeparateBatches() {
     return true;
+  }
+
+  private void createGroupMembers(final long key, final Collection<GroupRecordValue> roleMembers) {
+    roleMembers.forEach(
+        groupMember ->
+            commandWriter.appendFollowUpCommand(key, GroupIntent.ADD_ENTITY, groupMember));
+  }
+
+  private void createGroups(final long key, final Collection<GroupRecordValue> groups) {
+    groups.forEach(group -> commandWriter.appendFollowUpCommand(key, GroupIntent.CREATE, group));
   }
 
   private void createDefaultTenant(final long key, final TenantRecord defaultTenant) {
