@@ -11,6 +11,7 @@
   </parent>
 
   <artifactId>camunda-client-java</artifactId>
+  <!-- change -->
   <packaging>jar</packaging>
 
   <name>Camunda Client Java</name>
