@@ -42,6 +42,7 @@ import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivat
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
+import io.camunda.service.ConditionalEventServices.ConditionalEventCreateRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -73,6 +74,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ConditionalStartEventTriggerInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
@@ -871,6 +873,19 @@ public class RequestMapper {
                       + request.getClass().getSimpleName(),
                   "Only process instance creation by id or key is supported."));
     };
+  }
+
+  public static Either<ProblemDetail, ConditionalEventCreateRequest> toTriggerConditionalEvent(
+      final ConditionalStartEventTriggerInstruction request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Trigger Conditional Event");
+    return validationResponse.map(
+        tenantId ->
+            new ConditionalEventCreateRequest(
+                tenantId,
+                getKeyOrDefault(
+                    request, ConditionalStartEventTriggerInstruction::getProcessDefinitionKey, -1L),
+                getMapOrEmpty(request, ConditionalStartEventTriggerInstruction::getVariables)));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(

@@ -31,6 +31,7 @@ tags:
   - name: Authorization
   - name: Batch operation
   - name: Clock
+  - name: Condition
   - name: Cluster
   - name: Cluster Variable
   - name: Decision definition
@@ -107,6 +108,10 @@ paths:
     $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1tenants~1{tenantId}'
   /cluster-variables/tenants/{tenantId}/{name}:
     $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1tenants~1{tenantId}~1{name}'
+
+  # Conditions endpoints
+  /conditions:
+    $ref: 'conditions.yaml#/paths/~1conditions'
 
   # Message endpoints
   /correlated-message-subscriptions/search:

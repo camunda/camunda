@@ -40,6 +40,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterVariableServices;
+import io.camunda.service.ConditionalEventServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
@@ -186,6 +187,20 @@ public class CamundaServicesConfiguration {
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public ConditionalEventServices conditionalEventServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ConditionalEventServices(
+        brokerClient,
+        securityContextProvider,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);
