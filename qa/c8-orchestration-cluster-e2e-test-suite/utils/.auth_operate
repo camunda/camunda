@@ -1,1 +1,15 @@
-{}
+{
+  "cookies": [
+    {
+      "name": "OPERATE-SESSION",
+      "value": "C1EBB8D2AC0857659ACA186C78E1FE9E",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
