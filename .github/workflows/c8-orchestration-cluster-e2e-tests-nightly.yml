@@ -173,7 +173,10 @@ jobs:
 
           if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
             if [[ "${{ matrix.branch }}" == "main" ]]; then
-              echo "Running all tests in V2 mode on main branch, excluding V1-specific tests and tests/api/v2"
+              # Note: API tests (tests/api/) are excluded to prevent Playwright fixture exhaustion
+              # Running 600+ tests causes "Internal error: step id not found: fixture@XXX" errors
+              # API tests should be run in a separate dedicated job if needed
+              echo "Running V2 mode tests (excluding API tests to prevent fixture exhaustion)"
               npm run test -- --project=chromium tests/tasklist/ tests/operate/ tests/identity/ tests/common-flows/ --grep-invert "v1/"
             else
               echo "Running focused tests in V2 mode: Tasklist + HTO flows (excluding @v1-only tests)"
