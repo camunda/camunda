@@ -1086,29 +1086,30 @@ public final class SearchQueryResponseMapper {
   }
 
   public static VariableSearchQueryResult toVariableSearchQueryResponse(
-      final SearchQueryResult<VariableEntity> result) {
+      final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
     final var page = toSearchQueryPageResponse(result);
     return new VariableSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toVariables)
+                .map(entity -> toVariables(entity, truncateValues))
                 .orElseGet(Collections::emptyList));
   }
 
   private static List<VariableSearchResult> toVariables(
-      final List<VariableEntity> variableEntities) {
-    return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
+      final List<VariableEntity> variableEntities, final boolean truncateValues) {
+    return variableEntities.stream().map(entity -> toVariable(entity, truncateValues)).toList();
   }
 
-  private static VariableSearchResult toVariable(final VariableEntity variableEntity) {
+  private static VariableSearchResult toVariable(
+      final VariableEntity variableEntity, final boolean truncateValues) {
     return new VariableSearchResult()
         .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
         .name(variableEntity.name())
-        .value(variableEntity.value())
+        .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
-        .isTruncated(variableEntity.isPreview())
+        .isTruncated(truncateValues && variableEntity.isPreview())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
   }
 
@@ -1116,10 +1117,14 @@ public final class SearchQueryResponseMapper {
     return new VariableResult()
         .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
         .name(variableEntity.name())
-        .value(variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value())
+        .value(getFullValueIfPresent(variableEntity))
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
+  }
+
+  private static String getFullValueIfPresent(final VariableEntity variableEntity) {
+    return variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value();
   }
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
