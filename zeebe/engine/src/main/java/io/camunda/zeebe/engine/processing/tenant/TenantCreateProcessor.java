@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.DefaultRole;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -33,6 +36,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   private final TenantState tenantState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
+  private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -48,6 +52,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -107,6 +112,12 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
     record.setTenantKey(key);
     stateWriter.appendFollowUpEvent(key, TenantIntent.CREATED, record);
     responseWriter.writeEventOnCommand(key, TenantIntent.CREATED, record, command);
+
+    // Assign all-tenant role to the tenant
+    record.setEntityType(EntityType.ROLE);
+    record.setEntityId(DefaultRole.ALL_TENANTS.getId());
+    //    stateWriter.appendFollowUpEvent(key, TenantIntent.ENTITY_ADDED, record);
+    commandWriter.appendFollowUpCommand(key, TenantIntent.ADD_ENTITY, record);
   }
 
   private void distributeCommand(
