@@ -24,11 +24,9 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -544,80 +542,6 @@ public abstract class ElasticsearchUtil {
                             hit -> {
                               return hit.getIndex();
                             })));
-          });
-    } catch (final IOException e) {
-      throw new OperateRuntimeException(e.getMessage(), e);
-    }
-    return indexNames;
-  }
-
-  public static Map<String, String> getIndexNames(
-      final AbstractTemplateDescriptor template,
-      final Collection<String> ids,
-      final RestHighLevelClient esClient) {
-
-    final Map<String, String> indexNames = new HashMap<>();
-
-    final SearchRequest piRequest =
-        ElasticsearchUtil.createSearchRequest(template)
-            .source(
-                new SearchSourceBuilder()
-                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
-                    .fetchSource(false));
-    try {
-      scrollWith(
-          piRequest,
-          esClient,
-          sh -> {
-            indexNames.putAll(
-                Arrays.stream(sh.getHits())
-                    .collect(
-                        Collectors.toMap(
-                            hit -> {
-                              return hit.getId();
-                            },
-                            hit -> {
-                              return hit.getIndex();
-                            })));
-          });
-    } catch (final IOException e) {
-      throw new OperateRuntimeException(e.getMessage(), e);
-    }
-    return indexNames;
-  }
-
-  public static Map<String, List<String>> getIndexNamesAsList(
-      final AbstractTemplateDescriptor template,
-      final Collection<String> ids,
-      final RestHighLevelClient esClient) {
-
-    final Map<String, List<String>> indexNames = new ConcurrentHashMap<>();
-
-    final SearchRequest piRequest =
-        ElasticsearchUtil.createSearchRequest(template)
-            .source(
-                new SearchSourceBuilder()
-                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
-                    .fetchSource(false));
-    try {
-      scrollWith(
-          piRequest,
-          esClient,
-          sh -> {
-            Arrays.stream(sh.getHits())
-                .collect(
-                    Collectors.groupingBy(
-                        SearchHit::getId,
-                        Collectors.mapping(SearchHit::getIndex, Collectors.toList())))
-                .forEach(
-                    (key, value) ->
-                        indexNames.merge(
-                            key,
-                            value,
-                            (v1, v2) -> {
-                              v1.addAll(v2);
-                              return v1;
-                            }));
           });
     } catch (final IOException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
