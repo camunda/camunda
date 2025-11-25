@@ -11,7 +11,8 @@ import io.camunda.search.clients.impl.NoopSearchClientsProxy;
 import io.camunda.security.auth.SecurityContext;
 
 public interface SearchClientsProxy
-    extends AuthorizationSearchClient,
+    extends AuditLogSearchClient,
+        AuthorizationSearchClient,
         BatchOperationSearchClient,
         DecisionDefinitionSearchClient,
         DecisionInstanceSearchClient,
