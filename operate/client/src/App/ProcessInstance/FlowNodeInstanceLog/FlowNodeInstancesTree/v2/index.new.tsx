@@ -791,7 +791,13 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       };
     }, [processInstance]);
 
-    elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey);
+    const enablePolling =
+      processInstance.state === 'ACTIVE' &&
+      !modificationsStore.isModificationModeEnabled;
+
+    elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey, {
+      enablePolling,
+    });
 
     if (businessObjects === undefined) {
       return null;
