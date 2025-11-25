@@ -44,6 +44,7 @@ public class ProcessConditionalStartEventValidator implements ModelElementValida
     // event subprocess start events
     final Collection<StartEvent> eventSubprocessStartEvents =
         process.getChildElementsByType(SubProcess.class).stream()
+            .filter(SubProcess::triggeredByEvent)
             .map(sub -> sub.getChildElementsByType(StartEvent.class))
             .flatMap(Collection::stream)
             .toList();

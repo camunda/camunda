@@ -123,6 +123,19 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
+            .subProcess("subProcess")
+            .embeddedSubProcess()
+            .startEvent()
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .subProcessDone()
+            .endEvent()
+            .done(),
+        singletonList(expect("subProcess", "Start events in subprocesses must be of type none"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
             .receiveTask("task")
             .message(m -> m.name("message").zeebeCorrelationKeyExpression("correlationKey"))
             .boundaryEvent("boundary")
