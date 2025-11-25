@@ -17,7 +17,6 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCountUtil;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.collections.LongHashSet;
@@ -58,6 +57,10 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
   static final String IDLE_STATE_HANDLER_NAME = "idle";
   static final String HEARTBEAT_HANDLER_NAME = "heartbeat";
 
+  private static final int HEARTBEAT_REQUEST_SIZE =
+      MessageHeaderEncoder.ENCODED_LENGTH + HeartbeatRequestEncoder.BLOCK_LENGTH;
+  private static final int HEARTBEAT_RESPONSE_SIZE =
+      MessageHeaderEncoder.ENCODED_LENGTH + HeartbeatResponseEncoder.BLOCK_LENGTH;
   protected final Logger log;
   protected final boolean forwardHeartbeats;
 
@@ -67,8 +70,6 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
   }
 
   static final class Server extends HeartbeatHandler {
-    private static final int HEARTBEAT_RESPONSE_SIZE =
-        MessageHeaderEncoder.ENCODED_LENGTH + HeartbeatResponseEncoder.BLOCK_LENGTH;
     private final Duration heartbeatTimeout;
     private final boolean sendHeartbeatPayload;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
@@ -103,12 +104,6 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
           && request.subject().equals(HEARTBEAT_SUBJECT)) {
         heartbeatReceived = true;
         ctx.writeAndFlush(createHeartbeat(request.id()));
-        if (!Arrays.equals(request.payload(), EMPTY_HEARTBEAT_PAYLOAD)) {
-          log.warn(
-              "Received unexpected heartbeat payload from {}, perhaps the message subject {} is accidentally reused",
-              request.sender(),
-              HEARTBEAT_SUBJECT);
-        }
       }
 
       // Pass the message to the next handler.
@@ -137,6 +132,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
     private ProtocolMessage createHeartbeat(final long id) {
       final byte[] payload =
           sendHeartbeatPayload ? writeHeartbeatResponse() : EMPTY_HEARTBEAT_PAYLOAD;
+      log.debug("Heartbeat response payload for req id={} is {}", id, payload);
       return new ProtocolReply(id, payload, Status.OK);
     }
 
@@ -149,8 +145,6 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
   }
 
   static final class Client extends HeartbeatHandler {
-    private static final int HEARTBEAT_REQUEST_SIZE =
-        MessageHeaderEncoder.ENCODED_LENGTH + HeartbeatRequestEncoder.BLOCK_LENGTH;
     private final LongHashSet outstandingHeartbeats = new LongHashSet();
     private final AtomicLong messageIdGenerator;
     private final Address advertisedAddress;
@@ -196,7 +190,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       boolean heartbeatReceived = forwardHeartbeats;
       if (msg instanceof final ProtocolReply reply) {
         var isHeartbeat = false;
-        if (sendHeartbeatPayload) {
+        if (sendHeartbeatPayload && reply.payload().length == HEARTBEAT_RESPONSE_SIZE) {
           messageHeaderDecoder.wrap(new UnsafeBuffer(reply.payload()), 0);
           isHeartbeat = messageHeaderDecoder.schemaId() == HeartbeatResponseDecoder.SCHEMA_ID;
         } else {
@@ -265,6 +259,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
           new ProtocolRequest(
               messageIdGenerator.incrementAndGet(), advertisedAddress, HEARTBEAT_SUBJECT, payload);
       outstandingHeartbeats.add(heartbeat.id());
+      log.debug("Payload for heartbeat request with id={} is {}", heartbeat.id(), heartbeat);
       return heartbeat;
     }
 
