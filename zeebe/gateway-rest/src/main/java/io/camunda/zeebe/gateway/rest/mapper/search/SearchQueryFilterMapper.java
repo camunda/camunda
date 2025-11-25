@@ -876,6 +876,59 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
+  static io.camunda.search.filter.AuditLogFilter toAuditLogFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.AuditLogFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.auditLog().build();
+    }
+
+    final var builder = FilterBuilders.auditLog();
+    ofNullable(filter.getAuditLogKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::auditLogKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::elementInstanceKeyOperations);
+    ofNullable(filter.getOperationType())
+        .map(mapToOperations(String.class))
+        // TODO .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+        .ifPresent(builder::operationTypeOperations);
+    ofNullable(filter.getResult())
+        .map(io.camunda.zeebe.gateway.protocol.rest.AuditLogResultEnum::getValue)
+        .map(String::toUpperCase)
+        .map(io.camunda.search.entities.AuditLogEntity.AuditLogResult::valueOf)
+        .ifPresent(builder::result);
+    ofNullable(filter.getTimestamp())
+        .map(mapToOperations(OffsetDateTime.class))
+        .ifPresent(builder::timestampOperations);
+    ofNullable(filter.getActorId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::actorIdOperations);
+    ofNullable(filter.getActorType())
+        .map(io.camunda.zeebe.gateway.protocol.rest.AuditLogActorTypeEnum::getValue)
+        .map(String::toUpperCase)
+        .map(io.camunda.search.entities.AuditLogEntity.AuditLogActorType::valueOf)
+        .ifPresent(builder::actorType);
+    ofNullable(filter.getEntityType())
+        .map(mapToOperations(String.class))
+        // TODO .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+        .ifPresent(builder::entityTypeOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
+    ofNullable(filter.getCategory())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::categoryOperations);
+
+    return builder.build();
+  }
+
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
       final List<VariableValueFilterProperty> filters) {
     if (CollectionUtils.isEmpty(filters)) {

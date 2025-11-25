@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
@@ -53,6 +54,13 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.entity.ClusterMetadata.AppName;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogActorTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogCategoryEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogEntityTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogOperationTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogResult;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogResultEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
@@ -1289,6 +1297,69 @@ public final class SearchQueryResponseMapper {
                 .map(PermissionType::name)
                 .map(PermissionTypeEnum::fromValue)
                 .toList());
+  }
+
+  public static AuditLogSearchQueryResult toAuditLogSearchQueryResponse(
+      final SearchQueryResult<AuditLogEntity> result) {
+    return new AuditLogSearchQueryResult()
+        .items(toAuditLogs(result.items()))
+        .page(toSearchQueryPageResponse(result));
+  }
+
+  private static List<AuditLogResult> toAuditLogs(final List<AuditLogEntity> auditLogs) {
+    return auditLogs.stream().map(SearchQueryResponseMapper::toAuditLog).toList();
+  }
+
+  public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
+    return new AuditLogResult()
+        .auditLogKey(KeyUtil.keyToString(auditLog.auditLogKey()))
+        .entityKey(auditLog.entityKey())
+        .entityType(
+            ofNullable(auditLog.entityType())
+                .map(Enum::name)
+                .map(AuditLogEntityTypeEnum::fromValue)
+                .orElse(null))
+        .operationType(
+            ofNullable(auditLog.operationType())
+                .map(Enum::name)
+                .map(AuditLogOperationTypeEnum::fromValue)
+                .orElse(null))
+        .batchOperationKey(KeyUtil.keyToString(auditLog.batchOperationKey()))
+        .batchOperationType(
+            ofNullable(auditLog.batchOperationType())
+                .map(Enum::name)
+                .map(BatchOperationTypeEnum::fromValue)
+                .orElse(null))
+        .timestamp(auditLog.timestamp())
+        .actorId(auditLog.actorId())
+        .actorType(
+            ofNullable(auditLog.actorType())
+                .map(Enum::name)
+                .map(AuditLogActorTypeEnum::fromValue)
+                .orElse(null))
+        .tenantId(auditLog.tenantId())
+        .result(
+            ofNullable(auditLog.result())
+                .map(Enum::name)
+                .map(AuditLogResultEnum::fromValue)
+                .orElse(null))
+        .annotation(auditLog.annotation())
+        .category(
+            ofNullable(auditLog.category())
+                .map(Enum::name)
+                .map(AuditLogCategoryEnum::fromValue)
+                .orElse(null))
+        .processDefinitionId(auditLog.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(auditLog.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(auditLog.processInstanceKey()))
+        .elementInstanceKey(KeyUtil.keyToString(auditLog.elementInstanceKey()))
+        .jobKey(KeyUtil.keyToString(auditLog.jobKey()))
+        .userTaskKey(KeyUtil.keyToString(auditLog.userTaskKey()))
+        .decisionRequirementsId(auditLog.decisionRequirementsId())
+        .decisionRequirementsKey(KeyUtil.keyToString(auditLog.decisionRequirementsKey()))
+        .decisionDefinitionId(auditLog.decisionDefinitionId())
+        .decisionDefinitionKey(KeyUtil.keyToString(auditLog.decisionDefinitionKey()))
+        .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()));
   }
 
   private static ProcessInstanceStateEnum toProtocolState(
