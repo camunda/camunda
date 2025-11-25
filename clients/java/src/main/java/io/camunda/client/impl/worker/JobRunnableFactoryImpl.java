@@ -21,15 +21,16 @@ import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobExceptionHandler.JobExceptionHandlerContext;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
-import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
+import org.slf4j.MDC.MDCCloseable;
 
 public final class JobRunnableFactoryImpl implements JobRunnableFactory {
-
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
+  public static final String JOB_KEY = "jobKey";
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
-
   private final JobClient jobClient;
   private final JobHandler handler;
   private final JobExceptionHandler jobExceptionHandler;
@@ -49,23 +50,19 @@ public final class JobRunnableFactoryImpl implements JobRunnableFactory {
   }
 
   private void executeJob(final ActivatedJob job, final Runnable doneCallback) {
-    try {
-      MDC.setContextMap(createContextMap(job));
+    try (final MDCCloseable processDefinitionKey =
+            MDC.putCloseable(
+                PROCESS_DEFINITION_KEY, String.valueOf(job.getProcessDefinitionKey()));
+        final MDCCloseable processInstanceKey =
+            MDC.putCloseable(PROCESS_INSTANCE_KEY, String.valueOf(job.getProcessInstanceKey()));
+        final MDCCloseable elementInstanceKey =
+            MDC.putCloseable(ELEMENT_INSTANCE_KEY, String.valueOf(job.getElementInstanceKey()));
+        final MDCCloseable jobKey = MDC.putCloseable(JOB_KEY, String.valueOf(job.getKey()))) {
       handler.handle(jobClient, job);
     } catch (final Exception e) {
       jobExceptionHandler.handleJobException(new JobExceptionHandlerContext(jobClient, job, e));
     } finally {
-      MDC.clear();
       doneCallback.run();
     }
-  }
-
-  private Map<String, String> createContextMap(final ActivatedJob job) {
-    final Map<String, String> contextMap = new HashMap<>();
-    contextMap.put("processDefinitionKey", String.valueOf(job.getProcessDefinitionKey()));
-    contextMap.put("processInstanceKey", String.valueOf(job.getProcessInstanceKey()));
-    contextMap.put("elementInstanceKey", String.valueOf(job.getElementInstanceKey()));
-    contextMap.put("jobKey", String.valueOf(job.getKey()));
-    return contextMap;
   }
 }
