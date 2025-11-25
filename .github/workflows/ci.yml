@@ -67,7 +67,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.8'
+      ACTIONLINT_VERSION: '1.7.9'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.56.0'
     steps:
