@@ -22,11 +22,15 @@ import io.camunda.client.api.worker.JobExceptionHandler.JobExceptionHandlerConte
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
+import org.slf4j.MDC.MDCCloseable;
 
 public final class JobRunnableFactoryImpl implements JobRunnableFactory {
-
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
+  public static final String JOB_KEY = "jobKey";
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
-
   private final JobClient jobClient;
   private final JobHandler handler;
   private final JobExceptionHandler jobExceptionHandler;
@@ -46,7 +50,14 @@ public final class JobRunnableFactoryImpl implements JobRunnableFactory {
   }
 
   private void executeJob(final ActivatedJob job, final Runnable doneCallback) {
-    try {
+    try (final MDCCloseable processDefinitionKey =
+            MDC.putCloseable(
+                PROCESS_DEFINITION_KEY, String.valueOf(job.getProcessDefinitionKey()));
+        final MDCCloseable processInstanceKey =
+            MDC.putCloseable(PROCESS_INSTANCE_KEY, String.valueOf(job.getProcessInstanceKey()));
+        final MDCCloseable elementInstanceKey =
+            MDC.putCloseable(ELEMENT_INSTANCE_KEY, String.valueOf(job.getElementInstanceKey()));
+        final MDCCloseable jobKey = MDC.putCloseable(JOB_KEY, String.valueOf(job.getKey()))) {
       handler.handle(jobClient, job);
     } catch (final Exception e) {
       jobExceptionHandler.handleJobException(new JobExceptionHandlerContext(jobClient, job, e));
