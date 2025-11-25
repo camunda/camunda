@@ -77,7 +77,7 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
       if (condition.isStatic()) {
         LOG.warn(
             "The condition expression '{}' for conditional event definition with id '{}' is static. "
-                + "Static conditions are not supported and will never evaluate to true at runtime., ignoring condition.",
+                + "Static conditions are not supported and will never evaluate to true at runtime, ignoring condition.",
             condition.getExpression(),
             element.getId());
       } else {
