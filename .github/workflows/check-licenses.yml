@@ -73,7 +73,7 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@98d1314ca835f199797565423661bc1a66acc802
+      uses: camunda/infra-global-github-actions/fossa/setup@b80b223e3ebbe4ae3cfb87c4ff459fb19b56dded
     - name: Adjust pom.xml files for FOSSA
       if: matrix.project.name == 'single-app'
       run: |
@@ -89,7 +89,7 @@ jobs:
           'del(.project.modules.module[] | select(. == "bom" or . == "parent"))' \
           pom.xml
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@98d1314ca835f199797565423661bc1a66acc802
+      uses: camunda/infra-global-github-actions/fossa/analyze@b80b223e3ebbe4ae3cfb87c4ff459fb19b56dded
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{ github.ref_name }}
