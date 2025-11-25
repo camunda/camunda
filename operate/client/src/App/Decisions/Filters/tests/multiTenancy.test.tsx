@@ -162,7 +162,7 @@ describe('<Filters />', () => {
   });
 
   it('should disable decision name field when tenant is not selected', async () => {
-    window.clientConfig = {multiTenancyEnabled: true};
+    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
     render(<Filters />, {wrapper: getWrapper()});
 
     expect(screen.getByLabelText('Name')).toBeDisabled();
