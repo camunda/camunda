@@ -612,14 +612,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
       final int startingStringLength, final int endInclusiveStringLength) {
     final var digits = "1234567890";
     return IntStream.rangeClosed(startingStringLength, endInclusiveStringLength)
-        .mapToObj(
-            len -> {
-              final var numericString = new StringBuilder(len);
-              while (numericString.length() < len) {
-                numericString.append(digits);
-              }
-              return numericString.substring(0, len);
-            })
+        .mapToObj(len -> digits.repeat((len / 10) + 1).substring(0, len))
         .toList();
   }
 }
