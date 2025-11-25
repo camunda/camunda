@@ -57,6 +57,7 @@ public class ZeebeConditionalFilterValidator
       final String[] names = variableNames.split(",");
       for (final String name : names) {
         final String trimmedName = name.trim();
+
         if (trimmedName.isEmpty()) {
           validationResultCollector.addError(
               0,
@@ -64,7 +65,9 @@ public class ZeebeConditionalFilterValidator
                   "Variable names must not contain empty names but '%s' given."
                       + " Please provide a comma-separated list of variable names without empty entries.",
                   variableNames));
+          return;
         }
+
         if (trimmedName.startsWith(ZEEBE_EXPRESSION_PREFIX)) {
           validationResultCollector.addError(
               0,

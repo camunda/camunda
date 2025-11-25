@@ -60,9 +60,9 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
       final ExecutableConditional executableElement) {
     final var variableNames = conditionalFilter.getVariableNames();
     if (variableNames != null && !variableNames.isBlank()) {
-      final var events = variableNames.split(",");
+      final var names = variableNames.split(",");
       executableElement.setVariableNames(
-          Arrays.stream(events).map(String::trim).filter(s -> !s.isEmpty()).toList());
+          Arrays.stream(names).map(String::trim).filter(s -> !s.isEmpty()).toList());
     }
   }
 
