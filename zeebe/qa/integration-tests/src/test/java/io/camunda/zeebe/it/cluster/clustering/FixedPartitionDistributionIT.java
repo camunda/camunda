@@ -10,7 +10,9 @@ package io.camunda.zeebe.it.cluster.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.configuration.FixedPartition;
+import io.camunda.configuration.Node;
+import io.camunda.configuration.Partitioning;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -59,17 +61,14 @@ final class FixedPartitionDistributionIT {
     broker.withUnifiedConfig(
         cfg -> {
           cfg.getCluster().getRaft().setPriorityElectionEnabled(false);
+          cfg.getCluster()
+              .setPartitioning(
+                  new Partitioning(
+                      Partitioning.Scheme.FIXED,
+                      List.of(
+                          new FixedPartition(1, List.of(new Node(1), new Node(2))),
+                          new FixedPartition(2, List.of(new Node(0), new Node(2))),
+                          new FixedPartition(3, List.of(new Node(0), new Node(1))))));
         });
-    // set partitioning via properties because it is not yet supported in unified config
-    broker.withProperty("zeebe.broker.experimental.partitioning.scheme", Scheme.FIXED);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[0].partitionId", 1);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[0].nodes.[0].nodeId", 1);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[0].nodes.[1].nodeId", 2);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[1].partitionId", 2);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[1].nodes.[0].nodeId", 0);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[1].nodes.[1].nodeId", 2);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[2].partitionId", 3);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[2].nodes.[0].nodeId", 0);
-    broker.withProperty("zeebe.broker.experimental.partitioning.fixed.[2].nodes.[1].nodeId", 1);
   }
 }
