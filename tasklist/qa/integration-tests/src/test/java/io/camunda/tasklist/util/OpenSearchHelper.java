@@ -46,6 +46,8 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
+  @Autowired private VariableTemplate variableIndex;
+
   @Autowired
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
@@ -152,24 +154,27 @@ public class OpenSearchHelper implements NoSqlHelper {
       final SearchResponse<VariableEntity> response =
           osClient.search(
               search ->
-                  search.query(
-                      q ->
-                          q.constantScore(
-                              cs ->
-                                  cs.filter(
-                                      filter ->
-                                          filter.terms(
-                                              terms ->
-                                                  terms
-                                                      .field(VariableTemplate.NAME)
-                                                      .terms(
-                                                          tv ->
-                                                              tv.value(
-                                                                  Arrays.stream(varNames)
-                                                                      .map(m -> FieldValue.of(m))
-                                                                      .collect(
-                                                                          Collectors
-                                                                              .toList()))))))),
+                  search
+                      .index(variableIndex.getAlias())
+                      .query(
+                          q ->
+                              q.constantScore(
+                                  cs ->
+                                      cs.filter(
+                                          filter ->
+                                              filter.terms(
+                                                  terms ->
+                                                      terms
+                                                          .field(VariableTemplate.NAME)
+                                                          .terms(
+                                                              tv ->
+                                                                  tv.value(
+                                                                      Arrays.stream(varNames)
+                                                                          .map(
+                                                                              m -> FieldValue.of(m))
+                                                                          .collect(
+                                                                              Collectors
+                                                                                  .toList()))))))),
               VariableEntity.class);
       return response.hits().total().value() == varNames.length;
     } catch (final IOException e) {
