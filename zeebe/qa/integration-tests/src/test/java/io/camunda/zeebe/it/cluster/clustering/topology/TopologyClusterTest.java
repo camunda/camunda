@@ -34,7 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ZeebeIntegration
 public final class TopologyClusterTest {
 
-  @TestZeebe(autoStart = false)
+  @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestCluster CLUSTER =
       TestCluster.builder()
           .withEmbeddedGateway(false)

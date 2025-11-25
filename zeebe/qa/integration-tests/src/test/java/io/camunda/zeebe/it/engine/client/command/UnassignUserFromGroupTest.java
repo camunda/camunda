@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class UnassignUserFromGroupTest {
   @TestZeebe
-  private final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
@@ -36,7 +36,7 @@ public class UnassignUserFromGroupTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     username =
         client
             .newCreateUserCommand()

@@ -30,20 +30,19 @@ public final class CreateLargeDeploymentTest {
 
   private static final int MAX_MSG_SIZE_MB = 1;
 
-  CamundaClient client;
-
   @TestZeebe
-  final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(
               b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(MAX_MSG_SIZE_MB)));
 
+  CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 

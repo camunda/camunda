@@ -122,5 +122,15 @@ public @interface ZeebeIntegration {
      * <p>Defaults to an empty string if no initialization is required.
      */
     String initMethod() default "";
+
+    /**
+     * If true, the data of this instance is purged after each test method execution. When applied
+     * to a shared instance (defined as static), each test method still has a clean state and is not
+     * influenced by the data created by other test methods.
+     *
+     * @see <a href="https://docs.camunda.io/docs/self-managed/operational-guides/data-purge/">Purge
+     *     documentation</a>
+     */
+    boolean purgeAfterEach() default true;
   }
 }

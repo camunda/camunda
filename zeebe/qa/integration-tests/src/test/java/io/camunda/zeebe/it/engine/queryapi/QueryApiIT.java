@@ -49,7 +49,7 @@ final class QueryApiIT {
           .endEvent()
           .done();
 
-  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  @TestZeebe(initMethod = "initTestStandaloneBroker", purgeAfterEach = false)
   private static TestStandaloneBroker broker;
 
   private static long processDefinitionKey;
