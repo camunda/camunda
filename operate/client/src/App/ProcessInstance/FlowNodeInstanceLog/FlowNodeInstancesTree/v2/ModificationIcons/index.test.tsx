@@ -33,7 +33,7 @@ const Wrapper = ({children}: Props) => {
   );
 };
 
-describe('<ModificationIcons /> v3', () => {
+describe('<ModificationIcons />', () => {
   beforeEach(() => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
