@@ -69,8 +69,8 @@ public final class IdentitySetupInitializeProcessor
     return true;
   }
 
-  private void createGroupMembers(final long key, final Collection<GroupRecordValue> roleMembers) {
-    roleMembers.forEach(
+  private void createGroupMembers(final long key, final Collection<GroupRecordValue> groupMembers) {
+    groupMembers.forEach(
         groupMember ->
             commandWriter.appendFollowUpCommand(key, GroupIntent.ADD_ENTITY, groupMember));
   }
