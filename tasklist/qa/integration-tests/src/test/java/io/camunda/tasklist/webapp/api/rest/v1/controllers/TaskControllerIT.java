@@ -357,6 +357,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var taskId =
           createTask(bpmnProcessId, flowNodeBpmnId, 1)
               .claimAndCompleteHumanTask(flowNodeBpmnId, "varA", "\"test\"", "varB", "2.02")
+              .variablesExist("varA", "varB")
               .getTaskId();
 
       // when
@@ -382,6 +383,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var taskId =
           createTask(
                   bpmnProcessId, flowNodeBpmnId, "{\"var1\": 111, \"var2\": 22.2, \"var2\": 22.2}")
+              .variablesExist("var1", "var2")
               .getTaskId();
 
       // when
