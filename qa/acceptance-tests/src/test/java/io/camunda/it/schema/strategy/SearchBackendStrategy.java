@@ -35,7 +35,8 @@ public interface SearchBackendStrategy extends AutoCloseable {
 
   void configureStandaloneSchemaManager(final TestStandaloneSchemaManager schemaManager);
 
-  void configureStandaloneBackupManager(final TestStandaloneBackupManager schemaManager);
+  void configureStandaloneBackupManager(
+      final TestStandaloneBackupManager schemaManager, final String repositoryName);
 
   void configureCamundaApplication(final TestCamundaApplication camunda);
 
