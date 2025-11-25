@@ -135,10 +135,10 @@ const queryKeys = {
   },
   batchOperations: {
     get: (batchOperationKey: string) => ['batchOperation', batchOperationKey],
-    query: (payload: QueryBatchOperationsRequestBody) => [
-      'batchOperations',
-      payload,
-    ],
+    query: (payload?: QueryBatchOperationsRequestBody) =>
+      payload !== undefined
+        ? ['batchOperations', payload]
+        : ['batchOperations'],
   },
 };
 
