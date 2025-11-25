@@ -55,6 +55,12 @@ const queryKeys = {
         ? ['decisionDefinitionsSearch', payload]
         : ['decisionDefinitionsSearch'],
   },
+  decisionDefinitionXml: {
+    get: (decisionDefinitionKey?: string) => [
+      'decisionDefinitionXml',
+      decisionDefinitionKey,
+    ],
+  },
   processDefinitionXml: {
     get: (processDefinitionKey?: string) => [
       'processDefinitionXml',
