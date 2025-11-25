@@ -259,7 +259,7 @@ class OperateProcessInstancePage {
     await this.modifyDialogContinueButton.click();
   }
 
-  async getInstanceHistoryItems() {
+  async getAllInstanceHistoryItems() {
     return this.instanceHistory.getByRole('treeitem').getByTestId(/^node-details-/).all();
   }
 
@@ -269,6 +269,24 @@ class OperateProcessInstancePage {
       .getByRole('group')
       .locator('.cds--tree-parent-node__toggle-icon');
     return await expandingElements.count();
+  }
+
+  async ensureElementExpanded(expandingElementName: string) {
+    const expandingElement = this.instanceHistory
+      .getByRole('group')
+      .getByLabel(expandingElementName, { exact: true })
+    expect(expandingElement).toBeVisible();
+    const expandToggle = expandingElement
+      .locator('.cds--tree-parent-node__toggle-icon');
+    await expect(expandToggle).toBeVisible();
+    var isExpanded = await expandingElement.getAttribute('aria-expanded');
+    expect(isExpanded).not.toBeNull();
+
+    if (isExpanded === 'false') {
+      await expandToggle.click();
+    }
+    isExpanded = await expandingElement.getAttribute('aria-expanded');
+    expect(isExpanded).toBe('true');
   }
 }
 

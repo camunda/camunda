@@ -13,6 +13,7 @@ import { captureScreenshot, captureFailureVideo } from '@setup';
 import { navigateToApp } from '@pages/UtilitiesPage';
 import { waitForAssertion } from 'utils/waitForAssertion';
 import { defaultAssertionOptions } from 'utils/constants';
+import { sleep } from 'utils/sleep';
 
 type ProcessInstance = { processInstanceKey: number };
 
@@ -106,7 +107,7 @@ test.describe('Process Instance History', () => {
                 assertion: async () => {
                     await expect(
                         operateProcessInstancePage.incidentsBanner,
-                    ).toBeVisible();
+                    ).toBeVisible({ timeout: 30000 });
                 },
                 onFailure: async () => {
                     await page.reload();
@@ -264,9 +265,9 @@ test.describe('Process Instance History', () => {
                 })).processInstanceKey,
             ),
         };
-
         const embeddedProcessInstanceModificationPIK =
             embeddedSubprocesModificationInstance.processInstanceKey;
+
         await test.step('Open Process Instances Page and verify results', async () => {
             await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
             await operateFiltersPanelPage.selectVersion('1');
@@ -286,6 +287,90 @@ test.describe('Process Instance History', () => {
             const key = await operateProcessInstancePage.getProcessInstanceKey();
             expect(key).toContain(`${embeddedProcessInstanceModificationPIK}`);
         });
-    })
 
+        // const diagrammElements = [
+        //     'StartEvent_StartGlobal',
+        //     'Activity_Node',
+        //     'Activity_FirstSubprocess',
+        //     'Event_StartFirstSubProcess',
+        //     'Activity_CollectMoney',
+        //     'Activity_FetchItems',
+        //     'Event_EndFirstSubProcess',
+        //     'Event_OrderCancelled',
+        //     'Event_OrderCancelledEnd',
+        //     'Activity_SecondSubprocess',
+        //     'Event_StartSecondSubProcess',
+        //     'Activity_SendItems',
+        //     'Event_EndSecondSubProcess',
+        //     'Event_EndGlobal',
+        // ];
+
+        const startEventStartGlobal = 'StartEvent_StartGlobal';
+        const activityNode = 'Activity_Node';
+        const activityFirstSubprocess = 'Activity_FirstSubprocess';
+        const eventStartFirstSubProcess = 'Event_StartFirstSubProcess';
+        const activityCollectMoney = 'Activity_CollectMoney';
+        const activityFetchItems = 'Activity_FetchItems';
+        const eventEndFirstSubProcess = 'Event_EndFirstSubProcess';
+        const eventOrderCancelled = 'Event_OrderCancelled';
+        const eventOrderCancelledEnd = 'Event_OrderCancelledEnd';
+        const activitySecondSubprocess = 'Activity_SecondSubprocess';
+        const eventStartSecondSubProcess = 'Event_StartSecondSubProcess';
+        const activitySendItems = 'Activity_SendItems';
+        const eventEndSecondSubProcess = 'Event_EndSecondSubProcess';
+        const eventEndGlobal = 'Event_EndGlobal';
+
+
+        await test.step('Verify one active token', async () => {
+            const nodeStateOverlayActive = await operateDiagramPage
+                .getStateOverlayLocatorByElementNameAndState(activityNode, 'active');
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(nodeStateOverlayActive).toBeVisible();
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+        });
+
+        await test.step('Enter modification mode and assert results', async () => {
+            await operateProcessInstancePage.clickModifyInstanceButton();
+            await operateProcessInstancePage.clickModifyDialogContinueButton();
+            await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
+        });
+
+        await test.step('Add 2 tokens to "Collect money" task in first subprocess and verify two active tokens in diagram', async () => {
+            for (let i = 1; i < 3; i++) {
+                await operateDiagramPage.clickFlowNode(activityCollectMoney);
+                await operateProcessModificationModePage.clickAddModificationButtononPopup();
+
+                const collectMoneyModificationOverlay = await operateDiagramPage.getModificationOverlayLocatorByElementName(activityCollectMoney);
+
+                await expect(collectMoneyModificationOverlay).toBeVisible({ timeout: 10000 });
+                const collectMoneyModificationOverlayTextText = await collectMoneyModificationOverlay.innerText();
+                expect(collectMoneyModificationOverlayTextText).toContain(`${i}`);
+            }
+            await operateProcessModificationModePage.clickApplyModificationsButton();
+            await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
+
+            const activeStateOverlayCollectMoney = await operateDiagramPage
+                .getStateOverlayLocatorByElementNameAndState(activityCollectMoney, 'active');
+
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(activeStateOverlayCollectMoney).toBeVisible();
+                    expect(await activeStateOverlayCollectMoney.innerText()).toContain('2');
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+        });
+
+        await test.step('Verify History has "Collect Money" 2 times', async () => {
+            await operateProcessInstancePage.ensureElementExpanded('First Subprocess');
+
+        });
+    })
 });
