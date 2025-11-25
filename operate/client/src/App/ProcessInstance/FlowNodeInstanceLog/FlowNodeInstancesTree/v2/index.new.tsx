@@ -123,6 +123,10 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       });
 
       const handleSelect = () => {
+        if (isRoot) {
+          return;
+        }
+
         selectFlowNode(rootNode, {
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
@@ -449,6 +453,10 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       });
 
       const handleSelect = async () => {
+        if (isRoot) {
+          return;
+        }
+
         if (elementType !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
           selectFlowNode(rootNode, {
             flowNodeId: elementId,
