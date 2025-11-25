@@ -227,4 +227,16 @@ describe('buildProcessInstanceFilter', () => {
       elementInstanceState: {$neq: 'COMPLETED'},
     });
   });
+
+  it('does not add version or processDefinitionVersionTag to the filter', () => {
+    const filters: ProcessInstanceFilters = {
+      version: 'v1',
+      process: 'my-process',
+    };
+
+    const result = buildProcessInstanceFilter(filters);
+
+    expect(result.processDefinitionVersionTag).toBeUndefined();
+    expect(result.processDefinitionVersion).toBeUndefined();
+  });
 });
