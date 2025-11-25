@@ -422,7 +422,7 @@ jobs:
 
   elasticsearch-integration-tests:
     name: "Database Integration Tests / Elasticsearch"
-    # if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
@@ -434,7 +434,7 @@ jobs:
   opensearch-integration-tests:
     name: "Database Integration Tests / Opensearch"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    # if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     secrets: inherit
     with:
@@ -444,7 +444,7 @@ jobs:
 
   rdbms-h2-integration-tests:
     name: "Database Integration Tests / RDBMS H2"
-    # if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
@@ -455,62 +455,62 @@ jobs:
   rdbms-postgres-integration-tests:
     name: "Database Integration Tests / RDBMS Postgres"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    if: github.event_name == 'schedule'
+    needs: [ detect-changes ]
     secrets: inherit
     with:
       database-type: "postgres"
       database-image-version: "18-alpine"
       it-database-type: "rdbms_postgres"
 
-    #    if: github.event_name == 'schedule'
-    needs: [ detect-changes ]
 
   rdbms-mysql-integration-tests:
     name: "Database Integration Tests / RDBMS MySQL"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    if: github.event_name == 'schedule'
+    needs: [ detect-changes ]
     secrets: inherit
     with:
       database-type: "mysql"
       database-image-version: "9.4"
       it-database-type: "rdbms_mysql"
 
-    #    if: github.event_name == 'schedule'
-    needs: [ detect-changes ]
 
   rdbms-mariadb-integration-tests:
     name: "Database Integration Tests / RDBMS MariaDB"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    if: github.event_name == 'schedule'
+    needs: [ detect-changes ]
     secrets: inherit
     with:
       database-type: "mariadb"
       database-image-version: "12.0"
       it-database-type: "rdbms_mariadb"
 
-    #    if: github.event_name == 'schedule'
-    needs: [ detect-changes ]
 
   rdbms-mssql-integration-tests:
     name: "Database Integration Tests / RDBMS MSSQL"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    if: github.event_name == 'schedule'
+    needs: [ detect-changes ]
     secrets: inherit
     with:
       database-type: "mssql"
       database-image-version: "2022-latest"
       it-database-type: "rdbms_mssql"
 
-    #    if: github.event_name == 'schedule'
-    needs: [ detect-changes ]
 
   rdbms-oracle-integration-tests:
     name: "Database Integration Tests / RDBMS Oracle"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    if: github.event_name == 'schedule'
+    needs: [ detect-changes ]
     secrets: inherit
     with:
       database-type: "oracle"
       database-image-version: "23-slim-faststart"
       it-database-type: "rdbms_oracle"
 
-    #    if: github.event_name == 'schedule'
-    needs: [ detect-changes ]
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
