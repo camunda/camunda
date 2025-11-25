@@ -136,20 +136,25 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
           return;
         }
 
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
         if (modificationsStore.state.status === 'adding-token') {
           modificationsStore.finishAddingToken(
             businessObjects,
             elementId,
             scopeKey,
           );
-        } else {
-          tracking.track({eventName: 'instance-history-item-clicked'});
-          selectFlowNode(rootNode, {
-            flowNodeId: elementId,
-            flowNodeInstanceId: scopeKey,
-            isMultiInstance: false,
-          });
+          return;
         }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: false,
+        });
       };
 
       return (
@@ -220,21 +225,26 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
       });
 
       const handleSelect = () => {
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
         if (modificationsStore.state.status === 'adding-token') {
           modificationsStore.finishAddingToken(
             businessObjects,
             elementId,
             scopeKey,
           );
-        } else {
-          tracking.track({eventName: 'instance-history-item-clicked'});
-          selectFlowNode(rootNode, {
-            flowNodeId: elementId,
-            flowNodeInstanceId: scopeKey,
-            isMultiInstance: false,
-            isPlaceholder: true,
-          });
+          return;
         }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: false,
+          isPlaceholder: true,
+        });
       };
 
       return (
@@ -351,21 +361,26 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         );
 
       const handleSelect = async () => {
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
         if (modificationsStore.state.status === 'adding-token') {
           modificationsStore.finishAddingToken(
             businessObjects,
             elementId,
             scopeKey,
           );
-        } else {
-          tracking.track({eventName: 'instance-history-item-clicked'});
-          selectFlowNode(rootNode, {
-            flowNodeId: elementId,
-            flowNodeInstanceId: scopeKey,
-            isMultiInstance: isMultiInstance(businessObject),
-            isPlaceholder: true,
-          });
+          return;
         }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: isMultiInstance(businessObject),
+          isPlaceholder: true,
+        });
       };
 
       const elementProps = {
@@ -500,6 +515,10 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
           selectFlowNode(rootNode, {
             processInstanceId: processInstance.processInstanceKey,
           });
+          return;
+        }
+
+        if (modificationsStore.state.status === 'moving-token') {
           return;
         }
 
