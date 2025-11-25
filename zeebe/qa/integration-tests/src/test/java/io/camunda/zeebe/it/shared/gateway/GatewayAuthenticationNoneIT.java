@@ -17,6 +17,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.response.Topology;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -126,7 +127,8 @@ public class GatewayAuthenticationNoneIT {
           .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
           .withProperty("zeebe.broker.gateway.security.authentication.mode", "none")
           .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
-          .withProperty("camunda.identity.audience", ORCHESTRATION_CLIENT_AUDIENCE);
+          .withProperty("camunda.identity.audience", ORCHESTRATION_CLIENT_AUDIENCE)
+          .withSecondaryStorageType(SecondaryStorageType.elasticsearch);
 
   @BeforeEach
   void beforeEach() {

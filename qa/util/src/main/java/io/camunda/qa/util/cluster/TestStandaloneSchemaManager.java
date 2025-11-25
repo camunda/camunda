@@ -9,9 +9,11 @@ package io.camunda.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneSchemaManager;
+import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
+import java.util.function.Consumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
@@ -39,6 +41,12 @@ public class TestStandaloneSchemaManager
   @Override
   public boolean isGateway() {
     return false;
+  }
+
+  @Override
+  public TestStandaloneSchemaManager withUnifiedConfig(final Consumer<Camunda> modifier) {
+    throw new UnsupportedOperationException(
+        "TestStandaloneSchemaManager does not support unified configuration");
   }
 
   @Override

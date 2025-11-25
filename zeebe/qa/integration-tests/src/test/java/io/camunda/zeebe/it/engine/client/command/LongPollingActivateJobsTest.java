@@ -35,7 +35,7 @@ public class LongPollingActivateJobsTest {
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withGatewayConfig(c -> c.getLongPolling().setEnabled(true));
+          .withUnifiedConfig(c -> c.getApi().getLongPolling().setEnabled(true));
 
   ZeebeResourcesHelper resourcesHelper;
 
@@ -70,7 +70,8 @@ public class LongPollingActivateJobsTest {
     // given
     final int availableJobs = 10;
 
-    final int maxMessageSize = (int) zeebe.brokerConfig().getNetwork().getMaxMessageSizeInBytes();
+    final int maxMessageSize =
+        (int) zeebe.unifiedConfig().getCluster().getNetwork().getMaxMessageSize().toBytes();
     final var largeVariableValue = "x".repeat(maxMessageSize / 4);
     final String variablesJson = String.format("{\"variablesJson\":\"%s\"}", largeVariableValue);
 

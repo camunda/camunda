@@ -67,7 +67,7 @@ public class ClusteredBackupRestoreTest {
             .withBrokersCount(3)
             .withPartitionsCount(3)
             .withReplicationFactor(1)
-            .withBrokerConfig(broker -> configureBackupStore(broker.brokerConfig()))
+            .withBrokerConfig(broker -> configureBackupStore(broker.unifiedConfig()))
             .build()
             .start()
             .awaitCompleteTopology()) {
@@ -102,7 +102,7 @@ public class ClusteredBackupRestoreTest {
     // then -- restoring with one broker is successful
     try (final var restoreApp =
         new TestRestoreApp()
-            .withConfig(
+            .withUnifiedConfig(
                 config -> {
                   configureBackupStore(config);
                   config.getCluster().setSize(1);

@@ -33,7 +33,7 @@ class ActivateJobsTest {
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withGatewayConfig(c -> c.getLongPolling().setEnabled(true));
+          .withUnifiedConfig(c -> c.getApi().getLongPolling().setEnabled(true));
 
   ZeebeResourcesHelper resourcesHelper;
 

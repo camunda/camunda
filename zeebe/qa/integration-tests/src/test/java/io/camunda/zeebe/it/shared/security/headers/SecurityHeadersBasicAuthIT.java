@@ -23,6 +23,7 @@ import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -49,18 +50,23 @@ public class SecurityHeadersBasicAuthIT extends SecurityHeadersBaseIT {
   @AutoClose private static CamundaClient camundaClient;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withAuthorizationsEnabled()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC);
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withSecondaryStorageType(SecondaryStorageType.elasticsearch);
 
   @BeforeEach
   void beforeEach() {
     broker
         .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-        .withProperty(
-            "camunda.data.secondary-storage.elasticsearch.url", CONTAINER.getHttpHostAddress());
+        .withUnifiedConfig(
+            cfg ->
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getElasticsearch()
+                    .setUrl(CONTAINER.getHttpHostAddress()));
     broker.start();
 
     camundaClient = createClient(broker, USERNAME, PASSWORD);

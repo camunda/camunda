@@ -51,27 +51,25 @@ class ScaleResiliencyTest {
             .useRecordingExporter(true)
             .withGatewaysCount(1)
             .withGatewayConfig(
-                g ->
-                    g.gatewayConfig()
-                        .getCluster()
-                        .getMembership()
-                        // Decrease the timeouts for fast convergence of gateway topology.
-                        .setSyncInterval(Duration.ofSeconds(1))
-                        .setFailureTimeout(Duration.ofSeconds(2)))
+                g -> {
+                  final var membership = g.unifiedConfig().getCluster().getMembership();
+                  // Decrease the timeouts for fast convergence of gateway topology.
+                  membership.setSyncInterval(Duration.ofSeconds(1));
+                  membership.setFailureTimeout(Duration.ofSeconds(2));
+                })
             .withEmbeddedGateway(false)
             .withBrokersCount(initialClusterSize)
             .withPartitionsCount(partitionsCount)
             .withReplicationFactor(replicationFactor)
             .withBrokerConfig(
                 b -> {
-                  b.brokerConfig()
-                      .getCluster()
-                      .getMembership()
-                      // Decrease the timeouts for fast convergence of gateway topology.
-                      .setSyncInterval(Duration.ofSeconds(1))
-                      .setFailureTimeout(Duration.ofSeconds(2));
+                  // Decrease the timeouts for fast convergence of gateway topology.
+                  final var membership = b.unifiedConfig().getCluster().getMembership();
+                  membership.setSyncInterval(Duration.ofSeconds(1));
+                  membership.setFailureTimeout(Duration.ofSeconds(2));
+
                   b.withWorkingDirectory(
-                      getDataDirectory(tmpDir, b.brokerConfig().getCluster().getNodeId()));
+                      getDataDirectory(tmpDir, b.unifiedConfig().getCluster().getNodeId()));
                 })
             .build();
     cluster.start();
@@ -148,12 +146,12 @@ class ScaleResiliencyTest {
         final Path dataDirectory) {
       final var newBroker =
           new TestStandaloneBroker()
-              .withBrokerConfig(
-                  b -> {
-                    b.getCluster().setClusterSize(newClusterSize);
-                    b.getCluster().setNodeId(newBrokerId);
-                    b.getCluster().setReplicationFactor(replicationFactor);
-                    b.getCluster()
+              .withUnifiedConfig(
+                  uc -> {
+                    uc.getCluster().setSize(newClusterSize);
+                    uc.getCluster().setNodeId(newBrokerId);
+                    uc.getCluster().setReplicationFactor(replicationFactor);
+                    uc.getCluster()
                         .setInitialContactPoints(
                             List.of(
                                 cluster

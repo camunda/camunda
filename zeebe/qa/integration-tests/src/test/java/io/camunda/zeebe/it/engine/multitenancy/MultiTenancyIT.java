@@ -32,6 +32,7 @@ import io.camunda.client.api.response.UnassignUserTaskResponse;
 import io.camunda.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.client.api.response.UpdateUserTaskResponse;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -89,6 +90,7 @@ public class MultiTenancyIT {
           .withBasicAuth()
           .withMultiTenancyEnabled()
           .withAuthenticatedAccess()
+          .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
           .withSecurityConfig(
               cfg ->
                   cfg.getInitialization()
@@ -122,9 +124,12 @@ public class MultiTenancyIT {
   static void init() {
     BROKER
         .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-        .withProperty(
-            "camunda.data.secondary-storage.elasticsearch.url",
-            "http://" + CONTAINER.getHttpHostAddress())
+        .withUnifiedConfig(
+            cfg ->
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getElasticsearch()
+                    .setUrl("http://" + CONTAINER.getHttpHostAddress()))
         .start();
 
     // We can do the setup with any user. We pick user A for convenience.

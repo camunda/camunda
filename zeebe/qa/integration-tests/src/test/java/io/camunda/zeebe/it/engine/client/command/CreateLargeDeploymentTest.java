@@ -36,8 +36,11 @@ public final class CreateLargeDeploymentTest {
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withBrokerConfig(
-              b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(MAX_MSG_SIZE_MB)));
+          .withUnifiedConfig(
+              b ->
+                  b.getCluster()
+                      .getNetwork()
+                      .setMaxMessageSize(DataSize.ofMegabytes(MAX_MSG_SIZE_MB)));
 
   ZeebeResourcesHelper resourcesHelper;
 
@@ -63,9 +66,13 @@ public final class CreateLargeDeploymentTest {
             .send();
 
     // then
+    final var expectedMessage =
+        useRest
+            ? "Request size is above configured maxMessageSize."
+            : "gRPC message exceeds maximum size";
     assertThatThrownBy(deployLargeProcess::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Request size is above configured maxMessageSize.");
+        .hasMessageContaining(expectedMessage);
 
     // then - can deploy another process
     final var deployedValidProcess =
