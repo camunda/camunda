@@ -376,8 +376,8 @@ public class TaskService {
     }
 
     return new String[] {
-      TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
-      TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
+      TAG_KEY_BPMN_PROCESS_ID, Optional.ofNullable(task.getBpmnProcessId()).orElse("unknown"),
+      TAG_KEY_FLOW_NODE_ID, Optional.ofNullable(task.getFlowNodeBpmnId()).orElse("unknown"),
       TAG_KEY_USER_ID, Optional.ofNullable(keyUserId).orElse(DEFAULT_USER),
       TAG_KEY_ORGANIZATION_ID, organizationService.getOrganizationIfPresent()
     };
