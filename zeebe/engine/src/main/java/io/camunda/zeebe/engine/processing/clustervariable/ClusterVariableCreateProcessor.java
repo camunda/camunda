@@ -8,15 +8,20 @@
 package io.camunda.zeebe.engine.processing.clustervariable;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 
 @ExcludeAuthorizationCheck
 public class ClusterVariableCreateProcessor
@@ -43,6 +48,13 @@ public class ClusterVariableCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
+    final var isAuthorized = isAuthorized(command);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      writers.rejection().appendRejection(command, rejection.type(), rejection.reason());
+      writers.response().writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
     clusterVariableRecordValidator
         .validateName(clusterVariableRecord)
@@ -85,5 +97,16 @@ public class ClusterVariableCreateProcessor
                 writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private Either<Rejection, Void> isAuthorized(final TypedRecord<ClusterVariableRecord> command) {
+    final var authRequest =
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.CLUSTER_VARIABLE,
+                PermissionType.CREATE,
+                command.getValue().getTenantId())
+            .addResourceId(command.getValue().getName());
+    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

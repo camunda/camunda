@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -101,4 +102,7 @@ public abstract class Authorizations {
 
   public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_OPERATOR_AUTHORIZATION =
       Authorization.of(a -> a.auditLog().readOperatorAuditLog());
+
+  public static final Authorization<ClusterVariableEntity> CLUSTER_VARIABLE_READ_AUTHORIZATION =
+      Authorization.of(a -> a.clusterVariable().read());
 }
