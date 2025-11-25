@@ -6,11 +6,11 @@ services:
     container_name: postgres
     image: postgres:17.5-alpine
     ports:
-      - '5432:5432'
+      - "5432:5432"
     environment:
       POSTGRES_DB: identity
       POSTGRES_USER: identity
-      POSTGRES_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"
     networks:
       - zeebe_network
 
@@ -22,7 +22,7 @@ services:
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
-      - 'ES_JAVA_OPTS=-Xms1024m -Xmx1024m'
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
       - path.repo=/usr/local/els-snapshots
     ulimits:
       memlock:
@@ -45,7 +45,7 @@ services:
       - discovery.type=single-node
       - plugins.security.disabled=true
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
-      - 'OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m' # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
     ulimits:
       memlock:
@@ -77,17 +77,17 @@ services:
     container_name: keycloak
     image: bitnami/keycloak:26.3.3
     ports:
-      - '18080:8080'
+      - "18080:8080"
     environment:
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
       KEYCLOAK_DATABASE_HOST: postgres
       KEYCLOAK_DATABASE_NAME: identity
       KEYCLOAK_DATABASE_USER: identity
-      KEYCLOAK_DATABASE_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+      KEYCLOAK_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8080/auth']
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]
       interval: 30s
       timeout: 15s
       retries: 8
@@ -97,9 +97,9 @@ services:
 
   camunda:
     container_name: camunda
-    image: camunda/camunda:SNAPSHOT
+    image: camunda/camunda:8.8-SNAPSHOT
     environment:
-      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
       - ZEEBE_BROKER_NETWORK_HOST=camunda
       - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,identity
       - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false

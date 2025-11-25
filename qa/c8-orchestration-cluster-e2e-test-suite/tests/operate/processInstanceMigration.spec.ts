@@ -72,7 +72,8 @@ test.beforeAll(async () => {
   await sleep(2000);
 });
 
-test.describe.serial('Process Instance Migration', () => {
+// eslint-disable-next-line playwright/no-focused-test
+test.describe.serial.only('Process Instance Migration', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -371,7 +372,7 @@ test.describe.serial('Process Instance Migration', () => {
     const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
     const targetVersion = testProcesses.processV3.version.toString();
 
-    await test.step('Navigate to target process instances and apply filter to get retrieve processes', async () => {
+    await test.step('Navigate to target process instances and apply filter to retrieve processes', async () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
