@@ -381,6 +381,8 @@ jobs:
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            # Load test
+            The test has been set up successfully. You can observe it [here](https://grafana.dev.zeebe.io/d/zeebe-dashboard/zeebe?var-namespace=${{ inputs.name }})
             ## Load test \`${{ inputs.name }}\` values
             \`\`\`yaml
             $(helm get values ${{ inputs.name }}-test -n ${{ inputs.name }})
