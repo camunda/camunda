@@ -651,12 +651,15 @@ public class JobSearchTest {
         camundaClient.newJobSearchRequest().sort(s -> s.worker().desc()).send().join();
 
     // then
+    // note: For OracleDB empty strings are treated as NULLs, so we need to handle nulls in sorting
     assertThat(resultAsc.items())
         .extracting(Job::getWorker)
-        .containsExactlyElementsOf(all.stream().sorted(Comparator.naturalOrder()).toList());
+        .containsExactlyElementsOf(
+            all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList());
     assertThat(resultDesc.items())
         .extracting(Job::getWorker)
-        .containsExactlyElementsOf(all.stream().sorted(Comparator.reverseOrder()).toList());
+        .containsExactlyElementsOf(
+            all.stream().sorted(Comparator.nullsFirst(Comparator.reverseOrder())).toList());
   }
 
   @Test

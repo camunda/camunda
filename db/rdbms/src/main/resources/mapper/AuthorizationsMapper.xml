@@ -48,7 +48,7 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
     ) t
     JOIN ${prefix}AUTHORIZATIONS a ON t.AUTHORIZATION_KEY = a.AUTHORIZATION_KEY AND t.OWNER_ID = a.OWNER_ID AND t.OWNER_TYPE = a.OWNER_TYPE AND
-    t.RESOURCE_TYPE = a.RESOURCE_TYPE AND t.RESOURCE_ID = a.RESOURCE_ID AND t.RESOURCE_PROPERTY_NAME = a.RESOURCE_PROPERTY_NAME
+    t.RESOURCE_TYPE = a.RESOURCE_TYPE AND t.RESOURCE_ID = a.RESOURCE_ID
     <!-- outer orderBy for actual sorting -->
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>

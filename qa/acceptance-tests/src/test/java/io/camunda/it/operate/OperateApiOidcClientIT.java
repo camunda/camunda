@@ -40,7 +40,7 @@ import org.springframework.http.HttpStatus;
  * internal API (as one class, to save time on Keycloak setup).
  */
 @MultiDbTest(setupKeycloak = true)
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateApiOidcClientIT {
 
