@@ -6,7 +6,7 @@ networks:
 services:
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:${IMAGE_VERSION:-18-alpine}
     restart: always
     # set shared memory limit when using docker-compose
     shm_size: 128mb
@@ -23,7 +23,7 @@ services:
       - "5432:5432"
 
   mssql:
-    image: mcr.microsoft.com/mssql/server:2019-latest
+    image: mcr.microsoft.com/mssql/server:${IMAGE_VERSION:-2019-latest}
     restart: always
     environment:
       ACCEPT_EULA: y
@@ -32,7 +32,7 @@ services:
       - "1433:1433"
 
   mariadb:
-    image: mariadb:11.8
+    image: mariadb:${IMAGE_VERSION:-12.0}
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: example
@@ -43,7 +43,7 @@ services:
       - "3306:3306"
 
   mysql:
-    image: mysql:8.4
+    image: mysql:${IMAGE_VERSION:-9.4}
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: example
@@ -56,7 +56,7 @@ services:
       # Name of the Docker Compose service
   oracle:
     # Docker Hub image (feel free to change the tag "latest" to any other available one)
-    image: gvenzl/oracle-free:latest
+    image: gvenzl/oracle-free:${IMAGE_VERSION:-23-slim-faststart}
     # Forward Oracle port to localhost
     ports:
       - "1521:1521"
@@ -74,7 +74,7 @@ services:
       start_period: 5s
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+    image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.18.4}
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -98,7 +98,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.19.3
+    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.3}
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
