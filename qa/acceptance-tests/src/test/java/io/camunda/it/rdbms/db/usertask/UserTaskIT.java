@@ -32,6 +32,7 @@ import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -192,7 +193,8 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 UserTaskQuery.of(b -> b),
-                resourceAccessChecksFromResourceIds(userTask.processDefinitionId()));
+                resourceAccessChecksFromResourceIds(
+                    AuthorizationResourceType.PROCESS_DEFINITION, userTask.processDefinitionId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

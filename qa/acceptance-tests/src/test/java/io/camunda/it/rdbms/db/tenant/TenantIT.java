@@ -32,6 +32,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UserSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,7 +89,8 @@ public class TenantIT {
     final var searchResult =
         reader.search(
             TenantQuery.of(b -> b),
-            CommonFixtures.resourceAccessChecksFromResourceIds(tenant.tenantId()));
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.TENANT, tenant.tenantId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

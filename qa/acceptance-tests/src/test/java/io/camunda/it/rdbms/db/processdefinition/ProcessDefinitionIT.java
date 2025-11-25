@@ -24,6 +24,7 @@ import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -106,7 +107,9 @@ public class ProcessDefinitionIT {
     final var searchResult =
         processDefinitionReader.search(
             ProcessDefinitionQuery.of(b -> b),
-            resourceAccessChecksFromResourceIds(processDefinition.processDefinitionId()));
+            resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                processDefinition.processDefinitionId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

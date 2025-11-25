@@ -26,6 +26,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.assertj.core.data.TemporalUnitWithinOffset;
@@ -119,7 +120,9 @@ public class ElementInstanceIT {
     final var searchResult =
         reader.search(
             FlowNodeInstanceQuery.of(b -> b),
-            resourceAccessChecksFromResourceIds(elementInstance.processDefinitionId()));
+            resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                elementInstance.processDefinitionId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

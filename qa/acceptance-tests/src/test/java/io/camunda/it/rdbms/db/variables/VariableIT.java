@@ -28,6 +28,7 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -156,6 +157,7 @@ public class VariableIT {
             .search(
                 VariableQuery.of(b -> b),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
+                    AuthorizationResourceType.PROCESS_DEFINITION,
                     randomizedVariable.processDefinitionId()));
 
     assertThat(searchResult).isNotNull();
