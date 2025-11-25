@@ -25,6 +25,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.sort.DecisionInstanceSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -83,7 +84,8 @@ public class DecisionInstanceIT {
     final var searchResult =
         decisionInstanceReader.search(
             DecisionInstanceQuery.of(b -> b),
-            CommonFixtures.resourceAccessChecksFromResourceIds(original.decisionDefinitionId()));
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.DECISION_DEFINITION, original.decisionDefinitionId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

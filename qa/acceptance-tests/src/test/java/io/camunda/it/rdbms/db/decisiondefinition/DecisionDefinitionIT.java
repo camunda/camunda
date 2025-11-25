@@ -22,6 +22,7 @@ import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.sort.DecisionDefinitionSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -113,6 +114,7 @@ public class DecisionDefinitionIT {
         decisionDefinitionReader.search(
             DecisionDefinitionQuery.of(b -> b),
             CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.DECISION_DEFINITION,
                 decisionDefinition.decisionDefinitionId()));
 
     assertThat(searchResult).isNotNull();
