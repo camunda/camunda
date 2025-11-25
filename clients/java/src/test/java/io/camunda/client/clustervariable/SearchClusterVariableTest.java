@@ -21,6 +21,7 @@ import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
+import io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
@@ -122,16 +123,6 @@ public class SearchClusterVariableTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchClusterVariablesByIsTruncated() {
-    // when
-    client.newClusterVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
-
-    // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
-  }
-
-  @Test
   void shouldSearchClusterVariablesWithMultipleFilters() {
     // when
     client
@@ -175,23 +166,25 @@ public class SearchClusterVariableTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchClusterVariablesFilterByIsTruncatedTrue() {
-    // when
-    client.newClusterVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
-
-    // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
-  }
-
-  @Test
   void shouldSearchClusterVariablesFilterByIsTruncatedFalse() {
     // when
     client.newClusterVariableSearchRequest().filter(f -> f.isTruncated(false)).send().join();
 
     // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getClusterVariablesSearchUrl());
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getIsTruncated()).isEqualTo(false);
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByIsTruncatedTrue() {
+    // when
+    client.newClusterVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getIsTruncated()).isEqualTo(true);
   }
 
   @Test
