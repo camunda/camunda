@@ -90,8 +90,7 @@ final class SecuredClusterCommunicationIT {
 
       // Zeebe: REST API (8080), Gateway (26500), Command (26501), Internal (26502)
       assertAddressIsSecured(
-          "zeebe-rest",
-          new InetSocketAddress(zeebe.getExternalHost(), zeebe.getMappedPort(8080)));
+          "zeebe-rest", new InetSocketAddress(zeebe.getExternalHost(), zeebe.getMappedPort(8080)));
       assertAddressIsSecured(
           "zeebe-gateway",
           new InetSocketAddress(
@@ -138,8 +137,7 @@ final class SecuredClusterCommunicationIT {
 
       // Camunda: REST API (8080), Gateway (26500), Command (26501), Internal (26502)
       assertAddressIsSecured(
-          "camunda-rest",
-          new InetSocketAddress(camunda.getHost(), camunda.getMappedPort(8080)));
+          "camunda-rest", new InetSocketAddress(camunda.getHost(), camunda.getMappedPort(8080)));
       assertAddressIsSecured(
           "camunda-gateway",
           new InetSocketAddress(
@@ -280,7 +278,8 @@ final class SecuredClusterCommunicationIT {
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", ES_URL)
         // Zeebe gateway connection (plaintext for simplicity)
         .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
-        .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://" + zeebe.getInternalHost() + ":8080")
+        .withEnv(
+            "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://" + zeebe.getInternalHost() + ":8080")
         // Exposed ports
         .withExposedPorts(8080, 9600, ZeebePort.INTERNAL.getPort())
         .waitingFor(
@@ -335,7 +334,10 @@ final class SecuredClusterCommunicationIT {
         .withEnv(CREATE_SCHEMA_ENV_VAR, "true")
         // Exposed ports
         .withExposedPorts(
-            8080, 9600, ZeebePort.GATEWAY.getPort(), ZeebePort.COMMAND.getPort(),
+            8080,
+            9600,
+            ZeebePort.GATEWAY.getPort(),
+            ZeebePort.COMMAND.getPort(),
             ZeebePort.INTERNAL.getPort())
         .waitingFor(
             new HttpWaitStrategy()
