@@ -47,6 +47,9 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilter;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterProperty;
+import io.camunda.zeebe.gateway.rest.util.AuditLogCategoryConverter;
+import io.camunda.zeebe.gateway.rest.util.AuditLogEntityTypeConverter;
+import io.camunda.zeebe.gateway.rest.util.AuditLogOperationTypeConverter;
 import io.camunda.zeebe.gateway.rest.util.DecisionInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -896,8 +899,7 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class))
         .ifPresent(builder::elementInstanceKeyOperations);
     ofNullable(filter.getOperationType())
-        .map(mapToOperations(String.class))
-        // TODO .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
     ofNullable(filter.getResult())
         .map(io.camunda.zeebe.gateway.protocol.rest.AuditLogResultEnum::getValue)
@@ -916,14 +918,13 @@ public class SearchQueryFilterMapper {
         .map(io.camunda.search.entities.AuditLogEntity.AuditLogActorType::valueOf)
         .ifPresent(builder::actorType);
     ofNullable(filter.getEntityType())
-        .map(mapToOperations(String.class))
-        // TODO .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+        .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);
     ofNullable(filter.getTenantId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getCategory())
-        .map(mapToOperations(String.class))
+        .map(mapToOperations(String.class, new AuditLogCategoryConverter()))
         .ifPresent(builder::categoryOperations);
 
     return builder.build();
