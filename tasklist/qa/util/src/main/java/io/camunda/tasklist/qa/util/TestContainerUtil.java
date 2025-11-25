@@ -499,7 +499,7 @@ public class TestContainerUtil {
                     final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
                     cfg.getInitialization().setUsers(List.of(user));
                   });
-      LOGGER.info("************ Starting StandaloneBroker {} ************");
+      LOGGER.info("************ Starting StandaloneBroker ************");
       addConfig(broker, testContext);
       broker.start();
       LOGGER.info("************ StandaloneBroker started  ************");
