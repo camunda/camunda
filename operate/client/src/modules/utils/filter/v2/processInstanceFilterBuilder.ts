@@ -25,7 +25,6 @@ type NormalizedFilters = {
   elementId?: string;
   batchOperationId?: string;
   tenantId?: string;
-  processDefinitionVersionTag?: string;
   processDefinitionKey?: string[];
   variable?: {name: string; values: string[]};
   parentInstanceId?: string;
@@ -110,10 +109,6 @@ const inputFilterSchema = z
       normalized.tenantId = data.tenant;
     } else if (data.tenantId) {
       normalized.tenantId = data.tenantId;
-    }
-
-    if (data.version) {
-      normalized.processDefinitionVersionTag = data.version;
     }
 
     if (data.processIds && data.processIds.length > 0) {
@@ -310,11 +305,6 @@ const buildProcessInstanceFilter = (
 
   if (normalizedFilters.retriesLeft) {
     query.hasRetriesLeft = true;
-  }
-
-  if (normalizedFilters.processDefinitionVersionTag) {
-    query.processDefinitionVersionTag =
-      normalizedFilters.processDefinitionVersionTag;
   }
 
   if (normalizedFilters.processDefinitionKey) {
