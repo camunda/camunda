@@ -48,6 +48,12 @@ public interface ConditionalSubscriptionRecordValue
   long getElementInstanceKey();
 
   /**
+   * @return the key of the related process instance
+   */
+  @Override
+  long getProcessInstanceKey();
+
+  /**
    * @return the process definition key
    */
   long getProcessDefinitionKey();
