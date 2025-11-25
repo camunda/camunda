@@ -38,7 +38,7 @@ function getDefinitionIdFromIdentifier(
 
 /**
  * Returns sorted decision-definitions for an optional `tenantId`.
- * The definition are deduplicated for their `decisionDefinitionIds` and `tenantIds`
+ * The definitions are deduplicated for their `decisionDefinitionIds` and `tenantIds`
  * to include only the latest `version`.
  */
 function useDecisionDefinitions(tenantId?: string) {
