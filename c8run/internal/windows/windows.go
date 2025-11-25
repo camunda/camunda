@@ -25,8 +25,8 @@ func (w *WindowsC8Run) OpenBrowser(ctx context.Context, url string) error {
 	return nil
 }
 
-func (w *WindowsC8Run) ProcessTree(commandPid int) []*os.Process {
-	return process_tree(int(commandPid))
+func (w *WindowsC8Run) ProcessTree(commandPid int) []int {
+	return processTree(commandPid)
 }
 
 func (w *WindowsC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd {
