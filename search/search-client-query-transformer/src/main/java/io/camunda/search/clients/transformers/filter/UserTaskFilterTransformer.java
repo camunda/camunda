@@ -14,6 +14,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.*;
@@ -25,6 +26,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.auth.Authorization;
+import io.camunda.util.NumberParsingUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -96,7 +98,11 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+    return switch (authorization.resourceType()) {
+      case PROCESS_DEFINITION -> stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+      case USER_TASK -> longTerms(KEY, NumberParsingUtil.parseLongs(authorization.resourceIds()));
+      default -> matchNone();
+    };
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
