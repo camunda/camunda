@@ -212,8 +212,8 @@ jobs:
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
               else
-                # main: exclude v1 directories by only including non-v1 paths
-                TEST_ARGS+=(tests/tasklist tests/operate tests/identity tests/common-flows tests/api/v2)
+                # main: run all tests excluding v1/ directories
+                TEST_ARGS+=(tests/ --grep-invert 'v1/')
               fi
             else
               echo "Running V1 mode tests"
