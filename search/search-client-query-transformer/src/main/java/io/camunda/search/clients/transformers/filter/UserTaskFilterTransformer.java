@@ -32,6 +32,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.math.NumberUtils;
 
 public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
 
@@ -96,7 +97,15 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+    return switch (authorization.resourceType()) {
+      case PROCESS_DEFINITION -> stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+      case USER_TASK -> longTerms(KEY, parseLongs(authorization.resourceIds()));
+      default -> null;
+    };
+  }
+
+  private static List<Long> parseLongs(final List<String> strings) {
+    return strings.stream().filter(NumberUtils::isParsable).map(Long::parseLong).toList();
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
