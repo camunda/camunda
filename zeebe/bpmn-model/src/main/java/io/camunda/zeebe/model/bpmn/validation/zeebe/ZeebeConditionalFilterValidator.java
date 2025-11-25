@@ -24,6 +24,7 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class ZeebeConditionalFilterValidator
     implements ModelElementValidator<ZeebeConditionalFilter> {
 
+  private static final String ZEEBE_EXPRESSION_PREFIX = "=";
   private static final List<String> VALID_VARIABLE_EVENTS = Arrays.asList("create", "update");
 
   @Override
@@ -47,6 +48,29 @@ public class ZeebeConditionalFilterValidator
               String.format(
                   "Variable event '%s' is not valid. Must be one of: %s or a comma-separated list of both.",
                   trimmedEvent, String.join(", ", VALID_VARIABLE_EVENTS)));
+        }
+      }
+    }
+
+    final String variableNames = element.getVariableNames();
+    if (variableNames != null && !variableNames.trim().isEmpty()) {
+      final String[] names = variableNames.split(",");
+      for (final String name : names) {
+        final String trimmedName = name.trim();
+        if (trimmedName.isEmpty()) {
+          validationResultCollector.addError(
+              0,
+              String.format(
+                  "Variable names must not contain empty names but '%s' given."
+                      + " Please provide a comma-separated list of variable names without empty entries.",
+                  variableNames));
+        }
+        if (trimmedName.startsWith(ZEEBE_EXPRESSION_PREFIX)) {
+          validationResultCollector.addError(
+              0,
+              String.format(
+                  "Variable names must be static and cannot be expressions. '%s' starts with '%s'.",
+                  trimmedName, ZEEBE_EXPRESSION_PREFIX));
         }
       }
     }

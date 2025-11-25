@@ -53,10 +53,6 @@ public class AbstractConditionalEventDefinitionBuilder<
     return myself;
   }
 
-  public B zeebeVariableNamesExpression(final String expression) {
-    return zeebeVariableNames(asZeebeExpression(expression));
-  }
-
   public B zeebeVariableEvents(final String variableEvents) {
     final ZeebeConditionalFilter conditionalFilter =
         myself.getCreateSingleExtensionElement(ZeebeConditionalFilter.class);

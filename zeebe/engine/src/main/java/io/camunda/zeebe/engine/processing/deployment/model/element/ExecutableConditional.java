@@ -13,7 +13,6 @@ import java.util.List;
 public class ExecutableConditional extends AbstractFlowElement {
 
   private Expression conditionExpression;
-  private Expression variableNamesExpression;
   private List<String> variableNames;
   private List<String> variableEvents;
 
@@ -29,14 +28,6 @@ public class ExecutableConditional extends AbstractFlowElement {
     this.conditionExpression = conditionExpression;
   }
 
-  public Expression getVariableNamesExpression() {
-    return variableNamesExpression;
-  }
-
-  public void setVariableNamesExpression(final Expression variableNamesExpression) {
-    this.variableNamesExpression = variableNamesExpression;
-  }
-
   public List<String> getVariableEvents() {
     return variableEvents;
   }
@@ -45,14 +36,6 @@ public class ExecutableConditional extends AbstractFlowElement {
     this.variableEvents = variableEvents;
   }
 
-  /**
-   * Returns the variable names, if they have been resolved previously (and are independent of the
-   * variable context). If this returns an empty {@code List} then the variable names must be
-   * resolved by evaluating {@code getVariableNamesExpression()}
-   *
-   * @return the variable names, if they have been resolved previously (and is independent of the
-   *     variable context)
-   */
   public List<String> getVariableNames() {
     return variableNames;
   }

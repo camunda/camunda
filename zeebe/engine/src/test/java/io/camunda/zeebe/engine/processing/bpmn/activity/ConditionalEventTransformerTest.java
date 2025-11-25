@@ -178,18 +178,6 @@ public class ConditionalEventTransformerTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     class VariableNamesTests {
-      Stream<Arguments> variableNamesExpressions() {
-        return Stream.of(
-            Arguments.of(null, null),
-            Arguments.of("", null),
-            Arguments.of(" ", null),
-            Arguments.of("var1", "var1"),
-            Arguments.of("var1,var2", "var1,var2"),
-            Arguments.of(" var1 , var2 ", " var1 , var2 "),
-            Arguments.of("=obj1.var1", "obj1.var1"),
-            Arguments.of("=[\"var1\",\"var2\"]", "[\"var1\",\"var2\"]"));
-      }
-
       Stream<Arguments> variableNames() {
         return Stream.of(
             Arguments.of(null, null),
@@ -197,34 +185,13 @@ public class ConditionalEventTransformerTest {
             Arguments.of(" ", null),
             Arguments.of("var1", List.of("var1")),
             Arguments.of("var1,var2", List.of("var1", "var2")),
-            Arguments.of(" var1 , var2 ", List.of("var1", "var2")),
-            Arguments.of("=obj1.var1", null),
-            Arguments.of(
-                "=[\"var1\",\"var2\"]",
-                null)); // expressions will only be evaluated at runtime for non-static variable
-        // names
-      }
-
-      @DisplayName("Should transform conditional boundary events with variableNames expressions")
-      @ParameterizedTest
-      @MethodSource("variableNamesExpressions")
-      void shouldTransformConditionalBoundaryEvent(
-          final String variableNames, final String parsedExpression) {
-        final var executableConditional =
-            transformConditionalEvent(
-                processWithConditionalBoundaryEvent(c -> c.zeebeVariableNames(variableNames)));
-        if (parsedExpression == null) {
-          assertThat(executableConditional.getVariableNamesExpression()).isNull();
-        } else {
-          assertThat(executableConditional.getVariableNamesExpression().getExpression())
-              .isEqualTo(parsedExpression);
-        }
+            Arguments.of(" var1 , var2 ", List.of("var1", "var2")));
       }
 
       @DisplayName("Should transform conditional boundary events with variableNames")
       @ParameterizedTest
       @MethodSource("variableNames")
-      void shouldTransformStaticVariableNamesForConditionalBoundaryEvent(
+      void shouldTransformVariableNamesForConditionalBoundaryEvent(
           final String variableNames, final List<String> parsedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
@@ -232,58 +199,22 @@ public class ConditionalEventTransformerTest {
         assertThat(executableConditional.getVariableNames()).isEqualTo(parsedVariableNames);
       }
 
-      @DisplayName(
-          "Should transform intermediate conditional catch events with variableNames expressions")
-      @ParameterizedTest
-      @MethodSource("variableNamesExpressions")
-      void shouldTransformIntermediateConditionalEvent(
-          final String variableNames, final String parsedExpression) {
-        final var executableConditional =
-            transformConditionalEvent(
-                processWithConditionalIntermediateCatchEvent(
-                    c -> c.zeebeVariableNames(variableNames)));
-        if (parsedExpression == null) {
-          assertThat(executableConditional.getVariableNamesExpression()).isNull();
-        } else {
-          assertThat(executableConditional.getVariableNamesExpression().getExpression())
-              .isEqualTo(parsedExpression);
-        }
-      }
-
       @DisplayName("Should transform intermediate conditional catch events with variableNames")
       @ParameterizedTest
       @MethodSource("variableNames")
-      void shouldTransformStaticVariableNamesForIntermediateConditionalEvent(
+      void shouldTransformVariableNamesForIntermediateConditionalEvent(
           final String variableNames, final List<String> parsedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
                 processWithConditionalIntermediateCatchEvent(
                     c -> c.zeebeVariableNames(variableNames)));
         assertThat(executableConditional.getVariableNames()).isEqualTo(parsedVariableNames);
-      }
-
-      @DisplayName(
-          "Should transform event subprocess conditional start events with variableNames expressions")
-      @ParameterizedTest
-      @MethodSource("variableNamesExpressions")
-      void shouldTransformEventSubprocessConditionalStartEvent(
-          final String variableNames, final String parsedExpression) {
-        final var executableConditional =
-            transformConditionalEvent(
-                processWithEventSubprocessConditionalStartEvent(
-                    c -> c.zeebeVariableNames(variableNames)));
-        if (parsedExpression == null) {
-          assertThat(executableConditional.getVariableNamesExpression()).isNull();
-        } else {
-          assertThat(executableConditional.getVariableNamesExpression().getExpression())
-              .isEqualTo(parsedExpression);
-        }
       }
 
       @DisplayName("Should transform event subprocess conditional start events with variableNames")
       @ParameterizedTest
       @MethodSource("variableNames")
-      void shouldTransformStaticVariableNamesForSubprocessConditionalStartEvent(
+      void shouldTransformVariableNamesForSubprocessConditionalStartEvent(
           final String variableNames, final List<String> parsedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
@@ -292,54 +223,9 @@ public class ConditionalEventTransformerTest {
         assertThat(executableConditional.getVariableNames()).isEqualTo(parsedVariableNames);
       }
 
-      // only static expressions or expressions based on literals are valid
-      Stream<Arguments> variableNamesExpressionsForStartEvent() {
-        return Stream.of(
-            Arguments.of(null, null),
-            Arguments.of("", null),
-            Arguments.of(" ", null),
-            Arguments.of("var1", "var1"),
-            Arguments.of("var1,var2", "var1,var2"),
-            Arguments.of(" var1 , var2 ", " var1 , var2 "),
-            Arguments.of("=[\"var1\",\"var2\"]", "[\"var1\",\"var2\"]"));
-      }
-
-      // only static expressions or expressions based on literals are valid
-      Stream<Arguments> variableNamesForStartEvent() {
-        return Stream.of(
-            Arguments.of(null, null),
-            Arguments.of("", null),
-            Arguments.of(" ", null),
-            Arguments.of("var1", List.of("var1")),
-            Arguments.of("var1,var2", List.of("var1", "var2")),
-            Arguments.of(" var1 , var2 ", List.of("var1", "var2")),
-            Arguments.of(
-                "=[\"var1\",\"var2\"]",
-                List.of(
-                    "var1",
-                    "var2"))); // non-static variable names is also evaluated to support expression
-        // literals for root level start events
-      }
-
-      @DisplayName("Should transform conditional start events with variableNames expressions")
-      @ParameterizedTest
-      @MethodSource("variableNamesExpressionsForStartEvent")
-      void shouldTransformConditionalStartEvent(
-          final String variableNames, final String parsedExpression) {
-        final var executableConditional =
-            transformConditionalEvent(
-                processWithConditionalStartEvent(c -> c.zeebeVariableNames(variableNames)));
-        if (parsedExpression == null) {
-          assertThat(executableConditional.getVariableNamesExpression()).isNull();
-        } else {
-          assertThat(executableConditional.getVariableNamesExpression().getExpression())
-              .isEqualTo(parsedExpression);
-        }
-      }
-
       @DisplayName("Should transform conditional start events with variableNames")
       @ParameterizedTest
-      @MethodSource("variableNamesForStartEvent")
+      @MethodSource("variableNames")
       void shouldTransformStaticVariableNamesForConditionalStartEvent(
           final String variableNames, final List<String> parsedVariableNames) {
         final var executableConditional =

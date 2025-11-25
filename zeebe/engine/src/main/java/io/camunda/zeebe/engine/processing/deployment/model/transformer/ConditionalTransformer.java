@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
@@ -39,7 +37,7 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
 
     final var conditionalFilter = element.getSingleExtensionElement(ZeebeConditionalFilter.class);
     if (conditionalFilter != null) {
-      transformVariableNames(conditionalFilter, expressionLanguage, executableElement);
+      transformVariableNames(conditionalFilter, executableElement);
       transformVariableEvents(conditionalFilter, executableElement);
     }
 
@@ -59,28 +57,12 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
 
   private static void transformVariableNames(
       final ZeebeConditionalFilter conditionalFilter,
-      final ExpressionLanguage expressionLanguage,
       final ExecutableConditional executableElement) {
     final var variableNames = conditionalFilter.getVariableNames();
     if (variableNames != null && !variableNames.isBlank()) {
-      final Expression variableNamesExpression = expressionLanguage.parseExpression(variableNames);
-      executableElement.setVariableNamesExpression(variableNamesExpression);
-      // if the expression is static, we can parse it as a list of CSV values (comma-separated
-      // values)
-      if (variableNamesExpression.isStatic()) {
-        final Expression variableNamesStaticExpression =
-            ExpressionTransformer.parseListOfCsv(variableNames)
-                .map(ExpressionTransformer::asListLiteral)
-                .map(ExpressionTransformer::asFeelExpressionString)
-                .map(expressionLanguage::parseExpression)
-                .get();
-
-        final EvaluationResult variableNamesResult =
-            expressionLanguage.evaluateExpression(variableNamesStaticExpression, variable -> null);
-        if (variableNamesResult.getType() == ResultType.ARRAY) {
-          executableElement.setVariableNames(variableNamesResult.getListOfStrings());
-        }
-      }
+      final var events = variableNames.split(",");
+      executableElement.setVariableNames(
+          Arrays.stream(events).map(String::trim).filter(s -> !s.isEmpty()).toList());
     }
   }
 
