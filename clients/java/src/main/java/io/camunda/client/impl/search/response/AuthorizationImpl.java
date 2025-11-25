@@ -26,6 +26,7 @@ public class AuthorizationImpl implements Authorization {
   private final String authorizationKey;
   private final String ownerId;
   private final String resourceId;
+  private final String resourcePropertyName;
   private final OwnerType ownerType;
   private final ResourceType resourceType;
   private final List<PermissionType> permissionTypes;
@@ -34,12 +35,14 @@ public class AuthorizationImpl implements Authorization {
       final String authorizationKey,
       final String ownerId,
       final String resourceId,
+      final String resourcePropertyName,
       final OwnerType ownerType,
       final ResourceType resourceType,
       final List<PermissionType> permissionTypes) {
     this.authorizationKey = authorizationKey;
     this.ownerId = ownerId;
     this.resourceId = resourceId;
+    this.resourcePropertyName = resourcePropertyName;
     this.ownerType = ownerType;
     this.resourceType = resourceType;
     this.permissionTypes = permissionTypes;
@@ -68,6 +71,11 @@ public class AuthorizationImpl implements Authorization {
   @Override
   public String getResourceId() {
     return resourceId;
+  }
+
+  @Override
+  public String getResourcePropertyName() {
+    return resourcePropertyName;
   }
 
   @Override

@@ -928,6 +928,7 @@ public class SearchQueryFilterMapper {
                     .ownerIds(f.getOwnerId())
                     .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
                     .resourceIds(f.getResourceIds())
+                    .resourcePropertyNames(f.getResourcePropertyNames())
                     .resourceType(
                         f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())

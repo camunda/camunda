@@ -8,7 +8,8 @@
 package io.camunda.zeebe.gateway.rest.mapper;
 
 import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
-import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateIdBasedRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validatePropertyBasedRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
@@ -66,6 +67,8 @@ import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
@@ -131,7 +134,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -382,29 +387,105 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
       final AuthorizationRequest request, final Pattern idPattern) {
+    return switch (request) {
+      case AuthorizationIdBasedRequest idReq -> toCreateAuthorizationRequest(idReq, idPattern);
+      case AuthorizationPropertyBasedRequest propReq ->
+          toCreateAuthorizationRequest(propReq, idPattern);
+      default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
+    };
+  }
+
+  public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
+      final AuthorizationIdBasedRequest request, final Pattern idPattern) {
     return getResult(
-        validateAuthorizationRequest(request, idPattern),
+        validateIdBasedRequest(request, idPattern),
         () ->
             new CreateAuthorizationRequest(
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                resolveIdBasedResourceMatcher(request.getResourceId()),
                 request.getResourceId(),
+                "",
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
+  }
+
+  public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
+      final AuthorizationPropertyBasedRequest request, final Pattern idPattern) {
+
+    return getResult(
+        validatePropertyBasedRequest(request, idPattern),
+        () ->
+            new CreateAuthorizationRequest(
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                AuthorizationResourceMatcher.PROPERTY,
+                "",
+                request.getResourcePropertyName(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
                 transformPermissionTypes(request.getPermissionTypes())));
   }
 
   public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
       final long authorizationKey, final AuthorizationRequest request, final Pattern idPattern) {
+    return switch (request) {
+      case AuthorizationIdBasedRequest idReq ->
+          toUpdateAuthorizationRequest(authorizationKey, idReq, idPattern);
+      case AuthorizationPropertyBasedRequest propReq ->
+          toUpdateAuthorizationRequest(authorizationKey, propReq, idPattern);
+      default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
+    };
+  }
+
+  public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
+      final long authorizationKey,
+      final AuthorizationIdBasedRequest request,
+      final Pattern idPattern) {
     return getResult(
-        validateAuthorizationRequest(request, idPattern),
+        validateIdBasedRequest(request, idPattern),
         () ->
             new UpdateAuthorizationRequest(
                 authorizationKey,
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                resolveIdBasedResourceMatcher(request.getResourceId()),
                 request.getResourceId(),
+                "",
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
                 transformPermissionTypes(request.getPermissionTypes())));
+  }
+
+  public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
+      final long authorizationKey,
+      final AuthorizationPropertyBasedRequest request,
+      final Pattern idPattern) {
+    return getResult(
+        validatePropertyBasedRequest(request, idPattern),
+        () ->
+            new UpdateAuthorizationRequest(
+                authorizationKey,
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                AuthorizationResourceMatcher.PROPERTY,
+                "",
+                request.getResourcePropertyName(),
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
+  }
+
+  private static AuthorizationResourceMatcher resolveIdBasedResourceMatcher(
+      final String resourceId) {
+    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
+        ? AuthorizationResourceMatcher.ANY
+        : AuthorizationResourceMatcher.ID;
+  }
+
+  private static ProblemDetail createUnsupportedAuthorizationProblemDetail(
+      final AuthorizationRequest request) {
+    return RestErrorMapper.createProblemDetail(
+        HttpStatus.BAD_REQUEST,
+        "Unsupported authorization request: " + request.getClass().getSimpleName(),
+        "Only authorization by id or property is supported.");
   }
 
   private static Set<PermissionType> transformPermissionTypes(

@@ -8,9 +8,9 @@
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.ResponseMapper.formatDate;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -1277,16 +1277,13 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
-    final var resourceId =
-        (WILDCARD.getMatcher().value() == authorization.resourceMatcher())
-            ? "*"
-            : authorization.resourceId();
     return new AuthorizationResult()
         .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .resourceId(resourceId)
+        .resourceId(defaultIfEmpty(authorization.resourceId(), null))
+        .resourcePropertyName(defaultIfEmpty(authorization.resourcePropertyName(), null))
         .permissionTypes(
             authorization.permissionTypes().stream()
                 .map(PermissionType::name)

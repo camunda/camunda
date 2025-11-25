@@ -12,7 +12,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthorizationCreateResult'
+              $ref: '#/components/schemas/AuthorizationRequest'
         required: true
       responses:
         "201":
@@ -20,7 +20,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthorizationResult'
+                $ref: '#/components/schemas/AuthorizationCreateResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -172,7 +172,7 @@ paths:
 
 components:
   schemas:
-    AuthorizationRequest:
+    AuthorizationIdBasedRequest:
       type: object
       additionalProperties: false
       properties:
@@ -202,6 +202,46 @@ components:
         - resourceType
         - permissionTypes
 
+    AuthorizationPropertyBasedRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        ownerId:
+          description: The ID of the owner of the permissions.
+          type: string
+        ownerType:
+          $ref: '#/components/schemas/OwnerTypeEnum'
+        resourcePropertyName:
+          description: The name of the resource property on which this authorization is based.
+          type: string
+        resourceType:
+          description: The type of resource to add permissions to.
+          type: string
+          allOf:
+            - $ref: '#/components/schemas/ResourceTypeEnum'
+        permissionTypes:
+          type: array
+          description: The permission types to add.
+          items:
+            allOf:
+              - $ref: '#/components/schemas/PermissionTypeEnum'
+      required:
+        - ownerId
+        - ownerType
+        - resourcePropertyName
+        - resourceType
+        - permissionTypes
+
+    AuthorizationRequest:
+      x-polymorphic-schema: true
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/AuthorizationIdBasedRequest'
+        - $ref: '#/components/schemas/AuthorizationPropertyBasedRequest'
+      description: |
+        Defines an authorization request.
+        Either an id-based or a property-based authorization can be provided.
+
     AuthorizationSearchQuerySortRequest:
       type: object
       properties:
@@ -212,6 +252,7 @@ components:
             - ownerId
             - ownerType
             - resourceId
+            - resourcePropertyName
             - resourceType
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
@@ -248,6 +289,11 @@ components:
           type: array
           items:
             type: string
+        resourcePropertyNames:
+          description: The names of the resource properties to search permissions for.
+          type: array
+          items:
+            type: string
         resourceType:
           description: The type of resource to search permissions for.
           type: string
@@ -268,7 +314,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
         resourceId:
-          description: ID of the resource the permission relates to.
+          description: ID of the resource the permission relates to (mutually exclusive with `resourcePropertyName`).
+          type: string
+        resourcePropertyName:
+          description: The name of the resource property the permission relates to (mutually exclusive with `resourceId`).
           type: string
         permissionTypes:
           description: Specifies the types of the permissions.

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class CreateAuthorizationTest extends ClientRestTest {
 
   @Test
-  void shouldSendCommand() {
+  void shouldSendCommandForIdBasedAuthorization() {
     // given
     gatewayService.onCreateAuthorizationRequest(
         Instancio.create(AuthorizationCreateResult.class).authorizationKey("3"));
@@ -52,6 +52,39 @@ public class CreateAuthorizationTest extends ClientRestTest {
     assertThat(request.getOwnerType())
         .isEqualTo(io.camunda.client.protocol.rest.OwnerTypeEnum.USER);
     assertThat(request.getResourceId()).isEqualTo("resourceId");
+    assertThat(request.getResourcePropertyName()).isNull();
+    assertThat(request.getResourceType())
+        .isEqualTo(io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE);
+    assertThat(request.getPermissionTypes())
+        .containsExactly(
+            io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE,
+            io.camunda.client.protocol.rest.PermissionTypeEnum.READ);
+  }
+
+  @Test
+  void shouldSendCommandForPropertyBasedAuthorization() {
+    // given
+    gatewayService.onCreateAuthorizationRequest(
+        Instancio.create(AuthorizationCreateResult.class).authorizationKey("4"));
+
+    // when
+    client
+        .newCreateAuthorizationCommand()
+        .ownerId("ownerId")
+        .ownerType(OwnerType.USER)
+        .resourcePropertyName("resourcePropertyName")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE, PermissionType.READ)
+        .send()
+        .join();
+
+    // then
+    final AuthorizationRequest request = gatewayService.getLastRequest(AuthorizationRequest.class);
+    assertThat(request.getOwnerId()).isEqualTo("ownerId");
+    assertThat(request.getOwnerType())
+        .isEqualTo(io.camunda.client.protocol.rest.OwnerTypeEnum.USER);
+    assertThat(request.getResourceId()).isNull();
+    assertThat(request.getResourcePropertyName()).isEqualTo("resourcePropertyName");
     assertThat(request.getResourceType())
         .isEqualTo(io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE);
     assertThat(request.getPermissionTypes())
@@ -148,6 +181,42 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("resourceId must not be empty");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullResourcePropertyName() {
+    // when - then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAuthorizationCommand()
+                    .ownerId("ownerId")
+                    .ownerType(OwnerType.USER)
+                    .resourcePropertyName(null)
+                    .resourceType(ResourceType.RESOURCE)
+                    .permissionTypes(PermissionType.CREATE, PermissionType.READ)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("resourcePropertyName must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyResourcePropertyName() {
+    // when - then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAuthorizationCommand()
+                    .ownerId("ownerId")
+                    .ownerType(OwnerType.USER)
+                    .resourcePropertyName("")
+                    .resourceType(ResourceType.RESOURCE)
+                    .permissionTypes(PermissionType.CREATE, PermissionType.READ)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("resourcePropertyName must not be empty");
   }
 
   @Test

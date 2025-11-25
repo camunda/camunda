@@ -32,7 +32,11 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAuthorizationResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.*;
+import io.camunda.client.protocol.rest.AuthorizationCreateResult;
+import io.camunda.client.protocol.rest.AuthorizationRequest;
+import io.camunda.client.protocol.rest.OwnerTypeEnum;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +83,13 @@ public class CreateAuthorizationCommandImpl
     ArgumentUtil.ensureNotNull("resourceId", resourceId);
     ArgumentUtil.ensureNotEmpty("resourceId", resourceId);
     request.setResourceId(resourceId);
+    return this;
+  }
+
+  @Override
+  public CreateAuthorizationCommandStep4 resourcePropertyName(final String resourcePropertyName) {
+    ArgumentUtil.ensureNotNullNorEmpty("resourcePropertyName", resourcePropertyName);
+    request.setResourcePropertyName(resourcePropertyName);
     return this;
   }
 

@@ -2497,7 +2497,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .newCreateAuthorizationCommand()
    *   .ownerId(ownerId)
    *   .ownerType(ownerType)
-   *   .resourceId(resourceId)
+   *   .resourceId(resourceId) // or .resourcePropertyName(resourcePropertyName)
    *   .resourceType(resourceType)
    *   .permission(PermissionType.READ)
    *   .send();
@@ -2565,7 +2565,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .newUpdateAuthorizationCommand(authorizationKey)
    *   .ownerId(ownerId)
    *   .ownerType(ownerType)
-   *   .resourceId(resourceId)
+   *   .resourceId(resourceId) // or .resourcePropertyName(resourcePropertyName)
    *   .resourceType(resourceType)
    *   .permissionTypes(Set.of(PermissionType.READ))
    *   .send();
