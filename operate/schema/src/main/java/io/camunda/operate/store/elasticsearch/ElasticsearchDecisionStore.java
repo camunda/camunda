@@ -9,6 +9,7 @@ package io.camunda.operate.store.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -58,6 +59,11 @@ public class ElasticsearchDecisionStore implements DecisionStore {
           e);
       return Optional.empty();
     }
+  }
+
+  @Override
+  public BatchRequest newBatchRequest() {
+    return null;
   }
 
   @Override

@@ -14,5 +14,7 @@ public interface DecisionStore {
 
   Optional<Long> getDistinctCountFor(final String fieldName);
 
+  BatchRequest newBatchRequest();
+
   long deleteDocuments(final String indexName, final String idField, String id) throws IOException;
 }
