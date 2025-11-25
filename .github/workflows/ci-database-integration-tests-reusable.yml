@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         description: The database docker image version to be used during the tests. Will be set as env variable IMAGE_VERSION. If not set, the default value from the docker-compose file will be used.
+    outputs:
+      flakyTests:
+        description: "Flaky tests detected during database integration tests"
+        value: ${{ jobs.integration-tests.outputs.flakyTests }}
 defaults:
   run:
     shell: bash
@@ -36,6 +40,8 @@ jobs:
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       IMAGE_VERSION: ${{inputs.database-image-version}}
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
