@@ -13,12 +13,10 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.swagger.v3.oas.annotations.Hidden;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Profile("consolidated-auth")
 @ConditionalOnSaaSConfigured
 @CamundaRestController
 @ConditionalOnSecondaryStorageEnabled

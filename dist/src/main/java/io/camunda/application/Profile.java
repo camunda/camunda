@@ -29,9 +29,6 @@ public enum Profile {
   DEVELOPMENT("dev"),
   PRODUCTION("prod"),
 
-  // authentication profiles
-  CONSOLIDATED_AUTH("consolidated-auth"),
-
   // indicating legacy standalone application
   STANDALONE("standalone");
 

@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OperateProfileService {
-  public static final String CONSOLIDATED_AUTH = "consolidated-auth";
 
   @Autowired private Environment environment;
 

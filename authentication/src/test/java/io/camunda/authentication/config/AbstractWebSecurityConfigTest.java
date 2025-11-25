@@ -32,7 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -43,7 +42,6 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  */
 @AutoConfigureMockMvc
 @AutoConfigureWebMvc
-@ActiveProfiles("consolidated-auth")
 public class AbstractWebSecurityConfigTest {
 
   protected static final String EXPECTED_CSRF_TOKEN_COOKIE_NAME = "X-CSRF-TOKEN";
