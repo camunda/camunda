@@ -71,7 +71,7 @@ describe('<ModificationIcons /> v3', () => {
       <ModificationIcons
         elementId="some-flow-node-id"
         isPlaceholder={true}
-        instanceKeyHierarchy={[
+        scopeKeyHierarchy={[
           'some-other-parent-flow-node-id',
           'some-parent-flow-node-id',
           'some-flow-node-id',
@@ -98,7 +98,7 @@ describe('<ModificationIcons /> v3', () => {
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
-        instanceKeyHierarchy={[
+        scopeKeyHierarchy={[
           'some-other-parent-flow-node-id',
           'some-parent-flow-node-id',
           'some-flow-node-id',
@@ -125,7 +125,7 @@ describe('<ModificationIcons /> v3', () => {
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
-        instanceKeyHierarchy={[
+        scopeKeyHierarchy={[
           'some-other-parent-flow-node-id',
           'some-parent-flow-node-id',
           'some-flow-node-id',
@@ -150,7 +150,7 @@ describe('<ModificationIcons /> v3', () => {
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
-        instanceKeyHierarchy={[
+        scopeKeyHierarchy={[
           'some-other-parent-flow-node-id',
           'some-parent-flow-node-id',
           'some-flow-node-id',
@@ -179,7 +179,7 @@ describe('<ModificationIcons /> v3', () => {
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
-        instanceKeyHierarchy={[
+        scopeKeyHierarchy={[
           'some-other-parent-flow-node-id',
           'some-parent-flow-node-id',
           'some-flow-node-id',
@@ -208,7 +208,7 @@ describe('<ModificationIcons /> v3', () => {
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
-        instanceKeyHierarchy={[
+        scopeKeyHierarchy={[
           'some-other-parent-flow-node-id',
           'some-parent-flow-node-id',
           'some-flow-node-id',

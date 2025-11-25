@@ -24,7 +24,7 @@ type Props = {
   isTimestampLabelVisible: boolean;
   isRoot: boolean;
   latestMigrationDate: string | undefined;
-  instanceKeyHierarchy: string[];
+  scopeKeyHierarchy: string[];
 };
 
 const Bar = forwardRef<HTMLDivElement, Props>(
@@ -39,7 +39,7 @@ const Bar = forwardRef<HTMLDivElement, Props>(
       isTimestampLabelVisible,
       isRoot,
       latestMigrationDate,
-      instanceKeyHierarchy,
+      scopeKeyHierarchy,
     },
     ref,
   ) => {
@@ -65,7 +65,7 @@ const Bar = forwardRef<HTMLDivElement, Props>(
           elementId={elementId}
           isPlaceholder={false}
           endDate={endDate}
-          instanceKeyHierarchy={instanceKeyHierarchy}
+          scopeKeyHierarchy={scopeKeyHierarchy}
         />
       </Container>
     );

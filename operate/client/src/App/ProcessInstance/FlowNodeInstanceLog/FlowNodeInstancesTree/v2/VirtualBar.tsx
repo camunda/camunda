@@ -15,11 +15,11 @@ type Props = {
   elementInstanceKey: string;
   elementName: string;
   elementId: string;
-  instanceKeyHierarchy: string[];
+  scopeKeyHierarchy: string[];
 };
 
 const VirtualBar = forwardRef<HTMLDivElement, Props>(
-  ({elementInstanceKey, elementId, elementName, instanceKeyHierarchy}, ref) => {
+  ({elementInstanceKey, elementId, elementName, scopeKeyHierarchy}, ref) => {
     return (
       <Container ref={ref} data-testid={`node-details-${elementInstanceKey}`}>
         <Stack orientation="horizontal" gap={5}>
@@ -28,7 +28,7 @@ const VirtualBar = forwardRef<HTMLDivElement, Props>(
         <ModificationIcons
           elementId={elementId}
           isPlaceholder
-          instanceKeyHierarchy={instanceKeyHierarchy}
+          scopeKeyHierarchy={scopeKeyHierarchy}
         />
       </Container>
     );

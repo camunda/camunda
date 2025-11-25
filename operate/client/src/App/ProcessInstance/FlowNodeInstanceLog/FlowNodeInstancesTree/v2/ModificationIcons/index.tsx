@@ -17,16 +17,16 @@ type Props = {
   elementId: string;
   isPlaceholder?: boolean;
   endDate?: string;
-  instanceKeyHierarchy: string[];
+  scopeKeyHierarchy: string[];
 };
 
 const ModificationIcons: React.FC<Props> = observer(
-  ({elementId, isPlaceholder = false, endDate, instanceKeyHierarchy}) => {
+  ({elementId, isPlaceholder = false, endDate, scopeKeyHierarchy}) => {
     const modificationsByFlowNode = useModificationsByFlowNode();
 
     const hasCancelModification =
       modificationsByFlowNode[elementId]?.areAllTokensCanceled ||
-      instanceKeyHierarchy.some((flowNodeInstanceKey) =>
+      scopeKeyHierarchy.some((flowNodeInstanceKey) =>
         hasPendingCancelOrMoveModification({
           flowNodeId: elementId,
           flowNodeInstanceKey,
