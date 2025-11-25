@@ -33,7 +33,7 @@ final class LogEntryDescriptorTest {
     final var buffer = new UnsafeBuffer(new byte[128]);
 
     // when
-    LogEntryDescriptor.skipProcessing(buffer, 0);
+    LogEntryDescriptor.skipProcessing(buffer, 0, true);
 
     // then
     assertThat(LogEntryDescriptor.shouldSkipProcessing(buffer, 0)).isTrue();
