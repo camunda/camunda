@@ -45,7 +45,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
   private List<Integer> partitionIds;
-  private Integer nodeId;
+  private int nodeId = 0;
   private String clusterId;
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
@@ -110,11 +110,11 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
   }
 
-  public Integer getNodeId() {
+  public int getNodeId() {
     return nodeId;
   }
 
-  public void setNodeId(final Integer nodeId) {
+  public void setNodeId(final int nodeId) {
     this.nodeId = nodeId;
   }
 
