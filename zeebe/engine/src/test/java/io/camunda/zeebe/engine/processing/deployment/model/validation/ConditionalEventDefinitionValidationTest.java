@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Condition;
+import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeConditionalFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -155,6 +156,50 @@ public class ConditionalEventDefinitionValidationTest {
         Bpmn.readModelFromStream(
             ConditionalEventDefinitionValidationTest.class.getResourceAsStream(
                 "/processes/root-level-conditional-start-event.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  @DisplayName("Duplicate conditions for conditional start events are not allowed")
+  void duplicateConditionsForConditionalStartEventsNotAllowed() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("startEvent1")
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .moveToProcess("process")
+            .startEvent("startEvent2")
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Process.class,
+            "Duplicate condition expression '= x > 1' found in conditional start events of process"
+                + " 'process'. Condition expressions for conditional start events must be unique"
+                + " within a process."));
+  }
+
+  @Test
+  @DisplayName("Non-duplicate conditions for conditional start events are allowed")
+  void nonDuplicateConditionsForConditionalStartEventsAllowed() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("startEvent1")
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .moveToProcess("process")
+            .startEvent("startEvent2")
+            .condition(c -> c.condition("= y < 5"))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.validateProcess(process);
@@ -757,6 +802,64 @@ public class ConditionalEventDefinitionValidationTest {
         Bpmn.readModelFromStream(
             ConditionalEventDefinitionValidationTest.class.getResourceAsStream(
                 "/processes/event-subprocess-conditional-start-event.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  @DisplayName("Duplicate conditions for conditional event subprocess start events are not allowed")
+  void duplicateConditionsForConditionalEventSubProcessStartEventsNotAllowed() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent()
+            .moveToProcess("process")
+            .eventSubProcess()
+            .startEvent("startEvent1")
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .subProcessDone()
+            .moveToProcess("process")
+            .eventSubProcess()
+            .startEvent("startEvent2")
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .subProcessDone()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Process.class,
+            "Duplicate condition expression '= x > 1' found in conditional start events of event"
+                + " subprocesses in process 'process'. Condition expressions for conditional start"
+                + " events in event subprocesses must be unique within a process."));
+  }
+
+  @Test
+  @DisplayName("Non-duplicate conditions for conditional event subprocess start events are allowed")
+  void nonDuplicateConditionsForConditionalEventSubProcessStartEventsAllowed() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent()
+            .moveToProcess("process")
+            .eventSubProcess()
+            .startEvent("startEvent1")
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .subProcessDone()
+            .moveToProcess("process")
+            .eventSubProcess()
+            .startEvent("startEvent2")
+            .condition(c -> c.condition("= y < 5"))
+            .endEvent()
+            .subProcessDone()
+            .done();
 
     // when/then
     ProcessValidationUtil.validateProcess(process);

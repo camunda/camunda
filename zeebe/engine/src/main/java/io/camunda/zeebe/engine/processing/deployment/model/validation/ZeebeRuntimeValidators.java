@@ -226,6 +226,7 @@ public final class ZeebeRuntimeValidators {
                         .satisfiesIfStatic(
                             ZeebeExpressionValidator::isListOfCsv,
                             "be a list of comma-separated values, e.g. 'a,b,c'"))
-            .build(expressionLanguage));
+            .build(expressionLanguage),
+        new ProcessConditionalStartEventValidator());
   }
 }
