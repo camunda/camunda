@@ -9,7 +9,6 @@ package io.camunda.tasklist.webapp.service;
 
 import static io.camunda.tasklist.Metrics.*;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
-import static io.camunda.tasklist.webapp.service.OrganizationService.DEFAULT_ORGANIZATION;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
@@ -18,7 +17,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.Auth0Properties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.FormStore.FormIdView;
@@ -381,11 +379,5 @@ public class TaskService {
       TAG_KEY_USER_ID, Optional.ofNullable(keyUserId).orElse(DEFAULT_USER),
       TAG_KEY_ORGANIZATION_ID, organizationService.getOrganizationIfPresent()
     };
-  }
-
-  private String getOrganizationIfPresent() {
-    return Optional.ofNullable(tasklistProperties.getAuth0())
-        .map(Auth0Properties::getOrganization)
-        .orElse(DEFAULT_ORGANIZATION);
   }
 }
