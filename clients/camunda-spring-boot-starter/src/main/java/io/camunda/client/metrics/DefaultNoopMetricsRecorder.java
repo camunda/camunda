@@ -15,9 +15,6 @@
  */
 package io.camunda.client.metrics;
 
-import io.camunda.client.metrics.MetricsContext.CounterMetricsContext;
-import io.camunda.client.metrics.MetricsContext.TimerMetricsContext;
-
 /**
  * Default implementation for MetricsRecorder simply ignoring the counts. Typically, you will
  * replace this by a proper Micrometer implementation as you can find in the starter module

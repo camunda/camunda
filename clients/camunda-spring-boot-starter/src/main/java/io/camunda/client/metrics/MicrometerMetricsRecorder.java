@@ -15,8 +15,6 @@
  */
 package io.camunda.client.metrics;
 
-import io.camunda.client.metrics.MetricsContext.CounterMetricsContext;
-import io.camunda.client.metrics.MetricsContext.TimerMetricsContext;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -65,18 +63,17 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
 
   @Override
   public void executeWithTimer(final TimerMetricsContext context, final Runnable methodToExecute) {
-    final Timer timer = meterRegistry.timer(context.getName(), fromEntries(context.getTags()));
+    final Timer timer = meterRegistry.timer(context.name(), fromEntries(context.tags()));
     timer.record(methodToExecute);
   }
 
   protected void increaseCounter(final CounterMetricsContext context, final String action) {
-    final Tags tags = fromEntries(context.getTags(), action);
-    final String key = getKey(context.getName(), tags);
+    final Tags tags = fromEntries(context.tags(), action);
+    final String key = getKey(context.name(), tags);
     final Counter counter =
         counters.computeIfAbsent(
-            key,
-            k -> meterRegistry.counter(context.getName(), fromEntries(context.getTags(), action)));
-    counter.increment(context.getCount());
+            key, k -> meterRegistry.counter(context.name(), fromEntries(context.tags(), action)));
+    counter.increment(context.count());
   }
 
   private static Tags fromEntries(final Map<String, String> entries) {

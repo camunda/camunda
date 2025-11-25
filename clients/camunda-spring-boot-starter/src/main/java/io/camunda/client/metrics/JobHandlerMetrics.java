@@ -15,7 +15,19 @@
  */
 package io.camunda.client.metrics;
 
+/**
+ * Defines standard metrics constants for job handlers, including metric names, actions, and tags.
+ *
+ * <p>These constants are used for recording and tagging job handler metrics such as invocations,
+ * execution times, and job actions (activated, completed, failed, BPMN error).
+ */
+@SuppressWarnings("checkstyle:InterfaceIsType")
 public interface JobHandlerMetrics {
+  /**
+   * Contains constants representing the possible actions performed on a job.
+   *
+   * <p>These are used as values for the {@link Tag#ACTION} tag.
+   */
   interface Action {
     String ACTIVATED = "activated";
     String COMPLETED = "completed";
@@ -23,11 +35,13 @@ public interface JobHandlerMetrics {
     String BPMN_ERROR = "bpmn-error";
   }
 
+  /** Contains constants for the names of job handler metrics. */
   interface Name {
     String INVOCATION = "camunda.job.invocations";
     String EXECUTION_TIME = "camunda.job.execution-time";
   }
 
+  /** Contains constants for the tags used in job handler metrics. */
   interface Tag {
     String TYPE = "type";
     String ACTION = "action";

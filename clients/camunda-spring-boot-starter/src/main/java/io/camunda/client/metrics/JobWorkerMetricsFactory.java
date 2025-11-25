@@ -17,8 +17,33 @@ package io.camunda.client.metrics;
 
 import io.camunda.client.api.worker.JobWorkerMetrics;
 
+/**
+ * Factory interface for creating {@link JobWorkerMetrics} instances.
+ *
+ * <p>This is a key extension point for connectors and other integrations to provide custom metrics
+ * implementations for job workers. Implementations of this interface can be registered to supply
+ * metrics tailored to specific job worker types or use cases.
+ *
+ * <p>Typical usage involves implementing this interface and providing logic in {@link
+ * #createJobWorkerMetrics(JobWorkerMetricsFactoryContext)} to return a suitable {@link
+ * JobWorkerMetrics} instance based on the provided context.
+ */
 public interface JobWorkerMetricsFactory {
+  /**
+   * Creates a new {@link JobWorkerMetrics} instance for the given context.
+   *
+   * @param context the context containing information (such as the job worker type) for which
+   *     metrics should be created
+   * @return a {@link JobWorkerMetrics} instance appropriate for the given context
+   */
   JobWorkerMetrics createJobWorkerMetrics(JobWorkerMetricsFactoryContext context);
 
-  public record JobWorkerMetricsFactoryContext(String type) {}
+  /**
+   * Context information provided to {@link JobWorkerMetricsFactory} when creating a new {@link
+   * JobWorkerMetrics} instance.
+   *
+   * @param type the type of the job worker for which metrics are being created. This typically
+   *     corresponds to the job type handled by the worker.
+   */
+  record JobWorkerMetricsFactoryContext(String type) {}
 }
