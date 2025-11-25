@@ -642,11 +642,14 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
       );
     }
 
+    const isMultiInstanceBody = elementInstance.type === 'MULTI_INSTANCE_BODY';
     const nodeProps = {
       ...rest,
       scopeKey: elementInstance.elementInstanceKey,
       elementId: elementInstance.elementId,
-      elementName: elementInstance.elementName ?? elementInstance.elementId,
+      elementName: `${elementInstance.elementName ?? elementInstance.elementId}${
+        isMultiInstanceBody ? ' (Multi Instance)' : ''
+      }`,
       elementType: elementInstance.type,
       elementInstanceState: elementInstance.state,
       hasIncident: elementInstance.hasIncident,
