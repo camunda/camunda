@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useEffect, useState} from 'react';
+import {useEffect} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {DecisionOperations} from './DecisionOperations';
 import {CopiableContent, PanelHeader, Section} from './styled';
@@ -24,8 +24,8 @@ const Decision: React.FC = observer(() => {
 
   const {
     data: definitionSelection = {kind: 'no-match'},
-    status,
-    isFetching: isFetchingDefinitionSelection,
+    status: definitionSelectionStatus,
+    isLoading: isDefinitionSelectionLoading,
     isEnabled: isDefinitionSelectionEnabled,
     isError: isDefinitionSelectionError,
   } = useDecisionDefinitionSelection();
@@ -33,13 +33,20 @@ const Decision: React.FC = observer(() => {
     definitionSelection.kind === 'single-version'
       ? definitionSelection.definition.decisionDefinitionKey
       : undefined;
+  const selectedDefinitionId =
+    definitionSelection.kind === 'single-version'
+      ? definitionSelection.definition.decisionDefinitionId
+      : undefined;
   const selectedDefinitionName =
     definitionSelection.kind !== 'no-match'
       ? definitionSelection.definition.name
       : 'Decision';
 
   useEffect(() => {
-    if (status === 'success' && definitionSelection.kind === 'no-match') {
+    if (
+      definitionSelectionStatus === 'success' &&
+      definitionSelection.kind === 'no-match'
+    ) {
       setParams((p) => {
         p.delete('name');
         p.delete('version');
@@ -51,12 +58,11 @@ const Decision: React.FC = observer(() => {
         isDismissable: true,
       });
     }
-  }, [definitionSelection, status, setParams]);
+  }, [definitionSelection, definitionSelectionStatus, setParams]);
 
   const {
     data: decisionDefinitionXml,
     isFetching,
-    isFetched,
     isError,
   } = useQuery(
     useDecisionDefinitionXmlOptions({
@@ -64,21 +70,10 @@ const Decision: React.FC = observer(() => {
       enabled: !!selectedDefinitionKey,
     }),
   );
-  const [renderedDefinitionId, setRenderedDefinitionId] = useState<
-    string | null
-  >(null);
-
-  useEffect(() => {
-    if (isFetched && definitionSelection.kind === 'single-version') {
-      setRenderedDefinitionId(
-        definitionSelection.definition.decisionDefinitionId,
-      );
-    }
-  }, [isFetched, definitionSelection]);
 
   const getDisplayStatus = () => {
     switch (true) {
-      case isFetching || isFetchingDefinitionSelection:
+      case isFetching || isDefinitionSelectionLoading:
         return 'loading';
       case isError || isDefinitionSelectionError:
         return 'error';
@@ -134,7 +129,7 @@ const Decision: React.FC = observer(() => {
       >
         <DecisionViewer
           xml={decisionDefinitionXml ?? null}
-          decisionViewId={renderedDefinitionId}
+          decisionViewId={selectedDefinitionId ?? null}
         />
       </DiagramShell>
     </Section>
