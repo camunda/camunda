@@ -48,7 +48,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.19.0</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
-    <version.commons-validator>1.10.0</version.commons-validator>
+    <version.commons-validator>1.10.1</version.commons-validator>
     <version.zstd-jni>1.5.7-4</version.zstd-jni>
     <version.commons-text>1.14.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
