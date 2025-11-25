@@ -76,9 +76,6 @@ public class ProcessConditionalStartEventValidator implements ModelElementValida
 
     return startEvents.stream()
         .map(StartEvent::getEventDefinitions)
-        .filter(
-            eventDefinitions ->
-                eventDefinitions.stream().anyMatch(ConditionalEventDefinition.class::isInstance))
         .flatMap(Collection::stream)
         .filter(ConditionalEventDefinition.class::isInstance)
         .map(ConditionalEventDefinition.class::cast)
