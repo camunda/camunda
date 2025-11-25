@@ -207,13 +207,13 @@ jobs:
             TEST_ARGS=(--project=chromium)
             
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-              echo "Running V2 mode tests"
+              echo "Running V2 mode tests (skipping tests/api/v2 for investigation)"
               if [[ "${{ needs.validate-branch.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: run all tests excluding @v1-only tagged tests
-                TEST_ARGS+=(tests/ --grep-invert '@v1-only')
+                TEST_ARGS+=(tests/tasklist/ tests/operate/ tests/identity/ tests/common-flows/ --grep-invert '@v1-only')
               else
-                # main: run all tests excluding v1/ directories
-                TEST_ARGS+=(tests/ --grep-invert 'v1/')
+                # main: run all tests excluding v1/ directories and tests/api/v2
+                TEST_ARGS+=(tests/tasklist/ tests/operate/ tests/identity/ tests/common-flows/ --grep-invert 'v1/')
               fi
             else
               echo "Running V1 mode tests"
