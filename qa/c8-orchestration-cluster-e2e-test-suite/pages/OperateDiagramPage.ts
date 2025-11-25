@@ -7,6 +7,7 @@
  */
 
 import type {Locator, Page} from '@playwright/test';
+import {expect} from '@playwright/test';
 
 export class OperateDiagramPage {
   private page: Page;
@@ -14,6 +15,10 @@ export class OperateDiagramPage {
   readonly popover: Locator;
   readonly resetDiagramZoomButton: Locator;
   readonly diagramSpinner: Locator;
+  readonly monacoAriaContainer: Locator;
+  readonly metadataModal: Locator;
+  readonly metadataModalCloseButton: Locator;
+  readonly monacoScrollableElement: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -23,6 +28,14 @@ export class OperateDiagramPage {
       name: 'Reset diagram zoom',
     });
     this.diagramSpinner = page.getByTestId('diagram-spinner');
+    this.monacoAriaContainer = page.locator('.monaco-aria-container');
+    this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
+    this.metadataModalCloseButton = this.metadataModal.getByRole('button', {
+      name: /close/i,
+    });
+    this.monacoScrollableElement = this.metadataModal.locator(
+      '.monaco-scrollable-element',
+    );
   }
 
   async moveCanvasHorizontally(dx: number) {
@@ -47,7 +60,7 @@ export class OperateDiagramPage {
   }
 
   clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).first().click();
+    return this.getFlowNode(flowNodeName).first().click({timeout: 20000});
   }
 
   clickSubProcess(subProcessName: string) {
@@ -61,8 +74,8 @@ export class OperateDiagramPage {
 
   getFlowNode(flowNodeName: string) {
     return this.diagram
-      .locator('.djs-element')
-      .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
+      .locator('.djs-group')
+      .locator(`[data-element-id="${flowNodeName}"]`);
   }
 
   async clickDiagramElement(elementName: string) {
@@ -97,5 +110,79 @@ export class OperateDiagramPage {
       },
       {elementId},
     );
+  }
+
+  getStateOverlay(elementId: string) {
+    return this.page
+      .locator(`[data-container-id="${elementId}"]`)
+      .getByTestId('state-overlay-active');
+  }
+
+  async verifyFlowNodeMetadata(
+    flowNodeId: string,
+    options: {
+      expectedText?: string | string[];
+      hiddenText?: string | string[];
+      isSubProcess?: boolean;
+    } = {},
+  ) {
+    if (options.isSubProcess) {
+      await this.clickSubProcess(flowNodeId);
+    } else {
+      await this.clickFlowNode(flowNodeId);
+    }
+    await this.showMetaData();
+
+    await this.monacoAriaContainer.waitFor({state: 'visible'});
+
+    // Scroll to the bottom of the editor
+    await this.monacoScrollableElement.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+
+    if (options.expectedText) {
+      const expectedTexts = Array.isArray(options.expectedText)
+        ? options.expectedText
+        : [options.expectedText];
+      for (const text of expectedTexts) {
+        await expect(
+          this.metadataModal.getByText(text, {exact: false}),
+        ).toBeVisible();
+      }
+    }
+
+    if (options.hiddenText) {
+      const hiddenTexts = Array.isArray(options.hiddenText)
+        ? options.hiddenText
+        : [options.hiddenText];
+      for (const text of hiddenTexts) {
+        await expect(
+          this.metadataModal.getByText(text, {exact: false}),
+        ).toBeHidden();
+      }
+    }
+
+    await this.metadataModalCloseButton.click();
+
+    // Deselect the flow node by clicking it again
+    if (options.isSubProcess) {
+      await this.clickSubProcess(flowNodeId);
+    } else {
+      await this.clickFlowNode(flowNodeId);
+    }
+  }
+
+  async verifyIncidentInPopover(incidentPattern: RegExp) {
+    await expect(
+      this.popover.getByRole('heading', {
+        name: 'Incident',
+      }),
+    ).toBeVisible();
+
+    await expect(this.popover.getByText(incidentPattern)).toBeVisible();
+  }
+
+  async closeMetadataModal(): Promise<void> {
+    await this.metadataModalCloseButton.click();
   }
 }
