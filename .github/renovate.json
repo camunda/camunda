@@ -112,6 +112,24 @@
       ]
     },
     {
+      "description": "Identify updates related to frontend dependencies.",
+      "matchManagers": [
+        "npm"
+      ],
+      "addLabels": [
+        "area/frontend"
+      ]
+    },
+    {
+      "description": "Identify updates related to backend dependencies.",
+      "matchManagers": [
+        "maven"
+      ],
+      "addLabels": [
+        "area/backend"
+      ]
+    },
+    {
       "matchManagers": [
         "maven"
       ],
