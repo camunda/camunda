@@ -104,6 +104,9 @@ const mockEmptyResponse = createMockResponse([], 0);
 describe('elementInstancesTreeStore', () => {
   afterEach(() => {
     elementInstancesTreeStore.reset();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('should initialize store with empty state', async () => {
@@ -757,5 +760,244 @@ describe('elementInstancesTreeStore', () => {
     expect(
       elementInstancesTreeStore.hasPreviousPage(mockProcessInstanceKey),
     ).toBe(true);
+  });
+
+  it('should start polling when when setting root node', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(mockFirstPageItems, 160),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    const updatedNodeData = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(updatedNodeData?.pageMetadata.totalItems).toBe(160);
+
+    vi.useRealTimers();
+  });
+
+  it('should not start polling with disabled polling', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: false,
+    });
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(mockFirstPageItems, 160),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('should start polling when enabling polling', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: false,
+    });
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(mockFirstPageItems, 160),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    const updatedNodeData = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(updatedNodeData?.pageMetadata.totalItems).toBe(160);
+
+    vi.useRealTimers();
+  });
+
+  it('should stop polling when same root is set with enablePolling changing from true to false', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(mockFirstPageItems, 160),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    expect(
+      elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+        ?.pageMetadata.totalItems,
+    ).toBe(160);
+
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: false,
+    });
+
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(mockFirstPageItems, 170),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(160);
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('should skip polling when document is hidden', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    vi.stubGlobal('visibilityState', 'hidden');
+
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(mockFirstPageItems, 160),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('should update node data after successful poll', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+    expect(
+      elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)?.items,
+    ).toHaveLength(100);
+
+    const updatedItems: ElementInstance[] = [
+      ...mockFirstPageItems,
+      createMockElementInstance({
+        elementInstanceKey: '9999999999999999',
+        elementId: 'new_task',
+        startDate: '2023-01-01T12:00:00.000Z',
+      }),
+    ];
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(updatedItems, 151),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    const updatedNodeData = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(updatedNodeData?.pageMetadata.totalItems).toBe(151);
+    expect(updatedNodeData?.items).toHaveLength(101);
+    expect(updatedNodeData?.items[100].elementId).toBe('new_task');
+
+    vi.useRealTimers();
   });
 });
