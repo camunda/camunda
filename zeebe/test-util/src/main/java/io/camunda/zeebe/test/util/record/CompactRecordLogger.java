@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.CHECKPOINT;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.COMMAND_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.COMPENSATION_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.CONDITIONAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
@@ -82,6 +83,7 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -210,6 +212,7 @@ public class CompactRecordLogger {
           entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
           entry(ESCALATION.name(), "ESC"),
           entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
+          entry(CONDITIONAL_SUBSCRIPTION.name(), "COND_SUB"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"));
 
@@ -296,6 +299,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
+    valueLoggers.put(ValueType.CONDITIONAL_SUBSCRIPTION, this::summarizeConditionalSubscription);
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
@@ -951,6 +955,22 @@ public class CompactRecordLogger {
     final var value = (ClusterVariableRecordValue) record.getValue();
     return "%s->%s%s"
         .formatted(value.getName(), formatVariableValue(value.getValue()), formatTenant(value));
+  }
+
+  private String summarizeConditionalSubscription(final Record<?> record) {
+    final var value = (ConditionalSubscriptionRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getCondition())
+        .append("\"")
+        .append(String.join(", ", value.getVariableNames()))
+        .append("\"")
+        .append(String.join(", ", value.getVariableEvents()))
+        .append("\"")
+        .append(" <catch event ")
+        .append(formatId(value.getCatchEventId()))
+        .toString();
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {

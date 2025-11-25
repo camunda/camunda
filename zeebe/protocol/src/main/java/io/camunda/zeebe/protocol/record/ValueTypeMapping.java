@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -84,6 +85,7 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -330,6 +332,10 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.HISTORY_DELETION,
         new Mapping<>(HistoryDeletionRecordValue.class, HistoryDeletionIntent.class));
+    mapping.put(
+        ValueType.CONDITIONAL_SUBSCRIPTION,
+        new Mapping<>(
+            ConditionalSubscriptionRecordValue.class, ConditionalSubscriptionIntent.class));
     return mapping;
   }
 
