@@ -213,6 +213,7 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
           isMultiInstance: false,
+          isPlaceholder: true,
         });
       };
 
@@ -334,6 +335,7 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
           isMultiInstance: isMultiInstance(businessObject),
+          isPlaceholder: true,
         });
       };
 
