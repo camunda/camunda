@@ -29,6 +29,7 @@ import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -386,7 +387,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldApplyAuthorizationCheck() {
+  public void shouldApplySingleAuthorizationCheck() {
     // given
     final var authorization =
         Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
@@ -409,6 +410,66 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                           assertSearchTermsQuery(
                               query.queryOption(), TaskTemplate.BPMN_PROCESS_ID, "1", "2"));
             });
+  }
+
+  @Test
+  public void shouldApplyAnyOfAuthorizationCheck() {
+    // given
+    final var processDefinitionAuth =
+        Authorization.of(
+            a -> a.processDefinition().readUserTask().resourceIds(List.of("pd-1", "pd-2")));
+    final var userTaskAuth =
+        Authorization.of(a -> a.userTask().read().resourceIds(List.of("5", "55", "not-a-number")));
+    final var authorizationCheck =
+        AuthorizationCheck.enabled(
+            AuthorizationConditions.anyOf(processDefinitionAuth, userTaskAuth));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) ->
+                assertThat(boolQuery.must())
+                    .as("Top-level bool query must contain at least one authorization constraint")
+                    .anySatisfy(
+                        query ->
+                            assertThat(query.queryOption())
+                                .isInstanceOfSatisfying(
+                                    SearchBoolQuery.class,
+                                    t ->
+                                        assertThat(t.should())
+                                            .isNotEmpty()
+                                            .satisfies(
+                                                shouldList -> {
+                                                  assertThat(shouldList)
+                                                      .as(
+                                                          "expected exactly two 'should' clauses: one for PROCESS_DEFINITION auth and one for USER_TASK auth")
+                                                      .hasSize(2);
+
+                                                  assertThat(shouldList.getFirst())
+                                                      .satisfies(
+                                                          shouldQuery ->
+                                                              assertSearchTermsQuery(
+                                                                  shouldQuery.queryOption(),
+                                                                  TaskTemplate.BPMN_PROCESS_ID,
+                                                                  "pd-1",
+                                                                  "pd-2"));
+
+                                                  assertThat(shouldList.get(1))
+                                                      .satisfies(
+                                                          shouldQuery ->
+                                                              assertSearchTermsQuery(
+                                                                  shouldQuery.queryOption(),
+                                                                  TaskTemplate.KEY,
+                                                                  5L,
+                                                                  55L));
+                                                }))));
   }
 
   @Test
@@ -545,6 +606,17 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
   private static void assertSearchTermsQuery(
       final SearchQueryOption query, final String field, final String... expected) {
+    assertThat(query)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            terms -> {
+              assertThat(terms.field()).isEqualTo(field);
+              assertThat(terms.values()).extracting(TypedValue::value).containsExactly(expected);
+            });
+  }
+
+  private static void assertSearchTermsQuery(
+      final SearchQueryOption query, final String field, final Long... expected) {
     assertThat(query)
         .isInstanceOfSatisfying(
             SearchTermsQuery.class,
