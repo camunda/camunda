@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
 public class NextValue extends UnpackedObject implements DbValue {
-  private final LongProperty nextValueProp = new LongProperty("nextValue", -1L);
+  private final LongProperty nextValueProp = new LongProperty("nextValue");
 
   public NextValue() {
     super(1);
