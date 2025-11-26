@@ -706,6 +706,14 @@ public final class AuthorizationCheckBehavior {
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
+        final boolean isNewResource) {
+      this(command, resourceType, permissionType, null, isNewResource, false);
+    }
+
+    public AuthorizationRequest(
+        final TypedRecord<?> command,
+        final AuthorizationResourceType resourceType,
+        final PermissionType permissionType,
         final String tenantId) {
       this(command, resourceType, permissionType, tenantId, false, true);
     }

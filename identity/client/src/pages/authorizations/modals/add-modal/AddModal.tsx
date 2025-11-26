@@ -7,15 +7,11 @@
  */
 
 import { FC, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { Dropdown, CheckboxGroup, Checkbox } from "@carbon/react";
+import { Controller, useForm } from "react-hook-form";
+import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import {
-  isOIDC,
-  isTenantsApiEnabled,
-  isUserTaskAuthorizationEnabled,
-} from "src/configuration";
+import { isOIDC, isTenantsApiEnabled, isUserTaskAuthorizationEnabled } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   Authorization,
@@ -24,13 +20,13 @@ import {
   OwnerType,
   PermissionType,
   ResourcePropertyName,
-  ResourceType,
+  ResourceType
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
 import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
-import { Row, TextFieldContainer, Caption } from "../components";
+import { Caption, Row, TextFieldContainer } from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 import { isValidId, isValidResourceId } from "src/utility/validate";
@@ -127,6 +123,11 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.DELETE,
     PermissionType.READ,
     PermissionType.UPDATE,
+  ],
+  CLUSTER_VARIABLE: [
+    PermissionType.CREATE,
+    PermissionType.DELETE,
+    PermissionType.READ,
   ],
   DOCUMENT: [PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE],
 };

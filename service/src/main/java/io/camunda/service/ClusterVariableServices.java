@@ -121,9 +121,7 @@ public final class ClusterVariableServices
             clusterVariableSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        withAuthorization(
-                            CLUSTER_VARIABLE_READ_AUTHORIZATION, ClusterVariableEntity::name)))
+                        authentication, CLUSTER_VARIABLE_READ_AUTHORIZATION))
                 .searchClusterVariables(query));
   }
 }

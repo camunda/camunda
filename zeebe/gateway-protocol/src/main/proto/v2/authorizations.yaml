@@ -408,6 +408,7 @@ components:
         - TENANT
         - USER
         - USER_TASK
+        - CLUSTER_VARIABLE
 
     OwnerTypeEnum:
       type: string

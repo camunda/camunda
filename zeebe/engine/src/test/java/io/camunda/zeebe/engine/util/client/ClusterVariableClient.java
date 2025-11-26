@@ -96,6 +96,18 @@ public final class ClusterVariableClient {
     return expectation.apply(position);
   }
 
+  public Record<ClusterVariableRecordValue> create(final String username) {
+    final long position =
+        writer.writeCommand(
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            ClusterVariableIntent.CREATE,
+            username,
+            clusterVariableRecord);
+    return expectation.apply(position);
+  }
+
   public Record<ClusterVariableRecordValue> delete() {
     final long position =
         writer.writeCommand(
@@ -103,6 +115,18 @@ public final class ClusterVariableClient {
             requestStreamId,
             requestId,
             ClusterVariableIntent.DELETE,
+            clusterVariableRecord);
+    return expectation.apply(position);
+  }
+
+  public Record<ClusterVariableRecordValue> delete(final String username) {
+    final long position =
+        writer.writeCommand(
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            ClusterVariableIntent.DELETE,
+            username,
             clusterVariableRecord);
     return expectation.apply(position);
   }
