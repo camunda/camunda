@@ -48,7 +48,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   @Test
   void shouldHandleCompletedRecord() {
     // Given
-    final var record = createCompletedRecord();
+    final var record = createCompletedRecord(123456789L);
     when(CACHE.get(Mockito.anyString()))
         .thenReturn(
             Optional.of(
@@ -92,7 +92,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
     // Given
     final var record =
         ImmutableRecord.<R>builder()
-            .from(createCompletedRecord())
+            .from(createCompletedRecord(123456789L))
             .withBatchOperationReference(batchOperationReferenceNullValue())
             .build();
     when(CACHE.get(Mockito.anyString()))
@@ -109,9 +109,27 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   }
 
   @Test
+  void shouldNotHandleRecordsWithInvalidProcessInstanceKey() {
+    // Given
+    final var record = createCompletedRecord(-1L);
+    when(CACHE.get(Mockito.anyString()))
+        .thenReturn(
+            Optional.of(
+                new CachedBatchOperationEntity(
+                    String.valueOf(record.getBatchOperationReference()),
+                    map(underTest.getRelevantOperationType()))));
+
+    // When
+    final boolean result = underTest.handlesRecord(record);
+
+    // Then
+    assertThat(result).isFalse();
+  }
+
+  @Test
   void shouldNotHandleIrrelevantRecord() {
     // Given
-    final var record = createCompletedRecord();
+    final var record = createCompletedRecord(123456789L);
     final var irrelevantOperationType =
         Arrays.stream(OperationType.values())
             .filter(t -> t != underTest.getRelevantOperationType())
@@ -135,7 +153,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   @Test
   void shouldGenerateId() {
     // Given
-    final var record = createCompletedRecord();
+    final var record = createCompletedRecord(123456789L);
 
     // When
     final var idList = underTest.generateIds(record);
@@ -147,7 +165,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   @Test
   void shouldUpdateEntityFromRecord() {
     // Given
-    final var record = createCompletedRecord();
+    final var record = createCompletedRecord(123456789L);
     final var entity = underTest.createNewEntity("test-id");
 
     // When
@@ -177,7 +195,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
             eq(Map.of("batchOperationId", "batch-op-1")));
   }
 
-  protected abstract Record<R> createCompletedRecord();
+  protected abstract Record<R> createCompletedRecord(final long processInstanceKey);
 
   protected abstract Record<R> createRejectedRecord();
 
