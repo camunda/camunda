@@ -21,11 +21,13 @@ import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.CategoryFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.EntityTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobKindFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.OperationTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
@@ -43,11 +46,13 @@ import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeser
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperatioItemStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.CategoryFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ClusterVariableScopeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DecisionEvaluationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DecisionInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ElementInstanceStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.EntityTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IncidentErrorTypePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IncidentStatePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
@@ -55,6 +60,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.JobKindFilterPropertyDeseriali
 import io.camunda.zeebe.gateway.rest.deserializer.JobListenerEventTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionStatePropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.OperationTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceCreationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.SearchQueryPageRequestDeserializer;
@@ -117,6 +123,11 @@ public class JacksonConfig {
     module.addDeserializer(
         IncidentStateFilterProperty.class, new IncidentStatePropertyDeserializer());
     module.addDeserializer(AuthorizationRequest.class, new AuthorizationRequestDeserializer());
+    module.addDeserializer(
+        OperationTypeFilterProperty.class, new OperationTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        EntityTypeFilterProperty.class, new EntityTypeFilterPropertyDeserializer());
+    module.addDeserializer(CategoryFilterProperty.class, new CategoryFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
