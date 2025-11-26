@@ -37,7 +37,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -56,7 +56,7 @@ public abstract class MigrationTest {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   @Container
-  private static final OpensearchContainer<?> OS_CONTAINER =
+  private static final OpenSearchContainer<?> OS_CONTAINER =
       TestSearchContainers.createDefaultOpensearchContainer();
 
   private static ObjectMapper esObjectMapper;
