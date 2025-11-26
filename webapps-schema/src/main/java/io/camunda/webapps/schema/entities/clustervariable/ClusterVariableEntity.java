@@ -8,16 +8,30 @@
 package io.camunda.webapps.schema.entities.clustervariable;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import java.util.Objects;
 
 public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEntity> {
 
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String id;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String name;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String value;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String fullValue;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private boolean isPreview;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private ClusterVariableScope scope;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String tenantId;
 
   public boolean getIsPreview() {

@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -23,26 +24,27 @@ public class FlowNodeInstanceForListViewEntity
         PartitionedEntity<FlowNodeInstanceForListViewEntity>,
         TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
-  private Long processInstanceKey;
-  private String activityId;
-  private FlowNodeState activityState;
-  private FlowNodeType activityType;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private String activityId;
+  @BeforeVersion880 private FlowNodeState activityState;
+  @BeforeVersion880 private FlowNodeType activityType;
   @Deprecated @JsonIgnore private List<Long> incidentKeys = new ArrayList<>();
-  private String errorMessage;
-  private boolean incident;
-  private boolean jobFailedWithRetriesLeft = false;
+  @BeforeVersion880 private String errorMessage;
+  @BeforeVersion880 private boolean incident;
+  @BeforeVersion880 private boolean jobFailedWithRetriesLeft = false;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Deprecated @JsonIgnore private boolean pendingIncident;
 
-  private Long position;
-  private Long positionIncident;
-  private Long positionJob;
+  @BeforeVersion880 private Long position;
+  @BeforeVersion880 private Long positionIncident;
+  @BeforeVersion880 private Long positionJob;
 
+  @BeforeVersion880
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 

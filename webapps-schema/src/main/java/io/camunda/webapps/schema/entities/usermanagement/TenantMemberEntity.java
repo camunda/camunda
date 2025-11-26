@@ -8,18 +8,19 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class TenantMemberEntity extends AbstractExporterEntity<TenantMemberEntity> {
 
-  @SinceVersion(value = "8.8.0", nullable = true)
+  @SinceVersion(value = "8.8.0", requireDefault = false)
   private String tenantId;
 
-  private String memberId;
-  private EntityType memberType;
+  @BeforeVersion880 private String memberId;
+  @BeforeVersion880 private EntityType memberType;
 
-  private EntityJoinRelation join;
+  @BeforeVersion880 private EntityJoinRelation join;
 
   public String getTenantId() {
     return tenantId;

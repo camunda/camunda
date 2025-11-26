@@ -7,9 +7,11 @@
  */
 package io.camunda.webapps.schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Set;
@@ -49,17 +51,29 @@ public class EntityTest {
 
   private DynamicTest createValidationTest(final Class<? extends ExporterEntity<?>> entityClass) {
     return DynamicTest.dynamicTest(
-        "shouldHaveDefaultsForNewFields : " + entityClass.getSimpleName(),
-        () -> validateNewFieldsHaveDefaults(entityClass));
+        "shouldHaveSinceVersionAnnotationOnAllFields : " + entityClass.getSimpleName(),
+        () -> validateSinceVersionAnnotationForFields(entityClass));
   }
 
-  private void validateNewFieldsHaveDefaults(final Class<? extends ExporterEntity<?>> entityClass) {
+  private void validateSinceVersionAnnotationForFields(
+      final Class<? extends ExporterEntity<?>> entityClass) {
     final Field[] fields = entityClass.getDeclaredFields();
 
     for (final Field field : fields) {
-      if (field.isAnnotationPresent(SinceVersion.class)
-          && !field.getAnnotation(SinceVersion.class).nullable()) {
-
+      if (hasJsonIgnoreAnnotation(field) || isStaticAndFinal(field)) {
+        continue;
+      }
+      // if its static final
+      final var sinceVersion = getSinceVersionAnnotation(field);
+      if (sinceVersion == null) {
+        throw new RuntimeException(
+            "All entity fields must have a @SinceVersion annotation which is missing from ["
+                + entityClass.getSimpleName()
+                + "."
+                + field.getName()
+                + "]");
+      }
+      if (sinceVersion.requireDefault()) {
         Assertions.assertThat(hasValidDefault(field))
             .withFailMessage(
                 "Field '%s' in class '%s' introduced in version '%s' must have a default value",
@@ -69,6 +83,33 @@ public class EntityTest {
             .isTrue();
       }
     }
+  }
+
+  private boolean isStaticAndFinal(final Field field) {
+    return Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers());
+  }
+
+  private boolean hasJsonIgnoreAnnotation(final Field field) {
+    return field.getAnnotation(JsonIgnore.class) != null;
+  }
+
+  private SinceVersion getSinceVersionAnnotation(final Field field) {
+    // Direct annotation
+    final SinceVersion direct = field.getAnnotation(SinceVersion.class);
+    if (direct != null) {
+      return direct;
+    }
+
+    // Look for composed annotation
+    for (final Annotation annotation : field.getAnnotations()) {
+      final SinceVersion meta = annotation.annotationType().getAnnotation(SinceVersion.class);
+      if (meta != null) {
+        return meta;
+      }
+    }
+
+    // Not found
+    return null;
   }
 
   private boolean hasValidDefault(final Field field) {

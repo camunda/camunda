@@ -8,20 +8,24 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 
 public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-  private Long authorizationKey;
-  private String ownerId;
-  private String ownerType;
-  private String resourceType;
-  private Short resourceMatcher;
-  private String resourceId;
+  @BeforeVersion880 private Long authorizationKey;
+  @BeforeVersion880 private String ownerId;
+  @BeforeVersion880 private String ownerType;
+  @BeforeVersion880 private String resourceType;
+  @BeforeVersion880 private Short resourceMatcher;
+  @BeforeVersion880 private String resourceId;
+  @BeforeVersion880 private Set<PermissionType> permissionTypes;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String resourcePropertyName;
-  private Set<PermissionType> permissionTypes;
 
   public AuthorizationEntity() {}
 
