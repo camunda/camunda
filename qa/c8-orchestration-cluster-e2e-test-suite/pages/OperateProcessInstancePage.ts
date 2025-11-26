@@ -33,12 +33,12 @@ class OperateProcessInstancePage {
   readonly executionCountToggleOn: Locator;
   readonly executionCountToggleOff: Locator;
   readonly listenersTabButton: Locator;
-  readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly editVariableButton: Locator;
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
+  readonly migratedTag: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -76,10 +76,12 @@ class OperateProcessInstancePage {
       'hide execution count',
     );
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
-    this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
     this.variableAddedBanner = this.page.getByText('Variable added');
+    this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
+      hasText: /^Migrated/,
+    });
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
