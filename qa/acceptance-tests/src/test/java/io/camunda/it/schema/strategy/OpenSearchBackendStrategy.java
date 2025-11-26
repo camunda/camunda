@@ -23,13 +23,13 @@ import java.time.Duration;
 import java.util.Map;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
 
-  private OpensearchContainer<?> container;
+  private OpenSearchContainer<?> container;
   private OpenSearchClient adminClient;
   private String url;
 
@@ -39,7 +39,7 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
       throw new IllegalStateException("Container is already started");
     }
     container =
-        new OpensearchContainer<>(
+        new OpenSearchContainer<>(
                 DockerImageName.parse("opensearchproject/opensearch")
                     .withTag(SUPPORTED_OPENSEARCH_VERSION))
             .withStartupTimeout(Duration.ofMinutes(5))

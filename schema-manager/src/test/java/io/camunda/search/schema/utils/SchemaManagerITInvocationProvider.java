@@ -31,7 +31,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
@@ -50,7 +50,7 @@ public class SchemaManagerITInvocationProvider
       TestSearchContainers.createDefeaultElasticsearchContainer()
           .withNetwork(Network.SHARED)
           .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS);
-  private final OpensearchContainer<?> osContainer =
+  private final OpenSearchContainer<?> osContainer =
       TestSearchContainers.createDefaultOpensearchContainer()
           .withNetwork(Network.SHARED)
           .withNetworkAliases(OPENSEARCH_NETWORK_ALIAS);

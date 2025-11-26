@@ -199,7 +199,7 @@ public class GatewayAuthenticationNoneIT {
   }
 
   private static String getKeycloakRealmAddress() {
-    return KEYCLOAK.getAuthServerUrl() + "/" + KEYCLOAK_PATH_CAMUNDA_REALM;
+    return KEYCLOAK.getAuthServerUrl() + KEYCLOAK_PATH_CAMUNDA_REALM;
   }
 
   private CamundaClientBuilder createCamundaClientBuilder() {

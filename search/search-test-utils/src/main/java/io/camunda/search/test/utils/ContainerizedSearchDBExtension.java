@@ -16,7 +16,7 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -35,7 +35,7 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
       LoggerFactory.getLogger(ContainerizedSearchDBExtension.class);
 
   private static ElasticsearchContainer elasticsearchContainer;
-  private static OpensearchContainer opensearchContainer;
+  private static OpenSearchContainer opensearchContainer;
 
   private static ElasticsearchClient elsClient;
   private static OpenSearchClient osClient;
