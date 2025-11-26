@@ -360,6 +360,16 @@ test.describe.only('Process Instances Filters', () => {
         },
       });
 
+      await expect(operateProcessesPage.tableLoadingSpinner).toBeHidden({
+        timeout: 30000,
+      });
+
+      await expect(
+        page
+          .getByTestId('cell-processInstanceKey')
+          .getByText(processToCancelInstanceMeowIK),
+      ).toBeVisible({timeout: 30000});
+
       await operateProcessesPage.selectProcessCheckboxByPIK(
         processToCancelInstanceMeowIK,
         processToCancelInstanceGawIK,
@@ -382,7 +392,7 @@ test.describe.only('Process Instances Filters', () => {
 
       var lastOperation = operateOperationPanelPage
         .getAllOperationEntries()
-        .last();
+        .first();
 
       await waitForAssertion({
         assertion: async () => {
@@ -393,7 +403,7 @@ test.describe.only('Process Instances Filters', () => {
         onFailure: async () => {
           lastOperation = operateOperationPanelPage
             .getAllOperationEntries()
-            .last();
+            .first();
           await page.reload();
         },
       });
