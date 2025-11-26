@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -37,7 +38,7 @@ public class PrimaryStorage {
   @NestedConfigurationProperty private Disk disk = new Disk();
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
-  @NestedConfigurationProperty private PrimaryStorageBackup backup = new PrimaryStorageBackup();
+  @NestedConfigurationProperty private BackupSchedulerCfg backup = new BackupSchedulerCfg();
 
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -89,11 +90,11 @@ public class PrimaryStorage {
     this.rocksDb = rocksDb;
   }
 
-  public PrimaryStorageBackup getBackup() {
+  public BackupSchedulerCfg getBackup() {
     return backup;
   }
 
-  public void setBackup(final PrimaryStorageBackup backup) {
+  public void setBackup(final BackupSchedulerCfg backup) {
     this.backup = backup;
   }
 }

@@ -39,7 +39,7 @@ public final class DataCfg implements ConfigurationEntry {
   private Duration diskUsageMonitoringInterval;
   private DiskCfg disk = new DiskCfg();
   private BackupStoreCfg backup = new BackupStoreCfg();
-  private BackupSchedulerCfg backupScheduler = new BackupSchedulerCfg();
+  private BackupSchedulerCfg backupSchedulerCfg = new BackupSchedulerCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -49,7 +49,7 @@ public final class DataCfg implements ConfigurationEntry {
     }
 
     backup.init(globalConfig, brokerBase);
-    backupScheduler.init(globalConfig, brokerBase);
+    backupSchedulerCfg.init(globalConfig, brokerBase);
 
     overrideDiskConfig();
     disk.init(globalConfig, brokerBase);
@@ -167,12 +167,12 @@ public final class DataCfg implements ConfigurationEntry {
     this.backup = backup;
   }
 
-  public BackupSchedulerCfg getBackupScheduler() {
-    return backupScheduler;
+  public BackupSchedulerCfg getBackupSchedulerCfg() {
+    return backupSchedulerCfg;
   }
 
-  public void setBackupScheduler(final BackupSchedulerCfg backupScheduler) {
-    this.backupScheduler = backupScheduler;
+  public void setBackupSchedulerCfg(final BackupSchedulerCfg backupScheduler) {
+    backupSchedulerCfg = backupScheduler;
   }
 
   @Override
@@ -203,7 +203,7 @@ public final class DataCfg implements ConfigurationEntry {
         + ", backup="
         + backup
         + ", backupScheduler="
-        + backupScheduler
+        + backupSchedulerCfg
         + '}';
   }
 }
