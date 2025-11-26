@@ -52,6 +52,16 @@ public class DecisionDefinitionSortImpl extends SearchRequestSortBase<DecisionDe
   }
 
   @Override
+  public DecisionDefinitionSort decisionRequirementsName() {
+    return field("decisionRequirementsName");
+  }
+
+  @Override
+  public DecisionDefinitionSort decisionRequirementsVersion() {
+    return field("decisionRequirementsVersion");
+  }
+
+  @Override
   public DecisionDefinitionSort tenantId() {
     return field("tenantId");
   }

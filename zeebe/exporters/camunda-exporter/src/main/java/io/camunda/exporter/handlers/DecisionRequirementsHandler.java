@@ -11,6 +11,8 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -24,9 +26,14 @@ public class DecisionRequirementsHandler
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
   private final String indexName;
+  private final ExporterEntityCache<Long, CachedDecisionRequirementsEntity>
+      decisionRequirementsCache;
 
-  public DecisionRequirementsHandler(final String indexName) {
+  public DecisionRequirementsHandler(
+      final String indexName,
+      final ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache) {
     this.indexName = indexName;
+    this.decisionRequirementsCache = decisionRequirementsCache;
   }
 
   @Override
@@ -70,6 +77,14 @@ public class DecisionRequirementsHandler
         .setResourceName(decisionRequirements.getResourceName())
         .setXml(dmn)
         .setTenantId(tenantOrDefault(decisionRequirements.getTenantId()));
+
+    final var cachedDecisionRequirementsEntity =
+        new CachedDecisionRequirementsEntity(
+            decisionRequirements.getDecisionRequirementsKey(),
+            decisionRequirements.getDecisionRequirementsName(),
+            decisionRequirements.getDecisionRequirementsVersion());
+    decisionRequirementsCache.put(
+        decisionRequirements.getDecisionRequirementsKey(), cachedDecisionRequirementsEntity);
   }
 
   @Override

@@ -17,4 +17,8 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.response.Decision;
 
-public interface DecisionDefinition extends Decision {}
+public interface DecisionDefinition extends Decision {
+  String getDecisionRequirementsName();
+
+  int getDecisionRequirementsVersion();
+}

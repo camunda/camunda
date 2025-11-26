@@ -120,6 +120,40 @@ public class DecisionDefinitionSortIT {
   }
 
   @TestTemplate
+  public void shouldSortByRequirementsNameAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.decisionRequirementsName().asc(),
+        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsName));
+  }
+
+  @TestTemplate
+  public void shouldSortByRequirementsNameDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.decisionRequirementsName().desc(),
+        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsName).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByRequirementsVersionAsc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.decisionRequirementsVersion().asc(),
+        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsVersion));
+  }
+
+  @TestTemplate
+  public void shouldSortByRequirementsVersionDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.decisionRequirementsVersion().desc(),
+        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsVersion).reversed());
+  }
+
+  @TestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

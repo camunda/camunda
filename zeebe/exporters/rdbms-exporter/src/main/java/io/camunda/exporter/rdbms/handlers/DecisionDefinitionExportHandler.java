@@ -10,6 +10,8 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -22,9 +24,14 @@ public class DecisionDefinitionExportHandler implements RdbmsExportHandler<Decis
   private static final Logger LOG = LoggerFactory.getLogger(DecisionDefinitionExportHandler.class);
 
   private final DecisionDefinitionWriter decisionDefinitionWriter;
+  private final ExporterEntityCache<Long, CachedDecisionRequirementsEntity>
+      decisionRequirementsCache;
 
-  public DecisionDefinitionExportHandler(final DecisionDefinitionWriter decisionDefinitionWriter) {
+  public DecisionDefinitionExportHandler(
+      final DecisionDefinitionWriter decisionDefinitionWriter,
+      final ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache) {
     this.decisionDefinitionWriter = decisionDefinitionWriter;
+    this.decisionRequirementsCache = decisionRequirementsCache;
   }
 
   @Override
@@ -48,7 +55,23 @@ public class DecisionDefinitionExportHandler implements RdbmsExportHandler<Decis
         .version(decision.getVersion())
         .decisionRequirementsId(decision.getDecisionRequirementsId())
         .decisionRequirementsKey(decision.getDecisionRequirementsKey())
+        .decisionRequirementsName(getRequirementsName(decision.getDecisionRequirementsKey()))
+        .decisionRequirementsVersion(getRequirementsVersion(decision.getDecisionRequirementsKey()))
         .tenantId(decision.getTenantId())
         .build();
+  }
+
+  private String getRequirementsName(final long decisionRequirementsKey) {
+    return decisionRequirementsCache
+        .get(decisionRequirementsKey)
+        .map(CachedDecisionRequirementsEntity::name)
+        .orElse(null);
+  }
+
+  private int getRequirementsVersion(final long decisionRequirementsKey) {
+    return decisionRequirementsCache
+        .get(decisionRequirementsKey)
+        .map(CachedDecisionRequirementsEntity::version)
+        .orElse(0);
   }
 }
