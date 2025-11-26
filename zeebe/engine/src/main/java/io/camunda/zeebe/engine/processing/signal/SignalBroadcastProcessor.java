@@ -210,7 +210,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
-          if (isStartEvent) {
+          if (isStartEvent && !command.isCommandDistributed()) {
             eventHandle.activateProcessInstanceForStartEvent(
                 subscriptionRecord.getProcessDefinitionKey(),
                 keyGenerator.nextKey(),
