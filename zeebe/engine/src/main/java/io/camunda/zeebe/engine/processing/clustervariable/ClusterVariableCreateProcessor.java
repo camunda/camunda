@@ -118,12 +118,6 @@ public class ClusterVariableCreateProcessor
 
   private Either<Rejection, Void> checkAuthorizationForTenantScope(
       final TypedRecord<ClusterVariableRecord> command) {
-    if (!authCheckBehavior.isMultiTenancyEnabled()) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              "Cannot create tenant-scoped cluster variable when multi-tenancy is not enabled."));
-    }
     final var authRequest =
         new AuthorizationRequest(
             command,
