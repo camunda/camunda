@@ -7,9 +7,9 @@
  */
 
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {buildV2ProcessInstanceData} from './processInstanceDataBuilder';
+import {mapProcessInstanceToV1Entity} from './processInstanceDataBuilder';
 
-const v2Instance: ProcessInstance = {
+const instance: ProcessInstance = {
   processInstanceKey: '123',
   processDefinitionKey: '456',
   processDefinitionName: 'Order Process',
@@ -23,9 +23,9 @@ const v2Instance: ProcessInstance = {
   hasIncident: false,
 };
 
-describe('buildV2ProcessInstanceData', () => {
+describe('mapProcessInstanceToV1Entity', () => {
   it('should map V2 fields to V1 format correctly', () => {
-    const result = buildV2ProcessInstanceData(v2Instance);
+    const result = mapProcessInstanceToV1Entity(instance);
 
     expect(result).toEqual({
       id: '123',
@@ -48,13 +48,13 @@ describe('buildV2ProcessInstanceData', () => {
   });
 
   it('should convert hasIncident to INCIDENT state', () => {
-    const v2InstanceWithIncident: ProcessInstance = {
-      ...v2Instance,
+    const instanceWithIncident: ProcessInstance = {
+      ...instance,
       hasIncident: true,
       state: 'ACTIVE',
     };
 
-    const result = buildV2ProcessInstanceData(v2InstanceWithIncident);
+    const result = mapProcessInstanceToV1Entity(instanceWithIncident);
 
     expect(result.state).toBe('INCIDENT');
   });

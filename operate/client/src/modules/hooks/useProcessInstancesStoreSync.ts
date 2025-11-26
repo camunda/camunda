@@ -9,7 +9,7 @@
 import {useEffect} from 'react';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {buildV2ProcessInstanceData} from 'modules/utils/processInstance/processInstanceDataBuilder';
+import {mapProcessInstanceToV1Entity} from 'modules/utils/processInstance/processInstanceDataBuilder';
 
 const useProcessInstancesStoreSync = (
   processInstances: ProcessInstance[],
@@ -18,7 +18,9 @@ const useProcessInstancesStoreSync = (
 ) => {
   useEffect(() => {
     if (isSuccess) {
-      const adaptedInstances = processInstances.map(buildV2ProcessInstanceData);
+      const adaptedInstances = processInstances.map(
+        mapProcessInstanceToV1Entity,
+      );
 
       processInstancesStore.setProcessInstances({
         processInstances: adaptedInstances,
