@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistribut
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -92,6 +93,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -3915,7 +3917,26 @@ final class JsonSerializableToJsonTest {
         "processInstanceKey": -1
       }
       """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// HistoryDeletionRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "HistoryDeletionRecord",
+        (Supplier<HistoryDeletionRecord>)
+            () ->
+                new HistoryDeletionRecord()
+                    .setResourceKey(1L)
+                    .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                    .setBatchOperationKey(2L),
+        """
+      {
+        "resourceKey": 1,
+        "resourceType": "PROCESS_INSTANCE",
+        "batchOperationKey": 2
       }
+      """
+      },
     };
   }
 
