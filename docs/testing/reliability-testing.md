@@ -72,7 +72,8 @@ Our load tests can also be viewed as **endurance or soak tests**, as they typica
 
 ### Setup
 
-![setup](assets/setup.png)
+![setup-load-test](assets/setup-load-test.jpg)
+
 
 The setup for all of our load tests is equal for better comparability, and consist of two main ingredients.
 
@@ -86,6 +87,10 @@ Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) d
 Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [camunda-load-test](hhttps://github.com/camunda/camunda-load-tests-helm) Helm chart, and their [values files](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml).
 
 All of this is deployed in a Zeebe-maintained (as of now; 16 Jun 2025) Google Kubernetes Engine (GKE) cluster (zeebe-cluster), in its own zeebe-io Google Cloud Project (GCP). Details of the general infrastructure, which is deployed related to observability (Prometheus), can be found in the [Zeebe infrastructure repository](https://github.com/camunda/zeebe-infra).
+
+For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), before we had the Zeebe Broker and Zeebe Gateways standalone deployed.
+
+![setup](assets/setup.png)
 
 ### Variants
 
