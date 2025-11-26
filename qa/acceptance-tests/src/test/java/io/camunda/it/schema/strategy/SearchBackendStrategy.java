@@ -8,22 +8,13 @@
 package io.camunda.it.schema.strategy;
 
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.cluster.TestStandaloneBackupManager;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
+import java.io.IOException;
+import java.util.List;
 import org.testcontainers.containers.GenericContainer;
 
 public interface SearchBackendStrategy extends AutoCloseable {
-
-  default void initialize(
-      final TestStandaloneSchemaManager schemaManager, final TestCamundaApplication camunda)
-      throws Exception {
-    startContainer();
-    createAdminClient();
-    createSchema();
-    configureStandaloneSchemaManager(schemaManager);
-    configureCamundaApplication(camunda);
-    schemaManager.start();
-    camunda.start();
-  }
 
   @Override
   default void close() {
@@ -44,6 +35,8 @@ public interface SearchBackendStrategy extends AutoCloseable {
 
   void configureStandaloneSchemaManager(final TestStandaloneSchemaManager schemaManager);
 
+  void configureStandaloneBackupManager(final TestStandaloneBackupManager schemaManager);
+
   void configureCamundaApplication(final TestCamundaApplication camunda);
 
   // Methods to interact with the search backend
@@ -52,4 +45,15 @@ public interface SearchBackendStrategy extends AutoCloseable {
   long countTemplates(final String namePattern) throws Exception;
 
   long searchByKey(final String indexPattern, final long key) throws Exception;
+
+  void deleteIndices(final String indexName, final String... indexNames) throws IOException;
+
+  boolean indicesExist(final String indexName, final String... indexNames) throws Exception;
+
+  List<String> getSuccessSnapshots(final String repositoryName, final String snapshotNamePrefix)
+      throws Exception;
+
+  void restoreBackup(final String repositoryName, final String snapshot) throws IOException;
+
+  void createSnapshotRepository(final String repositoryName) throws IOException;
 }

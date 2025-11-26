@@ -13,16 +13,21 @@ import io.camunda.application.Profile;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.cluster.TestStandaloneBackupManager;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterSchemaManager;
+import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -42,6 +47,8 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         new OpenSearchContainer<>(
                 DockerImageName.parse("opensearchproject/opensearch")
                     .withTag(SUPPORTED_OPENSEARCH_VERSION))
+            // Configure with allowed repository storage path
+            .withEnv("path.repo", "~/")
             .withStartupTimeout(Duration.ofMinutes(5))
             .withStartupAttempts(3);
 
@@ -76,6 +83,16 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         .withProperty(
             "zeebe.broker.exporters.opensearch.class-name", OpensearchExporter.class.getName())
         .withProperty("zeebe.broker.exporters.opensearch.args.url", url)
+        .withProperty("camunda.data.secondary-storage.type", "opensearch")
+        .withProperty("camunda.data.secondary-storage.opensearch.url", url)
+        .withProperty("camunda.data.secondary-storage.opensearch.username", container.getUsername())
+        .withProperty(
+            "camunda.data.secondary-storage.opensearch.password", container.getPassword());
+  }
+
+  @Override
+  public void configureStandaloneBackupManager(final TestStandaloneBackupManager backupManager) {
+    backupManager
         .withProperty("camunda.data.secondary-storage.type", "opensearch")
         .withProperty("camunda.data.secondary-storage.opensearch.url", url)
         .withProperty("camunda.data.secondary-storage.opensearch.username", container.getUsername())
@@ -137,6 +154,47 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
                         q -> q.term(t -> t.field("key").value(FieldValue.of(String.valueOf(key))))),
             Object.class);
     return resp.hits().total() == null ? 0 : resp.hits().total().value();
+  }
+
+  @Override
+  public void deleteIndices(final String indexName, final String... indexNames) throws IOException {
+    adminClient.indices().delete(r -> r.index(indexName, indexNames).ignoreUnavailable(true));
+  }
+
+  @Override
+  public boolean indicesExist(final String indexName, final String... indexNames) throws Exception {
+    return adminClient
+        .indices()
+        .exists(r -> r.index(indexName, indexNames).allowNoIndices(false))
+        .value();
+  }
+
+  @Override
+  public List<String> getSuccessSnapshots(
+      final String repositoryName, final String snapshotNamePrefix) throws Exception {
+    return adminClient
+        .snapshot()
+        .get(r -> r.repository(repositoryName).snapshot(snapshotNamePrefix + "*"))
+        .snapshots()
+        .stream()
+        .filter(info -> Objects.equals(info.state(), "SUCCESS"))
+        .map(SnapshotInfo::snapshot)
+        .toList();
+  }
+
+  @Override
+  public void restoreBackup(final String repositoryName, final String snapshot) throws IOException {
+    adminClient
+        .snapshot()
+        .restore(r -> r.repository(repositoryName).snapshot(snapshot).waitForCompletion(true));
+  }
+
+  @Override
+  public void createSnapshotRepository(final String repositoryName) throws IOException {
+    adminClient
+        .snapshot()
+        .createRepository(
+            q -> q.name(repositoryName).type("fs").settings(s -> s.location(repositoryName)));
   }
 
   private OpensearchExporterConfiguration exporterAdminConfig() {

@@ -10,6 +10,7 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
+import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -38,7 +39,8 @@ public class TestStandaloneBackupManager
         SearchEngineRetentionPropertiesOverride.class,
         // ---
         BackupManagerConfiguration.class,
-        StandaloneBackupManager.class);
+        StandaloneBackupManager.class,
+        NativeSearchClientsConfiguration.class);
   }
 
   @Override
