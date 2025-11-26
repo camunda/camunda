@@ -67,8 +67,7 @@ test.beforeAll(async () => {
   await sleep(2000);
 });
 
-// eslint-disable-next-line playwright/no-focused-test
-test.describe.serial.only('Process Instance Migration', () => {
+test.describe.serial('Process Instance Migration', () => {
   test.describe.configure({retries: 0});
 
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {

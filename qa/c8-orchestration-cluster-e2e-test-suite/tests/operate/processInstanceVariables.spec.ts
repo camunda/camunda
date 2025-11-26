@@ -27,8 +27,7 @@ test.beforeAll(async () => {
   await createInstances('simpleServiceTaskProcess', 1, 1);
 });
 
-// eslint-disable-next-line playwright/no-focused-test
-test.describe.only('Process Instance Variables', () => {
+test.describe('Process Instance Variables', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
