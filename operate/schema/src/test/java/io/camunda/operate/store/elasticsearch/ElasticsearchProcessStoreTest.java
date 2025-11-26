@@ -20,6 +20,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -61,6 +62,8 @@ public class ElasticsearchProcessStoreTest {
 
   @Mock private OperateProperties operateProperties;
 
+  @Mock private ElasticsearchTenantHelper tenantHelper;
+
   private ElasticsearchProcessStore underTest;
 
   @BeforeEach
@@ -74,7 +77,8 @@ public class ElasticsearchProcessStoreTest {
             operateProperties,
             esClient,
             es8Client,
-            tenantAwareClient);
+            tenantAwareClient,
+            tenantHelper);
   }
 
   @Test
