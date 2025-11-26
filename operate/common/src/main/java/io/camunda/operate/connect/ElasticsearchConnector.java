@@ -120,7 +120,6 @@ public class ElasticsearchConnector {
 
   @Bean
   public ElasticsearchClient es8Client() {
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
     esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
     return createEs8Client(operateProperties.getElasticsearch(), esClientRepository);
   }

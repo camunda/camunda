@@ -11,6 +11,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.util.MissingRequiredPropertyException;
@@ -40,8 +41,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
 
-  private final co.elastic.clients.elasticsearch.core.BulkRequest.Builder bulkRequest =
-      new Builder();
+  private final BulkRequest.Builder bulkRequestBuilder = new Builder();
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -60,7 +60,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.index(
                 idx ->
@@ -76,7 +76,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index, final ExporterEntity entity, final String routing) {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.index(idx -> idx.index(index).id(entity.getId()).document(entity).routing(routing)));
     return this;
@@ -94,7 +94,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         entity,
         updateFields);
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.update(
                 u ->
@@ -122,7 +122,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         entity,
         updateFields);
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.update(
                 u ->
@@ -155,7 +155,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     final Map<String, JsonData> paramsMap =
         parameters.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.update(
                 u ->
@@ -186,7 +186,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     final Map<String, JsonData> paramsMap =
         parameters.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.update(
                 u ->
@@ -206,7 +206,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       throws PersistenceException {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.update(
                 u ->
@@ -243,7 +243,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
     // Create UpdateOperation
 
-    bulkRequest.operations(
+    bulkRequestBuilder.operations(
         op ->
             op.update(
                 u ->
@@ -260,7 +260,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     try {
       ElasticsearchUtil.processBulkRequest(
           es8Client,
-          bulkRequest,
+          bulkRequestBuilder,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final MissingRequiredPropertyException ignored) {
       // empty bulk request
@@ -272,7 +272,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     try {
       ElasticsearchUtil.processBulkRequest(
           es8Client,
-          bulkRequest,
+          bulkRequestBuilder,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final MissingRequiredPropertyException ignored) {

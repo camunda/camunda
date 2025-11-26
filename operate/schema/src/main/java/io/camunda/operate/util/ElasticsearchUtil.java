@@ -171,10 +171,10 @@ public abstract class ElasticsearchUtil {
       final var bulkRequest = bulkRequestBuilder.build();
       LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.operations().size());
 
-      final var bulkIngester =
-          createBulkIngester(esClient, maxBulkRequestSizeInBytes, refreshImmediately);
-      bulkRequest.operations().forEach(bulkIngester::add);
-      bulkIngester.close();
+      try (final var bulkIngester =
+          createBulkIngester(esClient, maxBulkRequestSizeInBytes, refreshImmediately)) {
+        bulkRequest.operations().forEach(bulkIngester::add);
+      }
     } catch (final MissingRequiredPropertyException ignored) {
       // if bulk request has no operations calling .build() will throw an exception, we suppress
       // this as it is a no op.

@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -195,7 +194,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void persistOperateEntitiesNew(final List<? extends ExporterEntity> operateEntities)
       throws PersistenceException {
     try {
-      final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+      final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
       for (final ExporterEntity entity : operateEntities) {
         final String alias = getEntityToAliasMap().get(entity.getClass());
@@ -203,28 +202,19 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
         }
 
-        bulkRequest.operations(
-            op -> {
-              final IndexOperation.Builder<Object> indexBuilder =
-                  new IndexOperation.Builder<>()
-                      .index(alias)
-                      .id(entity.getId())
-                      .document(entity); // no ObjectMapper required
-
-              // Set routing if needed
-              if (entity instanceof final FlowNodeInstanceForListViewEntity flow) {
-                indexBuilder.routing(flow.getProcessInstanceKey().toString());
-              } else if (entity instanceof final VariableForListViewEntity var) {
-                indexBuilder.routing(var.getProcessInstanceKey().toString());
-              }
-
-              return op.index(indexBuilder.build());
-            });
+        bulkRequestBuilder.operations(
+            op ->
+                op.index(
+                    i ->
+                        i.index(alias)
+                            .id(entity.getId())
+                            .document(entity)
+                            .routing(getRoutingKey(entity))));
       }
 
       ElasticsearchUtil.processBulkRequest(
           es8Client,
-          bulkRequest,
+          bulkRequestBuilder,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final Exception ex) {
@@ -269,6 +259,15 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public boolean indexExists(final String index) throws IOException {
     final var request = new GetIndexRequest(index);
     return esClient.indices().exists(request, RequestOptions.DEFAULT);
+  }
+
+  private String getRoutingKey(final ExporterEntity entity) {
+    if (entity instanceof final FlowNodeInstanceForListViewEntity flow) {
+      return flow.getProcessInstanceKey().toString();
+    } else if (entity instanceof final VariableForListViewEntity var) {
+      return var.getProcessInstanceKey().toString();
+    }
+    return null;
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
