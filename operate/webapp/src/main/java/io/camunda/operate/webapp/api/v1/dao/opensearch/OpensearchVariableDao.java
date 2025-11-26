@@ -18,7 +18,6 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +53,8 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   }
 
   @Override
-  protected void buildFiltering(final Query<Variable> query, final SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<Variable> query) {
     final Variable filter = query.getFilter();
 
     if (filter != null) {
@@ -72,9 +72,10 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override
