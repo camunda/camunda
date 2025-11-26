@@ -55,7 +55,10 @@ function useResolveProcessInstanceIncidents(
             throw error;
           }
 
-          if (['ACTIVE', 'CREATED'].includes(batchOperation.state)) {
+          if (
+            batchOperation.state === 'ACTIVE' ||
+            batchOperation.state === 'CREATED'
+          ) {
             throw new Error('batch operation is still active');
           }
 
