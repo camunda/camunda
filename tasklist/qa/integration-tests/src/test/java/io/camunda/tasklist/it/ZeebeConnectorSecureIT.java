@@ -7,24 +7,22 @@
  */
 package io.camunda.tasklist.it;
 
-import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
-import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.util.CertificateUtil;
 import io.camunda.tasklist.zeebe.ZeebeConnector;
-import io.zeebe.containers.ZeebeContainer;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import java.io.File;
-import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,9 +30,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
-import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
 @SpringBootTest(
     classes = {
@@ -49,15 +44,9 @@ public class ZeebeConnectorSecureIT {
 
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";
   private static final String PRIVATE_KEY_FILE = "zeebe-test-server.key.pem";
-  private static final DockerImageName ZEEBE_DOCKER_IMAGE =
-      DockerImageName.parse(
-              ContainerVersionsUtil.readProperty(
-                  ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME))
-          .withTag(
-              ContainerVersionsUtil.readProperty(
-                  ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
   @Autowired ZeebeConnector zeebeConnector;
-  private ZeebeContainer zeebeContainer;
+  @Autowired TasklistProperties tasklistProperties;
+  private TestStandaloneBroker broker;
   private CamundaClient camundaClient;
 
   @Test
@@ -66,32 +55,33 @@ public class ZeebeConnectorSecureIT {
     final File certFile = new File(tempDir, CERTIFICATE_FILE);
     final File privateKeyFile = new File(tempDir, PRIVATE_KEY_FILE);
     CertificateUtil.generateRSACertificate(certFile, privateKeyFile);
-    zeebeContainer =
-        new ZeebeContainer(ZEEBE_DOCKER_IMAGE)
-            .withCopyFileToContainer(
-                MountableFile.forHostPath(tempDir.toPath(), 0755), "/usr/local/zeebe/certs")
-            .withEnv(
-                Map.of(
-                    "ZEEBE_BROKER_GATEWAY_SECURITY_CERTIFICATECHAINPATH",
-                    "/usr/local/zeebe/certs/" + CERTIFICATE_FILE,
-                    "ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH",
-                    "/usr/local/zeebe/certs/" + PRIVATE_KEY_FILE,
-                    "ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED",
-                    "true",
-                    CREATE_SCHEMA_ENV_VAR,
-                    "false",
-                    "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI",
-                    "true"))
-            // Can't use connection wait strategy because of TLS
-            .waitingFor(
-                new LogMessageWaitStrategy()
-                    .withRegEx(".*Broker is ready!.*")
-                    .withStartupTimeout(Duration.ofSeconds(101)));
-    zeebeContainer.start();
+    broker =
+        new TestStandaloneBroker()
+            .withCreateSchema(false)
+            .withGatewayEnabled(true)
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .setType(
+                          tasklistProperties.isElasticsearchDB()
+                              ? SecondaryStorageType.elasticsearch
+                              : SecondaryStorageType.opensearch);
+                  cfg.getApi().getGrpc().getSsl().setEnabled(true);
+                  cfg.getApi().getGrpc().getSsl().setCertificatePrivateKey(privateKeyFile);
+                  cfg.getApi().getGrpc().getSsl().setCertificate(certFile);
+                })
+            .withSecurityConfig(cfg -> cfg.getAuthentication().setUnprotectedApi(true));
+    broker.start();
+
+    // replace loopback address with localhost for certificate match
+    final String gatewayAddress =
+        broker.address(TestZeebePort.GATEWAY).replace("0.0.0.0", "localhost");
+
     camundaClient =
         zeebeConnector.newCamundaClient(
             new ZeebeProperties()
-                .setGatewayAddress(zeebeContainer.getExternalGatewayAddress())
+                .setGatewayAddress(gatewayAddress)
                 .setSecure(true)
                 .setCertificatePath(tempDir.getCanonicalPath() + "/" + CERTIFICATE_FILE));
     // when
@@ -106,8 +96,8 @@ public class ZeebeConnectorSecureIT {
     if (camundaClient != null) {
       camundaClient.close();
     }
-    if (zeebeContainer != null) {
-      zeebeContainer.stop();
+    if (broker != null) {
+      broker.close();
     }
   }
 }

@@ -10,7 +10,6 @@ package io.camunda.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import org.junit.jupiter.api.AfterEach;
@@ -48,14 +47,13 @@ public class StartupIT {
     testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(
-        ContainerVersionsUtil.readProperty(
-            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME),
-        testContext);
+    testContainerUtil.startStandaloneBroker(testContext);
 
     tasklistContainer =
         testContainerUtil
             .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
+            .withAccessToHost(true)
+            .withExtraHost("host.testcontainers.internal", "host-gateway")
             .withCreateContainerCmdModifier(
                 cmd -> ((CreateContainerCmd) cmd).withUser("1000620000:0"))
             .withLogConsumer(new Slf4jLogConsumer(LOGGER));
