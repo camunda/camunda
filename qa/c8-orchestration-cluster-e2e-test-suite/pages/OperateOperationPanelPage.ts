@@ -46,4 +46,14 @@ export class OperateOperationPanelPage {
   async collapseOperationIdField(): Promise<void> {
     await this.collapseButton.click();
   }
+
+  async getMigrationOperationId(): Promise<string> {
+    const operationEntry = this.getAllOperationEntries()
+      .filter({hasText: /^Migrate/i})
+      .first();
+
+    return await OperateOperationPanelPage.getOperationID(
+      operationEntry,
+    ).innerText();
+  }
 }

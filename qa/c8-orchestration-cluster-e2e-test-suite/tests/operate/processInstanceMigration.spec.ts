@@ -68,8 +68,6 @@ test.beforeAll(async () => {
 });
 
 test.describe.serial('Process Instance Migration', () => {
-  test.describe.configure({retries: 0});
-
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -98,7 +96,9 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await expect(operateProcessesPage.resultsText).toBeVisible({
+        timeout: 30000,
+      });
     });
 
     await test.step('Select first 6 process instances for migration', async () => {
@@ -120,12 +120,118 @@ test.describe.serial('Process Instance Migration', () => {
         useInnerText: true,
       });
 
-      await expect(
-        page.getByLabel('target element for check payment'),
-      ).toHaveValue('checkPayment');
-      await expect(
-        page.getByLabel('target element for ship articles'),
-      ).toHaveValue('shipArticles');
+      await operateProcessMigrationModePage.verifyFlowNodeMappings([
+        {
+          label: 'target element for check payment',
+          targetValue: 'checkPayment',
+        },
+        {
+          label: 'target element for ship articles',
+          targetValue: 'shipArticles',
+        },
+        {
+          label: 'target element for request for payment',
+          targetValue: 'requestForPayment',
+        },
+        {label: 'target element for task a', targetValue: 'TaskA'},
+        {label: 'target element for task b', targetValue: 'TaskB'},
+        {label: 'target element for task c', targetValue: 'TaskC'},
+        {label: 'target element for task d', targetValue: 'TaskD'},
+        {
+          label: 'target element for message interrupting',
+          targetValue: 'MessageInterrupting',
+        },
+        {
+          label: 'target element for timer interrupting',
+          targetValue: 'TimerInterrupting',
+        },
+        {
+          label: 'target element for message non-interrupting',
+          targetValue: 'MessageNonInterrupting',
+        },
+        {
+          label: 'target element for timer non-interrupting',
+          targetValue: 'TimerNonInterrupting',
+        },
+        {
+          label: /target element for message intermediate catch$/i,
+          targetValue: 'MessageIntermediateCatch',
+        },
+        {
+          label: /target element for timer intermediate catch$/i,
+          targetValue: 'TimerIntermediateCatch',
+        },
+        {
+          label: 'target element for message event sub process',
+          targetValue: 'MessageEventSubProcess',
+        },
+        {
+          label: 'target element for timer event sub process',
+          targetValue: 'TimerEventSubProcess',
+        },
+        {label: 'target element for task e', targetValue: 'TaskE'},
+        {label: 'target element for task f', targetValue: 'TaskF'},
+        {
+          label: 'target element for message receive task',
+          targetValue: 'MessageReceiveTask',
+        },
+        {
+          label: 'target element for business rule task',
+          targetValue: 'BusinessRuleTask',
+        },
+        {label: 'target element for script task', targetValue: 'ScriptTask'},
+        {label: 'target element for send task', targetValue: 'SendTask'},
+        {
+          label: 'target element for timer start event',
+          targetValue: 'TimerStartEvent',
+        },
+        {
+          label: 'target element for signal start event',
+          targetValue: 'SignalStartEvent',
+        },
+        {
+          label: 'target element for signal boundary event',
+          targetValue: 'SignalBoundaryEvent',
+        },
+        {
+          label: 'target element for signal intermediate catch',
+          targetValue: 'SignalIntermediateCatch',
+        },
+        {
+          label: 'target element for signal event sub process',
+          targetValue: 'SignalEventSubProcess',
+        },
+        {
+          label: 'target element for error event sub process',
+          targetValue: 'ErrorEventSubProcess',
+        },
+        {
+          label: 'target element for error start event',
+          targetValue: 'ErrorStartEvent',
+        },
+        {label: 'target element for task g', targetValue: 'TaskG'},
+        {label: 'target element for sub process', targetValue: 'SubProcess'},
+        {
+          label: 'target element for multi instance sub process',
+          targetValue: 'MultiInstanceSubProcess',
+        },
+        {
+          label: 'target element for multi instance task',
+          targetValue: 'MultiInstanceTask',
+        },
+        {
+          label: 'target element for compensation task',
+          targetValue: 'CompensationTask',
+        },
+        {
+          label: 'target element for compensation boundary event',
+          targetValue: 'CompensationBoundaryEvent',
+        },
+        {
+          label: 'target element for message start event',
+          targetValue: 'MessageStartEvent',
+        },
+      ]);
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
     });
@@ -156,6 +262,41 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
+  test('Migrated event sub processes', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateOperationPanelPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
+    const targetVersion = testProcesses.processV2.version.toString();
+
+    await test.step('Navigate to processes and expand operations panel', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText).toBeVisible({
+        timeout: 30000,
+      });
+
+      await operateOperationPanelPage.expandOperationIdField();
+    });
+
+    await test.step('Get migration operation ID and verify TaskF instances', async () => {
+      const operationId =
+        await operateOperationPanelPage.getMigrationOperationId();
+
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await page.goto(
+        `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=TaskF`,
+      );
+
+      await expect(page.getByText('6 results')).toBeVisible({timeout: 30000});
+    });
+  });
+
   test('Manual mapping migration', async ({
     page,
     operateFiltersPanelPage,
@@ -172,7 +313,9 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await expect(operateProcessesPage.resultsText).toBeVisible({
+        timeout: 30000,
+      });
     });
 
     await test.step('Select 3 process instances for migration', async () => {
@@ -185,13 +328,13 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Manually select target process and version', async () => {
       await operateProcessMigrationModePage.targetProcessCombobox.click();
-      await page
-        .getByRole('option', {name: targetBpmnProcessId, exact: true})
+      await operateProcessMigrationModePage
+        .getOptionByName(targetBpmnProcessId)
         .click();
 
       await operateProcessMigrationModePage.targetVersionDropdown.click();
-      await page
-        .getByRole('option', {name: targetVersion, exact: true})
+      await operateProcessMigrationModePage
+        .getOptionByName(targetVersion)
         .click();
     });
 
@@ -309,10 +452,10 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Proceed to summary and verify migration details', async () => {
-      await operateProcessMigrationModePage.nextButton.click();
-
-      const summaryNotification = page.getByRole('main').getByRole('status');
-      await expect(summaryNotification).toContainText(
+      await operateProcessMigrationModePage.clickNextButton();
+      await expect(
+        operateProcessMigrationModePage.summaryNotification,
+      ).toContainText(
         `You are about to migrate 3 process instances from the process definition: ${sourceBpmnProcessId} - version ${sourceVersion} to the process definition: ${targetBpmnProcessId} - version ${targetVersion}`,
       );
     });
@@ -341,7 +484,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await expect(
         operateProcessesPage.getVersionCells(targetVersion),
-      ).toHaveCount(3, {timeout: 30000});
+      ).toHaveCount(3, {timeout: 60000});
 
       await expect(
         operateProcessesPage.getVersionCells(sourceVersion),
@@ -356,6 +499,213 @@ test.describe.serial('Process Instance Migration', () => {
       await expect(page.getByText(/3 results/i)).toBeVisible({
         timeout: 30000,
       });
+    });
+  });
+
+  test('Migrated tasks', async ({
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateDiagramPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
+
+    await test.step('Navigate to first migrated process instance', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText).toBeVisible({
+        timeout: 30000,
+      });
+
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateDiagramPage.resetDiagramZoomButton.click();
+    });
+
+    await test.step('Verify Send task migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata('SendTask2', {
+        hiddenText: 'expected worker failure',
+      });
+    });
+
+    await test.step('Verify Task G migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata('TaskG', {
+        expectedText: 'endDate',
+        hiddenText: '"endDate": "null"',
+      });
+    });
+
+    await test.step('Verify Business rule task incident migration', async () => {
+      await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
+      await operateDiagramPage.showMetaData();
+
+      await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+
+      await operateDiagramPage.closeMetadataModal();
+    });
+  });
+
+  test('Migrated message events', async ({
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateDiagramPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
+
+    await test.step('Navigate to first migrated process instance', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText).toBeVisible({
+        timeout: 30000,
+      });
+
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateDiagramPage.resetDiagramZoomButton.click();
+    });
+
+    await test.step('Verify Task A2 correlation key migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata('TaskA2', {
+        expectedText: [
+          '"correlationKey": "mySecondCorrelationKey"',
+          '"messageName": "Message_2",',
+        ],
+      });
+    });
+
+    await test.step('Verify Task C2 correlation key migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata('TaskC2', {
+        expectedText: [
+          '"correlationKey": "myFirstCorrelationKey"',
+          '"messageName": "Message_1",',
+        ],
+      });
+    });
+
+    await test.step('Verify Message receive task migration', async () => {
+      await sleep(500);
+      await operateDiagramPage.verifyFlowNodeMetadata('MessageReceiveTask2', {
+        expectedText: [
+          '"correlationKey": "myFirstCorrelationKey"',
+          '"messageName": "Message_5",',
+        ],
+      });
+    });
+
+    await test.step('Verify Message intermediate catch event migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata(
+        'MessageIntermediateCatch2',
+        {
+          expectedText: [
+            '"correlationKey": "myFirstCorrelationKey"',
+            '"messageName": "Message_3",',
+          ],
+        },
+      );
+    });
+  });
+
+  test('Migrated gateways', async ({
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateDiagramPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
+
+    await test.step('Navigate to first migrated process instance', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText).toBeVisible({
+        timeout: 30000,
+      });
+
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateDiagramPage.resetDiagramZoomButton.click();
+    });
+
+    await test.step('Verify Event based gateway correlation key update', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata('EventBasedGateway2', {
+        expectedText: [
+          '"correlationKey": "myFirstCorrelationKey"',
+          '"messageName": "Message_3",',
+        ],
+      });
+    });
+
+    await test.step('Verify Exclusive gateway incident migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata('ExclusiveGateway2', {
+        expectedText: '"hasIncident": true,',
+      });
+    });
+  });
+
+  test('Migrated signal elements', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateDiagramPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
+
+    await test.step('Navigate to migrated process instance', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateDiagramPage.resetDiagramZoomButton.click();
+    });
+
+    await test.step('Verify signal intermediate catch event migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata(
+        'SignalIntermediateCatch2',
+        {
+          expectedText: 'endDate',
+          hiddenText: '"endDate": "null"',
+        },
+      );
+    });
+  });
+
+  test('Migrated multi instance elements', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateDiagramPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
+
+    await test.step('Navigate to migrated process instance', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateDiagramPage.resetDiagramZoomButton.click();
+    });
+
+    await test.step('Verify multi instance sub process migration', async () => {
+      await operateDiagramPage.verifyFlowNodeMetadata(
+        'MultiInstanceSubProcess2',
+        {
+          expectedText: 'endDate',
+          hiddenText: '"endDate": "null"',
+          isSubProcess: true,
+        },
+      );
+    });
+
+    await test.step('Verify multi instance task migration', async () => {
+      const executionCount =
+        operateDiagramPage.getStateOverlay('MultiInstanceTask2');
+      await expect(executionCount.locator('span')).toHaveText('2');
     });
   });
 

@@ -33,7 +33,6 @@ class OperateProcessInstancePage {
   readonly executionCountToggleOn: Locator;
   readonly executionCountToggleOff: Locator;
   readonly listenersTabButton: Locator;
-  readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly editVariableButton: Locator;
@@ -77,7 +76,6 @@ class OperateProcessInstancePage {
       'hide execution count',
     );
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
-    this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
     this.variableAddedBanner = this.page.getByText('Variable added');

@@ -14,6 +14,7 @@ import {checkUpdateOnVersion} from 'utils/zeebeClient';
 class OperateProcessesPage {
   private page: Page;
   readonly processResultCount: Locator;
+  readonly resultsText: Locator;
   readonly processPageHeading: Locator;
   readonly noMatchingInstancesMessage: Locator;
   readonly processNameFilter: Locator;
@@ -61,6 +62,7 @@ class OperateProcessesPage {
     this.page = page;
     this.diagram = new OperateDiagramPage(page);
     this.processResultCount = page.getByTestId('result-count');
+    this.resultsText = page.getByText('results');
     this.processPageHeading = page
       .getByTestId('expanded-panel')
       .getByRole('heading', {name: 'Process'});
@@ -363,11 +365,10 @@ class OperateProcessesPage {
     try {
       await expect(this.inProgressBar).toBeVisible({timeout: 5000});
       await expect(this.inProgressBar).not.toBeVisible({timeout: 120000});
-    } catch (error) {
+    } catch {
       console.log(
         'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
       );
-      console.log('Error details:', error);
     }
   }
 }
