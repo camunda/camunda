@@ -253,12 +253,12 @@ function getProcessInstancesRequestFilters(): RequestFilters {
 }
 
 function updateFiltersSearchString<Filters extends object>(
-  currentSearch: string,
+  currentSearch: URLSearchParams,
   newFilters: Filters,
   possibleFilters: Array<keyof Filters>,
   possibleBooleanFilters: Array<keyof Filters>,
 ) {
-  const oldParams = Object.fromEntries(new URLSearchParams(currentSearch));
+  const oldParams = Object.fromEntries(currentSearch);
   const fieldsToDelete = possibleFilters.filter(
     (field) => newFilters[field] === undefined,
   );
@@ -289,7 +289,7 @@ function updateProcessFiltersSearchString(
   newFilters: ProcessInstanceFilters,
 ) {
   return updateFiltersSearchString<ProcessInstanceFilters>(
-    currentSearch,
+    new URLSearchParams(currentSearch),
     newFilters,
     PROCESS_INSTANCE_FILTER_FIELDS,
     BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,

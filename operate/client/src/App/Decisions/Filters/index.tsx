@@ -7,12 +7,12 @@
  */
 
 import {
-  parseDecisionInstancesFilter,
-  updateDecisionsFiltersSearchString,
-  type DecisionInstanceFilters,
-} from 'modules/utils/filter/decisionInstancesSearch';
+  parseDecisionsFilter,
+  updateDecisionsFilterSearchString,
+  type DecisionsFilter,
+} from 'modules/utils/filter/decisionsFilter';
 import {Form} from 'react-final-form';
-import {useLocation, useNavigate, type Location} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {
   Container,
   Form as StyledForm,
@@ -37,20 +37,16 @@ import {
   getDefinitionIdFromIdentifier,
 } from 'modules/hooks/decisionDefinition';
 
-const initialValues: DecisionInstanceFilters = {
+const initialValues: DecisionsFilter = {
   evaluated: true,
   failed: true,
 };
 
-type LocationType = Omit<Location, 'state'> & {
-  state: {hideOptionalFilters?: boolean};
-};
-
 const Filters: React.FC = observer(() => {
-  const location = useLocation() as LocationType;
+  const [params] = useSearchParams();
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filterValues = parseDecisionInstancesFilter(location.search);
+  const filterValues = parseDecisionsFilter(params);
   if (filterValues.name && filterValues.tenant !== 'all') {
     filterValues.name = getDefinitionIdentifier(
       filterValues.name,
@@ -63,10 +59,10 @@ const Filters: React.FC = observer(() => {
   }
 
   return (
-    <Form<DecisionInstanceFilters>
+    <Form<DecisionsFilter>
       onSubmit={(values) => {
         navigate({
-          search: updateDecisionsFiltersSearchString(location.search, {
+          search: updateDecisionsFilterSearchString(params, {
             ...values,
             name: getDefinitionIdFromIdentifier(values.name),
           }),
