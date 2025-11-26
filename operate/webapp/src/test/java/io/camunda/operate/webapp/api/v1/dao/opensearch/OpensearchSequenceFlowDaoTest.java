@@ -10,7 +10,6 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
@@ -23,9 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opensearch.client.opensearch.core.SearchRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class OpensearchSequenceFlowDaoTest {
@@ -66,17 +63,14 @@ public class OpensearchSequenceFlowDaoTest {
 
   @Test
   public void testBuildFilteringWithNullFilter() {
-    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    underTest.buildFiltering(new Query<>(), mockSearchRequest);
+    final var filtering = underTest.buildFiltering(new Query<>());
 
-    // Verify that the query was not modified in any way
-    verifyNoInteractions(mockSearchRequest);
-    verifyNoInteractions(mockQueryWrapper);
+    verify(mockQueryWrapper, times(1)).matchAll();
+    assertThat(filtering).isEqualTo(mockQueryWrapper.matchAll());
   }
 
   @Test
   public void testBuildFilteringWithValidFields() {
-    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     final SequenceFlow filter =
         new SequenceFlow()
             .setId("id")
@@ -86,7 +80,7 @@ public class OpensearchSequenceFlowDaoTest {
 
     final Query<SequenceFlow> inputQuery = new Query<SequenceFlow>().setFilter(filter);
 
-    underTest.buildFiltering(inputQuery, mockSearchRequest);
+    underTest.buildFiltering(inputQuery);
 
     // Verify that each field from the flow node filter was added as a query term to the query
     verify(mockQueryWrapper, times(1)).term(SequenceFlow.ID, filter.getId());

@@ -82,8 +82,10 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected SearchRequest.Builder buildSearchRequest(final Query<DecisionInstance> query) {
-    return super.buildSearchRequest(query)
+  protected SearchRequest.Builder buildSearchRequest(
+      final Query<DecisionInstance> query,
+      final org.opensearch.client.opensearch._types.query_dsl.Query filtering) {
+    return super.buildSearchRequest(query, filtering)
         .source(
             queryDSLWrapper.sourceExclude(
                 DecisionInstanceTemplate.EVALUATED_INPUTS,
@@ -106,8 +108,8 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<DecisionInstance> query, final SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<DecisionInstance> query) {
     final DecisionInstance filter = query.getFilter();
     if (filter != null) {
       final var queryTerms =
@@ -145,9 +147,10 @@ public class OpensearchDecisionInstanceDao
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override

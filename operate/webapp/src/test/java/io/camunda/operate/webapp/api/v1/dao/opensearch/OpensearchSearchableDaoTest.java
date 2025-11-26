@@ -64,7 +64,10 @@ public class OpensearchSearchableDaoTest {
           }
 
           @Override
-          protected void buildFiltering(final Query query, final SearchRequest.Builder request) {}
+          protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+              final Query query) {
+            return null;
+          }
 
           @Override
           protected Object convertInternalToApiResult(final Object internalResult) {
@@ -83,12 +86,11 @@ public class OpensearchSearchableDaoTest {
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
 
-    final SearchRequest.Builder result = underTest.buildSearchRequest(new Query<>());
+    final SearchRequest.Builder result = underTest.buildSearchRequest(new Query<>(), mockOsQuery);
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
     assertThat(result).isSameAs(mockRequestBuilder);
-    verify(mockQueryWrapper, times(1)).matchAll();
-    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
+    verify(mockQueryWrapper, times(1)).withTenantCheck(mockOsQuery);
     verify(mockRequestWrapper, times(1)).searchRequestBuilder("index");
   }
 

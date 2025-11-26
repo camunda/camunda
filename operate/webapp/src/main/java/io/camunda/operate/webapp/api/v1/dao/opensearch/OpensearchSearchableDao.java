@@ -32,19 +32,19 @@ public abstract class OpensearchSearchableDao<T, R> {
   protected final RichOpenSearchClient richOpenSearchClient;
 
   public OpensearchSearchableDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient) {
     this.queryDSLWrapper = queryDSLWrapper;
     this.requestDSLWrapper = requestDSLWrapper;
     this.richOpenSearchClient = richOpenSearchClient;
   }
 
-  public Results<T> search(Query<T> query) {
-    final var request = buildSearchRequest(query);
+  public Results<T> search(final Query<T> query) {
 
+    final var filtering = buildFiltering(query);
+    final var request = buildSearchRequest(query, filtering);
     buildSorting(query, getUniqueSortKey(), request);
-    buildFiltering(query, request);
     buildPaging(query, request);
 
     try {
@@ -52,15 +52,17 @@ public abstract class OpensearchSearchableDao<T, R> {
           richOpenSearchClient.doc().search(request, getInternalDocumentModelClass()).hits();
 
       return formatHitsIntoResults(results);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }
   }
 
-  protected SearchRequest.Builder buildSearchRequest(Query<T> query) {
+  protected SearchRequest.Builder buildSearchRequest(
+      final Query<T> query,
+      final org.opensearch.client.opensearch._types.query_dsl.Query filtering) {
     return requestDSLWrapper
         .searchRequestBuilder(getIndexName())
-        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.matchAll()));
+        .query(queryDSLWrapper.withTenantCheck(filtering));
   }
 
   protected abstract String getUniqueSortKey();
@@ -69,7 +71,8 @@ public abstract class OpensearchSearchableDao<T, R> {
 
   protected abstract String getIndexName();
 
-  protected void buildSorting(Query<T> query, String uniqueSortKey, SearchRequest.Builder request) {
+  protected void buildSorting(
+      final Query<T> query, final String uniqueSortKey, final SearchRequest.Builder request) {
     final List<Query.Sort> sorts = query.getSort();
     if (sorts != null) {
       sorts.forEach(
@@ -86,7 +89,7 @@ public abstract class OpensearchSearchableDao<T, R> {
     request.sort(queryDSLWrapper.sortOptions(uniqueSortKey, SortOrder.Asc));
   }
 
-  protected void buildPaging(Query<T> query, SearchRequest.Builder request) {
+  protected void buildPaging(final Query<T> query, final SearchRequest.Builder request) {
     final Object[] searchAfter = query.getSearchAfter();
     if (searchAfter != null) {
       request.searchAfter(CollectionUtil.toSafeListOfStrings(searchAfter));
@@ -94,9 +97,10 @@ public abstract class OpensearchSearchableDao<T, R> {
     request.size(query.getSize());
   }
 
-  protected abstract void buildFiltering(Query<T> query, SearchRequest.Builder request);
+  protected abstract org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      Query<T> query);
 
-  protected Results<T> formatHitsIntoResults(HitsMetadata<R> results) {
+  protected Results<T> formatHitsIntoResults(final HitsMetadata<R> results) {
     final List<Hit<R>> hits = results.hits();
 
     if (!hits.isEmpty()) {

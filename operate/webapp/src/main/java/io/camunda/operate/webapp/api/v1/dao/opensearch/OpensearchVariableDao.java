@@ -18,7 +18,6 @@ import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -30,10 +29,10 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   private final VariableTemplate variableIndex;
 
   public OpensearchVariableDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      VariableTemplate variableIndex) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final VariableTemplate variableIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.variableIndex = variableIndex;
   }
@@ -54,7 +53,8 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   }
 
   @Override
-  protected void buildFiltering(Query<Variable> query, SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<Variable> query) {
     final Variable filter = query.getFilter();
 
     if (filter != null) {
@@ -72,13 +72,14 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override
-  protected Variable convertInternalToApiResult(Variable internalResult) {
+  protected Variable convertInternalToApiResult(final Variable internalResult) {
     return internalResult;
   }
 
@@ -88,17 +89,17 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return String.format("Error in reading variable for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return String.format("No variable found for key %s", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return String.format("Found more than one variables for key %s", key);
   }
 }

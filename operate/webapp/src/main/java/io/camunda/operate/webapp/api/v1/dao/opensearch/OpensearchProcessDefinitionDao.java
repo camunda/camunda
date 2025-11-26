@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -35,10 +34,10 @@ public class OpensearchProcessDefinitionDao
   private final ProcessIndex processIndex;
 
   public OpensearchProcessDefinitionDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      ProcessIndex processIndex) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final ProcessIndex processIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processIndex = processIndex;
   }
@@ -49,22 +48,22 @@ public class OpensearchProcessDefinitionDao
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return String.format("Error in reading process definition for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return String.format("No process definition found for key %s", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return String.format("Found more than one process definition for key %s", key);
   }
 
   @Override
-  public String xmlByKey(Long key) throws APIException {
+  public String xmlByKey(final Long key) throws APIException {
     validateKey(key);
     final var request =
         requestDSLWrapper
@@ -76,7 +75,7 @@ public class OpensearchProcessDefinitionDao
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source().get(ProcessIndex.BPMN_XML).toString();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading process definition as xml for key %s", key), e);
     }
@@ -100,7 +99,8 @@ public class OpensearchProcessDefinitionDao
   }
 
   @Override
-  protected void buildFiltering(Query<ProcessDefinition> query, SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<ProcessDefinition> query) {
     final ProcessDefinition filter = query.getFilter();
     if (filter != null) {
       final var queryTerms =
@@ -116,13 +116,14 @@ public class OpensearchProcessDefinitionDao
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override
-  protected ProcessDefinition convertInternalToApiResult(ProcessDefinition internalResult) {
+  protected ProcessDefinition convertInternalToApiResult(final ProcessDefinition internalResult) {
     return internalResult;
   }
 }

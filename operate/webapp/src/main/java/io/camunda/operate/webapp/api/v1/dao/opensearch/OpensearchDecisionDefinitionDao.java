@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -45,12 +44,12 @@ public class OpensearchDecisionDefinitionDao
   private final DecisionRequirementsDao decisionRequirementsDao;
 
   public OpensearchDecisionDefinitionDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      DecisionIndex decisionIndex,
-      DecisionRequirementsIndex decisionRequirementsIndex,
-      DecisionRequirementsDao decisionRequirementsDao) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final DecisionIndex decisionIndex,
+      final DecisionRequirementsIndex decisionRequirementsIndex,
+      final DecisionRequirementsDao decisionRequirementsDao) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionIndex = decisionIndex;
     this.decisionRequirementsIndex = decisionRequirementsIndex;
@@ -58,7 +57,7 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  public DecisionDefinition byKey(Long key) {
+  public DecisionDefinition byKey(final Long key) {
     final var decisionDefinition = super.byKey(key);
     final DecisionRequirements decisionRequirements =
         decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
@@ -73,22 +72,22 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return String.format("Error in reading decision definition for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return String.format("No decision definition found for key %s", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return String.format("Found more than one decision definition for key %s", key);
   }
 
   @Override
-  public Results<DecisionDefinition> search(Query<DecisionDefinition> query) {
+  public Results<DecisionDefinition> search(final Query<DecisionDefinition> query) {
     final var results = super.search(query);
     final var decisionDefinitions = results.getItems();
     populateDecisionRequirementsNameAndVersion(decisionDefinitions);
@@ -111,7 +110,8 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected void buildFiltering(Query<DecisionDefinition> query, SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<DecisionDefinition> query) {
     final DecisionDefinition filter = query.getFilter();
 
     if (filter != null) {
@@ -136,13 +136,14 @@ public class OpensearchDecisionDefinitionDao
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override
-  protected DecisionDefinition convertInternalToApiResult(DecisionDefinition internalResult) {
+  protected DecisionDefinition convertInternalToApiResult(final DecisionDefinition internalResult) {
     return internalResult;
   }
 
@@ -151,7 +152,7 @@ public class OpensearchDecisionDefinitionDao
    * decisionRequirementsVersion fields to the decision definitions
    */
   private void populateDecisionRequirementsNameAndVersion(
-      List<DecisionDefinition> decisionDefinitions) {
+      final List<DecisionDefinition> decisionDefinitions) {
     final Set<Long> decisionRequirementsKeys =
         decisionDefinitions.stream()
             .map(DecisionDefinition::getDecisionRequirementsKey)
@@ -176,7 +177,7 @@ public class OpensearchDecisionDefinitionDao
   }
 
   private org.opensearch.client.opensearch._types.query_dsl.Query buildFilteringBy(
-      String decisionRequirementsName, Integer decisionRequirementsVersion) {
+      final String decisionRequirementsName, final Integer decisionRequirementsVersion) {
     try {
       final List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms =
           new LinkedList<>();
@@ -204,7 +205,7 @@ public class OpensearchDecisionDefinitionDao
         return queryDSLWrapper.matchNone();
       }
       return queryDSLWrapper.longTerms(DecisionDefinition.DECISION_REQUIREMENTS_KEY, nonNullKeys);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading decision requirements by name and version", e);
     }
   }
