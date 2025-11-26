@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdH
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -54,6 +55,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -381,13 +383,18 @@ public class ProcessInstanceMigrationMigrateProcessor
                 Please report this as a bug""",
                 processInstanceKey, elementInstance.getJobKey()));
       }
-      stateWriter.appendFollowUpEvent(
-          elementInstance.getJobKey(),
-          JobIntent.MIGRATED,
-          job.setProcessDefinitionKey(targetProcessDefinition.getKey())
-              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-              .setElementId(targetElementId));
+
+      if (requiresJobCancellation(job.getJobKind(), targetProcessDefinition, targetElementId)) {
+        stateWriter.appendFollowUpEvent(elementInstance.getJobKey(), JobIntent.CANCELED, job);
+      } else {
+        stateWriter.appendFollowUpEvent(
+            elementInstance.getJobKey(),
+            JobIntent.MIGRATED,
+            job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+                .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+                .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                .setElementId(targetElementId));
+      }
     }
 
     final long processIncidentKey =
@@ -465,6 +472,22 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
       migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
     }
+  }
+
+  private boolean requiresJobCancellation(
+      final JobKind jobKind,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId) {
+    final BpmnElementType targetElementType =
+        targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
+    if (targetElementType != BpmnElementType.USER_TASK) {
+      return false;
+    }
+    final ExecutableUserTask targetUserTask =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableUserTask.class);
+    return jobKind == JobKind.BPMN_ELEMENT && targetUserTask.getUserTaskProperties() != null;
   }
 
   private static DirectBuffer getTargetSequenceFlowId(
