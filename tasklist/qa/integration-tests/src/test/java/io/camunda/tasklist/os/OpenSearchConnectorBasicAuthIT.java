@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,9 +50,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ContextConfiguration(initializers = {OpenSearchConnectorBasicAuthIT.OpenSearchStarter.class})
 public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
-  static OpensearchContainer opensearch =
-      (OpensearchContainer)
-          new OpensearchContainer("opensearchproject/opensearch:2.9.0")
+  static OpenSearchContainer opensearch =
+      (OpenSearchContainer)
+          new OpenSearchContainer("opensearchproject/opensearch:2.9.0")
               .withEnv(
                   Map.of(
                       // "plugins.security.disabled", "false",
