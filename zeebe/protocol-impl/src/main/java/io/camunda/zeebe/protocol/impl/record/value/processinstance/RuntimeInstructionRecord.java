@@ -35,8 +35,9 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return bufferAsString(elementIdProperty.getValue());
   }
 
-  public void setElementId(final String interruptingElementId) {
+  public RuntimeInstructionRecord setElementId(final String interruptingElementId) {
     elementIdProperty.setValue(interruptingElementId);
+    return this;
   }
 
   @Override
@@ -44,8 +45,9 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return processInstanceKeyProperty.getValue();
   }
 
-  public void setProcessInstanceKey(final long processInstanceKey) {
+  public RuntimeInstructionRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
   }
 
   @Override
@@ -53,8 +55,9 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return bufferAsString(tenantIdProperty.getValue());
   }
 
-  public void setTenantId(final String tenantId) {
+  public RuntimeInstructionRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
+    return this;
   }
 
   public DirectBuffer getElementIdBuffer() {
