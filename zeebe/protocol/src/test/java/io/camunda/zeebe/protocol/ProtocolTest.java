@@ -27,6 +27,7 @@ public final class ProtocolTest {
   public void testEndiannessConstant() {
     assertThat(Protocol.ENDIANNESS).isEqualTo(ByteOrder.LITTLE_ENDIAN);
   }
+
   @Test
   public void shouldNotEncodeNegativeKeys() {
     // given
@@ -37,5 +38,17 @@ public final class ProtocolTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid key provided: got -1029819, expected a positive value");
   }
+
   @Test
+  public void shouldNotEncodeKeyAlreadyEncoded() {
+    // given
+    final long value = 1029819L;
+    final long encoded = Protocol.encodePartitionId(128, value);
+
+    // when/then
+    assertThatThrownBy(() -> Protocol.encodePartitionId(128, encoded))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Invalid key provided: got 288230376152741563, but it has the partitionId encoded already (partitionId=128)");
+  }
 }
