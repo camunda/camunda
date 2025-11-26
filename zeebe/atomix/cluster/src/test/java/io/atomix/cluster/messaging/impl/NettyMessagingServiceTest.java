@@ -226,32 +226,16 @@ final class NettyMessagingServiceTest {
                         .isNotNull()
                         .satisfies(heartbeat -> assertThat(heartbeat.receivedAt()).isPositive());
                   } else {
-                    // At least one party doesn't support payloads: verify empty heartbeats
-                    assertThat(
-                            emptyHeartbeatFromClientReceived.get()
-                                || heartbeatFromClient.get() != null)
-                        .as("Heartbeat from client should be received (empty or with payload)")
-                        .isTrue();
-                    assertThat(
-                            emptyHeartbeatResponseFromServerReceived.get()
-                                || heartbeatResponseFromServer.get() != null)
+                    // At least one party doesn't support payloads: negotiation requires both to
+                    // agree, so empty heartbeats are exchanged
+                    assertThat(emptyHeartbeatFromClientReceived.get())
                         .as(
-                            "Heartbeat response from server should be received (empty or with payload)")
+                            "Client should send empty heartbeats when negotiation results in no payload support")
                         .isTrue();
-
-                    // Additionally verify that at least one side has empty payload as expected
-                    if (!clientSupportsPayload) {
-                      assertThat(emptyHeartbeatFromClientReceived.get())
-                          .as(
-                              "Client should send empty heartbeats when it doesn't support payloads")
-                          .isTrue();
-                    }
-                    if (!serverSupportsPayload) {
-                      assertThat(emptyHeartbeatResponseFromServerReceived.get())
-                          .as(
-                              "Server should send empty heartbeat responses when it doesn't support payloads")
-                          .isTrue();
-                    }
+                    assertThat(emptyHeartbeatResponseFromServerReceived.get())
+                        .as(
+                            "Server should send empty heartbeat responses when negotiation results in no payload support")
+                        .isTrue();
                   }
                 });
       }
