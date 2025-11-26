@@ -252,7 +252,6 @@ After submitting the form you can observe the progress of the load test creation
 
 ![5-build](assets/5-build.png)
 
-
 ##### Creating manually
 
 As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
