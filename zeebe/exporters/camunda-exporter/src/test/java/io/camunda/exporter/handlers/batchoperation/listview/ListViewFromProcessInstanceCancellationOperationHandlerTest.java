@@ -43,11 +43,13 @@ class ListViewFromProcessInstanceCancellationOperationHandlerTest
   }
 
   @Override
-  protected Record<ProcessInstanceRecordValue> createCompletedRecord() {
+  protected Record<ProcessInstanceRecordValue> createCompletedRecord(
+      final long processInstanceKey) {
     final var value =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .withBpmnElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
             .withParentProcessInstanceKey(-1)
             .build();
     return factory.generateRecord(
@@ -61,6 +63,7 @@ class ListViewFromProcessInstanceCancellationOperationHandlerTest
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .withBpmnElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(123456789L)
             .withParentProcessInstanceKey(-1)
             .build();
     return factory.generateRecord(
