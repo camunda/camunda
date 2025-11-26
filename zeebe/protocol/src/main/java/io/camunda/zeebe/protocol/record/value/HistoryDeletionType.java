@@ -16,5 +16,8 @@
 package io.camunda.zeebe.protocol.record.value;
 
 public enum HistoryDeletionType {
-  PROCESS_INSTANCE
+  PROCESS_INSTANCE,
+  PROCESS_DEFINITION,
+  DECISION_INSTANCE,
+  DECISION_DEFINITION
 }
