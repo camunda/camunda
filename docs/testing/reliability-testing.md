@@ -335,6 +335,8 @@ One use case to create load tests manually is to run load tests against an SaaS 
 
 As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn’t matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
 
+Replace `PREFIX` with your initials or any other identifiable prefix, to make sure we can identify who created the load test, in case we need to reach out.
+
 ```shell
 # Source the downloaded credentials first, before run the following install command
 helm install PREFIX-saas-load-test camunda-load-tests/camunda-load-tests \
