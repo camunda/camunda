@@ -9,18 +9,14 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeConditionalFilter;
 import java.util.Arrays;
-import org.slf4j.Logger;
 
 public class ConditionalTransformer implements ModelElementTransformer<ConditionalEventDefinition> {
-
-  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   @Override
   public Class<ConditionalEventDefinition> getType() {
@@ -75,14 +71,14 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
           expressionLanguage.parseExpression(element.getCondition().getTextContent());
 
       if (condition.isStatic()) {
-        LOG.warn(
-            "The condition expression '{}' for conditional event definition with id '{}' is static. "
-                + "Static conditions are not supported and will never evaluate to true at runtime, ignoring condition.",
-            condition.getExpression(),
-            element.getId());
-      } else {
-        executableElement.setConditionExpression(condition);
+        // already validated in RuntimeValidator, so this is just a safeguard
+        throw new IllegalStateException(
+            String.format(
+                "The condition expression must be non-static. Found static expression '%s'.",
+                condition.getExpression()));
       }
+
+      executableElement.setConditionExpression(condition);
     }
   }
 }

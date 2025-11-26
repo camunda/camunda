@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -101,11 +102,10 @@ public class ConditionalEventTransformerTest {
 
     Stream<Arguments> conditions() {
       return Stream.of(
-          Arguments.of(null, null),
-          Arguments.of("", null),
-          Arguments.of(" ", null),
           Arguments.of("x > 1", "x > 1"),
-          Arguments.of("=x > 1", "x > 1"));
+          Arguments.of("=x > 1", "x > 1"),
+          Arguments.of("=true", "true"),
+          Arguments.of("=false", "false"));
     }
 
     @DisplayName("Should transform conditional boundary events with condition")
@@ -169,6 +169,18 @@ public class ConditionalEventTransformerTest {
         assertThat(executableConditional.getConditionExpression().getExpression())
             .isEqualTo(parsedExpression);
       }
+    }
+
+    @Test
+    void shouldThrowExceptionForInvalidConditionExpression() {
+      final var exception =
+          org.junit.jupiter.api.Assertions.assertThrows(
+              IllegalStateException.class,
+              () ->
+                  transformConditionalEvent(
+                      processWithConditionalBoundaryEvent(c -> c.condition(""))));
+      assertThat(exception.getMessage())
+          .contains("The condition expression must be non-static. Found static expression ''.");
     }
   }
 
