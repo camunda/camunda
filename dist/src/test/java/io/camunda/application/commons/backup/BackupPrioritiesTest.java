@@ -175,6 +175,7 @@ class BackupPrioritiesTest {
             "camunda-user-8.8.0_",
             "camunda-usage-metric-8.8.0_",
             "camunda-usage-metric-tu-8.8.0_",
+            "camunda-audit-log-8.9.0_",
             "camunda-cluster-variable-8.9.0_");
 
     for (final var indexList : indices) {

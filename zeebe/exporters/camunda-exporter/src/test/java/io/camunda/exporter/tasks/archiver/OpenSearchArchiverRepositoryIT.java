@@ -810,13 +810,13 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () ->
                 verify(
-                        genericClientSpy, times(18) // number of index templates
+                        genericClientSpy, times(19) // number of index templates
                         )
                     .executeAsync(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(18)
+        .hasSize(19)
         .allSatisfy(
             request -> {
               final var indexPattern =
