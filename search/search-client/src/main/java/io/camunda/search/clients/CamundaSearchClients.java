@@ -151,8 +151,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
                     .getTenantScopedClusterVariable(name, tenant, resourceAccessChecks))
         .orElseThrow(
             () ->
-                entityByIdNotFoundException(
-                    "Tenant-scoped Cluster Variable", "%s-%s".formatted(name, tenant)));
+                entityByNameNotFoundException(
+                    "Tenant-scoped Cluster Variable", "%s".formatted(name)));
   }
 
   @Override
@@ -164,7 +164,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
                     .getGloballyScopedClusterVariable(name, resourceAccessChecks))
         .orElseThrow(
             () ->
-                entityByIdNotFoundException(
+                entityByNameNotFoundException(
                     "Global-scoped Cluster Variable", "%s".formatted(name)));
   }
 
@@ -518,6 +518,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
   protected CamundaSearchException entityByIdNotFoundException(
       final String entityType, final String id) {
     return entityByIdNotFoundException(entityType, "id", id);
+  }
+
+  protected CamundaSearchException entityByNameNotFoundException(
+      final String entityType, final String id) {
+    return entityByIdNotFoundException(entityType, "name", id);
   }
 
   protected CamundaSearchException entityByUsernameNotFoundException(final String id) {
