@@ -66,9 +66,9 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
         getDatabaseType().name(),
         "camunda.operate.database",
         getDatabaseType().name(),
-        "camunda.tasklist.elasticsearch.url",
+        "camunda.tasklist.opensearch.url",
         dbUrl,
-        "camunda.operate.elasticsearch.url",
+        "camunda.operate.opensearch.url",
         dbUrl);
   }
 
