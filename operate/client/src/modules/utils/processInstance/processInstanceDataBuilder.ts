@@ -9,22 +9,21 @@
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {ProcessInstanceEntity} from 'modules/types/operate';
 
-// Adapts v2 API ProcessInstance to v1 store ProcessInstanceEntiy format
-
-const buildV2ProcessInstanceData = (
-  v2Instance: ProcessInstance,
-): ProcessInstanceEntity => {
+/** Maps a {@link ProcessInstance} from the orchestration-cluster API to a V1 {@link ProcessInstanceEntity}. */
+function mapProcessInstanceToV1Entity(
+  instance: ProcessInstance,
+): ProcessInstanceEntity {
   return {
-    id: v2Instance.processInstanceKey,
-    processId: v2Instance.processDefinitionKey,
-    processName: v2Instance.processDefinitionName,
-    processVersion: v2Instance.processDefinitionVersion,
-    startDate: v2Instance.startDate,
-    endDate: v2Instance.endDate ?? null,
-    state: v2Instance.hasIncident ? 'INCIDENT' : v2Instance.state,
-    tenantId: v2Instance.tenantId,
-    parentInstanceId: v2Instance.parentProcessInstanceKey ?? null,
-    bpmnProcessId: v2Instance.processDefinitionId ?? null,
+    id: instance.processInstanceKey,
+    processId: instance.processDefinitionKey,
+    processName: instance.processDefinitionName,
+    processVersion: instance.processDefinitionVersion,
+    startDate: instance.startDate,
+    endDate: instance.endDate ?? null,
+    state: instance.hasIncident ? 'INCIDENT' : instance.state,
+    tenantId: instance.tenantId,
+    parentInstanceId: instance.parentProcessInstanceKey ?? null,
+    bpmnProcessId: instance.processDefinitionId ?? null,
     // Fields not in v2 API - using defaults
     hasActiveOperation: false,
     operations: [],
@@ -33,6 +32,6 @@ const buildV2ProcessInstanceData = (
     callHierarchy: [],
     permissions: undefined,
   };
-};
+}
 
-export {buildV2ProcessInstanceData};
+export {mapProcessInstanceToV1Entity};
