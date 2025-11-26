@@ -11,7 +11,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AdvancedEntityTypeFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogEntityTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EntityTypeFilterProperty;
 
-public class EntityTypeFilterPropertyDeserializer
+public class AuditLogEntityTypeFilterPropertyDeserializer
     extends FilterDeserializer<EntityTypeFilterProperty, AuditLogEntityTypeEnum> {
 
   @Override

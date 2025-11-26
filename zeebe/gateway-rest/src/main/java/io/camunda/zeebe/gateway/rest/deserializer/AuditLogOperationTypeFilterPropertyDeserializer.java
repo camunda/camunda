@@ -11,7 +11,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AdvancedOperationTypeFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OperationTypeFilterProperty;
 
-public class OperationTypeFilterPropertyDeserializer
+public class AuditLogOperationTypeFilterPropertyDeserializer
     extends FilterDeserializer<OperationTypeFilterProperty, AuditLogOperationTypeEnum> {
 
   @Override

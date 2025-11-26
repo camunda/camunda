@@ -11,7 +11,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AdvancedCategoryFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogCategoryEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CategoryFilterProperty;
 
-public class CategoryFilterPropertyDeserializer
+public class AuditLogCategoryFilterPropertyDeserializer
     extends FilterDeserializer<CategoryFilterProperty, AuditLogCategoryEnum> {
 
   @Override
