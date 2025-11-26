@@ -68,6 +68,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -3882,6 +3883,41 @@ final class JsonSerializableToJsonTest {
                 }
                 """
       },
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// RuntimeInstructionRecord ////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "RuntimeInstructionRecord",
+        (Supplier<RuntimeInstructionRecord>)
+            () ->
+                new RuntimeInstructionRecord()
+                    .setProcessInstanceKey(12345L)
+                    .setTenantId("tenant_1")
+                    .setElementId("element_1"),
+        """
+      {
+        "tenantId": "tenant_1",
+        "elementIdBuffer": {"expandable": false},
+        "elementId": "element_1",
+        "processInstanceKey": 12345
+      }
+      """
+      },
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty RuntimeInstructionRecord ///////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty RuntimeInstructionRecord",
+        (Supplier<RuntimeInstructionRecord>) RuntimeInstructionRecord::new,
+        """
+      {
+        "tenantId": "",
+        "elementIdBuffer": {"expandable": false},
+        "elementId": "",
+        "processInstanceKey": -1
+      }
+      """
+      }
     };
   }
 
