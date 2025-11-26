@@ -125,6 +125,7 @@ public class TaskEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Set<String> tags;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String action;
 

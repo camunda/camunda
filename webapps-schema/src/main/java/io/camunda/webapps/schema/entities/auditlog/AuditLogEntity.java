@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.auditlog;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
@@ -15,57 +16,118 @@ import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   // the key of the affected entity
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long entityKey;
+
   // the id of the affected entity, if applicable (ex. Identity-related entities)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String entityId;
+
   // the type of the affected entity
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogEntityType entityType;
+
   // the type of operation that was performed, i.e. the Zeebe record intent
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationType operationType;
+
   // the version of the affected entity, i.e. the Zeebe record version
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Integer entityVersion;
+
   // the value type of the affected entity, i.e. the Zeebe record value type
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Short entityValueType;
+
   // the intent of the affected entity, i.e. the Zeebe record intent
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Short entityOperationIntent;
+
   // the key of the batch operation, if applicable
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long batchOperationKey;
+
   // the type of the batch operation, if applicable
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private BatchOperationType batchOperationType;
+
   // the creation timestamp of the Zeebe event that triggered the audit log entry
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long timestamp;
+
   // the type of the actor that performed the operation, (USER or CLIENT)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogActorType actorType;
+
   // the id of the actor that performed the operation
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String actorId;
+
   // the id of the tenant the operation was performed in
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String tenantId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private ClusterVariableScope tenantScope;
+
   // marks if the operations was successful or failed
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationResult result;
+
   // details
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String details;
+
   // the explanation on why the operation was performed
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String annotation;
+
   // the category of the operation (ADMIN, OPERATOR, USER_TASK)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationCategory category;
 
   // searchable fields dependent on the entity type
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String bpmnProcessId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String decisionRequirementsId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String decisionId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long deploymentKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long formKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long resourceKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long processDefinitionKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long processInstanceKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long elementInstanceKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long jobKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long userTaskKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long decisionRequirementsKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long decisionKey;
 
   // join relation for batch operation parent and items
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private EntityJoinRelation join;
 
   public Long getEntityKey() {
