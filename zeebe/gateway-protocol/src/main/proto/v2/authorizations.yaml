@@ -345,6 +345,7 @@ components:
       enum:
         - AUTHORIZATION
         - BATCH
+        - CLUSTER_VARIABLE
         - COMPONENT
         - DECISION_DEFINITION
         - DECISION_REQUIREMENTS_DEFINITION
@@ -359,7 +360,6 @@ components:
         - TENANT
         - USER
         - USER_TASK
-        - CLUSTER_VARIABLE
 
     OwnerTypeEnum:
       type: string

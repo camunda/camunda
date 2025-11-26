@@ -124,6 +124,14 @@ public class PlatformDefaultEntities {
             .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(connectorsRoleId)
+            .setResourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(Set.of(PermissionType.READ)));
     setupRecord.addTenantMember(
         new TenantRecord()
             .setTenantId(DEFAULT_TENANT_ID)

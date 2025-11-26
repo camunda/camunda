@@ -18,6 +18,7 @@ package io.camunda.client.api.search.enums;
 public enum ResourceType {
   AUTHORIZATION,
   BATCH,
+  CLUSTER_VARIABLE,
   COMPONENT,
   DECISION_DEFINITION,
   DECISION_REQUIREMENTS_DEFINITION,
@@ -33,5 +34,4 @@ public enum ResourceType {
   USER,
   USER_TASK,
   UNKNOWN_ENUM_VALUE,
-  CLUSTER_VARIABLE,
 }
