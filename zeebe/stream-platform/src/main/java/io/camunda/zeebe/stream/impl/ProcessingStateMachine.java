@@ -355,6 +355,13 @@ public final class ProcessingStateMachine {
     while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
+      if (LOG.isTraceEnabled()) {
+        if (command instanceof final UnwrittenRecord unwrittenRecord) {
+          LOG.trace("Processing batched command {}: {}", processedCommandsCount, unwrittenRecord);
+        } else {
+          LOG.trace("Processing command {}: {}", command.getPosition(), command);
+        }
+      }
 
       currentProcessor =
           recordProcessors.stream()
