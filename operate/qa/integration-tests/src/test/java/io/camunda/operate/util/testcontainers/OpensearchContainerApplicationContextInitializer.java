@@ -8,7 +8,7 @@
 package io.camunda.operate.util.testcontainers;
 
 import java.util.Map;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -16,16 +16,16 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class OpensearchContainerApplicationContextInitializer
     extends AbstractContainerApplicationContextInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-  private static OpensearchContainer<?> opensearch =
-      new OpensearchContainer<>(getDockerImageName("testcontainers.opensearch"))
+  private static final OpenSearchContainer<?> OPENSEARCH =
+      new OpenSearchContainer<>(getDockerImageName("testcontainers.opensearch"))
           .withEnv(Map.of())
           .withExposedPorts(9200);
 
   @Override
-  public void initialize(ConfigurableApplicationContext applicationContext) {
-    opensearch.start();
+  public void initialize(final ConfigurableApplicationContext applicationContext) {
+    OPENSEARCH.start();
     final String osUrl =
-        String.format("http://%s:%d/", opensearch.getHost(), opensearch.getFirstMappedPort());
+        String.format("http://%s:%d/", OPENSEARCH.getHost(), OPENSEARCH.getFirstMappedPort());
     TestPropertyValues.of(
             "camunda.operate.opensearch.url=" + osUrl,
             "camunda.operate.opensearch.username=elastic",

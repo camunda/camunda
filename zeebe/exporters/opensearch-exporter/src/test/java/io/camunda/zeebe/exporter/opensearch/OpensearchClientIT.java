@@ -25,14 +25,14 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 final class OpensearchClientIT {
   @Container
-  private static final OpensearchContainer CONTAINER =
+  private static final OpenSearchContainer CONTAINER =
       TestSupport.createDefaultContainer().withSecurityEnabled();
 
   private static final int PARTITION_ID = 1;

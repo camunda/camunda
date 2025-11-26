@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.opensearch.client.Request;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class SchemaManagerIT {
   @Container
-  private static final OpensearchContainer<?> CONTAINER =
+  private static final OpenSearchContainer<?> CONTAINER =
       TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
 
   private static final OpensearchExporterConfiguration CONFIG =
