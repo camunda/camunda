@@ -24,6 +24,7 @@
     <module>camunda-process-test-java</module>
     <module>camunda-process-test-spring</module>
     <module>camunda-process-test-example</module>
+    <module>camunda-process-test-dsl</module>
   </modules>
 
   <properties>
