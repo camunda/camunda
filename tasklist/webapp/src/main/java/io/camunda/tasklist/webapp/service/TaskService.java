@@ -204,6 +204,8 @@ public class TaskService {
       // persist completion and variables
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
       try {
+        LOGGER.info("Waiting for zeebe to finish");
+        Thread.sleep(5000);
         LOGGER.info("Start variable persistence: {}", taskId);
         variableService.persistTaskVariables(
             taskId, variables, withDraftVariableValues, task.getProcessInstanceId());
