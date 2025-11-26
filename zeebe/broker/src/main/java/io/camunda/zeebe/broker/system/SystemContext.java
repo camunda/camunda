@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
@@ -176,6 +177,8 @@ public final class SystemContext {
     if (security.isEnabled()) {
       validateNetworkSecurityConfig(security);
     }
+
+    validateBackupSchedulerConfig(brokerCfg.getData().getBackupSchedulerCfg());
   }
 
   private void validClusterConfigs(final ClusterCfg cluster) {
@@ -561,6 +564,17 @@ public final class SystemContext {
     }
 
     listeners.setUserTask(validListeners);
+  }
+
+  private void validateBackupSchedulerConfig(final BackupSchedulerCfg backupSchedulerCfg) {
+    if (!backupSchedulerCfg.isContinuous() || !backupSchedulerCfg.isRequired()) {
+      return;
+    }
+
+    // will throw IllegalArgumentException if schedule is invalid
+    backupSchedulerCfg.getSchedule();
+    // will throw IllegalArgumentException if schedule is invalid
+    backupSchedulerCfg.getRetention().getCleanupSchedule();
   }
 
   public ActorScheduler getScheduler() {
