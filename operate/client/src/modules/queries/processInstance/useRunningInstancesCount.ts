@@ -8,9 +8,10 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
+import {queryKeys} from 'modules/queries/queryKeys';
 
 type UseRunningInstancesCountParams = {
-  processDefinitionKey?: string;
+  processDefinitionKey: string;
   enabled?: boolean;
 };
 
@@ -19,13 +20,12 @@ const useRunningInstancesCount = ({
   enabled = true,
 }: UseRunningInstancesCountParams) => {
   return useQuery({
-    queryKey: ['runningInstancesCount', processDefinitionKey],
+    queryKey:
+      queryKeys.processInstances.runningInstancesCount(processDefinitionKey),
     queryFn: async () => {
       const {response} = await searchProcessInstances({
         filter: {
-          processDefinitionKey: processDefinitionKey
-            ? {$eq: processDefinitionKey}
-            : undefined,
+          processDefinitionKey: {$eq: processDefinitionKey},
           $or: [{state: {$eq: 'ACTIVE'}}, {hasIncident: true}],
         },
         page: {from: 0, limit: 0},
@@ -33,7 +33,7 @@ const useRunningInstancesCount = ({
 
       return response?.page.totalItems ?? 0;
     },
-    enabled: enabled && processDefinitionKey !== undefined,
+    enabled,
     refetchOnWindowFocus: true,
     placeholderData: (previousData) => previousData,
   });
