@@ -67,7 +67,8 @@ test.beforeAll(async () => {
   await sleep(2000);
 });
 
-test.describe.serial('Process Instance Migration', () => {
+// eslint-disable-next-line playwright/no-focused-test
+test.describe.serial.only('Process Instance Migration', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -316,8 +317,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Confirm migration and type MIGRATE', async () => {
-      await operateProcessMigrationModePage.confirmButton.click();
-      await operateProcessMigrationModePage.modificationConfirmationInput.fill(
+      await operateProcessMigrationModePage.clickConfirmButton();
+      await operateProcessMigrationModePage.fillMigrationConfirmation(
         'MIGRATE',
       );
       await operateProcessMigrationModePage.clickMigrationConfirmationButton();

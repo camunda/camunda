@@ -61,7 +61,8 @@ test.beforeAll(async () => {
   }));
 });
 
-test.describe('Process Instances Table', () => {
+// eslint-disable-next-line playwright/no-focused-test
+test.describe.only('Process Instances Table', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');

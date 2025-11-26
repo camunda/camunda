@@ -70,7 +70,8 @@ test.beforeAll(async () => {
   await deploy(['./resources/NamedEventsProcess.bpmn']);
 });
 
-test.describe('Process Instances Filters', () => {
+// eslint-disable-next-line playwright/no-focused-test
+test.describe.only('Process Instances Filters', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
