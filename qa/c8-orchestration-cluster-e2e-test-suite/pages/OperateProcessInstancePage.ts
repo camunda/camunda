@@ -259,11 +259,11 @@ class OperateProcessInstancePage {
     await this.modifyDialogContinueButton.click();
   }
 
-  async getAllInstanceHistoryItems() {
+  async getAllInstanceHistoryItems(): Promise<Locator[]> {
     return this.instanceHistory.getByRole('treeitem').getByTestId(/^node-details-/).all();
   }
 
-  async checkIfPresentExpandeingElementsInMainProcess(mainProcessName: string) {
+  async checkIfPresentExpandeingElementsInMainProcess(mainProcessName: string): Promise<number> {
     const expandingElements = this.instanceHistory
       .getByLabel(mainProcessName, { exact: true })
       .getByRole('group')
@@ -271,10 +271,8 @@ class OperateProcessInstancePage {
     return await expandingElements.count();
   }
 
-  async ensureElementExpanded(expandingElementName: string) {
-    const expandingElement = this.instanceHistory
-      .getByRole('group')
-      .getByLabel(expandingElementName, { exact: true })
+  async ensureElementExpandedInHistory(expandingElementName: string) {
+    const expandingElement = await this.getNestedParentLocatorInHistory(expandingElementName);
     expect(expandingElement).toBeVisible();
     const expandToggle = expandingElement
       .locator('.cds--tree-parent-node__toggle-icon');
@@ -287,6 +285,23 @@ class OperateProcessInstancePage {
     }
     isExpanded = await expandingElement.getAttribute('aria-expanded');
     expect(isExpanded).toBe('true');
+  }
+
+  async getNestedParentLocatorInHistory(parentElementName: string): Promise<Locator> {
+    return this.instanceHistory
+      .getByRole('group')
+      .getByLabel(parentElementName, { exact: true })
+  }
+
+  async getNestegGroupInHistoryLocator(parentElementName: string): Promise<Locator> {
+    const parentLocator = await this.getNestedParentLocatorInHistory(parentElementName);
+    return parentLocator
+      .getByRole('group');
+  }
+
+  async enterModificationMode(): Promise<void> {
+    await this.clickModifyInstanceButton();
+    await this.clickModifyDialogContinueButton();
   }
 }
 

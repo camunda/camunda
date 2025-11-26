@@ -6,31 +6,39 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 export class OperateProcessModificationModePage {
     private page: Page;
     readonly modifyModeHeader: Locator;
     readonly flowNodeModificationsPopup: Locator;
     readonly addModificationButtononPopup: Locator;
+    readonly moveAllButtononPopup: Locator;
     readonly applyModificationsButton: Locator;
     readonly discardAllModificationsButton: Locator;
     readonly cancelButtonModificationDialog: Locator;
     readonly applyButtonModificationsDialog: Locator;
+    readonly moveTokensMessage: Locator;
 
     constructor(page: Page) {
         this.page = page;
         this.modifyModeHeader = page.getByText('Process Instance Modification Mode');
         this.flowNodeModificationsPopup = page.getByText('Flow Node Modifications');
         this.addModificationButtononPopup = page.getByTitle('Add single flow node instance');
+        this.moveAllButtononPopup = page.getByTitle('Move all running instances in this flow node to another target');
         this.applyModificationsButton = page.getByTestId('apply-modifications-button');
         this.discardAllModificationsButton = page.getByTestId('discard-all-button');
         this.cancelButtonModificationDialog = page.getByRole('dialog').getByRole('button', { name: 'Cancel' });
         this.applyButtonModificationsDialog = page.getByRole('dialog').getByRole('button', { name: 'Apply' });
+        this.moveTokensMessage = page.getByText('Select the target flow node in the diagram');
     }
 
     async clickAddModificationButtononPopup(): Promise<void> {
         await this.addModificationButtononPopup.click();
+    }
+
+    async clickMoveAllButtononPopup(): Promise<void> {
+        await this.moveAllButtononPopup.click();
     }
 
     async clickApplyModificationsButton(): Promise<void> {
@@ -47,5 +55,11 @@ export class OperateProcessModificationModePage {
 
     async clickApplyButtonModificationsDialog(): Promise<void> {
         await this.applyButtonModificationsDialog.click();
+    }
+
+    async addTokenToFlowNodeAndApplyChanges(): Promise<void> {
+        await this.clickAddModificationButtononPopup();
+        await this.clickApplyModificationsButton();
+        await this.clickApplyButtonModificationsDialog();
     }
 }

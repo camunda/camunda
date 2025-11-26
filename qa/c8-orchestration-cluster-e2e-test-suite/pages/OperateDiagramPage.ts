@@ -189,7 +189,7 @@ export class OperateDiagramPage {
   /**
    * 
    * @param elementName corresponding element
-   * @param state active/incidents/cancelled/completedEndEvents
+   * @param state active/incidents/canceled/completedEndEvents
    * @returns locator to the state-overlay element
    */
   async getStateOverlayLocatorByElementNameAndState(elementName: string, state: string) {
@@ -198,5 +198,10 @@ export class OperateDiagramPage {
 
   async getModificationOverlayLocatorByElementName(elementName: string) {
     return this.page.locator(`[data-container-id=${elementName}]`).getByTestId('modifications-overlay');
+  }
+
+  async getBadgeLocatorForModificationOverlay(elementLocator: Locator) {
+    const badgeLocator = elementLocator.getByTestId(/^badge-/);
+    return await badgeLocator.getAttribute('data-testid');
   }
 }

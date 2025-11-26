@@ -180,8 +180,7 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Enter modification mode and assert results', async () => {
-            await operateProcessInstancePage.clickModifyInstanceButton();
-            await operateProcessInstancePage.clickModifyDialogContinueButton();
+            await operateProcessInstancePage.enterModificationMode();
             await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
         });
 
@@ -195,9 +194,7 @@ test.describe('Process Instance History', () => {
         await test.step('Add modification to activate task flow node process in first subprocess and verify results', async () => {
             const firstSubprocessTaskElement = 'Activity_CollectMoney';
             await operateDiagramPage.clickFlowNode(firstSubprocessTaskElement);
-            await operateProcessModificationModePage.clickAddModificationButtononPopup();
-            await operateProcessModificationModePage.clickApplyModificationsButton();
-            await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
+            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges();
 
             const activeStateOverlayTask = await operateDiagramPage
                 .getStateOverlayLocatorByElementNameAndState(firstSubprocessTaskElement, 'active');
@@ -218,17 +215,14 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Enter modification mode and assert results', async () => {
-            await operateProcessInstancePage.clickModifyInstanceButton();
-            await operateProcessInstancePage.clickModifyDialogContinueButton();
+            await operateProcessInstancePage.enterModificationMode();
             await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
         });
 
         await test.step('Add modification to activate task flow node process in second subprocess and verify results', async () => {
             const secondSubprocessTaskElement = 'Activity_SendItems';
             await operateDiagramPage.clickFlowNode(secondSubprocessTaskElement);
-            await operateProcessModificationModePage.clickAddModificationButtononPopup();
-            await operateProcessModificationModePage.clickApplyModificationsButton();
-            await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
+            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges();
 
             const activeStateOverlayTask = await operateDiagramPage
                 .getStateOverlayLocatorByElementNameAndState(secondSubprocessTaskElement, 'active');
@@ -288,23 +282,6 @@ test.describe('Process Instance History', () => {
             expect(key).toContain(`${embeddedProcessInstanceModificationPIK}`);
         });
 
-        // const diagrammElements = [
-        //     'StartEvent_StartGlobal',
-        //     'Activity_Node',
-        //     'Activity_FirstSubprocess',
-        //     'Event_StartFirstSubProcess',
-        //     'Activity_CollectMoney',
-        //     'Activity_FetchItems',
-        //     'Event_EndFirstSubProcess',
-        //     'Event_OrderCancelled',
-        //     'Event_OrderCancelledEnd',
-        //     'Activity_SecondSubprocess',
-        //     'Event_StartSecondSubProcess',
-        //     'Activity_SendItems',
-        //     'Event_EndSecondSubProcess',
-        //     'Event_EndGlobal',
-        // ];
-
         const startEventStartGlobal = 'StartEvent_StartGlobal';
         const activityNode = 'Activity_Node';
         const activityFirstSubprocess = 'Activity_FirstSubprocess';
@@ -320,7 +297,6 @@ test.describe('Process Instance History', () => {
         const eventEndSecondSubProcess = 'Event_EndSecondSubProcess';
         const eventEndGlobal = 'Event_EndGlobal';
 
-
         await test.step('Verify one active token', async () => {
             const nodeStateOverlayActive = await operateDiagramPage
                 .getStateOverlayLocatorByElementNameAndState(activityNode, 'active');
@@ -335,8 +311,7 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Enter modification mode and assert results', async () => {
-            await operateProcessInstancePage.clickModifyInstanceButton();
-            await operateProcessInstancePage.clickModifyDialogContinueButton();
+            await operateProcessInstancePage.enterModificationMode();
             await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
         });
 
@@ -347,7 +322,7 @@ test.describe('Process Instance History', () => {
 
                 const collectMoneyModificationOverlay = await operateDiagramPage.getModificationOverlayLocatorByElementName(activityCollectMoney);
 
-                await expect(collectMoneyModificationOverlay).toBeVisible({ timeout: 10000 });
+                await expect(collectMoneyModificationOverlay).toBeVisible();
                 const collectMoneyModificationOverlayTextText = await collectMoneyModificationOverlay.innerText();
                 expect(collectMoneyModificationOverlayTextText).toContain(`${i}`);
             }
@@ -369,8 +344,128 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Verify History has "Collect Money" 2 times', async () => {
-            await operateProcessInstancePage.ensureElementExpanded('First Subprocess');
+            const nestedParentName = 'First Subprocess';
+            await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
+            const nestedParentGroupLocator = await operateProcessInstancePage.getNestegGroupInHistoryLocator(nestedParentName);
+            await expect(nestedParentGroupLocator).toBeVisible();
+            expect(await nestedParentGroupLocator.getByLabel('Collect money').count()).toBe(2);
+        });
 
+        await test.step('Verify First Subprocess has state overlay 1', async () => {
+            const activeStateOverlayFirstSubprocess = await operateDiagramPage
+                .getStateOverlayLocatorByElementNameAndState(activityFirstSubprocess, 'active');
+
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(activeStateOverlayFirstSubprocess).toBeVisible();
+                    expect(await activeStateOverlayFirstSubprocess.innerText()).toContain('1');
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+        });
+
+        await test.step('Enter modification mode and assert results', async () => {
+            await operateProcessInstancePage.enterModificationMode();
+            await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
+        });
+
+        await test.step('Add token to the Second Subprocess and verify active token in diagram', async () => {
+            await operateDiagramPage.clickSubProcess(activitySecondSubprocess);
+            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges();
+
+            const activeStateOverlaySecondSubprocess = await operateDiagramPage
+                .getStateOverlayLocatorByElementNameAndState(activitySecondSubprocess, 'active');
+
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(activeStateOverlaySecondSubprocess).toBeVisible();
+                    expect(await activeStateOverlaySecondSubprocess.innerText()).toContain('1');
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+
+            const activeStateOverlaySendItems = await operateDiagramPage
+                .getStateOverlayLocatorByElementNameAndState(activitySendItems, 'active');
+
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(activeStateOverlaySendItems).toBeVisible();
+                    expect(await activeStateOverlaySendItems.innerText()).toContain('1');
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+        });
+
+        await test.step('Verify History has "Send items" 1 time', async () => {
+            const nestedParentName = 'Second Subprocess';
+            await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
+            const nestedParentGroupLocator = await operateProcessInstancePage.getNestegGroupInHistoryLocator(nestedParentName);
+            await expect(nestedParentGroupLocator).toBeVisible();
+            expect(await nestedParentGroupLocator.getByLabel('Send items').count()).toBe(1);
+        });
+
+        await test.step('Enter modification mode and assert results', async () => {
+            await operateProcessInstancePage.enterModificationMode();
+            await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
+        });
+
+        await test.step('Move tokens from "Collect money" to end state of first subprocess and verify results', async () => {
+            // TODO: decide how to do a functional version of it
+
+            await operateDiagramPage.clickFlowNode(activityCollectMoney);
+            await operateProcessModificationModePage.clickMoveAllButtononPopup();
+            await expect(operateProcessModificationModePage.moveTokensMessage).toBeVisible();
+            await operateDiagramPage.clickFlowNode(eventEndFirstSubProcess);
+
+            const collectMoneyModificationOverlay = await operateDiagramPage.getModificationOverlayLocatorByElementName(activityCollectMoney);
+            await expect(collectMoneyModificationOverlay).toBeVisible();
+            const collectMoneyModificationOverlayTextText = await collectMoneyModificationOverlay.innerText();
+            expect(collectMoneyModificationOverlayTextText).toContain('2');
+
+            const collectMoneyModificationOverlayBadgeValue = await operateDiagramPage.getBadgeLocatorForModificationOverlay(collectMoneyModificationOverlay);
+            expect(collectMoneyModificationOverlayBadgeValue).toContain('minus');
+
+
+            const endFirstsubprocessModificationOverlay = await operateDiagramPage.getModificationOverlayLocatorByElementName(eventEndFirstSubProcess);
+            await expect(endFirstsubprocessModificationOverlay).toBeVisible();
+            const endFirstsubprocessModificationOverlayTextText = await endFirstsubprocessModificationOverlay.innerText();
+            expect(endFirstsubprocessModificationOverlayTextText).toContain('2');
+
+            const endFirstsubprocessModificationOverlayBadgeValue = await operateDiagramPage.getBadgeLocatorForModificationOverlay(endFirstsubprocessModificationOverlay);
+            expect(endFirstsubprocessModificationOverlayBadgeValue).toContain('plus');
+
+            await operateProcessModificationModePage.clickApplyModificationsButton();
+            await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
+        });
+
+        await test.step('Verify in diagram that "Collect money" changed accordingly', async () => {
+            const canceledStateOverlayCollectMoney = await operateDiagramPage.getStateOverlayLocatorByElementNameAndState(activityCollectMoney, 'canceled');
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(canceledStateOverlayCollectMoney).toBeVisible();
+                    expect(await canceledStateOverlayCollectMoney.innerText()).toContain('2');
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+
+            const activeStateOverlaySendItems = await operateDiagramPage.getStateOverlayLocatorByElementNameAndState(activitySendItems, 'active');
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(activeStateOverlaySendItems).toBeVisible();
+                    expect(await activeStateOverlaySendItems.innerText()).toContain('2');
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
         });
     })
 });
