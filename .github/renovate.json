@@ -6,8 +6,7 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [
-    "/^stable\\/8\\.([5-9]|[1-9][0-9])/",
-    "stable/operate-8.5",
+    "/^stable\\/8\\.([6-9]|[1-9][0-9])/",
     "main"
   ],
   "dependencyDashboard": true,
@@ -60,27 +59,17 @@
       "description": "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
       "separateMinorPatch": true,
       "matchBaseBranches": [
-        "/^stable\\/8\\..*/",
-        "stable/operate-8.5"
+        "/^stable\\/8\\..*/"
       ]
     },
     {
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
-        "/^stable\\/8\\..*/",
-        "stable/operate-8.5"
+        "/^stable\\/8\\..*/"
       ],
       "matchUpdateTypes": [
         "minor",
         "major"
-      ],
-      "enabled": false
-    },
-    {
-      "description": "Disable all Renovate updates on EOL 8.5 stable branches to prevent unwanted PRs from Renovate.",
-      "matchBaseBranches": [
-        "stable/8.5",
-        "stable/operate-8.5"
       ],
       "enabled": false
     },
