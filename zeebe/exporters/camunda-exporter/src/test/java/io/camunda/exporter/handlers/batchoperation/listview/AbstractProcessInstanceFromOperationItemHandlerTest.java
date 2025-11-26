@@ -74,6 +74,20 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   }
 
   @Test
+  void shouldNotHandleNotFoundRejectionRecord() {
+    // Given
+    final var record = createNotFoundRejectedRecord();
+    when(CACHE.get(Mockito.anyString()))
+        .thenReturn(
+            Optional.of(
+                new CachedBatchOperationEntity(
+                    String.valueOf(record.getBatchOperationReference()),
+                    map(underTest.getRelevantOperationType()))));
+
+    assertThat(underTest.handlesRecord(record)).isFalse();
+  }
+
+  @Test
   void shouldNotHandleRecordsWithNoOperationReference() {
     // Given
     final var record =
@@ -166,4 +180,6 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   protected abstract Record<R> createCompletedRecord();
 
   protected abstract Record<R> createRejectedRecord();
+
+  protected abstract Record<R> createNotFoundRejectedRecord();
 }

@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation.listview;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -33,7 +34,18 @@ class ListViewFromProcessInstanceModificationOperationHandlerTest
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         b ->
-            b.withRejectionType(RejectionType.NOT_FOUND)
+            b.withRecordType(RecordType.COMMAND_REJECTION)
+                .withRejectionType(RejectionType.INVALID_STATE)
+                .withIntent(ProcessInstanceModificationIntent.MODIFY));
+  }
+
+  @Override
+  protected Record<ProcessInstanceModificationRecordValue> createNotFoundRejectedRecord() {
+    return factory.generateRecord(
+        ValueType.PROCESS_INSTANCE_MODIFICATION,
+        b ->
+            b.withRecordType(RecordType.COMMAND_REJECTION)
+                .withRejectionType(RejectionType.NOT_FOUND)
                 .withIntent(ProcessInstanceModificationIntent.MODIFY));
   }
 }

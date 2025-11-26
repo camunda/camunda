@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation.listview;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -29,6 +30,19 @@ class ListViewFromIncidentResolutionOperationHandlerTest
   protected Record<IncidentRecordValue> createRejectedRecord() {
     return factory.generateRecord(
         ValueType.INCIDENT,
-        b -> b.withRejectionType(RejectionType.NOT_FOUND).withIntent(IncidentIntent.RESOLVE));
+        b ->
+            b.withRecordType(RecordType.COMMAND_REJECTION)
+                .withRejectionType(RejectionType.INVALID_STATE)
+                .withIntent(IncidentIntent.RESOLVE));
+  }
+
+  @Override
+  protected Record<IncidentRecordValue> createNotFoundRejectedRecord() {
+    return factory.generateRecord(
+        ValueType.INCIDENT,
+        b ->
+            b.withRecordType(RecordType.COMMAND_REJECTION)
+                .withRejectionType(RejectionType.NOT_FOUND)
+                .withIntent(IncidentIntent.RESOLVE));
   }
 }
