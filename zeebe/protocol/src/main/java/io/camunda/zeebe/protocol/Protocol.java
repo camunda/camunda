@@ -99,6 +99,10 @@ public final class Protocol {
   public static final String LINKED_RESOURCES_HEADER_NAME = "linkedResources";
 
   public static long encodePartitionId(final int partitionId, final long key) {
+    if (key < 0) {
+      throw new IllegalArgumentException(
+          "Invalid key provided: got " + key + ", expected a positive value");
+    }
     return ((long) partitionId << KEY_BITS) + key;
   }
 
