@@ -16,9 +16,9 @@
   "executionPlatformVersion": "8.4.0",
   "exporter": {
     "name": "Camunda Modeler",
-    "version": "5.35.0"
+    "version": "5.40.1"
   },
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "id": "BigVariableForm",
   "type": "default"
 }
