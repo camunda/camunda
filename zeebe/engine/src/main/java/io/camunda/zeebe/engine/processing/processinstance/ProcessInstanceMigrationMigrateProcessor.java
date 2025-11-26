@@ -263,7 +263,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    requireSameUserTaskImplementation(
+    requireSupportedUserTaskImplementation(
         sourceProcessDefinition,
         targetProcessDefinition,
         targetElementId,
@@ -727,7 +727,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           targetProcessDefinition.getProcess().getElementById(targetElementId);
 
       final ExecutableAdHocSubProcess targetAhsp;
-      if (element instanceof ExecutableMultiInstanceBody mi) {
+      if (element instanceof final ExecutableMultiInstanceBody mi) {
         targetAhsp = (ExecutableAdHocSubProcess) mi.getInnerActivity();
       } else {
         targetAhsp = (ExecutableAdHocSubProcess) element;
