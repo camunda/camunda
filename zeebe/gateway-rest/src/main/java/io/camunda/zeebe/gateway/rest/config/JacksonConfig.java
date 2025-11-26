@@ -21,11 +21,13 @@ import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.CategoryFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.EntityTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
@@ -33,11 +35,15 @@ import io.camunda.zeebe.gateway.protocol.rest.JobKindFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.OperationTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskStateFilterProperty;
+import io.camunda.zeebe.gateway.rest.deserializer.AuditLogCategoryFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.AuditLogEntityTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.AuditLogOperationTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuthorizationRequestDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperatioItemStateFilterPropertyDeserializer;
@@ -117,6 +123,12 @@ public class JacksonConfig {
     module.addDeserializer(
         IncidentStateFilterProperty.class, new IncidentStatePropertyDeserializer());
     module.addDeserializer(AuthorizationRequest.class, new AuthorizationRequestDeserializer());
+    module.addDeserializer(
+        OperationTypeFilterProperty.class, new AuditLogOperationTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        EntityTypeFilterProperty.class, new AuditLogEntityTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        CategoryFilterProperty.class, new AuditLogCategoryFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 

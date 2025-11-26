@@ -191,6 +191,11 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  static List<SearchQuerySortRequest<AuditLogSearchQuerySortRequest.FieldEnum>>
+      fromAuditLogSearchQuerySortRequest(final List<AuditLogSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   static List<SearchQuerySortRequest<BatchOperationSearchQuerySortRequest.FieldEnum>>
       fromBatchOperationSearchQuerySortRequest(
           final List<BatchOperationSearchQuerySortRequest> requests) {
@@ -759,6 +764,44 @@ public class SearchQuerySortRequestMapper {
         case RESOURCE_ID -> builder.resourceId();
         case RESOURCE_PROPERTY_NAME -> builder.resourcePropertyName();
         case RESOURCE_TYPE -> builder.resourceType();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyAuditLogSortField(
+      final AuditLogSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.AuditLogSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case ACTOR_ID -> builder.actorId();
+        case ACTOR_TYPE -> builder.actorType();
+        case ANNOTATION -> builder.annotation();
+        case AUDIT_LOG_KEY -> builder.auditLogKey();
+        case BATCH_OPERATION_KEY -> builder.batchOperationKey();
+        case BATCH_OPERATION_TYPE -> builder.batchOperationType();
+        case CATEGORY -> builder.category();
+        case DECISION_DEFINITION_ID -> builder.decisionDefinitionId();
+        case DECISION_DEFINITION_KEY -> builder.decisionDefinitionKey();
+        case DECISION_EVALUATION_KEY -> builder.decisionEvaluationKey();
+        case DECISION_REQUIREMENTS_ID -> builder.decisionRequirementsId();
+        case DECISION_REQUIREMENTS_KEY -> builder.decisionRequirementsKey();
+        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
+        case ENTITY_KEY -> builder.entityKey();
+        case ENTITY_TYPE -> builder.entityType();
+        case JOB_KEY -> builder.jobKey();
+        case OPERATION_TYPE -> builder.operationType();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case RESULT -> builder.result();
+        case TENANT_ID -> builder.tenantId();
+        case TIMESTAMP -> builder.timestamp();
+        case USER_TASK_KEY -> builder.userTaskKey();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
