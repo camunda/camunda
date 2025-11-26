@@ -112,7 +112,7 @@ paths:
       summary: Get current user
       description: Retrieves the current authenticated user.
       security:
-        - BearerAuth: [ ]
+        - BearerAuth: []
       responses:
         "200":
           description: The current user is successfully returned.
@@ -1763,13 +1763,13 @@ paths:
                 summary: Create a process instance by processDefinitionKey.
                 value:
                   processDefinitionKey: "12345543223453245"
-                  variables: { }
+                  variables: {}
               By process definition ID:
                 summary: Create a process instance by processDefinitionId and version.
                 value:
                   processDefinitionId: my-business-process
                   processDefinitionVersion: 1
-                  variables: { }
+                  variables: {}
       responses:
         "200":
           description: The process instance was created.
@@ -2661,12 +2661,12 @@ paths:
                 summary: Evaluate the decision by decisionDefinitionKey.
                 value:
                   decisionDefinitionKey: "12345"
-                  variables: { }
+                  variables: {}
               By decision definition ID:
                 summary: Evaluate the decision by decisionDefinitionId.
                 value:
                   decisionDefinitionId: 1234-5678
-                  variables: { }
+                  variables: {}
       responses:
         "200":
           description: The decision was evaluated.
@@ -5028,7 +5028,7 @@ paths:
                     decisionInstances: 23
                     activeTenants: 2
                     assignees: 3
-                    tenants: { }
+                    tenants: {}
                 Response with tenants:
                   value:
                     processInstances: 5
@@ -5402,12 +5402,12 @@ paths:
             $ref: "#/components/schemas/BatchOperationKey"
       requestBody:
         content:
-          application/json: { }
+          application/json: {}
         required: false
       responses:
         "204":
           description: The batch operation cancel request was created.
-          content: { }
+          content: {}
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -5440,12 +5440,12 @@ paths:
             $ref: "#/components/schemas/BatchOperationKey"
       requestBody:
         content:
-          application/json: { }
+          application/json: {}
         required: false
       responses:
         "204":
           description: The batch operation pause request was created.
-          content: { }
+          content: {}
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -5480,12 +5480,12 @@ paths:
             $ref: "#/components/schemas/BatchOperationKey"
       requestBody:
         content:
-          application/json: { }
+          application/json: {}
         required: false
       responses:
         "204":
           description: The batch operation resume request was created.
-          content: { }
+          content: {}
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -8330,7 +8330,6 @@ components:
         - USER
         - ROLE
         - DOCUMENT
-        - CLUSTER_VARIABLE
     OwnerTypeEnum:
       type: string
       description: The type of the owner of permissions.
@@ -8654,7 +8653,7 @@ components:
         c8Links:
           description: The links to the components in the C8 stack.
           type: object
-          example: { }
+          example: {}
           additionalProperties:
             type: string
         canLogout:
@@ -9660,7 +9659,7 @@ components:
           description: A set of custom headers defined during modelling; returned as a serialized JSON document.
           type: object
           additionalProperties: true
-          example: { }
+          example: {}
         worker:
           description: The name of the worker which activated this job.
           type: string
@@ -11434,7 +11433,7 @@ components:
             List of variables by name to be included in the response when awaitCompletion is set to true.
             If empty, all visible variables in the root scope will be returned.
           type: array
-          example: [ ]
+          example: []
           items:
             type: string
         requestTimeout:
@@ -11501,7 +11500,7 @@ components:
             List of variables by name to be included in the response when awaitCompletion is set to true.
             If empty, all visible variables in the root scope will be returned.
           type: array
-          example: [ ]
+          example: []
           items:
             type: string
         requestTimeout:
