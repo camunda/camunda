@@ -35,31 +35,32 @@ import org.mockito.MockitoAnnotations;
 class AuditLogServicesTest {
 
   private static final AuditLogEntity AUDIT_LOG_ENTITY =
-      new AuditLogEntity(
-          123L,
-          "entityKey",
-          AuditLogEntityType.USER,
-          AuditLogOperationType.CREATE,
-          456L,
-          BatchOperationType.ADD_VARIABLE,
-          "2024-01-01T00:00:00Z",
-          "actorId",
-          AuditLogActorType.USER,
-          "tenant-1",
-          AuditLogResult.SUCCESS,
-          "annotation",
-          AuditLogCategory.OPERATOR,
-          "processDefinitionId",
-          789L,
-          987L,
-          654L,
-          321L,
-          111L,
-          "drg-1",
-          222L,
-          "decisionDefId",
-          333L,
-          444L);
+      new AuditLogEntity.Builder()
+          .auditLogKey(123L)
+          .entityKey("entityKey")
+          .entityType(AuditLogEntityType.USER)
+          .operationType(AuditLogOperationType.CREATE)
+          .batchOperationKey(456L)
+          .batchOperationType(BatchOperationType.ADD_VARIABLE)
+          .timestamp("2024-01-01T00:00:00Z")
+          .actorId("actorId")
+          .actorType(AuditLogActorType.USER)
+          .tenantId("tenant-1")
+          .result(AuditLogResult.SUCCESS)
+          .annotation("annotation")
+          .category(AuditLogCategory.OPERATOR)
+          .processDefinitionId("processDefinitionId")
+          .processDefinitionKey(789L)
+          .processInstanceKey(987L)
+          .elementInstanceKey(654L)
+          .jobKey(321L)
+          .userTaskKey(111L)
+          .decisionRequirementsId("drg-1")
+          .decisionRequirementsKey(222L)
+          .decisionDefinitionId("decisionDefId")
+          .decisionDefinitionKey(333L)
+          .decisionEvaluationKey(444L)
+          .build();
 
   @Mock private BrokerClient brokerClient;
   @Mock private SecurityContextProvider securityContextProvider;

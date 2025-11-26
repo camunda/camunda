@@ -117,31 +117,32 @@ public class AuditLogControllerTest extends RestControllerTest {
       """;
 
   private static final AuditLogEntity AUDIT_LOG_ENTITY =
-      new AuditLogEntity(
-          123L,
-          "entityKey",
-          AuditLogEntityType.USER,
-          AuditLogOperationType.CREATE,
-          456L,
-          BatchOperationType.ADD_VARIABLE,
-          "2024-01-01T00:00:00Z",
-          "actor",
-          AuditLogActorType.USER,
-          "tenant",
-          AuditLogResult.SUCCESS,
-          "annotation",
-          AuditLogCategory.OPERATOR,
-          "processDefinitionId",
-          789L,
-          987L,
-          654L,
-          321L,
-          111L,
-          "drg-1",
-          222L,
-          "decisionDefId",
-          333L,
-          444L);
+      new AuditLogEntity.Builder()
+          .auditLogKey(123L)
+          .entityKey("entityKey")
+          .entityType(AuditLogEntityType.USER)
+          .operationType(AuditLogOperationType.CREATE)
+          .batchOperationKey(456L)
+          .batchOperationType(BatchOperationType.ADD_VARIABLE)
+          .timestamp("2024-01-01T00:00:00Z")
+          .actorId("actor")
+          .actorType(AuditLogActorType.USER)
+          .tenantId("tenant")
+          .result(AuditLogResult.SUCCESS)
+          .annotation("annotation")
+          .category(AuditLogCategory.OPERATOR)
+          .processDefinitionId("processDefinitionId")
+          .processDefinitionKey(789L)
+          .processInstanceKey(987L)
+          .elementInstanceKey(654L)
+          .jobKey(321L)
+          .userTaskKey(111L)
+          .decisionRequirementsId("drg-1")
+          .decisionRequirementsKey(222L)
+          .decisionDefinitionId("decisionDefId")
+          .decisionDefinitionKey(333L)
+          .decisionEvaluationKey(444L)
+          .build();
 
   @MockitoBean AuditLogServices auditLogServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
