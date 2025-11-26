@@ -221,7 +221,7 @@ The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actio
 It allows high customization:
 
 * Specification of the Camunda/Zeebe version to test against (by selecting the workflow revision) - will make sure to use the right Camunda Platform Helm Chart version and values file.
-* Specification of the branch to test against (default: main) - will build a Docker image based on the specified branch.
+* Specification of the branch to test against (default: main) - will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
 * Specification of the time to live (TTL) for the load test - making sure that the load test is automatically cleaned up after the specified time.
 * Specification of an existing Docker image to use - making it possible to reuse existing images.
 * Specification of arbitrary Helm arguments - making it possible to customize the load test set up.
@@ -240,7 +240,7 @@ As part of the workflow dispatch form (UI), select the respective workflow revis
 
 This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
 
-We can reference tags, branches or commit SHAs, as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test.
+We can reference tags, branches or commit SHAs, as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test and load test applications.
 
 ![3-branch](assets/3-branch.png)
 
