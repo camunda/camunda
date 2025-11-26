@@ -67,7 +67,51 @@ public class ProcessInstanceTenancyIT {
 
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
-    waitForProcessBeingExported(adminClient);
+    waitForProcessBeingExported(adminClient, 2);
+  }
+
+  @Test
+  public void shouldNotReturnProcessesFromDeletedTenants(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+
+    // given
+    final var tenantToBeDeleted = "toBeDeleted";
+    createTenant(camundaClient, tenantToBeDeleted);
+    assignUserToTenant(camundaClient, ADMIN, tenantToBeDeleted);
+
+    deployResource(camundaClient, "process/service_tasks_v1.bpmn", tenantToBeDeleted);
+    startProcessInstance(camundaClient, PROCESS_ID, tenantToBeDeleted);
+
+    waitForProcessBeingExported(camundaClient, 3);
+
+    final var beforeTenantDeletionResults =
+        camundaClient.newProcessInstanceSearchRequest().send().join();
+
+    assertThat(beforeTenantDeletionResults.items()).hasSize(3);
+    assertThat(
+            beforeTenantDeletionResults.items().stream()
+                .map(ProcessInstance::getTenantId)
+                .collect(Collectors.toSet()))
+        .containsExactlyInAnyOrder(TENANT_A, TENANT_B, tenantToBeDeleted);
+
+    // when
+    deleteTenant(camundaClient, tenantToBeDeleted);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              // then
+              final var afterTenantDeletionResults =
+                  camundaClient.newProcessInstanceSearchRequest().send().join();
+
+              assertThat(afterTenantDeletionResults.items()).hasSize(2);
+              assertThat(
+                      afterTenantDeletionResults.items().stream()
+                          .map(ProcessInstance::getTenantId)
+                          .collect(Collectors.toSet()))
+                  .containsExactlyInAnyOrder(TENANT_A, TENANT_B);
+            });
   }
 
   @Test
@@ -143,6 +187,10 @@ public class ProcessInstanceTenancyIT {
     camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
   }
 
+  private static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
+    camundaClient.newDeleteTenantCommand(tenant).send().join();
+  }
+
   private static void assignUserToTenant(
       final CamundaClient camundaClient, final String username, final String tenant) {
     camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
@@ -169,7 +217,8 @@ public class ProcessInstanceTenancyIT {
         .join();
   }
 
-  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
+  private static void waitForProcessBeingExported(
+      final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -182,7 +231,7 @@ public class ProcessInstanceTenancyIT {
                           .send()
                           .join()
                           .items())
-                  .hasSize(2);
+                  .hasSize(expectedProcessDefinitions);
             });
   }
 
