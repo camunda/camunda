@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backup;
 
+import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 
@@ -32,7 +33,7 @@ public class BackupSchedulerRetentionCfg implements ConfigurationEntry {
   }
 
   public Schedule getCleanupSchedule() throws IllegalArgumentException {
-    return Schedule.parseSchedule(cleanupSchedule, false);
+    return Schedule.parseSchedule(cleanupSchedule);
   }
 
   public void setCleanupSchedule(final String cleanupSchedule) {

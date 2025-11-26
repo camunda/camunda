@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.system.configuration.backup;
+package io.camunda.zeebe.backup.schedule;
 
 import com.cronutils.model.Cron;
 import com.cronutils.model.CronType;
@@ -48,24 +48,16 @@ public sealed interface Schedule {
 
   /**
    * @param expression the expression string to parse
-   * @param mustMatch if true, the expression must be a valid cron or ISO8601 duration
    * @return the typed {@link Schedule}
    * @throws IllegalArgumentException if the expression is invalid
    */
-  static Schedule parseSchedule(final String expression, final boolean mustMatch)
-      throws IllegalArgumentException {
-    if (!mustMatch && expression == null
-        || expression.isBlank()
-        || expression.equalsIgnoreCase(NONE)) {
+  static Schedule parseSchedule(final String expression) throws IllegalArgumentException {
+    if (expression.equalsIgnoreCase(NONE)) {
       return new NoneSchedule();
     }
-    if (!mustMatch && expression.equalsIgnoreCase(AUTO)) {
+    if (expression.equalsIgnoreCase(AUTO)) {
       return new AutoSchedule();
     }
-    return mustParseSchedule(expression);
-  }
-
-  private static Schedule mustParseSchedule(final String expression) {
     try {
       final var cron =
           new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING53))
@@ -78,8 +70,8 @@ public sealed interface Schedule {
         return new IntervalSchedule(duration);
       } catch (final DateTimeParseException ex) {
         throw new IllegalArgumentException(
-            "Invalid schedule expression: must be either a valid CRON expression or an ISO8601 duration",
-            ex);
+            "Invalid expression for schedule: must be one of CRON, ISO8601, NONE or AUTO. Given: "
+                + expression);
       }
     }
   }
