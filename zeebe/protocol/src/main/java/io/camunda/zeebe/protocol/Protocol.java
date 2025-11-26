@@ -103,6 +103,14 @@ public final class Protocol {
       throw new IllegalArgumentException(
           "Invalid key provided: got " + key + ", expected a positive value");
     }
+    if (decodePartitionId(key) != 0) {
+      throw new IllegalArgumentException(
+          "Invalid key provided: got "
+              + key
+              + ", but it has the partitionId encoded already (partitionId="
+              + Protocol.decodePartitionId(key)
+              + ")");
+    }
     return ((long) partitionId << KEY_BITS) + key;
   }
 
