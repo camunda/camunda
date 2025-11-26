@@ -327,7 +327,7 @@ helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-he
 helm install this-is-a-load-test camunda-load-tests/camunda-load-tests
 ```
 
-To apply configuration changes, either edit the existing [values](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml) file in the repository (and apply them via **\-f**) or set configurations via the **\--set** flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
+To apply configuration changes, either edit the existing [values](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml) file in the repository (and apply them via `-f`) or set configurations via the `--set` flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
 
 ##### SaaS Test
 
