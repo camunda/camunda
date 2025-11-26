@@ -35,6 +35,7 @@
     <module>testing/camunda-process-test-spring</module>
     <module>testing/camunda-process-test-example</module>
     <module>document</module>
+    <module>debug-cli</module>
   </modules>
 
   <scm>

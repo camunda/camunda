@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import static io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.Header.HEADER_LENGTH;
+
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import java.io.IOException;
@@ -23,9 +25,8 @@ import java.util.zip.CRC32C;
  * a fixed-size header containing a version and a checksum, followed by the serialized
  * configuration.
  */
-final class PersistedClusterConfiguration {
+public final class PersistedClusterConfiguration {
   // Header is a single byte for the version, followed by a long for the checksum.
-  public static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
   // Constant version, to be incremented if the format changes.
   private static final byte VERSION = 1;
   private final Path topologyFile;
@@ -53,7 +54,7 @@ final class PersistedClusterConfiguration {
    * @throws ChecksumMismatch if the file exists but the checksum does not match.
    * @throws MissingHeader if the file exists but is too small to contain the header.
    */
-  static PersistedClusterConfiguration ofFile(
+  public static PersistedClusterConfiguration ofFile(
       final Path topologyFile, final ClusterConfigurationSerializer serializer) {
     final ClusterConfiguration currentlyPersisted;
     try {
@@ -68,7 +69,7 @@ final class PersistedClusterConfiguration {
     return clusterConfiguration;
   }
 
-  void update(final ClusterConfiguration clusterConfiguration) throws IOException {
+  public void update(final ClusterConfiguration clusterConfiguration) throws IOException {
     if (this.clusterConfiguration.equals(clusterConfiguration)) {
       return;
     }
@@ -87,28 +88,28 @@ final class PersistedClusterConfiguration {
     }
 
     final var content = Files.readAllBytes(topologyFile);
-    if (content.length < HEADER_LENGTH) {
-      throw new MissingHeader(topologyFile, content.length);
-    }
-    final var header = ByteBuffer.wrap(content, 0, HEADER_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
-    final var version = header.get();
-    final var expectedChecksum = header.getLong();
-
-    if (version != VERSION) {
-      throw new UnexpectedVersion(topologyFile, version);
-    }
+    final var header = Header.parseFrom(content, topologyFile);
 
     final var actualChecksum = checksum(content, HEADER_LENGTH, content.length - HEADER_LENGTH);
-    if (expectedChecksum != actualChecksum) {
-      throw new ChecksumMismatch(topologyFile, expectedChecksum, actualChecksum);
+    if (header.checksum != actualChecksum) {
+      throw new ChecksumMismatch(topologyFile, header.checksum, actualChecksum);
     }
-
     // deserialize the topology
     return serializer.decodeClusterTopology(content, HEADER_LENGTH, content.length - HEADER_LENGTH);
   }
 
   private void writeToFile(final ClusterConfiguration clusterConfiguration) throws IOException {
     final var body = serializer.encode(clusterConfiguration);
+    writeToFile(body, topologyFile);
+  }
+
+  /**
+   * Writes the serialized ClusterConfiguration into path.
+   *
+   * @param body the serialized ClusterConfiguration
+   * @param path the path where to save the file
+   */
+  public static void writeToFile(final byte[] body, final Path path) throws IOException {
     final var checksum = checksum(body, 0, body.length);
     final var buffer =
         ByteBuffer.allocate(HEADER_LENGTH + body.length)
@@ -117,7 +118,7 @@ final class PersistedClusterConfiguration {
             .putLong(checksum)
             .put(body);
     Files.write(
-        topologyFile,
+        path,
         buffer.array(),
         StandardOpenOption.CREATE,
         StandardOpenOption.WRITE,
@@ -153,6 +154,26 @@ final class PersistedClusterConfiguration {
       super(
           "Corrupted topology file: %s. Expected checksum: '%d', actual checksum: '%d'"
               .formatted(topologyFile, expectedChecksum, actualChecksum));
+    }
+  }
+
+  public record Header(byte version, long checksum) {
+
+    public static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
+
+    public static Header parseFrom(final byte[] content, final Path topologyFile) {
+      if (content.length < HEADER_LENGTH) {
+        throw new MissingHeader(topologyFile, content.length);
+      }
+      final var header = ByteBuffer.wrap(content, 0, HEADER_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
+      final var version = header.get();
+      final var expectedChecksum = header.getLong();
+
+      if (version != VERSION) {
+        throw new UnexpectedVersion(topologyFile, version);
+      }
+
+      return new Header(version, expectedChecksum);
     }
   }
 }
