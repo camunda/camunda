@@ -59,6 +59,8 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
    */
   List<Integer> getPartitionIds();
 
+  String getAppliedBy();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableBatchOperationProcessInstanceMigrationPlanValue.Builder.class)

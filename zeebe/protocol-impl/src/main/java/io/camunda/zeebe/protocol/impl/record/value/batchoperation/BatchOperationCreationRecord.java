@@ -13,11 +13,13 @@ import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -53,8 +55,15 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   private final ArrayProperty<IntegerValue> partitionIdsProp =
       new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
 
+  /**
+   * The user or client who applied the batch operation creation.
+   *
+   * @since 8.9 - On older batch operations, this field will default to an empty string.
+   */
+  private final StringProperty appliedByProperty = new StringProperty("appliedBy", "");
+
   public BatchOperationCreationRecord() {
-    super(8);
+    super(9);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
@@ -62,7 +71,8 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
         .declareProperty(modificationPlanProp)
         .declareProperty(authenticationProp)
         .declareProperty(authorizationCheckProp)
-        .declareProperty(partitionIdsProp);
+        .declareProperty(partitionIdsProp)
+        .declareProperty(appliedByProperty);
   }
 
   @Override
@@ -133,6 +143,20 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     }
 
     return this;
+  }
+
+  @Override
+  public String getAppliedBy() {
+    return BufferUtil.bufferAsString(getAppliedByBuffer());
+  }
+
+  public BatchOperationCreationRecord setAppliedBy(final String appliedBy) {
+    appliedByProperty.setValue(appliedBy);
+    return this;
+  }
+
+  public DirectBuffer getAppliedByBuffer() {
+    return appliedByProperty.getValue();
   }
 
   public DirectBuffer getAuthenticationBuffer() {

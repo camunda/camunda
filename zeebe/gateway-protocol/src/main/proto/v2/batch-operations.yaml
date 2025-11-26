@@ -330,6 +330,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BatchOperationError'
+        appliedBy:
+            type: string
+            description: The username or client-id that initiated the batch operation, if available otherwise null.
 
     BatchOperationError:
       type: object

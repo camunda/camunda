@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+
 import io.camunda.security.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -69,7 +72,7 @@ public final class BatchOperationCreateProcessor
       final RoutingInfo routingInfo,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
-    this.batchOperationState = state.getBatchOperationState();
+    batchOperationState = state.getBatchOperationState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
@@ -108,6 +111,14 @@ public final class BatchOperationCreateProcessor
     // we remember the partition ids of the batch operation, so that we can count the number of
     // finished partitions in the end.
     recordWithKey.setPartitionIds(routingInfo.partitions());
+
+    // set the appliedBy information from the auth info claims
+    final var claims = command.getAuthInfo().getClaims();
+    if (claims.containsKey(AUTHORIZED_CLIENT_ID)) {
+      recordWithKey.setAppliedBy((String) claims.get(AUTHORIZED_CLIENT_ID));
+    } else if (claims.containsKey(AUTHORIZED_USERNAME)) {
+      recordWithKey.setAppliedBy((String) claims.get(AUTHORIZED_USERNAME));
+    }
 
     stateWriter.appendFollowUpEvent(
         key,
