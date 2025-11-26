@@ -16,6 +16,7 @@
 package io.camunda.client.metrics;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 public interface MetricsRecorder {
 
@@ -35,7 +36,7 @@ public interface MetricsRecorder {
    * @param context - the context the metric uses
    * @param methodToExecute - the method to execute
    */
-  void executeWithTimer(TimerMetricsContext context, Runnable methodToExecute);
+  <T> T executeWithTimer(TimerMetricsContext context, Callable<T> methodToExecute) throws Exception;
 
   record CounterMetricsContext(String name, Map<String, String> tags, int count) {}
 

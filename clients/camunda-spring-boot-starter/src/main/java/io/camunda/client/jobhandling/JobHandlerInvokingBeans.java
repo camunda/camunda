@@ -28,7 +28,6 @@ import io.camunda.client.jobhandling.result.ResultProcessorContext;
 import io.camunda.client.metrics.JobHandlerInvokingBeansMetricsContext;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
-import io.camunda.client.metrics.MetricsRecorder.TimerMetricsContext;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -65,34 +64,15 @@ public class JobHandlerInvokingBeans implements JobHandler {
   }
 
   @Override
-  public void handle(final JobClient jobClient, final ActivatedJob job) {
-    final TimerMetricsContext timerMetricsContext =
-        JobHandlerInvokingBeansMetricsContext.timer(job);
+  public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
     final CounterMetricsContext counterMetricsContext =
         JobHandlerInvokingBeansMetricsContext.counter(job);
-    metricsRecorder.executeWithTimer(
-        timerMetricsContext,
-        () -> {
-          try {
-            handleTimed(jobClient, job, counterMetricsContext);
-          } catch (final Exception e) {
-            if (e instanceof final RuntimeException re) {
-              throw re;
-            }
-            throw new RuntimeException(e);
-          }
-        });
-  }
-
-  private void handleTimed(
-      final JobClient jobClient,
-      final ActivatedJob job,
-      final CounterMetricsContext counterMetricsContext)
-      throws Exception {
     final List<Object> args = createParameters(jobClient, job);
     LOG.trace("Handle {} and invoke worker {}", job, jobWorkerName);
     metricsRecorder.increaseActivated(counterMetricsContext);
-    final Object methodInvocationResult = method.invoke(args.toArray());
+    final Object methodInvocationResult =
+        metricsRecorder.executeWithTimer(
+            JobHandlerInvokingBeansMetricsContext.timer(job), () -> method.invoke(args.toArray()));
     final Object result =
         resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
     if (autoComplete) {

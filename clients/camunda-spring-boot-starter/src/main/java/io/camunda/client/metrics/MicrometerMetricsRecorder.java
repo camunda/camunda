@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,9 +63,10 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
   }
 
   @Override
-  public void executeWithTimer(final TimerMetricsContext context, final Runnable methodToExecute) {
+  public <T> T executeWithTimer(
+      final TimerMetricsContext context, final Callable<T> methodToExecute) throws Exception {
     final Timer timer = meterRegistry.timer(context.name(), fromEntries(context.tags()));
-    timer.record(methodToExecute);
+    return timer.recordCallable(methodToExecute);
   }
 
   protected void increaseCounter(final CounterMetricsContext context, final String action) {
