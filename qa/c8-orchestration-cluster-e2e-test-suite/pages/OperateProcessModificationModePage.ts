@@ -19,6 +19,7 @@ export class OperateProcessModificationModePage {
     readonly cancelButtonModificationDialog: Locator;
     readonly applyButtonModificationsDialog: Locator;
     readonly moveTokensMessage: Locator;
+    readonly diagram: Locator;
 
     constructor(page: Page) {
         this.page = page;
@@ -31,6 +32,7 @@ export class OperateProcessModificationModePage {
         this.cancelButtonModificationDialog = page.getByRole('dialog').getByRole('button', { name: 'Cancel' });
         this.applyButtonModificationsDialog = page.getByRole('dialog').getByRole('button', { name: 'Apply' });
         this.moveTokensMessage = page.getByText('Select the target flow node in the diagram');
+        this.diagram = this.page.getByTestId('diagram');
     }
 
     async clickAddModificationButtononPopup(): Promise<void> {
@@ -57,9 +59,78 @@ export class OperateProcessModificationModePage {
         await this.applyButtonModificationsDialog.click();
     }
 
-    async addTokenToFlowNodeAndApplyChanges(): Promise<void> {
+    clickFlowNode(flowNodeName: string) {
+        return this.getFlowNode(flowNodeName).first().click({ timeout: 20000 });
+    }
+
+    clickSubProcess(subProcessName: string) {
+        return this.getFlowNode(subProcessName).click({
+            position: { x: 5, y: 5 },
+            force: true,
+        });
+    }
+
+    getFlowNode(flowNodeName: string) {
+        return this.diagram
+            .locator('.djs-group')
+            .locator(`[data-element-id="${flowNodeName}"]`);
+    }
+
+    async addTokenToFlowNodeAndApplyChanges(flowNodeName: string): Promise<void> {
+        await this.clickFlowNode(flowNodeName);
         await this.clickAddModificationButtononPopup();
         await this.clickApplyModificationsButton();
         await this.clickApplyButtonModificationsDialog();
+    }
+
+    async addTokenToSubprocessAndApplyChanges(flowNodeName: string): Promise<void> {
+        await this.clickSubProcess(flowNodeName);
+        await this.clickAddModificationButtononPopup();
+        await this.clickApplyModificationsButton();
+        await this.clickApplyButtonModificationsDialog();
+    }
+
+    async moveAllTokensFromSelectedFlowNodeToTarget(sourceFlowNodeName: string, targetFlowNodeName: string): Promise<void> {
+        await this.clickFlowNode(sourceFlowNodeName);
+        await this.clickMoveAllButtononPopup();
+        await expect(this.moveTokensMessage).toBeVisible();
+        await this.clickFlowNode(targetFlowNodeName);
+    }
+
+    async applyChanges(): Promise<void> {
+        await this.clickApplyModificationsButton();
+        await this.clickApplyButtonModificationsDialog();
+    }
+
+    async getBadgeLocatorForModificationOverlay(elementLocator: Locator) {
+        const badgeLocator = elementLocator.getByTestId(/^badge-/);
+        return await badgeLocator.getAttribute('data-testid');
+    }
+
+
+    async getModificationOverlayLocatorByElementName(elementName: string) {
+        return this.page.locator(`[data-container-id=${elementName}]`).getByTestId('modifications-overlay');
+    }
+
+    /**
+     * 
+     * @param flowNodeName flow node to verify overlay
+     * @param expectedChange expected change value to verify on the overlay
+     */
+    async verifyModificationOverlay(flowNodeName: string, expectedChange: number): Promise<void> {
+        const flowNodeModificationOverlay = await this.getModificationOverlayLocatorByElementName(flowNodeName);
+        await expect(flowNodeModificationOverlay).toBeVisible();
+
+        const flowNodeModificationOverlayText = await flowNodeModificationOverlay.innerText();
+        const flowNodeModificationOverlayBadgeValue = await this.getBadgeLocatorForModificationOverlay(flowNodeModificationOverlay);
+
+        if (expectedChange < 0) {
+            expectedChange = -expectedChange;
+            expect(flowNodeModificationOverlayBadgeValue).toContain('minus');
+        } else {
+            expect(flowNodeModificationOverlayBadgeValue).toContain('plus');
+        }
+
+        expect(flowNodeModificationOverlayText).toContain(expectedChange.toString());
     }
 }

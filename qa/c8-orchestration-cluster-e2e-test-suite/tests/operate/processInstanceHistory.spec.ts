@@ -193,8 +193,7 @@ test.describe('Process Instance History', () => {
 
         await test.step('Add modification to activate task flow node process in first subprocess and verify results', async () => {
             const firstSubprocessTaskElement = 'Activity_CollectMoney';
-            await operateDiagramPage.clickFlowNode(firstSubprocessTaskElement);
-            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges();
+            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(firstSubprocessTaskElement);
 
             const activeStateOverlayTask = await operateDiagramPage
                 .getStateOverlayLocatorByElementNameAndState(firstSubprocessTaskElement, 'active');
@@ -221,8 +220,7 @@ test.describe('Process Instance History', () => {
 
         await test.step('Add modification to activate task flow node process in second subprocess and verify results', async () => {
             const secondSubprocessTaskElement = 'Activity_SendItems';
-            await operateDiagramPage.clickFlowNode(secondSubprocessTaskElement);
-            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges();
+            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(secondSubprocessTaskElement);
 
             const activeStateOverlayTask = await operateDiagramPage
                 .getStateOverlayLocatorByElementNameAndState(secondSubprocessTaskElement, 'active');
@@ -320,14 +318,13 @@ test.describe('Process Instance History', () => {
                 await operateDiagramPage.clickFlowNode(activityCollectMoney);
                 await operateProcessModificationModePage.clickAddModificationButtononPopup();
 
-                const collectMoneyModificationOverlay = await operateDiagramPage.getModificationOverlayLocatorByElementName(activityCollectMoney);
+                const collectMoneyModificationOverlay = await operateProcessModificationModePage.getModificationOverlayLocatorByElementName(activityCollectMoney);
 
                 await expect(collectMoneyModificationOverlay).toBeVisible();
                 const collectMoneyModificationOverlayTextText = await collectMoneyModificationOverlay.innerText();
                 expect(collectMoneyModificationOverlayTextText).toContain(`${i}`);
             }
-            await operateProcessModificationModePage.clickApplyModificationsButton();
-            await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
+            await operateProcessModificationModePage.applyChanges()
 
             const activeStateOverlayCollectMoney = await operateDiagramPage
                 .getStateOverlayLocatorByElementNameAndState(activityCollectMoney, 'active');
@@ -372,8 +369,7 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Add token to the Second Subprocess and verify active token in diagram', async () => {
-            await operateDiagramPage.clickSubProcess(activitySecondSubprocess);
-            await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges();
+            await operateProcessModificationModePage.addTokenToSubprocessAndApplyChanges(activitySecondSubprocess);
 
             const activeStateOverlaySecondSubprocess = await operateDiagramPage
                 .getStateOverlayLocatorByElementNameAndState(activitySecondSubprocess, 'active');
@@ -416,32 +412,10 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Move tokens from "Collect money" to end state of first subprocess and verify results', async () => {
-            // TODO: decide how to do a functional version of it
-
-            await operateDiagramPage.clickFlowNode(activityCollectMoney);
-            await operateProcessModificationModePage.clickMoveAllButtononPopup();
-            await expect(operateProcessModificationModePage.moveTokensMessage).toBeVisible();
-            await operateDiagramPage.clickFlowNode(eventEndFirstSubProcess);
-
-            const collectMoneyModificationOverlay = await operateDiagramPage.getModificationOverlayLocatorByElementName(activityCollectMoney);
-            await expect(collectMoneyModificationOverlay).toBeVisible();
-            const collectMoneyModificationOverlayTextText = await collectMoneyModificationOverlay.innerText();
-            expect(collectMoneyModificationOverlayTextText).toContain('2');
-
-            const collectMoneyModificationOverlayBadgeValue = await operateDiagramPage.getBadgeLocatorForModificationOverlay(collectMoneyModificationOverlay);
-            expect(collectMoneyModificationOverlayBadgeValue).toContain('minus');
-
-
-            const endFirstsubprocessModificationOverlay = await operateDiagramPage.getModificationOverlayLocatorByElementName(eventEndFirstSubProcess);
-            await expect(endFirstsubprocessModificationOverlay).toBeVisible();
-            const endFirstsubprocessModificationOverlayTextText = await endFirstsubprocessModificationOverlay.innerText();
-            expect(endFirstsubprocessModificationOverlayTextText).toContain('2');
-
-            const endFirstsubprocessModificationOverlayBadgeValue = await operateDiagramPage.getBadgeLocatorForModificationOverlay(endFirstsubprocessModificationOverlay);
-            expect(endFirstsubprocessModificationOverlayBadgeValue).toContain('plus');
-
-            await operateProcessModificationModePage.clickApplyModificationsButton();
-            await operateProcessModificationModePage.clickApplyButtonModificationsDialog();
+            await operateProcessModificationModePage.moveAllTokensFromSelectedFlowNodeToTarget(activityCollectMoney, eventEndFirstSubProcess);
+            await operateProcessModificationModePage.verifyModificationOverlay(activityCollectMoney, -2);
+            await operateProcessModificationModePage.verifyModificationOverlay(eventEndFirstSubProcess, 2);
+            await operateProcessModificationModePage.applyChanges()
         });
 
         await test.step('Verify in diagram that "Collect money" changed accordingly', async () => {
@@ -467,5 +441,7 @@ test.describe('Process Instance History', () => {
                 },
             });
         });
+
+        // TODO: verify history;
     })
 });

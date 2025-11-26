@@ -195,13 +195,4 @@ export class OperateDiagramPage {
   async getStateOverlayLocatorByElementNameAndState(elementName: string, state: string) {
     return this.page.locator(`[data-container-id=${elementName}]`).getByTestId(`state-overlay-${state}`);
   }
-
-  async getModificationOverlayLocatorByElementName(elementName: string) {
-    return this.page.locator(`[data-container-id=${elementName}]`).getByTestId('modifications-overlay');
-  }
-
-  async getBadgeLocatorForModificationOverlay(elementLocator: Locator) {
-    const badgeLocator = elementLocator.getByTestId(/^badge-/);
-    return await badgeLocator.getAttribute('data-testid');
-  }
 }
