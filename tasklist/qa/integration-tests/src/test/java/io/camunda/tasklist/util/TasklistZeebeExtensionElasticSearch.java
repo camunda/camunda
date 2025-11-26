@@ -9,6 +9,8 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.qa.util.TestUtil;
 import java.util.Map;
@@ -46,23 +48,31 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   }
 
   @Override
-  protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
+  protected void setSecondaryStorageConfig(final Camunda camunda, final String indexPrefix) {
     final String dbUrl = "http://host.testcontainers.internal:9200";
 
-    return Map.ofEntries(
-        // Unified Configuration: DB URL + compatibility
-        Map.entry("camunda.data.secondary-storage.elasticsearch.url", dbUrl),
-        Map.entry("camunda.database.url", dbUrl),
-        Map.entry("camunda.tasklist.elasticsearch.url", dbUrl),
-        Map.entry("camunda.operate.elasticsearch.url", dbUrl),
-        // Unified Configuration: DB type + compatibility
-        Map.entry("camunda.data.secondary-storage.type", getDatabaseType().toString()),
-        Map.entry("camunda.operate.database", getDatabaseType().toString()),
-        Map.entry("camunda.tasklist.database", getDatabaseType().toString()),
-        Map.entry("camunda.database.type", getDatabaseType().toString()),
-        Map.entry("camunda.data.secondary-storage.elasticsearch.index-prefix", indexPrefix),
-        // ---
-        Map.entry("camunda.database.index-prefix", indexPrefix));
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    camunda.getData().getSecondaryStorage().getElasticsearch().setUrl(dbUrl);
+    camunda.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(indexPrefix);
+  }
+
+  @Override
+  protected Map<String, String> getLegacyConfiguration(final String indexPrefix) {
+    final String dbUrl = "http://host.testcontainers.internal:9200";
+
+    return Map.of(
+        "camunda.database.type",
+        getDatabaseType().name(),
+        "camunda.database.url",
+        dbUrl,
+        "camunda.tasklist.database",
+        getDatabaseType().name(),
+        "camunda.operate.database",
+        getDatabaseType().name(),
+        "camunda.tasklist.elasticsearch.url",
+        dbUrl,
+        "camunda.operate.elasticsearch.url",
+        dbUrl);
   }
 
   @Override

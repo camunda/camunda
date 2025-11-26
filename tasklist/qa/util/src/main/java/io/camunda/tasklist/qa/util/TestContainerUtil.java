@@ -9,6 +9,7 @@ package io.camunda.tasklist.qa.util;
 
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -491,7 +492,7 @@ public class TestContainerUtil {
     if (broker == null) {
       broker =
           new TestStandaloneBroker()
-              .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
+              .withGatewayEnabled(true)
               .withSecurityConfig(
                   cfg -> {
                     cfg.getAuthentication().setUnprotectedApi(true);
@@ -547,21 +548,38 @@ public class TestContainerUtil {
                   Map.of("waitPeriodBeforeArchiving", "1s")));
         });
 
+    zeebeBroker.withUnifiedConfig(
+        cfg -> {
+          cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.valueOf(type));
+          if (TestUtil.isOpenSearch()) {
+            cfg.getData().getSecondaryStorage().getOpensearch().setUrl(url);
+            if (testContext.getIndexPrefix() != null) {
+              cfg.getData()
+                  .getSecondaryStorage()
+                  .getOpensearch()
+                  .setIndexPrefix(testContext.getIndexPrefix());
+            }
+          } else {
+            cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(url);
+            if (testContext.getIndexPrefix() != null) {
+              cfg.getData()
+                  .getSecondaryStorage()
+                  .getElasticsearch()
+                  .setIndexPrefix(testContext.getIndexPrefix());
+            }
+          }
+        });
+
     zeebeBroker.withAdditionalProperties(
         Map.of(
-            "camunda.data.secondary-storage.type",
-            type,
-            "camunda.data.secondary-storage." + type + ".url",
-            url,
             "camunda.database.type",
+            type,
+            "camunda.operate.database",
+            type,
+            "camunda.tasklist.database",
             type,
             "camunda.database.url",
             url));
-
-    if (testContext.getIndexPrefix() != null) {
-      zeebeBroker.withProperty(
-          "camunda.data.secondary-storage." + type + ".index-prefix", testContext.getIndexPrefix());
-    }
   }
 
   public void stopZeebeAndTasklist(final TestContext testContext) {

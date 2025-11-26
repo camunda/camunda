@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
@@ -48,6 +49,7 @@ public class ZeebeConnectorSecureIT {
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";
   private static final String PRIVATE_KEY_FILE = "zeebe-test-server.key.pem";
   @Autowired ZeebeConnector zeebeConnector;
+  @Autowired TasklistProperties tasklistProperties;
   private TestStandaloneBroker broker;
   private CamundaClient camundaClient;
 
@@ -60,13 +62,18 @@ public class ZeebeConnectorSecureIT {
     broker =
         new TestStandaloneBroker()
             .withCreateSchema(false)
-            .withBrokerConfig(
+            .withGatewayEnabled(true)
+            .withUnifiedConfig(
                 cfg -> {
-                  cfg.getGateway()
-                      .getSecurity()
-                      .setCertificateChainPath(certFile)
-                      .setPrivateKeyPath(privateKeyFile)
-                      .setEnabled(true);
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .setType(
+                          tasklistProperties.isElasticsearchDB()
+                              ? SecondaryStorageType.elasticsearch
+                              : SecondaryStorageType.opensearch);
+                  cfg.getApi().getGrpc().getSsl().setEnabled(true);
+                  cfg.getApi().getGrpc().getSsl().setCertificatePrivateKey(privateKeyFile);
+                  cfg.getApi().getGrpc().getSsl().setCertificate(certFile);
                 })
             .withSecurityConfig(cfg -> cfg.getAuthentication().setUnprotectedApi(true));
     broker.start();
