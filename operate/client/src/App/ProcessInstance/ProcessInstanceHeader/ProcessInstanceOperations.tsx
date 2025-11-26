@@ -13,7 +13,7 @@ import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
-import {handleOperationError} from 'modules/utils/notifications';
+import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
@@ -59,25 +59,17 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const {
     mutate: resolveProcessInstanceIncidents,
     isPending: isResolveIncidentsPending,
-  } = useResolveProcessInstanceIncidents(processInstance.processInstanceKey, {
-    onError: (error) => {
-      invalidateQueries();
-      handleOperationError(error.status);
-    },
-    onSuccess: () => {
-      invalidateQueries();
-      tracking.track({
-        eventName: 'single-operation',
-        operationType: 'RESOLVE_INCIDENT',
-        source: 'instance-header',
-      });
-    },
-  });
+  } = useResolveProcessInstanceIncidents(processInstance.processInstanceKey);
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({
       queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
     });
+  };
+
+  const handleOperationError = (statusCode?: number) => {
+    invalidateQueries();
+    handleOperationErrorUtil(statusCode);
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {
@@ -104,6 +96,14 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
         isDismissable: true,
       });
     }
+
+    if (operationType === 'RESOLVE_INCIDENT') {
+      tracking.track({
+        eventName: 'single-operation',
+        operationType: 'RESOLVE_INCIDENT',
+        source: 'instance-header',
+      });
+    }
   };
 
   const handleDelete = async () => {
@@ -113,10 +113,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
         payload: {
           operationType: 'DELETE_PROCESS_INSTANCE',
         },
-        onError: (error) => {
-          invalidateQueries();
-          handleOperationError(error.statusCode);
-        },
+        onError: ({statusCode}) => handleOperationError(statusCode),
         onSuccess: handleOperationSuccess,
       });
     } catch (error) {
@@ -163,7 +160,14 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     operations.push({
       type: 'RESOLVE_INCIDENT',
       onExecute: () => {
-        resolveProcessInstanceIncidents();
+        resolveProcessInstanceIncidents(undefined, {
+          onError: ({status}) => {
+            handleOperationError(status);
+          },
+          onSuccess: () => {
+            handleOperationSuccess('RESOLVE_INCIDENT');
+          },
+        });
       },
       disabled: isResolveIncidentsPending,
     });
