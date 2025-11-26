@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
@@ -26,4 +27,15 @@ public final class ProtocolTest {
   public void testEndiannessConstant() {
     assertThat(Protocol.ENDIANNESS).isEqualTo(ByteOrder.LITTLE_ENDIAN);
   }
+  @Test
+  public void shouldNotEncodeNegativeKeys() {
+    // given
+    final long value = -1029819L;
+
+    // when/then
+    assertThatThrownBy(() -> Protocol.encodePartitionId(128, value))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Invalid key provided: got -1029819, expected a positive value");
+  }
+  @Test
 }
