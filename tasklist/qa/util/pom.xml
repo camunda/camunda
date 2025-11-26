@@ -204,17 +204,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>configuration</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-zeebe</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
     </dependency>
 
   </dependencies>

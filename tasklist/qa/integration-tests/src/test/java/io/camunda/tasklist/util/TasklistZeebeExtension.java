@@ -8,6 +8,7 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.Camunda;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -95,11 +96,12 @@ public abstract class TasklistZeebeExtension
                               "bulk",
                               Map.of("size", 1))));
                 })
-            .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(2))
+            .withUnifiedConfig(uni -> uni.getCluster().setPartitionCount(2))
             .withUnauthenticatedAccess()
             .withAuthorizationsDisabled();
 
-    getDatabaseEnvironmentVariables(indexPrefix).forEach(app::withProperty);
+    setSecondaryStorageConfig(app.unifiedConfig(), indexPrefix);
+    getLegacyConfiguration(indexPrefix).forEach(app::withProperty);
 
     zeebeBroker = app.start();
     Testcontainers.exposeHostPorts(getDatabasePort());
@@ -117,7 +119,9 @@ public abstract class TasklistZeebeExtension
 
   protected abstract DatabaseType getDatabaseType();
 
-  protected abstract Map<String, String> getDatabaseEnvironmentVariables(String indexPrefix);
+  protected abstract void setSecondaryStorageConfig(Camunda camunda, String indexPrefix);
+
+  protected abstract Map<String, String> getLegacyConfiguration(String indexPrefix);
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
