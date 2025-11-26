@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
@@ -103,6 +104,7 @@ public class CommandApiRequestReader implements RequestReader {
     RECORDS_BY_TYPE.put(ValueType.USAGE_METRIC, UsageMetricRecord::new);
     RECORDS_BY_TYPE.put(ValueType.HISTORY_DELETION, HistoryDeletionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.CONDITIONAL_SUBSCRIPTION, ConditionalSubscriptionRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.CONDITIONAL_EVALUATION, ConditionalEvaluationRecord::new);
   }
 
   private UnifiedRecordValue value;

@@ -836,6 +836,7 @@
         #     clusterVariable: true
         #     adHocSubProcessInstruction: true
         #     conditionalEventSubscription: true
+        #     conditionalEvaluation: true
         #
         #   retention:
         #     enabled: false
@@ -922,6 +923,7 @@
         #     clusterVariable: true
         #     adHocSubProcessInstruction: true
         #     conditionalEventSubscription: true
+        #     conditionalEvaluation: true
 
       # Camunda Exporter ----------
       # An example configuration for the camunda exporter:

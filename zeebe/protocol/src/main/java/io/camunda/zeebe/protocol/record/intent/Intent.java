@@ -79,7 +79,8 @@ public interface Intent {
           RuntimeInstructionIntent.class,
           ClusterVariableIntent.class,
           HistoryDeletionIntent.class,
-          ConditionalSubscriptionIntent.class);
+          ConditionalSubscriptionIntent.class,
+          ConditionalEvaluationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -213,6 +214,8 @@ public interface Intent {
         return HistoryDeletionIntent.from(intent);
       case CONDITIONAL_SUBSCRIPTION:
         return ConditionalSubscriptionIntent.from(intent);
+      case CONDITIONAL_EVALUATION:
+        return ConditionalEvaluationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -334,6 +337,8 @@ public interface Intent {
         return HistoryDeletionIntent.valueOf(intent);
       case CONDITIONAL_SUBSCRIPTION:
         return ConditionalSubscriptionIntent.valueOf(intent);
+      case CONDITIONAL_EVALUATION:
+        return ConditionalEvaluationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
