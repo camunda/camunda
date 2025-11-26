@@ -250,6 +250,8 @@ public class TaskService {
       }
 
       try {
+        LOGGER.info("Waiting for zeebe to finish");
+        Thread.sleep(5000);
         LOGGER.info("Start variable persistence: {}", taskId);
         variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
         deleteDraftTaskVariablesSafely(taskId);
