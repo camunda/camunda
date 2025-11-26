@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -24,15 +25,17 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
+  private final BooleanProperty allTenantsAccessProp = new BooleanProperty("allTenantsAccess");
 
   public RoleRecord() {
-    super(6);
+    super(7);
     declareProperty(roleKeyProp)
         .declareProperty(roleIdProp)
         .declareProperty(nameProp)
         .declareProperty(descriptionProp)
         .declareProperty(entityIdProp)
-        .declareProperty(entityTypeProp);
+        .declareProperty(entityTypeProp)
+        .declareProperty(allTenantsAccessProp);
   }
 
   @Override
@@ -97,6 +100,16 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   public RoleRecord setEntityType(final EntityType entityType) {
     entityTypeProp.setValue(entityType);
+    return this;
+  }
+
+  @Override
+  public boolean isAllTenantsAccess() {
+    return allTenantsAccessProp.getValue();
+  }
+
+  public RoleRecord setAllTenantsAccess(final boolean allTenantsAccess) {
+    allTenantsAccessProp.setValue(allTenantsAccess);
     return this;
   }
 }

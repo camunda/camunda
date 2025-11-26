@@ -40,4 +40,7 @@ public interface RoleRecordValue extends RecordValue {
 
   /** The type of the entity to assign/remove from a role. */
   EntityType getEntityType();
+
+  /** Whether the role has access to all tenants. */
+  boolean isAllTenantsAccess();
 }
