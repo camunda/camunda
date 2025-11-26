@@ -7,8 +7,8 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
-import io.camunda.webapps.schema.entities.JoinRelationshipType;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.JoinRelationshipType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public record EntityJoinRelation(@BeforeVersion880 String name, @BeforeVersion880 String parent) {
