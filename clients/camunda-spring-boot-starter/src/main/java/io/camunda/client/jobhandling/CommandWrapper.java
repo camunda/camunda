@@ -19,7 +19,6 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.MetricsRecorder;
-import java.time.Instant;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -105,6 +104,6 @@ public class CommandWrapper {
   }
 
   private boolean jobDeadlineExceeded() {
-    return (Instant.now().getEpochSecond() > job.getDeadline());
+    return (System.currentTimeMillis() > job.getDeadline());
   }
 }
