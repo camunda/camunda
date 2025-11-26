@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -20,13 +21,16 @@ public class PersistedRole extends UnpackedObject implements DbValue {
   private final StringProperty roleIdProp = new StringProperty("roleId");
   private final StringProperty descriptionProp = new StringProperty("description");
   private final StringProperty nameProp = new StringProperty("name");
+  private final BooleanProperty allTenantsAccessProp =
+      new BooleanProperty("allTenantsAccess", false);
 
   public PersistedRole() {
-    super(4);
+    super(5);
     declareProperty(roleKeyProp)
         .declareProperty(roleIdProp)
         .declareProperty(nameProp)
-        .declareProperty(descriptionProp);
+        .declareProperty(descriptionProp)
+        .declareProperty(allTenantsAccessProp);
   }
 
   public long getRoleKey() {
@@ -60,6 +64,15 @@ public class PersistedRole extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public boolean isAllTenantsAccess() {
+    return allTenantsAccessProp.getValue();
+  }
+
+  public PersistedRole setAllTenantsAccess(final boolean allTenantsAccess) {
+    allTenantsAccessProp.setValue(allTenantsAccess);
+    return this;
+  }
+
   public PersistedRole copy() {
     final var copy = new PersistedRole();
     copy.copyFrom(this);
@@ -78,5 +91,6 @@ public class PersistedRole extends UnpackedObject implements DbValue {
     roleIdProp.setValue(roleRecord.getRoleId());
     nameProp.setValue(roleRecord.getName());
     descriptionProp.setValue(roleRecord.getDescription());
+    allTenantsAccessProp.setValue(roleRecord.isAllTenantsAccess());
   }
 }
