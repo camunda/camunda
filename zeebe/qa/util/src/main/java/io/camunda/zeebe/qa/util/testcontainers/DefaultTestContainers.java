@@ -9,18 +9,15 @@ package io.camunda.zeebe.qa.util.testcontainers;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import java.time.Duration;
-import org.testcontainers.utility.DockerImageName;
 
 public final class DefaultTestContainers {
-  private static final DockerImageName KEYCLOAK_IMAGE =
-      DockerImageName.parse("quay.io/keycloak/keycloak:22.0.1");
 
   private DefaultTestContainers() {}
 
   /** Returns a Keycloak container with defaults for CI. */
   public static KeycloakContainer createDefaultKeycloak() {
     final var container =
-        new KeycloakContainer(KEYCLOAK_IMAGE.asCanonicalNameString())
+        new KeycloakContainer()
             // Keycloak can take quite a while to start in CI
             .withStartupTimeout(Duration.ofMinutes(5))
             // speed up startup time at the expense of slower runtime, acceptable in CI

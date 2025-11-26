@@ -49,7 +49,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.opensearch.core.GetResponse;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -63,7 +63,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 final class OpensearchExporterIT {
   @Container
-  private static final OpensearchContainer<?> CONTAINER =
+  private static final OpenSearchContainer<?> CONTAINER =
       TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();

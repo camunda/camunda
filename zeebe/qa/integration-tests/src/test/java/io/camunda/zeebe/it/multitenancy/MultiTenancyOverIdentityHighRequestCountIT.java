@@ -108,8 +108,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
           .withEnv("KEYCLOAK_ADMIN_PASSWORD", KEYCLOAK_PASSWORD)
           .withEnv("KEYCLOAK_DATABASE_VENDOR", "dev-mem")
           .withNetwork(NETWORK)
-          .withNetworkAliases("keycloak")
-          .withExposedPorts(8080);
+          .withNetworkAliases("keycloak");
 
   @Container
   @SuppressWarnings("resource")

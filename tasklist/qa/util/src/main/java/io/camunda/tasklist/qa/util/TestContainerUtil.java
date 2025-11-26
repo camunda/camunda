@@ -33,7 +33,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -96,7 +96,7 @@ public class TestContainerUtil {
   private static final String APPLICATION_MEMBER_TYPE = "APPLICATION";
   private static final String TASKLIST = "tasklist";
   private ElasticsearchContainer elsContainer;
-  private OpensearchContainer osContainer;
+  private OpenSearchContainer osContainer;
   private ZeebeContainer broker;
   private GenericContainer tasklistContainer;
   private GenericContainer identityContainer;
@@ -256,8 +256,8 @@ public class TestContainerUtil {
   public void startOpenSearch(final TestContext testContext) {
     LOGGER.info("************ Starting OpenSearch ************");
     osContainer =
-        (OpensearchContainer)
-            new OpensearchContainer(
+        (OpenSearchContainer)
+            new OpenSearchContainer(
                     String.format(
                         "%s:%s", DOCKER_OPENSEARCH_IMAGE_NAME, DOCKER_OPENSEARCH_IMAGE_VERSION))
                 .withNetwork(Network.SHARED)

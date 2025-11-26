@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 import org.opensearch.client.RestClient;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /** Collection of utilities for unit and integration tests. */
@@ -32,8 +32,8 @@ final class TestSupport {
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
-  static OpensearchContainer<?> createDefaultContainer() {
-    return new OpensearchContainer<>(OPENSEARCH_IMAGE)
+  static OpenSearchContainer<?> createDefaultContainer() {
+    return new OpenSearchContainer<>(OPENSEARCH_IMAGE)
         .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.auto_create_index", "true");
   }
