@@ -14,8 +14,10 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -41,10 +43,9 @@ public abstract class OpensearchSearchableDao<T, R> {
   }
 
   public Results<T> search(final Query<T> query) {
-
     final var filtering = buildFiltering(query);
-    final var request = buildSearchRequest(query, filtering);
-    buildSorting(query, getUniqueSortKey(), request);
+    final var sortOptions = buildSorting(query, getUniqueSortKey());
+    final var request = buildSearchRequest(query, filtering, sortOptions);
     buildPaging(query, request);
 
     try {
@@ -59,9 +60,11 @@ public abstract class OpensearchSearchableDao<T, R> {
 
   protected SearchRequest.Builder buildSearchRequest(
       final Query<T> query,
-      final org.opensearch.client.opensearch._types.query_dsl.Query filtering) {
+      final org.opensearch.client.opensearch._types.query_dsl.Query filtering,
+      final ArrayList<SortOptions> sortOptions) {
     return requestDSLWrapper
         .searchRequestBuilder(getIndexName())
+        .sort(sortOptions)
         .query(queryDSLWrapper.withTenantCheck(filtering));
   }
 
@@ -71,22 +74,23 @@ public abstract class OpensearchSearchableDao<T, R> {
 
   protected abstract String getIndexName();
 
-  protected void buildSorting(
-      final Query<T> query, final String uniqueSortKey, final SearchRequest.Builder request) {
+  protected ArrayList<SortOptions> buildSorting(final Query<T> query, final String uniqueSortKey) {
+    final var sortOptions = new ArrayList<SortOptions>();
     final List<Query.Sort> sorts = query.getSort();
     if (sorts != null) {
       sorts.forEach(
           sort -> {
             final Query.Sort.Order order = sort.getOrder();
             if (order.equals(Query.Sort.Order.DESC)) {
-              request.sort(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Desc));
+              sortOptions.add(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Desc));
             } else {
               // if not specified always assume ASC order
-              request.sort(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Asc));
+              sortOptions.add(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Asc));
             }
           });
     }
-    request.sort(queryDSLWrapper.sortOptions(uniqueSortKey, SortOrder.Asc));
+    sortOptions.add(queryDSLWrapper.sortOptions(uniqueSortKey, SortOrder.Asc));
+    return sortOptions;
   }
 
   protected void buildPaging(final Query<T> query, final SearchRequest.Builder request) {

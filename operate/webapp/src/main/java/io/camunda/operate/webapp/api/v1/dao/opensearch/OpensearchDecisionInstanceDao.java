@@ -20,11 +20,13 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -84,8 +86,9 @@ public class OpensearchDecisionInstanceDao
   @Override
   protected SearchRequest.Builder buildSearchRequest(
       final Query<DecisionInstance> query,
-      final org.opensearch.client.opensearch._types.query_dsl.Query filtering) {
-    return super.buildSearchRequest(query, filtering)
+      final org.opensearch.client.opensearch._types.query_dsl.Query filtering,
+      final ArrayList<SortOptions> sortOptions) {
+    return super.buildSearchRequest(query, filtering, sortOptions)
         .source(
             queryDSLWrapper.sourceExclude(
                 DecisionInstanceTemplate.EVALUATED_INPUTS,
@@ -111,6 +114,7 @@ public class OpensearchDecisionInstanceDao
   protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
       final Query<DecisionInstance> query) {
     final DecisionInstance filter = query.getFilter();
+
     if (filter != null) {
       final var queryTerms =
           Stream.of(
@@ -182,6 +186,7 @@ public class OpensearchDecisionInstanceDao
               : internalResult.evaluationFailure();
       apiResult.setEvaluationFailure(evaluationFailure);
     }
+
     return apiResult;
   }
 }
