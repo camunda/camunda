@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
 class ListViewFromProcessInstanceModificationOperationHandlerTest
@@ -23,20 +24,32 @@ class ListViewFromProcessInstanceModificationOperationHandlerTest
   }
 
   @Override
-  protected Record<ProcessInstanceModificationRecordValue> createCompletedRecord() {
+  protected Record<ProcessInstanceModificationRecordValue> createCompletedRecord(
+      final long processInstanceKey) {
+    final var value =
+        ImmutableProcessInstanceModificationRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceModificationRecordValue.class))
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
-        b -> b.withIntent(ProcessInstanceModificationIntent.MODIFIED));
+        b -> b.withIntent(ProcessInstanceModificationIntent.MODIFIED).withValue(value));
   }
 
   @Override
   protected Record<ProcessInstanceModificationRecordValue> createRejectedRecord() {
+    final var value =
+        ImmutableProcessInstanceModificationRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceModificationRecordValue.class))
+            .withProcessInstanceKey(123456789L)
+            .build();
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         b ->
             b.withRecordType(RecordType.COMMAND_REJECTION)
                 .withRejectionType(RejectionType.INVALID_STATE)
-                .withIntent(ProcessInstanceModificationIntent.MODIFY));
+                .withIntent(ProcessInstanceModificationIntent.MODIFY)
+                .withValue(value));
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 
 class ListViewFromProcessInstanceMigrationOperationHandlerTest
@@ -23,20 +24,32 @@ class ListViewFromProcessInstanceMigrationOperationHandlerTest
   }
 
   @Override
-  protected Record<ProcessInstanceMigrationRecordValue> createCompletedRecord() {
+  protected Record<ProcessInstanceMigrationRecordValue> createCompletedRecord(
+      final long processInstanceKey) {
+    final var value =
+        ImmutableProcessInstanceMigrationRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceMigrationRecordValue.class))
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_MIGRATION,
-        b -> b.withIntent(ProcessInstanceMigrationIntent.MIGRATED));
+        b -> b.withIntent(ProcessInstanceMigrationIntent.MIGRATED).withValue(value));
   }
 
   @Override
   protected Record<ProcessInstanceMigrationRecordValue> createRejectedRecord() {
+    final var value =
+        ImmutableProcessInstanceMigrationRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceMigrationRecordValue.class))
+            .withProcessInstanceKey(123456789L)
+            .build();
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         b ->
             b.withRecordType(RecordType.COMMAND_REJECTION)
                 .withRejectionType(RejectionType.INVALID_STATE)
-                .withIntent(ProcessInstanceMigrationIntent.MIGRATE));
+                .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
+                .withValue(value));
   }
 
   @Override
