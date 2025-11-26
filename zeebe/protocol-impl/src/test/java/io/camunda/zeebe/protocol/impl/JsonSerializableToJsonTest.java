@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -3992,6 +3993,46 @@ final class JsonSerializableToJsonTest {
                 "tenantId":"<default>",
                 "scopeKey":-1,
                 "condition":""
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// ConditionalEvaluationRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ConditionalEvaluationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ConditionalEvaluationRecord()
+                    .setTenantId("tenant-1")
+                    .setProcessDefinitionKey(456L)
+                    .setVariables(VARIABLES_MSGPACK),
+        """
+                {
+                  "variables": {
+                    "foo": "bar"
+                  },
+                  "tenantId":"tenant-1",
+                  "processDefinitionKey":456
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty ConditionalEvaluationRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // /////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ConditionalEvaluationRecord",
+        (Supplier<UnifiedRecordValue>) ConditionalEvaluationRecord::new,
+        """
+                {
+                "processDefinitionKey":-1,
+                "variables":{},
+                "tenantId":"<default>"
                 }
                 """
       },

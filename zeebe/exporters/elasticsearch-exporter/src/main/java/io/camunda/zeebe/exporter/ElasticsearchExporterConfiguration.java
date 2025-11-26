@@ -110,6 +110,7 @@ public class ElasticsearchExporterConfiguration {
       case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
       case CLUSTER_VARIABLE -> index.clusterVariable;
       case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
+      case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
       default -> false;
     };
   }
@@ -229,6 +230,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean usageMetrics = false;
     public boolean clusterVariable = true;
     public boolean conditionalSubscription = false;
+    public boolean conditionalEvaluation = false;
 
     // index settings
     private Integer numberOfShards = null;
@@ -351,6 +353,8 @@ public class ElasticsearchExporterConfiguration {
           + asyncRequest
           + ", conditionalSubscription="
           + conditionalSubscription
+          + ", conditionalEvaluation="
+          + conditionalEvaluation
           + '}';
     }
   }
