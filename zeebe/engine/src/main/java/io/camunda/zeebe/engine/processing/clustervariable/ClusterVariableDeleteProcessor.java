@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecord
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -99,13 +100,39 @@ public class ClusterVariableDeleteProcessor
   }
 
   private Either<Rejection, Void> isAuthorized(final TypedRecord<ClusterVariableRecord> command) {
+    final ClusterVariableRecord clusterVariableRecord = command.getValue();
+    return switch (clusterVariableRecord.getScope()) {
+      case GLOBAL -> checkAuthorizationForGlobalScope(command);
+      case TENANT -> checkAuthorizationForTenantScope(command);
+      case UNSPECIFIED ->
+          Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  "Invalid cluster variable scope. The scope must be either 'GLOBAL' or 'TENANT'."));
+    };
+  }
+
+  private Either<Rejection, Void> checkAuthorizationForTenantScope(
+      final TypedRecord<ClusterVariableRecord> command) {
+    final var clusterVariableRecord = command.getValue();
     final var authRequest =
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.CLUSTER_VARIABLE,
                 PermissionType.DELETE,
-                command.getValue().getTenantId())
-            .addResourceId(command.getValue().getName());
+                command.getValue().getTenantId(),
+                false)
+            .addResourceId(clusterVariableRecord.getName());
+    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+  }
+
+  private Either<Rejection, Void> checkAuthorizationForGlobalScope(
+      final TypedRecord<ClusterVariableRecord> command) {
+    final var clusterVariableRecord = command.getValue();
+    final var authRequest =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.CLUSTER_VARIABLE, PermissionType.DELETE, false)
+            .addResourceId(clusterVariableRecord.getName());
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

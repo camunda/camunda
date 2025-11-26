@@ -410,6 +410,7 @@ components:
         - USER
         - USER_TASK
         - AUDIT_LOG
+        - CLUSTER_VARIABLE
 
     OwnerTypeEnum:
       type: string

@@ -34,4 +34,5 @@ public enum ResourceType {
   USER_TASK,
   AUDIT_LOG,
   UNKNOWN_ENUM_VALUE,
+  CLUSTER_VARIABLE,
 }
