@@ -19,7 +19,6 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
-import java.time.Instant;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -105,6 +104,6 @@ public class CommandWrapper {
   }
 
   private boolean jobDeadlineExceeded() {
-    return (Instant.now().getEpochSecond() > job.getDeadline());
+    return (System.currentTimeMillis() > job.getDeadline());
   }
 }
