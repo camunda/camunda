@@ -228,15 +228,15 @@ describe('buildProcessInstanceFilter', () => {
     });
   });
 
-  it('does not add version or processDefinitionVersionTag to the filter', () => {
+  it('does not add a processDefinitionVersion to the filter', () => {
     const filters: ProcessInstanceFilters = {
-      version: 'v1',
+      version: '1',
       process: 'my-process',
     };
 
     const result = buildProcessInstanceFilter(filters);
 
+    expect(result.processDefinitionVersion).toBe(1);
     expect(result.processDefinitionVersionTag).toBeUndefined();
-    expect(result.processDefinitionVersion).toBeUndefined();
   });
 });
