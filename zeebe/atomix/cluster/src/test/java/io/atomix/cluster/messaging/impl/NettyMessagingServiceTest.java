@@ -156,7 +156,10 @@ final class NettyMessagingServiceTest {
         }
         clientNetty.start().join();
         serverNetty.start().join();
+
+        // Track heartbeats from client - capture both empty and payload heartbeats
         final var heartbeatFromClient = new MutableReference<HeartbeatRequestDecoder>(null);
+        final var emptyHeartbeatFromClientReceived = new AtomicBoolean(false);
         serverNetty.registerHandler(
             HeartbeatHandler.HEARTBEAT_SUBJECT,
             (BiConsumer<Address, byte[]>)
@@ -166,6 +169,8 @@ final class NettyMessagingServiceTest {
                         new HeartbeatRequestDecoder()
                             .wrapAndApplyHeader(
                                 new UnsafeBuffer(payload), 0, new MessageHeaderDecoder()));
+                  } else {
+                    emptyHeartbeatFromClientReceived.set(true);
                   }
                 },
             Runnable::run);
@@ -173,6 +178,7 @@ final class NettyMessagingServiceTest {
         // when - connect and intercept heartbeat responses from server
         final var heartbeatResponseFromServer =
             new MutableReference<HeartbeatResponseDecoder>(null);
+        final var emptyHeartbeatResponseFromServerReceived = new AtomicBoolean(false);
         final var clientChannel =
             clientNetty.getChannelPool().getChannel(serverNetty.address(), "test").join();
 
@@ -188,13 +194,15 @@ final class NettyMessagingServiceTest {
               @Override
               public void channelRead(final ChannelHandlerContext ctx, final Object msg)
                   throws Exception {
-                if (msg instanceof final ProtocolReply reply
-                    && reply.payload() != null
-                    && reply.payload().length > 0) {
-                  heartbeatResponseFromServer.set(
-                      new HeartbeatResponseDecoder()
-                          .wrapAndApplyHeader(
-                              new UnsafeBuffer(reply.payload()), 0, new MessageHeaderDecoder()));
+                if (msg instanceof final ProtocolReply reply) {
+                  if (reply.payload() != null && reply.payload().length > 0) {
+                    heartbeatResponseFromServer.set(
+                        new HeartbeatResponseDecoder()
+                            .wrapAndApplyHeader(
+                                new UnsafeBuffer(reply.payload()), 0, new MessageHeaderDecoder()));
+                  } else {
+                    emptyHeartbeatResponseFromServerReceived.set(true);
+                  }
                 }
                 ctx.fireChannelRead(msg);
               }
@@ -204,19 +212,46 @@ final class NettyMessagingServiceTest {
             .addBefore(
                 HeartbeatHandler.HEARTBEAT_HANDLER_NAME, "test-interceptor", interceptingHandler);
 
-        // then - payload should have content only when both client and server support
-        // it
-        Awaitility.await("Until heartbeats payloads are received")
+        // then - verify heartbeats are exchanged with correct payload based on configuration
+        Awaitility.await("Until heartbeats are received")
             .atMost(Duration.ofSeconds(2))
             .untilAsserted(
                 () -> {
                   if (clientSupportsPayload && serverSupportsPayload) {
+                    // Both support payloads: verify payloads with timestamps
                     assertThat(heartbeatFromClient.get())
                         .isNotNull()
                         .satisfies(heartbeat -> assertThat(heartbeat.sentAt()).isPositive());
                     assertThat(heartbeatResponseFromServer.get())
                         .isNotNull()
                         .satisfies(heartbeat -> assertThat(heartbeat.receivedAt()).isPositive());
+                  } else {
+                    // At least one party doesn't support payloads: verify empty heartbeats
+                    assertThat(
+                            emptyHeartbeatFromClientReceived.get()
+                                || heartbeatFromClient.get() != null)
+                        .as("Heartbeat from client should be received (empty or with payload)")
+                        .isTrue();
+                    assertThat(
+                            emptyHeartbeatResponseFromServerReceived.get()
+                                || heartbeatResponseFromServer.get() != null)
+                        .as(
+                            "Heartbeat response from server should be received (empty or with payload)")
+                        .isTrue();
+
+                    // Additionally verify that at least one side has empty payload as expected
+                    if (!clientSupportsPayload) {
+                      assertThat(emptyHeartbeatFromClientReceived.get())
+                          .as(
+                              "Client should send empty heartbeats when it doesn't support payloads")
+                          .isTrue();
+                    }
+                    if (!serverSupportsPayload) {
+                      assertThat(emptyHeartbeatResponseFromServerReceived.get())
+                          .as(
+                              "Server should send empty heartbeat responses when it doesn't support payloads")
+                          .isTrue();
+                    }
                   }
                 });
       }
