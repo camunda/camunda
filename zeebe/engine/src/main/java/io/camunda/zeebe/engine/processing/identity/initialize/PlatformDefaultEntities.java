@@ -68,7 +68,7 @@ public class PlatformDefaultEntities {
 
   private static void setupAdminRole(final IdentitySetupRecord setupRecord) {
     final var adminRoleId = DefaultRole.ADMIN.getId();
-    setupRecord.addRole(new RoleRecord().setRoleId(adminRoleId).setName("Admin"));
+    setupRecord.addRole(new RoleRecord().setRoleId(adminRoleId).setName("Admin").setAllTenantsAccess(true));
     for (final var resourceType : AuthorizationResourceType.values()) {
       if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
         // We shouldn't add empty permissions for an unspecified resource type
