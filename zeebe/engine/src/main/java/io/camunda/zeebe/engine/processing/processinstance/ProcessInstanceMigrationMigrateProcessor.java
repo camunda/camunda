@@ -244,7 +244,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    requireSameUserTaskImplementation(
+    requireSupportedUserTaskImplementation(
         sourceProcessDefinition,
         targetProcessDefinition,
         targetElementId,
