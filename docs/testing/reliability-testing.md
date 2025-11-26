@@ -74,7 +74,6 @@ Our load tests can also be viewed as **endurance or soak tests**, as they typica
 
 ![setup-load-test](assets/setup-load-test.jpg)
 
-
 The setup for all of our load tests is equal for better comparability, and consist of two main ingredients.
 
 1. The official [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), taking care of the general set up of our Camunda 8 Platform.
@@ -228,6 +227,31 @@ It allows high customization:
 * Specification of arbitrary Helm arguments - making it possible to customize the load test set up.
 
 ![load-test-gha](assets/load-test-gha.png)
+
+###### Creating load test for old versions
+
+With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.6).
+
+![1-main](assets/1-main.png)
+
+As part of the workflow dispatch form (UI), select the respective workflow revision for the desired version.
+
+![2-choosing](assets/2-choosing.png)
+
+This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
+
+We can reference tags, branches or commit SHAs, as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test.
+
+![3-branch](assets/3-branch.png)
+
+One not optional parameter is the name of the load test. Please make sure to use an identifiable prefix (for example your initials), to make sure we can identify who created the load test, in case we need to reach out.
+
+![4-name](assets/4-name.png)
+
+After submitting the form you can observe the progress of the load test creation in the Actions tab of the mono repository.
+
+![5-build](assets/5-build.png)
+
 
 ##### Creating manually
 
