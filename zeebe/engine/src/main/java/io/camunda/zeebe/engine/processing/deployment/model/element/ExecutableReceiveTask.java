@@ -59,6 +59,11 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
+  public boolean isConditional() {
+    return false;
+  }
+
+  @Override
   public ExecutableMessage getMessage() {
     return message;
   }
@@ -80,6 +85,11 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
 
   @Override
   public ExecutableSignal getSignal() {
+    return null;
+  }
+
+  @Override
+  public ExecutableConditional getConditional() {
     return null;
   }
 

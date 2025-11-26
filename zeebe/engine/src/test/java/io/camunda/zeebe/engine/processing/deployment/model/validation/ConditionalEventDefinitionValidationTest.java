@@ -98,7 +98,7 @@ public class ConditionalEventDefinitionValidationTest {
   }
 
   @Test
-  @DisplayName("Variable names must be comma separated when static for conditional start event")
+  @DisplayName("Variable names must be comma separated for conditional start event")
   void invalidStaticVariableNamesForConditionalStartEvent() {
     // given
     final BpmnModelInstance process =
@@ -112,12 +112,13 @@ public class ConditionalEventDefinitionValidationTest {
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found 'x, ,y'."));
+            "Variable names must not contain empty names but 'x, ,y' given."
+                + " Please provide a comma-separated list of variable names without empty entries."));
   }
 
   @Test
-  @DisplayName("Variable names can be an expression for conditional start event")
-  void validVariableNamesExpressionForConditionalStartEvent() {
+  @DisplayName("Variable names cannot be an expression for conditional start event")
+  void variableNamesCannotBeAnExpressionForConditionalStartEvent() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -126,26 +127,11 @@ public class ConditionalEventDefinitionValidationTest {
             .done();
 
     // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName("Variable names must be a valid expression for conditional start event")
-  void invalidVariableNamesExpressionForConditionalStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("= array["))
-            .done();
-
-    // when/then
     ProcessValidationUtil.validateProcess(
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "failed to parse expression ' array[': Expected (binaryComparison | between"
-                + " | instanceOf | in | \"and\" | \"or\" | end-of-input):1:7, found \"[\""));
+            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test
@@ -320,8 +306,8 @@ public class ConditionalEventDefinitionValidationTest {
   }
 
   @Test
-  @DisplayName("Variable names must be comma separated when static for conditional boundary event")
-  void invalidStaticVariableNamesForConditionalBoundaryEvent() {
+  @DisplayName("Variable names must be comma separated for conditional boundary event")
+  void invalidVariableNamesForConditionalBoundaryEvent() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -340,12 +326,13 @@ public class ConditionalEventDefinitionValidationTest {
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found 'x, ,y'."));
+            "Variable names must not contain empty names but 'x, ,y' given."
+                + " Please provide a comma-separated list of variable names without empty entries."));
   }
 
   @Test
-  @DisplayName("Variable names can be an expression for conditional boundary event")
-  void validVariableNamesExpressionForConditionalBoundaryEvent() {
+  @DisplayName("Variable names cannot be an expression for conditional boundary event")
+  void variableNamesCannotBeAnExpressionForConditionalBoundaryEvent() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -360,32 +347,11 @@ public class ConditionalEventDefinitionValidationTest {
             .done();
 
     // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName("Variable names must be a valid expression for conditional boundary event")
-  void invalidVariableNamesExpressionForConditionalBoundaryEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("task")
-            .boundaryEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("= array["))
-            .endEvent()
-            .moveToActivity("task")
-            .endEvent()
-            .done();
-
-    // when/then
     ProcessValidationUtil.validateProcess(
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "failed to parse expression ' array[': Expected (binaryComparison | between"
-                + " | instanceOf | in | \"and\" | \"or\" | end-of-input):1:7, found \"[\""));
+            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test
@@ -517,9 +483,8 @@ public class ConditionalEventDefinitionValidationTest {
   }
 
   @Test
-  @DisplayName(
-      "Variable names must be comma separated when static for conditional intermediate catch event")
-  void invalidStaticVariableNamesForConditionalIntermediateCatchEvent() {
+  @DisplayName("Variable names must be comma separated for conditional intermediate catch event")
+  void invalidVariableNamesForConditionalIntermediateCatchEvent() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -534,12 +499,13 @@ public class ConditionalEventDefinitionValidationTest {
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found 'x, ,y'."));
+            "Variable names must not contain empty names but 'x, ,y' given."
+                + " Please provide a comma-separated list of variable names without empty entries."));
   }
 
   @Test
-  @DisplayName("Variable names can be an expression for conditional intermediate catch event")
-  void validVariableNamesExpressionForConditionalIntermediateCatchEvent() {
+  @DisplayName("Variable names cannot be an expression for conditional intermediate catch event")
+  void variableNamesCannotBeAnExpressionForConditionalIntermediateCatchEvent() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -550,28 +516,11 @@ public class ConditionalEventDefinitionValidationTest {
             .done();
 
     // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName("Variable names must be a valid expression for conditional intermediate catch event")
-  void invalidVariableNamesExpressionForConditionalIntermediateCatchEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("= array["))
-            .endEvent()
-            .done();
-
-    // when/then
     ProcessValidationUtil.validateProcess(
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "failed to parse expression ' array[': Expected (binaryComparison | between"
-                + " | instanceOf | in | \"and\" | \"or\" | end-of-input):1:7, found \"[\""));
+            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test
@@ -704,7 +653,7 @@ public class ConditionalEventDefinitionValidationTest {
 
   @Test
   @DisplayName(
-      "Variable names must be comma separated when static for conditional event subprocess start event")
+      "Variable names must be comma separated for conditional event subprocess start event")
   void invalidStaticVariableNamesForConditionalEventSubProcessStartEvent() {
     // given
     final BpmnModelInstance process =
@@ -724,12 +673,14 @@ public class ConditionalEventDefinitionValidationTest {
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found 'x, ,y'."));
+            "Variable names must not contain empty names but 'x, ,y' given."
+                + " Please provide a comma-separated list of variable names without empty entries."));
   }
 
   @Test
-  @DisplayName("Variable names can be an expression for conditional event subprocess start event")
-  void validVariableNamesExpressionForConditionalEventSubProcessStartEvent() {
+  @DisplayName(
+      "Variable names cannot be an expression for conditional event subprocess start event")
+  void variableNamesCannotBeAnExpressionForConditionalEventSubProcessStartEvent() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -744,33 +695,11 @@ public class ConditionalEventDefinitionValidationTest {
             .done();
 
     // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName(
-      "Variable names must be a valid expression for conditional event subprocess start event")
-  void invalidVariableNamesExpressionForConditionalEventSubProcessStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent()
-            .moveToProcess("process")
-            .eventSubProcess()
-            .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("= array["))
-            .endEvent()
-            .subProcessDone()
-            .done();
-
-    // when/then
     ProcessValidationUtil.validateProcess(
         process,
         ExpectedValidationResult.expect(
             ZeebeConditionalFilter.class,
-            "failed to parse expression ' array[': Expected (binaryComparison | between"
-                + " | instanceOf | in | \"and\" | \"or\" | end-of-input):1:7, found \"[\""));
+            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test

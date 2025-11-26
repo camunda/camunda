@@ -403,6 +403,19 @@ public class ZeebeConditionalEventValidationTest extends AbstractZeebeValidation
             expect(
                 ZeebeConditionalFilter.class,
                 "Variable event 'delete' is not valid. Must be one of: create, update or a comma-separated list of both."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .subProcess("subProcess")
+            .embeddedSubProcess()
+            .startEvent()
+            .condition(c -> c.condition("= x > 1"))
+            .endEvent()
+            .subProcessDone()
+            .endEvent()
+            .done(),
+        singletonList(expect("subProcess", "Start events in subprocesses must be of type none"))
       }
     };
   }
