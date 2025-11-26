@@ -318,7 +318,7 @@ When following the instructions above, execute all commands that deal with Docke
 
 ###### Installing manually
 
-The [camunda-load-test](https://github.com/camunda/camunda-load-tests-helm) Helm chart repository contains a [detailed](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/README.md) guide regarding this.
+The [camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm) Helm chart repository contains a [detailed](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/README.md) guide regarding this.
 
 ```shell
 # Add the load test chart to the local repository
