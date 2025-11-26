@@ -82,6 +82,7 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -209,6 +210,7 @@ public class CompactRecordLogger {
           entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
           entry(ESCALATION.name(), "ESC"),
           entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
+          entry("CONDITIONAL_EVALUATION", "COND_EVAL"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"));
 
@@ -295,6 +297,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
+    valueLoggers.put(ValueType.CONDITIONAL_EVALUATION, this::summarizeConditionalEvaluation);
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
@@ -949,6 +952,24 @@ public class CompactRecordLogger {
     final var value = (ClusterVariableRecordValue) record.getValue();
     return "%s->%s%s"
         .formatted(value.getName(), formatVariableValue(value.getValue()), formatTenant(value));
+  }
+
+  private String summarizeConditionalEvaluation(final Record<?> record) {
+    final var value = (ConditionalEvaluationRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    if (value.getProcessDefinitionKey() > 0) {
+      result
+          .append("for <process definition [")
+          .append(shortenKey(value.getProcessDefinitionKey()))
+          .append("]>");
+    } else {
+      result.append("(all process definitions)");
+    }
+
+    result.append(formatVariables(value)).append(formatTenant(value));
+
+    return result.toString();
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
