@@ -89,7 +89,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldExtractVariableNameFromParameterName() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "variableOnlyWorker"));
     // when
@@ -102,7 +102,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldExtractVariableNameFromValue() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "variableWithValueOnlyWorker"));
     // when
@@ -115,7 +115,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldExtractVariableNameFromName() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "variableWithNameOnlyWorker"));
     // when
