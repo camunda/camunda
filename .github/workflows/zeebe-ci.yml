@@ -33,11 +33,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos, windows, linux ]
+        os: [ windows, linux ]
         arch: [ amd64 ]
         include:
-          - os: macos
-            runner: macos-latest-large
           - os: macos
             runner: macos-latest
             arch: arm64
