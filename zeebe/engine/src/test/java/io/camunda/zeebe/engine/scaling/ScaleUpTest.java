@@ -31,22 +31,20 @@ import org.junit.Test;
 
 public class ScaleUpTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(2);
-  private int index;
+  private long key;
 
   @Before
   public void beforeEach() {
     RecordingExporter.reset();
     clearInvocations(engine.getCommandResponseWriter());
-    index = 10012093;
+    key = Protocol.encodePartitionId(1, 0);
   }
 
   @Test
   public void shouldRespondToScaleUp() {
     // given
     final var command =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3)).key(key);
 
     command.recordMetadata().requestId(123);
 
@@ -63,16 +61,14 @@ public class ScaleUpTest {
     // given
 
     final var command =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3)).key(key);
 
     final var bootstrapPartitions =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
                 new ScaleRecord().markPartitionBootstrapped(3))
-            .key(Protocol.encodePartitionId(1, index++));
+            .key(key);
     // when
     engine.writeRecords(command, bootstrapPartitions);
 
@@ -94,9 +90,7 @@ public class ScaleUpTest {
     engine.withInitializeRoutingState(false);
     engine.start();
     final var command =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3)).key(key);
 
     // when
     engine.writeRecords(command);
@@ -116,9 +110,7 @@ public class ScaleUpTest {
   public void shouldRejectEmptyScaleUp() {
     // given
     final var command =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord())
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord()).key(key);
 
     // when
     engine.writeRecords(command);
@@ -140,7 +132,7 @@ public class ScaleUpTest {
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(10000))
-            .key(Protocol.encodePartitionId(1, index++));
+            .key(key);
 
     // when
     engine.writeRecords(command);
@@ -159,9 +151,7 @@ public class ScaleUpTest {
   public void shouldRejectScaleDown() {
     // given
     final var command =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(1))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(1)).key(key);
 
     // when
     engine.writeRecords(command);
@@ -185,9 +175,7 @@ public class ScaleUpTest {
 
     // when
     engine.writeRecords(
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
-            .key(Protocol.encodePartitionId(1, index++)));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3)).key(key));
 
     // then
     assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
@@ -203,9 +191,7 @@ public class ScaleUpTest {
   public void shouldRespondWithTheCurrentNumberOfRedistributedPartitionsAndMessageCorrelation() {
     // given
     final var scaleUpCommand =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(4))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(4)).key(key);
 
     final var getStatusCommand =
         RecordToWrite.command().scale(ScaleIntent.STATUS, new ScaleRecord().status());
@@ -250,18 +236,16 @@ public class ScaleUpTest {
   @Test
   public void shouldScaleUpContinuously() {
     // given
-    var index = 1023;
+    final var index = 1023;
     final var scaleTo3 =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3)).key(key);
 
     final var bootstrapPartitionsTo3 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
                 new ScaleRecord().markPartitionBootstrapped(3))
-            .key(Protocol.encodePartitionId(1, index++));
+            .key(key);
     // when
     engine.writeRecords(scaleTo3, bootstrapPartitionsTo3);
 
@@ -281,15 +265,13 @@ public class ScaleUpTest {
 
     // when scaling up again
     final var scaleTo4 =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(4))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(4)).key(key);
     final var bootstrapPartitionsTo4 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
                 new ScaleRecord().markPartitionBootstrapped(4))
-            .key(Protocol.encodePartitionId(1, index++));
+            .key(key);
     engine.writeRecords(scaleTo4, bootstrapPartitionsTo4);
 
     // then
@@ -310,18 +292,16 @@ public class ScaleUpTest {
     // set a lower maximum time as we don't expect to see the SCALED_UP event
     RecordingExporter.setMaximumWaitTime(200);
     // given
-    var index = 99;
+    final var index = 99;
     final var scaleTo3 =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
-            .key(Protocol.encodePartitionId(1, index++));
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3)).key(key);
 
     final var bootstrapPartitionsTo3 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
                 new ScaleRecord().markPartitionBootstrapped(3))
-            .key(Protocol.encodePartitionId(1, index++));
+            .key(key);
     bootstrapPartitionsTo3.recordMetadata().requestId(1234);
     // when
     engine.writeRecords(scaleTo3, bootstrapPartitionsTo3);
