@@ -12,18 +12,18 @@ import io.camunda.zeebe.engine.state.mutable.MutableConditionalSubscriptionState
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 
-public final class ConditionalSubscriptionCanceledApplier
+public final class ConditionalSubscriptionCreatedApplier
     implements TypedEventApplier<ConditionalSubscriptionIntent, ConditionalSubscriptionRecord> {
 
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
 
-  public ConditionalSubscriptionCanceledApplier(
+  public ConditionalSubscriptionCreatedApplier(
       final MutableConditionalSubscriptionState conditionalSubscriptionState) {
     this.conditionalSubscriptionState = conditionalSubscriptionState;
   }
 
   @Override
   public void applyState(final long key, final ConditionalSubscriptionRecord value) {
-    conditionalSubscriptionState.delete(key, value);
+    conditionalSubscriptionState.put(key, value);
   }
 }
