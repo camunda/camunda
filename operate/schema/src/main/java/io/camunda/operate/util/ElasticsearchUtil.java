@@ -15,21 +15,25 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.ScrollRequest;
 import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -432,6 +436,56 @@ public abstract class ElasticsearchUtil {
       final Consumer<SearchHits> searchHitsProcessor)
       throws IOException {
     scrollWith(searchRequest, esClient, searchHitsProcessor, null, null);
+  }
+
+  public static <T> Stream<T> scrollAllStream(
+      final ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final Class<T> docClass) {
+    final Queue<T> batchQueue = new LinkedList<>();
+    final String[] scrollIdHolder = new String[1]; // mutable holder
+
+    searchRequestBuilder.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms")));
+    final var searchReq = searchRequestBuilder.build();
+
+    return Stream.generate(
+            () -> {
+              // If the queue is empty, fetch the next batch
+              while (batchQueue.isEmpty()) {
+                try {
+                  if (scrollIdHolder[0] == null) {
+                    // First request creates the scroll context
+                    final co.elastic.clients.elasticsearch.core.SearchResponse<T> response =
+                        client.search(searchReq, docClass);
+                    scrollIdHolder[0] = response.scrollId();
+                    response.hits().hits().forEach(hit -> batchQueue.add(hit.source()));
+                  } else {
+                    // Subsequent requests continue the scroll
+                    final var response =
+                        client.scroll(
+                            ScrollRequest.of(
+                                r ->
+                                    r.scrollId(scrollIdHolder[0])
+                                        .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms")))),
+                            docClass);
+
+                    scrollIdHolder[0] = response.scrollId();
+                    if (response.hits().hits().isEmpty()) {
+                      // Clear scroll when done
+                      client.clearScroll(cs -> cs.scrollId(scrollIdHolder[0]));
+                      return null;
+                    }
+
+                    response.hits().hits().forEach(hit -> batchQueue.add(hit.source()));
+                  }
+                } catch (final IOException e) {
+                  throw new ScrollException("Error during scroll with id: " + scrollIdHolder[0], e);
+                }
+              }
+
+              return batchQueue.poll();
+            })
+        .takeWhile(Objects::nonNull);
   }
 
   public static void scrollWith(
