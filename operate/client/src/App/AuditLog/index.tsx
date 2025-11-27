@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useMemo} from 'react';
+import {useState, useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Link} from '@carbon/react';
 import {AuditLogFilters} from './Filters';
@@ -21,6 +21,7 @@ import {useAuditLog} from 'modules/queries/auditLog/useAuditLog';
 import {SortableTable} from 'modules/components/SortableTable';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
+import {PAGE_TITLE} from 'modules/constants';
 import {Information} from '@carbon/react/icons';
 import {ClassicBatch} from '@carbon/icons-react';
 import {DetailsModal} from './DetailsModal';
@@ -42,6 +43,10 @@ const AuditLog: React.FC = () => {
     open: false,
     entry: null,
   });
+
+  useEffect(() => {
+    document.title = PAGE_TITLE.OPERATIONS_LOG;
+  }, []);
 
   // Get sort from URL or use defaults
   const sortParams = getSortParams(location.search);
