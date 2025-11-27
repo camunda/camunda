@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -23,8 +23,8 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
-import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -32,15 +32,14 @@ import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -221,46 +220,32 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   @Override
   public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(
       final List<Long> processInstanceKeys) {
-    final QueryBuilder processInstanceKeysQuery =
-        constantScoreQuery(
-            joinWithAnd(
-                termsQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys),
-                ACTIVE_INCIDENT_QUERY));
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(processInstanceKeysQuery)
-                    .fetchSource(IncidentTemplate.PROCESS_INSTANCE_KEY, null)
-                    .size(batchSize));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.joinWithAnd(
+                ElasticsearchUtil.termsQuery(
+                    IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys),
+                ACTIVE_INCIDENT_QUERY_ES8));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final Map<Long, List<Long>> result = new HashMap<>();
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
+            .query(tenantAwareQuery)
+            .source(s -> s.filter(f -> f.includes(IncidentTemplate.PROCESS_INSTANCE_KEY)))
+            .size(batchSize);
+
     try {
-      tenantAwareClient.search(
-          searchRequest,
-          () -> {
-            scrollWith(
-                searchRequest,
-                esClient,
-                searchHits -> {
-                  for (final SearchHit hit : searchHits.getHits()) {
-                    CollectionUtil.addToMap(
-                        result,
-                        Long.valueOf(
-                            hit.getSourceAsMap()
-                                .get(IncidentTemplate.PROCESS_INSTANCE_KEY)
-                                .toString()),
-                        Long.valueOf(hit.getId()));
-                  }
-                },
-                null,
-                null);
-            return null;
-          });
-      return result;
-    } catch (final IOException e) {
+      final var resStream =
+          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+      return resStream.collect(
+          Collectors.groupingBy(
+              hit ->
+                  Long.valueOf(hit.source().get(IncidentTemplate.PROCESS_INSTANCE_KEY).toString()),
+              Collectors.mapping(hit -> Long.valueOf(hit.id()), Collectors.toList())));
+    } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);
