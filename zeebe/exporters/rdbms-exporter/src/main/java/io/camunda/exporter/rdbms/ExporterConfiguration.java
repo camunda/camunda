@@ -21,6 +21,7 @@ public class ExporterConfiguration {
 
   private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
   private int queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
+  private int queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
 
   private HistoryConfiguration history = new HistoryConfiguration();
 
@@ -48,6 +49,14 @@ public class ExporterConfiguration {
 
   public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
+  }
+
+  public int getQueueMemoryLimit() {
+    return queueMemoryLimit;
+  }
+
+  public void setQueueMemoryLimit(final int queueMemoryLimit) {
+    this.queueMemoryLimit = queueMemoryLimit;
   }
 
   public boolean isExportBatchOperationItemsOnCreation() {
@@ -104,6 +113,12 @@ public class ExporterConfiguration {
       errors.add(String.format("queueSize must be greater or equal 0 but was %d", queueSize));
     }
 
+    if (queueMemoryLimit < 0) {
+      errors.add(
+          String.format(
+              "queueMemoryLimit must be greater or equal 0 but was %d", queueMemoryLimit));
+    }
+
     if (batchOperationItemInsertBlockSize < 1) {
       errors.add(
           String.format(
@@ -153,6 +168,7 @@ public class ExporterConfiguration {
     return new RdbmsWriterConfig.Builder()
         .partitionId(partitionId)
         .queueSize(queueSize)
+        .queueMemoryLimit(queueMemoryLimit)
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
         .history(historyConfig)

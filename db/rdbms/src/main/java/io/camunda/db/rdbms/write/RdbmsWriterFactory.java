@@ -98,7 +98,11 @@ public class RdbmsWriterFactory {
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
     final var executionQueue =
         new DefaultExecutionQueue(
-            sqlSessionFactory, config.partitionId(), config.queueSize(), metrics);
+            sqlSessionFactory,
+            config.partitionId(),
+            config.queueSize(),
+            config.queueMemoryLimit(),
+            metrics);
     return new RdbmsWriter(
         config,
         executionQueue,
