@@ -25,8 +25,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_NAME;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;

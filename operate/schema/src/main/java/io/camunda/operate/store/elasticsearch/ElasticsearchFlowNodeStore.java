@@ -7,26 +7,22 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.FlowNodeStore;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.store.ScrollException;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -37,50 +33,41 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
 
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
+  @Autowired private ElasticsearchClient esClient;
 
   @Override
   public Map<String, String> getFlowNodeIdsForFlowNodeInstances(
       final Set<String> flowNodeInstanceIds) {
-    final Map<String, String> flowNodeIdsMap = new HashMap<>();
-    final QueryBuilder q = termsQuery(FlowNodeInstanceTemplate.ID, flowNodeInstanceIds);
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate, ONLY_RUNTIME)
+    final var query =
+        ElasticsearchUtil.termsQuery(FlowNodeInstanceTemplate.ID, flowNodeInstanceIds);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, ONLY_RUNTIME))
+            .query(tenantAwareQuery)
             .source(
-                new SearchSourceBuilder()
-                    .query(q)
-                    .fetchSource(
-                        new String[] {
-                          FlowNodeInstanceTemplate.ID, FlowNodeInstanceTemplate.FLOW_NODE_ID
-                        },
-                        null));
+                s ->
+                    s.filter(
+                        f ->
+                            f.includes(
+                                FlowNodeInstanceTemplate.ID,
+                                FlowNodeInstanceTemplate.FLOW_NODE_ID)));
+
     try {
-      tenantAwareClient.search(
-          request,
-          () -> {
-            scrollWith(
-                request,
-                esClient,
-                searchHits -> {
-                  Arrays.stream(searchHits.getHits())
-                      .forEach(
-                          h ->
-                              flowNodeIdsMap.put(
-                                  h.getId(),
-                                  (String)
-                                      h.getSourceAsMap()
-                                          .get(FlowNodeInstanceTemplate.FLOW_NODE_ID)));
-                },
-                null,
-                null);
-            return null;
-          });
-    } catch (final IOException e) {
+      final var resStream =
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
+
+      return resStream.collect(
+          Collectors.toMap(
+              hit -> hit.id(),
+              hit -> hit.source().get(FlowNodeInstanceTemplate.FLOW_NODE_ID).toString()));
+
+    } catch (final ScrollException e) {
       throw new OperateRuntimeException(
           "Exception occurred when searching for flow node ids: " + e.getMessage(), e);
     }
-    return flowNodeIdsMap;
   }
 }

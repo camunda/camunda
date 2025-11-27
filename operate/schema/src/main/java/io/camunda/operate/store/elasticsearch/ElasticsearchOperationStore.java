@@ -66,7 +66,21 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Override
   public Map<String, String> getIndexNameForAliasAndIds(
       final String alias, final Collection<String> ids) {
-    return ElasticsearchUtil.getIndexNames(alias, ids, esClient);
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(alias)
+            .query(ElasticsearchUtil.idsQuery(ids.toArray(String[]::new)))
+            .source(s -> s.fetch(Boolean.FALSE));
+
+    try {
+      final var resStream =
+          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+
+      return resStream.collect(Collectors.toMap(Hit::id, Hit::index));
+    } catch (final ScrollException e) {
+      throw new OperateRuntimeException(e.getMessage(), e);
+    }
   }
 
   @Override
