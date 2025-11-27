@@ -59,6 +59,7 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
         .setRoleId(value.getRoleId())
         .setName(value.getName())
         .setDescription(value.getDescription())
+        .setAllTenantsAccess(value.isAllTenantsAccess())
         .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createParent());
   }
 

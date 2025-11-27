@@ -102,7 +102,6 @@ import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -125,7 +124,6 @@ final class JsonSerializableToJsonTest {
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
-  private static final Instant TIMESTAMP = Instant.now();
   private static final String STACK_TRACE;
 
   static {
@@ -3144,6 +3142,7 @@ final class JsonSerializableToJsonTest {
                     .setRoleId("id")
                     .setName("role")
                     .setDescription("description")
+                    .setAllTenantsAccess(true)
                     .setEntityId("entityId")
                     .setEntityType(EntityType.USER),
         """
@@ -3152,6 +3151,7 @@ final class JsonSerializableToJsonTest {
                   "roleId": "id",
                   "name": "role",
                   "description": "description",
+                  "allTenantsAccess": true,
                   "entityId": "entityId",
                   "entityType": "USER"
                 }
@@ -3171,6 +3171,7 @@ final class JsonSerializableToJsonTest {
                   "roleId": "roleId",
                   "name": "",
                   "description": "",
+                  "allTenantsAccess": false,
                   "entityId": "",
                   "entityType": "UNSPECIFIED"
                 }
@@ -3382,6 +3383,7 @@ final class JsonSerializableToJsonTest {
                             .setRoleId("id")
                             .setName("roleName")
                             .setDescription("description")
+                            .setAllTenantsAccess(true)
                             .setEntityId("entityId")
                             .setEntityType(EntityType.USER))
                     .addRoleMember(
@@ -3440,6 +3442,7 @@ final class JsonSerializableToJsonTest {
                       "roleId": "id",
                       "name": "roleName",
                       "description": "description",
+                      "allTenantsAccess": true,
                       "entityId": "entityId",
                       "entityType": "USER"
                     }
@@ -3450,6 +3453,7 @@ final class JsonSerializableToJsonTest {
                       "roleId": "id",
                       "name": "",
                       "description": "",
+                      "allTenantsAccess": false,
                       "entityId": "username",
                       "entityType": "USER"
                     }
