@@ -76,7 +76,12 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
   }
 
   private RoleEntity map(final RoleDbModel model) {
-    return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
+    return new RoleEntity(
+        model.roleKey(),
+        model.roleId(),
+        model.name(),
+        model.description(),
+        model.isAllTenantsAccess());
   }
 
   private boolean shouldReturnEmptyResult(

@@ -18,6 +18,7 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
   private String name;
   private String description;
   private List<RoleMemberDbModel> members;
+  private boolean allTenantsAccess;
 
   public Long roleKey() {
     return roleKey;
@@ -25,6 +26,14 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
 
   public void roleKey(final Long roleKey) {
     this.roleKey = roleKey;
+  }
+
+  public boolean isAllTenantsAccess() {
+    return allTenantsAccess;
+  }
+
+  public void setAllTenantsAccess(final boolean allTenantsAccess) {
+    this.allTenantsAccess = allTenantsAccess;
   }
 
   public String roleId() {
