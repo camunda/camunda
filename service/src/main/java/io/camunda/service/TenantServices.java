@@ -12,6 +12,7 @@ import static io.camunda.service.authorization.Authorizations.TENANT_READER_AUTH
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
+import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
@@ -123,6 +124,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             TenantQuery.of(
                 q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds)).unlimited()))
         .items();
+  }
+
+  public List<TenantEntity> getAllIds() {
+    return search(TenantQuery.of(AbstractQueryBuilder::unlimited)).items();
   }
 
   public TenantEntity getById(final String tenantId) {
