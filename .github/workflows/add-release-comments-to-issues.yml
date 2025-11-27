@@ -7,14 +7,14 @@ name: Add Release Comments to Issues
 
 on:
   schedule:
-    # Run on the second Wednesday of each month at 9:00 AM UTC
-    - cron: '0 9 8-14 * 3'
+    # Run every Wednesday at 9:00 AM UTC
+    - cron: '0 9 * * 3'
   workflow_dispatch:
     inputs:
       days_back:
-        description: 'Number of days back to look for releases (default: 35)'
+        description: 'Number of days back to look for releases (default: 10)'
         required: false
-        default: '35'
+        default: '10'
       dry_run:
         description: 'Dry run - only log what would be done, do not post comments'
         required: false
@@ -40,7 +40,7 @@ jobs:
       - name: Add release comments to issues
         env:
           GH_TOKEN: ${{ github.token }}
-          DAYS_BACK: ${{ github.event.inputs.days_back || '35' }}
+          DAYS_BACK: ${{ github.event.inputs.days_back || '10' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         shell: bash
         run: |
