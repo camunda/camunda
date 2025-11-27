@@ -311,11 +311,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
     return doSearchWithReader(
         readers.processDefinitionMessageSubscriptionStatisticsReader(), query);
   }
-  
+
   @Override
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
-  processDefinitionInstanceVersionStatistics(
-      final ProcessDefinitionInstanceVersionStatisticsQuery query) {
+      processDefinitionInstanceVersionStatistics(
+          final ProcessDefinitionInstanceVersionStatisticsQuery query) {
     return doSearchWithReader(readers.processDefinitionInstanceVersionStatisticsReader(), query);
   }
 
