@@ -346,4 +346,119 @@ public class MappingRuleMigrationHandlerTest {
         .extracting(TenantMemberRequest::tenantId)
         .containsExactlyInAnyOrder("tenant1", "tenant2");
   }
+
+  @Test
+  public void shouldApplyEntitySpecificNormalizationToMappingRuleAndRoleFKs() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    // Configure different normalization for mapping rules vs roles
+    // Mapping rules: keep uppercase, allow @ symbol
+    migrationProperties.getEntities().getMappingRule().setLowercase(false);
+    migrationProperties.getEntities().getMappingRule().setPattern("[^a-zA-Z0-9_@]");
+
+    // Roles: force lowercase, stricter pattern
+    migrationProperties.getEntities().getRole().setLowercase(true);
+    migrationProperties.getEntities().getRole().setPattern("[^a-z0-9_-]");
+
+    final var handler =
+        new MappingRuleMigrationHandler(
+            managementIdentityClient,
+            mappingRuleServices,
+            roleServices,
+            tenantServices,
+            CamundaAuthentication.none(),
+            migrationProperties);
+
+    when(managementIdentityClient.fetchMappingRules())
+        .thenReturn(
+            List.of(
+                new MappingRule(
+                    "Rule@Name#123",
+                    "claimName",
+                    "claimValue",
+                    Set.of(
+                        new Role("Role@Name#456", "description1"),
+                        new Role("Another-Role", "description2")),
+                    Set.of(new Tenant("tenant1", "Tenant 1")))));
+    when(mappingRuleServices.createMappingRule(any(MappingRuleDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(roleServices.addMember(any(RoleMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    handler.migrate();
+
+    // then
+    final var mappingRuleCapture = ArgumentCaptor.forClass(MappingRuleDTO.class);
+    verify(mappingRuleServices, times(1)).createMappingRule(mappingRuleCapture.capture());
+    final var mappingRuleDTO = mappingRuleCapture.getValue();
+
+    // Mapping rule should preserve case and @ but replace #
+    assertThat(mappingRuleDTO.mappingRuleId()).isEqualTo("Rule@Name_123");
+    assertThat(mappingRuleDTO.name()).isEqualTo("Rule@Name#123");
+
+    final var roleCapture = ArgumentCaptor.forClass(RoleMemberRequest.class);
+    verify(roleServices, times(2)).addMember(roleCapture.capture());
+    final var roleRequests = roleCapture.getAllValues();
+
+    // Role FKs should be lowercased and @ replaced with _ (stricter pattern)
+    assertThat(roleRequests)
+        .extracting(
+            RoleMemberRequest::roleId, RoleMemberRequest::entityType, RoleMemberRequest::entityId)
+        .containsExactlyInAnyOrder(
+            tuple("role_name_456", EntityType.MAPPING_RULE, "Rule@Name_123"),
+            tuple("another-role", EntityType.MAPPING_RULE, "Rule@Name_123"));
+  }
+
+  @Test
+  public void shouldApplyDefaultNormalizationWhenEntitySpecificNotConfigured() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    // Only configure defaults
+    migrationProperties.getEntities().getDefaults().setLowercase(true);
+    migrationProperties.getEntities().getDefaults().setPattern("[^a-z0-9]");
+
+    final var handler =
+        new MappingRuleMigrationHandler(
+            managementIdentityClient,
+            mappingRuleServices,
+            roleServices,
+            tenantServices,
+            CamundaAuthentication.none(),
+            migrationProperties);
+
+    when(managementIdentityClient.fetchMappingRules())
+        .thenReturn(
+            List.of(
+                new MappingRule(
+                    "Rule@Name",
+                    "claim",
+                    "value",
+                    Set.of(new Role("Role-Name", "desc")),
+                    Set.of())));
+    when(mappingRuleServices.createMappingRule(any(MappingRuleDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(roleServices.addMember(any(RoleMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    handler.migrate();
+
+    // then - Both should use default config (lowercase, strict pattern)
+    final var mappingRuleCapture = ArgumentCaptor.forClass(MappingRuleDTO.class);
+    verify(mappingRuleServices, times(1)).createMappingRule(mappingRuleCapture.capture());
+    assertThat(mappingRuleCapture.getValue().mappingRuleId()).isEqualTo("rule_name");
+
+    final var roleCapture = ArgumentCaptor.forClass(RoleMemberRequest.class);
+    verify(roleServices, times(1)).addMember(roleCapture.capture());
+    assertThat(roleCapture.getValue().roleId()).isEqualTo("role_name");
+  }
 }

@@ -370,4 +370,91 @@ public class GroupMigrationHandlerTest {
     // then
     verify(roleServices, times(5)).addMember(any(RoleMemberRequest.class));
   }
+
+  @Test
+  public void shouldApplyEntitySpecificNormalizationToGroupNameAndRoleFKs() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    migrationProperties.getEntities().getGroup().setLowercase(false);
+    migrationProperties.getEntities().getGroup().setPattern("[^a-zA-Z0-9_-]");
+
+    migrationProperties.getEntities().getRole().setLowercase(true);
+    migrationProperties.getEntities().getRole().setPattern("[^a-z0-9_-]");
+
+    final var handler =
+        new GroupMigrationHandler(
+            managementIdentityClient,
+            authorizationServices,
+            roleServices,
+            CamundaAuthentication.none(),
+            migrationProperties);
+
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(new Group("id1", "Test-Group@123")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupAuthorizations(any())).thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupRoles(any()))
+        .thenReturn(
+            List.of(new Role("Admin-Role", "Admin role"), new Role("User@Role", "User role")));
+    when(roleServices.addMember(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    handler.migrate();
+
+    // then
+    final var roleCapture = ArgumentCaptor.forClass(RoleMemberRequest.class);
+    verify(roleServices, times(2)).addMember(roleCapture.capture());
+    final var roleRequests = roleCapture.getAllValues();
+
+    // Group name used as entityId should preserve format per GROUP config
+    // Role IDs should be normalized per ROLE config
+    assertThat(roleRequests)
+        .extracting(RoleMemberRequest::roleId, RoleMemberRequest::entityId)
+        .containsExactlyInAnyOrder(
+            tuple("admin-role", "Test-Group@123"), // Group keeps format, role normalized
+            tuple("user_role", "Test-Group@123")); // @ replaced in role ID
+  }
+
+  @Test
+  public void shouldHandleDifferentNormalizationForGroupsAndRolesInAuthorizations() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    // Configure minimal normalization for groups
+    migrationProperties.getEntities().getGroup().setLowercase(false);
+    migrationProperties.getEntities().getGroup().setPattern("[^a-zA-Z0-9_@.-]");
+
+    final var handler =
+        new GroupMigrationHandler(
+            managementIdentityClient,
+            authorizationServices,
+            roleServices,
+            CamundaAuthentication.none(),
+            migrationProperties);
+
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(new Group("id1", "Engineering@Team.US")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupAuthorizations(any()))
+        .thenReturn(
+            List.of(
+                new Authorization(
+                    "group1", "GROUP", "process", "process-definition", Set.of("READ"))));
+    when(managementIdentityClient.fetchGroupRoles(any())).thenReturn(List.of());
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+
+    // when
+    handler.migrate();
+
+    // then
+    final var authCapture = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
+    verify(authorizationServices, times(1)).createAuthorization(authCapture.capture());
+
+    // Group name in authorization should keep @ and .
+    assertThat(authCapture.getValue().ownerId()).isEqualTo("Engineering@Team.US");
+  }
 }

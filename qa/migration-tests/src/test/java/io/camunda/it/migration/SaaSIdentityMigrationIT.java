@@ -25,6 +25,7 @@ import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.migration.identity.client.ConsoleClient.Role;
+import io.camunda.migration.identity.config.EntitiesProperties.NormalizationConfig;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -55,18 +56,21 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
         .untilAsserted(
             () -> {
               final var groups = client.newGroupsSearchRequest().send().join();
-              assertThat(groups.items().size()).isEqualTo(3);
+              assertThat(groups.items().size()).isEqualTo(4);
             });
 
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
     final var groups = client.newGroupsSearchRequest().send().join();
-    assertThat(groups.items().size()).isEqualTo(3);
+    assertThat(groups.items().size()).isEqualTo(4);
     assertThat(groups.items())
         .map(Group::getGroupId, Group::getName)
         .containsExactly(
-            tuple("groupa", "groupA"), tuple("groupb", "groupB"), tuple("groupc", "groupC"));
+            tuple("groupa", "groupA"),
+            tuple("groupb", "groupB"),
+            tuple("groupc", "groupC"),
+            tuple("group_123_@", "GROUP_123_@"));
     final var userA = client.newUsersByGroupSearchRequest("groupa").send().join();
     assertThat(userA.items().size()).isEqualTo(1);
     assertThat(userA.items().getFirst().getUsername()).isEqualTo("user0@email.com");
@@ -76,6 +80,30 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
     final var userC = client.newUsersByGroupSearchRequest("groupc").send().join();
     assertThat(userC.items().size()).isEqualTo(1);
     assertThat(userC.items().getFirst().getUsername()).isEqualTo("user1@email.com");
+  }
+
+  @Test
+  void canMigrateGroupsWithNormalizationConfigured()
+      throws IOException, URISyntaxException, InterruptedException {
+    // when
+    createGroups();
+    migration.withAppConfig(
+        properties ->
+            properties.getEntities().setGroup(new NormalizationConfig(false, "[^a-zA-Z0-9_@.-]")));
+
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var group = client.newGroupGetRequest("GROUP_123_@").send().join();
+              assertThat(group).isNotNull();
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
   }
 
   @Test

@@ -7,6 +7,9 @@
  */
 package io.camunda.migration.identity;
 
+import io.camunda.migration.identity.config.EntitiesProperties;
+import io.camunda.migration.identity.config.EntitiesProperties.EntityType;
+import io.camunda.migration.identity.config.EntitiesProperties.NormalizationConfig;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -57,25 +60,46 @@ public class MigrationUtil {
         .toList();
   }
 
-  // Normalizes the group ID to ensure it meets the requirements for a valid group ID.
-  // For SaaS the group ID is derived from the group name, because in the old identity
-  // management system the group ID was generated internally.
-  public static String normalizeGroupID(final Group group) {
+  /**
+   * Normalizes the group ID to ensure it meets the requirements for a valid group ID. For SaaS the
+   * group ID is derived from the group name, because in the old identity management system the
+   * group ID was generated internally.
+   */
+  public static String normalizeGroupID(final Group group, final EntitiesProperties properties) {
     if (group.name() == null || group.name().isEmpty()) {
       return group.id();
     }
-    final String groupName = group.name();
-
-    return normalizeID(groupName);
+    return normalizeID(group.name(), properties, EntityType.GROUP);
   }
 
-  public static String normalizeID(final String entityId) {
-    String normalizedId =
-        entityId.toLowerCase().replaceAll("[^a-z0-9_@.-]", "_"); // Replace disallowed characters
+  /**
+   * Normalizes an entity ID using type-specific configuration. The configuration supports
+   * inheritance: entity-specific settings override defaults.
+   *
+   * @param entityId the ID to normalize
+   * @param properties the configuration properties
+   * @param entityType the type of entity (determines which specific config to use)
+   * @return the normalized ID
+   */
+  public static String normalizeID(
+      final String entityId, final EntitiesProperties properties, final EntityType entityType) {
+    final NormalizationConfig config = properties.getEffectiveConfig(entityType);
 
+    String normalizedId = entityId;
+
+    // Apply lowercase conversion if configured
+    if (config.isLowercaseEnabled()) {
+      normalizedId = normalizedId.toLowerCase();
+    }
+
+    // Replace disallowed characters
+    normalizedId = normalizedId.replaceAll(config.getEffectivePattern(), "_");
+
+    // Truncate to max length (256 characters as per Camunda requirements)
     if (normalizedId.length() > 256) {
       normalizedId = normalizedId.substring(0, 256);
     }
+
     return normalizedId;
   }
 

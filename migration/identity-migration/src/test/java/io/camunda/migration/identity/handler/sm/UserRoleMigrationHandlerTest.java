@@ -167,4 +167,94 @@ public class UserRoleMigrationHandlerTest {
     // then
     verify(roleServices, times(5)).addMember(any(RoleMemberRequest.class));
   }
+
+  @Test
+  public void shouldApplyEntitySpecificNormalizationToRoleFKs() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    // Roles: lowercase, no hyphens or special chars
+    migrationProperties.getEntities().getRole().setLowercase(true);
+    migrationProperties.getEntities().getRole().setPattern("[^a-z0-9_]");
+
+    // Users: preserve case (though username is used, not normalized)
+    migrationProperties.getEntities().getUser().setLowercase(false);
+
+    final var handler =
+        new UserRoleMigrationHandler(
+            CamundaAuthentication.none(),
+            managementIdentityClient,
+            roleServices,
+            migrationProperties);
+
+    when(managementIdentityClient.fetchUsers(any(Integer.class)))
+        .thenReturn(List.of(new User("user1", "User.Name@Company", "Full Name", "user1@email.com")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchUserRoles(any()))
+        .thenReturn(
+            List.of(
+                new Role("Super-Admin", "Super admin role"),
+                new Role("Developer@Team", "Developer team role")));
+    when(roleServices.addMember(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    handler.migrate();
+
+    // then
+    final var roleCapture = ArgumentCaptor.forClass(RoleMemberRequest.class);
+    verify(roleServices, times(2)).addMember(roleCapture.capture());
+    final var roleRequests = roleCapture.getAllValues();
+
+    // Role IDs should be normalized per ROLE config (lowercase, no special chars)
+    // Username should remain as-is
+    assertThat(roleRequests)
+        .extracting(RoleMemberRequest::roleId, RoleMemberRequest::entityId)
+        .containsExactlyInAnyOrder(
+            tuple("super_admin", "User.Name@Company"),
+            tuple("developer_team", "User.Name@Company"));
+  }
+
+  @Test
+  public void shouldApplyRoleNormalizationConsistentlyAcrossMultipleUsers() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    // Configure role normalization with no lowercase
+    migrationProperties.getEntities().getRole().setLowercase(false);
+    migrationProperties.getEntities().getRole().setPattern("[^A-Za-z0-9_]");
+
+    final var handler =
+        new UserRoleMigrationHandler(
+            CamundaAuthentication.none(),
+            managementIdentityClient,
+            roleServices,
+            migrationProperties);
+
+    when(managementIdentityClient.fetchUsers(any(Integer.class)))
+        .thenReturn(
+            List.of(
+                new User("user1", "user1", "User 1", "user1@email.com"),
+                new User("user2", "user2", "User 2", "user2@email.com")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchUserRoles("user1"))
+        .thenReturn(List.of(new Role("Role-A@123", "Role A")));
+    when(managementIdentityClient.fetchUserRoles("user2"))
+        .thenReturn(List.of(new Role("Role-A@123", "Role A"))); // Same role name
+    when(roleServices.addMember(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    handler.migrate();
+
+    // then
+    final var roleCapture = ArgumentCaptor.forClass(RoleMemberRequest.class);
+    verify(roleServices, times(2)).addMember(roleCapture.capture());
+    final var roleRequests = roleCapture.getAllValues();
+
+    // Both users should reference the same normalized role ID
+    assertThat(roleRequests)
+        .extracting(RoleMemberRequest::roleId)
+        .containsOnly("Role_A_123"); // Consistent normalization
+  }
 }

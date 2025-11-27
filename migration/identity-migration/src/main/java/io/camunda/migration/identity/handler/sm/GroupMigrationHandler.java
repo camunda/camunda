@@ -10,11 +10,13 @@ package io.camunda.migration.identity.handler.sm;
 import static io.camunda.migration.identity.MigrationUtil.convertDecisionPermissions;
 import static io.camunda.migration.identity.MigrationUtil.convertProcessPermissions;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
+import static io.camunda.migration.identity.config.EntitiesProperties.EntityType.ROLE;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.EntitiesProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
@@ -38,6 +40,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   private final ManagementIdentityClient managementIdentityClient;
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
+  private final EntitiesProperties entitiesProperties;
 
   private final AtomicInteger createdGroupAuthorizationCount = new AtomicInteger();
   private final AtomicInteger totalGroupAuthorizationCount = new AtomicInteger();
@@ -54,6 +57,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
     this.authorizationServices = authorizationServices.withAuthentication(authentication);
+    entitiesProperties = migrationProperties.getEntities();
   }
 
   @Override
@@ -87,7 +91,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     groupRoles.forEach(
         role -> {
           try {
-            final var roleId = normalizeID(role.name());
+            final var roleId = normalizeID(role.name(), entitiesProperties, ROLE);
             logger.debug("Assigning role '{}' to group '{}'", roleId, group.name());
             final var roleMember = new RoleMemberRequest(roleId, group.name(), EntityType.GROUP);
             retryOnBackpressure(
