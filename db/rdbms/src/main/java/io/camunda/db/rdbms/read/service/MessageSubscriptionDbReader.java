@@ -58,15 +58,12 @@ public class MessageSubscriptionDbReader extends AbstractEntityReader<MessageSub
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for message subscriptions with filter {}", dbQuery);
-    final var totalHits = mapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits =
-        mapper.search(dbQuery).stream().map(MessageSubscriptionEntityMapper::toEntity).toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> mapper.count(dbQuery),
+        () -> mapper.search(dbQuery).stream().map(MessageSubscriptionEntityMapper::toEntity).toList(),
+        dbPage,
+        dbSort);
   }
 
   public Optional<MessageSubscriptionEntity> findOne(final long key) {

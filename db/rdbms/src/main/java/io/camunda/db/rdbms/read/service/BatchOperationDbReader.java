@@ -68,17 +68,15 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for batch operations with filter {}", dbQuery);
-    final var totalHits = batchOperationMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits =
-        batchOperationMapper.search(dbQuery).stream()
-            .map(BatchOperationEntityMapper::toEntity)
-            .toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> batchOperationMapper.count(dbQuery),
+        () ->
+            batchOperationMapper.search(dbQuery).stream()
+                .map(BatchOperationEntityMapper::toEntity)
+                .toList(),
+        dbPage,
+        dbSort);
   }
 
   public Optional<BatchOperationEntity> findOne(final String batchOperationKey) {

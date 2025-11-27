@@ -55,14 +55,12 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
-    final var totalHits = userMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits = userMapper.search(dbQuery);
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> userMapper.count(dbQuery),
+        () -> userMapper.search(dbQuery),
+        dbPage,
+        dbSort);
   }
 
   public Optional<UserEntity> findOneByUsername(final String username) {
