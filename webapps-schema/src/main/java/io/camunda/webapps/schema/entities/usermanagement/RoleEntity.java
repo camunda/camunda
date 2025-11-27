@@ -15,6 +15,7 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
   private String roleId;
   private String name;
   private String description;
+  private boolean allTenantsAccess;
   private EntityJoinRelation join;
 
   public Long getKey() {
@@ -23,6 +24,15 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
   public RoleEntity setKey(final Long key) {
     this.key = key;
+    return this;
+  }
+
+  public boolean isAllTenantsAccess() {
+    return allTenantsAccess;
+  }
+
+  public RoleEntity setAllTenantsAccess(final boolean allTenantsAccess) {
+    this.allTenantsAccess = allTenantsAccess;
     return this;
   }
 
