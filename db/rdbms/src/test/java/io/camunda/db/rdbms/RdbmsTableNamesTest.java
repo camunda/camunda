@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -31,8 +32,9 @@ class RdbmsTableNamesTest {
 
   @Test
   void shouldBeImmutable() {
-    // given / when / then
-    assertThat(RdbmsTableNames.TABLE_NAMES.getClass().getName()).contains("ImmutableCollections");
+    // given / when / then - verify list cannot be modified
+    assertThatThrownBy(() -> RdbmsTableNames.TABLE_NAMES.add("TEST"))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test

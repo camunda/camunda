@@ -128,7 +128,8 @@ class RdbmsTableRowCountMetricsTest {
     // when
     final long rowCount = metrics.getRowCount("UNKNOWN_TABLE");
 
-    // then - should fetch from mapper for unknown tables (not cached)
-    verify(tableMetricsMapper).countTableRows("UNKNOWN_TABLE");
+    // then - should return -1 and NOT call the mapper (validation prevents SQL injection)
+    assertThat(rowCount).isEqualTo(-1L);
+    verify(tableMetricsMapper, times(0)).countTableRows("UNKNOWN_TABLE");
   }
 }
