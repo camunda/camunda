@@ -13,7 +13,6 @@ import { captureScreenshot, captureFailureVideo } from '@setup';
 import { navigateToApp } from '@pages/UtilitiesPage';
 import { waitForAssertion } from 'utils/waitForAssertion';
 import { defaultAssertionOptions } from 'utils/constants';
-import { sleep } from 'utils/sleep';
 
 type ProcessInstance = { processInstanceKey: number };
 
@@ -28,9 +27,7 @@ test.beforeAll(async () => {
 
     incidentProcessInstance = {
         processInstanceKey: Number(
-            (await createSingleInstance('IncidentProcess', 1, {
-                goUp: 2,
-            })).processInstanceKey,
+            (await createSingleInstance('IncidentProcess', 1)).processInstanceKey,
         ),
     };
 
@@ -173,6 +170,27 @@ test.describe('Process Instance History', () => {
     }) => {
         const embeddedProcessInstancePIK =
             embeddedSubprocessInstance.processInstanceKey;
+
+        await test.step('Verify Process Instance is active', async () => {
+            await expect(async () => {
+                const process = await searchByProcessInstanceKey(embeddedProcessInstancePIK.toString());
+                expect(process.items.length).toBeGreaterThan(0);
+            }).toPass(defaultAssertionOptions);
+        });
+
+        await test.step('Wait for process name filter to be enabled', async () => {
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(
+                        operateFiltersPanelPage.processNameFilter,
+                    ).toBeEnabled();
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+        });
+
         await test.step('Open Process Instances Page and verify results', async () => {
             await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
             await operateFiltersPanelPage.selectVersion('1');
@@ -239,6 +257,26 @@ test.describe('Process Instance History', () => {
         const embeddedProcessInstanceModificationPIK =
             embeddedSubprocesModificationInstance.processInstanceKey;
 
+        await test.step('Verify Process Instance is active', async () => {
+            await expect(async () => {
+                const process = await searchByProcessInstanceKey(embeddedProcessInstanceModificationPIK.toString());
+                expect(process.items.length).toBeGreaterThan(0);
+            }).toPass(defaultAssertionOptions);
+        });
+
+        await test.step('Wait for process name filter to be enabled', async () => {
+            await waitForAssertion({
+                assertion: async () => {
+                    await expect(
+                        operateFiltersPanelPage.processNameFilter,
+                    ).toBeEnabled();
+                },
+                onFailure: async () => {
+                    await page.reload();
+                },
+            });
+        });
+
         await test.step('Open Process Instances Page and verify results', async () => {
             await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
             await operateFiltersPanelPage.selectVersion('1');
@@ -259,20 +297,20 @@ test.describe('Process Instance History', () => {
             expect(key).toContain(`${embeddedProcessInstanceModificationPIK}`);
         });
 
-        const startEventStartGlobal = 'StartEvent_StartGlobal';
-        const activityNode = 'Activity_Node';
-        const activityFirstSubprocess = 'Activity_FirstSubprocess';
-        const eventStartFirstSubProcess = 'Event_StartFirstSubProcess';
-        const activityCollectMoney = 'Activity_CollectMoney';
-        const activityFetchItems = 'Activity_FetchItems';
-        const eventEndFirstSubProcess = 'Event_EndFirstSubProcess';
-        const eventOrderCancelled = 'Event_OrderCancelled';
-        const eventOrderCancelledEnd = 'Event_OrderCancelledEnd';
-        const activitySecondSubprocess = 'Activity_SecondSubprocess';
-        const eventStartSecondSubProcess = 'Event_StartSecondSubProcess';
-        const activitySendItems = 'Activity_SendItems';
-        const eventEndSecondSubProcess = 'Event_EndSecondSubProcess';
-        const eventEndGlobal = 'Event_EndGlobal';
+        const startEventStartGlobal = 'StartGlobal';
+        const activityNode = 'Node';
+        const activityFirstSubprocess = 'FirstSubprocess';
+        const eventStartFirstSubProcess = 'StartFirstSubProcess';
+        const activityCollectMoney = 'CollectMoney';
+        const activityFetchItems = 'FetchItems';
+        const eventEndFirstSubProcess = 'EndFirstSubProcess';
+        const eventOrderCancelled = 'OrderCanceled';
+        const eventOrderCancelledEnd = 'OrderCancelledEnd';
+        const activitySecondSubprocess = 'SecondSubprocess';
+        const eventStartSecondSubProcess = 'StartSecondSubProcess';
+        const activitySendItems = 'SendItems';
+        const eventEndSecondSubProcess = 'EndSecondSubProcess';
+        const eventEndGlobal = 'EndGlobal';
 
         await test.step('Verify one active token', async () => {
             const nodeStateOverlayActive = await operateDiagramPage
@@ -302,11 +340,11 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Verify History has "Collect Money" 2 times', async () => {
-            const nestedParentName = 'First Subprocess';
+            const nestedParentName = activityFirstSubprocess;
             await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
             const nestedParentGroupLocator = await operateProcessInstancePage.getNestedGroupInHistoryLocator(nestedParentName);
             await expect(nestedParentGroupLocator).toBeVisible();
-            expect(await nestedParentGroupLocator.getByLabel('Collect money').count()).toBe(2);
+            expect(await nestedParentGroupLocator.getByLabel(activityCollectMoney).count()).toBe(2);
         });
 
         await test.step('Verify First Subprocess has state overlay 1', async () => {
@@ -326,11 +364,11 @@ test.describe('Process Instance History', () => {
 
 
         await test.step('Verify History has "Send items" 1 time', async () => {
-            const nestedParentName = 'Second Subprocess';
+            const nestedParentName = activitySecondSubprocess;
             await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
             const nestedParentGroupLocator = await operateProcessInstancePage.getNestedGroupInHistoryLocator(nestedParentName);
             await expect(nestedParentGroupLocator).toBeVisible();
-            expect(await nestedParentGroupLocator.getByLabel('Send items').count()).toBe(1);
+            expect(await nestedParentGroupLocator.getByLabel(activitySendItems).count()).toBe(1);
         });
 
         await test.step('Enter modification mode and assert results', async () => {
@@ -351,66 +389,24 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Verify First Subprocess history reflects moved tokens accordingly', async () => {
-            const nestedParentName = 'First Subprocess';
+            const nestedParentName = activityFirstSubprocess;
             await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
             const firstSubprocessLocator = await operateProcessInstancePage.getNestedParentLocatorInHistory(nestedParentName);
             await expect(firstSubprocessLocator).toBeVisible();
-            const firstSubprocessHistoryElementsLocators = await firstSubprocessLocator.getByTestId(/^node-details-/).all();
-            const firstSubprocessHistoryElements = [];
-            for (const element of firstSubprocessHistoryElementsLocators) {
-                firstSubprocessHistoryElements.push({
-                    icon: await element.getByTestId(/.*-icon$/).getAttribute('data-testid'),
-                    name: await element.innerText()
-                })
-            }
-            var element = firstSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'First Subprocess' });
-            element = firstSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'TERMINATED-icon', name: 'Collect money' });
-            element = firstSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'TERMINATED-icon', name: 'Collect money' });
-            element = firstSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_EndFirstSubProcess' });
+
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activityFirstSubprocess, ['COMPLETED']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activityCollectMoney, ['TERMINATED', 'TERMINATED']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(eventEndFirstSubProcess, ['COMPLETED']);
         });
 
         await test.step('Verify Second Subprocess history reflects moved tokens accordingly', async () => {
-            const nestedParentName = 'Second Subprocess';
+            const nestedParentName = activitySecondSubprocess;
             await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
-            const secondSubprocessLocators = await (await operateProcessInstancePage.getNestedParentLocatorInHistory(nestedParentName)).all();
-            const firstSecondSubprocess = secondSubprocessLocators[0];
-            const secondSecondSubprocess = secondSubprocessLocators[1];
-            await expect(firstSecondSubprocess).toBeVisible();
-            await expect(secondSecondSubprocess).toBeVisible();
 
-            const firstSecondSubprocessHistoryElementsLocators = await firstSecondSubprocess.getByTestId(/^node-details-/).all();
-            const firstSecondSubprocessHistoryElements = [];
-            for (const element of firstSecondSubprocessHistoryElementsLocators) {
-                firstSecondSubprocessHistoryElements.push({
-                    icon: await element.getByTestId(/.*-icon$/).getAttribute('data-testid'),
-                    name: await element.innerText()
-                })
-            }
-            var element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'ACTIVE-icon', name: 'Second Subprocess' });
-            element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_StartSecondSubProcess' });
-            element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'ACTIVE-icon', name: 'Send items' });
 
-            const secondSecondSubprocessHistoryElementsLocators = await secondSecondSubprocess.getByTestId(/^node-details-/).all();
-            const secondSecondSubprocessHistoryElements = [];
-            for (const element of secondSecondSubprocessHistoryElementsLocators) {
-                secondSecondSubprocessHistoryElements.push({
-                    icon: await element.getByTestId(/.*-icon$/).getAttribute('data-testid'),
-                    name: await element.innerText()
-                })
-            }
-            var element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'ACTIVE-icon', name: 'Second Subprocess' });
-            element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_StartSecondSubProcess' });
-            element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'ACTIVE-icon', name: 'Send items' });
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activitySecondSubprocess, ['ACTIVE', 'ACTIVE']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(eventStartSecondSubProcess, ['COMPLETED', 'COMPLETED']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activitySendItems, ['ACTIVE', 'ACTIVE']);
         });
 
         await test.step('Cancel one instance of "Send items"', async () => {
@@ -434,46 +430,15 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Verify history changed accordingly', async () => {
-            const nestedParentName = 'Second Subprocess';
+            const nestedParentName = activitySecondSubprocess;
             await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
-            const secondSubprocessLocators = await (await operateProcessInstancePage.getNestedParentLocatorInHistory(nestedParentName)).all();
-            const firstSecondSubprocess = secondSubprocessLocators[0];
-            const secondSecondSubprocess = secondSubprocessLocators[1];
-            await expect(firstSecondSubprocess).toBeVisible();
-            await expect(secondSecondSubprocess).toBeVisible();
 
-            const firstSecondSubprocessHistoryElementsLocators = await firstSecondSubprocess.getByTestId(/^node-details-/).all();
-            const firstSecondSubprocessHistoryElements = [];
-            for (const element of firstSecondSubprocessHistoryElementsLocators) {
-                firstSecondSubprocessHistoryElements.push({
-                    icon: await element.getByTestId(/.*-icon$/).getAttribute('data-testid'),
-                    name: await element.innerText()
-                })
-            }
-            var element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'TERMINATED-icon', name: 'Second Subprocess' });
-            element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_StartSecondSubProcess' });
-            element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'TERMINATED-icon', name: 'Send items' });
-
-            const secondSecondSubprocessHistoryElementsLocators = await secondSecondSubprocess.getByTestId(/^node-details-/).all();
-            const secondSecondSubprocessHistoryElements = [];
-            for (const element of secondSecondSubprocessHistoryElementsLocators) {
-                secondSecondSubprocessHistoryElements.push({
-                    icon: await element.getByTestId(/.*-icon$/).getAttribute('data-testid'),
-                    name: await element.innerText()
-                })
-            }
-            var element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'ACTIVE-icon', name: 'Second Subprocess' });
-            element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_StartSecondSubProcess' });
-            element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'ACTIVE-icon', name: 'Send items' });
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activitySecondSubprocess, ['TERMINATED', 'ACTIVE']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(eventStartSecondSubProcess, ['COMPLETED', 'COMPLETED']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activitySendItems, ['TERMINATED', 'ACTIVE']);
         });
 
-        await test.step('Cancel Send items', async () => {
+        await test.step('Move all Send items', async () => {
             await operateProcessInstancePage.enterModificationMode();
             await expect(operateProcessModificationModePage.modifyModeHeader).toBeVisible();
 
@@ -498,56 +463,17 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Verify history changed accordingly', async () => {
-            const nestedParentName = 'Second Subprocess';
+            const nestedParentName = activitySecondSubprocess;
             await operateProcessInstancePage.ensureElementExpandedInHistory(nestedParentName);
-            const secondSubprocessLocators = await (await operateProcessInstancePage.getNestedParentLocatorInHistory(nestedParentName)).all();
-            const firstSecondSubprocess = secondSubprocessLocators[0];
-            const secondSecondSubprocess = secondSubprocessLocators[1];
-            await expect(firstSecondSubprocess).toBeVisible();
-            await expect(secondSecondSubprocess).toBeVisible();
 
-            const firstSecondSubprocessHistoryElementsLocators = await firstSecondSubprocess.getByTestId(/^node-details-/).all();
-            const firstSecondSubprocessHistoryElements = [];
-            for (const element of firstSecondSubprocessHistoryElementsLocators) {
-                firstSecondSubprocessHistoryElements.push({
-                    icon: await element.getByTestId(/.*-icon$/).getAttribute('data-testid'),
-                    name: await element.innerText()
-                })
-            }
-            var element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'TERMINATED-icon', name: 'Second Subprocess' });
-            element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_StartSecondSubProcess' });
-            element = firstSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'TERMINATED-icon', name: 'Send items' });
-
-            const secondSecondSubprocessHistoryElementsLocators = await secondSecondSubprocess.getByTestId(/^node-details-/).all();
-            const secondSecondSubprocessHistoryElements = [];
-            for (const element of secondSecondSubprocessHistoryElementsLocators) {
-                secondSecondSubprocessHistoryElements.push({
-                    icon: await element.getByTestId(/.*-icon$/).getAttribute('data-testid'),
-                    name: await element.innerText()
-                })
-            }
-            var element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Second Subprocess' });
-            element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_StartSecondSubProcess' });
-            element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'TERMINATED-icon', name: 'Send items' });
-            element = secondSecondSubprocessHistoryElements.shift();
-            expect(element).toEqual({ icon: 'COMPLETED-icon', name: 'Event_EndSecondSubProcess' });
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activitySecondSubprocess, ['TERMINATED', 'COMPLETED']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(eventStartSecondSubProcess, ['COMPLETED', 'COMPLETED']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(activitySendItems, ['TERMINATED', 'TERMINATED']);
+            await operateProcessInstancePage.verifyHistoryItemsStatus(eventEndSecondSubProcess, ['COMPLETED']);
 
             const mainParentName = 'EmbeddedSubprocess';
             await operateProcessInstancePage.ensureElementExpandedInHistory(mainParentName);
-            const embeddedSubprocessEndGlobalLocator = operateProcessInstancePage.instanceHistory.getByLabel('End Global');
-            await expect(embeddedSubprocessEndGlobalLocator).toBeVisible();
-            const meow = await embeddedSubprocessEndGlobalLocator.getByTestId(/.*-icon$/).all();
-            const meowValues = [];
-            for (const element of meow) {
-                meowValues.push(await element.getAttribute('data-testid'));
-            }
-            expect(meowValues).toContain('COMPLETED-icon');
+            await operateProcessInstancePage.verifyHistoryItemsStatus(eventEndGlobal, ['COMPLETED']);
         });
     })
 });

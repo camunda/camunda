@@ -304,6 +304,39 @@ class OperateProcessInstancePage {
     await this.clickModifyInstanceButton();
     await this.clickModifyDialogContinueButton();
   }
+
+  async getHistoryElementsDataByName(itemName: string) {
+    const allHistoryItemsLocators = await this.page.getByTestId(/^tree-node-/)
+      .all();
+
+    var filteredElementsData = [];
+    for (const element of allHistoryItemsLocators) {
+      const testId = await element.getAttribute('data-testid');
+      const areaLabel = await element.getAttribute('aria-label');
+      const icon = element.getByTestId(/.*-icon$/).nth(1);
+
+      if (areaLabel?.includes(itemName)) {
+        filteredElementsData.push({
+          testId: testId,
+          ariaLabel: areaLabel,
+          icon: (await icon.getAttribute('data-testid'))?.split('-')[0],
+        });
+      }
+    }
+    return filteredElementsData;
+  }
+
+  async verifyHistoryItemsStatus(itemName: string, expectedStatus: string[]): Promise<void> {
+    const filteredElementsData = await this.getHistoryElementsDataByName(itemName);
+    expect(filteredElementsData.length).toBeGreaterThan(0);
+    if (filteredElementsData.length !== expectedStatus.length) {
+      throw new Error(`Number does not match expected count.`);
+    }
+    expect(filteredElementsData.length).toBe(expectedStatus.length);
+    for (let i = 0; i < filteredElementsData.length; i++) {
+      expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
+    }
+  }
 }
 
 export { OperateProcessInstancePage };
