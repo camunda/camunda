@@ -124,8 +124,6 @@ jobs:
             -Dcamunda.tasklist.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
             -Dcamunda.tasklist.${{ matrix.database }}.url=${{ matrix.url }} \
             -Dcamunda.operate.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
-            -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
-            -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }} \
             -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
             -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
 
