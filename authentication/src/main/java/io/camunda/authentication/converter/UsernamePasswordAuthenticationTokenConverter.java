@@ -21,6 +21,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,25 +69,32 @@ public class UsernamePasswordAuthenticationTokenConverter
       ownerTypeToIds.put(GROUP, groups);
     }
 
-    final var roles =
+    final List<RoleEntity> roleEntities =
         roleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds)
-            .stream()
-            .map(RoleEntity::roleId)
-            .collect(Collectors.toSet());
+            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds);
+
+    final boolean hasAllTenantAccess = roleEntities.stream().anyMatch(RoleEntity::allTenantsAccess);
+    final var roles = roleEntities.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
 
     if (!roles.isEmpty()) {
       ownerTypeToIds.put(ROLE, roles);
     }
 
     final var tenants =
-        tenantServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
-            .stream()
-            .map(TenantEntity::tenantId)
-            .toList();
+        hasAllTenantAccess
+            ? tenantServices
+                .withAuthentication(CamundaAuthentication.anonymous())
+                .getAllIds()
+                .stream()
+                .map(TenantEntity::tenantId)
+                .toList()
+            : tenantServices
+                .withAuthentication(CamundaAuthentication.anonymous())
+                .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
+                .stream()
+                .map(TenantEntity::tenantId)
+                .toList();
 
     return CamundaAuthentication.of(
         a ->

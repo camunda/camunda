@@ -19,10 +19,13 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
+import io.camunda.zeebe.engine.state.authorization.PersistedRole;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -58,6 +61,8 @@ public final class AuthorizationCheckBehavior {
   private final AuthorizationState authorizationState;
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
+  private final RoleState roleState;
+  private final TenantState tenantState;
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
@@ -72,6 +77,8 @@ public final class AuthorizationCheckBehavior {
     authorizationState = processingState.getAuthorizationState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
+    roleState = processingState.getRoleState();
+    tenantState = processingState.getTenantState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
 
@@ -411,18 +418,25 @@ public final class AuthorizationCheckBehavior {
                             membershipState
                                 .getMemberships(EntityType.GROUP, groupId, RelationType.ROLE)
                                 .stream()
-                                .flatMap(
-                                    roleId ->
-                                        membershipState
-                                            .getMemberships(
-                                                EntityType.ROLE, roleId, RelationType.TENANT)
-                                            .stream()))),
+                                .flatMap(this::getAuthorizedTenantIdsForRole))),
             membershipState.getMemberships(entityType, entityId, RelationType.ROLE).stream()
-                .flatMap(
-                    roleId ->
-                        membershipState
-                            .getMemberships(EntityType.ROLE, roleId, RelationType.TENANT)
-                            .stream())));
+                .flatMap(this::getAuthorizedTenantIdsForRole)));
+  }
+
+  private Stream<String> getAuthorizedTenantIdsForRole(final String roleId) {
+    if (multiTenancyEnabled) {
+      final Optional<PersistedRole> role = roleState.getRole(roleId);
+      if (role.isPresent() && role.get().isAllTenantsAccess()) {
+        final List<String> tenantIds = new ArrayList<>();
+        tenantState.forEachTenant(
+            tenantId -> {
+              tenantIds.add(tenantId);
+              return true;
+            });
+        return tenantIds.stream();
+      }
+    }
+    return membershipState.getMemberships(EntityType.ROLE, roleId, RelationType.TENANT).stream();
   }
 
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
