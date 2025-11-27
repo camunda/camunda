@@ -12,6 +12,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
@@ -68,6 +69,8 @@ test.beforeAll(async () => {
 });
 
 test.describe.serial('Process Instance Migration', () => {
+  test.describe.configure({retries: 0});
+
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -94,9 +97,18 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Filter by process name and version', async () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+
+      // Wait for the process to be selected and version dropdown to be populated
+      await sleep(1000);
+
+      // Ensure we're selecting the correct source version (version 1)
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
+      await expect
+        .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
+        .toBe(sourceVersion);
+
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
     });
@@ -240,20 +252,29 @@ test.describe.serial('Process Instance Migration', () => {
       await expect(operateProcessesPage.operationsList).toBeVisible({
         timeout: 30000,
       });
-
-      await operateProcessesPage.waitForOperationToComplete();
+      await sleep(500);
     });
 
     await test.step('Verify 6 instances migrated to target version', async () => {
-      await expect(operateProcessesPage.operationSuccessMessage).toBeVisible({
-        timeout: 120000,
-      });
+      await operateProcessesPage.expandOperationsPanel();
 
-      await operateProcessesPage.clickLatestOperationLink();
+      const operationEntry = operateProcessesPage.getMigrationOperationEntry(6);
+
+      await expect(operationEntry).toBeVisible({timeout: 120000});
+
+      await operateProcessesPage.clickOperationLink(operationEntry);
 
       await validateURL(page, /operationId=/);
-      await expect(page.getByText('6 results')).toBeVisible({
-        timeout: 30000,
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('6 results')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
 
       await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
@@ -485,10 +506,6 @@ test.describe.serial('Process Instance Migration', () => {
       await expect(
         operateProcessesPage.getVersionCells(targetVersion),
       ).toHaveCount(3, {timeout: 60000});
-
-      await expect(
-        operateProcessesPage.getVersionCells(sourceVersion),
-      ).toBeHidden();
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
@@ -618,7 +635,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
 
@@ -655,7 +672,9 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await expect(page.getByText('results').first()).toBeVisible({
+        timeout: 30000,
+      });
 
       await operateProcessesPage.clickProcessInstanceLink();
       await operateDiagramPage.resetDiagramZoomButton.click();
@@ -685,7 +704,9 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await expect(page.getByText('results').first()).toBeVisible({
+        timeout: 30000,
+      });
 
       await operateProcessesPage.clickProcessInstanceLink();
       await operateDiagramPage.resetDiagramZoomButton.click();

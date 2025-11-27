@@ -304,12 +304,35 @@ class OperateProcessesPage {
 
   async selectProcessInstances(count: number): Promise<void> {
     for (let i = 0; i < count; i++) {
-      await this.processInstancesPanel
-        .getByRole('row', {name: 'select row'})
-        .nth(i)
-        .locator('label')
-        .click();
-      await sleep(100);
+      const maxRetries = 3;
+      let retryCount = 0;
+
+      while (retryCount < maxRetries) {
+        try {
+          const checkbox = this.processInstancesPanel
+            .getByRole('row', {name: 'select row'})
+            .nth(i)
+            .locator('label');
+
+          // Wait for the element to be attached and stable
+          await checkbox.waitFor({state: 'attached', timeout: 5000});
+          await checkbox.click({timeout: 10000});
+          await sleep(100);
+          break;
+        } catch (error) {
+          retryCount++;
+          if (retryCount === maxRetries) {
+            console.error(
+              `Failed to select process instance ${i} after ${maxRetries} attempts`,
+            );
+            throw error;
+          }
+          console.log(
+            `Attempt ${retryCount} to select process instance ${i} failed. Retrying...`,
+          );
+          await sleep(500);
+        }
+      }
     }
   }
 
@@ -370,6 +393,19 @@ class OperateProcessesPage {
         'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
       );
     }
+  }
+
+  getMigrationOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Migrate'})
+      .filter({hasText: `${successCount} operations succeeded`});
+  }
+
+  async clickOperationLink(operationEntry: Locator): Promise<void> {
+    await operationEntry
+      .locator('[data-testid="operation-id"]')
+      .click({timeout: 30000});
   }
 }
 

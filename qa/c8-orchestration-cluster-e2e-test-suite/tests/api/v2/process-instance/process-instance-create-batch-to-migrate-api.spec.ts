@@ -25,7 +25,7 @@ import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
-test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
+test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
   const instanceKeys: string[] = [];
   test.beforeAll(async () => {
     await deploy([
