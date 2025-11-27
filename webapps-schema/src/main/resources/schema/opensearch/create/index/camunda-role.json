@@ -23,6 +23,9 @@
       "memberType": {
         "type": "keyword"
       },
+      "allTenantsAccess": {
+        "type": "boolean"
+      },
       "join": {
         "type": "join",
         "relations": {
