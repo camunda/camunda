@@ -8,10 +8,6 @@
 package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.util.ElasticsearchUtil.*;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
@@ -23,6 +19,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -36,11 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -85,33 +78,46 @@ public class ElasticsearchOperationStore implements OperationStore {
       throw new OperateRuntimeException(
           "Wrong call to search for operation. Not enough parameters.");
     }
-    final TermQueryBuilder zeebeCommandKeyQ =
-        zeebeCommandKey != null
-            ? termQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey)
-            : null;
-    final TermQueryBuilder processInstanceKeyQ =
-        processInstanceKey != null
-            ? termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
-            : null;
-    final TermQueryBuilder incidentKeyQ =
-        incidentKey != null ? termQuery(OperationTemplate.INCIDENT_KEY, incidentKey) : null;
-    final TermQueryBuilder operationTypeQ =
-        operationType != null ? termQuery(OperationTemplate.TYPE, operationType.name()) : null;
 
-    final QueryBuilder query =
-        joinWithAnd(
+    final var zeebeCommandKeyQ =
+        zeebeCommandKey == null
+            ? ElasticsearchUtil.termsQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey)
+            : null;
+    final var processInstanceKeyQ =
+        processInstanceKey != null
+            ? ElasticsearchUtil.termsQuery(
+                OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
+            : null;
+    final var incidentKeyQ =
+        incidentKey != null
+            ? ElasticsearchUtil.termsQuery(OperationTemplate.INCIDENT_KEY, incidentKey)
+            : null;
+    final var operationTypeQ =
+        operationType != null
+            ? ElasticsearchUtil.termsQuery(OperationTemplate.TYPE, operationType.name())
+            : null;
+
+    final var query =
+        ElasticsearchUtil.joinWithAnd(
             zeebeCommandKeyQ,
             processInstanceKeyQ,
             incidentKeyQ,
             operationTypeQ,
-            termsQuery(
-                OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()));
-    final SearchRequest searchRequest =
-        new SearchRequest(operationTemplate.getAlias())
-            .source(new SearchSourceBuilder().query(query).size(1));
+            ElasticsearchUtil.termsQuery(
+                OperationTemplate.STATE,
+                List.of(OperationState.SENT.name(), OperationState.LOCKED.name())));
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(operationTemplate.getAlias())
+            .size(1)
+            .query(query);
+
     try {
-      return scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, OperationEntity.class)
+          .toList();
+    } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining the operations: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
