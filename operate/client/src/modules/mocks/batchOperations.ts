@@ -490,5 +490,35 @@ export const mockBatchOperations: BatchOperation[] = [
     processDefinitionVersion: 3,
     items: generateMockItems(88, 'PARTIALLY_COMPLETED'),
   },
+  // Completed - Migrate Process Instance (large batch with >1K items)
+  {
+    id: '2251799813688026',
+    operationType: 'MIGRATE_PROCESS_INSTANCE',
+    state: 'COMPLETED',
+    totalItems: 2500,
+    completedItems: 2340,
+    failedItems: 160,
+    startTime: '2025-11-03T06:00:00.000+0000',
+    endTime: '2025-11-03T08:30:00.000+0000',
+    appliedBy: 'Data Migration Team',
+    processDefinitionName: 'Enterprise Workflow',
+    processDefinitionVersion: 6,
+    items: generateMockItems(100, 'COMPLETED'), // Using smaller item count for mock
+  },
+  // Partially Completed - Cancel Process Instance (very large batch with >1K items)
+  {
+    id: '2251799813688027',
+    operationType: 'CANCEL_PROCESS_INSTANCE',
+    state: 'PARTIALLY_COMPLETED',
+    totalItems: 15000,
+    completedItems: 12450,
+    failedItems: 1830,
+    startTime: '2025-11-02T00:00:00.000+0000',
+    endTime: '2025-11-02T06:45:00.000+0000',
+    appliedBy: 'Year-End Cleanup',
+    processDefinitionName: 'Quarterly Reports',
+    processDefinitionVersion: 2,
+    items: generateMockItems(100, 'PARTIALLY_COMPLETED'), // Using smaller item count for mock
+  },
 ];
 

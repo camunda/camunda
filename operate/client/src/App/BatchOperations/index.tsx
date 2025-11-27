@@ -31,6 +31,18 @@ const formatOperationType = (type: string) => {
     .join(' ');
 };
 
+const formatCount = (count: number): string => {
+  if (count >= 1000000) {
+    const value = count / 1000000;
+    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}M`;
+  }
+  if (count >= 1000) {
+    const value = count / 1000;
+    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}K`;
+  }
+  return count.toString();
+};
+
 const BatchOperations: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -193,10 +205,10 @@ const BatchOperations: React.FC = () => {
         if (!hasAnyProgress && pendingCount > 0) {
           // Show only pending count when nothing has started yet
           itemsDisplay = (
-            <Tooltip description={`${pendingCount} not started`} align="bottom">
+            <Tooltip description={`${pendingCount.toLocaleString()} not started`} align="bottom">
               <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default'}}>
                 <CircleDash size={16} />
-                {pendingCount}
+                {formatCount(pendingCount)}
               </span>
             </Tooltip>
           );
@@ -205,26 +217,26 @@ const BatchOperations: React.FC = () => {
           itemsDisplay = (
             <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
               {successCount > 0 && (
-                <Tooltip description={`${successCount} successful`} align="bottom">
+                <Tooltip description={`${successCount.toLocaleString()} successful`} align="bottom">
                   <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
                     <Checkmark size={16} style={{color: 'var(--cds-support-success)'}} />
-                    {successCount}
+                    {formatCount(successCount)}
                   </span>
                 </Tooltip>
               )}
               {failedCount > 0 && (
-                <Tooltip description={`${failedCount} failed`} align="bottom">
+                <Tooltip description={`${failedCount.toLocaleString()} failed`} align="bottom">
                   <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
                     <Error size={16} style={{color: 'var(--cds-support-error)'}} />
-                    {failedCount}
+                    {formatCount(failedCount)}
                   </span>
                 </Tooltip>
               )}
               {pendingCount > 0 && (
-                <Tooltip description={`${pendingCount} not started`} align="bottom">
+                <Tooltip description={`${pendingCount.toLocaleString()} not started`} align="bottom">
                   <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default'}}>
                     <CircleDash size={16} />
-                    {pendingCount}
+                    {formatCount(pendingCount)}
                   </span>
                 </Tooltip>
               )}
