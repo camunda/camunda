@@ -84,4 +84,38 @@ final class CamundaExporterMetricsTest {
     final var gauges = registry.find("zeebe.camunda.exporter.index.doc.count").gauges();
     assertThat(gauges).isEmpty();
   }
+
+  @Test
+  void shouldUpdateIndexDocumentCountOnSubsequentCalls() {
+    // given
+    final var metrics = new CamundaExporterMetrics(registry);
+
+    // when - initial call
+    metrics.recordIndexDocumentCount("test-index", 100);
+
+    // then - initial value
+    final var gauges = registry.find("zeebe.camunda.exporter.index.doc.count").gauges();
+    assertThat(gauges).hasSize(1);
+    assertThat(
+            registry
+                .get("zeebe.camunda.exporter.index.doc.count")
+                .tag("index", "test-index")
+                .gauge()
+                .value())
+        .isEqualTo(100);
+
+    // when - update call
+    metrics.recordIndexDocumentCount("test-index", 200);
+
+    // then - updated value, still only 1 gauge
+    final var updatedGauges = registry.find("zeebe.camunda.exporter.index.doc.count").gauges();
+    assertThat(updatedGauges).hasSize(1);
+    assertThat(
+            registry
+                .get("zeebe.camunda.exporter.index.doc.count")
+                .tag("index", "test-index")
+                .gauge()
+                .value())
+        .isEqualTo(200);
+  }
 }

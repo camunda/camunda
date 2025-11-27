@@ -21,8 +21,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CamundaExporterMetrics implements AutoCloseable {
@@ -75,6 +78,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
   private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
+  private final Map<String, AtomicLong> indexDocumentCounts = new ConcurrentHashMap<>();
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this(meterRegistry, InstantSource.system());
@@ -322,15 +326,28 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   /**
    * Records the document count for a specific index in the secondary storage (ES/OS). Uses a gauge
-   * to track the current count of documents in the index.
+   * to track the current count of documents in the index. The gauge is registered once and updated
+   * on subsequent calls.
    *
    * @param indexName the name of the index
    * @param count the number of documents in the index
    */
   public void recordIndexDocumentCount(final String indexName, final long count) {
-    final var gaugeId =
-        Gauge.builder(meterName("index.doc.count"), () -> count).tag("index", indexName);
-    gaugeId.register(meterRegistry);
+    indexDocumentCounts.compute(
+        indexName,
+        (key, existingCount) -> {
+          if (existingCount == null) {
+            final var atomicCount = new AtomicLong(count);
+            Gauge.builder(meterName("index.doc.count"), atomicCount, AtomicLong::get)
+                .tag("index", indexName)
+                .description("Number of documents in the index")
+                .register(meterRegistry);
+            return atomicCount;
+          } else {
+            existingCount.set(count);
+            return existingCount;
+          }
+        });
   }
 
   @Override
@@ -356,6 +373,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
     // Remove index document count gauges
     meterRegistry.find(meterName("index.doc.count")).gauges().forEach(meterRegistry::remove);
+    indexDocumentCounts.clear();
   }
 
   private void removeGaugeIfExists(final String meterName) {

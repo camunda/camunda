@@ -8,14 +8,12 @@
 package io.camunda.exporter.tasks.documentcount;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -77,15 +75,32 @@ final class IndexDocumentCountMetricJobTest {
   }
 
   @Test
-  void shouldLogErrorOnRepositoryFailure() {
+  void shouldHandleRepositoryFailureGracefully() {
     // given
     repository.failOnGetDocumentCounts = true;
 
-    // when/then - should throw CompletionException wrapping the original error
-    assertThatThrownBy(() -> job.execute().toCompletableFuture().join())
-        .isInstanceOf(CompletionException.class)
-        .hasCauseInstanceOf(RuntimeException.class)
-        .hasMessageContaining("Simulated failure");
+    // when - the job handles the error gracefully and returns 0
+    final var result = job.execute().toCompletableFuture().join();
+
+    // then - should complete normally with 0 (no indices updated)
+    assertThat(result).isEqualTo(0);
+  }
+
+  @Test
+  void shouldUpdateExistingGaugeOnSubsequentCalls() {
+    // given
+    repository.documentCounts = Map.of("index-1", 100L);
+    job.execute().toCompletableFuture().join();
+
+    // when - update with new count
+    repository.documentCounts = Map.of("index-1", 200L);
+    final var result = job.execute().toCompletableFuture().join();
+
+    // then - gauge should be updated
+    assertThat(result).isEqualTo(1);
+    final var gauge =
+        registry.get("zeebe.camunda.exporter.index.doc.count").tag("index", "index-1").gauge();
+    assertThat(gauge.value()).isEqualTo(200);
   }
 
   @Test

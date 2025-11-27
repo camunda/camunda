@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.documentcount;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 
@@ -36,16 +37,20 @@ public class IndexDocumentCountMetricJob implements BackgroundTask {
   public CompletionStage<Integer> execute() {
     return repository
         .getDocumentCountsPerIndex()
-        .whenCompleteAsync(
+        .handle(
             (result, err) -> {
-              if (err == null) {
-                result.forEach(
-                    (indexName, count) -> metrics.recordIndexDocumentCount(indexName, count));
-              } else {
+              if (err != null) {
                 logger.warn("Failed to get document counts per index", err);
+                return Map.<String, Long>of();
               }
+              return result;
             })
-        .thenApply(result -> result.size());
+        .thenApply(
+            result -> {
+              result.forEach(
+                  (indexName, count) -> metrics.recordIndexDocumentCount(indexName, count));
+              return result.size();
+            });
   }
 
   @Override
