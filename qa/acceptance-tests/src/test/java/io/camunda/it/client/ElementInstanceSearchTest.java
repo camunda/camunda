@@ -411,7 +411,7 @@ public class ElementInstanceSearchTest {
             .sort(s -> s.elementName().desc())
             .send()
             .join();
-    assertSorted(resultAsc, resultDesc, ElementInstance::getElementName);
+    assertSortedFlexible(resultAsc, resultDesc, ElementInstance::getElementName);
   }
 
   @Test
