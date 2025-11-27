@@ -10,11 +10,16 @@ package io.camunda.zeebe.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import io.camunda.zeebe.test.VersionCompatibilityMatrix.VersionInfo;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.VersionProvider;
 import io.camunda.zeebe.util.SemanticVersion;
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -145,13 +150,27 @@ class VersionCompatibilityMatrixTest {
     }
 
     @Override
-    public Stream<SemanticVersion> discoverVersions() {
-      return versions.stream();
-    }
+    public Stream<VersionInfo> discoverVersions() {
+      // Filter out null and pre-release versions
+      final var validVersions =
+          versions.stream().filter(Objects::nonNull).filter(v -> v.preRelease() == null).toList();
 
-    @Override
-    public boolean isReleased(final SemanticVersion version) {
-      return releasedVersions.contains(version);
+      // Calculate latest per minor
+      final var latestPerMinor =
+          validVersions.stream()
+              .collect(
+                  Collectors.toMap(
+                      SemanticVersion::minor,
+                      Function.identity(),
+                      BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
+
+      return validVersions.stream()
+          .map(
+              version -> {
+                final boolean isLatest = version.equals(latestPerMinor.get(version.minor()));
+                final boolean isReleased = releasedVersions.contains(version);
+                return new VersionInfo(version, isReleased, isLatest);
+              });
     }
   }
 }
