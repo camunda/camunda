@@ -88,6 +88,7 @@ import io.camunda.search.clients.transformers.filter.FilterTransformer;
 import io.camunda.search.clients.transformers.filter.FlownodeInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.FormFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
+import io.camunda.search.clients.transformers.filter.GroupMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingRuleFilterTransformer;
@@ -154,6 +155,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingRuleFilter;
@@ -193,8 +195,8 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
-import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -506,6 +508,9 @@ public final class ServiceTransformers {
         new RoleMemberFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         GroupFilter.class, new GroupFilterTransformer(indexDescriptors.get(GroupIndex.class)));
+    mappers.put(
+        GroupMemberFilter.class,
+        new GroupMemberFilterTransformer(indexDescriptors.get(GroupIndex.class)));
     mappers.put(
         IncidentFilter.class,
         new IncidentFilterTransformer(indexDescriptors.get(IncidentTemplate.class)));
