@@ -41,7 +41,7 @@ import io.camunda.client.protocol.rest.ProcessInstanceIncidentResolutionBatchOpe
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
-import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +65,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private E filter;
   private final ProcessInstanceMigrationBatchOperationPlan migrationPlan =
       new ProcessInstanceMigrationBatchOperationPlan();
-  private final List<ProcessInstanceModificationMoveBatchOperationInstruction> moveInstructions =
+  private final List<ProcessInstanceModificationMoveInstruction> moveInstructions =
       new ArrayList<>();
 
   public CreateBatchOperationCommandImpl(
@@ -100,7 +100,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     Objects.requireNonNull(sourceElementId, "must specify a source element id");
     Objects.requireNonNull(targetElementId, "must specify a target element id");
     moveInstructions.add(
-        new ProcessInstanceModificationMoveBatchOperationInstruction()
+        new ProcessInstanceModificationMoveInstruction()
             .sourceElementId(sourceElementId)
             .targetElementId(targetElementId));
     return this;

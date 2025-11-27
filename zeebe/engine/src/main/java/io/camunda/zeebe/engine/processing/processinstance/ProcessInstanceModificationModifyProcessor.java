@@ -37,6 +37,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -46,14 +47,17 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -241,8 +245,18 @@ public final class ProcessInstanceModificationModifyProcessor
     final var extendedRecord = new ProcessInstanceModificationRecord();
     extendedRecord.setProcessInstanceKey(value.getProcessInstanceKey());
 
+    final var activateInstructions = new HashSet<>(value.getActivateInstructions());
+    final var terminateInstructions = new HashSet<>(value.getTerminateInstructions());
+
+    mapIdInstructions(
+        value.getProcessInstanceKey(),
+        value.getMoveInstructions(),
+        value.getTerminateInstructions(),
+        activateInstructions,
+        terminateInstructions);
+
     final var requiredKeysForActivation =
-        value.getActivateInstructions().stream()
+        activateInstructions.stream()
             .flatMap(
                 instruction -> {
                   final var elementToActivate =
@@ -270,24 +284,22 @@ public final class ProcessInstanceModificationModifyProcessor
                 })
             .collect(Collectors.toSet());
 
-    value
-        .getTerminateInstructions()
-        .forEach(
-            instruction -> {
-              extendedRecord.addTerminateInstruction(instruction);
-              final var elementInstance =
-                  elementInstanceState.getInstance(instruction.getElementInstanceKey());
-              if (elementInstance == null) {
-                // at this point this element instance has already been terminated as a result of
-                // one of the previous terminate instructions. As a result we no longer need to
-                // terminate it.
-                return;
-              }
-              final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
+    terminateInstructions.forEach(
+        instruction -> {
+          extendedRecord.addTerminateInstruction(instruction);
+          final var elementInstance =
+              elementInstanceState.getInstance(instruction.getElementInstanceKey());
+          if (elementInstance == null) {
+            // at this point this element instance has already been terminated as a result of
+            // one of the previous terminate instructions. As a result we no longer need to
+            // terminate it.
+            return;
+          }
+          final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
-              terminateElement(elementInstance);
-              terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
-            });
+          terminateElement(elementInstance);
+          terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
+        });
 
     stateWriter.appendFollowUpEvent(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord);
@@ -340,6 +352,56 @@ public final class ProcessInstanceModificationModifyProcessor
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void mapIdInstructions(
+      final long processInstanceKey,
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructionsInput,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructionsInput,
+      final Set<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
+      final Set<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions) {
+    final var moveInstructions =
+        moveInstructionsInput.stream()
+            .collect(
+                Collectors.toMap(
+                    ProcessInstanceModificationMoveInstructionValue::getSourceElementId,
+                    ProcessInstanceModificationMoveInstructionValue::getTargetElementId));
+    final var terminateInstructionIds = new HashSet<String>();
+    terminateInstructionsInput.forEach(
+        instruction -> {
+          if (instruction.getElementInstanceKey() > 0) {
+            finalTerminateInstructions.add(instruction);
+          } else {
+            terminateInstructionIds.add(instruction.getElementId());
+          }
+        });
+
+    // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
+    final var elementInstances =
+        new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
+    while (!elementInstances.isEmpty()) {
+      final var elementInstance = elementInstances.poll();
+      final String elementId = elementInstance.getValue().getElementId();
+      if (moveInstructions.containsKey(elementId)) {
+        final var activateInstruction =
+            new ProcessInstanceModificationActivateInstruction()
+                .setElementId(moveInstructions.get(elementId))
+                .setAncestorScopeKey(elementInstance.getParentKey());
+        final var terminateInstruction =
+            new ProcessInstanceModificationTerminateInstruction()
+                .setElementInstanceKey(elementInstance.getKey());
+
+        finalActivateInstructions.add(activateInstruction);
+        finalTerminateInstructions.add(terminateInstruction);
+      }
+      if (terminateInstructionIds.contains(elementId)) {
+        finalTerminateInstructions.add(
+            new ProcessInstanceModificationTerminateInstruction()
+                .setElementInstanceKey(elementInstance.getKey()));
+      }
+
+      elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
+    }
   }
 
   private Either<Rejection, ?> validateCommand(

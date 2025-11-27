@@ -70,9 +70,7 @@ public final class BatchOperationSetupProcessors {
                 brokerRequestAuthorizationConverter),
             BatchOperationType.MODIFY_PROCESS_INSTANCE,
             new ModifyProcessInstanceBatchOperationExecutor(
-                writers.command(),
-                processingState.getElementInstanceState(),
-                brokerRequestAuthorizationConverter));
+                writers.command(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
         new BatchOperationInitializer(

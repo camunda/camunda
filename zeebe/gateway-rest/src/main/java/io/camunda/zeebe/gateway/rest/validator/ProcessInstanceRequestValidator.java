@@ -25,7 +25,9 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstructio
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper;
 import java.util.List;
@@ -150,6 +152,7 @@ public class ProcessInstanceRequestValidator {
         violations -> {
           validateActivateInstructions(request.getActivateInstructions(), violations);
           validateTerminateInstructions(request.getTerminateInstructions(), violations);
+          validateMoveInstructions(request.getMoveInstructions(), violations);
           validateOperationReference(request.getOperationReference(), violations);
         });
   }
@@ -164,7 +167,7 @@ public class ProcessInstanceRequestValidator {
           if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
           } else {
-            validateMoveBatchInstructions(request.getMoveInstructions(), violations);
+            validateMoveInstructions(request.getMoveInstructions(), violations);
           }
         });
   }
@@ -205,22 +208,27 @@ public class ProcessInstanceRequestValidator {
   private static void validateTerminateInstructions(
       final List<ProcessInstanceModificationTerminateInstruction> instructions,
       final List<String> violations) {
-    validateInstructions(
-        instructions,
-        (instruction) -> instruction.getElementInstanceKey() != null,
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
-    // Also validate the format of elementInstanceKey values
-    instructions.stream()
-        .filter(instruction -> instruction.getElementInstanceKey() != null)
-        .forEach(
-            instruction ->
-                validateKeyFormat(
-                    instruction.getElementInstanceKey(), "elementInstanceKey", violations));
+    instructions.forEach(
+        instruction -> {
+          if (instruction
+              instanceof final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
+            if (byKey.getElementInstanceKey() == null) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
+            } else {
+              validateKeyFormat(byKey.getElementInstanceKey(), "elementInstanceKey", violations);
+            }
+          } else {
+            final String elementId =
+                ((ProcessInstanceModificationTerminateByIdInstruction) instruction).getElementId();
+            if (elementId == null || elementId.isBlank()) {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
+            }
+          }
+        });
   }
 
-  private static void validateMoveBatchInstructions(
-      final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions,
+  private static void validateMoveInstructions(
+      final List<ProcessInstanceModificationMoveInstruction> instructions,
       final List<String> violations) {
     validateInstructions(
         instructions,
