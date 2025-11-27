@@ -36,6 +36,7 @@ import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -49,6 +50,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 
 /**
@@ -167,12 +169,27 @@ public final class TestHelper {
     }
   }
 
+  public static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
+    camundaClient.newDeleteTenantCommand(tenant).send().join();
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId) {
     return camundaClient
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
+        .send()
+        .join();
+  }
+
+  public static ProcessInstanceEvent startProcessInstanceForTenant(
+      final CamundaClient camundaClient, final String bpmnProcessId, final String tenant) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .tenantId(tenant)
         .send()
         .join();
   }
@@ -593,6 +610,20 @@ public final class TestHelper {
                             .join()
                             .items())
                     .hasSize(expectedProcessInstances));
+  }
+
+  public static void waitForTenantDeletion(
+      final CamundaClient camundaClient, final String tenantToBeDeleted) {
+    Awaitility.await("should wait until tenant is deleted")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient.newTenantsSearchRequest().send().join().items().stream()
+                            .map(Tenant::getTenantId)
+                            .collect(Collectors.toSet()))
+                    .doesNotContain(tenantToBeDeleted));
   }
 
   public static void waitForProcessesToBeDeployed(
