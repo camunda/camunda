@@ -14,7 +14,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,16 +27,10 @@ public class RdbmsTableRowCountMetrics implements MeterBinder {
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsTableRowCountMetrics.class);
   private static final String NAMESPACE = "zeebe.rdbms";
   private static final String METRIC_NAME = NAMESPACE + ".table.row.count";
-  private static final Duration DEFAULT_CACHE_DURATION = Duration.ofMinutes(1);
-  private static final Set<String> ALLOWED_TABLE_NAMES = Set.copyOf(RdbmsTableNames.TABLE_NAMES);
 
   private final TableMetricsMapper tableMetricsMapper;
   private final Duration cacheDuration;
   private final Map<String, CachedRowCount> cachedRowCounts = new ConcurrentHashMap<>();
-
-  public RdbmsTableRowCountMetrics(final TableMetricsMapper tableMetricsMapper) {
-    this(tableMetricsMapper, DEFAULT_CACHE_DURATION);
-  }
 
   public RdbmsTableRowCountMetrics(
       final TableMetricsMapper tableMetricsMapper, final Duration cacheDuration) {
@@ -84,7 +77,7 @@ public class RdbmsTableRowCountMetrics implements MeterBinder {
    * @return true if the table name is allowed, false otherwise
    */
   private boolean isAllowedTableName(final String tableName) {
-    return ALLOWED_TABLE_NAMES.contains(tableName);
+    return RdbmsTableNames.TABLE_NAMES.contains(tableName);
   }
 
   private long fetchRowCount(final String tableName) {

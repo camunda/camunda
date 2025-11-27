@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
@@ -268,8 +269,15 @@ public class RdbmsConfiguration {
 
   @Bean
   public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
-      final TableMetricsMapper tableMetricsMapper) {
-    return new RdbmsTableRowCountMetrics(tableMetricsMapper);
+      final TableMetricsMapper tableMetricsMapper, final Camunda configuration) {
+    return new RdbmsTableRowCountMetrics(
+        tableMetricsMapper,
+        configuration
+            .getData()
+            .getSecondaryStorage()
+            .getRdbms()
+            .getMetrics()
+            .getTableCountCacheDuration());
   }
 
   @Bean

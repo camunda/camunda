@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 
 class RdbmsTableRowCountMetricsTest {
 
+  private static final Duration DEFAULT_CACHE_DURATION = Duration.ofMinutes(15);
+
   private TableMetricsMapper tableMetricsMapper;
   private MeterRegistry meterRegistry;
   private RdbmsTableRowCountMetrics metrics;
@@ -39,7 +41,7 @@ class RdbmsTableRowCountMetricsTest {
   void shouldRegisterGaugesForAllTables() {
     // given
     when(tableMetricsMapper.countTableRows(anyString())).thenReturn(100L);
-    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper);
+    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper, DEFAULT_CACHE_DURATION);
 
     // when
     metrics.bindTo(meterRegistry);
@@ -56,7 +58,7 @@ class RdbmsTableRowCountMetricsTest {
   void shouldReturnRowCountFromMapper() {
     // given
     when(tableMetricsMapper.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
-    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper);
+    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper, DEFAULT_CACHE_DURATION);
     metrics.bindTo(meterRegistry);
 
     // when
@@ -107,7 +109,7 @@ class RdbmsTableRowCountMetricsTest {
     // given
     when(tableMetricsMapper.countTableRows("PROCESS_INSTANCE"))
         .thenThrow(new RuntimeException("Database error"));
-    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper);
+    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper, DEFAULT_CACHE_DURATION);
     metrics.bindTo(meterRegistry);
 
     // when
@@ -122,7 +124,7 @@ class RdbmsTableRowCountMetricsTest {
   @Test
   void shouldReturnNegativeOneForUnknownTable() {
     // given
-    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper);
+    metrics = new RdbmsTableRowCountMetrics(tableMetricsMapper, DEFAULT_CACHE_DURATION);
     metrics.bindTo(meterRegistry);
 
     // when
