@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -47,7 +46,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -431,14 +429,6 @@ public abstract class ElasticsearchUtil {
     clearScroll(scrollId, esClient);
   }
 
-  public static void scrollWith(
-      final SearchRequest searchRequest,
-      final RestHighLevelClient esClient,
-      final Consumer<SearchHits> searchHitsProcessor)
-      throws IOException {
-    scrollWith(searchRequest, esClient, searchHitsProcessor, null, null);
-  }
-
   public static <T> Stream<Hit<T>> scrollAllStream(
       final ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
@@ -542,19 +532,6 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static List<Long> scrollKeysToList(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final List<Long> result = new ArrayList<>();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
-        };
-
-    scrollWith(request, esClient, collectIds, null, collectIds);
-    return result;
-  }
-
   public static <T> List<T> scrollFieldToList(
       final SearchRequest request, final String fieldName, final RestHighLevelClient esClient)
       throws IOException {
@@ -569,39 +546,6 @@ public abstract class ElasticsearchUtil {
 
     scrollWith(request, esClient, collectFields, null, collectFields);
     return result;
-  }
-
-  public static Map<String, String> getIndexNames(
-      final String aliasName, final Collection<String> ids, final RestHighLevelClient esClient) {
-
-    final Map<String, String> indexNames = new HashMap<>();
-
-    final SearchRequest piRequest =
-        new SearchRequest(aliasName)
-            .source(
-                new SearchSourceBuilder()
-                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
-                    .fetchSource(false));
-    try {
-      scrollWith(
-          piRequest,
-          esClient,
-          sh -> {
-            indexNames.putAll(
-                Arrays.stream(sh.getHits())
-                    .collect(
-                        Collectors.toMap(
-                            hit -> {
-                              return hit.getId();
-                            },
-                            hit -> {
-                              return hit.getIndex();
-                            })));
-          });
-    } catch (final IOException e) {
-      throw new OperateRuntimeException(e.getMessage(), e);
-    }
-    return indexNames;
   }
 
   public static RequestOptions requestOptionsFor(final int maxSizeInBytes) {
