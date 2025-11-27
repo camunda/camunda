@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 psql postgres -c "DROP DATABASE IF EXISTS \"${PGDATABASE}\";" \
   -c "CREATE DATABASE \"${PGDATABASE}\";"

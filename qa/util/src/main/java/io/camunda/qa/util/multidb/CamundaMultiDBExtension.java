@@ -346,7 +346,7 @@ public class CamundaMultiDBExtension
               "jdbc:mysql://localhost:3306/camunda",
               "camunda",
               "camunda",
-              "com.mysql.jdbc.Driver");
+              "com.mysql.cj.jdbc.Driver");
       case RDBMS_ORACLE ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
@@ -358,8 +358,8 @@ public class CamundaMultiDBExtension
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               "jdbc:sqlserver://localhost:1433;Encrypt=false",
-              "camunda",
-              "camunda",
+              "sa",
+              "Camunda#8_demo",
               "com.microsoft.sqlserver.jdbc.SQLServerDriver");
       case RDBMS_AURORA ->
           multiDbConfigurator.configureRDBMSSupport(
