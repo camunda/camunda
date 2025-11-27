@@ -67,6 +67,7 @@ jobs:
           -D skipChecks
           verify
         env:
+          GH_TOKEN: ${{ github.token }}
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY: true
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_INDEX: ${{ strategy.job-index }}
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_TOTAL: ${{ strategy.job-total }}
@@ -117,6 +118,7 @@ jobs:
           -D skipChecks
           verify
         env:
+          GH_TOKEN: ${{ github.token }}
           ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY: true
       - uses: ./.github/actions/collect-test-artifacts
         if: always()

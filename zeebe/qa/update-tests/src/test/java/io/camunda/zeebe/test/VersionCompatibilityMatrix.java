@@ -379,6 +379,16 @@ final class VersionCompatibilityMatrix {
               });
     }
 
+    private HttpRequest.Builder createAuthenticatedRequest(final URI endpoint) {
+      final var builder = HttpRequest.newBuilder().GET().uri(endpoint);
+      final var token = System.getenv("GH_TOKEN");
+      if (token != null && !token.isEmpty()) {
+        builder.header("Authorization", "Bearer " + token);
+        LOG.debug("Using authenticated GitHub API request with GH_TOKEN");
+      }
+      return builder;
+    }
+
     private Optional<Release> fetchRelease(final SemanticVersion tagName) {
       final var endpoint =
           URI.create(
@@ -388,8 +398,7 @@ final class VersionCompatibilityMatrix {
             retry.executeCallable(
                 () ->
                     httpClient.send(
-                        HttpRequest.newBuilder().GET().uri(endpoint).build(),
-                        BodyHandlers.ofByteArray()));
+                        createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray()));
 
         final var statusCode = response.statusCode();
         if (statusCode == 404) {
@@ -418,8 +427,7 @@ final class VersionCompatibilityMatrix {
             retry.executeCallable(
                 () ->
                     httpClient.send(
-                        HttpRequest.newBuilder().GET().uri(endpoint).build(),
-                        BodyHandlers.ofByteArray()));
+                        createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray()));
 
         final var statusCode = response.statusCode();
         if (statusCode < 200 || statusCode >= 300) {
