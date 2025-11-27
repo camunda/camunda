@@ -31,11 +31,14 @@ class OperateProcessesPage {
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
-  readonly processActiveCheckbox: Locator;
-  readonly processCompletedCheckbox: Locator;
-  readonly processRunningInstancesCheckbox: Locator;
-  readonly processIncidentsCheckbox: Locator;
-  readonly processFinishedInstancesCheckbox: Locator;
+  readonly migrateBatchOperationButton: Locator;
+  readonly cancelBatchOperationButton: Locator;
+  readonly applyCancelBatchOperationDialogButton: Locator;
+  readonly continueMigrationDialogButton: Locator;
+  readonly cancelProcessInstanceButton: Locator;
+  readonly cancelProcessInstanceDialogButton: Locator;
+  readonly singleCancellationSpinner: Locator;
+  readonly tableLoadingSpinner: Locator;
   readonly dataList: Locator;
   readonly continueButton: Locator;
   readonly processInstancesPanel: Locator;
@@ -104,29 +107,6 @@ class OperateProcessesPage {
       .getByTestId('data-list')
       .getByTestId('cell-endDate')
       .first();
-<<<<<<< HEAD
-    this.versionCell = page.getByTestId('process-version-select');
-  }
-
-  async clickProcessActiveCheckbox(): Promise<void> {
-    await this.processActiveCheckbox.click();
-  }
-
-  async clickProcessCompletedCheckbox(): Promise<void> {
-    await this.processCompletedCheckbox.click({timeout: 120000});
-  }
-
-  async clickProcessIncidentsCheckbox(): Promise<void> {
-    await this.processIncidentsCheckbox.click({timeout: 90000});
-  }
-
-  async clickRunningProcessInstancesCheckbox(): Promise<void> {
-    await this.processRunningInstancesCheckbox.click({timeout: 90000});
-  }
-
-  async clickFinishedProcessInstancesCheckbox(): Promise<void> {
-    await this.processFinishedInstancesCheckbox.click({timeout: 90000});
-=======
     this.versionCell = page.getByTestId('cell-processVersion');
     this.migrateBatchOperationButton = page.getByRole('button', {
       name: 'Migrate',
@@ -148,23 +128,7 @@ class OperateProcessesPage {
       .getByRole('button', {name: 'Apply'});
     this.singleCancellationSpinner = page.getByTestId('operation-spinner');
     this.tableLoadingSpinner = page.getByTestId('data-table-loader');
-    this.processActiveCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Active'});
-    this.processCompletedCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Completed'});
-    this.processRunningInstancesCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Running Instances'});
-    this.processIncidentsCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Incidents'});
-    this.processFinishedInstancesCheckbox = page
-      .getByTestId('filter-finished-instances')
-      .getByRole('checkbox');
     this.dataList = page.getByTestId('data-list');
-    this.parentInstanceIdCell = this.dataList;
     this.continueButton = page.getByRole('button', {name: 'continue'});
     this.processInstancesPanel = page.getByRole('region', {
       name: 'process instances panel',
@@ -199,7 +163,6 @@ class OperateProcessesPage {
     this.inProgressBar = this.operationsList.locator(
       '[role="progressbar"][aria-busy="true"]',
     );
->>>>>>> 6bcc5765 (test: operate e2e test process instance migration)
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -272,8 +235,6 @@ class OperateProcessesPage {
   async clickProcessNameSortButton(): Promise<void> {
     await this.processNameSortButton.click();
   }
-<<<<<<< HEAD
-=======
 
   async selectProcessCheckboxByPIK(...PIK: string[]): Promise<void> {
     for (const key of PIK) {
@@ -381,7 +342,6 @@ class OperateProcessesPage {
     // Wait for it to disappear (operation completed and moved to top)
     await expect(this.inProgressBar).not.toBeVisible({timeout: 120000});
   }
->>>>>>> 6bcc5765 (test: operate e2e test process instance migration)
 }
 
 export {OperateProcessesPage};

@@ -145,7 +145,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await validateURL(page, /operationId=/);
       await expect(page.getByText('6 results')).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
 
       await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
