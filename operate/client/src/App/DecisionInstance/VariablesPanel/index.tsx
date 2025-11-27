@@ -10,6 +10,7 @@ import {useMemo} from 'react';
 import {TabView} from 'modules/components/TabView';
 import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
+import {OperationsLog} from './OperationsLog';
 import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type VariablesPanelProps = {
@@ -47,6 +48,13 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({
         removePadding: true,
       });
     }
+
+    tabs.push({
+      id: 'operations-log',
+      label: 'Operations Log',
+      content: <OperationsLog />,
+      removePadding: true,
+    });
 
     return tabs;
   }, [decisionDefinitionType, decisionEvaluationInstanceKey]);
