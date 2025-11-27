@@ -14,7 +14,6 @@ import static io.camunda.operate.util.CollectionUtil.toSafeListOfStrings;
 import static io.camunda.operate.util.ExceptionHelper.withIOException;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -37,11 +36,9 @@ public class OpensearchListViewStore implements ListViewStore {
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private OperateProperties operateProperties;
-
   @Override
-  public Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds)
-      throws IOException {
+  public Map<Long, String> getListViewIndicesForProcessInstances(
+      final List<Long> processInstanceIds) throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, RequestDSL.QueryType.ALL)
             .query(
@@ -65,48 +62,5 @@ public class OpensearchListViewStore implements ListViewStore {
     }
 
     return processInstanceId2IndexName;
-  }
-
-  @Override
-  public String findProcessInstanceTreePathFor(long processInstanceKey) {
-    record Result(String treePath) {}
-    final RequestDSL.QueryType queryType =
-        operateProperties.getImporter().isReadArchivedParents()
-            ? RequestDSL.QueryType.ALL
-            : RequestDSL.QueryType.ONLY_RUNTIME;
-    final var searchRequestBuilder =
-        searchRequestBuilder(listViewTemplate, queryType)
-            .query(withTenantCheck(term(ListViewTemplate.KEY, processInstanceKey)))
-            .source(sourceInclude(ListViewTemplate.TREE_PATH));
-
-    final List<Hit<Result>> hits =
-        richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
-
-    if (hits.size() > 0) {
-      return hits.get(0).source().treePath();
-    }
-    return null;
-  }
-
-  @Override
-  public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(Long processDefinitionKey) {
-    final var searchRequestBuilder =
-        searchRequestBuilder(listViewTemplate.getAlias())
-            .query(
-                withTenantCheck(
-                    constantScore(
-                        and(
-                            term(ListViewTemplate.PROCESS_KEY, processDefinitionKey),
-                            not(exists(ListViewTemplate.PROCESS_VERSION))))))
-            .source(s -> s.fetch(false));
-
-    return richOpenSearchClient
-        .doc()
-        .search(searchRequestBuilder, Void.class)
-        .hits()
-        .hits()
-        .stream()
-        .map(hit -> Long.valueOf(hit.id()))
-        .toList();
   }
 }
