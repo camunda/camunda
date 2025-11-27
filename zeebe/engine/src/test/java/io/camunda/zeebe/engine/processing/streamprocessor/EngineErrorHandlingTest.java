@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -93,36 +94,38 @@ public final class EngineErrorHandlingTest {
         new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), InstantSource.system());
     mockCommandResponseWriter = streams.getMockedResponseWriter();
     streams.createLogStream(STREAM_NAME, PARTITION_ID);
-
-    keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
   }
 
   @Test
   public void shouldAutoRejectCommandOnProcessingFailure() {
     // given
-    final long failingKey = keyGenerator.nextKey();
     streams.startStreamProcessor(
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
-        (processingContext) ->
-            TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
-                .onCommand(
-                    ValueType.DEPLOYMENT,
-                    DeploymentIntent.CREATE,
-                    new TypedRecordProcessor<DeploymentRecord>() {
-                      @Override
-                      public void processRecord(final TypedRecord<DeploymentRecord> record) {
-                        if (record.getKey() == failingKey) {
-                          throw new RuntimeException("expected");
-                        }
-                        processingContext
-                            .getWriters()
-                            .state()
-                            .appendFollowUpEvent(
-                                record.getKey(), DeploymentIntent.CREATED, record.getValue());
+        (processingContext) -> {
+          processingState = processingContext.getProcessingState();
+          return TypedRecordProcessors.processors(
+                  processingState.getKeyGenerator(), processingContext.getWriters())
+              .onCommand(
+                  ValueType.DEPLOYMENT,
+                  DeploymentIntent.CREATE,
+                  new TypedRecordProcessor<DeploymentRecord>() {
+                    @Override
+                    public void processRecord(final TypedRecord<DeploymentRecord> record) {
+                      if (Protocol.decodeKeyInPartition(record.getKey()) == 0) {
+                        throw new RuntimeException("expected");
                       }
-                    }));
+                      processingContext
+                          .getWriters()
+                          .state()
+                          .appendFollowUpEvent(
+                              record.getKey(), DeploymentIntent.CREATED, record.getValue());
+                    }
+                  });
+        });
 
+    keyGenerator = processingState.getKeyGenerator();
+    final long failingKey = keyGenerator.getCurrentKey();
     streams
         .newRecord(STREAM_NAME)
         .event(deployment("foo"))
@@ -188,6 +191,7 @@ public final class EngineErrorHandlingTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
+          keyGenerator = processingState.getKeyGenerator();
           return TypedRecordProcessors.processors(
                   processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
@@ -228,6 +232,7 @@ public final class EngineErrorHandlingTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
+          keyGenerator = processingState.getKeyGenerator();
           return TypedRecordProcessors.processors(
                   processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
@@ -275,6 +280,7 @@ public final class EngineErrorHandlingTest {
         (processingContext) -> {
           dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
           processingState = processingContext.getProcessingState();
+          keyGenerator = processingState.getKeyGenerator();
           return TypedRecordProcessors.processors(
                   processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
@@ -332,6 +338,7 @@ public final class EngineErrorHandlingTest {
   @Test
   public void shouldBanInstanceOnReplay() throws Exception {
     // given
+    keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
     final long failedPos =
         streams
             .newRecord(STREAM_NAME)
@@ -355,6 +362,7 @@ public final class EngineErrorHandlingTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
+          keyGenerator = processingState.getKeyGenerator();
           return TypedRecordProcessors.processors(
                   processingState.getKeyGenerator(), processingContext.getWriters())
               .withListener(
@@ -399,6 +407,7 @@ public final class EngineErrorHandlingTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
+          keyGenerator = processingState.getKeyGenerator();
 
           return TypedRecordProcessors.processors(
                   processingState.getKeyGenerator(), processingContext.getWriters())
