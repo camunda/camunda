@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { Locator, Page } from '@playwright/test';
-import { expect } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export class OperateDiagramPage {
   private page: Page;
@@ -194,5 +193,14 @@ export class OperateDiagramPage {
    */
   async getStateOverlayLocatorByElementNameAndState(elementName: string, state: string) {
     return this.page.locator(`[data-container-id=${elementName}]`).getByTestId(`state-overlay-${state}`);
+  }
+
+  async verifyStateOverlay(flowNodeName: string, state: "active" | "canceled" | "completedEndEvents", tokenAmount?: number): Promise<void> {
+    const stateOverlayFlowNode = await this
+      .getStateOverlayLocatorByElementNameAndState(flowNodeName, state);
+    await expect(stateOverlayFlowNode).toBeVisible({ timeout: 30000 });
+    if (tokenAmount !== undefined) {
+      expect(await stateOverlayFlowNode.innerText()).toContain(tokenAmount.toString());
+    }
   }
 }

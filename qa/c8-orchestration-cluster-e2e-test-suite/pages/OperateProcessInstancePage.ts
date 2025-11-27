@@ -259,7 +259,7 @@ class OperateProcessInstancePage {
     await this.modifyDialogContinueButton.click();
   }
 
-  async getAllInstanceHistoryItems(): Promise<Locator[]> {
+  async getAllInstanceHistoryNodeDetails(): Promise<Locator[]> {
     return this.instanceHistory.getByRole('treeitem').getByTestId(/^node-details-/).all();
   }
 
@@ -272,19 +272,21 @@ class OperateProcessInstancePage {
   }
 
   async ensureElementExpandedInHistory(expandingElementName: string) {
-    const expandingElement = await this.getNestedParentLocatorInHistory(expandingElementName);
-    expect(expandingElement).toBeVisible();
-    const expandToggle = expandingElement
-      .locator('.cds--tree-parent-node__toggle-icon');
-    await expect(expandToggle).toBeVisible();
-    var isExpanded = await expandingElement.getAttribute('aria-expanded');
-    expect(isExpanded).not.toBeNull();
+    const expandingElements = await (await this.getNestedParentLocatorInHistory(expandingElementName)).all();
+    for (const element of expandingElements) {
+      expect(element).toBeVisible();
+      const expandToggle = element
+        .locator('.cds--tree-parent-node__toggle-icon');
+      await expect(expandToggle).toBeVisible();
+      var isExpanded = await element.getAttribute('aria-expanded');
+      expect(isExpanded).not.toBeNull();
 
-    if (isExpanded === 'false') {
-      await expandToggle.click();
+      if (isExpanded === 'false') {
+        await expandToggle.click();
+      }
+      isExpanded = await element.getAttribute('aria-expanded');
+      expect(isExpanded).toBe('true');
     }
-    isExpanded = await expandingElement.getAttribute('aria-expanded');
-    expect(isExpanded).toBe('true');
   }
 
   async getNestedParentLocatorInHistory(parentElementName: string): Promise<Locator> {
@@ -293,7 +295,7 @@ class OperateProcessInstancePage {
       .getByLabel(parentElementName, { exact: true })
   }
 
-  async getNestegGroupInHistoryLocator(parentElementName: string): Promise<Locator> {
+  async getNestedGroupInHistoryLocator(parentElementName: string): Promise<Locator> {
     const parentLocator = await this.getNestedParentLocatorInHistory(parentElementName);
     return parentLocator
       .getByRole('group');
