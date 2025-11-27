@@ -126,6 +126,7 @@
                 </ignoredUnusedDeclaredDependencies>
                 <ignoredNonTestScopedDependencies>
                   <dep>org.elasticsearch:elasticsearch-x-content</dep>
+                  <dep>org.apache.lucene:lucene-core</dep>
                 </ignoredNonTestScopedDependencies>
               </configuration>
             </execution>
