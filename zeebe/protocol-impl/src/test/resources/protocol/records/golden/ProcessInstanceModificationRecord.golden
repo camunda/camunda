@@ -1,127 +1,201 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.protocol.record.value;
+package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import org.immutables.value.Value;
+import java.util.stream.Collectors;
 
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableProcessInstanceModificationRecordValue.Builder.class)
-public interface ProcessInstanceModificationRecordValue
-    extends RecordValue, ProcessInstanceRelated, TenantOwned {
+public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
+    implements ProcessInstanceModificationRecordValue {
 
-  /** Returns a list of terminate instructions (if available), or an empty list. */
-  List<ProcessInstanceModificationTerminateInstructionValue> getTerminateInstructions();
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue TERMINATE_INSTRUCTIONS_KEY =
+      new StringValue("terminateInstructions");
+  private static final StringValue ACTIVATE_INSTRUCTIONS_KEY =
+      new StringValue("activateInstructions");
+  private static final StringValue MOVE_INSTRUCTIONS_KEY = new StringValue("moveInstructions");
+  private static final StringValue ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY =
+      new StringValue("activatedElementInstanceKeys");
 
-  /** Returns a list of activate instructions (if available), or an empty list. */
-  List<ProcessInstanceModificationActivateInstructionValue> getActivateInstructions();
+  private final LongProperty processInstanceKeyProperty =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final ArrayProperty<ProcessInstanceModificationTerminateInstruction>
+      terminateInstructionsProperty =
+          new ArrayProperty<>(
+              TERMINATE_INSTRUCTIONS_KEY, ProcessInstanceModificationTerminateInstruction::new);
+  private final ArrayProperty<ProcessInstanceModificationActivateInstruction>
+      activateInstructionsProperty =
+          new ArrayProperty<>(
+              ACTIVATE_INSTRUCTIONS_KEY, ProcessInstanceModificationActivateInstruction::new);
+  private final ArrayProperty<ProcessInstanceModificationMoveInstruction> moveInstructionsProperty =
+      new ArrayProperty<>(MOVE_INSTRUCTIONS_KEY, ProcessInstanceModificationMoveInstruction::new);
 
-  /** Returns a list of move instructions (if available), or an empty list. */
-  List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions();
+  private final ArrayProperty<LongValue> activatedElementInstanceKeys =
+      new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
+
+  public ProcessInstanceModificationRecord() {
+    super(5);
+    declareProperty(processInstanceKeyProperty)
+        .declareProperty(terminateInstructionsProperty)
+        .declareProperty(activateInstructionsProperty)
+        .declareProperty(moveInstructionsProperty)
+        .declareProperty(activatedElementInstanceKeys);
+  }
 
   /**
-   * Returns a list of all ancestor keys of all activate instructions. The property is set in the
-   * event only after the modification is applied.
+   * This method is expensive because it copies each element before returning it. It is recommended
+   * to use {@link #hasTerminateInstructions()} before calling this.
    *
-   * @deprecated since 8.1.3, replaced by {@link
-   *     ProcessInstanceModificationActivateInstructionValue#getAncestorScopeKeys()}
+   * <p>{@inheritDoc}
    */
-  @Deprecated
-  Set<Long> getAncestorScopeKeys();
-
-  @Value.Immutable
-  @ImmutableProtocol(
-      builder = ImmutableProcessInstanceModificationTerminateInstructionValue.Builder.class)
-  interface ProcessInstanceModificationTerminateInstructionValue {
-
-    /** Returns the key of element instance to terminate. */
-    long getElementInstanceKey();
-
-    /** Returns the id of the elements to terminate. */
-    String getElementId();
+  @Override
+  public List<ProcessInstanceModificationTerminateInstructionValue> getTerminateInstructions() {
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return terminateInstructionsProperty.stream()
+        .map(
+            element -> {
+              final var elementCopy = new ProcessInstanceModificationTerminateInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceModificationTerminateInstructionValue) elementCopy;
+            })
+        .toList();
   }
 
-  @Value.Immutable
-  @ImmutableProtocol(
-      builder = ImmutableProcessInstanceModificationActivateInstructionValue.Builder.class)
-  interface ProcessInstanceModificationActivateInstructionValue {
-
-    /** Returns the id of the element to create a new element instance at. */
-    String getElementId();
-
-    /**
-     * Returns the key of the ancestor scope to create the new element instance in, or -1 if no
-     * specific ancestor is selected.
-     *
-     * <p>This key is used for ancestor selection:
-     *
-     * <p>By default, the new element instance is created within an existing element instance of the
-     * flow scope. For example, when activating an element inside an embedded subprocess and the
-     * subprocess is already active.
-     *
-     * <p>If there is more than one element instance of the flow scope active then the engine can't
-     * decide which element instance to create the new element instance in. Instead, the element
-     * instance must be selected by its element instance key. The new element instance is created
-     * within the selected element instance.
-     *
-     * <p>If the selected element instance is not of the flow scope but from a higher scope (e.g.
-     * the process instance key instead of the element instance key of the subprocess) then the
-     * engine creates a new element instance of the flow scope first and then creates the new
-     * element instance within this scope.
-     */
-    long getAncestorScopeKey();
-
-    /** Returns a list of variable instructions (if available), or an empty list. */
-    List<ProcessInstanceModificationVariableInstructionValue> getVariableInstructions();
-
-    /**
-     * Returns all ancestor scope keys of the element that will be activated. The property is set in
-     * the event only after the modification is applied.
-     */
-    Set<Long> getAncestorScopeKeys();
+  /**
+   * This method is expensive because it copies each element before returning it. It is recommended
+   * to use {@link #hasActivateInstructions()} before calling this.
+   *
+   * <p>{@inheritDoc}
+   */
+  @Override
+  public List<ProcessInstanceModificationActivateInstructionValue> getActivateInstructions() {
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return activateInstructionsProperty.stream()
+        .map(
+            element -> {
+              final var elementCopy = new ProcessInstanceModificationActivateInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceModificationActivateInstructionValue) elementCopy;
+            })
+        .toList();
   }
 
-  @Value.Immutable
-  @ImmutableProtocol(
-      builder = ImmutableProcessInstanceModificationVariableInstructionValue.Builder.class)
-  interface ProcessInstanceModificationVariableInstructionValue {
-
-    /** Returns the variables of this instruction. Can be empty. */
-    Map<String, Object> getVariables();
-
-    /**
-     * Returns the element id of the scope where the variables should be created in, or an empty
-     * string if the variables are global for the process instance.
-     */
-    String getElementId();
+  /**
+   * This method is expensive because it copies each element before returning it. It is recommended
+   * to use {@link #hasMoveInstructions()} before calling this.
+   *
+   * <p>{@inheritDoc}
+   */
+  @Override
+  public List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions() {
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return moveInstructionsProperty.stream()
+        .map(
+            element -> {
+              final var elementCopy = new ProcessInstanceModificationMoveInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceModificationMoveInstructionValue) elementCopy;
+            })
+        .toList();
   }
 
-  @Value.Immutable
-  @ImmutableProtocol(
-      builder = ImmutableProcessInstanceModificationMoveInstructionValue.Builder.class)
-  interface ProcessInstanceModificationMoveInstructionValue {
+  @Override
+  public Set<Long> getAncestorScopeKeys() {
+    final Set<Long> activatedElementInstanceKeys =
+        this.activatedElementInstanceKeys.stream()
+            .map(LongValue::getValue)
+            .collect(Collectors.toSet());
+    // For backwards compatibility's sake we have to add the ancestor scope keys of all activate
+    // instructions, as from version 8.1.3 on the activatedElementInstanceKeys property is no longer
+    // filled.
+    activatedElementInstanceKeys.addAll(
+        getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKeys)
+            .flatMap(Set::stream)
+            .collect(Collectors.toSet()));
+    return activatedElementInstanceKeys;
+  }
 
-    /** Returns the id of the element to terminate element instances at. */
-    String getSourceElementId();
+  /** Returns true if this record has terminate instructions, otherwise false. */
+  @JsonIgnore
+  public boolean hasTerminateInstructions() {
+    return !terminateInstructionsProperty.isEmpty();
+  }
 
-    /** Returns the id of the element to create a new element instance at. */
-    String getTargetElementId();
+  public ProcessInstanceModificationRecord addTerminateInstruction(
+      final ProcessInstanceModificationTerminateInstructionValue terminateInstruction) {
+    terminateInstructionsProperty.add().copy(terminateInstruction);
+    return this;
+  }
+
+  /** Returns true if this record has activate instructions, otherwise false. */
+  @JsonIgnore
+  public boolean hasMoveInstructions() {
+    return !moveInstructionsProperty.isEmpty();
+  }
+
+  public ProcessInstanceModificationRecord addMoveInstruction(
+      final ProcessInstanceModificationMoveInstructionValue moveInstruction) {
+    moveInstructionsProperty.add().copy(moveInstruction);
+    return this;
+  }
+
+  /** Returns true if this record has activate instructions, otherwise false. */
+  @JsonIgnore
+  public boolean hasActivateInstructions() {
+    return !activateInstructionsProperty.isEmpty();
+  }
+
+  public ProcessInstanceModificationRecord addActivateInstruction(
+      final ProcessInstanceModificationActivateInstruction activateInstruction) {
+    activateInstructionsProperty.add().copy(activateInstruction);
+    return this;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProperty.getValue();
+  }
+
+  public ProcessInstanceModificationRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
+  }
+
+  /** hashCode relies on implementation provided by {@link ObjectValue#hashCode()} */
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
+
+  /** equals relies on implementation provided by {@link ObjectValue#equals(Object)} */
+  @Override
+  public boolean equals(final Object o) {
+    return super.equals(o);
+  }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13288): replace dummy implementation
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }
