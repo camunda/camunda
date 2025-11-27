@@ -47,4 +47,41 @@ final class CamundaExporterMetricsTest {
         .as("then all values are in the next bucket <= 10ms")
         .isEqualTo(4);
   }
+
+  @Test
+  void shouldRecordIndexDocumentCount() {
+    // given
+    final var metrics = new CamundaExporterMetrics(registry);
+
+    // when
+    metrics.recordIndexDocumentCount("test-index-1", 100);
+    metrics.recordIndexDocumentCount("test-index-2", 200);
+
+    // then
+    final var gauges = registry.find("zeebe.camunda.exporter.index.doc.count").gauges();
+    assertThat(gauges).hasSize(2);
+
+    final var index1Gauge =
+        registry.get("zeebe.camunda.exporter.index.doc.count").tag("index", "test-index-1").gauge();
+    assertThat(index1Gauge.value()).isEqualTo(100);
+
+    final var index2Gauge =
+        registry.get("zeebe.camunda.exporter.index.doc.count").tag("index", "test-index-2").gauge();
+    assertThat(index2Gauge.value()).isEqualTo(200);
+  }
+
+  @Test
+  void shouldCleanupIndexDocumentCountGaugesOnClose() {
+    // given
+    final var metrics = new CamundaExporterMetrics(registry);
+    metrics.recordIndexDocumentCount("test-index-1", 100);
+    metrics.recordIndexDocumentCount("test-index-2", 200);
+
+    // when
+    metrics.close();
+
+    // then
+    final var gauges = registry.find("zeebe.camunda.exporter.index.doc.count").gauges();
+    assertThat(gauges).isEmpty();
+  }
 }
