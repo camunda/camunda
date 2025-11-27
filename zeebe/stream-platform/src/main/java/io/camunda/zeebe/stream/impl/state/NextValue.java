@@ -20,6 +20,10 @@ public class NextValue extends UnpackedObject implements DbValue {
   }
 
   public void set(final long value) {
+    if (value < 0) {
+      throw new IllegalArgumentException(
+          "Invalid value: expected positive number, but got " + value);
+    }
     nextValueProp.setValue(value);
   }
 
