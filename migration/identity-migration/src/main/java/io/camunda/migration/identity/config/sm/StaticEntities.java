@@ -352,4 +352,8 @@ public class StaticEntities {
   public static String createTasklistWritePermissionString(final Audiences audiences) {
     return audiences.getTasklist() + ":write:*";
   }
+
+  public static String createZeebeWritePermissionString(final Audiences audiences) {
+    return audiences.getZeebe() + ":write:*";
+  }
 }

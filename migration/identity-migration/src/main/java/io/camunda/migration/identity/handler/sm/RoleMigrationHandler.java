@@ -12,6 +12,7 @@ import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import static io.camunda.migration.identity.config.ResourceBasedAuthorizationConstants.RBA_IRRELEVANT_RESOURCE_TYPES;
 import static io.camunda.migration.identity.config.sm.StaticEntities.createTasklistReadPermissionString;
 import static io.camunda.migration.identity.config.sm.StaticEntities.createTasklistWritePermissionString;
+import static io.camunda.migration.identity.config.sm.StaticEntities.createZeebeWritePermissionString;
 import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
@@ -155,7 +156,23 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     final Set<CreateAuthorizationRequest> authorizations =
         getAuthorizationsByAudience(audiences, permission, roleId, AuthorizationOwnerType.ROLE);
     if (migrationProperties.isResourceAuthorizationsEnabled()) {
-      authorizations.removeIf(auth -> !RBA_IRRELEVANT_RESOURCE_TYPES.contains(auth.resourceType()));
+      // Check if this is the zeebe-api:write permission
+      final String zeebeWritePermission = createZeebeWritePermissionString(audiences);
+      final boolean isZeebeWrite = permission.equals(zeebeWritePermission);
+
+      // In 8.7, the Zeebe GRPC API did not enforce RBA - users with zeebe-api:write could perform
+      // all operations regardless of resource-specific authorizations. This was intentional: if a
+      // user has access to the Zeebe API via the Zeebe role, they should be able to use all
+      // operations it provides. After migration to 8.8's unified API (which does enforce RBA),
+      // we preserve this behavior by keeping wildcard permissions for zeebe-api:write. This ensures
+      // users retain their original access level (e.g., deploying via Web Modeler, starting any
+      // process via Zeebe GRPC). Other permissions like tasklist-api:read/write already enforced
+      // RBA in 8.7, so their wildcards are correctly filtered out to maintain resource
+      // restrictions.
+      if (!isZeebeWrite) {
+        authorizations.removeIf(
+            auth -> !RBA_IRRELEVANT_RESOURCE_TYPES.contains(auth.resourceType()));
+      }
 
       // for the Tasklist role there were no RBA restrictions on task access, thus adding task
       // permissions still

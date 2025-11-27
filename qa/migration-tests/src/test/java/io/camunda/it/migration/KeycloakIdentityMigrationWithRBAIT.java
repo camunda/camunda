@@ -72,7 +72,32 @@ public class KeycloakIdentityMigrationWithRBAIT extends AbstractKeycloakIdentity
             a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple("operate", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
+            // Zeebe role with zeebe-api:write creates wildcard permissions even with RBA enabled
             tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
+            tuple("zeebe", ResourceType.MESSAGE, Set.of(PermissionType.CREATE)),
+            tuple(
+                "zeebe",
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_RESOURCE)),
+            tuple(
+                "zeebe",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                "zeebe",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
             tuple("tasklist", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
             tuple(
                 "tasklist",

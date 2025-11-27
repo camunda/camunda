@@ -328,7 +328,7 @@ public class KeycloakRoleMigrationHandlerTest {
 
     // then
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(15)).createAuthorization(results.capture());
+    verify(authorizationServices, times(18)).createAuthorization(results.capture());
     final var authorizationRequests = results.getAllValues();
     assertThat(authorizationRequests)
         .extracting(
@@ -337,7 +337,7 @@ public class KeycloakRoleMigrationHandlerTest {
             CreateAuthorizationRequest::resourceType,
             CreateAuthorizationRequest::permissionTypes)
         .containsExactlyInAnyOrder(
-            // Identity read/write
+            // Identity read/write (role_1)
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -393,13 +393,13 @@ public class KeycloakRoleMigrationHandlerTest {
                     PermissionType.CREATE,
                     PermissionType.UPDATE,
                     PermissionType.DELETE)),
-            // Operate read/write
+            // Operate read/write (role_1)
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
-            // Tasklist read
+            // Tasklist read (role_1)
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -415,13 +415,7 @@ public class KeycloakRoleMigrationHandlerTest {
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 Set.of(PermissionType.READ_USER_TASK)),
-            // zeebe write
-            tuple(
-                "role@name_with_special_chars",
-                AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.SYSTEM,
-                Set.of(PermissionType.READ, PermissionType.UPDATE)),
-            // tasklist read/write
+            // role@name_with_special_chars - tasklist read/write & zeebe write combined
             tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
@@ -435,8 +429,40 @@ public class KeycloakRoleMigrationHandlerTest {
             tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.MESSAGE,
+                Set.of(PermissionType.CREATE)),
+            tuple(
+                "role@name_with_special_chars",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.SYSTEM,
+                Set.of(PermissionType.READ, PermissionType.UPDATE)),
+            tuple(
+                "role@name_with_special_chars",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_RESOURCE)),
+            tuple(
+                "role@name_with_special_chars",
+                AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                Set.of(PermissionType.READ_USER_TASK, PermissionType.UPDATE_USER_TASK)));
+                Set.of(
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                "role@name_with_special_chars",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)));
   }
 
   @Test
