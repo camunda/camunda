@@ -7,17 +7,13 @@
  */
 
 import {IncidentsTable} from '..';
-import {createInstance, createProcessInstance} from 'modules/testUtils';
+import {createProcessInstance} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {Wrapper, firstIncident, incidentsMock} from './mocks';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('Sorting', () => {
   beforeEach(() => {
-    mockFetchProcessInstance().withSuccess(
-      createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
-    );
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
         hasIncident: true,

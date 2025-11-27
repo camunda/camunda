@@ -17,7 +17,6 @@ import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {useHasPermissions} from 'modules/queries/permissions/useHasPermissions';
 import {
   getIncidentErrorName,
   isSingleIncidentSelected,
@@ -50,10 +49,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     const [modalContent, setModalContent] = useState<string>('');
     const [modalTitle, setModalTitle] = useState<string>('');
     const rootNode = useRootNode();
-
-    const {data: hasPermissionForRetryOperation} = useHasPermissions([
-      'UPDATE_PROCESS_INSTANCE',
-    ]);
 
     const handleModalClose = () => {
       setIsModalVisible(false);
@@ -143,15 +138,11 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               key: 'errorMessage',
               isDisabled: true,
             },
-            ...(hasPermissionForRetryOperation
-              ? [
-                  {
-                    header: 'Operations',
-                    key: 'operations',
-                    isDisabled: true,
-                  },
-                ]
-              : []),
+            {
+              header: 'Operations',
+              key: 'operations',
+              isDisabled: true,
+            },
           ]}
           rows={incidents.map((incident) => {
             const areOperationsVisible =
@@ -204,13 +195,12 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                   )}
                 </FlexContainer>
               ),
-              operations:
-                hasPermissionForRetryOperation && areOperationsVisible ? (
-                  <IncidentOperation
-                    incidentKey={incident.incidentKey}
-                    jobKey={incident.jobKey}
-                  />
-                ) : undefined,
+              operations: areOperationsVisible ? (
+                <IncidentOperation
+                  incidentKey={incident.incidentKey}
+                  jobKey={incident.jobKey}
+                />
+              ) : undefined,
             };
           })}
         />
