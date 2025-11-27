@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -23,10 +22,6 @@ public final class ConditionalSubscriptionTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldCreateConditionalSubscriptionsOnBoundaryEventActivation() {

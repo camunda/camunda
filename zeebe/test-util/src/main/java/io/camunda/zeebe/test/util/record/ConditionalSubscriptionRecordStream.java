@@ -24,7 +24,7 @@ public final class ConditionalSubscriptionRecordStream
   @Override
   protected ConditionalSubscriptionRecordStream supply(
       final Stream<Record<ConditionalSubscriptionRecordValue>> wrappedStream) {
-    return new ConditionalSubscriptionRecordStream((wrappedStream));
+    return new ConditionalSubscriptionRecordStream(wrappedStream);
   }
 
   public ConditionalSubscriptionRecordStream withScopeKey(final long scopeKey) {
