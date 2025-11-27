@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -71,6 +72,7 @@ import org.junit.rules.TemporaryFolder;
 public final class EngineErrorHandlingTest {
 
   private static final String STREAM_NAME = "foo";
+  private static final int PARTITION_ID = 1;
 
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
@@ -90,15 +92,15 @@ public final class EngineErrorHandlingTest {
     streams =
         new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), InstantSource.system());
     mockCommandResponseWriter = streams.getMockedResponseWriter();
-    streams.createLogStream(STREAM_NAME);
+    streams.createLogStream(STREAM_NAME, PARTITION_ID);
 
-    final AtomicLong key = new AtomicLong();
-    keyGenerator = () -> key.getAndIncrement();
+    keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
   }
 
   @Test
   public void shouldAutoRejectCommandOnProcessingFailure() {
     // given
+    final long failingKey = keyGenerator.nextKey();
     streams.startStreamProcessor(
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
@@ -110,7 +112,7 @@ public final class EngineErrorHandlingTest {
                     new TypedRecordProcessor<DeploymentRecord>() {
                       @Override
                       public void processRecord(final TypedRecord<DeploymentRecord> record) {
-                        if (record.getKey() == 0) {
+                        if (record.getKey() == failingKey) {
                           throw new RuntimeException("expected");
                         }
                         processingContext
@@ -121,7 +123,6 @@ public final class EngineErrorHandlingTest {
                       }
                     }));
 
-    final long failingKey = keyGenerator.nextKey();
     streams
         .newRecord(STREAM_NAME)
         .event(deployment("foo"))
@@ -131,13 +132,14 @@ public final class EngineErrorHandlingTest {
         .requestStreamId(99)
         .key(failingKey)
         .write();
+    final var secondKey = keyGenerator.nextKey();
     final long secondEventPosition =
         streams
             .newRecord(STREAM_NAME)
             .event(deployment("foo2"))
             .recordType(RecordType.COMMAND)
             .intent(DeploymentIntent.CREATE)
-            .key(keyGenerator.nextKey())
+            .key(secondKey)
             .write();
 
     // when
@@ -153,7 +155,7 @@ public final class EngineErrorHandlingTest {
             .get();
 
     // then
-    assertThat(writtenEvent.getKey()).isEqualTo(1);
+    assertThat(writtenEvent.getKey()).isEqualTo(secondKey);
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
 
     // error response

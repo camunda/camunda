@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.function.Supplier;
 
 /** Convenience class to aggregate all the writers */
@@ -16,22 +17,28 @@ public final class Writers {
 
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final StateWriter stateWriter;
+  private final ResultBuilderBackedEventApplyingStateWriter stateWriter;
 
   private final TypedResponseWriter responseWriter;
   private final SideEffectWriter sideEffectWriter;
 
   public Writers(
+      final int partitionId,
       final Supplier<ProcessingResultBuilder> resultBuilderSupplier,
       final EventApplier eventApplier) {
 
     commandWriter = new ResultBuilderBackedTypedCommandWriter(resultBuilderSupplier);
     rejectionWriter = new ResultBuilderBackedRejectionWriter(resultBuilderSupplier);
     stateWriter =
-        new ResultBuilderBackedEventApplyingStateWriter(resultBuilderSupplier, eventApplier);
+        new ResultBuilderBackedEventApplyingStateWriter(
+            partitionId, resultBuilderSupplier, eventApplier);
 
     responseWriter = new ResultBuilderBackedTypedResponseWriter(resultBuilderSupplier);
     sideEffectWriter = new ResultBuilderBackedSideEffectWriter(resultBuilderSupplier);
+  }
+
+  public void setKeyGenerator(final KeyGenerator keyGenerator) {
+    stateWriter.setKeyGenerator(keyGenerator);
   }
 
   /**

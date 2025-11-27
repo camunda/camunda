@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.time.InstantSource;
 
@@ -43,9 +44,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             context.getPartitionId(),
             zeebeDb,
             zeebeDbContext,
-            () -> {
-              throw new IllegalCallerException("New keys cannot be generated during migration");
-            },
+            KeyGenerator.immutable(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
