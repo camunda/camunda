@@ -10,35 +10,34 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.time.Duration;
 import java.time.InstantSource;
 
-public final class PendingMessageSubscriptionChecker implements Runnable {
-  private final SubscriptionCommandSender commandSender;
-  private final PendingMessageSubscriptionState state;
+public final class PendingMessageSubscriptionChecker implements StreamProcessorLifecycleAware {
 
-  /**
-   * Specifies the time in ms that no command is sent for a subscription after sending a command for
-   * it. This ensures that we don't overload the broker with duplicate command for the same
-   * subscription.
-   */
+  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+
+  private final SubscriptionCommandSender commandSender;
+  private final PendingMessageSubscriptionState pendingState;
   private final long subscriptionTimeout;
 
-  private final InstantSource clock;
+  private ProcessingScheduleService scheduleService;
+  private InstantSource clock;
 
   public PendingMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final PendingMessageSubscriptionState state,
-      final long subscriptionTimeout,
-      final InstantSource clock) {
+      final PendingMessageSubscriptionState pendingState) {
     this.commandSender = commandSender;
-    this.state = state;
-    this.subscriptionTimeout = subscriptionTimeout;
-    this.clock = clock;
+    this.pendingState = pendingState;
+    subscriptionTimeout = SUBSCRIPTION_TIMEOUT.toMillis();
   }
 
-  @Override
-  public void run() {
-    state.visitPending(clock.millis() - subscriptionTimeout, this::sendCommand);
+  private void checkPendingSubscriptions() {
+    pendingState.visitPending(clock.millis() - subscriptionTimeout, this::sendCommand);
   }
 
   private boolean sendCommand(final MessageSubscription subscription) {
@@ -57,8 +56,36 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
 
     // Update the sent time for the subscription to avoid it being considered for resending too soon
     final var sentTime = clock.millis();
-    state.onSent(record, sentTime);
+    pendingState.onSent(record, sentTime);
 
     return true; // to continue visiting
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    scheduleService = context.getScheduleService();
+    clock = context.getClock();
+    scheduleService.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, this::checkPendingSubscriptions);
+  }
+
+  @Override
+  public void onClose() {
+    // runAtFixedRate automatically stops when the scheduler is closed
+  }
+
+  @Override
+  public void onFailed() {
+    // runAtFixedRate automatically stops when the scheduler fails
+  }
+
+  @Override
+  public void onPaused() {
+    // runAtFixedRate will continue running, but pending messages won't be processed
+    // because the stream processor is paused
+  }
+
+  @Override
+  public void onResumed() {
+    // No additional action needed as runAtFixedRate continues automatically
   }
 }

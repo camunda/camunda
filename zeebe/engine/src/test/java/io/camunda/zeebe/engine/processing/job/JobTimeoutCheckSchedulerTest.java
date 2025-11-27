@@ -12,10 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -37,7 +39,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
-public class JobTimeoutCheckerTest {
+public class JobTimeoutCheckSchedulerTest {
   public static final int NUMBER_OF_ACTIVE_JOBS = 10;
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
@@ -89,9 +91,10 @@ public class JobTimeoutCheckerTest {
     final int batchLimit = Integer.MAX_VALUE;
 
     final var task =
-        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);
@@ -120,9 +123,10 @@ public class JobTimeoutCheckerTest {
     final int batchLimit = 3;
 
     final var task =
-        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);
@@ -164,9 +168,10 @@ public class JobTimeoutCheckerTest {
     final int batchLimit = Integer.MAX_VALUE;
 
     final var task =
-        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);

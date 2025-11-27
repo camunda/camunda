@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricsChecker implements Task {
+public class UsageMetricsChecker implements Task, StreamProcessorLifecycleAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsChecker.class);
 
@@ -38,7 +39,7 @@ public class UsageMetricsChecker implements Task {
     this.clock = clock;
   }
 
-  public void schedule(final boolean immediately) {
+  private void schedule(final boolean immediately) {
     final ScheduledTask nextTask;
     if (immediately) {
       nextTask = processingContext.getScheduleService().runAtAsync(0L, this);
@@ -67,11 +68,31 @@ public class UsageMetricsChecker implements Task {
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
+    shouldReschedule = true;
+    schedule(true);
   }
 
-  public void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
+  @Override
+  public void onClose() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onFailed() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onPaused() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onResumed() {
+    shouldReschedule = true;
+    schedule(true);
   }
 }
