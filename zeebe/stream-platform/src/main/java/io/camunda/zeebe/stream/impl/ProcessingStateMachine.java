@@ -15,7 +15,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -476,7 +475,7 @@ public final class ProcessingStateMachine {
             Expected to process command %d (%s.%s), but caught an exception. Check broker logs \
             (partition %s) for details, or ask your operator to do so."""
             .formatted(
-                Protocol.encodePartitionId(context.getPartitionId(), currentRecord.getKey()),
+                currentRecord.getKey(),
                 metadata.getValueType(),
                 metadata.getIntent(),
                 context.getPartitionId());
