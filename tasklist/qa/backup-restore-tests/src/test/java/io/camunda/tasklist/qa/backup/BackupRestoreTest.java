@@ -51,12 +51,9 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 public class BackupRestoreTest {
 
   public static final String INDEX_PREFIX = "backup-restore-test";
-  public static final String VERSION = "current-test";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String IMAGE_REPO = "localhost:5000/";
-  private static final String TASKLIST_TEST_DOCKER_IMAGE = IMAGE_REPO + "camunda/tasklist";
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
@@ -107,7 +104,7 @@ public class BackupRestoreTest {
 
     tasklistContainer =
         testContainerUtil
-            .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
+            .createTasklistContainer(testContext)
             .withLogConsumer(new Slf4jLogConsumer(LOGGER))
             // Unified Configuration: DB type + compatibility
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType)
@@ -168,7 +165,7 @@ public class BackupRestoreTest {
   }
 
   private void startTasklist() {
-    testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
+    testContainerUtil.startTasklistContainer(tasklistContainer, testContext);
     LOGGER.info("************ Tasklist started  ************");
     testContext.setTasklistRestClient(tasklistAPICaller.createTasklistRestClient(testContext));
   }

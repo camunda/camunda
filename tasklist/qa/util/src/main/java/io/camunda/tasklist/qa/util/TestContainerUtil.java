@@ -87,7 +87,6 @@ public class TestContainerUtil {
   public static final String TENANT_1 = "tenant_1";
   public static final String TENANT_2 = "tenant_2";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
-  private static final String DOCKER_TASKLIST_IMAGE_NAME = "camunda/tasklist";
   private static final Integer TASKLIST_HTTP_PORT = 8080;
   private static final Integer TASKLIST_MGMT_HTTP_PORT = 9600;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
@@ -378,25 +377,18 @@ public class TestContainerUtil {
     }
   }
 
-  public GenericContainer startTasklist(final String version, final TestContext testContext) {
-    if (tasklistContainer == null) {
-      LOGGER.info("************ Starting Tasklist {} ************", version);
-      tasklistContainer = createTasklistContainer(version, testContext);
-      startTasklistContainer(tasklistContainer, version, testContext);
-      LOGGER.info("************ Tasklist started  ************");
-    } else {
-      throw new IllegalStateException("Tasklist is already started. Call stopTasklist first.");
-    }
-    return tasklistContainer;
+  public GenericContainer createTasklistContainer(final TestContext testContext) {
+    return createTasklistContainer(ContainerVersionsUtil.getTasklistDockerImageName(), testContext);
   }
 
   public GenericContainer createTasklistContainer(
-      final String dockerImageName, final String version, final TestContext testContext) {
+      final DockerImageName dockerImageName, final TestContext testContext) {
+    final String version = dockerImageName.getVersionPart();
     final int managementPort = getTasklistManagementPort(version);
     final Integer[] exposedPorts =
         new HashSet<>(List.of(TASKLIST_HTTP_PORT, managementPort)).toArray(Integer[]::new);
     tasklistContainer =
-        new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
+        new GenericContainer<>(dockerImageName)
             .withExposedPorts(exposedPorts)
             .withAccessToHost(true)
             .withExtraHost("host.testcontainers.internal", "host-gateway")
@@ -415,17 +407,12 @@ public class TestContainerUtil {
     return version.compareTo("8.6.0") >= 0 ? TASKLIST_MGMT_HTTP_PORT : TASKLIST_HTTP_PORT;
   }
 
-  public GenericContainer createTasklistContainer(
-      final String version, final TestContext testContext) {
-    return createTasklistContainer(DOCKER_TASKLIST_IMAGE_NAME, version, testContext);
-  }
-
   public void startTasklistContainer(
-      final GenericContainer tasklistContainer,
-      final String version,
-      final TestContext testContext) {
+      final GenericContainer tasklistContainer, final TestContext testContext) {
     tasklistContainer.start();
-
+    final DockerImageName dockerImageName =
+        DockerImageName.parse(tasklistContainer.getDockerImageName());
+    final String version = dockerImageName.getVersionPart();
     testContext.setExternalTasklistHost(tasklistContainer.getHost());
     testContext.setExternalTasklistPort(tasklistContainer.getMappedPort(TASKLIST_HTTP_PORT));
     testContext.setExternalTasklistMgmtPort(

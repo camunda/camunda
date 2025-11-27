@@ -64,6 +64,8 @@ jobs:
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       ZEEBE_TEST_DOCKER_IMAGE_TAG: current-test
+      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
@@ -122,8 +124,8 @@ jobs:
             -Dcamunda.tasklist.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
             -Dcamunda.tasklist.${{ matrix.database }}.url=${{ matrix.url }} \
             -Dcamunda.operate.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
-            -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
-            -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+            -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
+            -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
