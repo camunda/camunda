@@ -170,4 +170,38 @@ public final class ConditionalSubscriptionTest {
                 .limit(1))
         .hasSize(1);
   }
+
+  @Test
+  public void shouldCreateConditionalSubscriptionsOnRootLevelStartEventActivation() {
+    // given/when
+    final String processId = helper.getBpmnProcessId();
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("startEvent")
+                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+                .withScopeKey(-1L)
+                .withElementInstanceKey(-1L)
+                .withProcessInstanceKey(-1L)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withCatchEventId("startEvent")
+                .withCondition("=x > y")
+                .withVariableNames("x", "y")
+                .isInterrupting(true)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limit(1))
+        .hasSize(1);
+  }
 }
