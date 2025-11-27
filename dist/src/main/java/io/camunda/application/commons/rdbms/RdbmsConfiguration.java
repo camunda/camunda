@@ -33,6 +33,7 @@ import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisti
 import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowDbReader;
@@ -63,6 +64,7 @@ import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
+import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
@@ -262,6 +264,12 @@ public class RdbmsConfiguration {
   @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
+  }
+
+  @Bean
+  public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
+      final TableMetricsMapper tableMetricsMapper) {
+    return new RdbmsTableRowCountMetrics(tableMetricsMapper);
   }
 
   @Bean
