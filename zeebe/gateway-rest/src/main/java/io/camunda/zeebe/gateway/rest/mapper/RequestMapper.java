@@ -1020,6 +1020,13 @@ public class RequestMapper {
                 processInstanceKey,
                 mapProcessInstanceModificationActivateInstruction(
                     request.getActivateInstructions()),
+                request.getMoveInstructions().stream()
+                    .map(
+                        instruction ->
+                            new ProcessInstanceModificationMoveInstruction()
+                                .setSourceElementId(instruction.getSourceElementId())
+                                .setTargetElementId(instruction.getTargetElementId()))
+                    .toList(),
                 request.getTerminateInstructions().stream()
                     .map(
                         instruction -> {

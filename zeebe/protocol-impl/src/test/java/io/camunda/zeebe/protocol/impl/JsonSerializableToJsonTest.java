@@ -1734,7 +1734,12 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(key)
                   .addTerminateInstruction(
                       new ProcessInstanceModificationTerminateInstruction()
-                          .setElementInstanceKey(elementInstanceKeyToTerminate))
+                          .setElementInstanceKey(elementInstanceKeyToTerminate)
+                          .setElementId(elementIdToActivate))
+                  .addMoveInstruction(
+                      new ProcessInstanceModificationMoveInstruction()
+                          .setSourceElementId(variableInstructionElementId)
+                          .setTargetElementId(elementIdToActivate))
                   .addActivateInstruction(
                       new ProcessInstanceModificationActivateInstruction()
                           .setElementId(elementIdToActivate)
@@ -1749,7 +1754,12 @@ final class JsonSerializableToJsonTest {
                 {
                   "processInstanceKey": 1,
                   "terminateInstructions": [{
-                    "elementInstanceKey": 2
+                    "elementInstanceKey": 2,
+                    "elementId": "activity"
+                  }],
+                  "moveInstructions": [{
+                    "sourceElementId": "sub-process",
+                    "targetElementId": "activity"
                   }],
                   "activateInstructions": [{
                     "ancestorScopeKey": 3,
@@ -1781,6 +1791,7 @@ final class JsonSerializableToJsonTest {
                 {
                   "processInstanceKey": 1,
                   "terminateInstructions": [],
+                  "moveInstructions": [],
                   "activateInstructions": [],
                   "ancestorScopeKeys": [],
                   "tenantId": "<default>"
@@ -3654,9 +3665,7 @@ final class JsonSerializableToJsonTest {
                      "moveInstructions": [
                        {
                          "targetElementId": "targetTask",
-                         "sourceElementId": "sourceTask",
-                         "empty": false,
-                         "encodedLength": 55
+                         "sourceElementId": "sourceTask"
                        }
                      ],
                      "empty": false,

@@ -154,7 +154,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   }
 
   public ProcessInstanceModificationRecord addMoveInstruction(
-      final ProcessInstanceModificationMoveInstruction moveInstruction) {
+      final ProcessInstanceModificationMoveInstructionValue moveInstruction) {
     moveInstructionsProperty.add().copy(moveInstruction);
     return this;
   }

@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
@@ -49,6 +51,11 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
           .addMixIn(
               ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionMixin.class)
+          .addMixIn(
+              ProcessInstanceModificationRecordValue.class, ProcessInstanceModificationMixin.class)
+          .addMixIn(
+              ProcessInstanceModificationTerminateInstructionValue.class,
+              TerminateInstructionsMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -59,8 +66,11 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String AUTH_INFO_PROPERTY = "authInfo";
   private static final String CHECKPOINT_TIMESTAMP_PROPERTY = "checkpointTimestamp";
   private static final String CHECKPOINT_TYPE_PROPERTY = "checkpointType";
-  private static final String RECORD_MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY =
+  private static final String MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY =
       "processDefinitionKey";
+  private static final String PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY =
+      "moveInstructions";
+  private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -193,9 +203,15 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonIgnoreProperties({CHECKPOINT_TYPE_PROPERTY, CHECKPOINT_TIMESTAMP_PROPERTY})
   private static final class CheckpointRecordMixin {}
 
-  @JsonIgnoreProperties({RECORD_MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
   private static final class MessageSubscriptionMixin {}
 
-  @JsonIgnoreProperties({RECORD_MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
   private static final class ProcessMessageSubscriptionMixin {}
+
+  @JsonIgnoreProperties({PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY})
+  private static final class ProcessInstanceModificationMixin {}
+
+  @JsonIgnoreProperties({TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY})
+  private static final class TerminateInstructionsMixin {}
 }

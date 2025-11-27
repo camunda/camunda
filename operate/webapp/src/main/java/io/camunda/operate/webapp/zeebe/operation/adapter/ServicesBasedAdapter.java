@@ -7,10 +7,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
-import static io.camunda.service.exception.ServiceException.Status.*;
-
 import io.camunda.client.api.command.MigrationPlan;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
@@ -29,10 +26,10 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
-import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import java.util.ArrayList;
@@ -250,6 +247,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
     final List<ProcessInstanceModificationActivateInstruction> activateInstructions =
         new ArrayList<>();
+    final List<ProcessInstanceModificationMoveInstruction> moveInstructions = new ArrayList<>();
     final List<ProcessInstanceModificationTerminateInstruction> terminateInstructions =
         new ArrayList<>();
 
@@ -258,24 +256,8 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
             modification -> {
               switch (modification.getModification()) {
                 case ADD_TOKEN -> addActivationInstruction(modification, activateInstructions);
-                case CANCEL_TOKEN ->
-                    addTerminateInstruction(
-                        processInstanceKey, modification, terminateInstructions);
-                case MOVE_TOKEN -> {
-                  final var newTokensCount =
-                      calculateNewTokensCount(modification, processInstanceKey);
-                  if (newTokensCount > 0) {
-                    addTerminateInstruction(
-                        processInstanceKey, modification, terminateInstructions);
-                    addActivationInstruction(modification, activateInstructions);
-                  } else {
-                    LOGGER.info(
-                        "Skipping MOVE_TOKEN processing for flowNode {} and process instance {} since newTokensCount is {}",
-                        modification.getFromFlowNodeId(),
-                        processInstanceKey,
-                        newTokensCount);
-                  }
-                }
+                case CANCEL_TOKEN -> addTerminateInstruction(modification, terminateInstructions);
+                case MOVE_TOKEN -> addMoveInstruction(modification, moveInstructions);
                 default ->
                     LOGGER.warn(
                         "ModifyProcessInstanceHandler encountered a modification type that should have been filtered out: {}",
@@ -284,7 +266,24 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
             });
 
     return new ProcessInstanceModifyRequest(
-        processInstanceKey, activateInstructions, terminateInstructions, operationId);
+        processInstanceKey,
+        activateInstructions,
+        moveInstructions,
+        terminateInstructions,
+        operationId);
+  }
+
+  private void addMoveInstruction(
+      final Modification modification,
+      final List<ProcessInstanceModificationMoveInstruction> moveInstructions) {
+    final var sourceId = modification.getFromFlowNodeId();
+    final var targetId = modification.getToFlowNodeId();
+
+    LOGGER.debug("Move tokens from flowNodeId {} to flowNodeId {}", sourceId, targetId);
+    moveInstructions.add(
+        new ProcessInstanceModificationMoveInstruction()
+            .setSourceElementId(sourceId)
+            .setTargetElementId(targetId));
   }
 
   private void addActivationInstruction(
@@ -325,62 +324,19 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   }
 
   private void addTerminateInstruction(
-      final Long processInstanceKey,
       final Modification modification,
       final List<ProcessInstanceModificationTerminateInstruction> terminateInstructions) {
-    // Build the list of instances to cancel
+    final var terminateInstruction = new ProcessInstanceModificationTerminateInstruction();
+
     final var flowNodeInstanceKey = modification.getFromFlowNodeInstanceKey();
-    final List<Long> flowNodeInstanceKeys;
+    final var flowNodeId = modification.getFromFlowNodeId();
     if (StringUtils.hasText(flowNodeInstanceKey)) {
       LOGGER.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
-      flowNodeInstanceKeys = List.of(Long.parseLong(flowNodeInstanceKey));
+      terminateInstruction.setElementInstanceKey(Long.parseLong(flowNodeInstanceKey));
     } else {
-      flowNodeInstanceKeys =
-          flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
-              processInstanceKey, modification.getFromFlowNodeId(), List.of(FlowNodeState.ACTIVE));
+      LOGGER.debug("Cancel token from flowNodeId {} ", flowNodeId);
+      terminateInstruction.setElementId(flowNodeId);
     }
-
-    if (flowNodeInstanceKeys.isEmpty()) {
-      throw new OperateRuntimeException(
-          String.format(
-              "Abort CANCEL_TOKEN: Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
-              processInstanceKey, modification.getFromFlowNodeId()));
-    }
-
-    flowNodeInstanceKeys.stream()
-        .forEach(
-            instanceKey ->
-                terminateInstructions.add(
-                    new ProcessInstanceModificationTerminateInstruction()
-                        .setElementInstanceKey(instanceKey)));
-    LOGGER.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
-  }
-
-  private int calculateNewTokensCount(
-      final Modification modification, final Long processInstanceKey) {
-    Integer newTokensCount = modification.getNewTokensCount();
-
-    if (newTokensCount == null) {
-      if (modification.getFromFlowNodeInstanceKey() != null) {
-        // If a flow node instance key was specified, assume that flow node is valid. Zeebe
-        // will correctly fail attempts to migrate off an invalid flow node
-        newTokensCount = 1;
-      } else if (modification.getFromFlowNodeId() != null) {
-        newTokensCount =
-            flowNodeInstanceReader
-                .getFlowNodeInstanceKeysByIdAndStates(
-                    processInstanceKey,
-                    modification.getFromFlowNodeId(),
-                    List.of(FlowNodeState.ACTIVE))
-                .size();
-      } else {
-        LOGGER.warn(
-            "MOVE_TOKEN attempted with no flowNodeId, flowNodeInstanceKey, or newTokenCount specified");
-        newTokensCount = 0;
-      }
-    }
-
-    LOGGER.info("MOVE_TOKEN has a newTokensCount value of {}", newTokensCount);
-    return newTokensCount;
+    terminateInstructions.add(terminateInstruction);
   }
 }
