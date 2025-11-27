@@ -18,11 +18,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public abstract class AbstractRequestDeserializer<T> extends JsonDeserializer<T> {
 
-  protected abstract Set<String> getSupportedFields();
+  protected abstract List<String> getSupportedFields();
 
   protected abstract Class<? extends T> getResultType(Set<String> presentFields);
 

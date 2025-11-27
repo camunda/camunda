@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.deserializer;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
+import java.util.List;
 import java.util.Set;
 
 public class DecisionEvaluationInstructionDeserializer
@@ -17,11 +18,11 @@ public class DecisionEvaluationInstructionDeserializer
 
   private static final String DECISION_DEFINITION_ID_FIELD = "decisionDefinitionId";
   private static final String DECISION_DEFINITION_KEY_FIELD = "decisionDefinitionKey";
-  private static final Set<String> SUPPORTED_FIELDS =
-      Set.of(DECISION_DEFINITION_ID_FIELD, DECISION_DEFINITION_KEY_FIELD);
+  private static final List<String> SUPPORTED_FIELDS =
+      List.of(DECISION_DEFINITION_ID_FIELD, DECISION_DEFINITION_KEY_FIELD);
 
   @Override
-  protected Set<String> getSupportedFields() {
+  protected List<String> getSupportedFields() {
     return SUPPORTED_FIELDS;
   }
 

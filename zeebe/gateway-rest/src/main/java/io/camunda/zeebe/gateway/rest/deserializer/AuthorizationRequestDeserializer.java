@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.deserializer;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
+import java.util.List;
 import java.util.Set;
 
 public class AuthorizationRequestDeserializer
@@ -17,11 +18,11 @@ public class AuthorizationRequestDeserializer
 
   private static final String RESOURCE_ID_FIELD = "resourceId";
   private static final String RESOURCE_PROPERTY_NAME_FIELD = "resourcePropertyName";
-  private static final Set<String> SUPPORTED_FIELDS =
-      Set.of(RESOURCE_ID_FIELD, RESOURCE_PROPERTY_NAME_FIELD);
+  private static final List<String> SUPPORTED_FIELDS =
+      List.of(RESOURCE_ID_FIELD, RESOURCE_PROPERTY_NAME_FIELD);
 
   @Override
-  protected Set<String> getSupportedFields() {
+  protected List<String> getSupportedFields() {
     return SUPPORTED_FIELDS;
   }
 

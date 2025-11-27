@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.deserializer;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
+import java.util.List;
 import java.util.Set;
 
 public class ProcessInstanceCreationInstructionDeserializer
@@ -17,11 +18,11 @@ public class ProcessInstanceCreationInstructionDeserializer
 
   private static final String PROCESS_DEFINITION_KEY_FIELD = "processDefinitionKey";
   private static final String PROCESS_DEFINITION_ID_FIELD = "processDefinitionId";
-  private static final Set<String> SUPPORTED_FIELDS =
-      Set.of(PROCESS_DEFINITION_KEY_FIELD, PROCESS_DEFINITION_ID_FIELD);
+  private static final List<String> SUPPORTED_FIELDS =
+      List.of(PROCESS_DEFINITION_ID_FIELD, PROCESS_DEFINITION_KEY_FIELD);
 
   @Override
-  protected Set<String> getSupportedFields() {
+  protected List<String> getSupportedFields() {
     return SUPPORTED_FIELDS;
   }
 

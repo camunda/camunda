@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.protocol.rest.LimitPagination;
 import io.camunda.zeebe.gateway.protocol.rest.OffsetPagination;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
+import java.util.List;
 import java.util.Set;
 
 public class SearchQueryPageRequestDeserializer
@@ -24,15 +25,15 @@ public class SearchQueryPageRequestDeserializer
   private static final String OFFSET_PAGINATION_FIELD = "from";
   private static final String AFTER_PAGINATION_KEY = "after";
   private static final String BEFORE_PAGINATION_KEY = "before";
-  private static final Set<String> SUPPORTED_FIELDS =
-      Set.of(
+  private static final List<String> SUPPORTED_FIELDS =
+      List.of(
           OFFSET_PAGINATION_FIELD,
           AFTER_PAGINATION_KEY,
           BEFORE_PAGINATION_KEY,
           LIMIT_PAGINATION_FIELD);
 
   @Override
-  protected Set<String> getSupportedFields() {
+  protected List<String> getSupportedFields() {
     return SUPPORTED_FIELDS;
   }
 

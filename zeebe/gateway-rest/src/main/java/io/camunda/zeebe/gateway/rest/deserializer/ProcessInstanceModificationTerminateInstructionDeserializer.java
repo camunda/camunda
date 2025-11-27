@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.deserializer;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
+import java.util.List;
 import java.util.Set;
 
 public class ProcessInstanceModificationTerminateInstructionDeserializer
@@ -17,11 +18,11 @@ public class ProcessInstanceModificationTerminateInstructionDeserializer
 
   private static final String ELEMENT_ID_FIELD = "elementId";
   private static final String ELEMENT_INSTANCE_KEY_FIELD = "elementInstanceKey";
-  private static final Set<String> SUPPORTED_FIELDS =
-      Set.of(ELEMENT_ID_FIELD, ELEMENT_INSTANCE_KEY_FIELD);
+  private static final List<String> SUPPORTED_FIELDS =
+      List.of(ELEMENT_ID_FIELD, ELEMENT_INSTANCE_KEY_FIELD);
 
   @Override
-  protected Set<String> getSupportedFields() {
+  protected List<String> getSupportedFields() {
     return SUPPORTED_FIELDS;
   }
 
