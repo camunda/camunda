@@ -46,6 +46,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     mutate: cancelProcessInstance,
     isPending: isCancelProcessInstancePending,
   } = useCancelProcessInstance(processInstance.processInstanceKey, {
+    onSuccess: () => handleOperationSuccess('CANCEL_PROCESS_INSTANCE'),
     onError: (error) => {
       notificationsStore.displayNotification({
         kind: 'error',
@@ -59,7 +60,14 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const {
     mutate: resolveProcessInstanceIncidents,
     isPending: isResolveIncidentsPending,
-  } = useResolveProcessInstanceIncidents(processInstance.processInstanceKey);
+  } = useResolveProcessInstanceIncidents(processInstance.processInstanceKey, {
+    onSuccess: () => {
+      handleOperationSuccess('RESOLVE_INCIDENT');
+    },
+    onError: ({status}) => {
+      handleOperationError(status);
+    },
+  });
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({
@@ -96,14 +104,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
         isDismissable: true,
       });
     }
-
-    if (operationType === 'RESOLVE_INCIDENT') {
-      tracking.track({
-        eventName: 'single-operation',
-        operationType: 'RESOLVE_INCIDENT',
-        source: 'instance-header',
-      });
-    }
   };
 
   const handleDelete = async () => {
@@ -114,7 +114,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
           operationType: 'DELETE_PROCESS_INSTANCE',
         },
         onError: ({statusCode}) => handleOperationError(statusCode),
-        onSuccess: handleOperationSuccess,
+        onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
       });
     } catch (error) {
       logger.error(error);
@@ -160,14 +160,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     operations.push({
       type: 'RESOLVE_INCIDENT',
       onExecute: () => {
-        resolveProcessInstanceIncidents(undefined, {
-          onError: ({status}) => {
-            handleOperationError(status);
-          },
-          onSuccess: () => {
-            handleOperationSuccess('RESOLVE_INCIDENT');
-          },
-        });
+        resolveProcessInstanceIncidents();
       },
       disabled: isResolveIncidentsPending,
     });
