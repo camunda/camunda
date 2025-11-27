@@ -58,6 +58,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -245,8 +246,9 @@ public final class ProcessInstanceModificationModifyProcessor
       return;
     }
 
-    final var activateInstructions = new HashSet<>(value.getActivateInstructions());
-    final var terminateInstructions = new HashSet<>(value.getTerminateInstructions());
+    final var activateInstructions = new LinkedHashSet<>(value.getActivateInstructions());
+    final var terminateInstructions =
+        new LinkedHashSet<ProcessInstanceModificationTerminateInstructionValue>();
 
     mapIdInstructions(
         value.getProcessInstanceKey(),
@@ -390,30 +392,32 @@ public final class ProcessInstanceModificationModifyProcessor
         });
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
-    final var elementInstances =
-        new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
-    while (!elementInstances.isEmpty()) {
-      final var elementInstance = elementInstances.poll();
-      final String elementId = elementInstance.getValue().getElementId();
-      if (moveInstructions.containsKey(elementId)) {
-        final var activateInstruction =
-            new ProcessInstanceModificationActivateInstruction()
-                .setElementId(moveInstructions.get(elementId))
-                .setAncestorScopeKey(elementInstance.getParentKey());
-        final var terminateInstruction =
-            new ProcessInstanceModificationTerminateInstruction()
-                .setElementInstanceKey(elementInstance.getKey());
+    if (!moveInstructions.isEmpty() || !terminateInstructionIds.isEmpty()) {
+      final var elementInstances =
+          new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
+      while (!elementInstances.isEmpty()) {
+        final var elementInstance = elementInstances.poll();
+        final String elementId = elementInstance.getValue().getElementId();
+        if (moveInstructions.containsKey(elementId)) {
+          final var activateInstruction =
+              new ProcessInstanceModificationActivateInstruction()
+                  .setElementId(moveInstructions.get(elementId))
+                  .setAncestorScopeKey(elementInstance.getParentKey());
+          final var terminateInstruction =
+              new ProcessInstanceModificationTerminateInstruction()
+                  .setElementInstanceKey(elementInstance.getKey());
 
-        finalActivateInstructions.add(activateInstruction);
-        finalTerminateInstructions.add(terminateInstruction);
-      }
-      if (terminateInstructionIds.contains(elementId)) {
-        finalTerminateInstructions.add(
-            new ProcessInstanceModificationTerminateInstruction()
-                .setElementInstanceKey(elementInstance.getKey()));
-      }
+          finalActivateInstructions.add(activateInstruction);
+          finalTerminateInstructions.add(terminateInstruction);
+        }
+        if (terminateInstructionIds.contains(elementId)) {
+          finalTerminateInstructions.add(
+              new ProcessInstanceModificationTerminateInstruction()
+                  .setElementInstanceKey(elementInstance.getKey()));
+        }
 
-      elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
+        elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
+      }
     }
   }
 
