@@ -12,6 +12,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.*;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -116,6 +117,7 @@ public class ElasticsearchOperationStore implements OperationStore {
     try {
       return ElasticsearchUtil.scrollAllStream(
               es8Client, searchRequestBuilder, OperationEntity.class)
+          .map(Hit::source)
           .toList();
     } catch (final ScrollException e) {
       final String message =
