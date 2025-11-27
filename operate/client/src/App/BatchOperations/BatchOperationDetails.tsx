@@ -752,7 +752,7 @@ const BatchOperationDetails: React.FC = () => {
               operation.state === 'SUSPENDED') && (
               <OverflowMenu
                 size="md"
-                flipped
+                align="bottom"
                 aria-label="Additional options"
               >
                 <OverflowMenuItem
