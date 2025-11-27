@@ -57,11 +57,13 @@ The version discovery automatically uses the `GH_TOKEN` environment variable if 
 - **Better for CI**: Reduces the chance of hitting rate limits in workflows
 
 **Local usage:**
+
 ```bash
 export GH_TOKEN=your_github_token
 ```
 
 **In GitHub Actions:**
+
 ```yaml
 env:
   GH_TOKEN: ${{ github.token }}
@@ -177,11 +179,13 @@ rm -f .cache/zeebe-versions.json
 ### Disable Caching (for debugging)
 
 Option 1: Delete the cache file before running tests
+
 ```bash
 rm -rf .cache
 ```
 
 Option 2: Use the provider directly in your test:
+
 ```java
 // Bypass caching by passing the provider directly
 new VersionCompatibilityMatrix(new GithubVersionProvider())

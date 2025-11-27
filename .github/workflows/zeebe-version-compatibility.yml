@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Generate cache key with current hour
         id: cache-key
-        run: echo "hour=$(date -u +%Y%m%d%H)" >> $GITHUB_OUTPUT
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
         uses: actions/cache@v4
         with:
@@ -90,7 +90,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Generate cache key with current hour
         id: cache-key
-        run: echo "hour=$(date -u +%Y%m%d%H)" >> $GITHUB_OUTPUT
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
         uses: actions/cache@v4
         with:
