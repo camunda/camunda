@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -31,6 +32,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
@@ -52,12 +55,13 @@ import org.junit.jupiter.api.Test;
  */
 class CommandDistributionBehaviorTest {
 
+  private static final int PARTITION_ID = 1;
   private DistributionState mockDistributionState;
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
   private Writers writers;
 
-  private long key;
+  private KeyGenerator keyGenerator;
   private ValueType valueType;
   private DeploymentIntent intent;
   private MockTypedRecord<DeploymentRecord> command;
@@ -67,14 +71,16 @@ class CommandDistributionBehaviorTest {
     mockDistributionState = mock(DistributionState.class);
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
-    writers = new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    writers =
+        new Writers(PARTITION_ID, () -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
+    writers.setKeyGenerator(keyGenerator);
 
-    key = Protocol.encodePartitionId(1, 100);
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     command =
         new MockTypedRecord<>(
-            key, new RecordMetadata().valueType(valueType).intent(intent), new DeploymentRecord());
+            keyGenerator.nextKey(), new RecordMetadata().valueType(valueType).intent(intent), new DeploymentRecord());
   }
 
   @Test
@@ -89,7 +95,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to all partitions
-    behavior.withKey(key).unordered().distribute(command);
+    behavior.withKey(keyGenerator.nextKey()).unordered().distribute(command);
 
     // then no command distribution is started
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords()).isEmpty();
@@ -111,6 +117,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to all partitions
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).unordered().distribute(command);
 
     // then command distribution is started on partition 1 and distributing to all other partitions
@@ -147,6 +154,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to partitions 1 and 3
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).unordered().forPartitions(Set.of(1, 3)).distribute(command);
 
     // then command distribution is started on partition 2 and distributing to all other partitions
@@ -183,6 +191,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing first command in queue to all partitions
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).inQueue("test-queue").distribute(command);
 
     // then command distribution is started on partition 1, distribution is enqueued and triggered
@@ -216,8 +225,8 @@ class CommandDistributionBehaviorTest {
             RoutingInfo.forStaticPartitions(3),
             mockInterpartitionCommandSender);
 
-    final var firstKey = Protocol.encodePartitionId(1, 100);
-    final var secondKey = Protocol.encodePartitionId(1, 101);
+    final var firstKey = keyGenerator.nextKey();
+    final var secondKey = keyGenerator.nextKey();
 
     // when adding two distributions to the same queue
     behavior.withKey(firstKey).inQueue("test-queue").distribute(command);

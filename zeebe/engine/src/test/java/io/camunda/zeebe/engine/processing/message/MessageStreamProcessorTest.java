@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -54,10 +56,11 @@ import org.junit.Test;
 
 public final class MessageStreamProcessorTest {
 
+  private static final int PARTITION_ID = 1;
   private static final EngineConfiguration DEFAULT_ENGINE_CONFIGURATION = new EngineConfiguration();
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
-  @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
+  @Rule public final StreamProcessorRule rule = new StreamProcessorRule(PARTITION_ID);
 
   private SubscriptionCommandSender spySubscriptionCommandSender;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
@@ -66,13 +69,15 @@ public final class MessageStreamProcessorTest {
   @Before
   public void setup() {
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
-    final var mockKeyGenerator = mock(KeyGenerator.class);
+    final var keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
     final var mockDistributionState = mock(DistributionState.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
-    final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
+    final var writers =
+        new Writers(PARTITION_ID, () -> mockProcessingResultBuilder, mockEventAppliers);
+    writers.setKeyGenerator(keyGenerator);
     spySubscriptionCommandSender =
-        spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
+        spy(new SubscriptionCommandSender(PARTITION_ID, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
     spyCommandDistributionBehavior =
         spy(
@@ -82,12 +87,17 @@ public final class MessageStreamProcessorTest {
                 1,
                 RoutingInfo.forStaticPartitions(1),
                 mockInterpartitionCommandSender));
+                PARTITION_ID,
+                routingInfo,
+                mockInterpartitionCommandSender,
+                mock(DistributionMetrics.class)));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
           MessageEventProcessors.addMessageProcessors(
+              PARTITION_ID,
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
               processingState,

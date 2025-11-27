@@ -106,6 +106,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
    *
    * @return the current key from the state
    */
+  @Override
   public long getCurrentKey() {
     return nextValueManager.getCurrentValue();
   }

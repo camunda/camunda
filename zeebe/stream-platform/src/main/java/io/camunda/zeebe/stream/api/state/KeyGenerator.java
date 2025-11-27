@@ -8,7 +8,6 @@
 package io.camunda.zeebe.stream.api.state;
 
 /** Generate unique keys. Should be used for records only. */
-@FunctionalInterface
 public interface KeyGenerator {
 
   /**
@@ -17,4 +16,20 @@ public interface KeyGenerator {
    * @return the next key for a new record
    */
   long nextKey();
+
+  long getCurrentKey();
+
+  static KeyGenerator immutable() {
+    return new KeyGenerator() {
+      @Override
+      public long nextKey() {
+        throw new UnsupportedOperationException("Not allowed to generate a new key");
+      }
+
+      @Override
+      public long getCurrentKey() {
+        throw new UnsupportedOperationException("Not allowed to fetch current key");
+      }
+    };
+  }
 }
