@@ -88,7 +88,6 @@ class OperateProcessInstancePage {
     this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
       hasText: /^Migrated/,
     });
-    this.metadataModal = this.page.getByRole('dialog', { name: 'metadata' });
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
     this.variableAddedBanner = this.page.getByText('Variable added');
