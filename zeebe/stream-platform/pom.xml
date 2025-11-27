@@ -89,6 +89,14 @@
       <artifactId>micrometer-commons</artifactId>
     </dependency>
 
+    <!--    TEST DEPENDENCIES -->
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
