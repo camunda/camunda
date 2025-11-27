@@ -73,6 +73,9 @@ VOLUME /tmp
 
 # Switch to root to allow setting up our own user
 USER root
+# Install dependencies required for the wait-for.sh script
+RUN apk add --no-cache netcat-openbsd curl bash
+
 RUN mkdir -p /usr/local/bin/ && \
     wget -nv -O /usr/local/bin/wait-for-it.sh "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
