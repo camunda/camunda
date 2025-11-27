@@ -63,11 +63,7 @@ const InstanceOperations: React.FC<Props> = ({
       handleOperationError(error.status);
     },
     onSuccess: () => {
-      tracking.track({
-        eventName: 'single-operation',
-        operationType: 'RESOLVE_INCIDENT',
-        source: 'instances-list',
-      });
+      handleOperationSuccess('RESOLVE_INCIDENT');
     },
   });
 
