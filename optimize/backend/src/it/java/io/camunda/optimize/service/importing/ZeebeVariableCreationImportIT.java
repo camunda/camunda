@@ -19,7 +19,6 @@ import static io.camunda.optimize.dto.optimize.query.variable.VariableType.STRIN
 import static io.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractCCSMIT;
@@ -34,12 +33,13 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import java.util.stream.IntStream;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
@@ -188,20 +188,38 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             Tuple.tuple(
                 "numericStrings",
                 OBJECT.getId(),
-                singletonList(
+                Collections.singletonList(
                     variablesClient.createMapJsonObjectVariableDto(numericStringMap).getValue())),
-            Tuple.tuple("numericStrings.10", STRING.getId(), singletonList("1234567890")),
-            Tuple.tuple("numericStrings.11", STRING.getId(), singletonList("12345678901")),
-            Tuple.tuple("numericStrings.12", STRING.getId(), singletonList("123456789012")),
-            Tuple.tuple("numericStrings.13", STRING.getId(), singletonList("1234567890123")),
-            Tuple.tuple("numericStrings.14", STRING.getId(), singletonList("12345678901234")),
-            Tuple.tuple("numericStrings.15", STRING.getId(), singletonList("123456789012345")),
-            Tuple.tuple("numericStrings.16", STRING.getId(), singletonList("1234567890123456")),
-            Tuple.tuple("numericStrings.17", STRING.getId(), singletonList("12345678901234567")),
-            Tuple.tuple("numericStrings.18", STRING.getId(), singletonList("123456789012345678")),
-            Tuple.tuple("numericStrings.19", STRING.getId(), singletonList("1234567890123456789")),
             Tuple.tuple(
-                "numericStrings.20", STRING.getId(), singletonList("12345678901234567890")));
+                "numericStrings.10", STRING.getId(), Collections.singletonList("1234567890")),
+            Tuple.tuple(
+                "numericStrings.11", STRING.getId(), Collections.singletonList("12345678901")),
+            Tuple.tuple(
+                "numericStrings.12", STRING.getId(), Collections.singletonList("123456789012")),
+            Tuple.tuple(
+                "numericStrings.13", STRING.getId(), Collections.singletonList("1234567890123")),
+            Tuple.tuple(
+                "numericStrings.14", STRING.getId(), Collections.singletonList("12345678901234")),
+            Tuple.tuple(
+                "numericStrings.15", STRING.getId(), Collections.singletonList("123456789012345")),
+            Tuple.tuple(
+                "numericStrings.16", STRING.getId(), Collections.singletonList("1234567890123456")),
+            Tuple.tuple(
+                "numericStrings.17",
+                STRING.getId(),
+                Collections.singletonList("12345678901234567")),
+            Tuple.tuple(
+                "numericStrings.18",
+                STRING.getId(),
+                Collections.singletonList("123456789012345678")),
+            Tuple.tuple(
+                "numericStrings.19",
+                STRING.getId(),
+                Collections.singletonList("1234567890123456789")),
+            Tuple.tuple(
+                "numericStrings.20",
+                STRING.getId(),
+                Collections.singletonList("12345678901234567890")));
   }
 
   @Test
@@ -230,7 +248,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
         .containsExactlyInAnyOrder(
             Tuple.tuple("numericStrings", STRING.getId(), numericStringList),
             // additional _listSize variable for lists
-            Tuple.tuple("numericStrings._listSize", LONG.getId(), singletonList("11")));
+            Tuple.tuple("numericStrings._listSize", LONG.getId(), Collections.singletonList("11")));
   }
 
   @Test
@@ -281,8 +299,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             SimpleProcessVariableDto::getValue,
             SimpleProcessVariableDto::getType)
         .containsExactlyInAnyOrder(
-            Tuple.tuple("var1", singletonList("someValue"), STRING_TYPE),
-            Tuple.tuple("var1", singletonList("false"), BOOLEAN_TYPE));
+            Tuple.tuple("var1", Collections.singletonList("someValue"), STRING_TYPE),
+            Tuple.tuple("var1", Collections.singletonList("false"), BOOLEAN_TYPE));
   }
 
   @Test
@@ -311,7 +329,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getValue,
             SimpleProcessVariableDto::getType)
-        .containsExactly(Tuple.tuple("var1", singletonList("someValue"), STRING_TYPE));
+        .containsExactly(Tuple.tuple("var1", Collections.singletonList("someValue"), STRING_TYPE));
   }
 
   @Test
@@ -385,7 +403,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getValue,
             SimpleProcessVariableDto::getType)
-        .containsExactly(Tuple.tuple("supportedVariable", singletonList("someValue"), STRING_TYPE));
+        .containsExactly(
+            Tuple.tuple("supportedVariable", Collections.singletonList("someValue"), STRING_TYPE));
   }
 
   @SneakyThrows
@@ -415,21 +434,27 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             Tuple.tuple(
                 "objectVar",
                 OBJECT.getId(),
-                singletonList(
+                Collections.singletonList(
                     variablesClient.createMapJsonObjectVariableDto(PERSON_VARIABLES).getValue())),
-            Tuple.tuple("objectVar.name", STRING.getId(), singletonList("Pond")),
-            Tuple.tuple("objectVar.age", DOUBLE.getId(), singletonList("28.0")),
-            Tuple.tuple("objectVar.IQ", DOUBLE.getId(), singletonList("9.9999999999999E13")),
+            Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
+            Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("28.0")),
             Tuple.tuple(
-                "objectVar.birthday", DATE.getId(), singletonList("1992-11-17T00:00:00.000+0100")),
-            Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), singletonList("99.9")),
-            Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), singletonList("false")),
-            Tuple.tuple("objectVar.hands", DOUBLE.getId(), singletonList("2.0")),
-            Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), singletonList("true")),
-            Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), singletonList("false")),
+                "objectVar.IQ", DOUBLE.getId(), Collections.singletonList("9.9999999999999E13")),
+            Tuple.tuple(
+                "objectVar.birthday",
+                DATE.getId(),
+                Collections.singletonList("1992-11-17T00:00:00.000+0100")),
+            Tuple.tuple(
+                "objectVar.muscleMassInPercent", DOUBLE.getId(), Collections.singletonList("99.9")),
+            Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), Collections.singletonList("false")),
+            Tuple.tuple("objectVar.hands", DOUBLE.getId(), Collections.singletonList("2.0")),
+            Tuple.tuple(
+                "objectVar.skills.read", BOOLEAN.getId(), Collections.singletonList("true")),
+            Tuple.tuple(
+                "objectVar.skills.write", BOOLEAN.getId(), Collections.singletonList("false")),
             Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
             // additional _listSize variable for lists
-            Tuple.tuple("objectVar.likes._listSize", LONG.getId(), singletonList("2")));
+            Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2")));
   }
 
   @SneakyThrows
@@ -460,7 +485,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             SimpleProcessVariableDto::getName,
             SimpleProcessVariableDto::getType,
             SimpleProcessVariableDto::getValue)
-        .containsExactlyInAnyOrder(Tuple.tuple("boolVar", BOOLEAN.getId(), singletonList("true")));
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("boolVar", BOOLEAN.getId(), Collections.singletonList("true")));
   }
 
   @SneakyThrows
@@ -487,7 +513,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
         .containsExactlyInAnyOrder(
             Tuple.tuple("listVar", STRING.getId(), List.of("value1", "value2")),
             // additional _listSize variable for lists
-            Tuple.tuple("listVar._listSize", LONG.getId(), singletonList("2")));
+            Tuple.tuple("listVar._listSize", LONG.getId(), Collections.singletonList("2")));
   }
 
   @Test
@@ -524,8 +550,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             SimpleProcessVariableDto::getValue,
             SimpleProcessVariableDto::getType)
         .containsExactlyInAnyOrder(
-            Tuple.tuple("var1", singletonList("someValue1"), STRING_TYPE),
-            Tuple.tuple("var2", singletonList("someValue2"), STRING_TYPE));
+            Tuple.tuple("var1", Collections.singletonList("someValue1"), STRING_TYPE),
+            Tuple.tuple("var2", Collections.singletonList("someValue2"), STRING_TYPE));
   }
 
   @Test
@@ -556,8 +582,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             SimpleProcessVariableDto::getValue,
             SimpleProcessVariableDto::getType)
         .containsExactlyInAnyOrder(
-            Tuple.tuple("var1", singletonList("someValue1"), STRING_TYPE),
-            Tuple.tuple("var2", singletonList("someValue2"), STRING_TYPE));
+            Tuple.tuple("var1", Collections.singletonList("someValue1"), STRING_TYPE),
+            Tuple.tuple("var2", Collections.singletonList("someValue2"), STRING_TYPE));
   }
 
   private ProcessInstanceDto getProcessInstanceForId(final String processInstanceId) {
@@ -589,11 +615,11 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             SimpleProcessVariableDto::getValue,
             SimpleProcessVariableDto::getType)
         .containsExactlyInAnyOrder(
-            Tuple.tuple("var1", singletonList("someValue"), STRING_TYPE),
-            Tuple.tuple("var2", singletonList("false"), BOOLEAN_TYPE),
-            Tuple.tuple("var3", singletonList("123"), DOUBLE_TYPE),
-            Tuple.tuple("var4", singletonList("123.3"), DOUBLE_TYPE),
-            Tuple.tuple("var5", singletonList(""), STRING_TYPE));
+            Tuple.tuple("var1", Collections.singletonList("someValue"), STRING_TYPE),
+            Tuple.tuple("var2", Collections.singletonList("false"), BOOLEAN_TYPE),
+            Tuple.tuple("var3", Collections.singletonList("123"), DOUBLE_TYPE),
+            Tuple.tuple("var4", Collections.singletonList("123.3"), DOUBLE_TYPE),
+            Tuple.tuple("var5", Collections.singletonList(""), STRING_TYPE));
   }
 
   private ProcessInstanceEvent deployProcessAndStartProcessInstance() {
