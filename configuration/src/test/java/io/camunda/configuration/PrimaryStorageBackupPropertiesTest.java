@@ -16,7 +16,6 @@ import io.camunda.zeebe.backup.schedule.Schedule.AutoSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.CronSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
-import io.camunda.zeebe.backup.schedule.Schedule.ScheduleType;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
@@ -51,12 +50,9 @@ public class PrimaryStorageBackupPropertiesTest {
     @Test
     void shouldSetCronExpression() {
       assertThat(backupSchedulerCfg.getSchedule()).isInstanceOf(CronSchedule.class);
-      assertThat(backupSchedulerCfg.getSchedule().getType()).isEqualTo(ScheduleType.CRON);
 
       assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(CronSchedule.class);
-      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule().getType())
-          .isEqualTo(ScheduleType.CRON);
     }
   }
 
@@ -106,12 +102,9 @@ public class PrimaryStorageBackupPropertiesTest {
     @Test
     void shouldParseConfig() {
       assertThat(backupSchedulerCfg.getSchedule()).isInstanceOf(IntervalSchedule.class);
-      assertThat(backupSchedulerCfg.getSchedule().getType()).isEqualTo(ScheduleType.INTERVAL);
       assertThat(backupSchedulerCfg.getCheckpointInterval()).isEqualTo(Duration.ofMinutes(2));
       assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(IntervalSchedule.class);
-      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule().getType())
-          .isEqualTo(ScheduleType.INTERVAL);
       assertThat(backupSchedulerCfg.getRetention().getWindow()).isEqualTo(Duration.ofDays(7));
       assertThat(backupSchedulerCfg.isContinuous()).isTrue();
       assertThat(backupSchedulerCfg.isRequired()).isTrue();
@@ -176,8 +169,6 @@ public class PrimaryStorageBackupPropertiesTest {
     void shouldParseConfig() {
       assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(AutoSchedule.class);
-      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule().getType())
-          .isEqualTo(ScheduleType.AUTO);
     }
   }
 }

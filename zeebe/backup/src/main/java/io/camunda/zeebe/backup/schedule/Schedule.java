@@ -44,8 +44,6 @@ public sealed interface Schedule {
    */
   Optional<Instant> previousExecution(Instant from);
 
-  ScheduleType getType();
-
   /**
    * @param expression the expression string to parse
    * @return the typed {@link Schedule}
@@ -91,11 +89,6 @@ public sealed interface Schedule {
           .lastExecution(from.atZone(ZoneId.systemDefault()))
           .map(ChronoZonedDateTime::toInstant);
     }
-
-    @Override
-    public ScheduleType getType() {
-      return ScheduleType.CRON;
-    }
   }
 
   record IntervalSchedule(Duration interval) implements Schedule {
@@ -109,11 +102,6 @@ public sealed interface Schedule {
     public Optional<Instant> previousExecution(final Instant from) {
       return Optional.of(from.minus(interval));
     }
-
-    @Override
-    public ScheduleType getType() {
-      return ScheduleType.INTERVAL;
-    }
   }
 
   record NoneSchedule() implements Schedule {
@@ -126,11 +114,6 @@ public sealed interface Schedule {
     @Override
     public Optional<Instant> previousExecution(final Instant from) {
       return Optional.empty();
-    }
-
-    @Override
-    public ScheduleType getType() {
-      return ScheduleType.NONE;
     }
   }
 
@@ -151,17 +134,5 @@ public sealed interface Schedule {
     public Optional<Instant> previousExecution(final Instant from) {
       return Optional.empty();
     }
-
-    @Override
-    public ScheduleType getType() {
-      return ScheduleType.AUTO;
-    }
-  }
-
-  enum ScheduleType {
-    CRON,
-    INTERVAL,
-    NONE,
-    AUTO
   }
 }
