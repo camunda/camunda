@@ -127,22 +127,29 @@ public final class RdbmsExporter {
 
     boolean exported = false;
     if (registeredHandlers.containsKey(record.getValueType())) {
-      for (final var handler : registeredHandlers.get(record.getValueType())) {
-        if (handler.canExport(record)) {
-          LOG.trace(
-              "[RDBMS Exporter] Exporting record {} with handler {}",
-              record.getValue(),
-              handler.getClass());
-          handler.export(record);
-          exported = true;
-        } else {
-          LOG.trace(
-              "[RDBMS Exporter] Handler {} can not export record {}",
-              handler.getClass(),
-              record.getValueType());
-        }
+      // Set the record timestamp context for exporting latency tracking
+      rdbmsWriter.getExecutionQueue().setCurrentRecordTimestamp(record.getTimestamp());
+      try {
+        for (final var handler : registeredHandlers.get(record.getValueType())) {
+          if (handler.canExport(record)) {
+            LOG.trace(
+                "[RDBMS Exporter] Exporting record {} with handler {}",
+                record.getValue(),
+                handler.getClass());
+            handler.export(record);
+            exported = true;
+          } else {
+            LOG.trace(
+                "[RDBMS Exporter] Handler {} can not export record {}",
+                handler.getClass(),
+                record.getValueType());
+          }
 
-        lastPosition = record.getPosition();
+          lastPosition = record.getPosition();
+        }
+      } finally {
+        // Clear the timestamp context after processing
+        rdbmsWriter.getExecutionQueue().setCurrentRecordTimestamp(-1);
       }
     } else {
       LOG.trace("[RDBMS Exporter] No registered handler found for {}", record.getValueType());

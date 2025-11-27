@@ -14,7 +14,21 @@ public record QueueItem(
     WriteStatementType statementType,
     Object id,
     String statementId,
-    Object parameter) {
+    Object parameter,
+    long recordCreatedTimestampMs) {
+
+  /**
+   * Creates a QueueItem without a record timestamp. This constructor is kept for backward
+   * compatibility and for cases where the record timestamp is not available.
+   */
+  public QueueItem(
+      final ContextType contextType,
+      final WriteStatementType statementType,
+      final Object id,
+      final String statementId,
+      final Object parameter) {
+    this(contextType, statementType, id, statementId, parameter, -1L);
+  }
 
   public QueueItem copy(final Function<QueueItemBuilder, QueueItemBuilder> builderFunction) {
     return builderFunction
@@ -25,7 +39,8 @@ public record QueueItem(
                 .statementType(statementType)
                 .id(id)
                 .statementId(statementId)
-                .parameter(parameter))
+                .parameter(parameter)
+                .recordCreatedTimestampMs(recordCreatedTimestampMs))
         .build();
   }
 
@@ -37,6 +52,7 @@ public record QueueItem(
     private Object id;
     private String statementId;
     private Object parameter;
+    private long recordCreatedTimestampMs = -1L;
 
     public QueueItemBuilder contextType(final ContextType contextType) {
       this.contextType = contextType;
@@ -63,8 +79,14 @@ public record QueueItem(
       return this;
     }
 
+    public QueueItemBuilder recordCreatedTimestampMs(final long recordCreatedTimestampMs) {
+      this.recordCreatedTimestampMs = recordCreatedTimestampMs;
+      return this;
+    }
+
     public QueueItem build() {
-      return new QueueItem(contextType, statementType, id, statementId, parameter);
+      return new QueueItem(
+          contextType, statementType, id, statementId, parameter, recordCreatedTimestampMs);
     }
   }
 }

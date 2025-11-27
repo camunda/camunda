@@ -162,6 +162,22 @@ public class RdbmsWriterMetrics {
     queueMemoryDistribution.record(memoryBytes);
   }
 
+  /**
+   * Records the exporting latency - the time from when the oldest record in the batch was created
+   * to when it was committed/flushed to the database.
+   *
+   * @param latencyMs the latency in milliseconds
+   */
+  public void recordExportingLatency(final long latencyMs) {
+    Timer.builder(meterName("record.exporting.latency"))
+        .description(
+            "Time from record creation to commit/flush to the database (end-to-end export latency)")
+        .publishPercentileHistogram()
+        .minimumExpectedValue(Duration.ofMillis(1))
+        .register(meterRegistry)
+        .record(Duration.ofMillis(latencyMs));
+  }
+
   private String meterName(final String name) {
     return NAMESPACE + "." + name;
   }
