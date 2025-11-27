@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.function.Consumer;
 
 public interface TypedEventWriter {
 
@@ -70,4 +73,25 @@ public interface TypedEventWriter {
    * @return true if an event of length {@code eventLength} can be written
    */
   boolean canWriteEventOfLength(final int eventLength);
+
+  /**
+   * Validate that the provided key is valid: - it's assigned to the expected partition - it's not
+   * higher than the current key
+   *
+   * @param key to validate
+   * @param expectedPartitionId expected partition
+   * @param keyGenerator to verify the key is not exceeding the highest key generated
+   */
+  static void validateKey(
+      final long key, final int expectedPartitionId, final KeyGenerator keyGenerator) {
+    if (key == -1L) {
+      return;
+    }
+    final var decodedPartitionId = Protocol.decodePartitionId(key);
+    if (decodedPartitionId == expectedPartitionId && key > keyGenerator.getCurrentKey()) {
+      throw new IllegalArgumentException(
+          "Expected to receive a key lesser than %d, but got %d"
+              .formatted(keyGenerator.getCurrentKey(), key));
+    }
+  }
 }
