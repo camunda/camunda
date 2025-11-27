@@ -963,13 +963,15 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append("\"")
         .append(value.getCondition())
-        .append("\"")
+        .append("\" \"")
         .append(String.join(", ", value.getVariableNames()))
-        .append("\"")
+        .append("\" \"")
         .append(String.join(", ", value.getVariableEvents()))
-        .append("\"")
+        .append("\" ")
         .append(" <catch event ")
         .append(formatId(value.getCatchEventId()))
+        .append(formatKey(value.getElementInstanceKey()))
+        .append(">")
         .toString();
   }
 
