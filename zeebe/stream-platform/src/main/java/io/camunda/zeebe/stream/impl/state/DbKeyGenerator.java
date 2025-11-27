@@ -68,7 +68,11 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
    *
    * @return the current key from the state
    */
+<<<<<<< HEAD
   @VisibleForTesting
+=======
+  @Override
+>>>>>>> 71541358 (feat: validate that the key() in Record is not higher than current key)
   public long getCurrentKey() {
     return nextValueManager.getCurrentValue();
   }

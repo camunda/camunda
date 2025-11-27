@@ -17,12 +17,18 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
+<<<<<<< HEAD
 import io.camunda.zeebe.protocol.Protocol;
+=======
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
+>>>>>>> 71541358 (feat: validate that the key() in Record is not higher than current key)
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
@@ -31,6 +37,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Map;
+>>>>>>> 71541358 (feat: validate that the key() in Record is not higher than current key)
 import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
@@ -52,12 +63,13 @@ import org.junit.jupiter.api.Test;
  */
 class CommandDistributionBehaviorTest {
 
+  private static final int PARTITION_ID = 1;
   private DistributionState mockDistributionState;
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
   private Writers writers;
 
-  private long key;
+  private KeyGenerator keyGenerator;
   private ValueType valueType;
   private DeploymentIntent intent;
   private MockTypedRecord<DeploymentRecord> command;
@@ -67,14 +79,22 @@ class CommandDistributionBehaviorTest {
     mockDistributionState = mock(DistributionState.class);
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
-    writers = new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    writers =
+        new Writers(PARTITION_ID, () -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
+    writers.setKeyGenerator(keyGenerator);
 
-    key = Protocol.encodePartitionId(1, 100);
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     command =
         new MockTypedRecord<>(
+<<<<<<< HEAD
             key, new RecordMetadata().valueType(valueType).intent(intent), new DeploymentRecord());
+=======
+            keyGenerator.nextKey(),
+            new RecordMetadata().valueType(valueType).intent(intent).authorization(authInfo),
+            new DeploymentRecord());
+>>>>>>> 71541358 (feat: validate that the key() in Record is not higher than current key)
   }
 
   @Test
@@ -89,7 +109,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to all partitions
-    behavior.withKey(key).unordered().distribute(command);
+    behavior.withKey(keyGenerator.nextKey()).unordered().distribute(command);
 
     // then no command distribution is started
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords()).isEmpty();
@@ -111,6 +131,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to all partitions
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).unordered().distribute(command);
 
     // then command distribution is started on partition 1 and distributing to all other partitions
@@ -147,6 +168,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to partitions 1 and 3
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).unordered().forPartitions(Set.of(1, 3)).distribute(command);
 
     // then command distribution is started on partition 2 and distributing to all other partitions
@@ -167,7 +189,62 @@ class CommandDistributionBehaviorTest {
     verify(mockInterpartitionCommandSender)
         .sendCommand(eq(1), eq(valueType), eq(intent), eq(key), any());
     verify(mockInterpartitionCommandSender)
+<<<<<<< HEAD
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+=======
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+    verifyNoMoreInteractions(mockInterpartitionCommandSender);
+  }
+
+  @Test
+  void shouldDistributeCommandWithAuthInfo() {
+    // given 3 partitions and behavior on partition 1
+    final var behavior =
+        new CommandDistributionBehavior(
+            mockDistributionState,
+            writers,
+            1,
+            RoutingInfo.forStaticPartitions(3),
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics);
+
+    // given command with auth info
+    final var authInfo =
+        new AuthInfo()
+            .setFormat(AuthDataFormat.JWT)
+            .setAuthData("some-jwt-token")
+            .setClaims(Map.of("a", "b", "c", 3));
+
+    final var key = keyGenerator.nextKey();
+    final var command =
+        new MockTypedRecord<>(
+            key,
+            new RecordMetadata().valueType(valueType).intent(intent).authorization(authInfo),
+            new DeploymentRecord());
+
+    // when distributing to all partitions
+    behavior.withKey(key).unordered().distribute(command);
+
+    // then command distribution is started on partition 1 and distributing to all other partitions
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .extracting(
+            Record::getKey,
+            Record::getIntent,
+            r -> r.getValue().getPartitionId(),
+            r -> r.getValue().getIntent())
+        .hasSize(3)
+        .startsWith(tuple(key, CommandDistributionIntent.STARTED, 1, intent))
+        .contains(
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2, intent),
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 3, intent));
+
+    // then command is sent to all other partitions
+    fakeProcessingResultBuilder.flushPostCommitTasks();
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+>>>>>>> 71541358 (feat: validate that the key() in Record is not higher than current key)
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 
@@ -183,6 +260,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing first command in queue to all partitions
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).inQueue("test-queue").distribute(command);
 
     // then command distribution is started on partition 1, distribution is enqueued and triggered
@@ -216,8 +294,8 @@ class CommandDistributionBehaviorTest {
             RoutingInfo.forStaticPartitions(3),
             mockInterpartitionCommandSender);
 
-    final var firstKey = Protocol.encodePartitionId(1, 100);
-    final var secondKey = Protocol.encodePartitionId(1, 101);
+    final var firstKey = keyGenerator.nextKey();
+    final var secondKey = keyGenerator.nextKey();
 
     // when adding two distributions to the same queue
     behavior.withKey(firstKey).inQueue("test-queue").distribute(command);
@@ -248,4 +326,78 @@ class CommandDistributionBehaviorTest {
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(firstKey), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
+<<<<<<< HEAD
+=======
+
+  @Nested
+  class OnAcknowledge {
+    CommandDistributionBehavior behavior;
+
+    @BeforeEach
+    void setUp() {
+      behavior =
+          new CommandDistributionBehavior(
+              mockDistributionState,
+              writers,
+              PARTITION_ID,
+              RoutingInfo.forStaticPartitions(2),
+              mockInterpartitionCommandSender,
+              mockDistributionMetrics);
+    }
+
+    @Test
+    public void shouldAcknowledgeCommandAndFinishDistribution() {
+      final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
+
+      final var key = keyGenerator.nextKey();
+      when(mockDistributionState.hasPendingDistribution(key)).thenReturn(false);
+
+      behavior.onAcknowledgeDistribution(key, record);
+
+      Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+          .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+          .containsExactly(
+              tuple(key, CommandDistributionIntent.ACKNOWLEDGED, 2),
+              tuple(key, CommandDistributionIntent.FINISH, 1));
+    }
+
+    @Test
+    public void shouldAcknowledgeCommandAndNotFinishDistribution() {
+      final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
+
+      final var key = keyGenerator.nextKey();
+      when(mockDistributionState.hasPendingDistribution(key)).thenReturn(true);
+
+      behavior.onAcknowledgeDistribution(key, record);
+
+      Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+          .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+          .containsExactly(tuple(key, CommandDistributionIntent.ACKNOWLEDGED, 2));
+    }
+
+    @Test
+    public void shouldAcknowledgeCommandAndContinueQueue() {
+      final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
+      final CommandDistributionRecord otherRecord =
+          new CommandDistributionRecord().setPartitionId(2);
+
+      final var key = keyGenerator.nextKey();
+      final var nextKey = keyGenerator.nextKey();
+      when(mockDistributionState.getQueueIdForDistribution(key)).thenReturn(Optional.of("queue"));
+      when(mockDistributionState.getNextQueuedDistributionKey("queue", 2))
+          .thenReturn(Optional.of(nextKey));
+      when(mockDistributionState.getCommandDistributionRecord(nextKey, 2)).thenReturn(otherRecord);
+      when(mockDistributionState.hasPendingDistribution(key)).thenReturn(false);
+
+      behavior.onAcknowledgeDistribution(key, record);
+
+      Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+          .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+          .containsExactly(
+              tuple(key, CommandDistributionIntent.ACKNOWLEDGED, 2),
+              tuple(nextKey, CommandDistributionIntent.DISTRIBUTING, 2),
+              tuple(key, CommandDistributionIntent.FINISH, 1));
+    }
+  }
+>>>>>>> 71541358 (feat: validate that the key() in Record is not higher than current key)
 }
