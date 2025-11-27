@@ -10,7 +10,7 @@ package io.camunda.migration.identity.handler.sm;
 import static io.camunda.migration.identity.MigrationUtil.convertDecisionPermissions;
 import static io.camunda.migration.identity.MigrationUtil.convertProcessPermissions;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
-import static io.camunda.migration.identity.config.EntitiesProperties.EntityType.GROUP;
+import static io.camunda.migration.identity.config.EntitiesProperties.EntityType.ROLE;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE;
 
@@ -91,7 +91,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     groupRoles.forEach(
         role -> {
           try {
-            final var roleId = normalizeID(role.name(), entitiesProperties, GROUP);
+            final var roleId = normalizeID(role.name(), entitiesProperties, ROLE);
             logger.debug("Assigning role '{}' to group '{}'", roleId, group.name());
             final var roleMember = new RoleMemberRequest(roleId, group.name(), EntityType.GROUP);
             retryOnBackpressure(

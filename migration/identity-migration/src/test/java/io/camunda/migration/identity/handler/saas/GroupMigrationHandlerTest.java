@@ -9,6 +9,7 @@ package io.camunda.migration.identity.handler.saas;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -419,5 +420,85 @@ public class GroupMigrationHandlerTest {
     // then
     verify(groupService, times(2)).createGroup(any(GroupDTO.class));
     verify(groupService, times(3)).assignMember(any(GroupMemberDTO.class));
+  }
+
+  @Test
+  public void shouldApplyEntitySpecificNormalizationToGroupID() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    // Groups: preserve case, allow @ and .
+    migrationProperties.getEntities().getGroup().setLowercase(false);
+    migrationProperties.getEntities().getGroup().setPattern("[^a-zA-Z0-9_@.-]");
+
+    final var handler =
+        new GroupMigrationHandler(
+            CamundaAuthentication.none(),
+            consoleClient,
+            managementIdentityClient,
+            groupService,
+            migrationProperties);
+
+    final var members = new ConsoleClient.Members(List.of(), List.of());
+    when(consoleClient.fetchMembers()).thenReturn(members);
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(
+            List.of(new Group("id1", "Engineering#Team"), new Group("id2", "Support@Company.US")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupUsers(any())).thenReturn(List.of());
+    when(groupService.createGroup(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    handler.migrate();
+
+    // then
+    final var groupCapture = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService, times(2)).createGroup(groupCapture.capture());
+    final var groupDTOs = groupCapture.getAllValues();
+
+    // Group IDs should be normalized per GROUP config
+    assertThat(groupDTOs)
+        .extracting(GroupDTO::groupId, GroupDTO::name)
+        .containsExactlyInAnyOrder(
+            tuple("Engineering_Team", "Engineering#Team"), // # replaced with _
+            tuple("Support@Company.US", "Support@Company.US")); // @ and . allowed
+  }
+
+  @Test
+  public void shouldUseDefaultNormalizationWhenGroupConfigNotSet() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setBackpressureDelay(100);
+
+    // Only set defaults (lowercase, strict pattern)
+    migrationProperties.getEntities().getDefaults().setLowercase(true);
+    migrationProperties.getEntities().getDefaults().setPattern("[^a-z0-9_]");
+
+    final var handler =
+        new GroupMigrationHandler(
+            CamundaAuthentication.none(),
+            consoleClient,
+            managementIdentityClient,
+            groupService,
+            migrationProperties);
+
+    final var members = new ConsoleClient.Members(List.of(), List.of());
+    when(consoleClient.fetchMembers()).thenReturn(members);
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(new Group("id1", "Test@Group-123")))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupUsers(any())).thenReturn(List.of());
+    when(groupService.createGroup(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    handler.migrate();
+
+    // then
+    final var groupCapture = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService, times(1)).createGroup(groupCapture.capture());
+
+    // Should apply default normalization: lowercase, replace all special chars
+    assertThat(groupCapture.getValue().groupId()).isEqualTo("test_group_123");
   }
 }
