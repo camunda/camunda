@@ -33,7 +33,6 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
-import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -54,6 +53,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.util.ObjectSizeEstimator;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
@@ -522,7 +522,7 @@ final class CamundaExporterIT {
     final var largeString = RandomStringUtils.randomAlphanumeric(250_000);
     final var varEntity = new VariableEntity();
     varEntity.setFullValue(largeString);
-    final var variableSize = EntitySizeEstimator.estimateEntitySize(varEntity);
+    final var variableSize = ObjectSizeEstimator.estimateSize(varEntity);
 
     final var requiredVariableRecordsForFlush =
         Math.ceil((double) (memoryLimit * 1024 * 1024) / variableSize);

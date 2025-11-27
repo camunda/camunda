@@ -54,7 +54,10 @@ public interface ExecutionQueue {
 
   /**
    * Checks if the queue has reached its flush limit and flushes if necessary. Does nothing if no
-   * flush limit is configured (queueFlushLimit <= 0).
+   * flush limit is configured (both queueFlushLimit <= 0 and queueMemoryLimit <= 0).
+   *
+   * <p>The queue will be flushed if either the count-based limit or the memory-based limit is
+   * exceeded.
    *
    * @return true if the queue was flushed, false otherwise
    */

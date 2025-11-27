@@ -24,6 +24,7 @@ public class RdbmsWriterMetrics {
 
   private final MeterRegistry meterRegistry;
   private final Timer flushLatency;
+  private final DistributionSummary queueMemoryDistribution;
   private Sample flushLatencyMeasurement;
 
   public RdbmsWriterMetrics(final MeterRegistry meterRegistry) {
@@ -34,6 +35,21 @@ public class RdbmsWriterMetrics {
             .description(
                 "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
             .publishPercentileHistogram()
+            .register(meterRegistry);
+
+    queueMemoryDistribution =
+        DistributionSummary.builder(meterName("queue.memory.bytes"))
+            .description("Estimated memory usage of the execution queue in bytes")
+            .baseUnit("bytes")
+            .serviceLevelObjectives(
+                1024, // 1KB
+                10240, // 10KB
+                102400, // 100KB
+                1048576, // 1MB
+                5242880, // 5MB
+                10485760, // 10MB
+                52428800, // 50MB
+                104857600) // 100MB
             .register(meterRegistry);
   }
 
@@ -140,6 +156,10 @@ public class RdbmsWriterMetrics {
     if (flushLatencyMeasurement != null) {
       flushLatencyMeasurement.stop(flushLatency);
     }
+  }
+
+  public void recordQueueMemoryUsage(final long memoryBytes) {
+    queueMemoryDistribution.record(memoryBytes);
   }
 
   private String meterName(final String name) {

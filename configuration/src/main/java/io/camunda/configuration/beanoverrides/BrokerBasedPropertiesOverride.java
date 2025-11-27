@@ -780,6 +780,7 @@ public class BrokerBasedPropertiesOverride {
     final Map<String, Object> args =
         exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
     setArgIfNotNull(args, "queueSize", database.getQueueSize());
+    setArgIfNotNull(args, "queueMemoryLimit", database.getQueueMemoryLimit());
     setArgIfNotNull(args, "flushInterval", database.getFlushInterval());
 
     if (database.getHistory() != null) {
