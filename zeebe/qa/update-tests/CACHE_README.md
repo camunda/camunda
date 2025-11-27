@@ -49,6 +49,24 @@ This file contains a JSON array of version strings discovered from GitHub tags.
 
 ## Cache Behavior
 
+### GitHub API Authentication
+
+The version discovery automatically uses the `GH_TOKEN` environment variable if available for authenticated GitHub API requests. This provides:
+- **Higher rate limits**: 5,000 requests/hour (vs 60 for unauthenticated)
+- **More reliable**: Less likely to hit rate limiting issues
+- **Better for CI**: Reduces the chance of hitting rate limits in workflows
+
+**Local usage:**
+```bash
+export GH_TOKEN=your_github_token
+```
+
+**In GitHub Actions:**
+```yaml
+env:
+  GH_TOKEN: ${{ github.token }}
+```
+
 ### Application Cache
 
 **Cache Miss** (file doesn't exist):
