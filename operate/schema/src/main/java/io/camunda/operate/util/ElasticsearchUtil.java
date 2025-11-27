@@ -21,6 +21,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.ScrollRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -438,11 +439,11 @@ public abstract class ElasticsearchUtil {
     scrollWith(searchRequest, esClient, searchHitsProcessor, null, null);
   }
 
-  public static <T> Stream<T> scrollAllStream(
+  public static <T> Stream<Hit<T>> scrollAllStream(
       final ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
       final Class<T> docClass) {
-    final Queue<T> batchQueue = new LinkedList<>();
+    final Queue<Hit<T>> batchQueue = new LinkedList<>();
     final String[] scrollIdHolder = new String[1]; // mutable holder
 
     searchRequestBuilder.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms")));
@@ -458,7 +459,7 @@ public abstract class ElasticsearchUtil {
                     final co.elastic.clients.elasticsearch.core.SearchResponse<T> response =
                         client.search(searchReq, docClass);
                     scrollIdHolder[0] = response.scrollId();
-                    response.hits().hits().forEach(hit -> batchQueue.add(hit.source()));
+                    batchQueue.addAll(response.hits().hits());
                   } else {
                     // Subsequent requests continue the scroll
                     final var response =
@@ -476,7 +477,7 @@ public abstract class ElasticsearchUtil {
                       return null;
                     }
 
-                    response.hits().hits().forEach(hit -> batchQueue.add(hit.source()));
+                    response.hits().hits().forEach(batchQueue::add);
                   }
                 } catch (final IOException e) {
                   throw new ScrollException("Error during scroll with id: " + scrollIdHolder[0], e);

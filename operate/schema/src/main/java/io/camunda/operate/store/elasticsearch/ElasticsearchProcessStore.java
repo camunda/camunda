@@ -510,17 +510,19 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final var resStream =
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
 
-      resStream.forEach(
-          resMap ->
-              callHierarchy.add(
-                  Map.of(
-                      "instanceId",
-                      String.valueOf(resMap.get(ID)),
-                      "processDefinitionId",
-                      String.valueOf(resMap.get(PROCESS_KEY)),
-                      "processDefinitionName",
-                      String.valueOf(
-                          resMap.getOrDefault(PROCESS_NAME, resMap.get(BPMN_PROCESS_ID))))));
+      resStream
+          .map(Hit::source)
+          .forEach(
+              resMap ->
+                  callHierarchy.add(
+                      Map.of(
+                          "instanceId",
+                          String.valueOf(resMap.get(ID)),
+                          "processDefinitionId",
+                          String.valueOf(resMap.get(PROCESS_KEY)),
+                          "processDefinitionName",
+                          String.valueOf(
+                              resMap.getOrDefault(PROCESS_NAME, resMap.get(BPMN_PROCESS_ID))))));
     } catch (final ScrollException e) {
       final String message =
           String.format(
@@ -575,10 +577,10 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final var resStream =
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
       resStream.forEach(
-          resMap -> {
+          hit -> {
             final Map<String, Object> updateFields = new HashMap<>();
             final String newTreePath =
-                new TreePath((String) resMap.get(TREE_PATH))
+                new TreePath((String) hit.source().get(TREE_PATH))
                     .removeProcessInstance(processInstanceKey)
                     .toString();
             updateFields.put(TREE_PATH, newTreePath);
@@ -586,11 +588,13 @@ public class ElasticsearchProcessStore implements ProcessStore {
                 op ->
                     op.update(
                         u ->
-                            u.index(resMap.get("index").toString())
-                                .id(resMap.get("id").toString())
+                            u.index(hit.index())
+                                .id(hit.id())
                                 .retryOnConflict(UPDATE_RETRY_COUNT)
                                 .action(a -> a.doc(updateFields))));
           });
+
+      // write test to confirm that the new bulk request is the same as the old one
       ElasticsearchUtil.processBulkRequest(
           es8Client,
           es8BulkRequest,
@@ -671,6 +675,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       return ElasticsearchUtil.scrollAllStream(
               es8Client, searchRequestBuilder, ProcessInstanceForListViewEntity.class)
+          .map(Hit::source)
           .toList();
 
     } catch (final ScrollException ex) {
