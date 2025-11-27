@@ -30,6 +30,7 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.documentcount.IndexDocumentCountMetricJob;
 import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
@@ -246,10 +247,22 @@ public final class BackgroundTaskManagerFactory {
       if (config.getHistory().getRetention().isEnabled()) {
         tasks.add(buildRolloverPeriodJob());
       }
+      if (config.getDocumentCount().isEnabled()) {
+        tasks.add(buildIndexDocumentCountMetricJob());
+      }
     }
 
     executor.setCorePoolSize(tasks.size());
     return tasks;
+  }
+
+  private ReschedulingTask buildIndexDocumentCountMetricJob() {
+    final var indexDocumentCountMetricJob =
+        new IndexDocumentCountMetricJob(metrics, archiverRepository, logger);
+    final long delayBetweenRuns = config.getDocumentCount().getDelayBetweenRuns();
+
+    return new ReschedulingTask(
+        indexDocumentCountMetricJob, 0, delayBetweenRuns, delayBetweenRuns, executor, logger);
   }
 
   private ReschedulingTask buildRolloverPeriodJob() {

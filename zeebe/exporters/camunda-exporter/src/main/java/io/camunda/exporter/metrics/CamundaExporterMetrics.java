@@ -320,6 +320,19 @@ public class CamundaExporterMetrics implements AutoCloseable {
     timer.stop(archivingDuration);
   }
 
+  /**
+   * Records the document count for a specific index in the secondary storage (ES/OS). Uses a gauge
+   * to track the current count of documents in the index.
+   *
+   * @param indexName the name of the index
+   * @param count the number of documents in the index
+   */
+  public void recordIndexDocumentCount(final String indexName, final long count) {
+    final var gaugeId =
+        Gauge.builder(meterName("index.doc.count"), () -> count).tag("index", indexName);
+    gaugeId.register(meterRegistry);
+  }
+
   @Override
   public void close() {
     // clean up all registered meters
@@ -340,6 +353,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(meterName("since.last.flush.seconds"));
     removeGaugeIfExists(meterName("process.instances.awaiting.archival"));
+
+    // Remove index document count gauges
+    meterRegistry.find(meterName("index.doc.count")).gauges().forEach(meterRegistry::remove);
   }
 
   private void removeGaugeIfExists(final String meterName) {
