@@ -178,7 +178,7 @@ final class VersionCompatibilityMatrix {
   }
 
   public Stream<VersionInfo> discoverReleasedVersions() {
-    return versionProvider.discoverVersions().filter(VersionInfo::isReleased);
+    return versionProvider.discoverVersions();
   }
 
   static class CachedVersionProvider implements VersionProvider {
@@ -273,35 +273,85 @@ final class VersionCompatibilityMatrix {
               .map(Ref::toSemanticVersion)
               .filter(Objects::nonNull) // Filter out null versions
               .filter(version -> version.preRelease() == null) // Filter out pre-releases
+              .map(version -> new VersionInfo(version, true, false))
               .toList();
 
-      // Identify latest patch per minor
+      // Mark latest versions, enrich with release status, and filter to released only
+      final var releasedVersions =
+          enrichWithReleaseStatus(markLatestVersions(allVersions)).stream()
+              .filter(VersionInfo::isReleased)
+              .toList();
+
+      // Re-mark latest based on released versions only
+      return markLatestVersions(releasedVersions).stream();
+    }
+
+    /**
+     * Marks the latest patch version for each minor version.
+     *
+     * @param versionInfos list of VersionInfo to analyze
+     * @return list of VersionInfo with isLatest=true for latest patch per minor, preserving other
+     *     fields
+     */
+    private List<VersionInfo> markLatestVersions(final List<VersionInfo> versionInfos) {
       final var latestPerMinor =
-          allVersions.stream()
-              .collect(
-                  Collectors.toMap(
-                      SemanticVersion::minor,
-                      Function.identity(),
-                      BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
+          findLatestPatchPerMinor(versionInfos.stream().map(VersionInfo::version).toList());
 
-      // Create VersionInfo with isLatest flag and check release status only for latest patches
-      return allVersions.stream()
+      return versionInfos.stream()
           .map(
-              version -> {
-                final boolean isLatest = version.equals(latestPerMinor.get(version.minor()));
+              info -> {
+                final var isLatest =
+                    info.version().equals(latestPerMinor.get(info.version().minor()));
+                return new VersionInfo(info.version(), info.isReleased(), isLatest);
+              })
+          .toList();
+    }
 
-                // We only probe for actual releases for the latest minor,
-                // for others we assume they are released
-                final boolean isReleased = !isLatest || fetchRelease(version).isPresent();
+    /**
+     * Enriches VersionInfo with actual release status from GitHub API. Only checks versions marked
+     * as latest; non-latest versions are assumed to be released.
+     *
+     * @param versionInfos list to enrich
+     * @return list with updated isReleased flags
+     */
+    private List<VersionInfo> enrichWithReleaseStatus(final List<VersionInfo> versionInfos) {
+      return versionInfos.stream()
+          .map(
+              info -> {
+                if (!info.isLatest()) {
+                  // Not latest, assume released
+                  return info;
+                }
+
+                // Latest version, check if it's actually released
+                final var isReleased = fetchRelease(info.version()).isPresent();
 
                 if (!isReleased) {
                   LOG.warn(
-                      "{} has no corresponding GitHub release yet. Excluding from compatibility matrix.",
-                      version);
+                      "{} has no corresponding GitHub release yet. Using previous patch as latest for minor {}.",
+                      info.version(),
+                      info.version().minor());
                 }
 
-                return new VersionInfo(version, isReleased, isLatest);
-              });
+                return new VersionInfo(info.version(), isReleased, info.isLatest());
+              })
+          .toList();
+    }
+
+    /**
+     * Finds the latest patch version for each minor version.
+     *
+     * @param versions list of versions to analyze
+     * @return map of minor version to the latest patch for that minor
+     */
+    private static java.util.Map<Integer, SemanticVersion> findLatestPatchPerMinor(
+        final List<SemanticVersion> versions) {
+      return versions.stream()
+          .collect(
+              Collectors.toMap(
+                  SemanticVersion::minor,
+                  Function.identity(),
+                  BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
     }
 
     private HttpRequest.Builder createAuthenticatedRequest(final URI endpoint) {
