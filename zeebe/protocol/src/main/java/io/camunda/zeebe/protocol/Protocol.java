@@ -96,6 +96,18 @@ public final class Protocol {
       RESERVED_HEADER_NAME_PREFIX + "followUpDate";
 
   public static long encodePartitionId(final int partitionId, final long key) {
+    if (key < 0) {
+      throw new IllegalArgumentException(
+          "Invalid key provided: got " + key + ", expected a positive value");
+    }
+    if (decodePartitionId(key) != 0) {
+      throw new IllegalArgumentException(
+          "Invalid key provided: got "
+              + key
+              + ", but it has the partitionId encoded already (partitionId="
+              + Protocol.decodePartitionId(key)
+              + ")");
+    }
     return ((long) partitionId << KEY_BITS) + key;
   }
 
