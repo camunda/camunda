@@ -3649,7 +3649,6 @@ final class JsonSerializableToJsonTest {
         """
       {
         "tenantId": "tenant_1",
-        "elementIdBuffer": {"expandable": false},
         "elementId": "element_1",
         "processInstanceKey": 12345
       }
@@ -3664,7 +3663,6 @@ final class JsonSerializableToJsonTest {
         """
       {
         "tenantId": "",
-        "elementIdBuffer": {"expandable": false},
         "elementId": "",
         "processInstanceKey": -1
       }

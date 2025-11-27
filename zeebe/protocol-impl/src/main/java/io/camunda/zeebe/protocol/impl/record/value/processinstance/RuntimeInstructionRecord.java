@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -60,6 +61,7 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProperty.getValue();
   }
