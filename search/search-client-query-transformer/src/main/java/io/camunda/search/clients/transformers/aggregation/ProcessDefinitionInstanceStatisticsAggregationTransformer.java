@@ -12,6 +12,8 @@ import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsA
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_PAGE;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_VERSION_COUNT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.PROCESS_DEFINITION_AND_TENANT_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.SCRIPT_LANGUAGE;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.bucketSort;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
@@ -67,11 +69,13 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
             .query(term(INCIDENT, false))
             .build();
 
-    final var byProcessDefinitionIdAggBuilder =
+    final var byProcessDefinitionIdAndTenantIdSubAgg =
         terms()
             .name(ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_ID)
             .field(BPMN_PROCESS_ID)
             .size(AGGREGATION_TERMS_SIZE)
+            .script(PROCESS_DEFINITION_AND_TENANT_KEY)
+            .lang(SCRIPT_LANGUAGE)
             .sorting(
                 List.of(
                     new FieldSorting(AGGREGATION_FIELD_KEY, io.camunda.search.sort.SortOrder.ASC)));
@@ -84,8 +88,8 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
             .size(aggregation.page() != null ? aggregation.page().size() : null)
             .build();
 
-    final var byProcessDefinitionIdAgg =
-        byProcessDefinitionIdAggBuilder
+    final var byProcessDefinitionIdAndTenantIdAgg =
+        byProcessDefinitionIdAndTenantIdSubAgg
             .aggregations(
                 latestProcessDefinitionAgg,
                 versionCountAgg,
@@ -96,15 +100,18 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
 
     // Add a cardinality aggregation to estimate the total number of unique process definition keys
     // (buckets)
-    final var processDefinitionKeyCardinalityAgg =
+    final var processDefinitionIdAndTenantIdCardinalityAgg =
         cardinality()
             .name(
                 ProcessDefinitionInstanceStatisticsAggregation
                     .AGGREGATION_NAME_PROCESS_DEFINITION_KEY_CARDINALITY)
             .field(BPMN_PROCESS_ID)
+            .script(PROCESS_DEFINITION_AND_TENANT_KEY)
+            .lang(SCRIPT_LANGUAGE)
             .build();
 
-    return List.of(byProcessDefinitionIdAgg, processDefinitionKeyCardinalityAgg);
+    return List.of(
+        byProcessDefinitionIdAndTenantIdAgg, processDefinitionIdAndTenantIdCardinalityAgg);
   }
 
   private static List<FieldSorting> getCountSuffixSortings(

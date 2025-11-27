@@ -465,6 +465,8 @@ components:
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
         latestProcessDefinitionName:
           description: Name of the latest deployed process definition instance version.
           type: string
