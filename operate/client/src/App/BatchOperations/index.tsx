@@ -8,8 +8,8 @@
 
 import {useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Link} from '@carbon/react';
-import {ArrowLeft, Checkmark, Error} from '@carbon/icons-react';
+import {Link, Breadcrumb, BreadcrumbItem} from '@carbon/react';
+import {Checkmark, Error} from '@carbon/icons-react';
 import {
   BatchOperationsFilters,
   type BatchOperationsFilters as BatchOperationsFiltersType,
@@ -47,6 +47,8 @@ const BatchOperations: React.FC = () => {
   // Get filters from URL and memoize them to avoid re-renders
   const filtersFromUrl: BatchOperationsFiltersType = useMemo(() => {
     const params = new URLSearchParams(location.search);
+    const operationTypesParam = params.get('operationTypes');
+    const operationStatesParam = params.get('operationStates');
     return {
       processDefinitionName: params.get('processDefinitionName') || undefined,
       processDefinitionVersion: params.get('processDefinitionVersion')
@@ -54,14 +56,12 @@ const BatchOperations: React.FC = () => {
         : undefined,
       processInstanceState: params.get('processInstanceState') || undefined,
       processInstanceKey: params.get('processInstanceKey') || undefined,
-      operationType:
-        (params.get('operationType') as
-          | BatchOperationsFiltersType['operationType']
-          | null) || undefined,
-      operationState:
-        (params.get('operationState') as
-          | BatchOperationsFiltersType['operationState']
-          | null) || undefined,
+      operationTypes: operationTypesParam
+        ? (operationTypesParam.split(',') as BatchOperationsFiltersType['operationTypes'])
+        : undefined,
+      operationStates: operationStatesParam
+        ? (operationStatesParam.split(',') as BatchOperationsFiltersType['operationStates'])
+        : undefined,
       startDateFrom: params.get('startDateFrom') || undefined,
       startDateTo: params.get('startDateTo') || undefined,
       user: params.get('user') || undefined,
@@ -78,8 +78,8 @@ const BatchOperations: React.FC = () => {
       'processDefinitionVersion',
       'processInstanceState',
       'processInstanceKey',
-      'operationType',
-      'operationState',
+      'operationTypes',
+      'operationStates',
       'startDateFrom',
       'startDateTo',
       'user',
@@ -93,7 +93,12 @@ const BatchOperations: React.FC = () => {
     // Add new filter params
     Object.entries(newFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        newParams.set(key, String(value));
+        // Handle array values (operationTypes, operationStates)
+        if (Array.isArray(value) && value.length > 0) {
+          newParams.set(key, value.join(','));
+        } else if (!Array.isArray(value)) {
+          newParams.set(key, String(value));
+        }
       }
     });
 
@@ -118,14 +123,14 @@ const BatchOperations: React.FC = () => {
           filtersFromUrl.processDefinitionVersion,
       );
     }
-    if (filtersFromUrl.operationType) {
-      result = result.filter(
-        (op) => op.operationType === filtersFromUrl.operationType,
+    if (filtersFromUrl.operationTypes?.length) {
+      result = result.filter((op) =>
+        filtersFromUrl.operationTypes!.includes(op.operationType),
       );
     }
-    if (filtersFromUrl.operationState) {
-      result = result.filter(
-        (op) => op.state === filtersFromUrl.operationState,
+    if (filtersFromUrl.operationStates?.length) {
+      result = result.filter((op) =>
+        filtersFromUrl.operationStates!.includes(op.state),
       );
     }
     if (filtersFromUrl.user) {
@@ -230,10 +235,34 @@ const BatchOperations: React.FC = () => {
   return (
     <>
       <VisuallyHiddenH1>Batch Operations</VisuallyHiddenH1>
+      {/* Breadcrumb - Full Width */}
+      <div
+        style={{
+          width: '100%',
+          backgroundColor: 'var(--cds-layer-01)',
+          borderBottom: '1px solid var(--cds-border-subtle-01)',
+          padding: 'var(--cds-spacing-04) var(--cds-spacing-05)',
+        }}
+      >
+        <Breadcrumb noTrailingSlash>
+          <BreadcrumbItem>
+            <Link
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                navigate(Paths.processes());
+              }}
+            >
+              Processes
+            </Link>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>Operations</BreadcrumbItem>
+        </Breadcrumb>
+      </div>
       <div
         style={{
           display: 'flex',
-          height: '100%',
+          height: 'calc(100% - 40px)',
           overflow: 'hidden',
         }}
       >
@@ -241,7 +270,7 @@ const BatchOperations: React.FC = () => {
         <FiltersPanel
           localStorageKey="isBatchOperationsFiltersCollapsed"
           isResetButtonDisabled={Object.values(filtersFromUrl).every(
-            (value) => value === undefined,
+            (value) => value === undefined || (Array.isArray(value) && value.length === 0),
           )}
           onResetClick={() => {
             updateFilters({});
@@ -266,31 +295,6 @@ const BatchOperations: React.FC = () => {
             overflow: 'hidden',
           }}
         >
-          <div
-            style={{
-              padding: 'var(--cds-spacing-05)',
-              paddingBottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-05)',
-            }}
-          >
-            <Link
-              href="#"
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                navigate(Paths.processes());
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--cds-spacing-02)',
-              }}
-            >
-              <ArrowLeft size={16} />
-              Go back
-            </Link>
-          </div>
           <div style={{padding: 'var(--cds-spacing-05)', paddingBottom: 0}}>
             <h3 style={{marginBottom: 'var(--cds-spacing-06)'}}>
               Process Operations
@@ -345,7 +349,6 @@ const BatchOperations: React.FC = () => {
           </div>
         </div>
       </div>
-
     </>
   );
 };

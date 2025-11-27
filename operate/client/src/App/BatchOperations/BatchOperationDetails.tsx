@@ -28,9 +28,10 @@ import {
   TableContainer,
   OverflowMenu,
   OverflowMenuItem,
+  Breadcrumb,
+  BreadcrumbItem,
 } from '@carbon/react';
 import {
-  ArrowLeft,
   CheckmarkFilled,
   ErrorFilled,
   InProgress,
@@ -40,6 +41,7 @@ import {
   Play,
   Misuse,
   Pending,
+  Close,
 } from '@carbon/icons-react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
@@ -260,32 +262,55 @@ const BatchOperationDetails: React.FC = () => {
           flexDirection: 'column',
           height: '100%',
           backgroundColor: 'var(--cds-layer)',
-          padding: 'var(--cds-spacing-05)',
         }}
       >
-        <Link
-          href="#"
-          onClick={(e: React.MouseEvent) => {
-            e.preventDefault();
-            navigate(Paths.batchOperations());
-          }}
+        {/* Breadcrumb - Full Width */}
+        <div
           style={{
+            width: '100%',
+            backgroundColor: 'var(--cds-layer-01)',
+            borderBottom: '1px solid var(--cds-border-subtle-01)',
+            padding: 'var(--cds-spacing-04) var(--cds-spacing-05)',
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--cds-spacing-02)',
-            marginBottom: 'var(--cds-spacing-05)',
+            justifyContent: 'space-between',
           }}
         >
-          <ArrowLeft size={16} />
-          Go back
-        </Link>
-        <InlineNotification
-          kind="error"
-          title="Operation not found"
-          subtitle={`The batch operation with ID "${operationId}" could not be found.`}
-          hideCloseButton
-          lowContrast
-        />
+          <Breadcrumb noTrailingSlash>
+            <BreadcrumbItem>
+              <Link
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  navigate(Paths.processes());
+                }}
+              >
+                Processes
+              </Link>
+            </BreadcrumbItem>
+            <BreadcrumbItem>
+              <Link
+                href="#"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  navigate(Paths.batchOperations());
+                }}
+              >
+                Operations
+              </Link>
+            </BreadcrumbItem>
+            <BreadcrumbItem isCurrentPage>Not found</BreadcrumbItem>
+          </Breadcrumb>
+        </div>
+        <div style={{padding: 'var(--cds-spacing-05)'}}>
+          <InlineNotification
+            kind="error"
+            title="Operation not found"
+            subtitle={`The batch operation with ID "${operationId}" could not be found.`}
+            hideCloseButton
+            lowContrast
+          />
+        </div>
       </div>
     );
   }
@@ -295,49 +320,55 @@ const BatchOperationDetails: React.FC = () => {
       <VisuallyHiddenH1>
         {formatOperationType(operation.operationType)}
       </VisuallyHiddenH1>
+      {/* Breadcrumb - Full Width */}
+      <div
+        style={{
+          width: '100%',
+          backgroundColor: 'var(--cds-layer-01)',
+          borderBottom: '1px solid var(--cds-border-subtle-01)',
+          padding: 'var(--cds-spacing-04) var(--cds-spacing-05)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Breadcrumb noTrailingSlash>
+          <BreadcrumbItem>
+            <Link
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                navigate(Paths.processes());
+              }}
+            >
+              Processes
+            </Link>
+          </BreadcrumbItem>
+          <BreadcrumbItem>
+            <Link
+              href="#"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                navigate(Paths.batchOperations());
+              }}
+            >
+              Operations
+            </Link>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            {formatOperationType(operation.operationType)}
+          </BreadcrumbItem>
+        </Breadcrumb>
+      </div>
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: '100%',
+          height: 'calc(100% - 48px)',
           backgroundColor: 'var(--cds-layer)',
           overflow: 'hidden',
         }}
       >
-        {/* Header with back link */}
-        <div
-          style={{
-            padding: 'var(--cds-spacing-05)',
-            paddingBottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Link
-            href="#"
-            onClick={(e: React.MouseEvent) => {
-              e.preventDefault();
-              navigate(Paths.batchOperations());
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-02)',
-            }}
-          >
-            <ArrowLeft size={16} />
-            Go back
-          </Link>
-          <Button
-            kind="ghost"
-            size="sm"
-            onClick={() => navigate(Paths.batchOperations())}
-          >
-            Close
-          </Button>
-        </div>
-
         {/* Title with Actions */}
         <div
           style={{
@@ -351,44 +382,44 @@ const BatchOperationDetails: React.FC = () => {
           <h3>{formatOperationType(operation.operationType)}</h3>
 
           {/* Action buttons based on state */}
-          {(operation.state === 'CREATED' ||
-            operation.state === 'ACTIVE' ||
-            operation.state === 'SUSPENDED') && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--cds-spacing-03)',
-              }}
-            >
-              {operation.state === 'ACTIVE' && (
-                <Button
-                  kind="tertiary"
-                  size="md"
-                  renderIcon={Pause}
-                  onClick={() => {
-                    // TODO: Implement suspend functionality
-                    console.log('Suspend operation:', operation.id);
-                  }}
-                >
-                  Suspend
-                </Button>
-              )}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+            }}
+          >
+            {operation.state === 'ACTIVE' && (
+              <Button
+                kind="tertiary"
+                size="md"
+                renderIcon={Pause}
+                onClick={() => {
+                  // TODO: Implement suspend functionality
+                  console.log('Suspend operation:', operation.id);
+                }}
+              >
+                Suspend
+              </Button>
+            )}
 
-              {operation.state === 'SUSPENDED' && (
-                <Button
-                  kind="tertiary"
-                  size="md"
-                  renderIcon={Play}
-                  onClick={() => {
-                    // TODO: Implement resume functionality
-                    console.log('Resume operation:', operation.id);
-                  }}
-                >
-                  Resume
-                </Button>
-              )}
+            {operation.state === 'SUSPENDED' && (
+              <Button
+                kind="tertiary"
+                size="md"
+                renderIcon={Play}
+                onClick={() => {
+                  // TODO: Implement resume functionality
+                  console.log('Resume operation:', operation.id);
+                }}
+              >
+                Resume
+              </Button>
+            )}
 
+            {(operation.state === 'CREATED' ||
+              operation.state === 'ACTIVE' ||
+              operation.state === 'SUSPENDED') && (
               <OverflowMenu
                 size="md"
                 flipped
@@ -403,8 +434,17 @@ const BatchOperationDetails: React.FC = () => {
                   }}
                 />
               </OverflowMenu>
-            </div>
-          )}
+            )}
+            <Button
+              kind="ghost"
+              size="md"
+              hasIconOnly
+              renderIcon={Close}
+              iconDescription="Close"
+              tooltipPosition="bottom"
+              onClick={() => navigate(Paths.batchOperations())}
+            />
+          </div>
         </div>
 
         {/* Content */}
