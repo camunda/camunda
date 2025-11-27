@@ -30,6 +30,7 @@ import {
   OverflowMenuItem,
   Breadcrumb,
   BreadcrumbItem,
+  Tooltip,
 } from '@carbon/react';
 import {
   CheckmarkFilled,
@@ -42,6 +43,9 @@ import {
   Misuse,
   Pending,
   Close,
+  Checkmark,
+  Error,
+  CircleDash,
 } from '@carbon/icons-react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
@@ -234,8 +238,8 @@ const BatchOperationDetails: React.FC = () => {
 
   const itemsTableHeaders = [
     {key: 'instanceName', header: 'Process name'},
-    {key: 'instanceKey', header: 'Instance key'},
-    {key: 'state', header: 'Instance state'},
+    {key: 'instanceKey', header: 'Process instance key'},
+    {key: 'state', header: 'Operation state'},
     {key: 'time', header: 'Time'},
   ];
 
@@ -458,7 +462,15 @@ const BatchOperationDetails: React.FC = () => {
           <Stack gap={6}>
             {/* Summary Section - Separate tiles in one row */}
             <Stack gap={4}>
+              <style>{`
+                .batch-operation-summary .cds--popover-content {
+                  padding: var(--cds-spacing-02) var(--cds-spacing-03);
+                  font-size: var(--cds-body-compact-01-font-size);
+                  max-width: 150px;
+                }
+              `}</style>
               <div
+                className="batch-operation-summary"
                 style={{
                   display: 'flex',
                   flexWrap: 'wrap',
@@ -484,6 +496,55 @@ const BatchOperationDetails: React.FC = () => {
                 <SummaryTile label="Applied by">
                   <span style={{fontWeight: 500}}>{operation.appliedBy}</span>
                 </SummaryTile>
+
+                <SummaryTile label="Items">
+                  {(() => {
+                    const successCount = operation.completedItems;
+                    const failedCount = operation.failedItems;
+                    const pendingCount = operation.totalItems - successCount - failedCount;
+                    const hasAnyProgress = successCount > 0 || failedCount > 0;
+
+                    if (!hasAnyProgress && pendingCount > 0) {
+                      return (
+                        <Tooltip description={`${pendingCount} not started`} align="bottom">
+                          <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default', fontWeight: 500}}>
+                            <CircleDash size={16} />
+                            {pendingCount}
+                          </span>
+                        </Tooltip>
+                      );
+                    }
+
+                    return (
+                      <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)', fontWeight: 500}}>
+                        {successCount > 0 && (
+                          <Tooltip description={`${successCount} successful`} align="bottom">
+                            <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
+                              <Checkmark size={16} style={{color: 'var(--cds-support-success)'}} />
+                              {successCount}
+                            </span>
+                          </Tooltip>
+                        )}
+                        {failedCount > 0 && (
+                          <Tooltip description={`${failedCount} failed`} align="bottom">
+                            <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
+                              <Error size={16} style={{color: 'var(--cds-support-error)'}} />
+                              {failedCount}
+                            </span>
+                          </Tooltip>
+                        )}
+                        {pendingCount > 0 && (
+                          <Tooltip description={`${pendingCount} not started`} align="bottom">
+                            <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default'}}>
+                              <CircleDash size={16} />
+                              {pendingCount}
+                            </span>
+                          </Tooltip>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </SummaryTile>
               </div>
 
               {/* Error message for failed operations */}
@@ -501,7 +562,7 @@ const BatchOperationDetails: React.FC = () => {
             {/* Items Section */}
             <Stack gap={2}>
               <Subtitle>
-                {operation.totalItems} instance
+                {operation.totalItems} item
                 {operation.totalItems !== 1 ? 's' : ''}
               </Subtitle>
 

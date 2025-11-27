@@ -8,8 +8,8 @@
 
 import {useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Link, Breadcrumb, BreadcrumbItem} from '@carbon/react';
-import {Checkmark, Error} from '@carbon/icons-react';
+import {Link, Breadcrumb, BreadcrumbItem, Tooltip} from '@carbon/react';
+import {Checkmark, Error, CircleDash} from '@carbon/icons-react';
 import {
   BatchOperationsFilters,
   type BatchOperationsFilters as BatchOperationsFiltersType,
@@ -64,6 +64,8 @@ const BatchOperations: React.FC = () => {
         : undefined,
       startDateFrom: params.get('startDateFrom') || undefined,
       startDateTo: params.get('startDateTo') || undefined,
+      endDateFrom: params.get('endDateFrom') || undefined,
+      endDateTo: params.get('endDateTo') || undefined,
       user: params.get('user') || undefined,
     };
   }, [location.search]);
@@ -82,6 +84,8 @@ const BatchOperations: React.FC = () => {
       'operationStates',
       'startDateFrom',
       'startDateTo',
+      'endDateFrom',
+      'endDateTo',
       'user',
     ];
 
@@ -178,33 +182,51 @@ const BatchOperations: React.FC = () => {
   const rows = useMemo(
     () =>
       filteredData.map((operation) => {
-        // Build items display with success/failed counts
-        let itemsDisplay: React.ReactNode;
+        // Build items display with success/failed/pending counts
         const successCount = operation.completedItems;
         const failedCount = operation.failedItems;
-        const hasStatus = successCount > 0 || failedCount > 0;
+        const pendingCount = operation.totalItems - successCount - failedCount;
+        const hasAnyProgress = successCount > 0 || failedCount > 0;
 
-        if (operation.state === 'ACTIVE' || operation.state === 'CREATED' || !hasStatus) {
-          // Show total count greyed out when no status available yet
+        let itemsDisplay: React.ReactNode;
+
+        if (!hasAnyProgress && pendingCount > 0) {
+          // Show only pending count when nothing has started yet
           itemsDisplay = (
-            <span style={{color: 'var(--cds-text-secondary)'}}>
-              {operation.totalItems}
-            </span>
+            <Tooltip description={`${pendingCount} not started`} align="bottom">
+              <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default'}}>
+                <CircleDash size={16} />
+                {pendingCount}
+              </span>
+            </Tooltip>
           );
         } else {
+          // Show breakdown of success / failed / pending
           itemsDisplay = (
             <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
               {successCount > 0 && (
-                <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)'}}>
-                  <Checkmark size={16} style={{color: 'var(--cds-support-success)'}} />
-                  {successCount}
-                </span>
+                <Tooltip description={`${successCount} successful`} align="bottom">
+                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
+                    <Checkmark size={16} style={{color: 'var(--cds-support-success)'}} />
+                    {successCount}
+                  </span>
+                </Tooltip>
               )}
               {failedCount > 0 && (
-                <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)'}}>
-                  <Error size={16} style={{color: 'var(--cds-support-error)'}}/>
-                  {failedCount}
-                </span>
+                <Tooltip description={`${failedCount} failed`} align="bottom">
+                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
+                    <Error size={16} style={{color: 'var(--cds-support-error)'}} />
+                    {failedCount}
+                  </span>
+                </Tooltip>
+              )}
+              {pendingCount > 0 && (
+                <Tooltip description={`${pendingCount} not started`} align="bottom">
+                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default'}}>
+                    <CircleDash size={16} />
+                    {pendingCount}
+                  </span>
+                </Tooltip>
               )}
             </div>
           );
@@ -314,6 +336,11 @@ const BatchOperations: React.FC = () => {
                 top: 0;
                 z-index: 1;
                 background-color: var(--cds-layer);
+              }
+              .batch-operations-table-container .cds--popover-content {
+                padding: var(--cds-spacing-02) var(--cds-spacing-03);
+                font-size: var(--cds-body-compact-01-font-size);
+                max-width: 150px;
               }
             `}</style>
             <SortableTable

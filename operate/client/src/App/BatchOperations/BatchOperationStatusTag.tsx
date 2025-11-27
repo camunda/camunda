@@ -12,10 +12,10 @@ import {
   InProgress,
   PauseFilled,
   WarningAltFilled,
-  Pending,
   SkipForwardFilled,
   CircleDash,
   Misuse,
+  PendingFilled,
 } from '@carbon/icons-react';
 import type {
   BatchOperationState,
@@ -69,7 +69,7 @@ const getStatusConfig = (
       };
     case 'CREATED':
       return {
-        Icon: Pending,
+        Icon: PendingFilled,
         color: 'var(--cds-status-gray)',
         label: 'Created',
       };
