@@ -112,10 +112,8 @@ public class RdbmsTableRowCountMetrics implements MeterBinder {
       synchronized (lock) {
         if (currentTimeMs - lastUpdateTimeMs > cacheDuration.toMillis()) {
           final long newValue = fetchRowCount(tableName);
-          if (newValue >= 0) {
-            cachedValue = newValue;
-            lastUpdateTimeMs = currentTimeMs;
-          }
+          cachedValue = newValue;
+          lastUpdateTimeMs = currentTimeMs;
         }
         return cachedValue;
       }

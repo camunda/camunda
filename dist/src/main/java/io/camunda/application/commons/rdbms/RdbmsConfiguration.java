@@ -270,14 +270,9 @@ public class RdbmsConfiguration {
   @Bean
   public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
       final TableMetricsMapper tableMetricsMapper, final Camunda configuration) {
+    final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
     return new RdbmsTableRowCountMetrics(
-        tableMetricsMapper,
-        configuration
-            .getData()
-            .getSecondaryStorage()
-            .getRdbms()
-            .getMetrics()
-            .getTableCountCacheDuration());
+        tableMetricsMapper, metricsConfig.getTableCountCacheDuration());
   }
 
   @Bean
