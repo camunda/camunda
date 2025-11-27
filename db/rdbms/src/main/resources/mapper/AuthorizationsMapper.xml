@@ -47,8 +47,13 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
     ) t
-    JOIN ${prefix}AUTHORIZATIONS a ON t.AUTHORIZATION_KEY = a.AUTHORIZATION_KEY AND t.OWNER_ID = a.OWNER_ID AND t.OWNER_TYPE = a.OWNER_TYPE AND
-    t.RESOURCE_TYPE = a.RESOURCE_TYPE AND t.RESOURCE_ID = a.RESOURCE_ID
+    JOIN ${prefix}AUTHORIZATIONS a ON t.AUTHORIZATION_KEY = a.AUTHORIZATION_KEY
+            <!-- Oracle treats NULL == NULL as false, so we need to cover that case explicitly -->
+            AND (t.OWNER_ID = a.OWNER_ID OR (t.OWNER_ID IS NULL AND a.OWNER_ID IS NULL))
+            AND (t.OWNER_TYPE = a.OWNER_TYPE OR (t.OWNER_TYPE IS NULL AND a.OWNER_TYPE IS NULL))
+            AND (t.RESOURCE_TYPE = a.RESOURCE_TYPE OR (t.RESOURCE_TYPE IS NULL AND a.RESOURCE_TYPE IS NULL))
+            AND (t.RESOURCE_ID = a.RESOURCE_ID OR (t.RESOURCE_ID IS NULL AND a.RESOURCE_ID IS NULL))
+            AND (t.RESOURCE_PROPERTY_NAME = a.RESOURCE_PROPERTY_NAME OR (t.RESOURCE_PROPERTY_NAME IS NULL AND a.RESOURCE_PROPERTY_NAME IS NULL))
     <!-- outer orderBy for actual sorting -->
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
