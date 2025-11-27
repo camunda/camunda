@@ -17,8 +17,8 @@ import {
   StructuredListWrapper,
   StructuredListCell,
   StructuredListBody,
-  ActionableNotification,
   InlineNotification,
+  Link,
 } from '@carbon/react';
 import {DataTable} from 'modules/components/DataTable';
 import {formatDate} from 'modules/utils/date';
@@ -31,8 +31,7 @@ import {
 } from './styled';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {CheckmarkOutline} from '@carbon/react/icons';
-import {EventSchedule, UserAvatar} from '@carbon/icons-react';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {EventSchedule, UserAvatar, ClassicBatch} from '@carbon/icons-react';
 import {StatusIndicator} from 'App/AuditLog/StatusIndicator';
 
 const JSONEditor = lazy(async () => {
@@ -188,6 +187,24 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
       />
       <ModalBody>
         <Stack gap={5}>
+          {entry.isMultiInstanceOperation && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--cds-spacing-03)',
+                color: 'var(--cds-text-secondary)',
+                fontSize: 'var(--cds-body-compact-01-font-size)',
+                lineHeight: 'var(--cds-body-compact-01-line-height)',
+              }}
+            >
+              <ClassicBatch size={16} />
+              <span>This operation is part of a batch.</span>
+              <Link href="#" size="md">
+                View batch operation details
+              </Link>
+            </div>
+          )}
           <Stack gap={1}>
             <StructuredListWrapper isCondensed isFlush>
               <StructuredListBody>
@@ -251,18 +268,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
               hideCloseButton
               lowContrast
             />
-          )}
-          {entry.isMultiInstanceOperation && (
-            <Stack gap={2}>
-              <ActionableNotification
-                kind="info"
-                lowContrast
-                inline
-                hideCloseButton
-                title="This operation is part of a batch"
-                actionButtonLabel="View batch operation details"
-              />
-            </Stack>
           )}
           {renderDetails()}
           {renderUserTaskDetails(entry)}

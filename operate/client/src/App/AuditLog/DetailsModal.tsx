@@ -314,7 +314,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
       />
       <ModalBody>
         <Stack gap={6}>
-          <Stack gap={1}>
+          <Stack gap={4}>
             <StructuredListWrapper isCondensed isFlush>
               <StructuredListBody>
                 <VerticallyAlignedRow>
@@ -368,16 +368,16 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                 </VerticallyAlignedRow>
               </StructuredListBody>
             </StructuredListWrapper>
+            {entry.operationState === 'fail' && entry.errorMessage && (
+              <InlineNotification
+                kind="error"
+                title="Failure reason:"
+                subtitle={entry.errorMessage}
+                hideCloseButton
+                lowContrast
+              />
+            )}
           </Stack>
-          {entry.operationState === 'fail' && entry.errorMessage && (
-            <InlineNotification
-              kind="error"
-              title="Failure reason:"
-              subtitle={entry.errorMessage}
-              hideCloseButton
-              lowContrast
-            />
-          )}
           {renderReference() && (
             <Stack gap={1}>
               <Subtitle>Applied to:</Subtitle>
