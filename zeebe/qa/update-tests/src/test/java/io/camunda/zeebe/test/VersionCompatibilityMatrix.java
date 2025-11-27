@@ -22,8 +22,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SequencedCollection;
@@ -47,7 +45,7 @@ final class VersionCompatibilityMatrix {
   private final VersionProvider versionProvider;
 
   public VersionCompatibilityMatrix() {
-    versionProvider = new GithubVersionProvider();
+    versionProvider = new CachedVersionProvider(new GithubVersionProvider());
   }
 
   public VersionCompatibilityMatrix(final VersionProvider versionProvider) {
@@ -107,28 +105,31 @@ final class VersionCompatibilityMatrix {
   }
 
   public Stream<Arguments> full() {
-    final var versions = discoverVersions().sorted().toList();
-    final var latestVersionPerMinor = getLatestVersionPerMinor(versions);
+    final var versionInfos = discoverReleasedVersions().sorted().toList();
     final var combinations =
-        versions.stream()
-            .filter(version -> version.minor() > 0)
+        versionInfos.stream()
+            .filter(info -> info.version().minor() > 0)
             .flatMap(
-                version1 ->
-                    versions.stream()
-                        .filter(version2 -> version1.compareTo(version2) < 0)
-                        .filter(version2 -> version2.minor() - version1.minor() <= 1)
+                info1 ->
+                    versionInfos.stream()
+                        .filter(info2 -> info1.compareTo(info2) < 0)
+                        .filter(info2 -> info2.version().minor() - info1.version().minor() <= 1)
                         .filter(
-                            version2 -> {
-                              if (version1.minor() <= 4 && version2.minor() > version1.minor()) {
+                            info2 -> {
+                              if (info1.version().minor() <= 4
+                                  && info2.version().minor() > info1.version().minor()) {
                                 // When updating from 8.4 (or earlier) to the next minor, only test
                                 // the latest patch.
                                 // Only 8.5 and onwards allow updating to a not-latest patch.
-                                return latestVersionPerMinor.get(version2.minor()).equals(version2);
+                                return info2.isLatest();
                               } else {
                                 return true;
                               }
                             })
-                        .map(version2 -> Arguments.of(version1.toString(), version2.toString())))
+                        .filter(info2 -> isCompatible(info1.version(), info2.version()))
+                        .map(
+                            info2 ->
+                                Arguments.of(info1.version.toString(), info2.version.toString())))
             .toList();
 
     final var index =
@@ -140,16 +141,6 @@ final class VersionCompatibilityMatrix {
             .map(Integer::parseInt)
             .orElse(1);
     return shard(combinations, index, total);
-  }
-
-  private Map<Integer, SemanticVersion> getLatestVersionPerMinor(
-      final List<SemanticVersion> versions) {
-    return versions.stream()
-        .collect(
-            Collectors.toMap(
-                SemanticVersion::minor,
-                Function.identity(),
-                BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
   }
 
   @VisibleForTesting
@@ -167,8 +158,8 @@ final class VersionCompatibilityMatrix {
   }
 
   /**
-   * Discovers Zeebe versions that aren't pre-releases. Sourced from the GitHub API and can fail on
-   * network issues. Includes all versions since 8.0.
+   * Discovers Zeebe versions that aren't pre-releases and are released. Sourced from the GitHub API
+   * and can fail on network issues. Includes all versions since 8.0.
    *
    * <p>For the latest patch version of each minor version, verifies that the version has been
    * published as a GitHub release before including it. This ensures that only versions with
@@ -179,27 +170,45 @@ final class VersionCompatibilityMatrix {
    *     API</a>
    */
   public Stream<SemanticVersion> discoverVersions() {
-    final var versions =
-        versionProvider
-            .discoverVersions()
-            .filter(version -> version != null && version.preRelease() == null)
-            .toList();
+    return discoverReleasedVersions().map(VersionInfo::version);
+  }
 
-    // Filter out unreleased versions which might not have the right artifacts like maven/docker
-    // published yet. The GitHub API for fetching releases is inflexible, thus we optimize to only
-    // check for the latest versions of each minor.
-    final var unreleasedVersions =
-        getLatestVersionPerMinor(versions).values().stream()
-            .filter(version -> !versionProvider.isReleased(version))
-            .peek(
-                version ->
-                    LOG.warn(
-                        "Latest patch {} for minor version 8.{} has no corresponding GitHub release yet. Excluding from compatibility matrix.",
-                        version,
-                        version.minor()))
-            .collect(Collectors.toSet());
+  public Stream<VersionInfo> discoverReleasedVersions() {
+    return versionProvider.discoverVersions().filter(VersionInfo::isReleased);
+  }
 
-    return versions.stream().filter(version -> !unreleasedVersions.contains(version));
+  private static SemanticVersion parseVersion(final String version) {
+    return SemanticVersion.parse(version)
+        .orElseThrow(
+            () -> new IllegalArgumentException("Invalid semantic version string: " + version));
+  }
+
+  private static boolean isCompatible(final SemanticVersion from, final SemanticVersion to) {
+    // Compatible if no incompatible range matches
+    return INCOMPATIBLE_UPGRADES.stream()
+        .noneMatch(
+            path -> {
+              final var lowerBoundFrom = path.from();
+              final var firstCompatibleTo = path.to();
+
+              // Source side: same major/minor as lowerBoundFrom, and patch >= lowerBoundFrom.patch
+              if (from.major() != lowerBoundFrom.major()
+                  || from.minor() != lowerBoundFrom.minor()
+                  || from.patch() < lowerBoundFrom.patch()) {
+                return false;
+              }
+
+              // Target side: same major/minor as firstCompatibleTo, and patch <
+              // firstCompatibleTo.patch
+              if (to.major() != firstCompatibleTo.major()
+                  || to.minor() != firstCompatibleTo.minor()
+                  || to.patch() >= firstCompatibleTo.patch()) {
+                return false;
+              }
+
+              // From >= lowerBoundFrom AND to < firstCompatibleTo => incompatible
+              return true;
+            });
   }
 
   static class GithubVersionProvider implements VersionProvider {
@@ -213,13 +222,41 @@ final class VersionCompatibilityMatrix {
                 .build());
 
     @Override
-    public Stream<SemanticVersion> discoverVersions() {
-      return fetchTags().map(Ref::toSemanticVersion);
-    }
+    public Stream<VersionInfo> discoverVersions() {
+      final var allVersions =
+          fetchTags()
+              .map(Ref::toSemanticVersion)
+              .filter(Objects::nonNull) // Filter out null versions
+              .filter(version -> version.preRelease() == null) // Filter out pre-releases
+              .toList();
 
-    @Override
-    public boolean isReleased(final SemanticVersion version) {
-      return fetchRelease(version).isPresent();
+      // Identify latest patch per minor
+      final var latestPerMinor =
+          allVersions.stream()
+              .collect(
+                  Collectors.toMap(
+                      SemanticVersion::minor,
+                      Function.identity(),
+                      BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
+
+      // Create VersionInfo with isLatest flag and check release status only for latest patches
+      return allVersions.stream()
+          .map(
+              version -> {
+                final boolean isLatest = version.equals(latestPerMinor.get(version.minor()));
+
+                // We only probe for actual releases for the latest minor,
+                // for others we assume they are released
+                final boolean isReleased = !isLatest || fetchRelease(version).isPresent();
+
+                if (!isReleased) {
+                  LOG.warn(
+                      "{} has no corresponding GitHub release yet. Excluding from compatibility matrix.",
+                      version);
+                }
+
+                return new VersionInfo(version, isReleased, isLatest);
+              });
     }
 
     private Optional<Release> fetchRelease(final SemanticVersion tagName) {
@@ -295,9 +332,9 @@ final class VersionCompatibilityMatrix {
     }
   }
 
-  interface VersionProvider {
-    Stream<SemanticVersion> discoverVersions();
+  private record UpgradePath(SemanticVersion from, SemanticVersion to) {}
 
-    boolean isReleased(SemanticVersion version);
+  interface VersionProvider {
+    Stream<VersionInfo> discoverVersions();
   }
 }
