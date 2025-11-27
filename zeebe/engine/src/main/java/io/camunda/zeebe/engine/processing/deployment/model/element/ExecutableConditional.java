@@ -13,6 +13,7 @@ import java.util.List;
 public class ExecutableConditional extends AbstractFlowElement {
 
   private Expression conditionExpression;
+  private String condition;
   private List<String> variableNames;
   private List<String> variableEvents;
 
@@ -26,6 +27,19 @@ public class ExecutableConditional extends AbstractFlowElement {
 
   public void setConditionExpression(final Expression conditionExpression) {
     this.conditionExpression = conditionExpression;
+  }
+
+  /**
+   * Returns the condition expression as a string
+   *
+   * @return the condition expression as a string
+   */
+  public String getCondition() {
+    return condition;
+  }
+
+  public void setCondition(final String condition) {
+    this.condition = condition;
   }
 
   public List<String> getVariableEvents() {

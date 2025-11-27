@@ -51,8 +51,6 @@ import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
 
-  private static final String ZEEBE_EXPRESSION_PREFIX = "=";
-
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final RoutingInfo routingInfo;
@@ -68,7 +66,7 @@ public final class CatchEventBehavior {
       new ProcessMessageSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
-  private final ConditionalSubscriptionRecord conditionSubscription =
+  private final ConditionalSubscriptionRecord conditionalSubscription =
       new ConditionalSubscriptionRecord();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
@@ -452,28 +450,22 @@ public final class CatchEventBehavior {
       final BpmnElementContext context, final ExecutableCatchEvent event) {
     final var conditional = event.getConditional();
 
-    conditionSubscription.reset();
-    conditionSubscription
+    conditionalSubscription.reset();
+    conditionalSubscription
         .setScopeKey(context.getElementInstanceKey())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setCatchEventId(event.getId())
         .setInterrupting(event.isInterrupting())
-        // set as an expression string with prefix to parse it directly during evaluation
-        .setCondition(
-            BufferUtil.wrapString(
-                ZEEBE_EXPRESSION_PREFIX + conditional.getConditionExpression().getExpression()))
+        .setCondition(BufferUtil.wrapString(conditional.getCondition()))
         .setVariableNames(conditional.getVariableNames())
         .setVariableEvents(conditional.getVariableEvents())
         .setTenantId(context.getTenantId());
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
-        subscriptionKey, ConditionalSubscriptionIntent.CREATED, conditionSubscription);
-
-    final ConditionalSubscriptionRecord record = new ConditionalSubscriptionRecord();
-    record.wrap(conditionSubscription);
+        subscriptionKey, ConditionalSubscriptionIntent.CREATED, conditionalSubscription);
   }
 
   public void unsubscribeFromSignalEventsBySubscriptionFilter(

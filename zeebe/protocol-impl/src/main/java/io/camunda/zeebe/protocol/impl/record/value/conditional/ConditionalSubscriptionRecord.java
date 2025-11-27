@@ -201,16 +201,6 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public ConditionalSubscriptionRecord setProcessInstanceKey(final long key) {
-    processInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  @Override
   public String getTenantId() {
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
