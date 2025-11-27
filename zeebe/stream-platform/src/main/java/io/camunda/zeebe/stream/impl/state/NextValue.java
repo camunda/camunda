@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
 public class NextValue extends UnpackedObject implements DbValue {
-  private final LongProperty nextValueProp = new LongProperty("nextValue", -1L);
+  private final LongProperty nextValueProp = new LongProperty("nextValue");
 
   public NextValue() {
     super(1);
@@ -20,6 +20,10 @@ public class NextValue extends UnpackedObject implements DbValue {
   }
 
   public void set(final long value) {
+    if (value < 0) {
+      throw new IllegalArgumentException(
+          "Invalid value: expected positive number, but got " + value);
+    }
     nextValueProp.setValue(value);
   }
 
