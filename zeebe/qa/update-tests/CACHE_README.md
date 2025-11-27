@@ -45,7 +45,7 @@ The `CachedVersionProvider`:
 
 The cache file is stored at: `.cache/camunda-versions.json`
 
-This file contains a JSON array of version strings discovered from GitHub tags.
+This file contains a JSON array of version metadata objects (version, isReleased, isLatest) discovered from GitHub tags.
 
 ## Cache Behavior
 
@@ -57,11 +57,13 @@ The version discovery automatically uses the `GH_TOKEN` environment variable if 
 - **Better for CI**: Reduces the chance of hitting rate limits in workflows
 
 **Local usage:**
+
 ```bash
 export GH_TOKEN=your_github_token
 ```
 
 **In GitHub Actions:**
+
 ```yaml
 env:
   GH_TOKEN: ${{ github.token }}
@@ -141,7 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: version-cache
-          path: .cache/zeebe-versions.json
+          path: .cache/camunda-versions.json
 
   test:
     needs: prepare-versions
@@ -164,24 +166,26 @@ jobs:
 ### View Cached Versions
 
 ```bash
-cat .cache/zeebe-versions.json | jq .
+cat .cache/camunda-versions.json | jq .
 ```
 
 ### Force Cache Refresh
 
 ```bash
-rm -f .cache/zeebe-versions.json
+rm -f .cache/camunda-versions.json
 ./mvnw test -pl zeebe/qa/update-tests
 ```
 
 ### Disable Caching (for debugging)
 
 Option 1: Delete the cache file before running tests
+
 ```bash
 rm -rf .cache
 ```
 
 Option 2: Use the provider directly in your test:
+
 ```java
 // Bypass caching by passing the provider directly
 new VersionCompatibilityMatrix(new GithubVersionProvider())
