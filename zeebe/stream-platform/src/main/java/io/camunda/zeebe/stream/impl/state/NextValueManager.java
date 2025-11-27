@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import org.agrona.DirectBuffer;
 
 public final class NextValueManager {
 
@@ -21,21 +20,24 @@ public final class NextValueManager {
   private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
   private final DbString nextValueKey;
   private final NextValue nextValue = new NextValue();
+  private long currentCachedValue;
 
   public NextValueManager(
       final long initialValue,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final ZbColumnFamilies columnFamily) {
+      final ZbColumnFamilies columnFamily,
+      final String key) {
     this.initialValue = initialValue;
 
     nextValueKey = new DbString();
+    nextValueKey.wrapString(key);
     nextValueColumnFamily =
         zeebeDb.createColumnFamily(columnFamily, transactionContext, nextValueKey, nextValue);
   }
 
-  public long getNextValue(final String key) {
-    final long previousKey = getCurrentValue(key);
+  public long getNextValue() {
+    final long previousKey = getCurrentValue();
     final long nextKey = previousKey + 1;
     nextValue.set(nextKey);
     nextValueColumnFamily.upsert(nextValueKey, nextValue);
@@ -49,17 +51,7 @@ public final class NextValueManager {
     nextValueColumnFamily.upsert(nextValueKey, nextValue);
   }
 
-  public long getCurrentValue(final String key) {
-    nextValueKey.wrapString(key);
-    return getCurrentValue();
-  }
-
-  public long getCurrentValue(final DirectBuffer key) {
-    nextValueKey.wrapBuffer(key);
-    return getCurrentValue();
-  }
-
-  private long getCurrentValue() {
+  public long getCurrentValue() {
     final NextValue readValue = nextValueColumnFamily.get(nextValueKey);
 
     long currentValue = initialValue;

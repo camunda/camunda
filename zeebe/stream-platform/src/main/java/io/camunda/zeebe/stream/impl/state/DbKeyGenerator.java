@@ -35,9 +35,10 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
     this.partitionId = partitionId;
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
     nextValueManager =
-        new NextValueManager(keyStartValue, zeebeDb, transactionContext, ZbColumnFamilies.KEY);
+        new NextValueManager(
+            keyStartValue, zeebeDb, transactionContext, ZbColumnFamilies.KEY, LATEST_KEY);
 
-    final var currentKey = nextValueManager.getCurrentValue(LATEST_KEY);
+    final var currentKey = nextValueManager.getCurrentValue();
     if (Protocol.decodePartitionId(currentKey) != partitionId) {
       throw new UnrecoverableException(
           new IllegalStateException(
@@ -49,7 +50,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
 
   @Override
   public long nextKey() {
-    final var nextKey = nextValueManager.getNextValue(LATEST_KEY);
+    final var nextKey = nextValueManager.getNextValue();
     if (Protocol.decodePartitionId(nextKey) != partitionId) {
       throw new UnrecoverableException(
           new IllegalStateException(
@@ -68,12 +69,12 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
    */
   @Override
   public long getCurrentKey() {
-    return nextValueManager.getCurrentValue(LATEST_KEY);
+    return nextValueManager.getCurrentValue();
   }
 
   @Override
   public void setKeyIfHigher(final long key) {
-    final var currentKey = nextValueManager.getCurrentValue(LATEST_KEY);
+    final var currentKey = nextValueManager.getCurrentValue();
 
     if (key > currentKey) {
       if (Protocol.decodePartitionId(key) != partitionId) {
