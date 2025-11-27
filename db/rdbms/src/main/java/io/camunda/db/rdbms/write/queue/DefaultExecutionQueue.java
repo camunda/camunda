@@ -50,10 +50,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   // Track current memory consumption of the queue
   private long currentQueueMemoryBytes = 0;
 
-  // Per-instance storage for the current record timestamp context
-  // This allows the exporter to set the timestamp before calling handlers
-  private long currentRecordTimestampMs = -1;
-
   public DefaultExecutionQueue(
       final SqlSessionFactory sessionFactory,
       final long partitionId,
@@ -69,11 +65,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   }
 
   @Override
-  public void setCurrentRecordTimestamp(final long timestampMs) {
-    this.currentRecordTimestampMs = timestampMs;
-  }
-
-  @Override
   public void executeInQueue(final QueueItem entry) {
     LOG.trace("[RDBMS ExecutionQueue, Partition {}] Added entry to queue: {}", partitionId, entry);
     synchronized (queue) {
@@ -81,25 +72,9 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         metrics.startFlushLatencyMeasurement();
       }
 
-      // If the entry doesn't have a timestamp but we have a context timestamp, create a new entry
-      // with the timestamp
-      final QueueItem itemToAdd;
-      if (entry.recordCreatedTimestampMs() < 0 && currentRecordTimestampMs > 0) {
-        itemToAdd =
-            new QueueItem(
-                entry.contextType(),
-                entry.statementType(),
-                entry.id(),
-                entry.statementId(),
-                entry.parameter(),
-                currentRecordTimestampMs);
-      } else {
-        itemToAdd = entry;
-      }
-
-      queue.add(itemToAdd);
+      queue.add(entry);
       // Track memory consumption
-      final long entrySize = ObjectSizeEstimator.estimateSize(itemToAdd);
+      final long entrySize = ObjectSizeEstimator.estimateSize(entry);
       currentQueueMemoryBytes += entrySize;
 
       metrics.recordEnqueuedStatement(entry.statementId());
@@ -234,9 +209,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     final var session =
         sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
 
-    // Find the oldest record timestamp in the queue for exporting latency calculation
-    final long oldestRecordTimestamp = findOldestRecordTimestamp(queue);
-
     var flushedElements = 0;
     final var optimizedItems = optimizeQueueOrder(queue);
 
@@ -268,14 +240,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       session.commit();
-
-      // Record exporting latency after successful commit
-      final long commitTimeMs = System.currentTimeMillis();
-      if (oldestRecordTimestamp > 0) {
-        final long exportingLatencyMs = commitTimeMs - oldestRecordTimestamp;
-        metrics.recordExportingLatency(exportingLatencyMs);
-      }
-
       if (!postFlushListeners.isEmpty()) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
         postFlushListeners.forEach(PostFlushListener::onPostFlush);
@@ -295,23 +259,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     } finally {
       session.close();
     }
-  }
-
-  /**
-   * Finds the oldest (minimum) record created timestamp from the queue items. Returns -1 if no
-   * items have a valid timestamp set.
-   */
-  private long findOldestRecordTimestamp(final List<QueueItem> items) {
-    long oldest = Long.MAX_VALUE;
-    boolean found = false;
-    for (final QueueItem item : items) {
-      final long timestamp = item.recordCreatedTimestampMs();
-      if (timestamp > 0 && timestamp < oldest) {
-        oldest = timestamp;
-        found = true;
-      }
-    }
-    return found ? oldest : -1;
   }
 
   /**

@@ -10,15 +10,6 @@ package io.camunda.db.rdbms.write.queue;
 public interface ExecutionQueue {
 
   /**
-   * Sets the current record timestamp context. All subsequent calls to {@link
-   * #executeInQueue(QueueItem)} will use this timestamp until it is cleared or changed. This is
-   * used to track the record creation time for calculating exporting latency.
-   *
-   * @param timestampMs the record creation timestamp in milliseconds, or -1 to clear the context
-   */
-  void setCurrentRecordTimestamp(long timestampMs);
-
-  /**
    * Enqueues the given entry to be executed later in a batch.
    *
    * @param entry the queue item to enqueue
