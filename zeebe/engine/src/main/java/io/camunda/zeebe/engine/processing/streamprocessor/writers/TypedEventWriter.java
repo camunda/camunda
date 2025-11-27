@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.function.Consumer;
 
 public interface TypedEventWriter {
@@ -89,7 +90,7 @@ public interface TypedEventWriter {
     }
     final var decodedPartitionId = Protocol.decodePartitionId(key);
     if (decodedPartitionId == expectedPartitionId && key > keyGenerator.getCurrentKey()) {
-      throw new IllegalArgumentException(
+      throw new UnrecoverableException(
           "Expected to receive a key lesser than %d, but got %d"
               .formatted(keyGenerator.getCurrentKey(), key));
     }
