@@ -351,6 +351,11 @@
     </dependency>
 
     <dependency>
+      <groupId>software.amazon.jdbc</groupId>
+      <artifactId>aws-advanced-jdbc-wrapper</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
     </dependency>
