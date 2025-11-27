@@ -38,6 +38,8 @@ import {
   StopFilledAlt,
   Pause,
   Play,
+  Misuse,
+  Pending,
 } from '@carbon/icons-react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
@@ -82,14 +84,14 @@ const ItemStatusIndicator: React.FC<{status: BatchOperationItemState}> = ({
         };
       case 'CANCELLED':
         return {
-          Icon: StopFilledAlt,
-          color: 'var(--cds-support-warning)',
+          Icon: Misuse,
+          color: '#ff832b',
           text: 'Cancelled',
         };
       default:
         return {
-          Icon: ErrorFilled,
-          color: 'var(--cds-text-secondary)',
+          Icon: Pending,
+          color: 'var(--cds-status-gray)',
           text: status,
         };
     }
@@ -159,7 +161,7 @@ const BatchOperationDetails: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   // Get sort from URL or use defaults
   const sortParams = getSortParams(location.search);
@@ -569,7 +571,7 @@ const BatchOperationDetails: React.FC = () => {
               <Pagination
                 page={currentPage}
                 pageSize={pageSize}
-                pageSizes={[10, 25, 50]}
+                pageSizes={[20, 50, 100]}
                 totalItems={operation.items.length}
                 onChange={({page, pageSize: newPageSize}) => {
                   setCurrentPage(page);

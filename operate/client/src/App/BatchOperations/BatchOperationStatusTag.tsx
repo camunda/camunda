@@ -11,11 +11,11 @@ import {
   ErrorFilled,
   InProgress,
   PauseFilled,
-  StopFilledAlt,
   WarningAltFilled,
   Pending,
   SkipForwardFilled,
   CircleDash,
+  Misuse,
 } from '@carbon/icons-react';
 import type {
   BatchOperationState,
@@ -57,8 +57,8 @@ const getStatusConfig = (
       };
     case 'CANCELLED':
       return {
-        Icon: StopFilledAlt,
-        color: 'var(--cds-text-secondary)',
+        Icon: Misuse,
+        color: '#ff832b',
         label: 'Cancelled',
       };
     case 'FAILED':
@@ -70,7 +70,7 @@ const getStatusConfig = (
     case 'CREATED':
       return {
         Icon: Pending,
-        color: 'var(--cds-support-info)',
+        color: 'var(--cds-status-gray)',
         label: 'Created',
       };
     case 'PARTIALLY_COMPLETED':
