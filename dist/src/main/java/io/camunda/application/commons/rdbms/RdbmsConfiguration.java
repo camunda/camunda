@@ -78,8 +78,8 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
-import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsReader;
+import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -275,8 +275,10 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionMessageSubscriptionStatisticsReader processDefinitionMessageSubscriptionStatisticsReader(){
-    return new ProcessDefinitionMessageSubscriptionStatisticsDbReader();
+  public ProcessDefinitionMessageSubscriptionStatisticsReader
+      processDefinitionMessageSubscriptionStatisticsReader(
+          final MessageSubscriptionMapper messageSubscriptionMapper) {
+    return new ProcessDefinitionMessageSubscriptionStatisticsDbReader(messageSubscriptionMapper);
   }
 
   @Bean
