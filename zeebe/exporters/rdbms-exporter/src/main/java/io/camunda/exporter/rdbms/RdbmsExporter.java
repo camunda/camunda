@@ -144,9 +144,9 @@ public final class RdbmsExporter {
                 handler.getClass(),
                 record.getValueType());
           }
-
-          lastPosition = record.getPosition();
         }
+        // Update lastPosition once per record, after all handlers have processed it
+        lastPosition = record.getPosition();
       } finally {
         // Clear the timestamp context after processing
         rdbmsWriter.getExecutionQueue().setCurrentRecordTimestamp(-1);

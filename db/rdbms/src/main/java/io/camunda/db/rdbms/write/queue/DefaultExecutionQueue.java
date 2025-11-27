@@ -50,7 +50,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   // Track current memory consumption of the queue
   private long currentQueueMemoryBytes = 0;
 
-  // Thread-local storage for the current record timestamp
+  // Per-instance storage for the current record timestamp context
   // This allows the exporter to set the timestamp before calling handlers
   private long currentRecordTimestampMs = -1;
 
