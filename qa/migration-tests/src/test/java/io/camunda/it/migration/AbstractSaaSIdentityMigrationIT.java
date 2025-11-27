@@ -227,7 +227,7 @@ public abstract class AbstractSaaSIdentityMigrationIT {
   }
 
   protected void createGroups() throws IOException, InterruptedException, URISyntaxException {
-    final var groupsNames = List.of("groupA", "groupB", "groupC");
+    final var groupsNames = List.of("groupA", "groupB", "groupC", "GROUP_123_@");
     for (final String groupName : groupsNames) {
       createGroup(groupName);
     }
@@ -260,7 +260,7 @@ public abstract class AbstractSaaSIdentityMigrationIT {
         getGroups().stream().map(io.camunda.migration.identity.dto.Group::id).toList();
     assignGroupToUser(groupIds.getFirst(), "user0");
     assignGroupToUser(groupIds.get(1), "user0");
-    assignGroupToUser(groupIds.getLast(), "user1");
+    assignGroupToUser(groupIds.get(2), "user1");
   }
 
   protected void assignGroupToUser(final String groupId, final String userId)
