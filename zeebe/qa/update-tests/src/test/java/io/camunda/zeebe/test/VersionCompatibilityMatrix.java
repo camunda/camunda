@@ -16,6 +16,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -23,6 +24,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.function.BinaryOperator;
@@ -232,8 +234,17 @@ final class VersionCompatibilityMatrix {
                         HttpRequest.newBuilder().GET().uri(endpoint).build(),
                         BodyHandlers.ofByteArray()));
 
-        if (response.statusCode() == 404) {
+        final var statusCode = response.statusCode();
+        if (statusCode == 404) {
           return Optional.empty();
+        }
+
+        if (statusCode < 200 || statusCode >= 300) {
+          final var body = new String(Objects.requireNonNullElse(response.body(), new byte[0]));
+          throw new IOException(
+              String.format(
+                  "Failed to fetch release from GitHub API. Status: %d, Endpoint: %s, Response: %s",
+                  statusCode, endpoint, body.isEmpty() ? "<empty>" : body));
         }
 
         return Optional.ofNullable(new ObjectMapper().readValue(response.body(), Release.class));
@@ -243,7 +254,6 @@ final class VersionCompatibilityMatrix {
     }
 
     private Stream<Ref> fetchTags() {
-
       final var endpoint =
           URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
       try (final var httpClient = HttpClient.newHttpClient()) {
@@ -253,6 +263,15 @@ final class VersionCompatibilityMatrix {
                     httpClient.send(
                         HttpRequest.newBuilder().GET().uri(endpoint).build(),
                         BodyHandlers.ofByteArray()));
+
+        final var statusCode = response.statusCode();
+        if (statusCode < 200 || statusCode >= 300) {
+          final var body = new String(Objects.requireNonNullElse(response.body(), new byte[0]));
+          throw new IOException(
+              String.format(
+                  "Failed to fetch tags from GitHub API. Status: %d, Endpoint: %s, Response: %s",
+                  statusCode, endpoint, body.isEmpty() ? "<empty>" : body));
+        }
 
         final var refs = new ObjectMapper().readValue(response.body(), Ref[].class);
         return Stream.of(refs);
