@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.function.Supplier;
 
 /**
@@ -28,17 +29,26 @@ import java.util.function.Supplier;
 final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBuilderBackedWriter
     implements StateWriter {
 
+  private final int partitionId;
   private final EventApplier eventApplier;
+  private KeyGenerator keyGenerator;
 
   public ResultBuilderBackedEventApplyingStateWriter(
+      final int partitionId,
       final Supplier<ProcessingResultBuilder> resultBuilderSupplier,
       final EventApplier eventApplier) {
     super(resultBuilderSupplier);
+    this.partitionId = partitionId;
     this.eventApplier = eventApplier;
+  }
+
+  public void setKeyGenerator(final KeyGenerator keyGenerator) {
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
+    validateKey(key);
     final int latestVersion = eventApplier.getLatestVersion(intent);
     appendFollowUpEvent(key, intent, value, latestVersion);
   }
@@ -46,6 +56,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
+    validateKey(key);
     appendFollowUpEvent(key, intent, value, m -> m.recordVersion(recordVersion));
   }
 
@@ -55,6 +66,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
       final Intent intent,
       final RecordValue value,
       final FollowUpEventMetadata metadata) {
+    validateKey(key);
     final int recordVersion =
         metadata.getRecordVersion() == FollowUpEventMetadata.VERSION_NOT_SET
             ? eventApplier.getLatestVersion(intent)
@@ -77,5 +89,11 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return resultBuilder().canWriteEventOfLength(eventLength);
+  }
+
+  private void validateKey(final long key) {
+    if (keyGenerator != null) {
+      TypedEventWriter.validateKey(key, partitionId, keyGenerator);
+    }
   }
 }
