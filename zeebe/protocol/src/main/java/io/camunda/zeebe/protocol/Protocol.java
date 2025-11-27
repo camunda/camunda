@@ -116,13 +116,13 @@ public final class Protocol {
   public static long encodePartitionId(final int partitionId, final long key) {
     if (key < 0) {
       throw new IllegalArgumentException(
-          "Invalid key provided: got " + key + ", expected a positive value");
+          "Expected to receive a positive value as key, but got: '" + key + "'");
     }
     if (decodePartitionId(key) != 0) {
       throw new IllegalArgumentException(
-          "Invalid key provided: got "
+          "Expected that the provided value is smaller and doesn't contain the partition Id already, but got: '"
               + key
-              + ", but it has the partitionId encoded already (partitionId="
+              + "', which contains (partitionId="
               + Protocol.decodePartitionId(key)
               + ")");
     }
