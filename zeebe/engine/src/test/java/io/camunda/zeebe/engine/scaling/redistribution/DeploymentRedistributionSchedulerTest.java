@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributionScheduler;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, ProcessingStateExtension.class})
-public class DeploymentRedistributorTest {
+public class DeploymentRedistributionSchedulerTest {
 
   @Mock private DeploymentDistributionCommandSender deploymentDistributionCommandSender;
 
@@ -49,7 +49,7 @@ public class DeploymentRedistributorTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private StreamProcessorContext context;
 
-  private DeploymentRedistributor deploymentRedistributor;
+  private DeploymentRedistributionScheduler deploymentRedistributor;
   private ArgumentCaptor<Runnable> taskCaptor;
   private long recordKey;
   private DeploymentRecord deploymentRecord;
@@ -68,7 +68,7 @@ public class DeploymentRedistributorTest {
         RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
 
     deploymentRedistributor =
-        new DeploymentRedistributor(
+        new DeploymentRedistributionScheduler(
             deploymentDistributionCommandSender, deploymentState, routingInfo);
 
     final DeploymentResource deploymentResource =
