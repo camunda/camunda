@@ -36,7 +36,7 @@ public final class ProtocolTest {
     // when/then
     assertThatThrownBy(() -> Protocol.encodePartitionId(128, value))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Invalid key provided: got -1029819, expected a positive value");
+        .hasMessageContaining("Expected to receive a positive value as key, but got: '-1029819'");
   }
 
   @Test
@@ -49,6 +49,6 @@ public final class ProtocolTest {
     assertThatThrownBy(() -> Protocol.encodePartitionId(128, encoded))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            "Invalid key provided: got 288230376152741563, but it has the partitionId encoded already (partitionId=128)");
+            "Expected that the provided value is smaller and doesn't contain the partition Id already, but got: '288230376152741563', which contains (partitionId=128)");
   }
 }
