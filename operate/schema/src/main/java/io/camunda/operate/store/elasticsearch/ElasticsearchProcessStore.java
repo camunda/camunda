@@ -62,10 +62,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
@@ -526,7 +524,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
-    final BulkRequest bulkRequest = new BulkRequest();
     final co.elastic.clients.elasticsearch.core.BulkRequest.Builder es8BulkRequest =
         new co.elastic.clients.elasticsearch.core.BulkRequest.Builder();
     // select process instance - get tree path
@@ -557,19 +554,12 @@ public class ElasticsearchProcessStore implements ProcessStore {
                   Arrays.stream(hits.getHits())
                       .forEach(
                           sh -> {
-                            final UpdateRequest updateRequest = new UpdateRequest();
                             final Map<String, Object> updateFields = new HashMap<>();
                             final String newTreePath =
                                 new TreePath((String) sh.getSourceAsMap().get(TREE_PATH))
                                     .removeProcessInstance(processInstanceKey)
                                     .toString();
                             updateFields.put(TREE_PATH, newTreePath);
-                            updateRequest
-                                .index(sh.getIndex())
-                                .id(sh.getId())
-                                .doc(updateFields)
-                                .retryOnConflict(UPDATE_RETRY_COUNT);
-                            bulkRequest.add(updateRequest);
                             es8BulkRequest.operations(
                                 op ->
                                     op.update(
