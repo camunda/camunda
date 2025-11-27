@@ -21,6 +21,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
@@ -56,6 +58,10 @@ import org.slf4j.LoggerFactory;
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaProcessTestContextImpl.class);
+
+  // We can complete only created user tasks. Ignore other states.
+  private static final Consumer<UserTaskFilter> DEFAULT_USER_TASK_COMPLETION_FILTER =
+      filter -> filter.state(UserTaskState.CREATED);
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -380,7 +386,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         () ->
             client
                 .newUserTaskSearchRequest()
-                .filter(userTaskSelector::applyFilter)
+                .filter(
+                    filter ->
+                        DEFAULT_USER_TASK_COMPLETION_FILTER
+                            .andThen(userTaskSelector::applyFilter)
+                            .accept(filter))
                 .send()
                 .join()
                 .items()
