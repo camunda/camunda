@@ -14,6 +14,8 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.stream.impl.state.NextValue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class NextValueTest {
   @Test
@@ -25,5 +27,14 @@ public class NextValueTest {
     writer.wrap(buffer, 0);
 
     assertThatThrownBy(() -> value.write(writer)).isInstanceOf(MsgpackPropertyException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {-1, -100, (long) Integer.MIN_VALUE, Long.MIN_VALUE})
+  public void shouldRequirePositiveValueInSetter(final long v) {
+    final var value = new NextValue();
+    assertThatThrownBy(() -> value.set(v))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Invalid value: expected positive number, but got " + v);
   }
 }
