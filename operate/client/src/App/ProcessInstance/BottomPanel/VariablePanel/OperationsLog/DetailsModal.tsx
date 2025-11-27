@@ -102,7 +102,7 @@ const renderUserTaskDetails = (
 
   return (
     <div>
-      <Title>Operation changes</Title>
+      <Subtitle>Operation changes</Subtitle>
       <DataTable headers={headers} rows={rows} />
     </div>
   );
