@@ -17,6 +17,8 @@ public record SearchTermsAggregator(
     String field,
     Integer size,
     Integer minDocCount,
+    String script,
+    String lang,
     List<FieldSorting> sorting,
     List<SearchAggregator> aggregations)
     implements SearchAggregator {
@@ -37,6 +39,8 @@ public record SearchTermsAggregator(
     private String field;
     private Integer size = 10; // Default to 10 buckets
     private Integer minDocCount = 1; // Default to showing at least 1 document
+    private String script;
+    private String lang;
     private List<FieldSorting> sorting;
 
     @Override
@@ -71,6 +75,16 @@ public record SearchTermsAggregator(
       return this;
     }
 
+    public Builder script(final String value) {
+      script = value;
+      return this;
+    }
+
+    public Builder lang(final String value) {
+      lang = value;
+      return this;
+    }
+
     @Override
     public SearchTermsAggregator build() {
       return new SearchTermsAggregator(
@@ -78,6 +92,8 @@ public record SearchTermsAggregator(
           Objects.requireNonNull(field, "Expected non-null field for field."),
           size,
           minDocCount,
+          script,
+          lang,
           sorting,
           aggregations);
     }

@@ -17,7 +17,6 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
-import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
@@ -105,43 +104,25 @@ public class ProcessDefinitionServices
 
   public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
       getProcessDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
-
-    final var filter =
-        query.filter().toBuilder().states(ProcessInstanceState.ACTIVE.name()).build();
-
-    final var updatedQuery =
-        ProcessDefinitionInstanceStatisticsQuery.of(
-            b -> b.filter(filter).sort(query.sort()).page(query.page()));
-
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
-                .processDefinitionInstanceStatistics(updatedQuery));
+                .processDefinitionInstanceStatistics(query));
   }
 
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
       searchProcessDefinitionInstanceVersionStatistics(
-          final String processDefinitionId,
           final ProcessDefinitionInstanceVersionStatisticsQuery query) {
-
-    final var filter =
-        query.filter().toBuilder()
-            .processDefinitionIds(processDefinitionId)
-            .states(ProcessInstanceState.ACTIVE.name())
-            .build();
-    final var updatedQuery =
-        ProcessDefinitionInstanceVersionStatisticsQuery.of(
-            b -> b.filter(filter).sort(query.sort()).page(query.page()));
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
-                .processDefinitionInstanceVersionStatistics(updatedQuery));
+                .processDefinitionInstanceVersionStatistics(query));
   }
 
   public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {
