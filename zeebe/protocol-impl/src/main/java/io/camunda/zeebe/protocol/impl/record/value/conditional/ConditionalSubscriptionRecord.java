@@ -39,13 +39,15 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
 
   // default to -1 for root level start events
   private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
-  private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
-  private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty elementInstanceKeyProp =
+      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
   private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY);
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty catchEventIdProp = new StringProperty(CATCH_EVENT_ID_KEY, "");
   private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
-  private final StringProperty conditionProp = new StringProperty(CONDITION_KEY);
+  private final StringProperty conditionProp = new StringProperty(CONDITION_KEY, "");
   private final ArrayProperty<StringValue> variableNamesProp =
       new ArrayProperty<>(VARIABLE_NAMES_KEY, StringValue::new);
   private final ArrayProperty<StringValue> variableEventsProp =

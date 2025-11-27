@@ -79,6 +79,8 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
       }
 
       executableElement.setConditionExpression(condition);
+      // set raw condition expression string to be stored in the conditional subscription record
+      executableElement.setCondition(element.getCondition().getTextContent());
     }
   }
 }
