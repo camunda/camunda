@@ -623,7 +623,6 @@ jobs:
       CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
       DOCKER_IMAGE_TAG: current-test
       TEST_TYPE: Integration
-      GH_TOKEN: ${{ github.token }}
     services:
       registry:
         image: registry:3
@@ -632,9 +631,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Generate cache key with current hour
+        if: matrix.group == 'qa-update'
         id: cache-key
-        run: echo "hour=$(date -u +%Y%m%d%H)" >> $GITHUB_OUTPUT
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
+        if: matrix.group == 'qa-update'
         uses: actions/cache@v4
         with:
           path: .cache
