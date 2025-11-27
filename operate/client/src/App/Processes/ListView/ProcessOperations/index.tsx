@@ -57,6 +57,7 @@ const ProcessOperations: React.FC<Props> = observer(
                   ? 'Only process definitions without running instances can be deleted.'
                   : `Delete Process Definition "${processName} - Version ${processVersion}"`
               }
+              size="sm"
               type="DELETE"
               disabled={isOperationRunning || runningInstancesCount !== 0}
               onClick={() => {

@@ -32,6 +32,12 @@ const Paths = {
   auditLog() {
     return '/audit-log';
   },
+  batchOperations() {
+    return '/batch-operations';
+  },
+  batchOperationDetails(operationId: string = ':operationId') {
+    return `/batch-operations/${operationId}`;
+  },
   forbidden() {
     return '/forbidden';
   },
@@ -75,6 +81,11 @@ const Locations = {
   auditLog(): To {
     return {
       pathname: Paths.auditLog(),
+    };
+  },
+  batchOperations(): To {
+    return {
+      pathname: Paths.batchOperations(),
     };
   },
 } as const;

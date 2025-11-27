@@ -135,7 +135,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               <ComboBox
                 id="process-definition-name"
                 titleText="Name"
-                placeholder="Search by process name"
+                placeholder="Search by Process Name"
                 items={PROCESS_DEFINITIONS}
                 selectedItem={filters.processDefinitionName || null}
                 onChange={({selectedItem}) =>
@@ -149,7 +149,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               id="process-definition-version"
               titleText="Version"
               placeholder={
-                filters.processDefinitionName ? 'Select version' : 'Select a process version'
+                filters.processDefinitionName ? 'Select Version' : 'Select Process Version'
               }
               items={availableVersions}
               selectedItem={
@@ -168,7 +168,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
             <TextInput
               id="process-instance-key"
               labelText="Process instance key"
-              placeholder="Filter by instance key"
+              placeholder="Filter by Instance Key"
               value={filters.processInstanceKey || ''}
               onChange={(e) =>
                 handleFilterChange('processInstanceKey', e.target.value)
@@ -216,6 +216,16 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 size="sm"
               />
             </div>
+            <TextInput
+              id="user"
+              labelText="Applied by"
+              placeholder="Username or client ID"
+              value={filters.user || ''}
+              onChange={(e) => handleFilterChange('user', e.target.value)}
+              light={true}
+              size="sm"
+              style={{width: '100%'}}
+            />
             <DatePicker
               datePickerType="range"
               value={[filters.startDateFrom || '', filters.startDateTo || '']}
@@ -240,16 +250,6 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 size="sm"
               />
             </DatePicker>
-            <TextInput
-              id="user"
-              labelText="Applied by"
-              placeholder="Username or client ID"
-              value={filters.user || ''}
-              onChange={(e) => handleFilterChange('user', e.target.value)}
-              light={true}
-              size="sm"
-              style={{width: '100%'}}
-            />
           </Stack>
         </Stack>
         </div>
