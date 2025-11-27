@@ -15,18 +15,18 @@ import java.time.InstantSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class JobTimeoutCheckerScheduler implements StreamProcessorLifecycleAware {
-  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckerScheduler.class);
+public final class JobTimeoutCheckSchedulerScheduler implements StreamProcessorLifecycleAware {
+  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckSchedulerScheduler.class);
   private final Duration pollingInterval;
-  private final JobTimeoutChecker jobTimeoutChecker;
+  private final JobTimeoutCheckScheduler jobTimeoutChecker;
 
-  public JobTimeoutCheckerScheduler(
+  public JobTimeoutCheckSchedulerScheduler(
       final JobState state,
       final Duration pollingInterval,
       final int batchLimit,
       final InstantSource clock) {
     this.pollingInterval = pollingInterval;
-    jobTimeoutChecker = new JobTimeoutChecker(state, pollingInterval, batchLimit, clock);
+    jobTimeoutChecker = new JobTimeoutCheckScheduler(state, pollingInterval, batchLimit, clock);
   }
 
   @Override

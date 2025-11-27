@@ -12,14 +12,14 @@ import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.InstantSource;
 
-public class UsageMetricsCheckerScheduler implements StreamProcessorLifecycleAware {
+public class UsageMetricsCheckSchedulerScheduler implements StreamProcessorLifecycleAware {
 
-  private final UsageMetricsChecker usageMetricsChecker;
+  private final UsageMetricsCheckScheduler usageMetricsChecker;
 
-  public UsageMetricsCheckerScheduler(
+  public UsageMetricsCheckSchedulerScheduler(
       final EngineConfiguration engineConfiguration, final InstantSource clock) {
     final var exportInterval = engineConfiguration.getUsageMetricsExportInterval();
-    usageMetricsChecker = new UsageMetricsChecker(exportInterval, clock);
+    usageMetricsChecker = new UsageMetricsCheckScheduler(exportInterval, clock);
   }
 
   @Override

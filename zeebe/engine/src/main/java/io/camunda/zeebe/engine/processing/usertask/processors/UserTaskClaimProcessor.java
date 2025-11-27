@@ -38,7 +38,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final UserTaskCommandPreconditionValidator preconditionChecker;
 
   public UserTaskClaimProcessor(
       final ProcessingState state,
@@ -50,7 +50,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
     preconditionChecker =
-        new UserTaskCommandPreconditionChecker(
+        new UserTaskCommandPreconditionValidator(
             List.of(LifecycleState.CREATED),
             "claim",
             UserTaskClaimProcessor::checkClaim,

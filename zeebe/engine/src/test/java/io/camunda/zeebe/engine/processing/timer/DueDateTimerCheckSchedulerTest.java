@@ -17,8 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.TriggerTimersSideEffect;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.YieldingDecorator;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class DueDateTimerCheckerTest {
+class DueDateTimerCheckSchedulerTest {
 
   @Nested
   final class TriggerTimersSideEffectTest {

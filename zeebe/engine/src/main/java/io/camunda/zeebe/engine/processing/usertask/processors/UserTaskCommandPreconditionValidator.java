@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-public class UserTaskCommandPreconditionChecker {
+public class UserTaskCommandPreconditionValidator {
 
   private static final String NO_USER_TASK_FOUND_MESSAGE =
       "Expected to %s user task with key '%d', but no such user task was found";
@@ -37,7 +37,7 @@ public class UserTaskCommandPreconditionChecker {
       additionalChecks;
   private final UserTaskState userTaskState;
 
-  public UserTaskCommandPreconditionChecker(
+  public UserTaskCommandPreconditionValidator(
       final List<LifecycleState> validLifecycleStates,
       final String intent,
       final UserTaskState userTaskState,
@@ -45,7 +45,7 @@ public class UserTaskCommandPreconditionChecker {
     this(validLifecycleStates, intent, null, userTaskState, authCheckBehavior);
   }
 
-  public UserTaskCommandPreconditionChecker(
+  public UserTaskCommandPreconditionValidator(
       final List<LifecycleState> validLifecycleStates,
       final String intent,
       final BiFunction<

@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveInciden
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommandAppender;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationExecutionScheduler;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -75,7 +75,7 @@ public final class BatchOperationSetupProcessors {
                 brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
-        new BatchOperationInitializer(
+        new BatchOperationInitializationHelper(
             new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
             new BatchOperationPageProcessor(engineConfiguration.getBatchOperationChunkSize()),
             new BatchOperationCommandAppender(partitionId),

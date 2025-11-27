@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.IS_CAMUNDA_GROUPS_ENABLED;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.IS_CAMUNDA_USERS_ENABLED;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.USER_DOES_NOT_EXIST_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_USERS_ENABLED;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.USER_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -47,7 +47,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AuthorizationEntityCheckerTest {
+class AuthorizationEntityValidatorTest {
 
   @Mock private ProcessingState processingState;
   @Mock private UserState userState;
@@ -57,7 +57,7 @@ class AuthorizationEntityCheckerTest {
 
   @Mock private TypedRecord<AuthorizationRecord> command;
 
-  private AuthorizationEntityChecker checker;
+  private AuthorizationEntityValidator validator;
 
   @BeforeEach
   void setUp() {
@@ -66,7 +66,7 @@ class AuthorizationEntityCheckerTest {
     when(processingState.getGroupState()).thenReturn(groupState);
     when(processingState.getRoleState()).thenReturn(roleState);
 
-    checker = new AuthorizationEntityChecker(processingState);
+    validator = new AuthorizationEntityValidator(processingState);
     lenient().when(userState.getUser("user1")).thenReturn(Optional.of(mock(PersistedUser.class)));
     lenient().when(roleState.getRole("role1")).thenReturn(Optional.of(mock(PersistedRole.class)));
     lenient().when(groupState.get("group1")).thenReturn(Optional.of(mock(PersistedGroup.class)));
@@ -99,7 +99,7 @@ class AuthorizationEntityCheckerTest {
                 IS_CAMUNDA_GROUPS_ENABLED,
                 localGroupEnabled));
     // when
-    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
+    final Either<Rejection, AuthorizationRecord> result = validator.ownerAndResourceExists(command);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -145,7 +145,7 @@ class AuthorizationEntityCheckerTest {
                 localGroupEnabled));
 
     // when
-    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
+    final Either<Rejection, AuthorizationRecord> result = validator.ownerAndResourceExists(command);
 
     // then
     assertThat(result.isLeft()).isTrue();
@@ -319,7 +319,7 @@ class AuthorizationEntityCheckerTest {
     final var record = createAuthorizationRecord(matcher, resourceId, resourcePropertyName);
 
     // when
-    final var result = checker.validateResourceMatcher(record, "operation");
+    final var result = validator.validateResourceMatcher(record, "operation");
 
     // then
     assertThat(result.isRight()).as(testCase).isTrue();
@@ -339,7 +339,7 @@ class AuthorizationEntityCheckerTest {
     final var record = createAuthorizationRecord(matcher, resourceId, resourcePropertyName);
 
     // when
-    final var result = checker.validateResourceMatcher(record, operation);
+    final var result = validator.validateResourceMatcher(record, operation);
 
     // then
     assertThat(result.isLeft()).as(testCase).isTrue();

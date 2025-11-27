@@ -26,7 +26,7 @@ import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -66,7 +66,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final DecisionBehavior decisionBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
       final RoutingInfo routingInfo,
-      final DueDateTimerChecker timerChecker,
+      final DueDateTimerCheckScheduler timerChecker,
       final JobStreamer jobStreamer,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,

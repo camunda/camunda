@@ -34,7 +34,7 @@ public class AuthorizationUpdateProcessor
   private final SideEffectWriter sideEffectWriter;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
-  private final AuthorizationEntityChecker authorizationEntityChecker;
+  private final AuthorizationEntityValidator authorizationEntityValidator;
 
   public AuthorizationUpdateProcessor(
       final Writers writers,
@@ -50,7 +50,7 @@ public class AuthorizationUpdateProcessor
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
-    authorizationEntityChecker = new AuthorizationEntityChecker(processingState);
+    authorizationEntityValidator = new AuthorizationEntityValidator(processingState);
   }
 
   @Override
@@ -68,8 +68,8 @@ public class AuthorizationUpdateProcessor
                     command.getValue().getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-        .flatMap(record -> authorizationEntityChecker.validateResourceMatcher(record, "update"))
-        .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
+        .flatMap(record -> authorizationEntityValidator.validateResourceMatcher(record, "update"))
+        .flatMap(record -> authorizationEntityValidator.ownerAndResourceExists(command))
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -82,7 +82,7 @@ public class AuthorizationUpdateProcessor
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
         .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
-        .flatMap(s -> authorizationEntityChecker.ownerAndResourceExists(command))
+        .flatMap(s -> authorizationEntityValidator.ownerAndResourceExists(command))
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(
