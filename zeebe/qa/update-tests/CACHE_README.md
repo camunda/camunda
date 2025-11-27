@@ -23,6 +23,7 @@ The `VersionCompatibilityMatrix` uses a two-level caching strategy to minimize G
 - First workflow run: Creates cache file
 - Later workflow runs: Restores cache file from GitHub Actions cache
 - Cache persists across workflow runs (until manually invalidated or expired)
+- **Recommended**: Use hourly cache refresh to balance freshness and performance
 
 This approach pairs perfectly with GitHub Actions caching - the application creates the cache file, and GitHub Actions persists it across runs.
 
@@ -73,41 +74,31 @@ This two-level caching (application + CI) ensures minimal API usage and fast tes
 
 ## GitHub Actions Integration
 
-### Option 1: Cache Between Workflow Runs
+### Option 1: Hourly Cache Refresh (Recommended)
 
-Add this step to your GitHub Actions workflow to cache the file between runs:
+To automatically refresh the cache every hour while still benefiting from caching:
 
 ```yaml
-- name: Cache Zeebe versions
+- name: Generate cache key with current hour
+  id: cache-key
+  run: echo "hour=$(date -u +%Y%m%d%H)" >> $GITHUB_OUTPUT
+
+- name: Cache Zeebe versions (hourly refresh)
   uses: actions/cache@v4
   with:
     path: .cache
-    key: zeebe-versions-${{ github.run_id }}
+    key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
     restore-keys: |
       zeebe-versions-
 ```
 
-This will:
-- Restore the cache from a previous run
-- Use the same cached versions throughout the workflow
-- Save the cache at the end of the run
+This ensures:
+- Cache is invalidated every hour (new cache key each hour)
+- Multiple workflow runs within the same hour share the cache
+- Automatic refresh keeps version data current
+- No manual intervention needed
 
-### Option 2: Daily Cache Refresh
-
-To refresh the cache daily while using it within the same day:
-
-```yaml
-- name: Cache Zeebe versions
-  uses: actions/cache@v4
-  with:
-    path: .cache
-    key: zeebe-versions-${{ github.run_id }}-${{ hashFiles('.cache/zeebe-versions.json') }}
-    restore-keys: |
-      zeebe-versions-${{ github.run_id }}-
-      zeebe-versions-
-```
-
-### Option 3: Manual Cache Control
+### Option 2: Manual Cache Control
 
 Generate the cache file once in a dedicated job:
 
