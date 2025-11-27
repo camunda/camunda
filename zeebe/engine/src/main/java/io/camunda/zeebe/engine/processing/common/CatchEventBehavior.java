@@ -32,9 +32,11 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -48,6 +50,8 @@ import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
+
+  private static final String ZEEBE_EXPRESSION_PREFIX = "=";
 
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
@@ -63,9 +67,11 @@ public final class CatchEventBehavior {
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
+  private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
+  private final ConditionalSubscriptionRecord conditionSubscription =
+      new ConditionalSubscriptionRecord();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
-  private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
   private final InstantSource clock;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
 
@@ -200,6 +206,10 @@ public final class CatchEventBehavior {
           subscribeToTimerEvents(context, results);
           subscribeToSignalEvents(context, results);
         });
+
+    // conditional events don't require expression evaluation for subscription
+    // condition expressions are stored as-is and evaluated when a variable changes
+    subscribeToConditionalEvents(context, supplier);
 
     return evaluationResults.map(r -> null);
   }
@@ -419,6 +429,51 @@ public final class CatchEventBehavior {
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         subscriptionKey, SignalSubscriptionIntent.CREATED, signalSubscription);
+  }
+
+  private void subscribeToConditionalEvents(
+      final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
+    supplier.getEvents().stream()
+        .filter(ExecutableCatchEvent::isConditional)
+        .forEach(event -> subscribeToConditionalEvent(context, event));
+  }
+
+  /**
+   * Closest scope key for different elements \(equals to context.getElementInstanceKey\):
+   *
+   * <ul>
+   *   <li>Boundary event &rarr; attached activity
+   *   <li>Intermediate catch event &rarr; element itself
+   *   <li>Event subprocess start event &rarr; flow scope that is enclosing the event subprocess
+   *   <li>Root level start event &rarr; not handled here, will be evaluated through endpoint call
+   * </ul>
+   */
+  private void subscribeToConditionalEvent(
+      final BpmnElementContext context, final ExecutableCatchEvent event) {
+    final var conditional = event.getConditional();
+
+    conditionSubscription.reset();
+    conditionSubscription
+        .setScopeKey(context.getElementInstanceKey())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setCatchEventId(event.getId())
+        .setInterrupting(event.isInterrupting())
+        // set as an expression string with prefix to parse it directly during evaluation
+        .setCondition(
+            BufferUtil.wrapString(
+                ZEEBE_EXPRESSION_PREFIX + conditional.getConditionExpression().getExpression()))
+        .setVariableNames(conditional.getVariableNames())
+        .setVariableEvents(conditional.getVariableEvents())
+        .setTenantId(context.getTenantId());
+
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, ConditionalSubscriptionIntent.CREATED, conditionSubscription);
+
+    final ConditionalSubscriptionRecord record = new ConditionalSubscriptionRecord();
+    record.wrap(conditionSubscription);
   }
 
   public void unsubscribeFromSignalEventsBySubscriptionFilter(
