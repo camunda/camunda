@@ -872,6 +872,16 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
+      - name: Generate cache key with current hour
+        id: cache-key
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> $GITHUB_OUTPUT
+      - name: Cache Zeebe versions (hourly refresh)
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
+          restore-keys: |
+            zeebe-versions-
       - name: Print metadata
         uses: ./.github/actions/print-metadata
         with:
