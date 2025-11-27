@@ -9,6 +9,7 @@ package io.camunda.zeebe.test;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.test.VersionCompatibilityMatrix.GithubAPI.Ref;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.StreamUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -26,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SequencedCollection;
@@ -70,13 +72,34 @@ final class VersionCompatibilityMatrix {
           );
 
   private final VersionProvider versionProvider;
+  private VersionCompatibilityConfig config =
+      new VersionCompatibilityConfig() {
+        @Override
+        public SemanticVersion getCurrentVersion() {
+          return VersionUtil.getSemanticVersion().orElseThrow();
+        }
+
+        @Override
+        public Optional<SemanticVersion> getPreviousMinorVersion() {
+          return VersionUtil.getPreviousSemanticVersion();
+        }
+      };
 
   public VersionCompatibilityMatrix() {
-    versionProvider = new CachedVersionProvider(new GithubVersionProvider());
+    final GithubAPI api = new GithubAPI();
+    versionProvider =
+        new CachedVersionProvider(
+            new AdvancedGithubVersionProvider(new GithubVersionProvider(api), api));
   }
 
   public VersionCompatibilityMatrix(final VersionProvider versionProvider) {
     this.versionProvider = versionProvider;
+  }
+
+  public VersionCompatibilityMatrix(
+      final VersionProvider versionProvider, final VersionCompatibilityConfig config) {
+    this.versionProvider = versionProvider;
+    this.config = config;
   }
 
   /**
@@ -107,9 +130,10 @@ final class VersionCompatibilityMatrix {
   }
 
   public Stream<Arguments> fromPreviousMinorToCurrent() {
-    final var current = VersionUtil.getSemanticVersion().orElseThrow();
+    final var current = config.getCurrentVersion();
     final var previous =
-        SemanticVersion.parse(VersionUtil.getPreviousVersion())
+        config
+            .getPreviousMinorVersion()
             .orElseThrow(
                 () ->
                     new IllegalStateException(
@@ -127,8 +151,9 @@ final class VersionCompatibilityMatrix {
   }
 
   public Stream<Arguments> fromPreviousPatchesToCurrent() {
-    final var current = VersionUtil.getSemanticVersion().orElseThrow();
+    final var current = config.getCurrentVersion();
     return discoverVersions()
+        .map(VersionInfo::version)
         .filter(version -> version.compareTo(current) < 0)
         .filter(version -> current.minor() - version.minor() <= 1)
         .filter(version -> isCompatible(version, current))
@@ -136,21 +161,23 @@ final class VersionCompatibilityMatrix {
   }
 
   public Stream<Arguments> fromFirstAndLastPatchToCurrent() {
-    final var current = VersionUtil.getSemanticVersion().orElseThrow();
+    final var current = config.getCurrentVersion();
 
     final var minAndMaxPatch =
         discoverVersions()
+            .map(VersionInfo::version)
             .filter(version -> version.compareTo(current) < 0)
             .filter(version -> current.minor() - version.minor() == 1)
             .filter(next -> isCompatible(current, next))
             .collect(StreamUtil.minMax(Comparator.comparing(SemanticVersion::patch)));
+
     return Stream.of(
         Arguments.of(minAndMaxPatch.min().toString(), "CURRENT"),
         Arguments.of(minAndMaxPatch.max().toString(), "CURRENT"));
   }
 
   public Stream<Arguments> full() {
-    final var versionInfos = discoverReleasedVersions().sorted().toList();
+    final var versionInfos = discoverVersions().sorted().toList();
     final var combinations =
         versionInfos.stream()
             .filter(info -> info.version().minor() > 0)
@@ -214,12 +241,8 @@ final class VersionCompatibilityMatrix {
    *     href="https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#list-matching-references--parameters">GitHub
    *     API</a>
    */
-  public Stream<SemanticVersion> discoverVersions() {
-    return discoverReleasedVersions().map(VersionInfo::version);
-  }
-
-  public Stream<VersionInfo> discoverReleasedVersions() {
-    return versionProvider.discoverVersions().filter(VersionInfo::isReleased);
+  public Stream<VersionInfo> discoverVersions() {
+    return versionProvider.discoverVersions();
   }
 
   private static SemanticVersion parseVersion(final String version) {
@@ -261,9 +284,15 @@ final class VersionCompatibilityMatrix {
     private static final Path CACHE_FILE = Paths.get(".cache", "camunda-versions.json");
 
     private final VersionProvider delegate;
+    private final Path cacheFile;
 
     public CachedVersionProvider(final VersionProvider delegate) {
+      this(delegate, CACHE_FILE);
+    }
+
+    public CachedVersionProvider(final VersionProvider delegate, final Path cacheFile) {
       this.delegate = delegate;
+      this.cacheFile = cacheFile;
     }
 
     @Override
@@ -271,7 +300,7 @@ final class VersionCompatibilityMatrix {
       // Try to load from cache first
       final var cachedVersions = loadFromCache();
       if (cachedVersions.isPresent()) {
-        LOG.info("Loaded {} versions from cache file: {}", cachedVersions.get().size(), CACHE_FILE);
+        LOG.info("Loaded {} versions from cache file: {}", cachedVersions.get().size(), cacheFile);
         return cachedVersions.get().stream();
       }
 
@@ -284,11 +313,11 @@ final class VersionCompatibilityMatrix {
 
     private Optional<List<VersionInfo>> loadFromCache() {
       try {
-        if (!Files.exists(CACHE_FILE)) {
+        if (!Files.exists(cacheFile)) {
           return Optional.empty();
         }
 
-        final var json = Files.readString(CACHE_FILE);
+        final var json = Files.readString(cacheFile);
         final var mapper = new ObjectMapper();
         final var cachedInfos = mapper.readValue(json, CachedVersionInfo[].class);
         final var versionInfos =
@@ -302,14 +331,14 @@ final class VersionCompatibilityMatrix {
                 .toList();
         return Optional.of(versionInfos);
       } catch (final Exception e) {
-        LOG.warn("Failed to load versions from cache file: {}", CACHE_FILE, e);
+        LOG.warn("Failed to load versions from cache file: {}", cacheFile, e);
         return Optional.empty();
       }
     }
 
     private void saveToCache(final List<VersionInfo> versionInfos) {
       try {
-        Files.createDirectories(CACHE_FILE.getParent());
+        Files.createDirectories(cacheFile.getParent());
         final var cachedInfos =
             versionInfos.stream()
                 .map(
@@ -319,10 +348,10 @@ final class VersionCompatibilityMatrix {
                 .toList();
         final var mapper = new ObjectMapper();
         final var json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(cachedInfos);
-        Files.writeString(CACHE_FILE, json);
-        LOG.info("Saved {} versions to cache file: {}", versionInfos.size(), CACHE_FILE);
+        Files.writeString(cacheFile, json);
+        LOG.info("Saved {} versions to cache file: {}", versionInfos.size(), cacheFile);
       } catch (final Exception e) {
-        LOG.warn("Failed to save versions to cache file: {}", CACHE_FILE, e);
+        LOG.warn("Failed to save versions to cache file: {}", cacheFile, e);
       }
     }
 
@@ -331,7 +360,181 @@ final class VersionCompatibilityMatrix {
     record CachedVersionInfo(String version, boolean isReleased, boolean isLatest) {}
   }
 
+  static class AdvancedGithubVersionProvider implements VersionProvider {
+
+    private final VersionProvider delegate;
+    private final GithubAPI api;
+
+    public AdvancedGithubVersionProvider(final VersionProvider delegate, final GithubAPI api) {
+      this.delegate = delegate;
+      this.api = api;
+    }
+
+    @Override
+    public Stream<VersionInfo> discoverVersions() {
+      // Mark latest versions, enrich with release status, and filter to released only
+      final var releasedVersions =
+          delegate
+              .discoverVersions()
+              .map(
+                  info -> {
+                    if (info.isLatest()) {
+                      final var isReleased = api.fetchRelease(info.version()).isPresent();
+                      return new VersionInfo(info.version(), isReleased, info.isLatest());
+                    } else {
+                      return info;
+                    }
+                  })
+              .peek(
+                  info -> {
+                    if (!info.isReleased()) {
+                      LOG.warn(
+                          "{} has no corresponding GitHub release yet. Using previous patch as latest for minor {}.",
+                          info.version(),
+                          info.version().minor());
+                    }
+                  })
+              .filter(VersionInfo::isReleased)
+              .toList();
+
+      // Re-mark latest based on released versions only
+      return VersionInfo.updateLatest(releasedVersions).stream();
+    }
+  }
+
   static class GithubVersionProvider implements VersionProvider {
+
+    private final GithubAPI api;
+
+    public GithubVersionProvider(final GithubAPI api) {
+      this.api = api;
+    }
+
+    @Override
+    public Stream<VersionInfo> discoverVersions() {
+      final var versions =
+          api.fetchTags()
+              .map(Ref::toSemanticVersion)
+              .map(VersionInfo::of)
+              .filter(Objects::nonNull) // Filter out null versions
+              .filter(VersionInfo::isReleased)
+              .toList();
+
+      return VersionInfo.updateLatest(versions).stream();
+    }
+  }
+
+  @Deprecated
+  static class LegacyVersionProvider implements VersionProvider {
+
+    @Override
+    public Stream<VersionInfo> discoverVersions() {
+      @JsonIgnoreProperties(ignoreUnknown = true)
+      record Ref(String ref) {
+        SemanticVersion toSemanticVersion() {
+          return SemanticVersion.parse(ref.substring("refs/tags/".length())).orElse(null);
+        }
+      }
+      final var endpoint =
+          URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
+      try (final var httpClient = HttpClient.newHttpClient()) {
+        final var retry =
+            Retry.of(
+                "github-api",
+                RetryConfig.custom()
+                    .maxAttempts(10)
+                    .intervalFunction(IntervalFunction.ofExponentialBackoff())
+                    .build());
+        final var response =
+            retry.executeCallable(
+                () ->
+                    httpClient.send(
+                        HttpRequest.newBuilder().GET().uri(endpoint).build(),
+                        BodyHandlers.ofByteArray()));
+        final var refs = new ObjectMapper().readValue(response.body(), Ref[].class);
+        return Stream.of(refs)
+            .map(Ref::toSemanticVersion)
+            .filter(version -> version != null && version.preRelease() == null)
+            .map(VersionInfo::of);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  record VersionInfo(SemanticVersion version, boolean isReleased, boolean isLatest)
+      implements Comparable<VersionInfo> {
+
+    private static Map<Integer, VersionInfo> findLatestPatchPerMinor(
+        final List<VersionInfo> versions) {
+      return versions.stream()
+          .collect(
+              Collectors.toMap(
+                  VersionInfo::minor,
+                  Function.identity(),
+                  BinaryOperator.maxBy(Comparator.comparing(VersionInfo::patch))));
+    }
+
+    static List<VersionInfo> updateLatest(final List<VersionInfo> versions) {
+      final var latestPerMinor = VersionInfo.findLatestPatchPerMinor(versions);
+
+      return versions.stream()
+          .map(
+              info -> {
+                final var isLatest =
+                    info.version().equals(latestPerMinor.get(info.version().minor()).version());
+                return isLatest ? info.asLatest() : info.asNotLatest();
+              })
+          .toList();
+    }
+
+    public int minor() {
+      return version().minor();
+    }
+
+    public int patch() {
+      return version().patch();
+    }
+
+    @Override
+    public int compareTo(final VersionInfo other) {
+      return version.compareTo(other.version);
+    }
+
+    public static VersionInfo of(final String s) {
+      return VersionInfo.of(SemanticVersion.parse(s).orElse(null));
+    }
+
+    public static VersionInfo of(final SemanticVersion version) {
+      if (Objects.isNull(version)) {
+        return null;
+      }
+
+      return new VersionInfo(version, !version.isPreRelease(), false);
+    }
+
+    public VersionInfo asLatest() {
+      return new VersionInfo(version(), isReleased(), true);
+    }
+
+    private VersionInfo asNotLatest() {
+      return new VersionInfo(version(), isReleased(), false);
+    }
+  }
+
+  private record UpgradePath(SemanticVersion from, SemanticVersion to) {}
+
+  interface VersionProvider {
+    Stream<VersionInfo> discoverVersions();
+  }
+
+  interface VersionCompatibilityConfig {
+    SemanticVersion getCurrentVersion();
+
+    Optional<SemanticVersion> getPreviousMinorVersion();
+  }
+
+  public class GithubAPI {
 
     final Retry retry =
         Retry.of(
@@ -340,44 +543,6 @@ final class VersionCompatibilityMatrix {
                 .maxAttempts(10)
                 .intervalFunction(IntervalFunction.ofExponentialBackoff())
                 .build());
-
-    @Override
-    public Stream<VersionInfo> discoverVersions() {
-      final var allVersions =
-          fetchTags()
-              .map(Ref::toSemanticVersion)
-              .filter(Objects::nonNull) // Filter out null versions
-              .filter(version -> version.preRelease() == null) // Filter out pre-releases
-              .toList();
-
-      // Identify latest patch per minor
-      final var latestPerMinor =
-          allVersions.stream()
-              .collect(
-                  Collectors.toMap(
-                      SemanticVersion::minor,
-                      Function.identity(),
-                      BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
-
-      // Create VersionInfo with isLatest flag and check release status only for latest patches
-      return allVersions.stream()
-          .map(
-              version -> {
-                final boolean isLatest = version.equals(latestPerMinor.get(version.minor()));
-
-                // We only probe for actual releases for the latest minor,
-                // for others we assume they are released
-                final boolean isReleased = !isLatest || fetchRelease(version).isPresent();
-
-                if (!isReleased) {
-                  LOG.warn(
-                      "{} has no corresponding GitHub release yet. Excluding from compatibility matrix.",
-                      version);
-                }
-
-                return new VersionInfo(version, isReleased, isLatest);
-              });
-    }
 
     private HttpRequest.Builder createAuthenticatedRequest(final URI endpoint) {
       final var builder = HttpRequest.newBuilder().GET().uri(endpoint);
@@ -389,7 +554,7 @@ final class VersionCompatibilityMatrix {
       return builder;
     }
 
-    private Optional<Release> fetchRelease(final SemanticVersion tagName) {
+    public Optional<Release> fetchRelease(final SemanticVersion tagName) {
       final var endpoint =
           URI.create(
               "https://api.github.com/repos/camunda/camunda/releases/tags/" + tagName.toString());
@@ -419,7 +584,7 @@ final class VersionCompatibilityMatrix {
       }
     }
 
-    private Stream<Ref> fetchTags() {
+    public Stream<Ref> fetchTags() {
       final var endpoint =
           URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
       try (final var httpClient = HttpClient.newHttpClient()) {
@@ -446,31 +611,17 @@ final class VersionCompatibilityMatrix {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Ref(String ref) {
+    public record Ref(String ref) {
       SemanticVersion toSemanticVersion() {
         return SemanticVersion.parse(ref.substring("refs/tags/".length())).orElse(null);
       }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Release(String tag_name, boolean prerelease) {
+    public record Release(String tag_name) {
       SemanticVersion toSemanticVersion() {
         return SemanticVersion.parse(tag_name).orElse(null);
       }
     }
-  }
-
-  record VersionInfo(SemanticVersion version, boolean isReleased, boolean isLatest)
-      implements Comparable<VersionInfo> {
-    @Override
-    public int compareTo(final VersionInfo other) {
-      return version.compareTo(other.version);
-    }
-  }
-
-  private record UpgradePath(SemanticVersion from, SemanticVersion to) {}
-
-  interface VersionProvider {
-    Stream<VersionInfo> discoverVersions();
   }
 }
