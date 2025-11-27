@@ -314,6 +314,33 @@ public class CamundaProcessTestCompletionApiIT {
             "Expected to complete user task [elementId: unknown-task] but no user task is available.");
   }
 
+  @Test
+  void shouldCompleteMultipleUserTasksBySameElementId() {
+    // Given: a multi-instance user task with a collection of two items
+    final String elementId = "user-task-1";
+
+    final long processDefinitionKey =
+        deployProcessModel(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .userTask(elementId)
+                .zeebeUserTask()
+                .multiInstance()
+                .zeebeInputCollectionExpression("[1,2]")
+                .done());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When: complete both user tasks
+    processTestContext.completeUserTask(UserTaskSelectors.byElementId(elementId));
+    assertThatProcessInstance(processInstanceEvent).hasCompletedElement(elementId, 1);
+
+    processTestContext.completeUserTask(UserTaskSelectors.byElementId(elementId));
+
+    // Then: both user tasks are completed (3 elements = 2 user tasks + multi-instance body)
+    assertThatProcessInstance(processInstanceEvent).isCompleted().hasCompletedElement(elementId, 3);
+  }
+
   /**
    * Deploys a process model and waits until it is accessible via the API.
    *
