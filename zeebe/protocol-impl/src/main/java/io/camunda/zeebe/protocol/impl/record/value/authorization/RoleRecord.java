@@ -25,7 +25,8 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
-  private final BooleanProperty allTenantsAccessProp = new BooleanProperty("allTenantsAccess");
+  private final BooleanProperty allTenantsAccessProp =
+      new BooleanProperty("allTenantsAccess", false);
 
   public RoleRecord() {
     super(7);
