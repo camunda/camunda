@@ -229,6 +229,8 @@ paths:
   # Process definition endpoints
   /process-definitions/search:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1search'
+  /process-definitions/statistics/message-subscriptions:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1message-subscriptions'
   /process-definitions/statistics/process-instances:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1process-instances'
   /process-definitions/{processDefinitionKey}:
