@@ -20,6 +20,11 @@ on:
         required: false
         type: string
         description: The database docker image version to be used during the tests. Will be set as env variable IMAGE_VERSION. If not set, the default value from the docker-compose file will be used.
+      notify-slack-on-failure:
+        required: false
+        type: boolean
+        default: false
+        description: Whether to send a Slack notification on failure.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -101,6 +106,50 @@ jobs:
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
           detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  send-slack-notification:
+    name: "Send slack notification on fail"
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && inputs.notify-slack-on-failure
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+      - name: Send notification
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          # For posting a rich message using Block Kit
+          payload: |
+            text: "Scheduled Database Integration Tests for ${{inputs.database-type}} failed"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Scheduled Database Integration Tests for **${{inputs.database-type}}** FAILED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # Send metrics about CI health
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
