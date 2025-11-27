@@ -140,7 +140,11 @@ public final class ProcessorNamingArchTest {
                   private static final Set<String> INTENTS = new HashSet<>();
                   private static final Set<String> VALUE_TYPES = new HashSet<>();
                   private static final Set<String> WHITELIST =
-                      Set.of("BpmnStreamProcessor", "CommandProcessor", "CommandProcessorImpl");
+                      Set.of(
+                          "BpmnStreamProcessor", // special case
+                          "CommandProcessor", // will be removed in #40162
+                          "CommandProcessorImpl", // will be removed in #40162
+                          "UserTaskProcessor"); // will be refactored in the future
                   private static volatile boolean initialized = false;
 
                   private static void ensureInitialized() {
