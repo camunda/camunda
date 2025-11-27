@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscr
 public class ConditionalSubscription extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<ConditionalSubscriptionRecord> recordProp =
-      new ObjectProperty<>("ConditionalSubscriptionRecord", new ConditionalSubscriptionRecord());
+      new ObjectProperty<>("conditionalSubscriptionRecord", new ConditionalSubscriptionRecord());
   private final LongProperty keyProp = new LongProperty("key");
 
   public ConditionalSubscription() {
