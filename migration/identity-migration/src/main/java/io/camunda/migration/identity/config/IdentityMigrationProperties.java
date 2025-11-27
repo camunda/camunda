@@ -32,6 +32,7 @@ public class IdentityMigrationProperties {
   private OidcProperties oidc = new OidcProperties();
   private Integer backpressureDelay = 5000;
   private boolean resourceAuthorizationsEnabled = false;
+  private EntitiesProperties entities = new EntitiesProperties();
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
@@ -95,6 +96,14 @@ public class IdentityMigrationProperties {
 
   public void setResourceAuthorizationsEnabled(final boolean resourceAuthorizationsEnabled) {
     this.resourceAuthorizationsEnabled = resourceAuthorizationsEnabled;
+  }
+
+  public EntitiesProperties getEntities() {
+    return entities;
+  }
+
+  public void setEntities(final EntitiesProperties entities) {
+    this.entities = entities;
   }
 
   public enum Mode {

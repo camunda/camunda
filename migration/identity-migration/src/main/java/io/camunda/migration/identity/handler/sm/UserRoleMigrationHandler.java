@@ -8,10 +8,12 @@
 package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
+import static io.camunda.migration.identity.config.EntitiesProperties.EntityType.ROLE;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.EntitiesProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -25,6 +27,7 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final RoleServices roleServices;
+  private final EntitiesProperties entitiesProperties;
 
   private final AtomicInteger assignedUserCount = new AtomicInteger();
   private final AtomicInteger totalRoleCount = new AtomicInteger();
@@ -37,6 +40,7 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
     super(migrationProperties.getBackpressureDelay());
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
+    entitiesProperties = migrationProperties.getEntities();
   }
 
   @Override
@@ -55,7 +59,7 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
           userRoles.forEach(
               role -> {
                 try {
-                  final var roleId = normalizeID(role.name());
+                  final var roleId = normalizeID(role.name(), entitiesProperties, ROLE);
                   logger.debug("Assigning role '{}' to user '{}'", roleId, userId);
                   final var roleMember = new RoleMemberRequest(roleId, userId, EntityType.USER);
                   retryOnBackpressure(

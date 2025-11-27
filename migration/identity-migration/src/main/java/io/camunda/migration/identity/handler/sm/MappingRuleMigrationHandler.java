@@ -8,9 +8,12 @@
 package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
+import static io.camunda.migration.identity.config.EntitiesProperties.EntityType.MAPPING_RULE;
+import static io.camunda.migration.identity.config.EntitiesProperties.EntityType.ROLE;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.EntitiesProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.Role;
@@ -36,6 +39,7 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
   private final MappingRuleServices mappingRuleServices;
   private final RoleServices roleServices;
   private final TenantServices tenantServices;
+  private final EntitiesProperties entitiesProperties;
 
   private final AtomicInteger createdMappingRuleCount = new AtomicInteger();
   private final AtomicInteger totalMappingRuleCount = new AtomicInteger();
@@ -56,6 +60,7 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
     this.mappingRuleServices = mappingRuleServices.withAuthentication(camundaAuthentication);
     this.roleServices = roleServices.withAuthentication(camundaAuthentication);
     this.tenantServices = tenantServices.withAuthentication(camundaAuthentication);
+    entitiesProperties = migrationProperties.getEntities();
   }
 
   @Override
@@ -79,7 +84,8 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
               // Sort group by mapping rule name/id for deterministic selection of the first rule
               mappingRulesWithSameClaim.sort(Comparator.comparing(MappingRule::name));
               final var firstRule = mappingRulesWithSameClaim.getFirst();
-              final var mappingRuleId = normalizeID(firstRule.name());
+              final var mappingRuleId =
+                  normalizeID(firstRule.name(), entitiesProperties, MAPPING_RULE);
               try {
                 final var mappingRuleDTO =
                     new MappingRuleDTO(
@@ -122,7 +128,7 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
   private void assignRolesToMappingRule(final Set<Role> appliedRoles, final String mappingRuleId) {
     appliedRoles.forEach(
         role -> {
-          final var roleId = normalizeID(role.name());
+          final var roleId = normalizeID(role.name(), entitiesProperties, ROLE);
           try {
             final var roleMember =
                 new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);

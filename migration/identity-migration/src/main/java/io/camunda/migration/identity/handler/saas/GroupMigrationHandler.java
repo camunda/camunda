@@ -13,6 +13,7 @@ import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.EntitiesProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.handler.MigrationHandler;
@@ -32,6 +33,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   private final ConsoleClient consoleClient;
   private final ManagementIdentityClient managementIdentityClient;
   private final GroupServices groupServices;
+  private final EntitiesProperties entitiesProperties;
 
   private final AtomicInteger createdGroupCount = new AtomicInteger();
   private final AtomicInteger assignedUserCount = new AtomicInteger();
@@ -48,6 +50,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     this.consoleClient = consoleClient;
     this.managementIdentityClient = managementIdentityClient;
     this.groupServices = groupServices.withAuthentication(authentication);
+    entitiesProperties = migrationProperties.getEntities();
   }
 
   @Override
@@ -64,7 +67,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             .collect(Collectors.toMap(Member::userId, Member::email));
     batch.forEach(
         group -> {
-          final var normalizedGroupId = normalizeGroupID(group);
+          final var normalizedGroupId = normalizeGroupID(group, entitiesProperties);
           logger.debug(
               "Migrating Group: {} to a Group with the identifier: {}.", group, normalizedGroupId);
           try {

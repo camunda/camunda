@@ -16,6 +16,7 @@ import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthoriz
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.EntitiesProperties.EntityType;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.sm.OidcProperties.Audiences;
 import io.camunda.migration.identity.dto.Role;
@@ -72,7 +73,8 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     roles.forEach(
         role -> {
           final var roleName = role.name();
-          final var roleId = normalizeID(roleName);
+          final var roleId =
+              normalizeID(roleName, migrationProperties.getEntities(), EntityType.ROLE);
           try {
             final var roleRequest = new CreateRoleRequest(roleId, roleName, role.description());
             retryOnBackpressure(
