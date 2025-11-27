@@ -28,7 +28,7 @@ const TargetProcessField: React.FC = observer(() => {
         aria-label="Target"
         title="Target"
         id="targetProcess"
-        placeholder="Search by Process Name"
+        placeholder="Search by process name"
         items={processes.map(({id, label}) => {
           return {
             label,

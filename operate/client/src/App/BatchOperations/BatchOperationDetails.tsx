@@ -26,6 +26,8 @@ import {
   TableExpandedRow,
   TableExpandHeader,
   TableContainer,
+  OverflowMenu,
+  OverflowMenuItem,
 } from '@carbon/react';
 import {
   ArrowLeft,
@@ -34,6 +36,8 @@ import {
   InProgress,
   SkipForwardFilled,
   StopFilledAlt,
+  Pause,
+  Play,
 } from '@carbon/icons-react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
@@ -227,7 +231,7 @@ const BatchOperationDetails: React.FC = () => {
   const itemsTableHeaders = [
     {key: 'instanceName', header: 'Process name'},
     {key: 'instanceKey', header: 'Instance key'},
-    {key: 'state', header: 'State'},
+    {key: 'state', header: 'Instance state'},
     {key: 'time', header: 'Time'},
   ];
 
@@ -332,11 +336,73 @@ const BatchOperationDetails: React.FC = () => {
           </Button>
         </div>
 
-        {/* Title */}
-        <div style={{padding: 'var(--cds-spacing-05)', paddingBottom: 0}}>
-          <h3 style={{marginBottom: 'var(--cds-spacing-05)'}}>
-            {formatOperationType(operation.operationType)}
-          </h3>
+        {/* Title with Actions */}
+        <div
+          style={{
+            padding: 'var(--cds-spacing-05)',
+            paddingBottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <h3>{formatOperationType(operation.operationType)}</h3>
+
+          {/* Action buttons based on state */}
+          {(operation.state === 'CREATED' ||
+            operation.state === 'ACTIVE' ||
+            operation.state === 'SUSPENDED') && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--cds-spacing-03)',
+              }}
+            >
+              {operation.state === 'ACTIVE' && (
+                <Button
+                  kind="tertiary"
+                  size="md"
+                  renderIcon={Pause}
+                  onClick={() => {
+                    // TODO: Implement suspend functionality
+                    console.log('Suspend operation:', operation.id);
+                  }}
+                >
+                  Suspend
+                </Button>
+              )}
+
+              {operation.state === 'SUSPENDED' && (
+                <Button
+                  kind="tertiary"
+                  size="md"
+                  renderIcon={Play}
+                  onClick={() => {
+                    // TODO: Implement resume functionality
+                    console.log('Resume operation:', operation.id);
+                  }}
+                >
+                  Resume
+                </Button>
+              )}
+
+              <OverflowMenu
+                size="md"
+                flipped
+                aria-label="Additional options"
+              >
+                <OverflowMenuItem
+                  itemText="Cancel"
+                  isDelete
+                  onClick={() => {
+                    // TODO: Implement cancel functionality
+                    console.log('Cancel operation:', operation.id);
+                  }}
+                />
+              </OverflowMenu>
+            </div>
+          )}
         </div>
 
         {/* Content */}

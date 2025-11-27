@@ -135,7 +135,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               <ComboBox
                 id="process-definition-name"
                 titleText="Name"
-                placeholder="Search by Process Name"
+                placeholder="Search by process name"
                 items={PROCESS_DEFINITIONS}
                 selectedItem={filters.processDefinitionName || null}
                 onChange={({selectedItem}) =>
@@ -149,7 +149,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               id="process-definition-version"
               titleText="Version"
               placeholder={
-                filters.processDefinitionName ? 'Select Version' : 'Select Process Version'
+                filters.processDefinitionName ? 'Select version' : 'Select process version'
               }
               items={availableVersions}
               selectedItem={
@@ -168,7 +168,7 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
             <TextInput
               id="process-instance-key"
               labelText="Process instance key"
-              placeholder="Filter by Instance Key"
+              placeholder="Search by instance key"
               value={filters.processInstanceKey || ''}
               onChange={(e) =>
                 handleFilterChange('processInstanceKey', e.target.value)

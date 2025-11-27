@@ -160,7 +160,7 @@ const BatchOperationsFilters: React.FC<BatchOperationsFiltersProps> = observer(
               <ComboBox
                 id="process-definition-name"
                 titleText="Name"
-                placeholder="Search by Process Name"
+                placeholder="Search by process name"
                 items={PROCESS_DEFINITIONS}
                 selectedItem={filters.processDefinitionName || null}
                 onChange={({selectedItem}) =>
@@ -176,7 +176,7 @@ const BatchOperationsFilters: React.FC<BatchOperationsFiltersProps> = observer(
                 placeholder={
                   filters.processDefinitionName
                     ? 'Select Version'
-                    : 'Select process first'
+                    : 'Select process version'
                 }
                 items={availableVersions}
                 selectedItem={
@@ -216,7 +216,7 @@ const BatchOperationsFilters: React.FC<BatchOperationsFiltersProps> = observer(
               <TextInput
                 id="process-instance-key"
                 labelText="Process instance key"
-                placeholder="Filter by instance key"
+                placeholder="Search by instance key"
                 value={filters.processInstanceKey || ''}
                 onChange={(e) =>
                   handleFilterChange('processInstanceKey', e.target.value)
