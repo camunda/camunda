@@ -11,5 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(Long roleKey, String roleId, String name, String description)
+public record RoleEntity(
+    Long roleKey, String roleId, String name, String description, boolean allTenantsAccess)
     implements Serializable {}

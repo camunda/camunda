@@ -18,6 +18,10 @@ public class RoleEntityTransformer
   public RoleEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.RoleEntity value) {
     return new RoleEntity(
-        value.getKey(), value.getRoleId(), value.getName(), value.getDescription());
+        value.getKey(),
+        value.getRoleId(),
+        value.getName(),
+        value.getDescription(),
+        value.isAllTenantsAccess());
   }
 }
