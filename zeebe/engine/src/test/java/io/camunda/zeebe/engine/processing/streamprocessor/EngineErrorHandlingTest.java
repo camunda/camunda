@@ -56,16 +56,21 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -189,6 +194,76 @@ public final class EngineErrorHandlingTest {
     final DeploymentRecord event = new DeploymentRecord();
     event.resources().add().setResource(wrapString("foo")).setResourceName(wrapString(name));
     return event;
+  }
+
+  @Test
+  public void shouldFailWhenWritingAnEventWithWrongKey() {
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingState.getKeyGenerator();
+              return TypedRecordProcessors.processors(
+                      processingState.getKeyGenerator(), processingContext.getWriters())
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                      new TypedRecordProcessor<DeploymentRecord>() {
+                        @Override
+                        public void processRecord(final TypedRecord<DeploymentRecord> record) {
+                          processingContext
+                              .getWriters()
+                              .state()
+                              .appendFollowUpEvent(
+                                  keyGenerator.getCurrentKey() + 1000,
+                                  ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                                  record.getValue());
+                        }
+                      });
+            });
+    final AtomicReference<HealthReport> reportRef = new AtomicReference<>();
+    final AtomicBoolean unrecoverableFailure = new AtomicBoolean(false);
+    streamProcessor.addFailureListener(
+        new FailureListener() {
+          @Override
+          public void onFailure(final HealthReport report) {
+            reportRef.set(report);
+          }
+
+          @Override
+          public void onRecovered(final HealthReport report) {
+            reportRef.set(report);
+          }
+
+          @Override
+          public void onUnrecoverableFailure(final HealthReport report) {
+            reportRef.set(report);
+            unrecoverableFailure.set(true);
+          }
+        });
+
+    // when
+    final long failingEventPosition =
+        streams
+            .newRecord(STREAM_NAME)
+            .event(Records.processInstance(1))
+            .recordType(RecordType.COMMAND)
+            .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+            .key(keyGenerator.nextKey())
+            .write();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              assertThat(streamProcessor.isFailed()).isTrue();
+              assertThat(reportRef.get())
+                  .isNotNull()
+                  .returns(HealthStatus.DEAD, HealthReport::getStatus);
+              assertThat(unrecoverableFailure.get()).isTrue();
+            });
   }
 
   @Test
