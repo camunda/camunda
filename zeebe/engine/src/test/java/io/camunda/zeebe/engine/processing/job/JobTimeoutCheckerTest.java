@@ -90,8 +90,9 @@ public class JobTimeoutCheckerTest {
 
     final var task =
         new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);
@@ -121,8 +122,9 @@ public class JobTimeoutCheckerTest {
 
     final var task =
         new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);
@@ -165,8 +167,9 @@ public class JobTimeoutCheckerTest {
 
     final var task =
         new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);

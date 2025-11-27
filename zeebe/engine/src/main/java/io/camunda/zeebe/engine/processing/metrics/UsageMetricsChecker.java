@@ -13,6 +13,8 @@ import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -23,13 +25,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricsChecker implements Task {
+public class UsageMetricsChecker implements Task, StreamProcessorLifecycleAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsChecker.class);
 
   private final Duration exportInterval;
   private final InstantSource clock;
-  private ReadonlyStreamProcessorContext processingContext;
+  private ProcessingScheduleService scheduleService;
   private volatile boolean shouldReschedule = false;
   private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
 
@@ -38,15 +40,12 @@ public class UsageMetricsChecker implements Task {
     this.clock = clock;
   }
 
-  public void schedule(final boolean immediately) {
+  private void schedule(final boolean immediately) {
     final ScheduledTask nextTask;
     if (immediately) {
-      nextTask = processingContext.getScheduleService().runAtAsync(0L, this);
+      nextTask = scheduleService.runAtAsync(0L, this);
     } else {
-      nextTask =
-          processingContext
-              .getScheduleService()
-              .runAt(clock.millis() + exportInterval.toMillis(), this);
+      nextTask = scheduleService.runAt(clock.millis() + exportInterval.toMillis(), this);
       LOG.trace("UsageMetricsChecker scheduled");
     }
 
@@ -67,11 +66,31 @@ public class UsageMetricsChecker implements Task {
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
-    this.processingContext = processingContext;
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
+    scheduleService = processingContext.getScheduleService();
+    shouldReschedule = true;
+    schedule(true);
   }
 
-  public void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
+  @Override
+  public void onClose() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onFailed() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onPaused() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onResumed() {
+    shouldReschedule = true;
+    schedule(true);
   }
 }
