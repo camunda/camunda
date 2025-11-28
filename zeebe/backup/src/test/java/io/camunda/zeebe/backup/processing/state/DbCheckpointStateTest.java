@@ -22,8 +22,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class DbCheckpointStateTest {
+  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   @TempDir Path database;
   private DbCheckpointState state;
@@ -36,12 +44,15 @@ final class DbCheckpointStateTest {
 
   @BeforeEach
   void before() {
+    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                SimpleMeterRegistry::new)
+                SimpleMeterRegistry::new,
+                lruCache,
+                new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE, lruCache))
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
   }
