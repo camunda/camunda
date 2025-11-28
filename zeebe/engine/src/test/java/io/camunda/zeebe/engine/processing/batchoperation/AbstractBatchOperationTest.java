@@ -24,9 +24,9 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -145,7 +145,7 @@ abstract class AbstractBatchOperationTest {
 
     final var modificationPlan = new BatchOperationProcessInstanceModificationPlan();
 
-    final var mappingInstruction = new BatchOperationProcessInstanceModificationMoveInstruction();
+    final var mappingInstruction = new ProcessInstanceModificationMoveInstruction();
     mappingInstruction.setSourceElementId(sourceElementId);
     mappingInstruction.setTargetElementId(targetElementId);
     modificationPlan.addMoveInstruction(mappingInstruction);
