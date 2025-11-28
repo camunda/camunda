@@ -12,6 +12,7 @@ import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.ibm.icu.text.Collator;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ProblemException;
@@ -45,6 +46,7 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -1097,17 +1099,28 @@ public final class TestHelper {
       final SearchResponse<T> resultAsc,
       final SearchResponse<T> resultDesc,
       final Function<T, String> propertyExtractor) {
+
+    // The AWS Aurora instances we test against use a collation based on Thai locale.
+    final var locale = Locale.of("th");
+    final Collator collator = Collator.getInstance(locale);
+    collator.setStrength(Collator.SECONDARY); // case-insensitive, accent-sensitive
+    final Comparator<String> stringComparator = collator::compare;
+
     assertThat(resultAsc)
         .satisfiesAnyOf(
             result ->
                 assertThatIsSortedBy(result.items(), propertyExtractor, CASE_INSENSITIVE_ORDER),
-            result -> assertThatIsAscSorted(result.items(), propertyExtractor));
+            result -> assertThatIsAscSorted(result.items(), propertyExtractor),
+            result -> assertThatIsSortedBy(result.items(), propertyExtractor, stringComparator));
     assertThat(resultDesc)
         .satisfiesAnyOf(
             result ->
                 assertThatIsSortedBy(
                     result.items(), propertyExtractor, CASE_INSENSITIVE_ORDER.reversed()),
-            result -> assertThatIsDescSorted(result.items(), propertyExtractor));
+            result -> assertThatIsDescSorted(result.items(), propertyExtractor),
+            result ->
+                assertThatIsSortedBy(
+                    result.items(), propertyExtractor, stringComparator.reversed()));
   }
 
   public static <T, U extends Comparable<U>> void assertThatIsAscSorted(

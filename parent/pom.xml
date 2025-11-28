@@ -146,6 +146,7 @@
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.7</version.postgresql>
     <version.h2>2.3.232</version.h2>
+    <version.aws-advanced-jdbc-wrapper>2.6.7</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>3.0.0</version.aws-signing>
     <version.tc-keycloak>4.0.0</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
@@ -1636,6 +1637,12 @@
       </dependency>
 
       <dependency>
+        <groupId>software.amazon.jdbc</groupId>
+        <artifactId>aws-advanced-jdbc-wrapper</artifactId>
+        <version>${version.aws-advanced-jdbc-wrapper}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.netflix.concurrency-limits</groupId>
         <artifactId>concurrency-limits-core</artifactId>
         <version>${version.netflix.concurrency}</version>
@@ -2667,6 +2674,7 @@
                   <dep>com.mysql:mysql-connector-j</dep>
                   <dep>com.microsoft.sqlserver:mssql-jdbc</dep>
                   <dep>com.oracle.database.jdbc:ojdbc8</dep>
+                  <dep>software.amazon.jdbc:aws-advanced-jdbc-wrapper</dep>
                   <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
