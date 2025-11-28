@@ -39,13 +39,15 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
 
   // default to -1 for root level start events
   private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
-  private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
-  private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty elementInstanceKeyProp =
+      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
   private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY);
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty catchEventIdProp = new StringProperty(CATCH_EVENT_ID_KEY, "");
   private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
-  private final StringProperty conditionProp = new StringProperty(CONDITION_KEY);
+  private final StringProperty conditionProp = new StringProperty(CONDITION_KEY, "");
   private final ArrayProperty<StringValue> variableNamesProp =
       new ArrayProperty<>(VARIABLE_NAMES_KEY, StringValue::new);
   private final ArrayProperty<StringValue> variableEventsProp =
@@ -80,21 +82,6 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     tenantIdProp.setValue(record.getTenantId());
   }
 
-  /**
-   * The key of the scope in which the condition is evaluated. Scopes should be assigned for
-   * different element types as follows:
-   *
-   * <p>Intermediate catch event → element itself
-   *
-   * <p>Boundary event → attached activity
-   *
-   * <p>Event subprocess start event → flow scope that is enclosing the event subprocess
-   *
-   * <p>Root level start event → nothing, just evaluate through endpoint call using process
-   * definition key
-   *
-   * @return the scope key
-   */
   @Override
   public long getScopeKey() {
     return scopeKeyProp.getValue();
@@ -112,16 +99,6 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
 
   public ConditionalSubscriptionRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public ConditionalSubscriptionRecord setProcessInstanceKey(final long key) {
-    processInstanceKeyProp.setValue(key);
     return this;
   }
 
@@ -198,8 +175,14 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getCatchEventIdBuffer() {
-    return catchEventIdProp.getValue();
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public ConditionalSubscriptionRecord setProcessInstanceKey(final long key) {
+    processInstanceKeyProp.setValue(key);
+    return this;
   }
 
   @Override

@@ -835,6 +835,7 @@
         #     variableDocument: true
         #     clusterVariable: true
         #     adHocSubProcessInstruction: true
+        #     conditionalEventSubscription: true
         #
         #   retention:
         #     enabled: false
@@ -920,6 +921,7 @@
         #     variableDocument: true
         #     clusterVariable: true
         #     adHocSubProcessInstruction: true
+        #     conditionalEventSubscription: true
 
       # Camunda Exporter ----------
       # An example configuration for the camunda exporter:
