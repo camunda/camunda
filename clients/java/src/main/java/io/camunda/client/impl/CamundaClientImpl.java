@@ -429,14 +429,15 @@ public final class CamundaClientImpl implements CamundaClient {
     final URI address;
     address = config.getGrpcAddress();
 
-    final NettyChannelBuilder channelBuilder =
-        NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    final String target = String.format("dns:///%s:%d", address.getHost(), address.getPort());
+    final NettyChannelBuilder channelBuilder = NettyChannelBuilder.forTarget(target);
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("camunda-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
     channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
+    channelBuilder.defaultLoadBalancingPolicy("round_robin");
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
