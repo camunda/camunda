@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<HistoryDeletionRecord> {
@@ -38,5 +39,21 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   }
 
   @Override
-  public void processRecord(final TypedRecord<HistoryDeletionRecord> record) {}
+  public void processRecord(final TypedRecord<HistoryDeletionRecord> command) {
+    switch (command.getValue().getResourceType()) {
+      case PROCESS_INSTANCE -> deleteProcessInstance(command);
+      default ->
+          throw new UnsupportedOperationException(
+              "Unsupported resource type: " + command.getValue().getResourceType());
+    }
+  }
+
+  private void deleteProcessInstance(final TypedRecord<HistoryDeletionRecord> command) {
+    final var recordValue = command.getValue();
+
+    stateWriter.appendFollowUpEvent(
+        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue);
+    responseWriter.writeEventOnCommand(
+        recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue, command);
+  }
 }
