@@ -34,8 +34,12 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(UserTaskFilterTransformer.class);
 
   private final ServiceTransformers transformers;
 
@@ -101,7 +105,13 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return switch (authorization.resourceType()) {
       case PROCESS_DEFINITION -> stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
       case USER_TASK -> longTerms(KEY, NumberParsingUtil.parseLongs(authorization.resourceIds()));
-      default -> matchNone();
+      default -> {
+        LOG.warn(
+            "Unsupported authorization resource type {} for user task search query authorization check; "
+                + "returning a match-none query. Supported types: PROCESS_DEFINITION, USER_TASK.",
+            authorization.resourceType());
+        yield matchNone();
+      }
     };
   }
 
