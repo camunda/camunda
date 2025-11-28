@@ -12,13 +12,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
-import io.camunda.operate.store.elasticsearch.dao.response.SearchResponse;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
-import java.util.List;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -104,25 +101,6 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
     }
 
     throw new OperateRuntimeException("Error while trying to upsert entity: " + entity);
-  }
-
-  public SearchResponse<T> search(final Query query) {
-    final SearchSourceBuilder source =
-        SearchSourceBuilder.searchSource()
-            .query(query.getQueryBuilder())
-            .aggregation(query.getAggregationBuilder());
-    final SearchRequest searchRequest =
-        new SearchRequest(index.getFullQualifiedName())
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
-            .source(source);
-    try {
-      final List<T> hits =
-          ElasticsearchUtil.scroll(searchRequest, typeOfEntity, objectMapper, esClient);
-      return new SearchResponse<>(false, hits);
-    } catch (final IOException e) {
-      LOGGER.error("Error searching at index: " + index, e);
-    }
-    return new SearchResponse<>(true);
   }
 
   public AggregationResponse searchWithAggregation(final Query query) {
