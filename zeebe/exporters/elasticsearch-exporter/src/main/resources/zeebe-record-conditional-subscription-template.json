@@ -41,10 +41,10 @@
               "type": "keyword"
             },
             "variableNames": {
-              "type": "text"
+              "type": "keyword"
             },
             "variableEvents": {
-              "type": "text"
+              "type": "keyword"
             },
             "interrupting": {
               "type": "boolean"

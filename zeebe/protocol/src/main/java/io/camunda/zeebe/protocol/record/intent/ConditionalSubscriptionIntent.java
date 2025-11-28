@@ -19,7 +19,7 @@ public enum ConditionalSubscriptionIntent implements ProcessInstanceRelatedInten
   CREATED((short) 0),
   TRIGGER((short) 1),
   TRIGGERED((short) 2),
-  CANCELED((short) 3);
+  DELETED((short) 3);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -43,7 +43,7 @@ public enum ConditionalSubscriptionIntent implements ProcessInstanceRelatedInten
     switch (this) {
       case CREATED:
       case TRIGGERED:
-      case CANCELED:
+      case DELETED:
         return true;
       default:
         return false;
@@ -59,7 +59,7 @@ public enum ConditionalSubscriptionIntent implements ProcessInstanceRelatedInten
       case 2:
         return TRIGGERED;
       case 3:
-        return CANCELED;
+        return DELETED;
       default:
         return Intent.UNKNOWN;
     }
