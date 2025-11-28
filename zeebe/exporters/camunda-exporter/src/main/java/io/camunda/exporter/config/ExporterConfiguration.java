@@ -23,6 +23,7 @@ public class ExporterConfiguration {
   private PostExportConfiguration postExport = new PostExportConfiguration();
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
+  private DocumentCountConfiguration documentCount = new DocumentCountConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -113,6 +114,14 @@ public class ExporterConfiguration {
     this.batchOperation = batchOperation;
   }
 
+  public DocumentCountConfiguration getDocumentCount() {
+    return documentCount;
+  }
+
+  public void setDocumentCount(final DocumentCountConfiguration documentCount) {
+    this.documentCount = documentCount;
+  }
+
   @Override
   public String toString() {
     return "ExporterConfiguration{"
@@ -136,6 +145,8 @@ public class ExporterConfiguration {
         + postExport
         + ", batchOperation="
         + batchOperation
+        + ", documentCount="
+        + documentCount
         + '}';
   }
 
@@ -463,6 +474,43 @@ public class ExporterConfiguration {
       return "BatchOperationConfiguration{"
           + "exportItemsOnCreation="
           + exportItemsOnCreation
+          + '}';
+    }
+  }
+
+  public static final class DocumentCountConfiguration {
+    /** Whether document count metrics are enabled. */
+    private boolean enabled = true;
+
+    /**
+     * Delay between runs in milliseconds. Since getting document counts can be expensive, this
+     * controls how often the metric is updated.
+     */
+    private int delayBetweenRuns = 60000;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public int getDelayBetweenRuns() {
+      return delayBetweenRuns;
+    }
+
+    public void setDelayBetweenRuns(final int delayBetweenRuns) {
+      this.delayBetweenRuns = delayBetweenRuns;
+    }
+
+    @Override
+    public String toString() {
+      return "DocumentCountConfiguration{"
+          + "enabled="
+          + enabled
+          + ", delayBetweenRuns="
+          + delayBetweenRuns
           + '}';
     }
   }
