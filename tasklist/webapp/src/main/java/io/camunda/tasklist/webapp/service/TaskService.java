@@ -185,10 +185,10 @@ public class TaskService {
 
   public TaskDTO completeTask(
       final String taskId,
-      final List<VariableInputDTO> variables,
+      final List<VariableInputDTO> taskCompletionVariables,
       final boolean withDraftVariableValues) {
     final Map<String, Object> variablesMap = new HashMap<>();
-    requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
+    requireNonNullElse(taskCompletionVariables, Collections.<VariableInputDTO>emptyList())
         .forEach(variable -> variablesMap.put(variable.getName(), extractTypedValue(variable)));
 
     try {
@@ -196,13 +196,16 @@ public class TaskService {
 
       final TaskEntity task = taskStore.getTask(taskId);
       taskValidator.validateCanComplete(task);
+      // get runtime variables before completion
+      final var taskRuntimeVariables = variableService.getTaskRuntimeVariables(task);
       tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
       // persist completion and variables
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
       try {
         LOGGER.info("Start variable persistence: {}", taskId);
-        variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+        variableService.persistTaskVariables(
+            taskId, taskCompletionVariables, taskRuntimeVariables, withDraftVariableValues);
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);
