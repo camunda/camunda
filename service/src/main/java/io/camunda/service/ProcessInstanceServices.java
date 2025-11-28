@@ -363,6 +363,11 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> deleteProcessInstancesBatchOperation(
+      final ProcessInstanceFilter filter) {
+    throw new UnsupportedOperationException("Batch deletion of process instances is coming soon!");
+  }
+
   public SearchQueryResult<IncidentEntity> searchIncidents(
       final long processInstanceKey, final IncidentQuery query) {
     final var processInstance = getByKey(processInstanceKey);
