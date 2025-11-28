@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util.micrometer;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongUnaryOperator;
 
@@ -35,5 +36,9 @@ interface GaugeState {
         return state.updateAndGet(updateFunction);
       }
     };
+  }
+
+  static GaugeState expiring(final Duration expiration, final long expiredValue) {
+    return new ExpiringGaugeState(expiration, expiredValue);
   }
 }
