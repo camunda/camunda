@@ -20,6 +20,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +56,16 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.DECISION_DEFINITION.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         DecisionInstanceDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(dbPage));

@@ -54,6 +54,8 @@ public class ClusterVariableIT {
                 randomizedVariable.name(),
                 randomizedVariable.tenantId(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
                     AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
@@ -75,6 +77,8 @@ public class ClusterVariableIT {
             .getGloballyScopedClusterVariable(
                 randomizedVariable.name(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
                     AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
@@ -100,6 +104,8 @@ public class ClusterVariableIT {
                 randomizedVariable.name(),
                 randomizedVariable.tenantId(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
                     AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
@@ -124,6 +130,8 @@ public class ClusterVariableIT {
             .getGloballyScopedClusterVariable(
                 randomizedVariable.name(),
                 CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
                     AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
