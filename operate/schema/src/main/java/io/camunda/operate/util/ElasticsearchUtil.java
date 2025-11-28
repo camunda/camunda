@@ -480,46 +480,6 @@ public abstract class ElasticsearchUtil {
         .takeWhile(Objects::nonNull);
   }
 
-  public static void scrollWith(
-      final SearchRequest searchRequest,
-      final RestHighLevelClient esClient,
-      final Consumer<SearchHits> searchHitsProcessor,
-      final Consumer<Aggregations> aggsProcessor,
-      final Consumer<SearchHits> firstResponseConsumer)
-      throws IOException {
-
-    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    if (firstResponseConsumer != null) {
-      firstResponseConsumer.accept(response.getHits());
-    }
-
-    // call aggregations processor
-    if (aggsProcessor != null) {
-      aggsProcessor.accept(response.getAggregations());
-    }
-
-    String scrollId = response.getScrollId();
-    SearchHits hits = response.getHits();
-    while (hits.getHits().length != 0) {
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
-      }
-
-      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-      scrollId = response.getScrollId();
-      hits = response.getHits();
-    }
-
-    clearScroll(scrollId, esClient);
-  }
-
   public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
     if (scrollId != null) {
       // clear the scroll
@@ -531,22 +491,6 @@ public abstract class ElasticsearchUtil {
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
       }
     }
-  }
-
-  public static <T> List<T> scrollFieldToList(
-      final SearchRequest request, final String fieldName, final RestHighLevelClient esClient)
-      throws IOException {
-    final List<T> result = new ArrayList<>();
-    final Function<SearchHit, T> searchHitFieldToString =
-        (searchHit) -> (T) searchHit.getSourceAsMap().get(fieldName);
-
-    final Consumer<SearchHits> collectFields =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), searchHitFieldToString));
-        };
-
-    scrollWith(request, esClient, collectFields, null, collectFields);
-    return result;
   }
 
   public static RequestOptions requestOptionsFor(final int maxSizeInBytes) {
