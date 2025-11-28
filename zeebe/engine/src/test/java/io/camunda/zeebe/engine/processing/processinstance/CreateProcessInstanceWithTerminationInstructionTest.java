@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -270,5 +271,60 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
         .doesNotContain(
             Tuple.tuple(
                 ProcessInstanceIntent.ELEMENT_ACTIVATING, boundaryEventNestedSubProcessEnd));
+  }
+
+  @Test
+  public void shouldTerminateOnlyOnceForMultiInstanceElements() {
+    // given
+    final String processId = "process";
+    final String multiInstanceTaskId = "multiInstanceTask";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .scriptTask(multiInstanceTaskId)
+                .zeebeExpression("i + 2")
+                .zeebeResultVariable("j")
+                .multiInstance(
+                    b -> b.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("i"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeTerminateInstruction(multiInstanceTaskId)
+            .create();
+
+    // then
+    final var result =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(processId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .filter(
+                record ->
+                    record.getValue().getElementId().equals(processId)
+                        || record.getValue().getElementId().equals(multiInstanceTaskId));
+
+    assertThat(result)
+        .extracting(Record::getIntent, r -> r.getValue().getBpmnElementType())
+        .containsSubsequence(
+            Tuple.tuple(
+                ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.MULTI_INSTANCE_BODY),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(
+                ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.MULTI_INSTANCE_BODY),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, BpmnElementType.PROCESS),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, BpmnElementType.PROCESS));
   }
 }
