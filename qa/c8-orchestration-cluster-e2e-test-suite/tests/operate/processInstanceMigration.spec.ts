@@ -12,10 +12,15 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
+import {OperationEntry, getNewOperationIds} from 'utils/getNewOperationIds';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
 const MANUAL_MIGRATION_INSTANCE_COUNT = 3;
+
+let beforeOperationOperationPanelEntries: OperationEntry[];
+let afterOperationOperationPanelEntries: OperationEntry[];
 
 type ProcessDeployment = {
   readonly bpmnProcessId: string;
@@ -85,6 +90,7 @@ test.describe.serial('Process Instance Migration', () => {
     operateFiltersPanelPage,
     operateProcessesPage,
     operateProcessMigrationModePage,
+    operateOperationPanelPage,
   }) => {
     test.slow();
     const sourceVersion = testProcesses.processV1.version.toString();
@@ -105,7 +111,8 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessesPage.selectProcessInstances(
         AUTO_MIGRATION_INSTANCE_COUNT,
       );
-
+      beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
       await operateProcessesPage.startMigration();
     });
 
@@ -113,12 +120,6 @@ test.describe.serial('Process Instance Migration', () => {
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId);
-
-      await expect(
-        operateProcessMigrationModePage.targetVersionDropdown,
-      ).toHaveText(targetVersion, {
-        useInnerText: true,
-      });
 
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
         {
@@ -233,7 +234,7 @@ test.describe.serial('Process Instance Migration', () => {
         },
       ]);
 
-      await operateProcessMigrationModePage.completeProcessInstanceMigration();
+      await operateProcessMigrationModePage.migrateProcess(targetVersion);
     });
 
     await test.step('Verify migration operation is created and completes', async () => {
@@ -242,6 +243,8 @@ test.describe.serial('Process Instance Migration', () => {
       });
 
       await operateProcessesPage.waitForOperationToComplete();
+      afterOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
     });
 
     await test.step('Verify 6 instances migrated to target version', async () => {
@@ -249,7 +252,29 @@ test.describe.serial('Process Instance Migration', () => {
         timeout: 120000,
       });
 
-      await operateProcessesPage.clickLatestOperationLink();
+      var migratedIds = getNewOperationIds(
+        beforeOperationOperationPanelEntries,
+        afterOperationOperationPanelEntries,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          console.log('MIGRATED IDS', migratedIds);
+          expect(migratedIds.length).toBeGreaterThan(0);
+        },
+        onFailure: async () => {
+          await page.waitForTimeout(1000);
+          afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          migratedIds = getNewOperationIds(
+            beforeOperationOperationPanelEntries,
+            afterOperationOperationPanelEntries,
+          );
+        },
+        maxRetries: 60,
+      });
+
+      await operateOperationPanelPage.clickOperationEntryById(migratedIds[0]);
 
       await validateURL(page, /operationId=/);
       await expect(page.getByText('6 results')).toBeVisible({
@@ -322,7 +347,6 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessesPage.selectProcessInstances(
         MANUAL_MIGRATION_INSTANCE_COUNT,
       );
-
       await operateProcessesPage.startMigration();
     });
 
