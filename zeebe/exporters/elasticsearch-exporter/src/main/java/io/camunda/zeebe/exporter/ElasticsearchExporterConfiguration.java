@@ -109,6 +109,7 @@ public class ElasticsearchExporterConfiguration {
       case ASYNC_REQUEST -> index.asyncRequest;
       case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
       case CLUSTER_VARIABLE -> index.clusterVariable;
+      case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
       default -> false;
     };
   }
@@ -227,6 +228,7 @@ public class ElasticsearchExporterConfiguration {
 
     public boolean usageMetrics = false;
     public boolean clusterVariable = true;
+    public boolean conditionalSubscription = false;
 
     // index settings
     private Integer numberOfShards = null;
@@ -347,6 +349,8 @@ public class ElasticsearchExporterConfiguration {
           + authorization
           + ", asyncRequest="
           + asyncRequest
+          + ", conditionalSubscription="
+          + conditionalSubscription
           + '}';
     }
   }
