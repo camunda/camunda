@@ -67,6 +67,7 @@ public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
+  public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
   static {
@@ -124,7 +125,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    final SharedCache sharedCache = getSharedCache(brokerCfg);
+    final SharedRocksDbResources sharedRocksDbResources = getSharedCache(brokerCfg);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -145,24 +146,12 @@ public final class PartitionManagerImpl
             securityConfig,
             searchClientsProxy,
             brokerRequestAuthorizationConverter,
-            sharedCache.sharedCache(),
-            sharedCache.sharedWbm());
+            sharedRocksDbResources.sharedCache(),
+            sharedRocksDbResources.sharedWbm());
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
     raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
-  }
-
-  private static SharedCache getSharedCache(final BrokerCfg brokerCfg) {
-    final long blockCacheBytes =
-        brokerCfg.getCluster().getPartitionsCount()
-            * brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes();
-    // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
-    // with headroom for memtable bloom/filter overhead.
-    final long wbmLimitBytes = blockCacheBytes / 4;
-    final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
-    final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
-    return new SharedCache(sharedCache, sharedWbm);
   }
 
   public void start() {
@@ -675,7 +664,46 @@ public final class PartitionManagerImpl
     }
   }
 
-  private record SharedCache(LRUCache sharedCache, WriteBufferManager sharedWbm) {}
+  private static SharedRocksDbResources getSharedCache(final BrokerCfg brokerCfg) {
+    final long jvmMem = Runtime.getRuntime().maxMemory();
+    // Heap by default is 25% of the RAM, and off-heap (unless configured otherwise) is the same.
+    // So 50% of your RAM goes to the JVM, for both heap and off-heap (aka direct) memory.
+    // Leaving 50% of RAM for OS page cache and other processes.
+    final long maxRocksDbMem = jvmMem * 2;
+    final long blockCacheBytes =
+        brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
+            * brokerCfg.getCluster().getPartitionsCount();
+
+    validateRocksDbMemory(brokerCfg, blockCacheBytes, maxRocksDbMem);
+
+    // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
+    // with headroom for memtable bloom/filter overhead.
+    final long wbmLimitBytes = blockCacheBytes / 2;
+    final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
+    final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
+    return new SharedRocksDbResources(sharedCache, sharedWbm);
+  }
+
+  static void validateRocksDbMemory(
+      final BrokerCfg brokerCfg, final long blockCacheBytes, final long maxRocksDbMem) {
+    if (blockCacheBytes > maxRocksDbMem) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB to be bellow or "
+                  + "equal half of ram memory, but was %s %%.",
+              (blockCacheBytes / (2 * maxRocksDbMem) * 100)));
+    }
+    if (blockCacheBytes / brokerCfg.getCluster().getPartitionsCount()
+        < MINIMUM_PARTITION_MEMORY_LIMIT) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
+              MINIMUM_PARTITION_MEMORY_LIMIT,
+              blockCacheBytes / brokerCfg.getCluster().getPartitionsCount()));
+    }
+  }
+
+  private record SharedRocksDbResources(LRUCache sharedCache, WriteBufferManager sharedWbm) {}
 
   public final class PartitionAlreadyExistsException extends RuntimeException {
 
