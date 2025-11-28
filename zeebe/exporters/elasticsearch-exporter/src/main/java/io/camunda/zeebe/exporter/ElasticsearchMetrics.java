@@ -30,7 +30,7 @@ public class ElasticsearchMetrics {
     bulkMemorySize =
         StatefulGauge.builder(meterName("bulk.memory.size"))
             .description("Exporter bulk memory size")
-            .expiringState()
+            .valueExpires()
             .register(meterRegistry);
 
     flushDuration =
