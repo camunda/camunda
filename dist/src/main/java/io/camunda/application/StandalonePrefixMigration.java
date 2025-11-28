@@ -7,7 +7,7 @@
  */
 package io.camunda.application;
 
-import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+import static io.camunda.configuration.beans.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 
 import io.camunda.application.StandalonePrefixMigration.OperateIndexPrefixPropertiesOverride;
 import io.camunda.application.StandalonePrefixMigration.TasklistIndexPrefixPropertiesOverride;

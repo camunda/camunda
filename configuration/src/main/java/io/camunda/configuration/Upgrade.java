@@ -15,7 +15,9 @@ public class Upgrade {
   private static final String PREFIX = "camunda.system.upgrade";
 
   private static final Set<String> LEGACY_ENABLE_VERSION_CHECK_PROPERTIES =
-      Set.of("zeebe.broker.experimental.versionCheckRestrictionEnabled");
+      Set.of(
+          "zeebe.broker.experimental.versionCheckRestrictionEnabled",
+          "camunda.database.schema-manager.version-check-restriction-enabled");
 
   /**
    * Toggles the version check restriction, used for migration. Useful for testing migration logic
