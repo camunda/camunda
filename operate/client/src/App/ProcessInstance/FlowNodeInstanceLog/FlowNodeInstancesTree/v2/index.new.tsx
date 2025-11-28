@@ -136,6 +136,13 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
           return;
         }
 
+        if (modificationsStore.state.status === 'requires-ancestor-selection') {
+          return modificationsStore.setAncestorFlowNodeKeyForMoveOperation({
+            instanceKey: scopeKey,
+            flowNodeId: elementId,
+          });
+        }
+
         if (modificationsStore.state.status === 'adding-token') {
           modificationsStore.finishAddingToken(
             businessObjects,
