@@ -148,7 +148,20 @@ public final class EventAppliers implements EventApplier {
     registerUsageMetricsAppliers(state);
     registerMultiInstanceAppliers(state);
     registerClusterVariableEventAppliers(state);
+    registerConditionalSubscriptionAppliers(state);
     return this;
+  }
+
+  private void registerConditionalSubscriptionAppliers(final MutableProcessingState state) {
+    register(
+        io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent.CREATED,
+        NOOP_EVENT_APPLIER);
+    register(
+        io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent.TRIGGERED,
+        NOOP_EVENT_APPLIER);
+    register(
+        io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent.CANCELED,
+        NOOP_EVENT_APPLIER);
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
