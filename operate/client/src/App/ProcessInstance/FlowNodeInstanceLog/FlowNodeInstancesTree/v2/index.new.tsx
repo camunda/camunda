@@ -94,6 +94,7 @@ type NonFoldableElementInstancesNodeProps = {
   endDate: string | undefined;
   elementType: ElementInstance['type'];
   renderIcon: () => React.ReactNode | null;
+  scopeKeyHierarchy: string[];
 };
 
 const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeProps> =
@@ -107,6 +108,7 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       endDate,
       elementType,
       renderIcon,
+      scopeKeyHierarchy,
       ...rest
     }) => {
       const rowRef = useRef<HTMLDivElement>(null);
@@ -121,6 +123,10 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       });
 
       const handleSelect = () => {
+        if (isRoot) {
+          return;
+        }
+
         selectFlowNode(rootNode, {
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
@@ -152,6 +158,7 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
               isTimestampLabelVisible={false}
               isRoot={isRoot}
               latestMigrationDate={latestMigrationDate}
+              scopeKeyHierarchy={scopeKeyHierarchy}
               ref={rowRef}
             />
           }
@@ -166,11 +173,20 @@ type NonFoldableVirtualElementInstanceNodeProps = {
   elementName: string;
   elementType: ElementType;
   renderIcon: () => React.ReactNode | null;
+  scopeKeyHierarchy: string[];
 };
 
 const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementInstanceNodeProps> =
   observer(
-    ({scopeKey, elementId, elementName, elementType, renderIcon, ...rest}) => {
+    ({
+      scopeKey,
+      elementId,
+      elementName,
+      elementType,
+      renderIcon,
+      scopeKeyHierarchy,
+      ...rest
+    }) => {
       const rowRef = useRef<HTMLDivElement>(null);
       const isRoot = elementType === 'bpmn:Process';
       const {businessObjects} = useElementInstanceHistoryTree();
@@ -208,6 +224,8 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
             <VirtualBar
               elementInstanceKey={scopeKey}
               elementName={elementName}
+              scopeKeyHierarchy={scopeKeyHierarchy}
+              elementId={elementId}
               ref={rowRef}
             />
           }
@@ -219,12 +237,14 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
 const ScrollableNodes: React.FC<
   Omit<React.ComponentProps<typeof InfiniteScroller>, 'children'> & {
     visibleChildren: (ElementInstance | VirtualElementInstance)[];
+    scopeKeyHierarchy: string[];
   }
 > = ({
   onVerticalScrollEndReach,
   onVerticalScrollStartReach,
   visibleChildren,
   scrollableContainerRef,
+  scopeKeyHierarchy,
   ...carbonTreeNodeProps
 }) => {
   return (
@@ -239,6 +259,10 @@ const ScrollableNodes: React.FC<
             <ElementInstanceSubTreeRoot
               key={elementInstance.elementInstanceKey}
               elementInstance={elementInstance}
+              scopeKeyHierarchy={[
+                ...scopeKeyHierarchy,
+                elementInstance.elementInstanceKey,
+              ]}
               {...carbonTreeNodeProps}
             />
           );
@@ -254,6 +278,7 @@ type FoldableVirtualElementInstanceNodeProps = {
   elementName: string;
   elementType: ElementType;
   renderIcon: () => React.ReactNode;
+  scopeKeyHierarchy: string[];
 };
 
 const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanceNodeProps> =
@@ -264,6 +289,7 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
       elementName,
       elementType,
       renderIcon,
+      scopeKeyHierarchy,
       ...carbonTreeNodeProps
     }) => {
       const rowRef = useRef<HTMLDivElement>(null);
@@ -317,6 +343,8 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
           <VirtualBar
             elementInstanceKey={scopeKey}
             elementName={elementName}
+            scopeKeyHierarchy={scopeKeyHierarchy}
+            elementId={elementId}
             ref={rowRef}
           />
         ),
@@ -356,6 +384,7 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
               }
             }}
             scrollableContainerRef={scrollableContainerRef}
+            scopeKeyHierarchy={scopeKeyHierarchy}
             visibleChildren={virtualChildren}
           />
         </TreeNode>
@@ -372,6 +401,7 @@ type FoldableElementInstancesNodeProps = {
   endDate: string | undefined;
   elementType: ElementInstance['type'];
   renderIcon: () => React.ReactNode;
+  scopeKeyHierarchy: string[];
 };
 
 const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> =
@@ -385,6 +415,7 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       endDate,
       elementType,
       renderIcon,
+      scopeKeyHierarchy,
       ...carbonTreeNodeProps
     }) => {
       const rowRef = useRef<HTMLDivElement>(null);
@@ -422,6 +453,10 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       });
 
       const handleSelect = async () => {
+        if (isRoot) {
+          return;
+        }
+
         if (elementType !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
           selectFlowNode(rootNode, {
             flowNodeId: elementId,
@@ -488,6 +523,7 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
             isTimestampLabelVisible={false}
             isRoot={isRoot}
             latestMigrationDate={latestMigrationDate}
+            scopeKeyHierarchy={scopeKeyHierarchy}
             ref={rowRef}
           />
         ),
@@ -519,6 +555,7 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
               }
             }}
             scrollableContainerRef={scrollableContainerRef}
+            scopeKeyHierarchy={scopeKeyHierarchy}
             visibleChildren={
               elementInstancesTreeStore.hasNextPage(scopeKey)
                 ? elementInstancesTreeStore.getItems(scopeKey)
@@ -541,10 +578,11 @@ function isVirtualElementInstance(
 
 type Props = {
   elementInstance: ElementInstance | VirtualElementInstance;
+  scopeKeyHierarchy: string[];
 };
 
 const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
-  ({elementInstance, ...rest}) => {
+  ({elementInstance, scopeKeyHierarchy, ...rest}) => {
     const {businessObjects, processInstance} = useElementInstanceHistoryTree();
 
     if (isVirtualElementInstance(elementInstance)) {
@@ -560,6 +598,7 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
         elementId: elementInstance.elementId,
         elementName: elementInstance.elementName ?? elementInstance.elementId,
         elementType: elementInstance.type,
+        scopeKeyHierarchy,
       };
 
       if (hasChildren) {
@@ -600,6 +639,7 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
       elementInstanceState: elementInstance.state,
       hasIncident: elementInstance.hasIncident,
       endDate: elementInstance.endDate,
+      scopeKeyHierarchy,
     };
     const isFoldable = FOLDABLE_ELEMENT_TYPES.includes(elementInstance.type);
     if (isFoldable) {
@@ -675,6 +715,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
         <ElementInstanceSubTreeRoot
           {...rest}
           elementInstance={rootElementInstance}
+          scopeKeyHierarchy={[processInstance.processInstanceKey]}
         />
       </ElementInstanceHistoryTree.Provider>
     );
