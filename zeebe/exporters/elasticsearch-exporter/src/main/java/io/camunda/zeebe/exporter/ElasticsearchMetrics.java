@@ -7,19 +7,18 @@
  */
 package io.camunda.zeebe.exporter;
 
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ElasticsearchMetrics {
   private static final String NAMESPACE = "zeebe.elasticsearch.exporter";
 
   private final MeterRegistry meterRegistry;
-  private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
+  private final StatefulGauge bulkMemorySize;
   private final Timer flushDuration;
   private final DistributionSummary bulkSize;
   private final Counter failedFlush;
@@ -28,9 +27,11 @@ public class ElasticsearchMetrics {
   public ElasticsearchMetrics(final MeterRegistry registry) {
     meterRegistry = registry;
 
-    Gauge.builder(meterName("bulk.memory.size"), bulkMemorySize, AtomicInteger::get)
-        .description("Exporter bulk memory size")
-        .register(meterRegistry);
+    bulkMemorySize =
+        StatefulGauge.builder(meterName("bulk.memory.size"))
+            .description("Exporter bulk memory size")
+            .expiringState()
+            .register(meterRegistry);
 
     flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
