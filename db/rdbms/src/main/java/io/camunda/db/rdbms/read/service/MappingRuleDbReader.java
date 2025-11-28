@@ -59,14 +59,12 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for mapping rule with filter {}", dbQuery);
-    final var totalHits = mappingRuleMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits = mappingRuleMapper.search(dbQuery);
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> mappingRuleMapper.count(dbQuery),
+        () -> mappingRuleMapper.search(dbQuery),
+        dbPage,
+        dbSort);
   }
 
   public Optional<MappingRuleEntity> findOne(final String mappingRuleId) {

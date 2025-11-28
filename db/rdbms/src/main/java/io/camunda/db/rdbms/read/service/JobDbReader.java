@@ -52,14 +52,12 @@ public class JobDbReader extends AbstractEntityReader<JobEntity> implements JobR
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for jobs with filter {}", dbQuery);
-    final var totalHits = jobMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits = jobMapper.search(dbQuery).stream().map(JobEntityMapper::toEntity).toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> jobMapper.count(dbQuery),
+        () -> jobMapper.search(dbQuery).stream().map(JobEntityMapper::toEntity).toList(),
+        dbPage,
+        dbSort);
   }
 
   public Optional<JobEntity> findOne(final long jobKey) {

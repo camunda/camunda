@@ -54,9 +54,12 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
 
     final var dbQuery = dbQueryBuilder.build();
     LOG.trace("[RDBMS DB] Search for cluster variables with filter {}", query);
-    final var totalHits = clusterVariableMapper.count(dbQuery);
-    final var hits = clusterVariableMapper.search(dbQuery);
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+
+    return executePagedQuery(
+        () -> clusterVariableMapper.count(dbQuery),
+        () -> clusterVariableMapper.search(dbQuery),
+        dbQuery.page(),
+        dbSort);
   }
 
   public SearchQueryResult<ClusterVariableEntity> search(final ClusterVariableQuery query) {

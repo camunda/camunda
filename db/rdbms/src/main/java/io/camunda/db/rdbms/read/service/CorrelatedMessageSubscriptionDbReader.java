@@ -65,17 +65,15 @@ public class CorrelatedMessageSubscriptionDbReader
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for correlated message subscriptions with filter {}", dbQuery);
-    final var totalHits = mapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits =
-        mapper.search(dbQuery).stream()
-            .map(CorrelatedMessageSubscriptionEntityMapper::toEntity)
-            .toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> mapper.count(dbQuery),
+        () ->
+            mapper.search(dbQuery).stream()
+                .map(CorrelatedMessageSubscriptionEntityMapper::toEntity)
+                .toList(),
+        dbPage,
+        dbSort);
   }
 
   public Optional<CorrelatedMessageSubscriptionEntity> findOne(

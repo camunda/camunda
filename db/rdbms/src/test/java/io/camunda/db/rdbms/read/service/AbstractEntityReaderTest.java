@@ -168,4 +168,49 @@ class AbstractEntityReaderTest {
             new KeySetPaginationFieldEntry(
                 "PROCESS_INSTANCE_KEY", Operator.LOWER, entity.processInstanceKey()));
   }
+
+  @Test
+  void shouldExecutePagedQueryWithResults() {
+    final var entity = Instancio.create(ProcessInstanceEntity.class);
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    final DbQueryPage page = new DbQueryPage(10, 0, List.of());
+
+    final SearchQueryResult<ProcessInstanceEntity> result =
+        reader.executePagedQuery(() -> 1L, () -> List.of(entity), page, sort);
+
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items()).containsExactly(entity);
+  }
+
+  @Test
+  void shouldExecutePagedQueryWithEmptyResults() {
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    final DbQueryPage page = new DbQueryPage(10, 0, List.of());
+
+    final SearchQueryResult<ProcessInstanceEntity> result =
+        reader.executePagedQuery(() -> 0L, () -> List.of(), page, sort);
+
+    assertThat(result.total()).isEqualTo(0);
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldExecutePagedQueryWithZeroPageSize() {
+    final var entity = Instancio.create(ProcessInstanceEntity.class);
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    final DbQueryPage page = new DbQueryPage(0, 0, List.of());
+
+    final SearchQueryResult<ProcessInstanceEntity> result =
+        reader.executePagedQuery(() -> 1L, () -> List.of(entity), page, sort);
+
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items()).isEmpty();
+  }
 }

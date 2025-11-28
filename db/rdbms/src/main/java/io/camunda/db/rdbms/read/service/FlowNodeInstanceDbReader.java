@@ -60,17 +60,15 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
-    final var totalHits = flowNodeInstanceMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits =
-        flowNodeInstanceMapper.search(dbQuery).stream()
-            .map(FlowNodeInstanceEntityMapper::toEntity)
-            .toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> flowNodeInstanceMapper.count(dbQuery),
+        () ->
+            flowNodeInstanceMapper.search(dbQuery).stream()
+                .map(FlowNodeInstanceEntityMapper::toEntity)
+                .toList(),
+        dbPage,
+        dbSort);
   }
 
   public Optional<FlowNodeInstanceEntity> findOne(final long key) {
