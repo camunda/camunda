@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -99,6 +100,7 @@ public class CommandApiRequestReader implements RequestReader {
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         BatchOperationLifecycleManagementRecord::new);
     RECORDS_BY_TYPE.put(ValueType.USAGE_METRIC, UsageMetricRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.HISTORY_DELETION, HistoryDeletionRecord::new);
   }
 
   private UnifiedRecordValue value;

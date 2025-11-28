@@ -88,6 +88,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -299,6 +300,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
     valueLoggers.put(ValueType.FORM, this::summarizeForm);
+    valueLoggers.put(ValueType.HISTORY_DELETION, this::summarizeHistoryDeletion);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1703,6 +1705,17 @@ public class CompactRecordLogger {
     final var value = (CheckpointRecordValue) record.getValue();
     return "checkpoint %s @ #%s"
         .formatted(value.getCheckpointId(), formatPosition(value.getCheckpointPosition()));
+  }
+
+  private String summarizeHistoryDeletion(final Record<?> record) {
+    final var value = (HistoryDeletionRecordValue) record.getValue();
+
+    return "Resource key: "
+        + shortenKey(value.getResourceKey())
+        + ", Resource type: "
+        + value.getResourceType()
+        + ", Batch operation key: "
+        + shortenKey(value.getBatchOperationKey());
   }
 
   private String summarizeForm(final Record<?> record) {
