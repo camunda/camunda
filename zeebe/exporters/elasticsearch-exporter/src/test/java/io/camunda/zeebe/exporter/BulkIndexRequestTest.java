@@ -565,8 +565,11 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
           .extracting(source -> ((Map<String, Object>) source).get("terminateInstructions"))
-          .extracting(source -> ((List<Object>) source).getFirst())
-          .extracting("elementId", "elementInstanceKey")
+          .extracting(
+              source -> {
+                final var values = (Map<String, Object>) (((List<Object>) source).getFirst());
+                return tuple(values.get("elementId"), values.get("elementInstanceKey"));
+              })
           .describedAs(
               "Expect that the records are serialized without elementId in terminateInstructions")
           .containsExactly(tuple(null, 5));

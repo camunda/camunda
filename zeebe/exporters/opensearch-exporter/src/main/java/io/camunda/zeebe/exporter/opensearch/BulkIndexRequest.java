@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -212,6 +213,8 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonIgnoreProperties({PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY})
   private static final class ProcessInstanceModificationMixin {}
 
-  @JsonIgnoreProperties({TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY})
-  private static final class TerminateInstructionsMixin {}
+  public interface TerminateInstructionsMixin {
+    @JsonIgnore
+    String getElementId();
+  }
 }
