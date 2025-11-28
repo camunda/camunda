@@ -127,17 +127,18 @@ public interface Intent {
     return Intent.UNKNOWN;
   }
 
-  static Intent fromProtocolValue(final ValueType valueType, final String intent) {
+  @SuppressWarnings("unchecked")
+  static <T extends Enum<T>> Intent fromProtocolValue(
+      final ValueType valueType, final String intent) {
     if (valueType == ValueType.NULL_VAL || valueType == ValueType.SBE_UNKNOWN) {
       return Intent.UNKNOWN;
     }
     final Class<? extends Intent> intentClass = fromValueType(valueType);
-    for (final Intent intentValue : intentClass.getEnumConstants()) {
-      if (intentValue.name().equals(intent)) {
-        return intentValue;
-      }
+    try {
+      return (Intent) Enum.valueOf((Class<T>) intentClass, intent);
+    } catch (final IllegalArgumentException e) {
+      return Intent.UNKNOWN;
     }
-    return Intent.UNKNOWN;
   }
 
   static int maxCardinality() {
