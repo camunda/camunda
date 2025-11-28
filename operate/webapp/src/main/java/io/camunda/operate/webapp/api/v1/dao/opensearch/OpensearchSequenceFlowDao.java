@@ -18,7 +18,6 @@ import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -30,10 +29,10 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
   private final SequenceFlowTemplate sequenceFlowIndex;
 
   public OpensearchSequenceFlowDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      SequenceFlowTemplate sequenceFlowIndex) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final SequenceFlowTemplate sequenceFlowIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.sequenceFlowIndex = sequenceFlowIndex;
   }
@@ -54,7 +53,8 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
   }
 
   @Override
-  protected void buildFiltering(Query<SequenceFlow> query, SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<SequenceFlow> query) {
     final SequenceFlow filter = query.getFilter();
 
     if (filter != null) {
@@ -69,13 +69,14 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override
-  protected SequenceFlow convertInternalToApiResult(SequenceFlow internalResult) {
+  protected SequenceFlow convertInternalToApiResult(final SequenceFlow internalResult) {
     return internalResult;
   }
 }
