@@ -12,6 +12,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongUnaryOperator;
+import org.apache.commons.lang3.NotImplementedException;
 
 class ExpiringGaugeState implements GaugeState {
   private final Clock clock;
@@ -47,6 +48,6 @@ class ExpiringGaugeState implements GaugeState {
 
   @Override
   public long updateAndGet(final LongUnaryOperator updateFunction) {
-    throw new RuntimeException("not implemented");
+    throw new NotImplementedException("not implemented");
   }
 }
