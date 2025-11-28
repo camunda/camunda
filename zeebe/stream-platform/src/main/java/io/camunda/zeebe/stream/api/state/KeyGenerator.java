@@ -17,8 +17,20 @@ public interface KeyGenerator {
    */
   long nextKey();
 
+  /**
+   * Returns the current key value from the state, which represents the last generated key.
+   *
+   * @return the current key value
+   */
   long getCurrentKey();
 
+  /**
+   * Returns an immutable {@code KeyGenerator} that throws {@link UnsupportedOperationException} for
+   * all operations. Useful for contexts where key generation should not be allowed, such as
+   * read-only or restricted environments.
+   *
+   * @return an immutable KeyGenerator instance
+   */
   static KeyGenerator immutable() {
     return new KeyGenerator() {
       @Override
