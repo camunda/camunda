@@ -37,8 +37,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionPriority;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class ZeebeRocksDbFactoryTest {
+  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   @Test
   void shouldCreateNewDb(final @TempDir File pathName) throws Exception {
@@ -83,12 +91,15 @@ final class ZeebeRocksDbFactoryTest {
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -100,7 +111,7 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(50704475L, CompactionPriority.OldestSmallestSeqFirst, 4);
+        .containsExactly(101_408_950L, CompactionPriority.OldestSmallestSeqFirst, 4);
 
     // then - user options should override defaults
     assertThat(customOptions)
@@ -126,7 +137,7 @@ final class ZeebeRocksDbFactoryTest {
     assertThat(defaults.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
     assertThat(defaults.minWriteBufferNumberToMerge()).isEqualTo(3);
     assertThat(defaults.maxWriteBufferNumber()).isEqualTo(6);
-    assertThat(defaults.writeBufferSize()).isEqualTo(50_704_475L);
+    assertThat(defaults.writeBufferSize()).isEqualTo(101_408_950L);
     assertThat(defaults.compactionPriority())
         .isEqualTo(org.rocksdb.CompactionPriority.OldestSmallestSeqFirst);
     assertThat(defaults.compactionStyle()).isEqualTo(org.rocksdb.CompactionStyle.LEVEL);
@@ -167,12 +178,15 @@ final class ZeebeRocksDbFactoryTest {
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
+    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
 
     // expect
     //noinspection resource
