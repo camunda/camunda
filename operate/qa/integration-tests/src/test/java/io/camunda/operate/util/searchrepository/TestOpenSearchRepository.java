@@ -13,7 +13,6 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.ids;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.script;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
@@ -32,18 +31,14 @@ import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.IndexRequest.Builder;
@@ -240,18 +235,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public List<Long> searchIds(
-      final String index, final String idFieldName, final List<Long> ids, final int size)
-      throws IOException {
-    final var searchRequestBuilder =
-        searchRequestBuilder(index).query(longTerms(idFieldName, ids)).size(size);
-
-    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class).stream()
-        .map(map -> (Long) map.get(idFieldName))
-        .toList();
-  }
-
-  @Override
   public void deleteByTermsQuery(
       final String index, final String fieldName, final List<Long> values) throws IOException {
     richOpenSearchClient.doc().deleteByQuery(index, longTerms(fieldName, values));
@@ -315,32 +298,5 @@ public class TestOpenSearchRepository implements TestSearchRepository {
     return richOpenSearchClient
         .doc()
         .searchValues(searchRequestBuilder, ProcessInstanceForListViewEntity.class, true);
-  }
-
-  @Override
-  public Optional<List<Long>> getIds(
-      final String indexName,
-      final String idFieldName,
-      final List<Long> ids,
-      final boolean ignoreAbsentIndex)
-      throws IOException {
-    try {
-      final var searchRequestBuilder =
-          searchRequestBuilder(indexName)
-              .query(stringTerms(idFieldName, Arrays.asList(toSafeArrayOfStrings(ids))))
-              .size(100);
-
-      final List<Long> indexIds =
-          richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class).stream()
-              .map(map -> (Long) map.get(idFieldName))
-              .toList();
-
-      return Optional.of(indexIds);
-    } catch (final OpenSearchException ex) {
-      if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
-        throw ex;
-      }
-      return Optional.empty();
-    }
   }
 }

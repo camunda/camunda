@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.writer;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.webapps.schema.entities.ProcessEntity;
@@ -21,8 +20,6 @@ public interface BatchOperationWriter {
   List<OperationEntity> lockBatch() throws PersistenceException;
 
   void updateOperation(OperationEntity operation) throws PersistenceException;
-
-  BatchOperationEntity scheduleBatchOperation(CreateBatchOperationRequestDto batchOperationRequest);
 
   BatchOperationEntity scheduleSingleOperation(
       long processInstanceKey, CreateOperationRequestDto operationRequest);

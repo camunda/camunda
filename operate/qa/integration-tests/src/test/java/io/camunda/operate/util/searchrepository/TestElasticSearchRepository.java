@@ -30,10 +30,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -50,7 +48,6 @@ import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
@@ -234,17 +231,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public List<Long> searchIds(
-      final String index, final String idFieldName, final List<Long> ids, final int size)
-      throws IOException {
-    final TermsQueryBuilder q =
-        QueryBuilders.termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
-    final SearchRequest request =
-        new SearchRequest(index).source(new SearchSourceBuilder().query(q).size(size));
-    return ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
-  }
-
-  @Override
   public void deleteByTermsQuery(
       final String index, final String fieldName, final List<Long> values) throws IOException {
     final DeleteByQueryRequest request =
@@ -311,26 +297,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
 
     return ElasticsearchUtil.mapSearchHits(
         response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
-  }
-
-  @Override
-  public Optional<List<Long>> getIds(
-      final String indexName,
-      final String idFieldName,
-      final List<Long> ids,
-      final boolean ignoreAbsentIndex)
-      throws IOException {
-    try {
-      final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
-      final SearchRequest request =
-          new SearchRequest(indexName).source(new SearchSourceBuilder().query(q).size(100));
-      return Optional.of(ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient));
-    } catch (final ElasticsearchStatusException ex) {
-      if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
-        throw ex;
-      }
-      return Optional.empty();
-    }
   }
 
   private Map<String, Object> getMappingSource(final String indexName) throws IOException {

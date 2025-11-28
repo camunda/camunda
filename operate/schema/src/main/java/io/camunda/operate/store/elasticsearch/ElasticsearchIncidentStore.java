@@ -15,7 +15,6 @@ import static io.camunda.operate.util.ElasticsearchUtil.sortOrder;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -23,14 +22,12 @@ import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.util.NamedValue;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ScrollException;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -41,18 +38,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -65,15 +54,8 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   public static final Query ACTIVE_INCIDENT_QUERY_ES8 =
       ElasticsearchUtil.termsQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
-  @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ElasticsearchClient es8Client;
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-
-  @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
 
   @Autowired private IncidentTemplate incidentTemplate;
 
@@ -117,62 +99,52 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   @Override
   public List<IncidentEntity> getIncidentsWithErrorTypesFor(
       final String treePath, final List<Map<ErrorType, Long>> errorTypes) {
-    final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.TREE_PATH, treePath);
-    final var processInstanceQ = ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, treePath);
     final var query =
         ElasticsearchUtil.constantScoreQuery(
-            ElasticsearchUtil.joinWithAnd(processInstanceQ, ACTIVE_INCIDENT_QUERY_ES8));
+            ElasticsearchUtil.joinWithAnd(
+                ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, treePath),
+                ACTIVE_INCIDENT_QUERY_ES8));
 
     final String errorTypesAggName = "errorTypesAgg";
 
-    final var errorTypesAggEs8 =
+    final var errorTypesAgg =
         TermsAggregation.of(
                 t ->
                     t.field(IncidentTemplate.ERROR_TYPE)
                         .size(ErrorType.values().length)
                         .order(NamedValue.of("_key", SortOrder.Asc)))
             ._toAggregation();
-    final TermsAggregationBuilder errorTypesAgg =
-        terms(errorTypesAggName)
-            .field(IncidentTemplate.ERROR_TYPE)
-            .size(ErrorType.values().length)
-            .order(BucketOrder.key(true));
 
     final var searchRequestBuilder =
         new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
             .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
             .query(query)
-            .aggregations(errorTypesAggName, errorTypesAggEs8);
-
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        constantScoreQuery(
-                            joinWithAnd(processInstanceQuery, ACTIVE_INCIDENT_QUERY)))
-                    .aggregation(errorTypesAgg));
+            .aggregations(errorTypesAggName, errorTypesAgg);
 
     try {
-      return tenantAwareClient.search(
-          searchRequest,
-          () -> {
-            return ElasticsearchUtil.scroll(
-                searchRequest,
-                IncidentEntity.class,
-                objectMapper,
-                esClient,
-                null,
-                aggs ->
-                    ((Terms) aggs.get(errorTypesAggName))
-                        .getBuckets()
-                        .forEach(
-                            b -> {
-                              final ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
-                              errorTypes.add(Map.of(errorType, b.getDocCount()));
-                            }));
-          });
-    } catch (final IOException e) {
+      final var resStream =
+          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class);
+
+      return resStream
+          .peek(
+              res -> {
+                final var errorTypesAggRes = res.aggregations().get(errorTypesAggName);
+
+                errorTypesAggRes
+                    .sterms()
+                    .buckets()
+                    .array()
+                    .forEach(
+                        b -> {
+                          final var errorType = ErrorType.valueOf(b.key().stringValue());
+                          errorTypes.add(Map.of(errorType, b.docCount()));
+                        });
+              })
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       LOGGER.error(message, e);
