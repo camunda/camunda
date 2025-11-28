@@ -2,7 +2,7 @@ services:
   optimize:
     profiles: ["", "elasticsearch"]
     container_name: optimize
-    image: camunda/optimize:8-latest
+    image: camunda/optimize:8.8.1
     depends_on:
       - elasticsearch
       - identity
@@ -35,7 +35,7 @@ services:
   optimize-opensearch:
     profiles: [ "opensearch" ]
     container_name: optimize-opensearch
-    image: camunda/optimize:8-latest
+    image: camunda/optimize:8.8.1
     depends_on:
       - identity
     ports:
@@ -93,7 +93,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:latest
+    image: camunda/identity:8.8.2
     ports:
       - "8081:8081"
     environment:
@@ -140,7 +140,7 @@ services:
       - optimize
   zeebe:
     profiles: ["", "elasticsearch"]
-    image: camunda/zeebe:latest
+    image: camunda/zeebe:8.8.5
     container_name: zeebe
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
@@ -158,7 +158,7 @@ services:
   tasklist:
     profiles: ["", "elasticsearch"]
     container_name: tasklist
-    image: camunda/tasklist:latest
+    image: camunda/tasklist:8.8.5
     ports:
       - "8082:8080"
     environment:
@@ -176,7 +176,7 @@ services:
   # We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
   operate:
     profiles: ["", "elasticsearch"]
-    image: camunda/operate:latest
+    image: camunda/operate:8.8.5
     container_name: operate
     environment:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
@@ -237,7 +237,7 @@ services:
   zeebe-opensearch:
     profiles: [ "opensearch" ]
     container_name: zeebe-opensearch
-    image: camunda/zeebe:latest
+    image: camunda/zeebe:8.8.5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
@@ -255,7 +255,7 @@ services:
       - optimize
   operate-opensearch:
     profiles: [ "opensearch" ]
-    image: camunda/operate:latest
+    image: camunda/operate:8.8.5
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080
@@ -284,7 +284,7 @@ services:
   tasklist-opensearch:
     profiles: [ "opensearch" ]
     container_name: tasklist-opensearch
-    image: camunda/tasklist:latest
+    image: camunda/tasklist:8.8.5
     ports:
       - "8082:8080"
     environment:
