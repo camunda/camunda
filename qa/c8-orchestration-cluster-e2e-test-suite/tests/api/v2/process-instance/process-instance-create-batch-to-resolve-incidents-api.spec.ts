@@ -52,7 +52,8 @@ test.describe
     await assertUnauthorizedRequest(res);
   });
 
-  test('Create a Batch Operation to Resolve Incidents - Success', async ({
+  // Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
+  test.skip('Create a Batch Operation to Resolve Incidents - Success', async ({
     request,
   }) => {
     const localState: Record<string, string> = {
