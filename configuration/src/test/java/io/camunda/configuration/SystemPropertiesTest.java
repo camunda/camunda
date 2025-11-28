@@ -12,9 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.configuration.beans.ActorClockControlledProperties;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.IdleStrategyBasedProperties;
+import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   BrokerBasedPropertiesOverride.class,
   ActorClockControlledPropertiesOverride.class,
   IdleStrategyPropertiesOverride.class,
+  SearchEngineSchemaManagerPropertiesOverride.class,
   UnifiedConfigurationHelper.class
 })
 @ActiveProfiles("broker")
@@ -49,14 +52,17 @@ public class SystemPropertiesTest {
     final BrokerBasedProperties brokerCfg;
     final ActorClockControlledProperties clockCfg;
     final IdleStrategyBasedProperties idleCfg;
+    final SearchEngineSchemaManagerProperties schemaCfg;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final BrokerBasedProperties brokerCfg,
         @Autowired final ActorClockControlledProperties clockCfg,
-        @Autowired final IdleStrategyBasedProperties idleCfg) {
+        @Autowired final IdleStrategyBasedProperties idleCfg,
+        @Autowired final SearchEngineSchemaManagerProperties schemaCfg) {
       this.brokerCfg = brokerCfg;
       this.clockCfg = clockCfg;
       this.idleCfg = idleCfg;
+      this.schemaCfg = schemaCfg;
     }
 
     @Test
@@ -77,6 +83,11 @@ public class SystemPropertiesTest {
     @Test
     void shouldSetEnableVersionCheck() {
       assertThat(brokerCfg.getExperimental().isVersionCheckRestrictionEnabled()).isFalse();
+    }
+
+    @Test
+    void shouldSetSchemaManagerVersionCheck() {
+      assertThat(schemaCfg.isVersionCheckRestrictionEnabled()).isFalse();
     }
 
     @Test
@@ -107,6 +118,7 @@ public class SystemPropertiesTest {
         "zeebe.broker.threads.ioThreadCount=12",
         "zeebe.clock.controlled=true",
         "zeebe.broker.experimental.versionCheckRestrictionEnabled=false",
+        "camunda.database.schema-manager.version-check-restriction-enabled=false",
         "zeebe.actor.idle.maxSpins=2000",
         "zeebe.actor.idle.maxYields=1000",
         "zeebe.actor.idle.minParkPeriod=20ms",
@@ -116,14 +128,17 @@ public class SystemPropertiesTest {
     final BrokerBasedProperties brokerCfg;
     final ActorClockControlledProperties clockCfg;
     final IdleStrategyBasedProperties idleCfg;
+    final SearchEngineSchemaManagerProperties schemaCfg;
 
     WithOnlyLegacySet(
         @Autowired final BrokerBasedProperties brokerCfg,
         @Autowired final ActorClockControlledProperties clockCfg,
-        @Autowired final IdleStrategyBasedProperties idleCfg) {
+        @Autowired final IdleStrategyBasedProperties idleCfg,
+        @Autowired final SearchEngineSchemaManagerProperties schemaCfg) {
       this.brokerCfg = brokerCfg;
       this.clockCfg = clockCfg;
       this.idleCfg = idleCfg;
+      this.schemaCfg = schemaCfg;
     }
 
     @Test
@@ -144,6 +159,11 @@ public class SystemPropertiesTest {
     @Test
     void shouldSetEnableVersionCheck() {
       assertThat(brokerCfg.getExperimental().isVersionCheckRestrictionEnabled()).isFalse();
+    }
+
+    @Test
+    void shouldSetSchemaManagerVersionCheck() {
+      assertThat(schemaCfg.isVersionCheckRestrictionEnabled()).isFalse();
     }
 
     @Test
@@ -184,6 +204,7 @@ public class SystemPropertiesTest {
         "zeebe.broker.threads.ioThreadCount=20",
         "zeebe.clock.controlled=false",
         "zeebe.broker.experimental.versionCheckRestrictionEnabled=true",
+        "camunda.database.schema-manager.version-check-restriction-enabled=true",
         "zeebe.actor.idle.maxSpins=5000",
         "zeebe.actor.idle.maxYields=2500",
         "zeebe.actor.idle.minParkPeriod=50ms",
@@ -193,14 +214,17 @@ public class SystemPropertiesTest {
     final BrokerBasedProperties brokerCfg;
     final ActorClockControlledProperties clockCfg;
     final IdleStrategyBasedProperties idleCfg;
+    final SearchEngineSchemaManagerProperties schemaManagerCfg;
 
     WithNewAndLegacySet(
         @Autowired final BrokerBasedProperties brokerCfg,
         @Autowired final ActorClockControlledProperties clockCfg,
-        @Autowired final IdleStrategyBasedProperties idleCfg) {
+        @Autowired final IdleStrategyBasedProperties idleCfg,
+        @Autowired final SearchEngineSchemaManagerProperties schemaManagerCfg) {
       this.brokerCfg = brokerCfg;
       this.clockCfg = clockCfg;
       this.idleCfg = idleCfg;
+      this.schemaManagerCfg = schemaManagerCfg;
     }
 
     @Test
@@ -221,6 +245,11 @@ public class SystemPropertiesTest {
     @Test
     void shouldSetEnableVersionCheckFromNew() {
       assertThat(brokerCfg.getExperimental().isVersionCheckRestrictionEnabled()).isFalse();
+    }
+
+    @Test
+    void shouldSetSchemaManagerVersionCheckFromNew() {
+      assertThat(schemaManagerCfg.isVersionCheckRestrictionEnabled()).isFalse();
     }
 
     @Test

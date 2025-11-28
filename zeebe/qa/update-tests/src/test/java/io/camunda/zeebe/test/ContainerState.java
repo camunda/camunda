@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.test;
 
-import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
+import static io.camunda.configuration.beans.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;

@@ -9,19 +9,17 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
+import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
-import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -37,7 +35,6 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({
   SearchEngineIndexProperties.class,
   SearchEngineRetentionProperties.class,
-  SearchEngineSchemaManagerProperties.class,
 })
 public class SearchEngineDatabaseConfiguration {
 
@@ -79,15 +76,4 @@ public class SearchEngineDatabaseConfiguration {
 
   @ConfigurationProperties("camunda.database.retention")
   public static final class SearchEngineRetentionProperties extends RetentionConfiguration {}
-
-  @ConfigurationProperties("camunda.database.schema-manager")
-  public static final class SearchEngineSchemaManagerProperties extends SchemaManagerConfiguration {
-    @VisibleForTesting
-    public static final String CREATE_SCHEMA_PROPERTY =
-        "camunda.database.schema-manager.createSchema";
-
-    @VisibleForTesting
-    public static final String CREATE_SCHEMA_ENV_VAR =
-        "CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA";
-  }
 }

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.cluster.exporter;
 
-import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
+import static io.camunda.configuration.beans.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporter;
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporterConfig;
