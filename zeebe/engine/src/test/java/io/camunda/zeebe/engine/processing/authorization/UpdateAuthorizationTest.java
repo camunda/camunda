@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -78,6 +79,55 @@ public class UpdateAuthorizationTest {
             "resourceId",
             AuthorizationResourceType.RESOURCE,
             Set.of(PermissionType.CREATE));
+  }
+
+  @Test
+  public void shouldRejectIfPermissionAlreadyExistsDirectly() {
+    // given
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId("test")
+        .withOwnerType(AuthorizationOwnerType.GROUP)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
+        .withResourceId("resourceId")
+        .withResourceType(AuthorizationResourceType.USER)
+        .withPermissions(PermissionType.READ)
+        .create();
+
+    final Record<AuthorizationRecordValue> secondRecord =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("test")
+            .withOwnerType(AuthorizationOwnerType.GROUP)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.USER)
+            .withPermissions(PermissionType.UPDATE)
+            .create();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(secondRecord.getKey())
+            .withOwnerId("test")
+            .withOwnerType(AuthorizationOwnerType.GROUP)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.USER)
+            .withPermissions(PermissionType.READ, PermissionType.UPDATE)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Authorization already exists")
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists."
+                .formatted("test", "resourceId"));
   }
 
   @Test
