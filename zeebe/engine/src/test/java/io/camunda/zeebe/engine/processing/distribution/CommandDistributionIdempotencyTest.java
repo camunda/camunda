@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycle
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycleManagementSuspendProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleCompletePartitionProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleFailPartitionProcessor;
+import io.camunda.zeebe.engine.processing.clock.ClockPinProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockResetProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
@@ -99,6 +100,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -341,6 +343,18 @@ public class CommandDistributionIdempotencyTest {
                       .execute();
                 }),
             BatchOperationPartitionLifecycleCompletePartitionProcessor.class
+          },
+          {
+            "Clock.PIN is idempotent",
+            new Scenario(
+                ValueType.CLOCK,
+                ClockIntent.PIN,
+                () -> {
+                  final var record = ENGINE.clock().pinAt(Instant.now());
+                  ENGINE.clock().reset(); // reset immediately to avoid timing issues
+                  return record;
+                }),
+            ClockPinProcessor.class
           },
           {
             "Clock.RESET is idempotent",
