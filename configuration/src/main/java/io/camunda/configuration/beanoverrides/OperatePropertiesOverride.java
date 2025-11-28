@@ -7,7 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.Backup;
+import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -55,27 +55,27 @@ public class OperatePropertiesOverride {
     final OperateProperties override = new OperateProperties();
     BeanUtils.copyProperties(legacyOperateProperties, override);
 
-    populateFromBackup(override);
-
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
     if (SecondaryStorageType.elasticsearch.equals(database.getType())) {
       populateFromElasticsearch(override, database);
+      populateFromBackup(override, database.getElasticsearch().getBackup());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       populateFromOpensearch(override, database);
+      populateFromBackup(override, database.getOpensearch().getBackup());
     }
 
     return override;
   }
 
-  private void populateFromBackup(final OperateProperties override) {
-    final Backup operateBackup = unifiedConfiguration.getCamunda().getData().getBackup();
+  private void populateFromBackup(
+      final OperateProperties override, final DocumentBasedSecondaryStorageBackup backup) {
     final BackupProperties backupProperties = override.getBackup();
-    backupProperties.setRepositoryName(operateBackup.getRepositoryName());
-    backupProperties.setSnapshotTimeout(operateBackup.getSnapshotTimeout());
+    backupProperties.setRepositoryName(backup.getRepositoryName());
+    backupProperties.setSnapshotTimeout(backup.getSnapshotTimeout());
     backupProperties.setIncompleteCheckTimeoutInSeconds(
-        operateBackup.getIncompleteCheckTimeout().getSeconds());
+        backup.getIncompleteCheckTimeout().getSeconds());
   }
 
   private void populateFromElasticsearch(

@@ -127,7 +127,8 @@ public class BackupRestoreIT {
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
             .withUnauthenticatedAccess();
     configurator = new MultiDbConfigurator(testStandaloneApplication);
-    testStandaloneApplication.withUnifiedConfig(this::configureZeebeBackupStore);
+    testStandaloneApplication.withUnifiedConfig(
+        cfg -> configureZeebeBackupStore(cfg, config.databaseType));
     final String dbUrl;
     searchContainer =
         switch (config.databaseType) {
@@ -238,7 +239,7 @@ public class BackupRestoreIT {
     generator.verifyAllExported(ProcessInstanceState.COMPLETED);
   }
 
-  private void configureZeebeBackupStore(final Camunda cfg) {
+  private void configureZeebeBackupStore(final Camunda cfg, final DatabaseType databaseType) {
     final var backup = cfg.getData().getBackup();
     final var azure = backup.getAzure();
 
@@ -246,7 +247,19 @@ public class BackupRestoreIT {
     azure.setBasePath(containerName);
     azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
 
-    cfg.getData().getBackup().setRepositoryName(REPOSITORY_NAME);
+    if (databaseType.isElasticSearch()) {
+      cfg.getData()
+          .getSecondaryStorage()
+          .getElasticsearch()
+          .getBackup()
+          .setRepositoryName(REPOSITORY_NAME);
+    } else {
+      cfg.getData()
+          .getSecondaryStorage()
+          .getOpensearch()
+          .getBackup()
+          .setRepositoryName(REPOSITORY_NAME);
+    }
   }
 
   private void restoreZeebe() {
