@@ -27,6 +27,7 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.FeatureFlagProperties;
@@ -426,6 +427,8 @@ class TaskServiceTest {
             .setAssignee("demo")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+    final var runtimeVariable = new VariableEntity().setName("b").setValue("2");
+    when(variableService.getTaskRuntimeVariables(taskBefore)).thenReturn(List.of(runtimeVariable));
 
     // When
     final var result = instance.completeTask(taskId, variables, true);
@@ -434,7 +437,8 @@ class TaskServiceTest {
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
     verify(variableService)
-        .persistTaskVariables(taskId, variables, true, taskBefore.getProcessInstanceId());
+        .persistTaskVariables(
+            taskId, variables, List.of(runtimeVariable), true, taskBefore.getProcessInstanceId());
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }
@@ -444,7 +448,6 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var variables = List.of(new VariableInputDTO().setName("a").setValue("1"));
-    final Map<String, Object> variablesMap = Map.of("a", 1);
 
     final var mockedUser = mock(UserDTO.class);
     when(userReader.getCurrentUser()).thenReturn(mockedUser);
@@ -459,6 +462,8 @@ class TaskServiceTest {
             .setProcessInstanceId("1234")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+    final var runtimeVariable = new VariableEntity().setName("b").setValue("2");
+    when(variableService.getTaskRuntimeVariables(taskBefore)).thenReturn(List.of(runtimeVariable));
 
     // When
     final var result = instance.completeTask(taskId, variables, true);
@@ -467,7 +472,8 @@ class TaskServiceTest {
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
     verify(variableService)
-        .persistTaskVariables(taskId, variables, true, taskBefore.getProcessInstanceId());
+        .persistTaskVariables(
+            taskId, variables, List.of(runtimeVariable), true, taskBefore.getProcessInstanceId());
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }
