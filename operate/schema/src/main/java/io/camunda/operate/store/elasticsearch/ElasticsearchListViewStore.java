@@ -54,7 +54,9 @@ public class ElasticsearchListViewStore implements ListViewStore {
             es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
 
     final var processInstanceId2IndexName =
-        resStream.collect(Collectors.toMap(hit -> Long.valueOf(hit.id()), hit -> hit.index()));
+        resStream
+            .flatMap(res -> res.hits().hits().stream())
+            .collect(Collectors.toMap(hit -> Long.valueOf(hit.id()), hit -> hit.index()));
 
     if (processInstanceId2IndexName.isEmpty()) {
       throw new NotFoundException(

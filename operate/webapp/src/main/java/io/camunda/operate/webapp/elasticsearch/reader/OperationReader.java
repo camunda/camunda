@@ -161,6 +161,7 @@ public class OperationReader extends AbstractReader
     try {
       final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
       return resStream
+          .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .collect(Collectors.groupingBy(OperationEntity::getProcessInstanceKey));
 
@@ -197,6 +198,7 @@ public class OperationReader extends AbstractReader
     try {
       final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
       return resStream
+          .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .collect(Collectors.groupingBy(OperationEntity::getIncidentKey));
 
@@ -235,6 +237,7 @@ public class OperationReader extends AbstractReader
     try {
       final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
       return resStream
+          .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .collect(Collectors.groupingBy(OperationEntity::getVariableName));
 
@@ -269,6 +272,7 @@ public class OperationReader extends AbstractReader
 
     try {
       return scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
     } catch (final ScrollException e) {
@@ -294,6 +298,7 @@ public class OperationReader extends AbstractReader
     try {
       final var operationEntities =
           scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class)
+              .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .toList();
       return DtoCreator.create(operationEntities, OperationDto.class);
@@ -328,6 +333,7 @@ public class OperationReader extends AbstractReader
     try {
       final var operationEntities =
           scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class)
+              .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .toList();
       return DtoCreator.create(operationEntities, OperationDto.class);
