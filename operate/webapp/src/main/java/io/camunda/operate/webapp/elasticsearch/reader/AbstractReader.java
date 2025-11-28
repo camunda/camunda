@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -24,6 +25,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public abstract class AbstractReader {
 
   @Autowired protected RestHighLevelClient esClient;
+
+  @Qualifier("es8Client")
+  @Autowired
+  protected ElasticsearchClient es8client;
 
   @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 

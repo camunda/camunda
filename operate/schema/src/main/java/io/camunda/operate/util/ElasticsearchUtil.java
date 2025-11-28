@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -576,6 +577,11 @@ public abstract class ElasticsearchUtil {
 
   public static <T> Query termsQuery(final String name, final T value) {
     return termsQuery(name, Collections.singletonList(value));
+  }
+
+  public static SortOptions sortOrder(
+      final String field, final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder)));
   }
 
   public enum QueryType {
