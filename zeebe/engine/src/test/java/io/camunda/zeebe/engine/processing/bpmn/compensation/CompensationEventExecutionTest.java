@@ -3303,8 +3303,6 @@ public class CompensationEventExecutionTest {
         .doesNotContain(tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
-<<<<<<< HEAD
-=======
   @Test
   public void shouldTriggerCompensationHandlerInAdHocSubprocesses() {
     final var process =
@@ -3414,7 +3412,6 @@ public class CompensationEventExecutionTest {
             PROCESS_ID);
   }
 
->>>>>>> 57d5a846 (test: improve flakiness of test)
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
