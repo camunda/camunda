@@ -1,0 +1,130 @@
+# description: Tests forward compatibility of camunda-process-test-java across versions. Tests each version against all subsequent versions to ensure newer Camunda runtime versions work with older test library versions.
+# test location: /testing/camunda-process-test-java
+# type: CI
+# owner: TODO
+name: Camunda Process Test Java - Forward Compatibility
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run at 2:00 AM UTC every day
+    - cron: '0 2 * * *'
+
+concurrency:
+  group: camunda-process-test-java-forward-compatibility
+  cancel-in-progress: false
+
+permissions: {}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  get-versions:
+    name: Get Camunda Versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      versions: ${{ steps.compute-versions.outputs.versions }}
+      matrix: ${{ steps.compute-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Compute available versions
+        id: compute-versions
+        run: |
+          # Get all tags starting from 8.8.0, filter semantic versions without suffixes
+          # Sort in natural order and output as JSON array
+          versions=$(git tag | grep -E '^8\.(8|9|[1-9][0-9]+)\.[0-9]+$' | sort -V)
+
+          # Filter to only include versions >= 8.8.0
+          filtered_versions=$(echo "$versions" | awk -F. '$1 >= 8 && ($1 > 8 || $2 >= 8)')
+
+          if [ -z "$filtered_versions" ]; then
+            echo "No versions found >= 8.8.0"
+            exit 1
+          fi
+
+          # Convert to JSON array
+          json_versions=$(echo "$filtered_versions" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "versions=${json_versions}" >> $GITHUB_OUTPUT
+          echo "Found versions: ${json_versions}"
+
+      - name: Compute test matrix
+        id: compute-matrix
+        run: |
+          # Create matrix of test_version x runtime_version combinations
+          # For each test version, include all runtime versions >= that version
+          versions='${{ steps.compute-versions.outputs.versions }}'
+
+          matrix=$(echo "$versions" | jq -c '
+            . as $all_versions |
+            [
+              to_entries[] |
+              . as $test_entry |
+              $all_versions[($test_entry.key):] |
+              map({
+                test_version: $test_entry.value,
+                runtime_version: .
+              })
+            ] |
+            flatten
+          ')
+
+          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+          echo "Generated matrix with $(echo "$matrix" | jq '. | length') combinations:"
+          echo "$matrix" | jq -c '.[] | "Test: \(.test_version) -> Runtime: \(.runtime_version)"'
+
+  test-forward-compatibility:
+    name: Test v${{ matrix.test_version }} -> Runtime v${{ matrix.runtime_version }}
+    needs: get-versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.get-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.test_version }}
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Run tests with Camunda runtime ${{ matrix.runtime_version }}
+        run: >
+          ./mvnw -B --no-snapshot-updates
+          -pl testing/camunda-process-test-java
+          -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.runtime_version }}
+          -DskipChecks
+          verify
+
+      - uses: ./.github/actions/collect-test-artifacts
+        if: always()
+        with:
+          name: "forward-compat-test-${{ matrix.test_version }}-runtime-${{ matrix.runtime_version }}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
