@@ -29,9 +29,11 @@ import {
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {modificationsStore} from 'modules/stores/modifications';
 import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {VirtualBar} from './VirtualBar';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {useBatchOperations} from 'modules/queries/batch-operations/useBatchOperations';
 
 const TREE_NODE_HEIGHT = 32;
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
@@ -73,6 +75,7 @@ const ElementInstanceHistoryTree = createContext<{
   processInstance: ProcessInstance;
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
   businessObjects: BusinessObjects;
+  latestMigrationDate: string | undefined;
 } | null>(null);
 
 const useElementInstanceHistoryTree = () => {
@@ -112,7 +115,7 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       ...rest
     }) => {
       const rowRef = useRef<HTMLDivElement>(null);
-      const latestMigrationDate = undefined;
+      const {latestMigrationDate} = useElementInstanceHistoryTree();
       const isRoot = elementType === 'PROCESS';
 
       const rootNode = useRootNode();
@@ -155,7 +158,9 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
               elementInstanceState={elementInstanceState}
               hasIncident={hasIncident}
               endDate={endDate}
-              isTimestampLabelVisible={false}
+              isTimestampLabelVisible={
+                !modificationsStore.isModificationModeEnabled
+              }
               isRoot={isRoot}
               latestMigrationDate={latestMigrationDate}
               scopeKeyHierarchy={scopeKeyHierarchy}
@@ -204,6 +209,7 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
           isMultiInstance: false,
+          isPlaceholder: true,
         });
       };
 
@@ -325,6 +331,7 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
           isMultiInstance: isMultiInstance(businessObject),
+          isPlaceholder: true,
         });
       };
 
@@ -419,8 +426,12 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       ...carbonTreeNodeProps
     }) => {
       const rowRef = useRef<HTMLDivElement>(null);
-      const {scrollableContainerRef, businessObjects, processInstance} =
-        useElementInstanceHistoryTree();
+      const {
+        scrollableContainerRef,
+        businessObjects,
+        processInstance,
+        latestMigrationDate,
+      } = useElementInstanceHistoryTree();
       const {refetch: fetchFirstChild} = useSearchElementInstancesByScope(
         {
           elementInstanceScopeKey: scopeKey,
@@ -429,7 +440,6 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         },
         {enabled: false},
       );
-      const latestMigrationDate = undefined;
       const isRoot = elementType === 'PROCESS';
 
       const rootNode = useRootNode();
@@ -520,7 +530,9 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
             elementInstanceState={elementInstanceState}
             hasIncident={hasIncident}
             endDate={endDate}
-            isTimestampLabelVisible={false}
+            isTimestampLabelVisible={
+              !modificationsStore.isModificationModeEnabled
+            }
             isRoot={isRoot}
             latestMigrationDate={latestMigrationDate}
             scopeKeyHierarchy={scopeKeyHierarchy}
@@ -680,6 +692,15 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
     const {processInstance, scrollableContainerRef, ...rest} = props;
     const {data: businessObjects} = useBusinessObjects();
+    const {data: {items: operations} = {items: []}} = useBatchOperations({
+      filter: {
+        operationType: 'MIGRATE_PROCESS_INSTANCE',
+      },
+      sort: [{field: 'endDate', order: 'desc'}],
+      page: {limit: 1, from: 0},
+    });
+    const latestMigrationDate =
+      operations.length > 0 ? operations[0].endDate : undefined;
     const rootElementInstance = useMemo<ElementInstance>(() => {
       const {
         processInstanceKey,
@@ -710,6 +731,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
           processInstance,
           scrollableContainerRef,
           businessObjects,
+          latestMigrationDate,
         }}
       >
         <ElementInstanceSubTreeRoot
