@@ -43,4 +43,39 @@ public class MemberId extends NodeId {
   public static MemberId from(final String id) {
     return new MemberId(id);
   }
+
+  /**
+   * Creates a MemberId for the given node ID and version.
+   *
+   * <p>This factory method automatically selects the appropriate type based on the version:
+   *
+   * <ul>
+   *   <li>If version is 0, a simple {@link MemberId} is created (for static/FIXED node ID config)
+   *   <li>If version is greater than 0, a {@link VersionedMemberId} is created (for dynamic/S3 node
+   *       ID config)
+   * </ul>
+   *
+   * @param nodeId the node ID
+   * @param version the version of the node ID (0 means no versioning)
+   * @return a {@link MemberId} or {@link VersionedMemberId} depending on the version
+   */
+  public static MemberId from(final int nodeId, final long version) {
+    if (version < 0) {
+      throw new IllegalArgumentException("Expected version to be non-negative, but got " + version);
+    }
+    final String id = String.valueOf(nodeId);
+    return version > 0 ? new VersionedMemberId(id, version) : new MemberId(id);
+  }
+
+  /**
+   * Returns the version of this member ID.
+   *
+   * <p>For static node ID configuration, this returns 0. For dynamic node ID configuration (e.g.,
+   * S3), this returns the version/lease generation of the node ID.
+   *
+   * @return the version number, or 0 if not versioned
+   */
+  public long getIdVersion() {
+    return 0;
+  }
 }

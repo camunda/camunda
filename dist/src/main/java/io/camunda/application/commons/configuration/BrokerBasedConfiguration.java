@@ -8,6 +8,7 @@
 package io.camunda.application.commons.configuration;
 
 import io.atomix.cluster.ClusterConfig;
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -37,6 +38,7 @@ public class BrokerBasedConfiguration {
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
   private final LifecycleProperties lifecycle;
+  private final MemberId memberId;
 
   @Autowired
   public BrokerBasedConfiguration(
@@ -48,7 +50,9 @@ public class BrokerBasedConfiguration {
     this.properties = properties;
     this.lifecycle = lifecycle;
 
-    properties.getCluster().setNodeId(nodeIdProvider.currentNodeInstance().id());
+    final var nodeInstance = nodeIdProvider.currentNodeInstance();
+    properties.getCluster().setNodeId(nodeInstance.id());
+    memberId = MemberId.from(nodeInstance.id(), nodeInstance.version().version());
     properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
 
@@ -100,7 +104,7 @@ public class BrokerBasedConfiguration {
   @Bean
   public ClusterConfig clusterConfig() {
     final var configFactory = new ClusterConfigFactory();
-    return configFactory.mapConfiguration(properties);
+    return configFactory.mapConfiguration(properties, memberId);
   }
 
   @Bean

@@ -26,6 +26,7 @@ import io.atomix.cluster.BootstrapService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
+import io.atomix.cluster.VersionedMemberId;
 import io.atomix.cluster.discovery.NodeDiscoveryEvent;
 import io.atomix.cluster.discovery.NodeDiscoveryEventListener;
 import io.atomix.cluster.discovery.NodeDiscoveryService;
@@ -87,6 +88,7 @@ public class SwimMembershipProtocol
               .register(Namespaces.BASIC)
               .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
               .register(MemberId.class)
+              .register(VersionedMemberId.class)
               .register(new AddressSerializer(), Address.class)
               .register(ImmutableMember.class)
               .register(State.class)
