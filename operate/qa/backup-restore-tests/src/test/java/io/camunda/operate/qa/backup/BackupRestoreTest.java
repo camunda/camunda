@@ -140,7 +140,7 @@ public class BackupRestoreTest {
 
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
-    testContainerUtil.startZeebe(zeebeVersion, testContext);
+    testContainerUtil.startZeebe(testContext);
 
     operateContainer =
         testContainerUtil
