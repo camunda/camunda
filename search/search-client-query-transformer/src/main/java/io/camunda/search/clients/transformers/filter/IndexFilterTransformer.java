@@ -88,7 +88,7 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
 
     final var condition = authorizationCheck.authorizationCondition();
     return switch (condition) {
-      case SingleAuthorizationCondition single -> applySingleAuthorizationCheck(single);
+      case SingleAuthorizationCondition single -> applyAuthorizationCheck(single.authorization());
       case AnyOfAuthorizationCondition anyOf -> applyAnyOfAuthorizationCheck(anyOf);
       default ->
           throw new IllegalStateException(
@@ -96,23 +96,20 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     };
   }
 
-  private SearchQuery applySingleAuthorizationCheck(final SingleAuthorizationCondition single) {
-    final var authorization = single.authorization();
+  private SearchQuery applyAuthorizationCheck(final Authorization<?> authorization) {
     final var resourceIds = authorization.resourceIds();
-
     if (resourceIds == null || resourceIds.isEmpty()) {
       return matchNone();
     }
-
     return toAuthorizationCheckSearchQuery(authorization);
   }
 
   private SearchQuery applyAnyOfAuthorizationCheck(final AnyOfAuthorizationCondition anyOf) {
     final var queries =
         anyOf.authorizations().stream()
-            .filter(a -> a.resourceIds() != null && !a.resourceIds().isEmpty())
-            .map(this::toAuthorizationCheckSearchQuery)
+            .map(this::applyAuthorizationCheck)
             .filter(Objects::nonNull)
+            .filter(q -> !(q.queryOption() instanceof SearchMatchNoneQuery))
             .toList();
 
     if (queries.isEmpty()) {
