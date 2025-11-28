@@ -74,9 +74,18 @@ export class OperateProcessMigrationModePage {
     await this.migrationConfirmationButton.click();
   }
 
-  async migrateProcessToVersion(version: string): Promise<void> {
+  /**
+   *
+   * @param version opetional version to select during migration
+   */
+  async migrateProcess(version?: string): Promise<void> {
     await this.clickTargetVersionCombo();
-    await this.selectTargetVersion(version);
+    if (version) {
+      await this.selectTargetVersion(version);
+      await expect(this.targetVersionDropdown).toHaveText(version, {
+        useInnerText: true,
+      });
+    }
     await this.clickNextButton();
     await this.clickConfirmButton();
     await this.fillMigrationConfirmation('MIGRATE');
