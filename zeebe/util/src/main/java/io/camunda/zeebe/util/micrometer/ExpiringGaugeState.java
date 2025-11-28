@@ -47,6 +47,6 @@ class ExpiringGaugeState implements GaugeState {
 
   @Override
   public long updateAndGet(final LongUnaryOperator updateFunction) {
-    throw new RuntimeException("not implemented");
+    throw new UnsupportedOperationException("not supported for expiring gauges");
   }
 }
