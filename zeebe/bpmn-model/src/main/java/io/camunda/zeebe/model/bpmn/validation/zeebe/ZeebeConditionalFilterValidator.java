@@ -65,7 +65,7 @@ public class ZeebeConditionalFilterValidator
                   "Variable names must not contain empty names but '%s' given."
                       + " Please provide a comma-separated list of variable names without empty entries.",
                   variableNames));
-          return;
+          continue;
         }
 
         if (trimmedName.startsWith(ZEEBE_EXPRESSION_PREFIX)) {
