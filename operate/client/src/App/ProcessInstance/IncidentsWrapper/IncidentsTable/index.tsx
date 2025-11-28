@@ -19,7 +19,6 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
@@ -67,8 +66,6 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   );
 
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
-  const hasPermissionForRetryOperation =
-    processInstanceDetailsStore.hasPermission(['UPDATE_PROCESS_INSTANCE']);
 
   const hasIncidentInCalledInstance = sortedIncidents.some(
     ({rootCauseInstance}) =>
@@ -144,15 +141,11 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                 },
               ]
             : []),
-          ...(hasPermissionForRetryOperation
-            ? [
-                {
-                  header: 'Operations',
-                  key: 'operations',
-                  isDisabled: true,
-                },
-              ]
-            : []),
+          {
+            header: 'Operations',
+            key: 'operations',
+            isDisabled: true,
+          },
         ]}
         rows={sortedIncidents.map((incident) => {
           const {rootCauseInstance} = incident;
@@ -209,14 +202,13 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                 )
               ) : undefined,
 
-            operations:
-              hasPermissionForRetryOperation && areOperationsVisible ? (
-                <IncidentOperation
-                  instanceId={processInstanceId}
-                  incident={incident}
-                  showSpinner={incident.hasActiveOperation}
-                />
-              ) : undefined,
+            operations: areOperationsVisible ? (
+              <IncidentOperation
+                instanceId={processInstanceId}
+                incident={incident}
+                showSpinner={incident.hasActiveOperation}
+              />
+            ) : undefined,
           };
         })}
       />
