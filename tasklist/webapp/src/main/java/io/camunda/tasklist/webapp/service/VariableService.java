@@ -88,7 +88,7 @@ public class VariableService {
       }
 
       final Map<String, VariableEntity> currentOriginalVariables = new HashMap<>();
-      getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task))
+      getTaskRuntimeVariables(task)
           .forEach(originalVar -> currentOriginalVariables.put(originalVar.getName(), originalVar));
 
       final int variableSizeThreshold = tasklistProperties.getImporter().getVariableSizeThreshold();
@@ -145,17 +145,14 @@ public class VariableService {
   public void persistTaskVariables(
       final String taskId,
       final List<VariableInputDTO> changedVariables,
+      final List<VariableEntity> runtimeVariables,
       final boolean withDraftVariableValues,
       final String processInstanceKey) {
     // take current runtime variables values and
     final TaskEntity task = taskStore.getTask(taskId);
-    final String taskFlowNodeInstanceId = task.getFlowNodeInstanceId();
-
-    final List<VariableEntity> taskVariables =
-        getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task));
 
     final Map<String, TaskVariableEntity> finalVariablesMap = new HashMap<>();
-    taskVariables.forEach(
+    runtimeVariables.forEach(
         variable ->
             finalVariablesMap.put(
                 variable.getName(),
@@ -193,11 +190,9 @@ public class VariableService {
     draftVariableStore.deleteAllByTaskId(taskId);
   }
 
-  private List<VariableEntity> getRuntimeVariablesByRequest(
-      final GetVariablesRequest getVariablesRequest) {
-    final List<GetVariablesRequest> requests = Collections.singletonList(getVariablesRequest);
+  public List<VariableEntity> getTaskRuntimeVariables(final TaskEntity task) {
     final Map<String, List<VariableEntity>> runtimeVariablesPerTaskId =
-        getRuntimeVariablesPerTaskId(requests);
+        getRuntimeVariablesPerTaskId(List.of(GetVariablesRequest.createFrom(task)));
     if (runtimeVariablesPerTaskId.size() > 0) {
       return runtimeVariablesPerTaskId.values().iterator().next();
     } else {
