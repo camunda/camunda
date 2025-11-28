@@ -7,6 +7,7 @@
  */
 
 import {lazy, Suspense} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {
   ComposedModal,
   ModalHeader,
@@ -32,6 +33,7 @@ import {
 } from '@carbon/icons-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {StatusIndicator} from './StatusIndicator';
+import {Paths} from 'modules/Routes';
 
 const JSONEditor = lazy(async () => {
   const [{loadMonaco}, {JSONEditor}] = await Promise.all([
@@ -89,6 +91,8 @@ type Props = {
 };
 
 const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
+  const navigate = useNavigate();
+
   if (!entry) {
     return null;
   }
@@ -194,8 +198,8 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             renderIcon={ArrowRight}
             iconDescription="View batch operation details"
             onClick={() => {
-              // TODO: Navigate to batch operation
-              console.log('Navigate to batch:', entry.batchOperationId);
+              onClose();
+              navigate(Paths.batchOperationDetails(entry.batchOperationId!));
             }}
           >
             View batch operation details

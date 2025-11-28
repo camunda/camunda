@@ -43,6 +43,8 @@ export type MockAuditLogEntry = AuditLogEntry & {
   affectedInstancesCount?: number;
   // Error message for failed operations
   errorMessage?: string;
+  // Batch operation ID for multi-instance operations
+  batchOperationId?: string;
 };
 
 export const mockOperationLog: MockAuditLogEntry[] = [
@@ -60,6 +62,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     isMultiInstanceOperation: true,
     affectedInstancesCount: 15,
     errorMessage: 'Request property [maxJobsToActivates] cannot be parsed.',
+    batchOperationId: '2251799813688010',
   },
   // Failed multi-instance operation (cancelled by user)
   {
@@ -75,6 +78,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     errorMessage: 'Operation was cancelled by the user before completion.',
     isMultiInstanceOperation: true,
     affectedInstancesCount: 8,
+    batchOperationId: '2251799813688011',
   },
   // Completed multi-instance operation
   {
@@ -89,6 +93,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     user: 'System Migration',
     isMultiInstanceOperation: true,
     affectedInstancesCount: 42,
+    batchOperationId: '2251799813688012',
   },
   // Completed multi-instance operation
   {
@@ -103,6 +108,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     user: 'Incident Manager',
     isMultiInstanceOperation: true,
     affectedInstancesCount: 5,
+    batchOperationId: '2251799813688013',
   },
   // Failed single instance operation
   {
@@ -129,6 +135,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     user: 'Bulk Modifier',
     isMultiInstanceOperation: true,
     affectedInstancesCount: 25,
+    batchOperationId: '2251799813688014',
   },
   {
     id: '23',
@@ -142,6 +149,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     user: 'Bulk Migrator',
     isMultiInstanceOperation: true,
     affectedInstancesCount: 12,
+    batchOperationId: '2251799813688015',
   },
   {
     id: '22',
@@ -155,6 +163,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     user: 'Incident Manager',
     isMultiInstanceOperation: true,
     affectedInstancesCount: 7,
+    batchOperationId: '2251799813688016',
   },
   {
     id: '17',

@@ -7,6 +7,7 @@
  */
 
 import {lazy, Suspense, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {
   ComposedModal,
   ModalHeader,
@@ -33,6 +34,7 @@ import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {CheckmarkOutline} from '@carbon/react/icons';
 import {EventSchedule, UserAvatar, ClassicBatch} from '@carbon/icons-react';
 import {StatusIndicator} from 'App/AuditLog/StatusIndicator';
+import {Paths} from 'modules/Routes';
 
 const JSONEditor = lazy(async () => {
   const [{loadMonaco}, {JSONEditor}] = await Promise.all([
@@ -115,6 +117,8 @@ type Props = {
 };
 
 const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
+  const navigate = useNavigate();
+
   if (!entry) {
     return null;
   }
@@ -187,7 +191,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
       />
       <ModalBody>
         <Stack gap={5}>
-          {entry.isMultiInstanceOperation && (
+          {entry.isMultiInstanceOperation && entry.batchOperationId && (
             <div
               style={{
                 display: 'flex',
@@ -200,7 +204,15 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             >
               <ClassicBatch size={16} />
               <span>This operation is part of a batch.</span>
-              <Link href="#" size="md">
+              <Link
+                href="#"
+                size="md"
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  onClose();
+                  navigate(Paths.batchOperationDetails(entry.batchOperationId!));
+                }}
+              >
                 View batch operation details
               </Link>
             </div>
