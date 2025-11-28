@@ -10,13 +10,19 @@ package io.camunda.operate.store.elasticsearch;
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
+import static io.camunda.operate.util.ElasticsearchUtil.sortOrder;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.util.NamedValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -37,14 +43,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,14 +118,31 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   public List<IncidentEntity> getIncidentsWithErrorTypesFor(
       final String treePath, final List<Map<ErrorType, Long>> errorTypes) {
     final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.TREE_PATH, treePath);
+    final var processInstanceQ = ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, treePath);
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.joinWithAnd(processInstanceQ, ACTIVE_INCIDENT_QUERY_ES8));
 
     final String errorTypesAggName = "errorTypesAgg";
 
+    final var errorTypesAggEs8 =
+        TermsAggregation.of(
+                t ->
+                    t.field(IncidentTemplate.ERROR_TYPE)
+                        .size(ErrorType.values().length)
+                        .order(NamedValue.of("_key", SortOrder.Asc)))
+            ._toAggregation();
     final TermsAggregationBuilder errorTypesAgg =
         terms(errorTypesAggName)
             .field(IncidentTemplate.ERROR_TYPE)
             .size(ErrorType.values().length)
             .order(BucketOrder.key(true));
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
+            .query(query)
+            .aggregations(errorTypesAggName, errorTypesAggEs8);
 
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
@@ -161,26 +182,30 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   @Override
   public List<IncidentEntity> getIncidentsByProcessInstanceKey(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final ConstantScoreQueryBuilder query =
-        constantScoreQuery(joinWithAnd(processInstanceKeyQuery, ACTIVE_INCIDENT_QUERY));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            joinWithAnd(
+                ElasticsearchUtil.termsQuery(
+                    IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+                ACTIVE_INCIDENT_QUERY_ES8));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
+            .query(tenantAwareQuery)
+            .sort(
+                sortOrder(
+                    IncidentTemplate.CREATION_TIME,
+                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
 
     try {
-      return tenantAwareClient.search(
-          searchRequest,
-          () -> {
-            return ElasticsearchUtil.scroll(
-                searchRequest, IncidentEntity.class, objectMapper, esClient);
-          });
-    } catch (final IOException e) {
+      return scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -190,26 +215,29 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   @Override
   public List<IncidentEntity> getIncidentsByErrorHashCode(final Integer incidentErrorHashCode) {
-    final TermQueryBuilder incidentErrorHashCodeQuery =
-        termQuery(IncidentTemplate.ERROR_MSG_HASH, incidentErrorHashCode);
-    final ConstantScoreQueryBuilder query =
-        constantScoreQuery(joinWithAnd(incidentErrorHashCodeQuery, ACTIVE_INCIDENT_QUERY));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            joinWithAnd(
+                ElasticsearchUtil.termsQuery(
+                    IncidentTemplate.ERROR_MSG_HASH, incidentErrorHashCode),
+                ACTIVE_INCIDENT_QUERY_ES8));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
+            .query(tenantAwareQuery)
+            .sort(
+                sortOrder(
+                    IncidentTemplate.CREATION_TIME,
+                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
 
     try {
-      return tenantAwareClient.search(
-          searchRequest,
-          () -> {
-            return ElasticsearchUtil.scroll(
-                searchRequest, IncidentEntity.class, objectMapper, esClient);
-          });
-    } catch (final IOException e) {
+      return scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+    } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -240,11 +268,14 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     try {
       final var resStream =
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
-      return resStream.collect(
-          Collectors.groupingBy(
-              hit ->
-                  Long.valueOf(hit.source().get(IncidentTemplate.PROCESS_INSTANCE_KEY).toString()),
-              Collectors.mapping(hit -> Long.valueOf(hit.id()), Collectors.toList())));
+      return resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .collect(
+              Collectors.groupingBy(
+                  hit ->
+                      Long.valueOf(
+                          hit.source().get(IncidentTemplate.PROCESS_INSTANCE_KEY).toString()),
+                  Collectors.mapping(hit -> Long.valueOf(hit.id()), Collectors.toList())));
     } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());

@@ -161,6 +161,7 @@ public class DecisionInstanceReader extends AbstractReader
     try {
       final var entries =
           scrollAllStream(es8client, searchRequestBuilder, MAP_CLASS)
+              .flatMap(res -> res.hits().hits().stream())
               .map(
                   hit ->
                       new DRDDataEntryDto(

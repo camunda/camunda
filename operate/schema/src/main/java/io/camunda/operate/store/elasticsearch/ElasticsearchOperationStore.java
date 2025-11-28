@@ -77,7 +77,9 @@ public class ElasticsearchOperationStore implements OperationStore {
       final var resStream =
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
 
-      return resStream.collect(Collectors.toMap(Hit::id, Hit::index));
+      return resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .collect(Collectors.toMap(Hit::id, Hit::index));
     } catch (final ScrollException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
     }
@@ -131,6 +133,7 @@ public class ElasticsearchOperationStore implements OperationStore {
     try {
       return ElasticsearchUtil.scrollAllStream(
               es8Client, searchRequestBuilder, OperationEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
     } catch (final ScrollException e) {
