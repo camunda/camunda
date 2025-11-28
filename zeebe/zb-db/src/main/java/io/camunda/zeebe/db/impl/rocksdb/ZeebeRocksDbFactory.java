@@ -39,6 +39,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
+import org.rocksdb.WriteBufferManager;
 
 public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -52,16 +53,22 @@ public final class ZeebeRocksDbFactory<
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration metrics;
   private final Supplier<MeterRegistry> meterRegistryFactory;
+  private final LRUCache lruCache;
+  private final WriteBufferManager writeBufferManager;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration metricsConfiguration,
-      final Supplier<MeterRegistry> meterRegistryFactory) {
+      final Supplier<MeterRegistry> meterRegistryFactory,
+      final LRUCache lruCache,
+      final WriteBufferManager writeBufferManager) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
     this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
+    this.lruCache = Objects.requireNonNull(lruCache);
+    this.writeBufferManager = Objects.requireNonNull(writeBufferManager);
   }
 
   @Override
@@ -149,7 +156,8 @@ public final class ZeebeRocksDbFactory<
             // keep 1 hour of logs - completely arbitrary. we should keep what we think would be
             // a good balance between useful for performance and small for replication
             .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
-            .setKeepLogFileNum(2);
+            .setKeepLogFileNum(2)
+            .setWriteBufferManager(writeBufferManager);
 
     // limit I/O writes
     if (rocksDbConfiguration.getIoRateBytesPerSecond() > 0) {
@@ -200,7 +208,7 @@ public final class ZeebeRocksDbFactory<
     }
 
     // Apply configuration that cannot be set via Properties
-    final var tableConfig = createTableFormatConfig(closeables, memoryConfig.blockCacheMemory);
+    final var tableConfig = createTableFormatConfig(closeables);
     columnFamilyOptions.setTableFormatConfig(tableConfig);
     return columnFamilyOptions;
   }
@@ -315,18 +323,12 @@ public final class ZeebeRocksDbFactory<
     return props;
   }
 
-  private TableFormatConfig createTableFormatConfig(
-      final List<AutoCloseable> closeables, final long blockCacheMemory) {
-    // you can use the perf context to check if we're often blocked on the block cache mutex, in
-    // which case we want to increase the number of shards (shard count == 2^shardBits)
-    final var cache = new LRUCache(blockCacheMemory, 8, false, 0.15);
-    closeables.add(cache);
-
+  private TableFormatConfig createTableFormatConfig(final List<AutoCloseable> closeables) {
     final var filter = new BloomFilter(10, false);
     closeables.add(filter);
 
     return new BlockBasedTableConfig()
-        .setBlockCache(cache)
+        .setBlockCache(lruCache)
         // increasing block size means reducing memory usage, but increasing read iops
         .setBlockSize(32 * 1024L)
         // full and partitioned filters use a more efficient bloom filter implementation when
