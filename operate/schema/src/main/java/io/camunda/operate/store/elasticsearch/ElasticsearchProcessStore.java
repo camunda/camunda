@@ -509,6 +509,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
 
       resStream
+          .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .forEach(
               resMap ->
@@ -574,23 +575,25 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final var resStream =
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
-      resStream.forEach(
-          hit -> {
-            final Map<String, Object> updateFields = new HashMap<>();
-            final String newTreePath =
-                new TreePath((String) hit.source().get(TREE_PATH))
-                    .removeProcessInstance(processInstanceKey)
-                    .toString();
-            updateFields.put(TREE_PATH, newTreePath);
-            es8BulkRequest.operations(
-                op ->
-                    op.update(
-                        u ->
-                            u.index(hit.index())
-                                .id(hit.id())
-                                .retryOnConflict(UPDATE_RETRY_COUNT)
-                                .action(a -> a.doc(updateFields))));
-          });
+      resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .forEach(
+              hit -> {
+                final Map<String, Object> updateFields = new HashMap<>();
+                final String newTreePath =
+                    new TreePath((String) hit.source().get(TREE_PATH))
+                        .removeProcessInstance(processInstanceKey)
+                        .toString();
+                updateFields.put(TREE_PATH, newTreePath);
+                es8BulkRequest.operations(
+                    op ->
+                        op.update(
+                            u ->
+                                u.index(hit.index())
+                                    .id(hit.id())
+                                    .retryOnConflict(UPDATE_RETRY_COUNT)
+                                    .action(a -> a.doc(updateFields))));
+              });
 
       // write test to confirm that the new bulk request is the same as the old one
       ElasticsearchUtil.processBulkRequest(
@@ -673,6 +676,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       return ElasticsearchUtil.scrollAllStream(
               es8Client, searchRequestBuilder, ProcessInstanceForListViewEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
 
