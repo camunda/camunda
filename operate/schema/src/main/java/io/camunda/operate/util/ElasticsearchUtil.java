@@ -9,18 +9,19 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.throwAwayNullElements;
-import static java.util.Arrays.asList;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -28,26 +29,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.*;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -162,145 +154,49 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void processBulkRequest(
-      final RestHighLevelClient esClient,
-      final BulkRequest bulkRequest,
-      final long maxBulkRequestSizeInBytes)
-      throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
+      final ElasticsearchClient esClient,
+      final BulkRequest.Builder bulkRequestBuilder,
+      final long maxBulkRequestSizeInBytes) {
+    processBulkRequest(esClient, bulkRequestBuilder, false, maxBulkRequestSizeInBytes);
   }
 
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
-      final RestHighLevelClient esClient,
-      final BulkRequest bulkRequest,
+      final ElasticsearchClient esClient,
+      final BulkRequest.Builder bulkRequestBuilder,
       final boolean refreshImmediately,
-      final long maxBulkRequestSizeInBytes)
-      throws PersistenceException {
-    if (bulkRequest.estimatedSizeInBytes() > maxBulkRequestSizeInBytes) {
-      divideLargeBulkRequestAndProcess(
-          esClient, bulkRequest, refreshImmediately, maxBulkRequestSizeInBytes);
+      final long maxBulkRequestSizeInBytes) {
+    try {
+      final var bulkRequest = bulkRequestBuilder.build();
+      LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.operations().size());
+
+      try (final var bulkIngester =
+          createBulkIngester(esClient, maxBulkRequestSizeInBytes, refreshImmediately)) {
+        bulkRequest.operations().forEach(bulkIngester::add);
+      }
+    } catch (final MissingRequiredPropertyException ignored) {
+      // if bulk request has no operations calling .build() will throw an exception, we suppress
+      // this as it is a no op.
+    }
+  }
+
+  private static BulkIngester<Void> createBulkIngester(
+      final ElasticsearchClient esClient,
+      final long maxBulkRequestSizeInBytes,
+      final boolean refreshImmediately) {
+    final Refresh refreshVal;
+    if (refreshImmediately) {
+      refreshVal = Refresh.True;
     } else {
-      processLimitedBulkRequest(esClient, bulkRequest, refreshImmediately);
+      refreshVal = Refresh.False;
     }
-  }
-
-  private static void divideLargeBulkRequestAndProcess(
-      final RestHighLevelClient esClient,
-      final BulkRequest bulkRequest,
-      final boolean refreshImmediately,
-      final long maxBulkRequestSizeInBytes)
-      throws PersistenceException {
-    LOGGER.debug(
-        "Bulk request has {} bytes > {} max bytes ({} requests). Will divide it into smaller bulk requests.",
-        bulkRequest.estimatedSizeInBytes(),
-        maxBulkRequestSizeInBytes,
-        bulkRequest.requests().size());
-
-    int requestCount = 0;
-    final List<DocWriteRequest<?>> requests = bulkRequest.requests();
-
-    BulkRequest limitedBulkRequest = new BulkRequest();
-    while (requestCount < requests.size()) {
-      final DocWriteRequest<?> nextRequest = requests.get(requestCount);
-      if (nextRequest.ramBytesUsed() > maxBulkRequestSizeInBytes) {
-        throw new PersistenceException(
-            String.format(
-                "One of the request with size of %d bytes is greater than max allowed %d bytes",
-                nextRequest.ramBytesUsed(), maxBulkRequestSizeInBytes));
-      }
-
-      final long wholeSize = limitedBulkRequest.estimatedSizeInBytes() + nextRequest.ramBytesUsed();
-      if (wholeSize < maxBulkRequestSizeInBytes) {
-        limitedBulkRequest.add(nextRequest);
-      } else {
-        LOGGER.debug(
-            "Submit bulk of {} requests, size {} bytes.",
-            limitedBulkRequest.requests().size(),
-            limitedBulkRequest.estimatedSizeInBytes());
-        processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
-        limitedBulkRequest = new BulkRequest();
-        limitedBulkRequest.add(nextRequest);
-      }
-      requestCount++;
-    }
-    if (!limitedBulkRequest.requests().isEmpty()) {
-      LOGGER.debug(
-          "Submit bulk of {} requests, size {} bytes.",
-          limitedBulkRequest.requests().size(),
-          limitedBulkRequest.estimatedSizeInBytes());
-      processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
-    }
-  }
-
-  @SuppressWarnings("checkstyle:NestedIfDepth")
-  private static void processLimitedBulkRequest(
-      final RestHighLevelClient esClient, BulkRequest bulkRequest, final boolean refreshImmediately)
-      throws PersistenceException {
-    if (bulkRequest.requests().size() > 0) {
-      try {
-        LOGGER.debug("************* FLUSH BULK START *************");
-        if (refreshImmediately) {
-          bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-        }
-        final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-        final BulkItemResponse[] items = bulkItemResponses.getItems();
-        for (int i = 0; i < items.length; i++) {
-          final BulkItemResponse responseItem = items[i];
-          if (responseItem.isFailed() && !isEventConflictError(responseItem)) {
-
-            if (isMissingIncident(responseItem)) {
-              // the case when incident was already archived to dated index, but must be updated
-              final DocWriteRequest<?> request = bulkRequest.requests().get(i);
-              final String incidentId = extractIncidentId(responseItem.getFailure().getMessage());
-              final String indexName =
-                  getIndexNames(request.index() + "alias", asList(incidentId), esClient)
-                      .get(incidentId);
-              request.index(indexName);
-              if (indexName == null) {
-                LOGGER.warn("Index is not known for incident: " + incidentId);
-              } else {
-                esClient.update((UpdateRequest) request, RequestOptions.DEFAULT);
-              }
-            } else {
-              LOGGER.error(
-                  String.format(
-                      "%s failed for type [%s] and id [%s]: %s",
-                      responseItem.getOpType(),
-                      responseItem.getIndex(),
-                      responseItem.getId(),
-                      responseItem.getFailureMessage()),
-                  responseItem.getFailure().getCause());
-              throw new PersistenceException(
-                  "Operation failed: " + responseItem.getFailureMessage(),
-                  responseItem.getFailure().getCause(),
-                  responseItem.getItemId());
-            }
-          }
-        }
-        LOGGER.debug("************* FLUSH BULK FINISH *************");
-      } catch (final IOException ex) {
-        throw new PersistenceException(
-            "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
-      }
-    }
-  }
-
-  private static String extractIncidentId(final String errorMessage) {
-    final Pattern fniPattern = Pattern.compile(".*\\[_doc\\]\\[(\\d*)\\].*");
-    final Matcher matcher = fniPattern.matcher(errorMessage);
-    matcher.matches();
-    return matcher.group(1);
-  }
-
-  private static boolean isMissingIncident(final BulkItemResponse responseItem) {
-    return responseItem.getIndex().contains(IncidentTemplate.INDEX_NAME)
-        && responseItem.getFailure().getStatus().equals(RestStatus.NOT_FOUND);
-  }
-
-  private static boolean isEventConflictError(final BulkItemResponse responseItem) {
-    return responseItem.getIndex().contains(MessageSubscriptionTemplate.INDEX_NAME)
-        && responseItem.getFailure().getStatus().equals(RestStatus.CONFLICT);
+    return BulkIngester.of(
+        b ->
+            b.client(esClient)
+                .maxOperations(100)
+                .maxSize(maxBulkRequestSizeInBytes)
+                .globalSettings(s -> s.refresh(refreshVal)));
   }
 
   /* MAP QUERY RESULTS */

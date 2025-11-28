@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -54,6 +55,8 @@ public class ElasticsearchProcessStoreTest {
 
   @Mock private RestHighLevelClient esClient;
 
+  @Mock private ElasticsearchClient es8Client;
+
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Mock private OperateProperties operateProperties;
@@ -70,6 +73,7 @@ public class ElasticsearchProcessStoreTest {
             objectMapper,
             operateProperties,
             esClient,
+            es8Client,
             tenantAwareClient);
   }
 
