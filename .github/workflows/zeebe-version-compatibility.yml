@@ -25,6 +25,16 @@ jobs:
         shards: [ 1, 2, 3] # Values are not used, we just need an array of the right length
     steps:
       - uses: actions/checkout@v4
+      - name: Generate cache key with current hour
+        id: cache-key
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
+      - name: Cache Zeebe versions (hourly refresh)
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
+          restore-keys: |
+            zeebe-versions-
       - name: Find previous report
         id: get-last-run-id
         run: |
@@ -57,6 +67,7 @@ jobs:
           -D skipChecks
           verify
         env:
+          GH_TOKEN: ${{ github.token }}
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY: true
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_INDEX: ${{ strategy.job-index }}
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_TOTAL: ${{ strategy.job-total }}
@@ -77,6 +88,16 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@v4
+      - name: Generate cache key with current hour
+        id: cache-key
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
+      - name: Cache Zeebe versions (hourly refresh)
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
+          restore-keys: |
+            zeebe-versions-
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -97,6 +118,7 @@ jobs:
           -D skipChecks
           verify
         env:
+          GH_TOKEN: ${{ github.token }}
           ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY: true
       - uses: ./.github/actions/collect-test-artifacts
         if: always()
