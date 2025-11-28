@@ -288,4 +288,54 @@ class ResourceAccessChecksTest {
       assertThat(result).isEmpty();
     }
   }
+
+  @Nested
+  class HasAnyResourceId {
+
+    @Test
+    void shouldReturnFalseWhenAuthorizationDisabled() {
+      // given
+      final var checks = ResourceAccessChecks.disabled();
+
+      // when - then
+      assertThat(checks.hasAnyResourceId()).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenAuthorizationConditionIsNull() {
+      // given
+      final var checks =
+          ResourceAccessChecks.of(
+              AuthorizationCheck.enabled((AuthorizationCondition) null), TenantCheck.disabled());
+
+      // when - then
+      assertThat(checks.hasAnyResourceId()).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenNoResourceIdsProvided() {
+      // given
+      final var authorization = Authorization.of(b -> b.processDefinition().readUserTask());
+      final var checks =
+          ResourceAccessChecks.of(
+              AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
+
+      // when - then
+      assertThat(checks.hasAnyResourceId()).isFalse();
+    }
+
+    @Test
+    void shouldReturnTrueWhenAnyAuthorizationHasIds() {
+      // given
+      final var withoutIds = Authorization.of(b -> b.processDefinition().readUserTask());
+      final var withIds =
+          Authorization.of(b -> b.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
+      final var condition = AuthorizationConditions.anyOf(withoutIds, withIds);
+      final var checks =
+          ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
+
+      // when - then
+      assertThat(checks.hasAnyResourceId()).isTrue();
+    }
+  }
 }

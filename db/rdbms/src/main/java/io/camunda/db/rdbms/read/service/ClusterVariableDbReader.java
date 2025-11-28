@@ -80,6 +80,6 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   @Override
   protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
     return resourceAccessChecks.authorizationCheck().enabled()
-        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty();
+        && !resourceAccessChecks.hasAnyResourceId();
   }
 }

@@ -84,6 +84,6 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
       final TenantFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.memberIds() != null && filter.memberIds().isEmpty())
         || (resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
+            && !resourceAccessChecks.hasAnyResourceId());
   }
 }

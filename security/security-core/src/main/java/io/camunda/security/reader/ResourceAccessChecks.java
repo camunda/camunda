@@ -99,6 +99,28 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
                     List::copyOf)));
   }
 
+  /**
+   * @return {@code true} if any authorization branch provides at least one resource ID; {@code
+   *     false} otherwise.
+   */
+  public boolean hasAnyResourceId() {
+    if (authorizationCheck == null
+        || !authorizationCheck.enabled()
+        || authorizationCheck.authorizationCondition() == null) {
+      return false;
+    }
+
+    final var auths = authorizationCheck.authorizationCondition().authorizations();
+    if (auths == null || auths.isEmpty()) {
+      return false;
+    }
+
+    return auths.stream()
+        .map(Authorization::resourceIds)
+        .filter(Objects::nonNull)
+        .anyMatch(r -> !r.isEmpty());
+  }
+
   public List<String> getAuthorizedTenantIds() {
     if (tenantCheck == null || !tenantCheck.enabled()) {
       return List.of();
