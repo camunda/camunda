@@ -197,11 +197,31 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
       return this;
     }
 
-    public Builder expiringState() {
-      return expiringState(DistributionStatisticConfig.DEFAULT.getExpiry(), 0.0);
+    /**
+     * Sets a default expiration for the gauge value. After the expiration time, the gauge will
+     * return zero when queried.
+     *
+     * <p>This is useful for gauges that track values that may become stale over time, such as
+     * resource usage metrics.
+     *
+     * @return The gauge builder with expiration configured.
+     */
+    public Builder valueExpires() {
+      return valueExpires(DistributionStatisticConfig.DEFAULT.getExpiry(), 0.0);
     }
 
-    public Builder expiringState(final Duration expiration, final double valueWhenExpired) {
+    /**
+     * Sets a custom expiration for the gauge value. After the expiration time, the gauge will
+     * return the provided value when queried.
+     *
+     * <p>This is useful for gauges that track values that may become stale over time, such as
+     * resource usage metrics.
+     *
+     * @param expiration The duration after which the gauge value expires.
+     * @param valueWhenExpired The value to return when the gauge has expired.
+     * @return The gauge builder with expiration configured.
+     */
+    public Builder valueExpires(final Duration expiration, final double valueWhenExpired) {
       state = GaugeState.expiring(expiration, Double.doubleToLongBits(valueWhenExpired));
       return this;
     }
