@@ -29,6 +29,9 @@ const Paths = {
   decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
     return `/decisions/${decisionInstanceId}`;
   },
+  auditLog() {
+    return '/audit-log';
+  },
   forbidden() {
     return '/forbidden';
   },
