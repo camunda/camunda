@@ -14,6 +14,8 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -110,8 +112,9 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     return new Builder(name);
   }
 
-  static StatefulGauge registerAsGauge(final Meter.Id id, final MeterRegistry registry) {
-    final var state = GaugeState.from(new AtomicLong());
+  static StatefulGauge registerAsGauge(
+      final Meter.Id id, final Builder builder, final MeterRegistry registry) {
+    final var state = builder.state;
     final var gauge =
         Gauge.builder(id.getName(), state, StatefulGauge::longAsDouble)
             .description(id.getDescription())
@@ -138,6 +141,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     private Tags tags = Tags.empty();
     private String description;
     private String baseUnit;
+    private GaugeState state = GaugeState.from(new AtomicLong());
 
     private Builder(final String name) {
       this.name = name;
@@ -193,6 +197,15 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
       return this;
     }
 
+    public Builder expiringState() {
+      return expiringState(DistributionStatisticConfig.DEFAULT.getExpiry(), 0.0);
+    }
+
+    public Builder expiringState(final Duration expiration, final double valueWhenExpired) {
+      state = GaugeState.expiring(expiration, Double.doubleToLongBits(valueWhenExpired));
+      return this;
+    }
+
     /**
      * Convenience method to create meters from the builder that only differ in tags. This method
      * can be used for dynamic tagging by creating the builder once and applying the dynamically
@@ -219,10 +232,10 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
       final var id = new Id(name, tags, baseUnit, description, Type.GAUGE);
 
       if (registry instanceof final StatefulMeterRegistry s) {
-        return s.registerIfNecessary(id);
+        return s.registerIfNecessary(id, this);
       }
 
-      return StatefulGauge.registerAsGauge(id, registry);
+      return StatefulGauge.registerAsGauge(id, this, registry);
     }
   }
 }
