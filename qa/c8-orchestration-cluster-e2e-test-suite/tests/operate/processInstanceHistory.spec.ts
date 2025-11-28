@@ -160,6 +160,22 @@ test.describe('Process Instance History', () => {
 
     });
 
+    const startEventStartGlobal = 'StartGlobal';
+    const activityNode = 'Node';
+    const activityFirstSubprocess = 'FirstSubprocess';
+    const eventStartFirstSubProcess = 'StartFirstSubProcess';
+    const activityCollectMoney = 'CollectMoney';
+    const activityFetchItems = 'FetchItems';
+    const eventEndFirstSubProcess = 'EndFirstSubProcess';
+    const eventOrderCancelled = 'OrderCanceled';
+    const eventOrderCancelledEnd = 'OrderCancelledEnd';
+    const activitySecondSubprocess = 'SecondSubprocess';
+    const eventStartSecondSubProcess = 'StartSecondSubProcess';
+    const activitySendItems = 'SendItems';
+    const eventEndSecondSubProcess = 'EndSecondSubProcess';
+    const eventEndGlobal = 'EndGlobal';
+
+
     test('Verify history of instance with a subprocess', async ({
         page,
         operateProcessesPage,
@@ -212,7 +228,7 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Add modification to activate task flow node process in first subprocess and verify results', async () => {
-            const firstSubprocessTaskElement = 'CollectMoney';
+            const firstSubprocessTaskElement = activityCollectMoney;
             await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(firstSubprocessTaskElement);
             await operateDiagramPage.verifyStateOverlay(firstSubprocessTaskElement, 'active');
         });
@@ -228,7 +244,7 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Add modification to activate task flow node process in second subprocess and verify results', async () => {
-            const secondSubprocessTaskElement = 'SendItems';
+            const secondSubprocessTaskElement = activitySendItems;
             await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(secondSubprocessTaskElement);
             await operateDiagramPage.verifyStateOverlay(secondSubprocessTaskElement, 'active');
         });
@@ -296,21 +312,6 @@ test.describe('Process Instance History', () => {
             const key = await operateProcessInstancePage.getProcessInstanceKey();
             expect(key).toContain(`${embeddedProcessInstanceModificationPIK}`);
         });
-
-        const startEventStartGlobal = 'StartGlobal';
-        const activityNode = 'Node';
-        const activityFirstSubprocess = 'FirstSubprocess';
-        const eventStartFirstSubProcess = 'StartFirstSubProcess';
-        const activityCollectMoney = 'CollectMoney';
-        const activityFetchItems = 'FetchItems';
-        const eventEndFirstSubProcess = 'EndFirstSubProcess';
-        const eventOrderCancelled = 'OrderCanceled';
-        const eventOrderCancelledEnd = 'OrderCancelledEnd';
-        const activitySecondSubprocess = 'SecondSubprocess';
-        const eventStartSecondSubProcess = 'StartSecondSubProcess';
-        const activitySendItems = 'SendItems';
-        const eventEndSecondSubProcess = 'EndSecondSubProcess';
-        const eventEndGlobal = 'EndGlobal';
 
         await test.step('Verify one active token', async () => {
             const nodeStateOverlayActive = await operateDiagramPage
