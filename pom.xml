@@ -44,6 +44,7 @@
     <module>load-tests/load-tester</module>
     <module>debug-cli</module>
     <module>microbenchmarks</module>
+    <module>hierarchy-aware-cleanup</module>
   </modules>
 
   <scm>
