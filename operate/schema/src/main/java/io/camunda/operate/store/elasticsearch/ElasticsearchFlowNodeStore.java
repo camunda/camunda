@@ -60,10 +60,12 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
       final var resStream =
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
 
-      return resStream.collect(
-          Collectors.toMap(
-              hit -> hit.id(),
-              hit -> hit.source().get(FlowNodeInstanceTemplate.FLOW_NODE_ID).toString()));
+      return resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .collect(
+              Collectors.toMap(
+                  hit -> hit.id(),
+                  hit -> hit.source().get(FlowNodeInstanceTemplate.FLOW_NODE_ID).toString()));
 
     } catch (final ScrollException e) {
       throw new OperateRuntimeException(
