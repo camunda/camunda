@@ -14,8 +14,6 @@ import {
 import {IncidentsWrapper} from '../index';
 import {Wrapper, mockIncidents} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {createInstance} from 'modules/testUtils';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
@@ -25,7 +23,6 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 describe('Sorting', () => {
   beforeEach(() => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockFetchProcessInstance().withSuccess(createInstance());
     mockFetchProcessInstanceV2().withSuccess(mockProcessInstance);
     mockSearchProcessInstances().withSuccess({
       page: {totalItems: 1},

@@ -7,11 +7,10 @@
  */
 
 import {IncidentsTable} from '..';
-import {createInstance, createProcessInstance} from 'modules/testUtils';
+import {createProcessInstance} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {Wrapper, firstIncident, secondIncident} from './mocks';
 import * as selectionUtils from 'modules/utils/flowNodeSelection';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 // TanStack query is still fetching the data when the test executes, so "useRootNode"
@@ -20,7 +19,6 @@ const rootNode = {flowNodeInstanceId: undefined, isMultiInstance: false};
 
 describe('Selection', () => {
   beforeEach(() => {
-    mockFetchProcessInstance().withSuccess(createInstance());
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
         hasIncident: true,

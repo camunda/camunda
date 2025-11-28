@@ -10,13 +10,8 @@ import {IncidentsTable} from '..';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {
-  createInstance,
-  createProcessInstance,
-  createUser,
-} from 'modules/testUtils';
+import {createProcessInstance, createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
@@ -25,9 +20,6 @@ const secondIncidentErrorName = getIncidentErrorName(secondIncident.errorType);
 
 describe('IncidentsTable', () => {
   beforeEach(() => {
-    mockFetchProcessInstance().withSuccess(
-      createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
-    );
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
         hasIncident: true,
@@ -56,8 +48,8 @@ describe('IncidentsTable', () => {
     ).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
     expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'}),
-    ).not.toBeInTheDocument();
+      withinRow.getByRole('button', {name: 'Retry Incident'}),
+    ).toBeInTheDocument();
     withinRow = within(
       screen.getByRole('row', {name: new RegExp(secondIncidentErrorName)}),
     );
@@ -71,7 +63,7 @@ describe('IncidentsTable', () => {
       withinRow.getByText(secondIncident.errorMessage),
     ).toBeInTheDocument();
     expect(
-      await withinRow.findByRole('button', {name: 'Retry Incident'}),
+      withinRow.getByRole('button', {name: 'Retry Incident'}),
     ).toBeInTheDocument();
   });
 
@@ -90,7 +82,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Job Id')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(await screen.findByText('Operations')).toBeInTheDocument();
+    expect(screen.getByText('Operations')).toBeInTheDocument();
   });
 
   it('should render the right column headers for restricted user', async () => {
@@ -110,77 +102,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Job Id')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(await screen.findByText('Operations')).toBeInTheDocument();
-  });
-
-  it('should render the right column headers for restricted user (with resource-based permissions)', () => {
-    mockMe().withSuccess(createUser());
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
-    });
-
-    render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidentsMock}
-      />,
-      {wrapper: Wrapper},
-    );
-
-    expect(screen.getByText('Incident Type')).toBeInTheDocument();
-    expect(screen.getByText('Failing Element')).toBeInTheDocument();
-    expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Date')).toBeInTheDocument();
-    expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(screen.queryByText('Operations')).not.toBeInTheDocument();
-  });
-
-  it('should render incident details (with resource-based permissions enabled)', () => {
-    mockMe().withSuccess(createUser());
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
-    });
-
-    render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidentsMock}
-      />,
-      {wrapper: Wrapper},
-    );
-    let withinRow = within(
-      screen.getByRole('row', {name: new RegExp(firstIncidentErrorName)}),
-    );
-
-    expect(withinRow.getByText(firstIncidentErrorName)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.jobKey!)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
-    expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'}),
-    ).not.toBeInTheDocument();
-
-    withinRow = within(
-      screen.getByRole('row', {name: new RegExp(secondIncidentErrorName)}),
-    );
-
-    expect(withinRow.getByText(secondIncidentErrorName)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.jobKey!)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
-    ).toBeInTheDocument();
-    expect(
-      withinRow.getByText(secondIncident.errorMessage),
-    ).toBeInTheDocument();
-    expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'}),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText('Operations')).toBeInTheDocument();
   });
 
   it('should display -- for jobKey', () => {
