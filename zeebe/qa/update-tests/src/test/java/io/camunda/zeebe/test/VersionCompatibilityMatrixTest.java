@@ -53,6 +53,36 @@ class VersionCompatibilityMatrixTest {
     assertThat(versions).isEqualTo(Set.of("8.7.11", "8.8.0", "8.8.1"));
   }
 
+  @Test
+  void shouldIgnoreKnownIncompatibleUpgradeInFullMatrix() {
+    // given
+    final VersionCompatibilityMatrix matrix =
+        new VersionCompatibilityMatrix(
+            new StaticVersionProvider(
+                // include two patches in 8.5 and the first patch in 8.6
+                Set.of("8.5.16", "8.5.17", "8.6.0"),
+                // mark all of them as released so discoverVersions() keeps them
+                Set.of("8.5.16", "8.5.17", "8.6.0")));
+
+    // when
+    final var upgradePairs =
+        matrix
+            .full()
+            .map(
+                args -> {
+                  final Object[] values = args.get();
+                  return values[0] + "->" + values[1];
+                })
+            .collect(Collectors.toSet());
+
+    // then
+    // the explicitly known incompatible upgrade path must be excluded
+    assertThat(upgradePairs).doesNotContain("8.5.17->8.6.0");
+
+    // but other valid combinations derived from the same set of versions should still be present
+    assertThat(upgradePairs).contains("8.5.16->8.5.17", "8.5.16->8.6.0");
+  }
+
   @ParameterizedTest(name = "Sharding {0} elements into {1} shards")
   @MethodSource("sizeAndShards")
   void shouldShardCompletely(final int size, final int totalShards) {
