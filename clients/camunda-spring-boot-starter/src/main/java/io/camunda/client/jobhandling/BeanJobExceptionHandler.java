@@ -25,7 +25,7 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.worker.JobExceptionHandlerImpl;
-import io.camunda.client.metrics.JobHandlerInvokingBeansMetricsContext;
+import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.time.Duration;
@@ -72,7 +72,7 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
   @Override
   public void handleJobException(final JobExceptionHandlerContext context) {
     final CounterMetricsContext metricsContext =
-        JobHandlerInvokingBeansMetricsContext.counter(context.getActivatedJob());
+        JobHandlerMetrics.counter(context.getActivatedJob());
     final Exception exception = context.getException();
     final ActivatedJob job = context.getActivatedJob();
     final JobClient jobClient = context.getJobClient();

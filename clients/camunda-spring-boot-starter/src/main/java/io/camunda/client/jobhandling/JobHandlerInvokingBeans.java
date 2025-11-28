@@ -25,7 +25,7 @@ import io.camunda.client.impl.Loggers;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.result.ResultProcessor;
 import io.camunda.client.jobhandling.result.ResultProcessorContext;
-import io.camunda.client.metrics.JobHandlerInvokingBeansMetricsContext;
+import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.util.List;
@@ -65,14 +65,13 @@ public class JobHandlerInvokingBeans implements JobHandler {
 
   @Override
   public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
-    final CounterMetricsContext counterMetricsContext =
-        JobHandlerInvokingBeansMetricsContext.counter(job);
+    final CounterMetricsContext counterMetricsContext = JobHandlerMetrics.counter(job);
     final List<Object> args = createParameters(jobClient, job);
     LOG.trace("Handle {} and invoke worker {}", job, jobWorkerName);
     metricsRecorder.increaseActivated(counterMetricsContext);
     final Object methodInvocationResult =
         metricsRecorder.executeWithTimer(
-            JobHandlerInvokingBeansMetricsContext.timer(job), () -> method.invoke(args.toArray()));
+            JobHandlerMetrics.timer(job), () -> method.invoke(args.toArray()));
     final Object result =
         resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
     if (autoComplete) {

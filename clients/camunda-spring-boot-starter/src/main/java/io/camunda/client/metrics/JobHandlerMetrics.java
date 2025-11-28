@@ -15,6 +15,11 @@
  */
 package io.camunda.client.metrics;
 
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
+import io.camunda.client.metrics.MetricsRecorder.TimerMetricsContext;
+import java.util.Map;
+
 /**
  * Defines standard metrics constants for job handlers, including metric names, actions, and tags.
  *
@@ -23,6 +28,16 @@ package io.camunda.client.metrics;
  */
 @SuppressWarnings("checkstyle:InterfaceIsType")
 public interface JobHandlerMetrics {
+  static CounterMetricsContext counter(final ActivatedJob activatedJob) {
+    return new CounterMetricsContext(
+        Name.INVOCATION, Map.ofEntries(Map.entry(Tag.TYPE, activatedJob.getType())), 1);
+  }
+
+  static TimerMetricsContext timer(final ActivatedJob activatedJob) {
+    return new TimerMetricsContext(
+        Name.EXECUTION_TIME, Map.ofEntries(Map.entry(Tag.TYPE, activatedJob.getType())));
+  }
+
   /**
    * Contains constants representing the possible actions performed on a job.
    *
