@@ -9,7 +9,6 @@ package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -33,7 +32,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired private ElasticsearchClient esClient;
+  @Autowired private ElasticsearchClient es8Client;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -52,7 +51,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
     final var resStream =
         ElasticsearchUtil.scrollAllStream(
-            esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
+            es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
 
     final var processInstanceId2IndexName =
         resStream.collect(Collectors.toMap(hit -> Long.valueOf(hit.id()), hit -> hit.index()));
