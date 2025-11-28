@@ -8,7 +8,6 @@
 
 import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import isNil from 'lodash/isNil';
-import {isWithinMultiInstance} from './isWithinMultiInstance';
 import {isAttachedToAnEventBasedGateway} from './isAttachedToAnEventBasedGateway';
 import {hasType} from './hasType';
 
@@ -17,7 +16,6 @@ const isMoveModificationTarget = (
 ) => {
   return (
     !isNil(businessObject) &&
-    !isWithinMultiInstance(businessObject) &&
     !isAttachedToAnEventBasedGateway(businessObject) &&
     !hasType({businessObject, types: ['bpmn:StartEvent', 'bpmn:BoundaryEvent']})
   );
