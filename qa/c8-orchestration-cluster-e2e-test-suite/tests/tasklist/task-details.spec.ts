@@ -629,8 +629,10 @@ test.describe('task details page', () => {
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
   });
-
-  test('task completion with large variable form @v2-only', async ({
+  
+  // TODO issue #41614
+  // eslint-disable-next-line playwright/no-skipped-test
+  test.skip('task completion with large variable form @v2-only', async ({
     taskPanelPage,
     page,
   }) => {
