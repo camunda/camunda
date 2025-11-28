@@ -46,6 +46,7 @@ import {
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
 import {
+  useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
@@ -74,6 +75,7 @@ import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -108,6 +110,8 @@ const TopPanel: React.FC = observer(() => {
   const {data: totalRunningInstances} = useTotalRunningInstancesForFlowNode(
     currentSelection?.flowNodeId,
   );
+  const {data: totalRunningInstancesByFlowNode} =
+    useTotalRunningInstancesByFlowNode();
   const {data: businessObjects} = useBusinessObjects();
   const {data: totalMoveOperationRunningInstances} =
     useTotalRunningInstancesForFlowNode(
@@ -319,6 +323,10 @@ const TopPanel: React.FC = observer(() => {
           isOpen={isIncidentBarOpen}
         />
       )}
+
+      {modificationsStore.state.status === 'requires-ancestor-selection' && (
+        <ModificationInfoBanner text="Target flow node has multiple parent scopes. Please select parent node from Instance History to move." />
+      )}
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -368,7 +376,13 @@ const TopPanel: React.FC = observer(() => {
                 }
                 selectedFlowNodeIds={selectedFlowNode}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                  console.log({flowNodeId});
                   if (modificationsStore.state.status === 'moving-token') {
+                    const ancestorSelectionRequired = hasMultipleScopes(
+                      businessObjects[flowNodeId ?? ''],
+                      totalRunningInstancesByFlowNode,
+                    );
+
                     if (IS_ELEMENT_SELECTION_V2) {
                       clearSelection();
                     } else {
@@ -380,6 +394,7 @@ const TopPanel: React.FC = observer(() => {
                       businessObjects,
                       processInstance?.processDefinitionId,
                       flowNodeId,
+                      ancestorSelectionRequired,
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {

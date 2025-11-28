@@ -114,6 +114,26 @@ vi.mock('react-transition-group', () => {
   };
 });
 
+vi.mock('modules/components/Diagram', async () => {
+  const actual = await vi.importActual<
+    typeof import('modules/components/Diagram')
+  >('modules/components/Diagram');
+
+  return {
+    Diagram: (props: React.ComponentProps<typeof actual.Diagram>) => (
+      <div>
+        <button
+          data-testid="select-task-2"
+          onClick={() => props.onFlowNodeSelection?.('task-2', false)}
+        >
+          Select task-2
+        </button>
+        <actual.Diagram {...props} />
+      </div>
+    ),
+  };
+});
+
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: 'instance_id',
   state: 'ACTIVE',
@@ -565,6 +585,76 @@ describe('TopPanel', () => {
     expect(
       screen.queryByText(/select the target flow node in the diagram/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('should render modification info banner when move modification requires an ancestor', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('subprocessInsideMultiInstance.bpmn'),
+    );
+
+    const parentElement = {
+      flowNodeId: 'sub-2',
+    };
+    const element = {
+      flowNodeInstanceId: '2251799813699889',
+      flowNodeId: 'task-1',
+    };
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: element.flowNodeId,
+          active: 2,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+        {
+          elementId: parentElement.flowNodeId,
+          active: 2,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    });
+
+    flowNodeMetaDataStore.setMetaData({
+      ...calledInstanceMetadata,
+      ...element,
+      instanceMetadata: {
+        ...calledInstanceMetadata.instanceMetadata,
+        endDate: null,
+      },
+    });
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(),
+    });
+
+    modificationsStore.enableModificationMode();
+
+    selectFlowNode({}, element);
+
+    expect(
+      screen.queryByText(/select the target flow node in the diagram/i),
+    ).not.toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', {name: /move/i}));
+
+    expect(
+      await screen.findByText(/select the target flow node in the diagram/i),
+    ).toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole('button', {name: /Select task-2/}),
+    );
+
+    expect(
+      await screen.findByText(
+        /Target flow node has multiple parent scopes. Please select parent node from Instance History to move./i,
+      ),
+    ).toBeInTheDocument();
   });
 
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
