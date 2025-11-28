@@ -152,42 +152,6 @@ public class OpensearchBatchOperationWriter
   }
 
   /**
-   * Schedule operations based of process instance query.
-   *
-   * @param batchOperationRequest
-   * @return
-   */
-  @Override
-  public BatchOperationEntity scheduleBatchOperation(
-      final CreateBatchOperationRequestDto batchOperationRequest) {
-    LOGGER.debug("Creating batch operation: operationRequest [{}]", batchOperationRequest);
-    try {
-      // add batch operation with unique id
-      final BatchOperationEntity batchOperation =
-          createBatchOperationEntity(
-              batchOperationRequest.getOperationType(), batchOperationRequest.getName());
-
-      // Creates an OperationEntity object for each process instance that will be changed and
-      // sends to the batch processor to be executed asynchronously
-      final var operationsCount = addOperations(batchOperationRequest, batchOperation);
-
-      // update counts
-      batchOperation.setOperationsTotalCount(operationsCount);
-
-      if (operationsCount == 0) {
-        batchOperation.setEndDate(OffsetDateTime.now());
-      }
-      operationStore.add(batchOperation);
-      return batchOperation;
-    } catch (final InvalidRequestException ex) {
-      throw ex;
-    } catch (final Exception ex) {
-      throw new OperateRuntimeException(
-          String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
-    }
-  }
-
-  /**
    * Schedule operation for single process instance.
    *
    * @param processInstanceKey
