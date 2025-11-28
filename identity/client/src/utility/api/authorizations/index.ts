@@ -74,6 +74,7 @@ export enum ResourceType {
   SYSTEM = "SYSTEM",
   TENANT = "TENANT",
   USER = "USER",
+  CLUSTER_VARIABLE = "CLUSTER_VARIABLE",
 }
 
 type BaseAuthorization = {
