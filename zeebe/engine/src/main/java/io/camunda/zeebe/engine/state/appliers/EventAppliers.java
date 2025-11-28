@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -155,15 +156,9 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerConditionalSubscriptionAppliers(final MutableProcessingState state) {
-    register(
-        io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent.CREATED,
-        NOOP_EVENT_APPLIER);
-    register(
-        io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent.TRIGGERED,
-        NOOP_EVENT_APPLIER);
-    register(
-        io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent.CANCELED,
-        NOOP_EVENT_APPLIER);
+    register(ConditionalSubscriptionIntent.CREATED, NOOP_EVENT_APPLIER);
+    register(ConditionalSubscriptionIntent.TRIGGERED, NOOP_EVENT_APPLIER);
+    register(ConditionalSubscriptionIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
