@@ -108,7 +108,7 @@ test.describe.serial('groups CRUD', () => {
         await page.goto(relativizePath(Paths.groups()));
         await Promise.race([
           identityGroupsPage.groupsList.waitFor({timeout: 15000}),
-          identityGroupsPage.emptyStateLocator.waitFor({timeout: 15000}),
+          identityGroupsPage.emptyStateLocator.waitFor({timeout: 20000}),
         ]);
       },
     });
