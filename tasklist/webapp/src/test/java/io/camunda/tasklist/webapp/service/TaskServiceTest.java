@@ -25,6 +25,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.Metrics;
+<<<<<<< HEAD
+=======
+import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
+import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.entities.VariableEntity;
+>>>>>>> 9b4a4d56 (fix: Tasklist complete task persist task variables in an undefined manner)
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.FeatureFlagProperties;
@@ -445,6 +452,8 @@ class TaskServiceTest {
             .setAssignee("demo")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+    final var runtimeVariable = new VariableEntity().setName("b").setValue("2");
+    when(variableService.getTaskRuntimeVariables(taskBefore)).thenReturn(List.of(runtimeVariable));
 
     // When
     final var result = instance.completeTask(taskId, variables, true);
@@ -452,7 +461,13 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
+<<<<<<< HEAD
     verify(variableService).persistTaskVariables(taskId, variables, true);
+=======
+    verify(variableService)
+        .persistTaskVariables(
+            taskId, variables, List.of(runtimeVariable), true, taskBefore.getProcessInstanceId());
+>>>>>>> 9b4a4d56 (fix: Tasklist complete task persist task variables in an undefined manner)
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }
@@ -462,7 +477,6 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var variables = List.of(new VariableInputDTO().setName("a").setValue("1"));
-    final Map<String, Object> variablesMap = Map.of("a", 1);
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
@@ -475,6 +489,8 @@ class TaskServiceTest {
             .setAssignee("demo")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+    final var runtimeVariable = new VariableEntity().setName("b").setValue("2");
+    when(variableService.getTaskRuntimeVariables(taskBefore)).thenReturn(List.of(runtimeVariable));
 
     // When
     final var result = instance.completeTask(taskId, variables, true);
@@ -482,7 +498,13 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
+<<<<<<< HEAD
     verify(variableService).persistTaskVariables(taskId, variables, true);
+=======
+    verify(variableService)
+        .persistTaskVariables(
+            taskId, variables, List.of(runtimeVariable), true, taskBefore.getProcessInstanceId());
+>>>>>>> 9b4a4d56 (fix: Tasklist complete task persist task variables in an undefined manner)
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }

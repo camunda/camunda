@@ -502,7 +502,13 @@ class VariableServiceTest {
         List.of(
             new VariableInputDTO().setName("varB").setValue("\"changedB\""),
             new VariableInputDTO().setName("varC").setValue("\"changedC\"")),
+<<<<<<< HEAD
         false);
+=======
+        instance.getTaskRuntimeVariables(task),
+        false,
+        task.getProcessInstanceId());
+>>>>>>> 9b4a4d56 (fix: Tasklist complete task persist task variables in an undefined manner)
 
     // then
     verify(draftVariableStore, never()).getVariablesByTaskIdAndVariableNames(any(), any());
@@ -567,7 +573,13 @@ class VariableServiceTest {
                 .setName("varD")
                 .setValue("\"changedD_longValueThatExceedLimit\""),
             new VariableInputDTO().setName("varE").setValue("\"changedE\"")),
+<<<<<<< HEAD
         true);
+=======
+        instance.getTaskRuntimeVariables(task),
+        true,
+        task.getProcessInstanceId());
+>>>>>>> 9b4a4d56 (fix: Tasklist complete task persist task variables in an undefined manner)
 
     // then
     verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());
