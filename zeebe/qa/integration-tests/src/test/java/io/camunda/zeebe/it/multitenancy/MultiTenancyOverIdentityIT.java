@@ -128,6 +128,12 @@ public class MultiTenancyOverIdentityIT {
           .withEnv("KEYCLOAK_ADMIN_PASSWORD", KEYCLOAK_PASSWORD)
           .withEnv("KEYCLOAK_DATABASE_VENDOR", "dev-mem")
           .withNetwork(NETWORK)
+          .waitingFor(
+              new HttpWaitStrategy()
+                  .forPort(8080)
+                  .forPath("/health/started")
+                  .allowInsecure()
+                  .forStatusCode(200))
           .withNetworkAliases("keycloak")
           .withExposedPorts(8080);
 
