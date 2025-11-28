@@ -29,29 +29,6 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
   }
 
   /**
-   * Returns resource ids only for the <em>first</em> authorization branch. This method is intended
-   * to be used by readers that still operate on a single (non-composite) authorization.
-   *
-   * <p>If a composite (ANY-of) condition was provided, this method still returns the first branch’s
-   * ids and ignores the others.
-   *
-   * <p>For composite-aware code use {@link #getAuthorizedResourceIdsByType()}.
-   */
-  public List<String> getAuthorizedResourceIds() {
-    if (authorizationCheck == null || !authorizationCheck.enabled()) {
-      return List.of();
-    }
-
-    return Optional.of(authorizationCheck)
-        .map(AuthorizationCheck::authorizationCondition)
-        .map(AuthorizationCondition::authorizations)
-        .filter(list -> !list.isEmpty())
-        .map(List::getFirst)
-        .map(Authorization::resourceIds)
-        .orElse(List.of());
-  }
-
-  /**
    * Returns a mapping from authorization resource type name to the list of all resource IDs
    * authorized by any branch of the current {@link AuthorizationCondition}.
    *
