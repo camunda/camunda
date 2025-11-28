@@ -158,7 +158,7 @@ abstract class AbstractEntityReader<T> {
    */
   protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
     return resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIdsByType().isEmpty()
+            && !resourceAccessChecks.hasAnyResourceId()
         || resourceAccessChecks.tenantCheck().enabled()
             && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
   }
