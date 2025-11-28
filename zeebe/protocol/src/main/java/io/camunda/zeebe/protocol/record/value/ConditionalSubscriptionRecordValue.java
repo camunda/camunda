@@ -26,7 +26,17 @@ public interface ConditionalSubscriptionRecordValue
     extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
-   * The key of the scope in which the condition is evaluated.
+   * The key of the scope in which the condition is evaluated. Scopes should be assigned for
+   * different element types as follows:
+   *
+   * <p>Intermediate catch event → element itself
+   *
+   * <p>Boundary event → attached activity
+   *
+   * <p>Event subprocess start event → flow scope that is enclosing the event subprocess
+   *
+   * <p>Root level start event → nothing, just evaluate through endpoint call using process
+   * definition key
    *
    * @return the scope key
    */
@@ -36,12 +46,6 @@ public interface ConditionalSubscriptionRecordValue
    * @return the key of the related element instance.
    */
   long getElementInstanceKey();
-
-  /**
-   * @return the key of the related process instance
-   */
-  @Override
-  long getProcessInstanceKey();
 
   /**
    * @return the process definition key
