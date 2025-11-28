@@ -9,10 +9,8 @@ package io.camunda.operate.webapp.elasticsearch.writer;
 
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.ConversionUtils.toLongOrNull;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -23,12 +21,9 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.QueryHelper;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -48,19 +43,11 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -150,42 +137,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   @Override
   public void updateOperation(final OperationEntity operation) throws PersistenceException {
     operationStore.update(operation, true);
-  }
-
-  /**
-   * Schedule operations based of process instance query.
-   *
-   * @param batchOperationRequest
-   * @return
-   */
-  @Override
-  public BatchOperationEntity scheduleBatchOperation(
-      final CreateBatchOperationRequestDto batchOperationRequest) {
-    LOGGER.debug("Creating batch operation: operationRequest [{}]", batchOperationRequest);
-    try {
-      // add batch operation with unique id
-      final BatchOperationEntity batchOperation =
-          createBatchOperationEntity(
-              batchOperationRequest.getOperationType(), batchOperationRequest.getName());
-
-      // Creates an OperationEntity object for each process instance that will be changed and
-      // sends to the batch processor to be executed asynchronously
-      final var operationsCount = addOperations(batchOperationRequest, batchOperation);
-
-      // update counts
-      batchOperation.setOperationsTotalCount(operationsCount);
-
-      if (operationsCount == 0) {
-        batchOperation.setEndDate(OffsetDateTime.now());
-      }
-      operationStore.add(batchOperation);
-      return batchOperation;
-    } catch (final InvalidRequestException ex) {
-      throw ex;
-    } catch (final Exception ex) {
-      throw new OperateRuntimeException(
-          String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
-    }
   }
 
   /**
@@ -452,79 +403,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
               ex.getMessage()),
           ex);
     }
-  }
-
-  private int addOperations(
-      final CreateBatchOperationRequestDto batchOperationRequest,
-      final BatchOperationEntity batchOperation)
-      throws IOException {
-    final int batchSize = operateProperties.getElasticsearch().getBatchSize();
-    ConstantScoreQueryBuilder query =
-        queryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
-    if (permissionsService.permissionsEnabled()) {
-      final PermissionType permission =
-          batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)
-              ? PermissionType.DELETE_PROCESS_INSTANCE
-              : PermissionType.UPDATE_PROCESS_INSTANCE;
-      final var allowed = permissionsService.getProcessesWithPermission(permission);
-      final var permissionQuery =
-          allowed.isAll()
-              ? QueryBuilders.matchAllQuery()
-              : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
-      query = constantScoreQuery(joinWithAnd(query, permissionQuery));
-    }
-    QueryType queryType = QueryType.ONLY_RUNTIME;
-    if (batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)) {
-      queryType = QueryType.ALL;
-    }
-    final String[] includeFields =
-        new String[] {
-          OperationTemplate.PROCESS_INSTANCE_KEY,
-          OperationTemplate.PROCESS_DEFINITION_KEY,
-          OperationTemplate.BPMN_PROCESS_ID
-        };
-
-    // Query the list of process instances that will be modified based on the input query
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .size(batchSize)
-                    .fetchSource(includeFields, null));
-
-    final AtomicInteger operationsCount = new AtomicInteger();
-    tenantAwareClient.search(
-        searchRequest,
-        () -> {
-          ElasticsearchUtil.scrollWith(
-              searchRequest,
-              esClient,
-              searchHits -> {
-                try {
-                  final List<ProcessInstanceSource> processInstanceSources = new ArrayList<>();
-                  for (final SearchHit hit : searchHits.getHits()) {
-                    processInstanceSources.add(
-                        ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
-                  }
-                  operationsCount.addAndGet(
-                      persistOperationHelper.persistOperations(
-                          processInstanceSources,
-                          batchOperation.getId(),
-                          batchOperationRequest,
-                          null));
-                } catch (final PersistenceException e) {
-                  throw new RuntimeException(e);
-                }
-              },
-              null,
-              searchHits -> {
-                validateTotalHits(searchHits);
-                batchOperation.setInstancesCount((int) searchHits.getTotalHits().value);
-              });
-          return null;
-        });
-    return operationsCount.get();
   }
 
   private BatchOperationEntity createBatchOperationEntity(
