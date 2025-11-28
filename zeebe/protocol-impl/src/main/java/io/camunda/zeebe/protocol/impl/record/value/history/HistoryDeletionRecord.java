@@ -19,18 +19,14 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
 
   private static final StringValue RESOURCE_KEY = new StringValue("resourceKey");
   private static final StringValue RESOURCE_TYPE = new StringValue("resourceType");
-  private static final StringValue BATCH_OPERATION_KEY = new StringValue("batchOperationKey");
 
   private final LongProperty resourceKeyProp = new LongProperty(RESOURCE_KEY);
   private final EnumProperty<HistoryDeletionType> resourceTypeProp =
       new EnumProperty<>(RESOURCE_TYPE, HistoryDeletionType.class);
-  private final LongProperty batchOperationKeyProp = new LongProperty(BATCH_OPERATION_KEY);
 
   public HistoryDeletionRecord() {
-    super(3);
-    declareProperty(resourceKeyProp)
-        .declareProperty(resourceTypeProp)
-        .declareProperty(batchOperationKeyProp);
+    super(2);
+    declareProperty(resourceKeyProp).declareProperty(resourceTypeProp);
   }
 
   @Override
@@ -50,16 +46,6 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
 
   public HistoryDeletionRecord setResourceType(final HistoryDeletionType resourceType) {
     resourceTypeProp.setValue(resourceType);
-    return this;
-  }
-
-  @Override
-  public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
-  }
-
-  public HistoryDeletionRecord setBatchOperationKey(final long batchOperationKey) {
-    batchOperationKeyProp.setValue(batchOperationKey);
     return this;
   }
 }
