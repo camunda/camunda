@@ -33,6 +33,9 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
   private static final String INITIAL_FAILURE_MESSAGE =
       "<No assertion error occurred. Maybe, the assertion timed out before it could be tested.>";
 
+  private static final String UNEXPECTED_FAILURE_MESSAGE =
+      "<No assertion error occurred, but an unexpected exception was thrown.>";
+
   private final boolean expectFailure;
 
   private Duration assertionTimeout = CamundaAssert.DEFAULT_ASSERTION_TIMEOUT;
@@ -53,6 +56,7 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
   @Override
   public void untilAsserted(final ThrowingRunnable assertion) throws AssertionError {
     final AtomicReference<String> failureMessage = new AtomicReference<>(INITIAL_FAILURE_MESSAGE);
+    final AtomicReference<Throwable> unexpectedException = new AtomicReference<>(null);
     final AtomicBoolean failFastCondition = new AtomicBoolean(false);
 
     try {
@@ -72,10 +76,17 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
                     failFastCondition.set(true);
                   }
                   throw e;
+                } catch (final Exception unexpected) {
+                  unexpectedException.set(unexpected);
+                  throw unexpected;
                 }
               });
     } catch (final ConditionTimeoutException | TerminalFailureException ignore) {
-      fail(failureMessage.get());
+      if (unexpectedException.get() != null) {
+        fail(UNEXPECTED_FAILURE_MESSAGE, unexpectedException.get());
+      } else {
+        fail(failureMessage.get());
+      }
     }
   }
 
