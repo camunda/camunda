@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.util.micrometer;
 
+import io.camunda.zeebe.util.micrometer.StatefulGauge.Builder;
 import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.Meter.Id;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.Collections;
@@ -36,12 +38,12 @@ final class StatefulMeterRegistry extends CompositeMeterRegistry {
     config().onMeterAdded(this::onMeterAdded).onMeterRemoved(this::onMeterRemoved);
   }
 
-  StatefulGauge registerIfNecessary(final Meter.Id id) {
-    return gauges.computeIfAbsent(id, this::registerStatefulGauge);
+  StatefulGauge registerIfNecessary(final Id id, final Builder builder) {
+    return gauges.computeIfAbsent(id, metricId -> registerStatefulGauge(metricId, builder));
   }
 
-  StatefulGauge registerStatefulGauge(final Meter.Id id) {
-    return StatefulGauge.registerAsGauge(id, this);
+  StatefulGauge registerStatefulGauge(final Id id, final Builder builder) {
+    return StatefulGauge.registerAsGauge(id, builder, this);
   }
 
   private void onMeterAdded(final Meter meter) {
