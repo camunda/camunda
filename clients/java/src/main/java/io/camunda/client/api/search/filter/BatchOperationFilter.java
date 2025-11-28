@@ -45,10 +45,10 @@ public interface BatchOperationFilter extends SearchRequestFilter {
   /**
    * Filters batch operations by the specified type.
    *
-   * @param operationType the operationType
+   * @param batchOperationType the batchOperationType
    * @return the updated filter
    */
-  BatchOperationFilter operationType(final BatchOperationType operationType);
+  BatchOperationFilter operationType(final BatchOperationType batchOperationType);
 
   /**
    * Filter by operationType using {@link BatchOperationType} consumer
