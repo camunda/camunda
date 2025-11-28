@@ -703,4 +703,59 @@ describe('elementInstancesTreeStore', () => {
       ).toBe(false),
     );
   });
+
+  it('should not have a next page for non-existent node', () => {
+    expect(elementInstancesTreeStore.hasNextPage('non-existent-key')).toBe(
+      false,
+    );
+  });
+
+  it('should have a next page', async () => {
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
+
+    expect(elementInstancesTreeStore.hasNextPage(mockProcessInstanceKey)).toBe(
+      true,
+    );
+  });
+
+  it('should not have a next page', async () => {
+    const singlePageResponse = createMockResponse(
+      mockFirstPageItems.slice(0, 50),
+      50,
+    );
+    mockSearchElementInstances().withSuccess(singlePageResponse);
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
+
+    expect(elementInstancesTreeStore.hasNextPage(mockProcessInstanceKey)).toBe(
+      false,
+    );
+  });
+
+  it('should not have a previous page for non-existent node', () => {
+    expect(elementInstancesTreeStore.hasPreviousPage('non-existent-key')).toBe(
+      false,
+    );
+  });
+
+  it('should not have a previous page for node at start of list', async () => {
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
+
+    expect(
+      elementInstancesTreeStore.hasPreviousPage(mockProcessInstanceKey),
+    ).toBe(false);
+  });
+
+  it('should have a previous page for node not at start of list', async () => {
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
+
+    mockSearchElementInstances().withSuccess(mockSecondPageResponse);
+    await elementInstancesTreeStore.fetchNextPage(mockProcessInstanceKey);
+
+    expect(
+      elementInstancesTreeStore.hasPreviousPage(mockProcessInstanceKey),
+    ).toBe(true);
+  });
 });
