@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -122,8 +121,8 @@ public class OpensearchDecisionRequirementsDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<DecisionRequirements> query, final SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<DecisionRequirements> query) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
       final var queryTerms =
@@ -142,9 +141,10 @@ public class OpensearchDecisionRequirementsDao
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override
