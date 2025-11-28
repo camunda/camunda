@@ -308,6 +308,36 @@ class BatchOperationInitializerTest {
     verify(metrics).recordItemsPerPartition(8, BatchOperationType.CANCEL_PROCESS_INSTANCE); // 5 + 3
   }
 
+  @Test
+  void shouldInitializeDeleteProcessInstanceBatchOperation() {
+    // given
+    batchOperation.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    final var items = List.of(createItem(10L), createItem(11L));
+    final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 2L, true);
+    final var pageResult = new PageProcessingResult(true, NEXT_SEARCH_CURSOR, 2, true);
+
+    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
+    when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
+        .thenReturn(pageResult);
+
+    // when
+    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+
+    // then
+    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(result.searchResultCursor()).isEqualTo("finished");
+    verify(commandBuilder)
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+    verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+    verify(metrics).recordItemsPerPartition(2, BatchOperationType.DELETE_PROCESS_INSTANCE);
+    verify(metrics)
+        .startStartExecuteLatencyMeasure(
+            BATCH_OPERATION_KEY, BatchOperationType.DELETE_PROCESS_INSTANCE);
+    verify(metrics)
+        .startTotalExecutionLatencyMeasure(
+            BATCH_OPERATION_KEY, BatchOperationType.DELETE_PROCESS_INSTANCE);
+  }
+
   private Item createItem(final long key) {
     return new Item(key, key + 1000);
   }
