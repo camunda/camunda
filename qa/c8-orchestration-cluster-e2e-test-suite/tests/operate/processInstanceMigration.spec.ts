@@ -6,21 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
-import {expect} from '@playwright/test';
-import {deploy, createInstances} from 'utils/zeebeClient';
-import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
-import {waitForAssertion} from 'utils/waitForAssertion';
-import {OperationEntry, getNewOperationIds} from 'utils/getNewOperationIds';
+import { test } from 'fixtures';
+import { expect } from '@playwright/test';
+import { deploy, createInstances } from 'utils/zeebeClient';
+import { captureScreenshot, captureFailureVideo } from '@setup';
+import { navigateToApp, validateURL } from '@pages/UtilitiesPage';
+import { sleep } from 'utils/sleep';
+import { waitForAssertion } from 'utils/waitForAssertion';
+import { OperationEntry, getNewOperationIds } from 'utils/getNewOperationIds';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
 const MANUAL_MIGRATION_INSTANCE_COUNT = 3;
 
-let beforeOperationOperationPanelEntries: OperationEntry[];
-let afterOperationOperationPanelEntries: OperationEntry[];
+let migratedIds: string[];
 
 type ProcessDeployment = {
   readonly bpmnProcessId: string;
@@ -73,14 +72,14 @@ test.beforeAll(async () => {
 });
 
 test.describe.serial('Process Instance Migration', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+  test.beforeEach(async ({ page, loginPage, operateHomePage }) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
 
-  test.afterEach(async ({page}, testInfo) => {
+  test.afterEach(async ({ page }, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
@@ -111,7 +110,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessesPage.selectProcessInstances(
         AUTO_MIGRATION_INSTANCE_COUNT,
       );
-      beforeOperationOperationPanelEntries =
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
         await operateOperationPanelPage.operationIdsEntries();
       await operateProcessesPage.startMigration();
     });
@@ -134,10 +133,10 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for request for payment',
           targetValue: 'requestForPayment',
         },
-        {label: 'target element for task a', targetValue: 'TaskA'},
-        {label: 'target element for task b', targetValue: 'TaskB'},
-        {label: 'target element for task c', targetValue: 'TaskC'},
-        {label: 'target element for task d', targetValue: 'TaskD'},
+        { label: 'target element for task a', targetValue: 'TaskA' },
+        { label: 'target element for task b', targetValue: 'TaskB' },
+        { label: 'target element for task c', targetValue: 'TaskC' },
+        { label: 'target element for task d', targetValue: 'TaskD' },
         {
           label: 'target element for message interrupting',
           targetValue: 'MessageInterrupting',
@@ -170,8 +169,8 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for timer event sub process',
           targetValue: 'TimerEventSubProcess',
         },
-        {label: 'target element for task e', targetValue: 'TaskE'},
-        {label: 'target element for task f', targetValue: 'TaskF'},
+        { label: 'target element for task e', targetValue: 'TaskE' },
+        { label: 'target element for task f', targetValue: 'TaskF' },
         {
           label: 'target element for message receive task',
           targetValue: 'MessageReceiveTask',
@@ -180,8 +179,8 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for business rule task',
           targetValue: 'BusinessRuleTask',
         },
-        {label: 'target element for script task', targetValue: 'ScriptTask'},
-        {label: 'target element for send task', targetValue: 'SendTask'},
+        { label: 'target element for script task', targetValue: 'ScriptTask' },
+        { label: 'target element for send task', targetValue: 'SendTask' },
         {
           label: 'target element for timer start event',
           targetValue: 'TimerStartEvent',
@@ -210,8 +209,8 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for error start event',
           targetValue: 'ErrorStartEvent',
         },
-        {label: 'target element for task g', targetValue: 'TaskG'},
-        {label: 'target element for sub process', targetValue: 'SubProcess'},
+        { label: 'target element for task g', targetValue: 'TaskG' },
+        { label: 'target element for sub process', targetValue: 'SubProcess' },
         {
           label: 'target element for multi instance sub process',
           targetValue: 'MultiInstanceSubProcess',
@@ -243,7 +242,7 @@ test.describe.serial('Process Instance Migration', () => {
       });
 
       await operateProcessesPage.waitForOperationToComplete();
-      afterOperationOperationPanelEntries =
+      operateOperationPanelPage.afterOperationOperationPanelEntries =
         await operateOperationPanelPage.operationIdsEntries();
     });
 
@@ -252,9 +251,9 @@ test.describe.serial('Process Instance Migration', () => {
         timeout: 120000,
       });
 
-      var migratedIds = getNewOperationIds(
-        beforeOperationOperationPanelEntries,
-        afterOperationOperationPanelEntries,
+      migratedIds = getNewOperationIds(
+        operateOperationPanelPage.beforeOperationOperationPanelEntries,
+        operateOperationPanelPage.afterOperationOperationPanelEntries,
       );
 
       await waitForAssertion({
@@ -264,11 +263,11 @@ test.describe.serial('Process Instance Migration', () => {
         },
         onFailure: async () => {
           await page.waitForTimeout(1000);
-          afterOperationOperationPanelEntries =
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
             await operateOperationPanelPage.operationIdsEntries();
           migratedIds = getNewOperationIds(
-            beforeOperationOperationPanelEntries,
-            afterOperationOperationPanelEntries,
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
           );
         },
         maxRetries: 60,
@@ -309,7 +308,8 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Get migration operation ID and verify TaskF instances', async () => {
       const operationId =
-        await operateOperationPanelPage.getMigrationOperationId();
+        // await operateOperationPanelPage.getMigrationOperationId();
+        migratedIds[0];
 
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
@@ -318,7 +318,7 @@ test.describe.serial('Process Instance Migration', () => {
         `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=TaskF`,
       );
 
-      await expect(page.getByText('6 results')).toBeVisible({timeout: 30000});
+      await expect(page.getByText('6 results')).toBeVisible({ timeout: 30000 });
     });
   });
 
@@ -508,7 +508,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await expect(
         operateProcessesPage.getVersionCells(targetVersion),
-      ).toHaveCount(3, {timeout: 60000});
+      ).toHaveCount(3, { timeout: 60000 });
 
       await expect(
         operateProcessesPage.getVersionCells(sourceVersion),
@@ -679,7 +679,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await expect(page.getByText('results')).toBeVisible({ timeout: 30000 });
 
       await operateProcessesPage.clickProcessInstanceLink();
       await operateDiagramPage.resetDiagramZoomButton.click();
@@ -709,7 +709,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await expect(page.getByText('results')).toBeVisible({ timeout: 30000 });
 
       await operateProcessesPage.clickProcessInstanceLink();
       await operateDiagramPage.resetDiagramZoomButton.click();
@@ -746,7 +746,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(page.getByText('3 results')).toBeVisible({timeout: 30000});
+      await expect(page.getByText('3 results')).toBeVisible({ timeout: 30000 });
     });
 
     await test.step('Open first migrated instance', async () => {
