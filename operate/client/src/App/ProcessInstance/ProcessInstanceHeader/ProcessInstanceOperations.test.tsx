@@ -16,6 +16,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
+import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
@@ -137,8 +138,8 @@ describe('ProcessInstanceOperations', () => {
     );
   });
 
-  it('should show notification on legacy resolve incident error', async () => {
-    mockApplyOperation().withServerError();
+  it('should show notification on resolve incident error', async () => {
+    mockResolveProcessInstanceIncidents().withServerError();
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
       hasIncident: true,
@@ -155,6 +156,30 @@ describe('ProcessInstanceOperations', () => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'error',
         title: 'Operation could not be created',
+        isDismissable: true,
+      }),
+    );
+  });
+
+  it('should show notification on resolve incident permission error', async () => {
+    mockResolveProcessInstanceIncidents().withServerError(403);
+    const instanceWithIncident = createProcessInstance({
+      state: 'ACTIVE',
+      hasIncident: true,
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={instanceWithIncident} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByTitle(/retry instance/i));
+
+    await waitFor(() =>
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'warning',
+        title: "You don't have permission to perform this operation",
+        subtitle: 'Please contact the administrator if you need access.',
         isDismissable: true,
       }),
     );

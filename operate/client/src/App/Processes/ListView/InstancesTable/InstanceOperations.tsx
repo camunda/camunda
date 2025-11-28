@@ -8,11 +8,12 @@
 
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
-import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
+import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
-import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
+import {operationsStore} from 'modules/stores/operations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
 import {logger} from 'modules/logger';
@@ -49,9 +50,22 @@ const InstanceOperations: React.FC<Props> = ({
     },
   });
 
-  const handleOperationError: ErrorHandler = ({statusCode}) => {
-    handleOperationErrorUtil(statusCode);
-  };
+  const {
+    mutate: resolveProcessInstanceIncidents,
+    isPending: isResolveIncidentsPending,
+  } = useResolveProcessInstanceIncidents(processInstanceKey, {
+    onError: (error) => {
+      processInstancesStore.unmarkProcessInstancesWithActiveOperations({
+        instanceIds: [processInstanceKey],
+        operationType: 'RESOLVE_INCIDENT',
+      });
+
+      handleOperationError(error.status);
+    },
+    onSuccess: () => {
+      handleOperationSuccess('RESOLVE_INCIDENT');
+    },
+  });
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {
     tracking.track({
@@ -61,7 +75,8 @@ const InstanceOperations: React.FC<Props> = ({
     });
   };
 
-  const applyOperation = async (operationType: OperationEntityType) => {
+  const handleDelete = async () => {
+    const operationType = 'DELETE_PROCESS_INSTANCE';
     try {
       processInstancesStore.markProcessInstancesWithActiveOperations({
         ids: [processInstanceKey],
@@ -78,7 +93,7 @@ const InstanceOperations: React.FC<Props> = ({
             instanceIds: [processInstanceKey],
             operationType,
           });
-          handleOperationError(error);
+          handleOperationError(error.statusCode);
         },
         onSuccess: () => handleOperationSuccess(operationType),
       });
@@ -91,19 +106,21 @@ const InstanceOperations: React.FC<Props> = ({
     }
   };
 
-  const handleDelete = () => {
-    applyOperation('DELETE_PROCESS_INSTANCE');
-  };
-
   const operations: OperationConfig[] = [];
 
   if (isInstanceActive && hasIncident) {
     operations.push({
       type: 'RESOLVE_INCIDENT',
       onExecute: () => {
-        applyOperation('RESOLVE_INCIDENT');
+        processInstancesStore.markProcessInstancesWithActiveOperations({
+          ids: [processInstanceKey],
+          operationType: 'RESOLVE_INCIDENT',
+        });
+        resolveProcessInstanceIncidents();
       },
-      disabled: activeOperations.includes('RESOLVE_INCIDENT'),
+      disabled:
+        isResolveIncidentsPending ||
+        activeOperations.includes('RESOLVE_INCIDENT'),
     });
   }
 
@@ -134,7 +151,9 @@ const InstanceOperations: React.FC<Props> = ({
   const isLoading =
     processInstancesStore.processInstanceIdsWithActiveOperations.includes(
       processInstanceKey,
-    ) || isCancelProcessInstancePending;
+    ) ||
+    isCancelProcessInstancePending ||
+    isResolveIncidentsPending;
 
   return (
     <Operations

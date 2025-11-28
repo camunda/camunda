@@ -132,6 +132,9 @@ const queryKeys = {
       payload,
     ],
   },
+  batchOperations: {
+    get: (batchOperationKey: string) => ['batchOperation', batchOperationKey],
+  },
 };
 
 export {queryKeys};
