@@ -30,8 +30,7 @@ public class HistoryDeletionClient {
 
   private final CommandWriter writer;
   private final HistoryDeletionRecord record = new HistoryDeletionRecord();
-  private final Function<Long, Record<HistoryDeletionRecordValue>> expectation =
-      SUCCESS_EXPECTATION;
+  private Function<Long, Record<HistoryDeletionRecordValue>> expectation = SUCCESS_EXPECTATION;
 
   public HistoryDeletionClient(final CommandWriter writer) {
     this.writer = writer;
@@ -46,5 +45,10 @@ public class HistoryDeletionClient {
   public Record<HistoryDeletionRecordValue> delete() {
     final long position = writer.writeCommand(HistoryDeletionIntent.DELETE, record);
     return expectation.apply(position);
+  }
+
+  public HistoryDeletionClient expectRejection() {
+    expectation = REJECTION_EXPECTATION;
+    return this;
   }
 }

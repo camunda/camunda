@@ -10,7 +10,10 @@ package io.camunda.zeebe.engine.processing.historydeletion;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -34,5 +37,29 @@ public class DeleteProcessInstanceHistoryTest {
     assertThat(deletedEvent.getValue())
         .hasResourceKey(processInstanceKey)
         .hasResourceType(HistoryDeletionType.PROCESS_INSTANCE);
+  }
+
+  @Test
+  public void shouldRejectProcessInstanceDeletionWhenInstanceIsActive() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    final var rejection =
+        ENGINE.history().processInstance(processInstanceKey).expectRejection().delete();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            String.format(
+                "Expected to delete history for process instance with key '%d', but it is still active.",
+                processInstanceKey));
   }
 }
