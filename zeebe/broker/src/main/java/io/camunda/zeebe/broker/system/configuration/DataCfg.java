@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import java.io.File;
 import java.time.Duration;
 import java.util.Optional;
@@ -37,7 +37,7 @@ public final class DataCfg implements ConfigurationEntry {
   private Double diskUsageCommandWatermark;
   private Duration diskUsageMonitoringInterval;
   private DiskCfg disk = new DiskCfg();
-  private BackupStoreCfg backup = new BackupStoreCfg();
+  private BackupCfg backup = new BackupCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -156,11 +156,11 @@ public final class DataCfg implements ConfigurationEntry {
     this.disk = disk;
   }
 
-  public BackupStoreCfg getBackup() {
+  public BackupCfg getBackup() {
     return backup;
   }
 
-  public void setBackup(final BackupStoreCfg backup) {
+  public void setBackup(final BackupCfg backup) {
     this.backup = backup;
   }
 

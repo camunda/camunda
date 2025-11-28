@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.nio.file.Path;

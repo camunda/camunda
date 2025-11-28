@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 
-public class BackupStoreCfg implements ConfigurationEntry {
+public class BackupCfg implements ConfigurationEntry {
 
   private BackupStoreType store = BackupStoreType.NONE;
 

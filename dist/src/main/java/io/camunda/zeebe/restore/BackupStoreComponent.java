@@ -14,7 +14,7 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -37,7 +37,7 @@ final class BackupStoreComponent {
     return buildBackupStore(brokerCfg.getData().getBackup());
   }
 
-  private BackupStore buildBackupStore(final BackupStoreCfg backupCfg) {
+  private BackupStore buildBackupStore(final BackupCfg backupCfg) {
     final var store = backupCfg.getStore();
     return switch (store) {
       case S3 -> buildS3BackupStore(backupCfg);
@@ -50,24 +50,23 @@ final class BackupStoreComponent {
     };
   }
 
-  private static BackupStore buildS3BackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupStoreCfg.getS3());
+  private static BackupStore buildS3BackupStore(final BackupCfg backupCfg) {
+    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
     return S3BackupStore.of(storeConfig);
   }
 
-  private static BackupStore buildGcsBackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var storeConfig = GcsBackupStoreConfig.toStoreConfig(backupStoreCfg.getGcs());
+  private static BackupStore buildGcsBackupStore(final BackupCfg backupCfg) {
+    final var storeConfig = GcsBackupStoreConfig.toStoreConfig(backupCfg.getGcs());
     return GcsBackupStore.of(storeConfig);
   }
 
-  private static BackupStore buildAzureBackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupStoreCfg.getAzure());
+  private static BackupStore buildAzureBackupStore(final BackupCfg backupCfg) {
+    final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupCfg.getAzure());
     return AzureBackupStore.of(storeConfig);
   }
 
-  private static BackupStore buildFilesystemBackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var storeConfig =
-        FilesystemBackupStoreConfig.toStoreConfig(backupStoreCfg.getFilesystem());
+  private static BackupStore buildFilesystemBackupStore(final BackupCfg backupCfg) {
+    final var storeConfig = FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem());
     return FilesystemBackupStore.of(storeConfig);
   }
 }
