@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -34,7 +33,7 @@ public final class JobTimeoutChecker implements Task, StreamProcessorLifecycleAw
   private DeadlineIndex startAtIndex = null;
 
   private final JobState state;
-  private ProcessingScheduleService scheduleService;
+  private ReadonlyStreamProcessorContext processingContext;
   private final Duration pollingInterval;
   private final int batchLimit;
   private final InstantSource clock;
@@ -52,7 +51,7 @@ public final class JobTimeoutChecker implements Task, StreamProcessorLifecycleAw
 
   private void schedule(final Duration idleInterval) {
     if (shouldReschedule) {
-      scheduleService.runAt(clock.millis() + idleInterval.toMillis(), this);
+      processingContext.getScheduleService().runAt(clock.millis() + idleInterval.toMillis(), this);
     }
   }
 
@@ -96,7 +95,7 @@ public final class JobTimeoutChecker implements Task, StreamProcessorLifecycleAw
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    scheduleService = processingContext.getScheduleService();
+    this.processingContext = processingContext;
     shouldReschedule = true;
     schedule(pollingInterval);
   }

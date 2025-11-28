@@ -14,7 +14,6 @@ import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -31,7 +30,7 @@ public class UsageMetricsChecker implements Task, StreamProcessorLifecycleAware 
 
   private final Duration exportInterval;
   private final InstantSource clock;
-  private ProcessingScheduleService scheduleService;
+  private ReadonlyStreamProcessorContext processingContext;
   private volatile boolean shouldReschedule = false;
   private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
 
@@ -43,9 +42,12 @@ public class UsageMetricsChecker implements Task, StreamProcessorLifecycleAware 
   private void schedule(final boolean immediately) {
     final ScheduledTask nextTask;
     if (immediately) {
-      nextTask = scheduleService.runAtAsync(0L, this);
+      nextTask = processingContext.getScheduleService().runAtAsync(0L, this);
     } else {
-      nextTask = scheduleService.runAt(clock.millis() + exportInterval.toMillis(), this);
+      nextTask =
+          processingContext
+              .getScheduleService()
+              .runAt(clock.millis() + exportInterval.toMillis(), this);
       LOG.trace("UsageMetricsChecker scheduled");
     }
 
@@ -68,7 +70,7 @@ public class UsageMetricsChecker implements Task, StreamProcessorLifecycleAware 
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    scheduleService = processingContext.getScheduleService();
+    this.processingContext = processingContext;
     shouldReschedule = true;
     schedule(true);
   }
