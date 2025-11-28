@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -68,6 +69,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -640,6 +642,16 @@ public final class RecordingExporter implements Exporter {
   public static AsyncRequestRecordStream asyncRequestRecords() {
     return new AsyncRequestRecordStream(
         records(ValueType.ASYNC_REQUEST, AsyncRequestRecordValue.class));
+  }
+
+  public static HistoryDeletionRecordStream historyDeletionRecords(
+      final HistoryDeletionIntent intent) {
+    return historyDeletionRecords().withIntent(intent);
+  }
+
+  public static HistoryDeletionRecordStream historyDeletionRecords() {
+    return new HistoryDeletionRecordStream(
+        records(ValueType.HISTORY_DELETION, HistoryDeletionRecordValue.class));
   }
 
   public static BatchOperationPartitionLifecycleRecordStream
