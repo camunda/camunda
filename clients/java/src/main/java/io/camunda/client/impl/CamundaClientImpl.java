@@ -156,6 +156,7 @@ import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequ
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByTenantSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesSearchRequest;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
@@ -305,6 +306,7 @@ import io.camunda.client.impl.search.request.IncidentsByProcessInstanceSearchReq
 import io.camunda.client.impl.search.request.JobSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesByRoleSearchRequestImpl;
+import io.camunda.client.impl.search.request.MappingRulesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesSearchRequestImpl;
 import io.camunda.client.impl.search.request.MessageSubscriptionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
@@ -1436,6 +1438,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public MappingRulesByRoleSearchRequest newMappingRulesByRoleSearchRequest(final String roleId) {
     return new MappingRulesByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
+  }
+
+  @Override
+  public MappingRulesByTenantSearchRequest newMappingRulesByTenantSearchRequest(
+      final String tenantId) {
+    return new MappingRulesByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override

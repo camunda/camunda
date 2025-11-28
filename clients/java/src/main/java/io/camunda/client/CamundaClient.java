@@ -145,6 +145,7 @@ import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequ
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByTenantSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesSearchRequest;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
@@ -2823,6 +2824,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the mapping rules by role search request
    */
   MappingRulesByRoleSearchRequest newMappingRulesByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query mapping rules by tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newMappingRulesByTenantSearchRequest("tenantId")
+   *  .filter((f) -> f.mappingRuleId("mapping-rule-123"))
+   *  .sort((s) -> s.mappingRuleId().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the mapping rules by tenant search request
+   */
+  MappingRulesByTenantSearchRequest newMappingRulesByTenantSearchRequest(String tenantId);
 
   /**
    * Executes a search request to query mapping rules.
