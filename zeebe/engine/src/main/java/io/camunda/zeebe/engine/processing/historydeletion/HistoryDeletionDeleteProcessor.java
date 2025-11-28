@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.historydeletion;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
+// TODO add authorization checks with https://github.com/camunda/camunda/issues/41771
+@ExcludeAuthorizationCheck
 public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<HistoryDeletionRecord> {
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS =
