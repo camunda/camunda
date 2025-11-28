@@ -28,21 +28,32 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 public class RawTransactionalColumnFamilyTest {
   @TempDir static Path path;
   @AutoClose static ZeebeTransactionDb<ZbColumnFamilies> db;
   static Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies = new HashMap<>();
   private static TransactionContext context;
+  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   @BeforeAll
   static void setup() {
+    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
     db = factory.createDb(path.toFile());
     context = db.createContext();
 
