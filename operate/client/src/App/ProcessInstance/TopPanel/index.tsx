@@ -72,6 +72,7 @@ import {isRequestError} from 'modules/request';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
+import {useElementSelection} from 'modules/hooks/useElementSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -138,6 +139,8 @@ const TopPanel: React.FC = observer(() => {
   } = useProcessInstanceXml({
     processDefinitionKey,
   });
+
+  const elementSelection = useElementSelection();
 
   useEffect(() => {
     if (flowNodeInstancesStatistics?.items && processInstance) {
@@ -346,6 +349,12 @@ const TopPanel: React.FC = observer(() => {
                       : undefined
                 }
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                  if (flowNodeId) {
+                    elementSelection.selectElement(flowNodeId);
+                  } else {
+                    elementSelection.clearSelection();
+                  }
+
                   if (modificationsStore.state.status === 'moving-token') {
                     clearSelection(rootNode);
                     finishMovingToken(
