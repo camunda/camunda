@@ -1,0 +1,36 @@
+services:
+  keycloak:
+    image: bitnamilegacy/keycloak:26.1.0
+    ports:
+      - "8090:8090"
+    environment:
+      KEYCLOAK_HTTP_PORT: 8090
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_DATABASE_HOST: keycloak_postgres
+      KEYCLOAK_DATABASE_NAME: oc
+      KEYCLOAK_DATABASE_USER: oc
+      KEYCLOAK_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_LOG_LEVEL: 'INFO'
+      KEYCLOAK_EXTRA_ARGS: --import-realm --verbose
+    volumes:
+      - ./realms:/opt/bitnami/keycloak/data/import
+      - ./providers:/opt/bitnami/keycloak/providers
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8090/auth" ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      - keycloak_postgres
+
+  keycloak_postgres:
+    image: postgres:16.6-alpine
+    #    ports:
+    #      - "5432:5432"
+    environment:
+      POSTGRES_DB: oc
+      POSTGRES_USER: oc
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"
