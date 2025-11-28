@@ -12,41 +12,41 @@ import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.InstantSource;
 
-public class UsageMetricsCheckSchedulerScheduler implements StreamProcessorLifecycleAware {
+public class UsageMetricsCheckerScheduler implements StreamProcessorLifecycleAware {
 
-  private final UsageMetricsCheckScheduler usageMetricsChecker;
+  private final UsageMetricsCheckScheduler usageMetricsCheckScheduler;
 
-  public UsageMetricsCheckSchedulerScheduler(
+  public UsageMetricsCheckerScheduler(
       final EngineConfiguration engineConfiguration, final InstantSource clock) {
     final var exportInterval = engineConfiguration.getUsageMetricsExportInterval();
-    usageMetricsChecker = new UsageMetricsCheckScheduler(exportInterval, clock);
+    usageMetricsCheckScheduler = new UsageMetricsCheckScheduler(exportInterval, clock);
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    usageMetricsChecker.setProcessingContext(processingContext);
-    usageMetricsChecker.setShouldReschedule(true);
-    usageMetricsChecker.schedule(true);
+    usageMetricsCheckScheduler.setProcessingContext(processingContext);
+    usageMetricsCheckScheduler.setShouldReschedule(true);
+    usageMetricsCheckScheduler.schedule(true);
   }
 
   @Override
   public void onClose() {
-    usageMetricsChecker.setShouldReschedule(false);
+    usageMetricsCheckScheduler.setShouldReschedule(false);
   }
 
   @Override
   public void onFailed() {
-    usageMetricsChecker.setShouldReschedule(false);
+    usageMetricsCheckScheduler.setShouldReschedule(false);
   }
 
   @Override
   public void onPaused() {
-    usageMetricsChecker.setShouldReschedule(false);
+    usageMetricsCheckScheduler.setShouldReschedule(false);
   }
 
   @Override
   public void onResumed() {
-    usageMetricsChecker.setShouldReschedule(true);
-    usageMetricsChecker.schedule(true);
+    usageMetricsCheckScheduler.setShouldReschedule(true);
+    usageMetricsCheckScheduler.schedule(true);
   }
 }
