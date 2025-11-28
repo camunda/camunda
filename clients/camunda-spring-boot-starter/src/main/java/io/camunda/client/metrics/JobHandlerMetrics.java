@@ -30,12 +30,47 @@ import java.util.Map;
 public interface JobHandlerMetrics {
   static CounterMetricsContext counter(final ActivatedJob activatedJob) {
     return new CounterMetricsContext(
-        Name.INVOCATION, Map.ofEntries(Map.entry(Tag.TYPE, activatedJob.getType())), 1);
+        Name.INVOCATION.asString(),
+        Map.ofEntries(Map.entry(Tag.TYPE.asString(), activatedJob.getType())),
+        1);
   }
 
   static TimerMetricsContext timer(final ActivatedJob activatedJob) {
     return new TimerMetricsContext(
-        Name.EXECUTION_TIME, Map.ofEntries(Map.entry(Tag.TYPE, activatedJob.getType())));
+        Name.EXECUTION_TIME.asString(),
+        Map.ofEntries(Map.entry(Tag.TYPE.asString(), activatedJob.getType())));
+  }
+
+  /** Contains constants for the tags used in job handler metrics. */
+  enum Tag {
+    TYPE("type"),
+    ACTION("action");
+
+    private final String name;
+
+    Tag(final String name) {
+      this.name = name;
+    }
+
+    public String asString() {
+      return name;
+    }
+  }
+
+  /** Contains constants for the names of job handler metrics. */
+  enum Name {
+    INVOCATION("camunda.job.invocations"),
+    EXECUTION_TIME("camunda.job.execution-time");
+
+    private final String name;
+
+    Name(final String name) {
+      this.name = name;
+    }
+
+    public String asString() {
+      return name;
+    }
   }
 
   /**
@@ -43,22 +78,20 @@ public interface JobHandlerMetrics {
    *
    * <p>These are used as values for the {@link Tag#ACTION} tag.
    */
-  interface Action {
-    String ACTIVATED = "activated";
-    String COMPLETED = "completed";
-    String FAILED = "failed";
-    String BPMN_ERROR = "bpmn-error";
-  }
+  enum Action {
+    ACTIVATED("activated"),
+    COMPLETED("completed"),
+    FAILED("failed"),
+    BPMN_ERROR("bpmn-error");
 
-  /** Contains constants for the names of job handler metrics. */
-  interface Name {
-    String INVOCATION = "camunda.job.invocations";
-    String EXECUTION_TIME = "camunda.job.execution-time";
-  }
+    private final String name;
 
-  /** Contains constants for the tags used in job handler metrics. */
-  interface Tag {
-    String TYPE = "type";
-    String ACTION = "action";
+    Action(final String name) {
+      this.name = name;
+    }
+
+    public String asString() {
+      return name;
+    }
   }
 }

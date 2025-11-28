@@ -15,6 +15,7 @@
  */
 package io.camunda.client.metrics;
 
+import io.camunda.client.metrics.JobHandlerMetrics.Action;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -69,12 +70,15 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
     return timer.recordCallable(methodToExecute);
   }
 
-  protected void increaseCounter(final CounterMetricsContext context, final String action) {
-    final Tags tags = fromEntries(context.tags(), action);
+  protected void increaseCounter(final CounterMetricsContext context, final Action action) {
+    final Tags tags = fromEntries(context.tags(), action.asString());
     final String key = getKey(context.name(), tags);
     final Counter counter =
         counters.computeIfAbsent(
-            key, k -> meterRegistry.counter(context.name(), fromEntries(context.tags(), action)));
+            key,
+            k ->
+                meterRegistry.counter(
+                    context.name(), fromEntries(context.tags(), action.asString())));
     counter.increment(context.count());
   }
 
@@ -83,6 +87,6 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
   }
 
   private static Tags fromEntries(final Map<String, String> entries, final String action) {
-    return Tags.concat(fromEntries(entries), JobHandlerMetrics.Tag.ACTION, action);
+    return Tags.concat(fromEntries(entries), JobHandlerMetrics.Tag.ACTION.asString(), action);
   }
 }
