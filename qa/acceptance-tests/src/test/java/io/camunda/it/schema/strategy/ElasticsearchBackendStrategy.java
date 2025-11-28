@@ -112,14 +112,18 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
   @Override
   public void configureStandaloneSchemaManager(final TestStandaloneSchemaManager schemaManager) {
     schemaManager
+        .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
+        .withUnifiedConfig(
+            cfg -> {
+              final var elasticsearch = cfg.getData().getSecondaryStorage().getElasticsearch();
+              elasticsearch.setUrl(url);
+              elasticsearch.setUsername(ADMIN_USER);
+              elasticsearch.setPassword(ADMIN_PASSWORD);
+            })
         .withProperty(
             "zeebe.broker.exporters.elasticsearch.class-name",
             ElasticsearchExporter.class.getName())
         .withProperty("zeebe.broker.exporters.elasticsearch.args.url", url)
-        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
-        .withProperty("camunda.data.secondary-storage.elasticsearch.url", url)
-        .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
-        .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
         .withProperty(
             "zeebe.broker.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
         .withProperty(
