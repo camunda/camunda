@@ -6,9 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLogEntry} from 'modules/api/v2/auditLog/searchAuditLog';
+import type {
+  AuditLogEntry,
+} from 'modules/api/v2/auditLog/searchAuditLog';
 
-export type MockDecisionAuditLogEntry = AuditLogEntry & {
+export type MockDecisionAuditLogEntry = Omit<
+  AuditLogEntry,
+  'processDefinitionName' | 'processDefinitionVersion' | 'processInstanceKey' | 'processInstanceState'
+> & {
+  decisionDefinitionName?: string;
+  decisionDefinitionVersion?: number;
+  decisionEvaluationInstanceKey?: string;
   errorMessage?: string;
 };
 

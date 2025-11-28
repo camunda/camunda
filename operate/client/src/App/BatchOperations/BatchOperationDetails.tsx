@@ -931,8 +931,7 @@ const BatchOperationDetails: React.FC = () => {
                       display: 'grid',
                       gridTemplateColumns: 'repeat(4, 1fr)',
                       gap: 'var(--cds-spacing-05)',
-                      paddingTop: 'var(--cds-spacing-02)',
-                      paddingBottom: 'var(--cds-spacing-04)',
+                      padding: 'var(--cds-spacing-02)',
                     }}
                   >
                     <TextInput

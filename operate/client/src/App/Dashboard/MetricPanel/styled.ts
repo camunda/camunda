@@ -25,7 +25,7 @@ const LabelContainer = styled.div`
 `;
 
 const Label = styled(Link)`
-  ${styles.productiveHeading03};
+  ${styles.productiveHeading02};
   color: var(--cds-text-primary) !important;
 `;
 
