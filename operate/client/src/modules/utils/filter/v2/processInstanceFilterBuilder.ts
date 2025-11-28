@@ -25,6 +25,7 @@ type NormalizedFilters = {
   elementId?: string;
   batchOperationId?: string;
   tenantId?: string;
+  processDefinitionVersion?: number;
   processDefinitionKey?: string[];
   variable?: {name: string; values: string[]};
   parentInstanceId?: string;
@@ -58,7 +59,7 @@ const inputFilterSchema = z
     flowNodeId: z.string().optional(),
     operationId: z.string().optional(),
     tenant: z.string().optional(),
-    version: z.string().optional(),
+    version: z.union([z.string(), z.number()]).optional(),
     variableName: z.string().optional(),
     variableValues: z.string().optional(),
     activityId: z.string().optional(),
@@ -109,6 +110,16 @@ const inputFilterSchema = z
       normalized.tenantId = data.tenant;
     } else if (data.tenantId) {
       normalized.tenantId = data.tenantId;
+    }
+
+    if (data.version) {
+      const versionNumber =
+        typeof data.version === 'string'
+          ? parseInt(data.version, 10)
+          : data.version;
+      if (!isNaN(versionNumber)) {
+        normalized.processDefinitionVersion = versionNumber;
+      }
     }
 
     if (data.processIds && data.processIds.length > 0) {
@@ -305,6 +316,10 @@ const buildProcessInstanceFilter = (
 
   if (normalizedFilters.retriesLeft) {
     query.hasRetriesLeft = true;
+  }
+
+  if (normalizedFilters.processDefinitionVersion) {
+    query.processDefinitionVersion = normalizedFilters.processDefinitionVersion;
   }
 
   if (normalizedFilters.processDefinitionKey) {

@@ -21,6 +21,7 @@ import {useProcessInstanceQueryFilters} from 'modules/hooks/useProcessInstanceQu
 import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {handleOperationError} from 'modules/utils/notifications';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 const Footer: React.FC = observer(() => {
   const baseFilter = useProcessInstanceQueryFilters().filter;
@@ -65,6 +66,7 @@ const Footer: React.FC = observer(() => {
             onRequestSubmit={() => {
               setOpen(false);
               processInstanceMigrationStore.disable();
+              processInstancesSelectionStore.reset();
             }}
             onRequestClose={() => setOpen(false)}
             size="md"
@@ -168,6 +170,7 @@ const Footer: React.FC = observer(() => {
 
                   panelStatesStore.expandOperationsPanel();
                   processInstanceMigrationStore.disable();
+                  processInstancesSelectionStore.reset();
 
                   tracking.track({
                     eventName: 'process-instance-migration-confirmed',

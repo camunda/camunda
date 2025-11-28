@@ -17,12 +17,16 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesStore} from 'modules/stores/processInstances';
 import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 import {useFilters} from 'modules/hooks/useFilters';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {reaction} from 'mobx';
+import {tracking} from 'modules/tracking';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -57,6 +61,7 @@ const ListView: React.FC = observer(() => {
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
+      processInstancesStore.reset();
       processesStore.reset();
     };
   }, []);
@@ -64,6 +69,22 @@ const ListView: React.FC = observer(() => {
   useEffect(() => {
     processInstancesSelectionStore.resetState();
   }, [filtersJSON]);
+
+  useEffect(() => {
+    const disposer = reaction(
+      () => variableFilterStore.state.variable,
+      () => {
+        if (processesStatus === 'fetched') {
+          tracking.track({
+            eventName: 'process-instances-filtered',
+            filterName: 'variable',
+            multipleValues: variableFilterStore.state.isInMultipleMode,
+          });
+        }
+      },
+    );
+    return disposer;
+  }, [processesStatus]);
 
   useEffect(() => {
     if (processesStatus === 'fetched') {
