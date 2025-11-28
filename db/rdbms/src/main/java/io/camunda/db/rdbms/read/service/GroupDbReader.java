@@ -84,6 +84,6 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
       final GroupFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.memberIds() != null && filter.memberIds().isEmpty())
         || (resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
+            && !resourceAccessChecks.hasAnyResourceId());
   }
 }
