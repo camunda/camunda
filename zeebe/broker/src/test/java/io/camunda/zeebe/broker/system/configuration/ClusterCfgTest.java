@@ -223,7 +223,6 @@ public final class ClusterCfgTest {
     // given
     final ClusterCfg clusterCfg = new ClusterCfg();
     clusterCfg.setPartitionsCount(8);
-    clusterCfg.setNodeId(0);
 
     // when
     clusterCfg.init(new BrokerCfg(), "");
