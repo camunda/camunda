@@ -7,29 +7,22 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.store.SequenceFlowStore;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
-import java.io.IOException;
 import java.util.List;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,34 +33,30 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
       LoggerFactory.getLogger(ElasticsearchSequenceFlowStore.class);
   @Autowired private SequenceFlowTemplate sequenceFlowTemplate;
 
-  @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-
-  @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
+  @Autowired private ElasticsearchClient es8Client;
 
   @Override
   public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(
       final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(sequenceFlowTemplate, ElasticsearchUtil.QueryType.ALL)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .sort(SequenceFlowTemplate.ACTIVITY_ID, SortOrder.ASC));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(sequenceFlowTemplate, QueryType.ALL))
+            .query(query)
+            .sort(ElasticsearchUtil.sortOrder(SequenceFlowTemplate.ACTIVITY_ID, SortOrder.Asc));
+
     try {
-      return tenantAwareClient.search(
-          searchRequest,
-          () -> {
-            return ElasticsearchUtil.scroll(
-                searchRequest, SequenceFlowEntity.class, objectMapper, esClient);
-          });
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, SequenceFlowEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining sequence flows: %s for processInstanceKey %s",
