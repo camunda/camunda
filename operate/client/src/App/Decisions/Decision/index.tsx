@@ -14,8 +14,7 @@ import {CopiableContent, PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
-import {useQuery} from '@tanstack/react-query';
+import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useDecisionDefinitionSelection} from 'modules/hooks/decisionDefinition';
 
@@ -64,12 +63,7 @@ const Decision: React.FC = observer(() => {
     data: decisionDefinitionXml,
     isFetching,
     isError,
-  } = useQuery(
-    useDecisionDefinitionXmlOptions({
-      decisionDefinitionKey: selectedDefinitionKey ?? '',
-      enabled: !!selectedDefinitionKey,
-    }),
-  );
+  } = useDecisionDefinitionXml({decisionDefinitionKey: selectedDefinitionKey});
 
   const getDisplayStatus = () => {
     switch (true) {
