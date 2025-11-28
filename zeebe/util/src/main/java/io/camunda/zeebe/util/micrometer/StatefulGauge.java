@@ -50,9 +50,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class StatefulGauge extends AbstractMeter implements Gauge {
 
   private final Gauge delegate;
-  private final AtomicLong state;
+  private final GaugeState state;
 
-  public StatefulGauge(final Gauge gauge, final AtomicLong state) {
+  public StatefulGauge(final Gauge gauge, final GaugeState state) {
     super(gauge.getId());
     delegate = gauge;
     this.state = state;
@@ -96,7 +96,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
   }
 
   @VisibleForTesting("convenience accessor to test state identity")
-  AtomicLong state() {
+  GaugeState state() {
     return state;
   }
 
@@ -111,7 +111,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
   }
 
   static StatefulGauge registerAsGauge(final Meter.Id id, final MeterRegistry registry) {
-    final var state = new AtomicLong();
+    final var state = GaugeState.from(new AtomicLong());
     final var gauge =
         Gauge.builder(id.getName(), state, StatefulGauge::longAsDouble)
             .description(id.getDescription())
@@ -122,7 +122,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     return new StatefulGauge(gauge, state);
   }
 
-  private static double longAsDouble(final AtomicLong value) {
+  private static double longAsDouble(final GaugeState value) {
     return Double.longBitsToDouble(value.get());
   }
 
@@ -167,7 +167,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
      * @return The gauge builder with a single added tag.
      */
     public Builder tag(final String key, final String value) {
-      this.tags = this.tags.and(key, value);
+      tags = tags.and(key, value);
       return this;
     }
 
@@ -218,7 +218,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     private StatefulGauge register(final MeterRegistry registry, final Tags tags) {
       final var id = new Id(name, tags, baseUnit, description, Type.GAUGE);
 
-      if (registry instanceof StatefulMeterRegistry s) {
+      if (registry instanceof final StatefulMeterRegistry s) {
         return s.registerIfNecessary(id);
       }
 
