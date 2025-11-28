@@ -13,7 +13,7 @@ import java.time.Duration;
 public class RdbmsMetrics {
 
   /** Default cache duration for table row count metrics. */
-  public static final Duration DEFAULT_TABLE_COUNT_CACHE_DURATION = Duration.ofMinutes(15);
+  public static final Duration DEFAULT_TABLE_COUNT_CACHE_DURATION = Duration.ofMinutes(5);
 
   /**
    * The duration for which the table row count metrics are cached before being refreshed from the
