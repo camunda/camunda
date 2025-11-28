@@ -41,13 +41,21 @@ const useFlowNodes = () => {
 
 const useAppendableFlowNodes = () => {
   return useFlowNodes()
-    .filter(
-      (flowNode) =>
-        flowNode.isMoveModificationTarget &&
-        ((IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED &&
-          modificationsStore.state.status !== 'moving-token') ||
-          !flowNode.hasMultipleScopes),
-    )
+    .filter((flowNode) => {
+      if (!flowNode.isMoveModificationTarget) {
+        return false;
+      }
+
+      if (flowNode.hasMultipleScopes) {
+        const {state, isMoveAllOperation} = modificationsStore;
+        return (
+          (state.status === 'moving-token' && !isMoveAllOperation) ||
+          IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED
+        );
+      }
+
+      return true;
+    })
     .map(({id}) => id);
 };
 
@@ -60,6 +68,11 @@ const useCancellableFlowNodes = () => {
 const useModifiableFlowNodes = () => {
   const appendableFlowNodes = useAppendableFlowNodes();
   const cancellableFlowNodes = useCancellableFlowNodes();
+
+  // disable all flownodes while ancestor selection is required
+  if (modificationsStore.state.status === 'requires-ancestor-selection') {
+    return [];
+  }
 
   if (modificationsStore.state.status === 'moving-token') {
     return appendableFlowNodes.filter(

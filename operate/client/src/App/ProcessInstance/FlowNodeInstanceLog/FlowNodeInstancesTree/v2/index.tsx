@@ -263,6 +263,13 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               flowNodeInstance.flowNodeId,
               flowNodeInstance.id,
             );
+          } else if (
+            modificationsStore.state.status === 'requires-ancestor-selection'
+          ) {
+            modificationsStore.setAncestorFlowNodeKeyForMoveOperation({
+              instanceKey: flowNodeInstance.id,
+              flowNodeId: flowNodeInstance.flowNodeId,
+            });
           } else {
             tracking.track({eventName: 'instance-history-item-clicked'});
             if (isAdHocSubProcessInnerInstance) {
