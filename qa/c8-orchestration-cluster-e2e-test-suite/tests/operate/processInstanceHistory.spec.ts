@@ -212,7 +212,7 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Add modification to activate task flow node process in first subprocess and verify results', async () => {
-            const firstSubprocessTaskElement = 'Activity_CollectMoney';
+            const firstSubprocessTaskElement = 'CollectMoney';
             await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(firstSubprocessTaskElement);
             await operateDiagramPage.verifyStateOverlay(firstSubprocessTaskElement, 'active');
         });
@@ -228,7 +228,7 @@ test.describe('Process Instance History', () => {
         });
 
         await test.step('Add modification to activate task flow node process in second subprocess and verify results', async () => {
-            const secondSubprocessTaskElement = 'Activity_SendItems';
+            const secondSubprocessTaskElement = 'SendItems';
             await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(secondSubprocessTaskElement);
             await operateDiagramPage.verifyStateOverlay(secondSubprocessTaskElement, 'active');
         });
