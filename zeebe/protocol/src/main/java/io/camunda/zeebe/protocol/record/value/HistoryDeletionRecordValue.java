@@ -40,7 +40,4 @@ public interface HistoryDeletionRecordValue extends RecordValue {
 
   /** Returns the type of resource to delete. */
   HistoryDeletionType getResourceType();
-
-  /** Returns the key of the batch operation that triggered this history deletion */
-  long getBatchOperationKey();
 }
