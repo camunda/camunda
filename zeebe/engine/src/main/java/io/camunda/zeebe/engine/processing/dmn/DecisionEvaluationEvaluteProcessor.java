@@ -11,8 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;

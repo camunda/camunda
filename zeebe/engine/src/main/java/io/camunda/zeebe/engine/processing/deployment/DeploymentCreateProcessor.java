@@ -21,8 +21,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;

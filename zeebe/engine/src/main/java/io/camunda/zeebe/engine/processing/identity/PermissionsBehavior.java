@@ -8,7 +8,8 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
