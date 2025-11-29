@@ -129,8 +129,8 @@ class ProcessInstanceItemProviderTest {
   }
 
   private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
-    final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
-    return entity;
+    return Instancio.of(ProcessInstanceEntity.class)
+        .set(field(ProcessInstanceEntity::getProcessInstanceKey), processInstanceKey)
+        .create();
   }
 }
