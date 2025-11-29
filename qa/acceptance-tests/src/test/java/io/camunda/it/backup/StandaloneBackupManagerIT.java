@@ -46,7 +46,7 @@ final class StandaloneBackupManagerIT {
   @TestZeebe(autoStart = false)
   final TestStandaloneBackupManager backupManager =
       new TestStandaloneBackupManager()
-          .withProperty("camunda.data.backup.repository-name", REPOSITORY_NAME);
+          .withUnifiedConfig(cfg -> cfg.getData().getBackup().setRepositoryName(REPOSITORY_NAME));
 
   // Configure the schema manager to create indices and templates in test setup
   @TestZeebe(autoStart = false)
