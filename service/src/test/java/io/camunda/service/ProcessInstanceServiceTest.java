@@ -143,9 +143,11 @@ public final class ProcessInstanceServiceTest {
   public void shouldReturnProcessInstanceByKey() {
     // given
     final var key = 123L;
-    final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.processInstanceKey()).thenReturn(key);
-    when(entity.processDefinitionId()).thenReturn("processId");
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::getProcessInstanceKey), key)
+            .set(field(ProcessInstanceEntity::getProcessDefinitionId), "processId")
+            .create();
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(entity);
 
     // when
@@ -247,14 +249,19 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnOrderedProcessHierarchy() {
     // given
-    final var childProcess = mock(ProcessInstanceEntity.class);
-    when(childProcess.processInstanceKey()).thenReturn(789L);
-    when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
-    when(childProcess.processDefinitionId()).thenReturn("child_process_id");
+    final var childProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::getProcessInstanceKey), 789L)
+            .set(field(ProcessInstanceEntity::getTreePath),
+                "PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654")
+            .set(field(ProcessInstanceEntity::getProcessDefinitionId), "child_process_id")
+            .create();
 
-    final var parentProcess = mock(ProcessInstanceEntity.class);
-    when(parentProcess.processInstanceKey()).thenReturn(123L);
-    when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
+    final var parentProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::getProcessInstanceKey), 123L)
+            .set(field(ProcessInstanceEntity::getProcessDefinitionId), "parent_process_id")
+            .create();
 
     when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
     when(processInstanceSearchClient.searchProcessInstances(any()))
@@ -273,10 +280,13 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnEmptyListForBlankTreePath() {
     // given
-    final var rootInstance = mock(ProcessInstanceEntity.class);
-    when(rootInstance.processInstanceKey()).thenReturn(123L);
-    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    when(rootInstance.treePath()).thenReturn(null); // No treePath
+    final var rootInstance =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::getProcessInstanceKey), 123L)
+            .set(field(ProcessInstanceEntity::getProcessDefinitionId), "root_process_id")
+            .set(field(ProcessInstanceEntity::getTreePath), null)
+            .create();
+
 
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
@@ -290,10 +300,12 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnEmptyListForRootTreePath() {
     // given
-    final var rootInstance = mock(ProcessInstanceEntity.class);
-    when(rootInstance.processInstanceKey()).thenReturn(123L);
-    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
+    final var rootInstance =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::getProcessInstanceKey), 123L)
+            .set(field(ProcessInstanceEntity::getProcessDefinitionId), "root_process_id")
+            .set(field(ProcessInstanceEntity::getTreePath), "PI_123")
+            .create();
 
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
