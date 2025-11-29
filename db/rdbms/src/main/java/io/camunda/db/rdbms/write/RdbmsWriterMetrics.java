@@ -24,6 +24,7 @@ public class RdbmsWriterMetrics {
 
   private final MeterRegistry meterRegistry;
   private final Timer flushLatency;
+  private final Timer recordExportingLatency;
   private final DistributionSummary queueMemoryDistribution;
   private Sample flushLatencyMeasurement;
 
@@ -35,6 +36,14 @@ public class RdbmsWriterMetrics {
             .description(
                 "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
             .publishPercentileHistogram()
+            .register(meterRegistry);
+
+    recordExportingLatency =
+        Timer.builder(meterName("record.exporting.latency"))
+            .description(
+                "Time from record creation to commit/flush to the database (end-to-end export latency)")
+            .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(1))
             .register(meterRegistry);
 
     queueMemoryDistribution =
@@ -160,6 +169,16 @@ public class RdbmsWriterMetrics {
 
   public void recordQueueMemoryUsage(final long memoryBytes) {
     queueMemoryDistribution.record(memoryBytes);
+  }
+
+  /**
+   * Records the exporting latency - the time from when the oldest record in the batch was created
+   * to when it was committed/flushed to the database.
+   *
+   * @param latencyMs the latency in milliseconds
+   */
+  public void recordExportingLatency(final long latencyMs) {
+    recordExportingLatency.record(Duration.ofMillis(latencyMs));
   }
 
   private String meterName(final String name) {
