@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -143,9 +145,10 @@ public final class ProcessInstanceServiceTest {
   public void shouldReturnProcessInstanceByKey() {
     // given
     final var key = 123L;
-    final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.processInstanceKey()).thenReturn(key);
-    when(entity.processDefinitionId()).thenReturn("processId");
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), key)
+            .create();
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(entity);
 
     // when
@@ -247,14 +250,16 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnOrderedProcessHierarchy() {
     // given
-    final var childProcess = mock(ProcessInstanceEntity.class);
-    when(childProcess.processInstanceKey()).thenReturn(789L);
-    when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
-    when(childProcess.processDefinitionId()).thenReturn("child_process_id");
+    final var childProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 789L)
+            .set(field(ProcessInstanceEntity::treePath), "PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654")
+            .create();
 
-    final var parentProcess = mock(ProcessInstanceEntity.class);
-    when(parentProcess.processInstanceKey()).thenReturn(123L);
-    when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
+    final var parentProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 123L)
+            .create();
 
     when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
     when(processInstanceSearchClient.searchProcessInstances(any()))
@@ -273,10 +278,11 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnEmptyListForBlankTreePath() {
     // given
-    final var rootInstance = mock(ProcessInstanceEntity.class);
-    when(rootInstance.processInstanceKey()).thenReturn(123L);
-    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    when(rootInstance.treePath()).thenReturn(null); // No treePath
+    final var rootInstance =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 123L)
+            .set(field(ProcessInstanceEntity::treePath), null)
+            .create();
 
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
@@ -290,10 +296,11 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnEmptyListForRootTreePath() {
     // given
-    final var rootInstance = mock(ProcessInstanceEntity.class);
-    when(rootInstance.processInstanceKey()).thenReturn(123L);
-    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
+    final var rootInstance =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 123L)
+            .set(field(ProcessInstanceEntity::treePath), "PI_123")
+            .create();
 
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
