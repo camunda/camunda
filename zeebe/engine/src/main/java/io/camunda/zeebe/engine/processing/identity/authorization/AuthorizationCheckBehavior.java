@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
+import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationResult;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
@@ -265,9 +267,8 @@ public final class AuthorizationCheckBehavior {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(
-            new AuthorizationRejection(
-                new Rejection(rejectionType, request.getTenantErrorMessage()),
-                AuthorizationRejectionType.TENANT));
+            AuthorizationRejection.ofTenant(
+                new Rejection(rejectionType, request.getTenantErrorMessage())));
       }
     }
     return Either.right(null);
@@ -308,9 +309,8 @@ public final class AuthorizationCheckBehavior {
     }
 
     return Either.left(
-        new AuthorizationRejection(
-            new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()),
-            AuthorizationRejectionType.PERMISSION));
+        AuthorizationRejection.ofPermission(
+            new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage())));
   }
 
   /**
@@ -325,7 +325,7 @@ public final class AuthorizationCheckBehavior {
     // return permission rejection first, if it exists
     final var permissionRejections =
         rejections.stream()
-            .filter(r -> r.authorizationRejectionType() == AuthorizationRejectionType.PERMISSION)
+            .filter(AuthorizationRejection::isPermission)
             .map(AuthorizationRejection::rejection)
             .toList();
     if (!permissionRejections.isEmpty()) {
@@ -340,7 +340,7 @@ public final class AuthorizationCheckBehavior {
     // if there are tenant rejections, return them
     final var tenantRejections =
         rejections.stream()
-            .filter(r -> r.authorizationRejectionType() == AuthorizationRejectionType.TENANT)
+            .filter(AuthorizationRejection::isTenant)
             .map(AuthorizationRejection::rejection)
             .toList();
     if (!tenantRejections.isEmpty()) {
@@ -803,20 +803,5 @@ public final class AuthorizationCheckBehavior {
     public RejectionType getRejectionType() {
       return RejectionType.FORBIDDEN;
     }
-  }
-
-  // Helper record for authorization results
-  private record AuthorizationResult(boolean hasTenantAccess, boolean hasResourceAccess) {
-    public boolean hasBothAccess() {
-      return hasTenantAccess && hasResourceAccess;
-    }
-  }
-
-  private record AuthorizationRejection(
-      Rejection rejection, AuthorizationRejectionType authorizationRejectionType) {}
-
-  private enum AuthorizationRejectionType {
-    TENANT,
-    PERMISSION
   }
 }
