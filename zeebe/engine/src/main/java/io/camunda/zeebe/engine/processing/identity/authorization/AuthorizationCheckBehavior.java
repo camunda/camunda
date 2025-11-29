@@ -84,8 +84,7 @@ public final class AuthorizationCheckBehavior {
                 new CacheLoader<>() {
                   @Override
                   public Either<Rejection, Void> load(
-                      final AuthorizationRequestMetadata authorizationRequest)
-                      throws AuthorizationsNotFoundException {
+                      final AuthorizationRequestMetadata authorizationRequest) {
                     return checkAuthorized(authorizationRequest);
                   }
                 });
@@ -805,20 +804,6 @@ public final class AuthorizationCheckBehavior {
       return RejectionType.FORBIDDEN;
     }
   }
-
-  public static class NotFoundException extends RuntimeException {
-
-    public NotFoundException(final String message) {
-      super(message);
-    }
-  }
-
-  /**
-   * This exception is thrown when the authorization and tenant caches can't find data in the state
-   * for a given key. This must be a checked exception, because of the way the {@link LoadingCache}
-   * works.
-   */
-  private static final class AuthorizationsNotFoundException extends Exception {}
 
   // Helper record for authorization results
   private record AuthorizationResult(boolean hasTenantAccess, boolean hasResourceAccess) {
