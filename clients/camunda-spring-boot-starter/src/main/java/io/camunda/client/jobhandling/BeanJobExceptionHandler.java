@@ -25,7 +25,9 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.worker.JobExceptionHandlerImpl;
+import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,13 +56,23 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
   }
 
   private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command, final ActivatedJob job, final int maxRetries) {
+      final FinalCommandStep<?> command,
+      final ActivatedJob job,
+      final int maxRetries,
+      final CounterMetricsContext metricsContext) {
     return new CommandWrapper(
-        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
+        command,
+        job,
+        commandExceptionHandlingStrategy,
+        metricsRecorder,
+        metricsContext,
+        maxRetries);
   }
 
   @Override
   public void handleJobException(final JobExceptionHandlerContext context) {
+    final CounterMetricsContext metricsContext =
+        JobHandlerMetrics.counter(context.getActivatedJob());
     final Exception exception = context.getException();
     final ActivatedJob job = context.getActivatedJob();
     final JobClient jobClient = context.getJobClient();
@@ -70,21 +82,20 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
           createCommandWrapper(
               createFailJobCommand(jobClient, context.getActivatedJob(), jobError),
               context.getActivatedJob(),
-              maxRetries);
-      command.executeAsyncWithMetrics(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
+              maxRetries,
+              metricsContext);
+      command.executeAsyncWithMetrics(MetricsRecorder::increaseFailed);
     } else if (exception instanceof final BpmnError bpmnError) {
       LOG.trace("Caught BPMN error on {}", job);
       final CommandWrapper command =
           createCommandWrapper(
               createThrowErrorCommand(jobClient, context.getActivatedJob(), bpmnError),
               context.getActivatedJob(),
-              maxRetries);
-      command.executeAsyncWithMetrics(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
+              maxRetries,
+              metricsContext);
+      command.executeAsyncWithMetrics(MetricsRecorder::increaseBpmnError);
     } else {
-      metricsRecorder.increase(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
+      metricsRecorder.increaseFailed(metricsContext);
       super.handleJobException(context);
     }
   }

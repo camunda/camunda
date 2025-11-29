@@ -63,6 +63,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.send()).thenReturn(future);
     when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);
     handler.handleJobException(new JobExceptionHandlerContext(jobClient, job, new Exception()));
     verify(jobClient, times(0)).newCompleteCommand(anyLong());
@@ -91,6 +92,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.send()).thenReturn(future);
     when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);
     handler.handleJobException(
         new JobExceptionHandlerContext(jobClient, job, new JobError("test error")));
@@ -120,6 +122,7 @@ public class BeanJobExceptionHandlerTest {
     when(throwErrorCommandStep2.send()).thenReturn(future);
     when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);
     handler.handleJobException(
         new JobExceptionHandlerContext(jobClient, job, new BpmnError("errorCode", "test error")));

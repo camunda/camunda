@@ -31,6 +31,7 @@ import io.camunda.client.jobhandling.result.DefaultDocumentResultProcessorFailur
 import io.camunda.client.jobhandling.result.DefaultResultProcessorStrategy;
 import io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.client.metrics.JobWorkerMetricsFactory;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.client.spring.properties.CamundaClientProperties;
@@ -108,9 +109,10 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   public JobWorkerFactory jobWorkerFactory(
       final BackoffSupplier backoffSupplier,
-      final MetricsRecorder metricsRecorder,
+      final JobWorkerMetricsFactory jobWorkerMetricsFactory,
       final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
-    return new JobWorkerFactory(backoffSupplier, metricsRecorder, jobExceptionHandlerSupplier);
+    return new JobWorkerFactory(
+        backoffSupplier, jobExceptionHandlerSupplier, jobWorkerMetricsFactory);
   }
 
   @Bean

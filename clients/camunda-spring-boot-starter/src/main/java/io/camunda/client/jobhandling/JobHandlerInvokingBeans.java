@@ -25,7 +25,9 @@ import io.camunda.client.impl.Loggers;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.result.ResultProcessor;
 import io.camunda.client.jobhandling.result.ResultProcessorContext;
+import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -63,19 +65,21 @@ public class JobHandlerInvokingBeans implements JobHandler {
 
   @Override
   public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
+    final CounterMetricsContext counterMetricsContext = JobHandlerMetrics.counter(job);
     final List<Object> args = createParameters(jobClient, job);
     LOG.trace("Handle {} and invoke worker {}", job, jobWorkerName);
-    metricsRecorder.increase(
-        MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
-    final Object methodInvocationResult = method.invoke(args.toArray());
+    metricsRecorder.increaseActivated(counterMetricsContext);
+    final Object methodInvocationResult =
+        metricsRecorder.executeWithTimer(
+            JobHandlerMetrics.timer(job), () -> method.invoke(args.toArray()));
     final Object result =
         resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
     if (autoComplete) {
       LOG.trace("Auto completing {}", job);
       final CommandWrapper command =
-          createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
-      command.executeAsyncWithMetrics(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
+          createCommandWrapper(
+              createCompleteCommand(jobClient, job, result), job, counterMetricsContext);
+      command.executeAsyncWithMetrics(MetricsRecorder::increaseCompleted);
     } else {
       if (result != null) {
         LOG.warn("Result provided but auto complete disabled for job {}", job);
@@ -84,9 +88,16 @@ public class JobHandlerInvokingBeans implements JobHandler {
   }
 
   private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command, final ActivatedJob job) {
+      final FinalCommandStep<?> command,
+      final ActivatedJob job,
+      final CounterMetricsContext metricsContext) {
     return new CommandWrapper(
-        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
+        command,
+        job,
+        commandExceptionHandlingStrategy,
+        metricsRecorder,
+        metricsContext,
+        maxRetries);
   }
 
   private List<Object> createParameters(final JobClient jobClient, final ActivatedJob job) {
