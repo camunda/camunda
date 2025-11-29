@@ -222,16 +222,19 @@ public class TaskService {
 
   public TaskDTO completeTask(
       final String taskId,
-      final List<VariableInputDTO> variables,
+      final List<VariableInputDTO> taskCompletionVariables,
       final boolean withDraftVariableValues) {
     final Map<String, Object> variablesMap = new HashMap<>();
-    requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
+    requireNonNullElse(taskCompletionVariables, Collections.<VariableInputDTO>emptyList())
         .forEach(variable -> variablesMap.put(variable.getName(), extractTypedValue(variable)));
 
     try {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
 
       final TaskEntity task = taskStore.getTask(taskId);
+
+      // get runtime variables before completion
+      final var taskRuntimeVariables = variableService.getTaskRuntimeVariables(task);
 
       final TaskEntity completedTaskEntity;
       if (task.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
@@ -251,7 +254,8 @@ public class TaskService {
 
       try {
         LOGGER.info("Start variable persistence: {}", taskId);
-        variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+        variableService.persistTaskVariables(
+            taskId, taskCompletionVariables, taskRuntimeVariables, withDraftVariableValues);
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);
