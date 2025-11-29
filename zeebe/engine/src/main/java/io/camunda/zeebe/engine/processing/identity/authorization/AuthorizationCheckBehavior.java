@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.identity;
+package io.camunda.zeebe.engine.processing.identity.authorization;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
@@ -17,6 +17,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
