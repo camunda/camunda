@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -21,6 +22,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import java.util.List;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -61,11 +63,11 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    mockProcessInstanceEntity(1L),
-                    mockProcessInstanceEntity(2L),
-                    mockProcessInstanceEntity(3L),
-                    mockProcessInstanceEntity(4L),
-                    mockProcessInstanceEntity(5L)))
+                    createProcessInstanceEntity(1L),
+                    createProcessInstanceEntity(2L),
+                    createProcessInstanceEntity(3L),
+                    createProcessInstanceEntity(4L),
+                    createProcessInstanceEntity(5L)))
             .total(5)
             .endCursor("5")
             .build();
@@ -111,9 +113,9 @@ class ProcessInstanceItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    mockProcessInstanceEntity(1L),
-                    mockProcessInstanceEntity(2L),
-                    mockProcessInstanceEntity(3L)))
+                    createProcessInstanceEntity(1L),
+                    createProcessInstanceEntity(2L),
+                    createProcessInstanceEntity(3L)))
             .total(3)
             .endCursor("3")
             .build();
@@ -128,9 +130,9 @@ class ProcessInstanceItemProviderTest {
     assertThat(resultPage.isLastPage()).isTrue();
   }
 
-  private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
-    final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
-    return entity;
+  private ProcessInstanceEntity createProcessInstanceEntity(final long processInstanceKey) {
+    return Instancio.of(ProcessInstanceEntity.class)
+        .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
+        .create();
   }
 }

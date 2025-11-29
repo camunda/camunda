@@ -69,11 +69,11 @@ class IncidentItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    mockProcessInstanceEntity(1L),
-                    mockProcessInstanceEntity(2L),
-                    mockProcessInstanceEntity(3L),
-                    mockProcessInstanceEntity(4L),
-                    mockProcessInstanceEntity(5L)))
+                    createProcessInstanceEntity(1L),
+                    createProcessInstanceEntity(2L),
+                    createProcessInstanceEntity(3L),
+                    createProcessInstanceEntity(4L),
+                    createProcessInstanceEntity(5L)))
             .total(5)
             .build();
     when(searchClientsProxy.searchProcessInstances(piQueryCaptor.capture())).thenReturn(piResult);
@@ -137,11 +137,11 @@ class IncidentItemProviderTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    mockProcessInstanceEntity(1L),
-                    mockProcessInstanceEntity(2L),
-                    mockProcessInstanceEntity(3L),
-                    mockProcessInstanceEntity(4L),
-                    mockProcessInstanceEntity(5L)))
+                    createProcessInstanceEntity(1L),
+                    createProcessInstanceEntity(2L),
+                    createProcessInstanceEntity(3L),
+                    createProcessInstanceEntity(4L),
+                    createProcessInstanceEntity(5L)))
             .total(5)
             .build();
     when(searchClientsProxy.searchProcessInstances(piQueryCaptor.capture())).thenReturn(piResult);
@@ -179,16 +179,16 @@ class IncidentItemProviderTest {
     assertThat(resultPage.isLastPage()).isTrue();
   }
 
-  private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
-    final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
-    return entity;
+  private ProcessInstanceEntity createProcessInstanceEntity(final long processInstanceKey) {
+    return Instancio.of(ProcessInstanceEntity.class)
+        .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
+        .create();
   }
 
   private IncidentEntity mockIncidentEntity(final long incidentKey, final long processInstanceKey) {
-    return Instancio.of(IncidentEntity.class)
-        .set(field(IncidentEntity::incidentKey), incidentKey)
-        .set(field(IncidentEntity::processInstanceKey), processInstanceKey)
-        .create();
+    final var entity = mock(IncidentEntity.class);
+    when(entity.incidentKey()).thenReturn(incidentKey);
+    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
+    return entity;
   }
 }
