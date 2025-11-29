@@ -29,6 +29,7 @@ import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
+import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
@@ -281,6 +282,12 @@ public class MyBatisConfiguration {
   MapperFactoryBean<CorrelatedMessageSubscriptionMapper> correlatedMessageSubscriptionMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageSubscriptionMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<TableMetricsMapper> tableMetricsMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, TableMetricsMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(
