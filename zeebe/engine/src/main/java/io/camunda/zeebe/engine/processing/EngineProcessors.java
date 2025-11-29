@@ -34,12 +34,12 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
 import io.camunda.zeebe.engine.processing.identity.IdentitySetupProcessors;
 import io.camunda.zeebe.engine.processing.identity.MappingRuleProcessors;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
