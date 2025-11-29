@@ -475,6 +475,20 @@ components:
       required:
         - filter
 
+    ProcessInstanceDeletionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be deleted.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
     ProcessInstanceMigrationBatchOperationRequest:
       type: object
       additionalProperties: false

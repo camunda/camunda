@@ -247,6 +247,8 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances'
   /process-instances/cancellation:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1cancellation'
+  /process-instances/deletion:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1deletion'
   /process-instances/incident-resolution:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1incident-resolution'
   /process-instances/migration:
