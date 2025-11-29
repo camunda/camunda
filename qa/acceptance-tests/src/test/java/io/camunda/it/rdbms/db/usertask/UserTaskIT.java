@@ -32,6 +32,12 @@ import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -192,7 +198,8 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 UserTaskQuery.of(b -> b),
-                resourceAccessChecksFromResourceIds(userTask.processDefinitionId()));
+                resourceAccessChecksFromResourceIds(
+                    AuthorizationResourceType.PROCESS_DEFINITION, userTask.processDefinitionId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -219,6 +226,258 @@ public class UserTaskIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCompositeAuthorizationWhenBothBranchesMatch(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // create another user task to ensure only the intended one is matched
+    createAndSaveUserTask(rdbmsService, UserTaskFixtures.createRandomized());
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        // both branches match the user task
+                        AuthorizationConditions.anyOf(
+                            Authorization.of(
+                                b ->
+                                    b.processDefinition()
+                                        .resourceId(userTask.processDefinitionId())),
+                            Authorization.of(
+                                b ->
+                                    b.userTask()
+                                        .resourceId(String.valueOf(userTask.userTaskKey()))))),
+                    TenantCheck.disabled()));
+
+    // then
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCompositeAuthorizationWhenOnlyProcessDefinitionMatches(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // create another user task to ensure only the intended one is matched
+    createAndSaveUserTask(rdbmsService, UserTaskFixtures.createRandomized());
+
+    final long nonExistentTaskKey = 99993999992L;
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        AuthorizationConditions.anyOf(
+                            // only process definition branch matches
+                            Authorization.of(
+                                b ->
+                                    b.processDefinition()
+                                        .resourceId(userTask.processDefinitionId())),
+                            Authorization.of(
+                                b -> b.userTask().resourceId(String.valueOf(nonExistentTaskKey))))),
+                    TenantCheck.disabled()));
+
+    // then
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCompositeAuthorizationWhenOnlyUserTaskMatches(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // create another user task to ensure only the intended one is matched
+    createAndSaveUserTask(rdbmsService, UserTaskFixtures.createRandomized());
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        AuthorizationConditions.anyOf(
+                            Authorization.of(
+                                b -> b.processDefinition().resourceId("non-existent-process-def")),
+                            // only user task branch matches
+                            Authorization.of(
+                                b ->
+                                    b.userTask()
+                                        .resourceId(String.valueOf(userTask.userTaskKey()))))),
+                    TenantCheck.disabled()));
+
+    // then
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyResultWhenNeitherCompositeAuthorizationBranchMatches(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    final long nonExistentTaskKey = 99993999992L;
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        // either branch matches
+                        AuthorizationConditions.anyOf(
+                            Authorization.of(
+                                b -> b.processDefinition().resourceId("non-existent-process-def")),
+                            Authorization.of(
+                                b -> b.userTask().resourceId(String.valueOf(nonExistentTaskKey))))),
+                    TenantCheck.disabled()));
+
+    // then
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(0);
+    assertThat(searchResult.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldFindMultipleUserTasksByCompositeAuthorizationWithPartialMatches(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // create two user tasks with different process definitions
+    final UserTaskDbModel userTask1 =
+        UserTaskFixtures.createRandomized(b -> b.processDefinitionId("proc-def-1"));
+    final UserTaskDbModel userTask2 =
+        UserTaskFixtures.createRandomized(b -> b.processDefinitionId("proc-def-2"));
+    createAndSaveUserTask(rdbmsService, userTask1);
+    createAndSaveUserTask(rdbmsService, userTask2);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // create another user task to ensure only the intended ones are matched
+    createAndSaveUserTask(rdbmsService, UserTaskFixtures.createRandomized());
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        // composite authorization: proc-def-1 OR userTask2's key
+                        AuthorizationConditions.anyOf(
+                            Authorization.of(b -> b.processDefinition().resourceId("proc-def-1")),
+                            Authorization.of(
+                                b ->
+                                    b.userTask()
+                                        .resourceId(String.valueOf(userTask2.userTaskKey()))))),
+                    TenantCheck.disabled()));
+
+    // then
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items())
+        .extracting(UserTaskEntity::userTaskKey)
+        .containsExactlyInAnyOrder(userTask1.userTaskKey(), userTask2.userTaskKey());
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCompositeAuthorizationWithMultipleResourceIdsPerType(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask1 =
+        UserTaskFixtures.createRandomized(b -> b.processDefinitionId("proc-def-A"));
+    final UserTaskDbModel userTask2 =
+        UserTaskFixtures.createRandomized(b -> b.processDefinitionId("proc-def-B"));
+    final UserTaskDbModel userTask3 = UserTaskFixtures.createRandomized();
+    final UserTaskDbModel userTask4 = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask1);
+    createAndSaveUserTask(rdbmsService, userTask2);
+    createAndSaveUserTask(rdbmsService, userTask3);
+    createAndSaveUserTask(rdbmsService, userTask4);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // create another user task to ensure only the intended ones are matched
+    createAndSaveUserTask(rdbmsService, UserTaskFixtures.createRandomized());
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        // multiple IDs for PROCESS_DEFINITION and USER_TASK
+                        AuthorizationConditions.anyOf(
+                            Authorization.of(
+                                b ->
+                                    b.processDefinition()
+                                        .resourceIds(List.of("proc-def-A", "proc-def-B"))),
+                            Authorization.of(
+                                b ->
+                                    b.userTask()
+                                        .resourceIds(
+                                            List.of(
+                                                String.valueOf(userTask3.userTaskKey()),
+                                                String.valueOf(userTask4.userTaskKey())))))),
+                    TenantCheck.disabled()));
+
+    // then
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(4);
+    assertThat(searchResult.items()).hasSize(4);
+    assertThat(searchResult.items())
+        .extracting(UserTaskEntity::userTaskKey)
+        .containsExactlyInAnyOrder(
+            userTask1.userTaskKey(),
+            userTask2.userTaskKey(),
+            userTask3.userTaskKey(),
+            userTask4.userTaskKey());
   }
 
   @TestTemplate

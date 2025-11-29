@@ -9,20 +9,19 @@ package io.camunda.security.auth;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.security.auth.condition.AuthorizationCondition;
+import io.camunda.security.auth.condition.AuthorizationConditions;
 import java.util.function.Function;
 
 /**
  * Represents the security context for the current operation, containing both authentication and
  * authorization information. It encapsulates the user's identity, group and tenant affiliations,
  * along with the permissions that need to be checked for the current operation.
- *
- * <p><strong>Note:</strong> For now, we only support a single authorization check. This will be
- * later extended to more than one authorization (for composite permissions checks).
  */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record SecurityContext(
     @JsonProperty("authentication") CamundaAuthentication authentication,
-    @JsonProperty("authorization") Authorization<?> authorization) {
+    @JsonProperty("authorizationCondition") AuthorizationCondition authorizationCondition) {
 
   public static SecurityContext of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
@@ -30,7 +29,7 @@ public record SecurityContext(
 
   public static class Builder {
     private CamundaAuthentication authentication;
-    private Authorization<?> authorization;
+    private AuthorizationCondition authorizationCondition;
 
     public Builder withAuthentication(final CamundaAuthentication authentication) {
       this.authentication = authentication;
@@ -43,9 +42,8 @@ public record SecurityContext(
       return withAuthentication(CamundaAuthentication.of(builderFunction));
     }
 
-    public Builder withAuthorization(final Authorization authorization) {
-      this.authorization = authorization;
-      return this;
+    public Builder withAuthorization(final Authorization<?> authorization) {
+      return withAuthorizationCondition(AuthorizationConditions.single(authorization));
     }
 
     public <T> Builder withAuthorization(
@@ -53,8 +51,13 @@ public record SecurityContext(
       return withAuthorization(Authorization.of(builderFunction));
     }
 
+    public Builder withAuthorizationCondition(final AuthorizationCondition authorizationCondition) {
+      this.authorizationCondition = authorizationCondition;
+      return this;
+    }
+
     public SecurityContext build() {
-      return new SecurityContext(authentication, authorization);
+      return new SecurityContext(authentication, authorizationCondition);
     }
   }
 }

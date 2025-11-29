@@ -25,6 +25,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -152,7 +153,8 @@ public class AuthorizationIT {
     final var searchResult =
         authorizationReader.search(
             AuthorizationQuery.of(b -> b),
-            CommonFixtures.resourceAccessChecksFromResourceIds(resourceId));
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.AUTHORIZATION, resourceId));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

@@ -26,6 +26,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.sort.IncidentSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.assertj.core.data.TemporalUnitWithinOffset;
@@ -128,7 +129,8 @@ public class IncidentIT {
     final var searchResult =
         processInstanceReader.search(
             IncidentQuery.of(b -> b),
-            resourceAccessChecksFromResourceIds(original.processDefinitionId()));
+            resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.PROCESS_DEFINITION, original.processDefinitionId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

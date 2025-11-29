@@ -17,6 +17,7 @@ import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.util.ClusterVariableUtil;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,11 +45,17 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
 
     final ClusterVariableDbQuery.Builder dbQueryBuilder = new ClusterVariableDbQuery.Builder();
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            // FIXME: change resource type to CLUSTER_VARIABLE once available
+            //  (see https://github.com/camunda/camunda/issues/39054)
+            .getOrDefault(AuthorizationResourceType.UNSPECIFIED.name(), List.of());
     dbQueryBuilder
         .filter(query.filter())
         .tenancyEnabled(resourceAccessChecks.tenantCheck().enabled())
         .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
-        .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+        .authorizedResourceIds(authorizedResourceIds)
         .sort(dbSort)
         .page(convertPaging(dbSort, query.page()));
 
@@ -80,6 +87,6 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   @Override
   protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
     return resourceAccessChecks.authorizationCheck().enabled()
-        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty();
+        && !resourceAccessChecks.hasAnyResourceId();
   }
 }

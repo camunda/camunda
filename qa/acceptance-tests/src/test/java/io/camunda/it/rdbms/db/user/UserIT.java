@@ -24,6 +24,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -129,7 +130,8 @@ public class UserIT {
     final var searchResult =
         userReader.search(
             UserQuery.of(b -> b),
-            CommonFixtures.resourceAccessChecksFromResourceIds(user.username()));
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.USER, user.username()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

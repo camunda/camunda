@@ -16,6 +16,7 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -49,13 +50,17 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
 
     final var dbSort = convertSort(query.sort(), MappingRuleSearchColumn.MAPPING_RULE_ID);
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.MAPPING_RULE.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         MappingRuleDbQuery.of(
             b ->
                 b.filter(query.filter())
                     .sort(dbSort)
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for mapping rule with filter {}", dbQuery);
@@ -91,6 +96,6 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
       final MappingRuleFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.mappingRuleIds() != null && filter.mappingRuleIds().isEmpty())
         || (resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
+            && !resourceAccessChecks.hasAnyResourceId());
   }
 }
