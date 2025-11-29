@@ -9,28 +9,37 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
-import static io.camunda.util.FilterUtil.mapDefaultToOperation;
 
-import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogResult;
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record AuditLogFilter(
     List<Operation<String>> auditLogKeyOperations,
-    List<Operation<String>> processDefinitionKeyOperations,
-    List<Operation<String>> processInstanceKeyOperations,
-    List<Operation<String>> elementInstanceKeyOperations,
-    List<Operation<String>> operationTypeOperations,
-    AuditLogResult result,
-    List<Operation<OffsetDateTime>> timestampOperations,
-    List<Operation<String>> actorIdOperations,
-    AuditLogActorType actorType,
+    List<Operation<String>> entityKeyOperations,
     List<Operation<String>> entityTypeOperations,
+    List<Operation<String>> operationTypeOperations,
+    List<Operation<OffsetDateTime>> timestampOperations,
+    List<Operation<String>> actorTypeOperations,
+    List<Operation<String>> actorIdOperations,
     List<Operation<String>> tenantIdOperations,
-    List<Operation<String>> categoryOperations)
+    List<Operation<String>> resultOperations,
+    List<Operation<String>> categoryOperations,
+    List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<Long>> processDefinitionKeyOperations,
+    List<Operation<String>> processDefinitionIdOperations,
+    List<Operation<Long>> userTaskKeyOperations,
+    List<Operation<Long>> decisionDefinitionKeyOperations,
+    List<Operation<Long>> decisionEvaluationKeyOperations,
+    List<Operation<Long>> elementInstanceKeyOperations,
+    List<Operation<Long>> jobKeyOperations,
+    List<Operation<Long>> batchOperationKeyOperations,
+    List<Operation<Long>> deploymentKeyOperations,
+    List<Operation<Long>> formKeyOperations,
+    List<Operation<Long>> resourceKeyOperations)
     implements FilterBase {
 
   public static AuditLogFilter of(
@@ -41,32 +50,52 @@ public record AuditLogFilter(
   public Builder toBuilder() {
     return new Builder()
         .auditLogKeyOperations(auditLogKeyOperations)
-        .processDefinitionKeyOperations(processDefinitionKeyOperations)
-        .processInstanceKeyOperations(processInstanceKeyOperations)
-        .elementInstanceKeyOperations(elementInstanceKeyOperations)
-        .operationTypeOperations(operationTypeOperations)
-        .result(result)
-        .timestampOperations(timestampOperations)
-        .actorIdOperations(actorIdOperations)
-        .actorType(actorType)
+        .entityKeyOperations(entityKeyOperations)
         .entityTypeOperations(entityTypeOperations)
+        .operationTypeOperations(operationTypeOperations)
+        .timestampOperations(timestampOperations)
+        .actorTypeOperations(actorTypeOperations)
+        .actorIdOperations(actorIdOperations)
         .tenantIdOperations(tenantIdOperations)
-        .categoryOperations(categoryOperations);
+        .resultOperations(resultOperations)
+        .categoryOperations(categoryOperations)
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .processDefinitionKeyOperations(processDefinitionKeyOperations)
+        .processDefinitionIdOperations(processDefinitionIdOperations)
+        .userTaskKeyOperations(userTaskKeyOperations)
+        .decisionDefinitionKeyOperations(decisionDefinitionKeyOperations)
+        .decisionEvaluationKeyOperations(decisionEvaluationKeyOperations)
+        .elementInstanceKeyOperations(elementInstanceKeyOperations)
+        .jobKeyOperations(jobKeyOperations)
+        .batchOperationKeyOperations(batchOperationKeyOperations)
+        .deploymentKeyOperations(deploymentKeyOperations)
+        .formKeyOperations(formKeyOperations)
+        .resourceKeyOperations(resourceKeyOperations);
   }
 
   public static final class Builder implements ObjectBuilder<AuditLogFilter> {
     private List<Operation<String>> auditLogKeyOperations;
-    private List<Operation<String>> processDefinitionKeyOperations;
-    private List<Operation<String>> processInstanceKeyOperations;
-    private List<Operation<String>> elementInstanceKeyOperations;
-    private List<Operation<String>> operationTypeOperations;
-    private AuditLogResult result;
-    private List<Operation<OffsetDateTime>> timestampOperations;
-    private List<Operation<String>> actorIdOperations;
-    private AuditLogActorType actorType;
+    private List<Operation<String>> entityKeyOperations;
     private List<Operation<String>> entityTypeOperations;
+    private List<Operation<String>> operationTypeOperations;
+    private List<Operation<OffsetDateTime>> timestampOperations;
+    private List<Operation<String>> actorTypeOperations;
+    private List<Operation<String>> actorIdOperations;
     private List<Operation<String>> tenantIdOperations;
+    private List<Operation<String>> resultOperations;
     private List<Operation<String>> categoryOperations;
+    private List<Operation<Long>> processInstanceKeyOperations;
+    private List<Operation<Long>> processDefinitionKeyOperations;
+    private List<Operation<String>> processDefinitionIdOperations;
+    private List<Operation<Long>> userTaskKeyOperations;
+    private List<Operation<Long>> decisionDefinitionKeyOperations;
+    private List<Operation<Long>> decisionEvaluationKeyOperations;
+    private List<Operation<Long>> elementInstanceKeyOperations;
+    private List<Operation<Long>> jobKeyOperations;
+    private List<Operation<Long>> batchOperationKeyOperations;
+    private List<Operation<Long>> deploymentKeyOperations;
+    private List<Operation<Long>> formKeyOperations;
+    private List<Operation<Long>> resourceKeyOperations;
 
     public Builder auditLogKeyOperations(final List<Operation<String>> operations) {
       if (operations != null) {
@@ -75,127 +104,25 @@ public record AuditLogFilter(
       return this;
     }
 
-    public Builder auditLogKey(final String value, final String... values) {
-      return auditLogKeyOperations(mapDefaultToOperation(value, values));
+    public Builder auditLogKeys(final String value, final String... values) {
+      return auditLogKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
-    @SafeVarargs
-    public final Builder auditLogKeyOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return auditLogKeyOperations(collectValues(operation, operations));
-    }
-
-    public Builder processDefinitionKeyOperations(final List<Operation<String>> operations) {
+    public Builder entityKeyOperations(final List<Operation<String>> operations) {
       if (operations != null) {
-        processDefinitionKeyOperations =
-            addValuesToList(processDefinitionKeyOperations, operations);
+        entityKeyOperations = addValuesToList(entityKeyOperations, operations);
       }
       return this;
     }
 
-    public Builder processDefinitionKey(final String value, final String... values) {
-      return processDefinitionKeyOperations(mapDefaultToOperation(value, values));
-    }
-
     @SafeVarargs
-    public final Builder processDefinitionKeyOperations(
+    public final Builder entityKeyOperations(
         final Operation<String> operation, final Operation<String>... operations) {
-      return processDefinitionKeyOperations(collectValues(operation, operations));
+      return entityKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder processInstanceKeyOperations(final List<Operation<String>> operations) {
-      if (operations != null) {
-        processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
-      }
-      return this;
-    }
-
-    public Builder processInstanceKey(final String value, final String... values) {
-      return processInstanceKeyOperations(mapDefaultToOperation(value, values));
-    }
-
-    @SafeVarargs
-    public final Builder processInstanceKeyOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return processInstanceKeyOperations(collectValues(operation, operations));
-    }
-
-    public Builder elementInstanceKeyOperations(final List<Operation<String>> operations) {
-      if (operations != null) {
-        elementInstanceKeyOperations = addValuesToList(elementInstanceKeyOperations, operations);
-      }
-      return this;
-    }
-
-    public Builder elementInstanceKey(final String value, final String... values) {
-      return elementInstanceKeyOperations(mapDefaultToOperation(value, values));
-    }
-
-    @SafeVarargs
-    public final Builder elementInstanceKeyOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return elementInstanceKeyOperations(collectValues(operation, operations));
-    }
-
-    public Builder operationTypeOperations(final List<Operation<String>> operations) {
-      if (operations != null) {
-        operationTypeOperations = addValuesToList(operationTypeOperations, operations);
-      }
-      return this;
-    }
-
-    public Builder operationType(final String value, final String... values) {
-      return operationTypeOperations(mapDefaultToOperation(value, values));
-    }
-
-    @SafeVarargs
-    public final Builder operationTypeOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return operationTypeOperations(collectValues(operation, operations));
-    }
-
-    public Builder result(final AuditLogResult result) {
-      this.result = result;
-      return this;
-    }
-
-    public Builder timestampOperations(final List<Operation<OffsetDateTime>> operations) {
-      if (operations != null) {
-        timestampOperations = addValuesToList(timestampOperations, operations);
-      }
-      return this;
-    }
-
-    public Builder timestamp(final OffsetDateTime value, final OffsetDateTime... values) {
-      return timestampOperations(mapDefaultToOperation(value, values));
-    }
-
-    @SafeVarargs
-    public final Builder timestampOperations(
-        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
-      return timestampOperations(collectValues(operation, operations));
-    }
-
-    public Builder actorIdOperations(final List<Operation<String>> operations) {
-      if (operations != null) {
-        actorIdOperations = addValuesToList(actorIdOperations, operations);
-      }
-      return this;
-    }
-
-    public Builder actorId(final String value, final String... values) {
-      return actorIdOperations(mapDefaultToOperation(value, values));
-    }
-
-    @SafeVarargs
-    public final Builder actorIdOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return actorIdOperations(collectValues(operation, operations));
-    }
-
-    public Builder actorType(final AuditLogActorType actorType) {
-      this.actorType = actorType;
-      return this;
+    public Builder entityKeys(final String value, final String... values) {
+      return entityKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder entityTypeOperations(final List<Operation<String>> operations) {
@@ -205,14 +132,52 @@ public record AuditLogFilter(
       return this;
     }
 
-    public Builder entityType(final String value, final String... values) {
-      return entityTypeOperations(mapDefaultToOperation(value, values));
+    public Builder entityTypes(final String value, final String... values) {
+      return entityTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
-    @SafeVarargs
-    public final Builder entityTypeOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return entityTypeOperations(collectValues(operation, operations));
+    public Builder operationTypeOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        operationTypeOperations = addValuesToList(operationTypeOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder operationTypes(final String value, final String... values) {
+      return operationTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder timestampOperations(final List<Operation<OffsetDateTime>> operations) {
+      if (operations != null) {
+        timestampOperations = addValuesToList(timestampOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder timestamps(final OffsetDateTime value, final OffsetDateTime... values) {
+      return timestampOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder actorTypeOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        actorTypeOperations = addValuesToList(actorTypeOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder actorTypes(final String value, final String... values) {
+      return actorTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder actorIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        actorIdOperations = addValuesToList(actorIdOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder actorIds(final String value, final String... values) {
+      return actorIdOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
     public Builder tenantIdOperations(final List<Operation<String>> operations) {
@@ -222,14 +187,19 @@ public record AuditLogFilter(
       return this;
     }
 
-    public Builder tenantId(final String value, final String... values) {
-      return tenantIdOperations(mapDefaultToOperation(value, values));
+    public Builder tenantIds(final String value, final String... values) {
+      return tenantIdOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
-    @SafeVarargs
-    public final Builder tenantIdOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return tenantIdOperations(collectValues(operation, operations));
+    public Builder resultOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        resultOperations = addValuesToList(resultOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder results(final String value, final String... values) {
+      return resultOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
     public Builder categoryOperations(final List<Operation<String>> operations) {
@@ -239,31 +209,174 @@ public record AuditLogFilter(
       return this;
     }
 
-    public Builder category(final String value, final String... values) {
-      return categoryOperations(mapDefaultToOperation(value, values));
+    public Builder categories(final String value, final String... values) {
+      return categoryOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
-    @SafeVarargs
-    public final Builder categoryOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return categoryOperations(collectValues(operation, operations));
+    public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder processInstanceKeys(final Long value, final Long... values) {
+      return processInstanceKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        processDefinitionKeyOperations =
+            addValuesToList(processDefinitionKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder processDefinitionKeys(final Long value, final Long... values) {
+      return processDefinitionKeyOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder processDefinitionIds(final String value, final String... values) {
+      return processDefinitionIdOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder userTaskKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        userTaskKeyOperations = addValuesToList(userTaskKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder userTaskKeys(final Long value, final Long... values) {
+      return userTaskKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder decisionDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        decisionDefinitionKeyOperations =
+            addValuesToList(decisionDefinitionKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder decisionDefinitionKeys(final Long value, final Long... values) {
+      return decisionDefinitionKeyOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder decisionEvaluationKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        decisionEvaluationKeyOperations =
+            addValuesToList(decisionEvaluationKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder decisionEvaluationKeys(final Long value, final Long... values) {
+      return decisionEvaluationKeyOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder elementInstanceKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        elementInstanceKeyOperations = addValuesToList(elementInstanceKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder elementInstanceKeys(final Long value, final Long... values) {
+      return elementInstanceKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder jobKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        jobKeyOperations = addValuesToList(jobKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder jobKeys(final Long value, final Long... values) {
+      return jobKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder batchOperationKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        batchOperationKeyOperations = addValuesToList(batchOperationKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder batchOperationKeys(final Long value, final Long... values) {
+      return batchOperationKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder deploymentKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        deploymentKeyOperations = addValuesToList(deploymentKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder deploymentKeys(final Long value, final Long... values) {
+      return deploymentKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder formKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        formKeyOperations = addValuesToList(formKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder formKeys(final Long value, final Long... values) {
+      return formKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder resourceKeyOperations(final List<Operation<Long>> operations) {
+      if (operations != null) {
+        resourceKeyOperations = addValuesToList(resourceKeyOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder resourceKeys(final Long value, final Long... values) {
+      return resourceKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
     @Override
     public AuditLogFilter build() {
       return new AuditLogFilter(
-          auditLogKeyOperations,
-          processDefinitionKeyOperations,
-          processInstanceKeyOperations,
-          elementInstanceKeyOperations,
-          operationTypeOperations,
-          result,
-          timestampOperations,
-          actorIdOperations,
-          actorType,
-          entityTypeOperations,
-          tenantIdOperations,
-          categoryOperations);
+          Objects.requireNonNullElse(auditLogKeyOperations, List.of()),
+          Objects.requireNonNullElse(entityKeyOperations, List.of()),
+          Objects.requireNonNullElse(entityTypeOperations, List.of()),
+          Objects.requireNonNullElse(operationTypeOperations, List.of()),
+          Objects.requireNonNullElse(timestampOperations, List.of()),
+          Objects.requireNonNullElse(actorTypeOperations, List.of()),
+          Objects.requireNonNullElse(actorIdOperations, List.of()),
+          Objects.requireNonNullElse(tenantIdOperations, List.of()),
+          Objects.requireNonNullElse(resultOperations, List.of()),
+          Objects.requireNonNullElse(categoryOperations, List.of()),
+          Objects.requireNonNullElse(processInstanceKeyOperations, List.of()),
+          Objects.requireNonNullElse(processDefinitionKeyOperations, List.of()),
+          Objects.requireNonNullElse(processDefinitionIdOperations, List.of()),
+          Objects.requireNonNullElse(userTaskKeyOperations, List.of()),
+          Objects.requireNonNullElse(decisionDefinitionKeyOperations, List.of()),
+          Objects.requireNonNullElse(decisionEvaluationKeyOperations, List.of()),
+          Objects.requireNonNullElse(elementInstanceKeyOperations, List.of()),
+          Objects.requireNonNullElse(jobKeyOperations, List.of()),
+          Objects.requireNonNullElse(batchOperationKeyOperations, List.of()),
+          Objects.requireNonNullElse(deploymentKeyOperations, List.of()),
+          Objects.requireNonNullElse(formKeyOperations, List.of()),
+          Objects.requireNonNullElse(resourceKeyOperations, List.of()));
     }
   }
 }

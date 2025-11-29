@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.queue;
 
 public enum ContextType {
+  AUDIT_LOG(false),
   AUTHORIZATION(true),
   BATCH_OPERATION(false),
   CORRELATED_MESSAGE_SUBSCRIPTION(false),

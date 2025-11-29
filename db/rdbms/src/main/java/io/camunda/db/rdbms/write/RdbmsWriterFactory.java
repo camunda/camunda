@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
+import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
@@ -34,6 +35,7 @@ public class RdbmsWriterFactory {
   private final SqlSessionFactory sqlSessionFactory;
   private final ExporterPositionMapper exporterPositionMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final AuditLogMapper auditLogMapper;
   private final DecisionInstanceMapper decisionInstanceMapper;
   private final FlowNodeInstanceMapper flowNodeInstanceMapper;
   private final IncidentMapper incidentMapper;
@@ -56,6 +58,7 @@ public class RdbmsWriterFactory {
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
+      final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
@@ -76,6 +79,7 @@ public class RdbmsWriterFactory {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
+    this.auditLogMapper = auditLogMapper;
     this.decisionInstanceMapper = decisionInstanceMapper;
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
     this.incidentMapper = incidentMapper;
@@ -108,6 +112,7 @@ public class RdbmsWriterFactory {
         executionQueue,
         new ExporterPositionService(executionQueue, exporterPositionMapper),
         metrics,
+        auditLogMapper,
         decisionInstanceMapper,
         flowNodeInstanceMapper,
         incidentMapper,
