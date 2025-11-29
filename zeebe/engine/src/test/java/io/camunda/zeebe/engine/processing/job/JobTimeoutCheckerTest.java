@@ -12,10 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -90,8 +92,9 @@ public class JobTimeoutCheckerTest {
 
     final var task =
         new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);
@@ -121,8 +124,9 @@ public class JobTimeoutCheckerTest {
 
     final var task =
         new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);
@@ -165,8 +169,9 @@ public class JobTimeoutCheckerTest {
 
     final var task =
         new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
+    // Use lifecycle method to set up the checker - clears the initial schedule call
+    task.onRecovered(mockContext);
+    clearInvocations(mockScheduleService);
 
     // When
     task.execute(mockTaskResultBuilder);

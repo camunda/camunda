@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -20,7 +21,7 @@ import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class JobTimeoutChecker implements Task {
+public final class JobTimeoutChecker implements Task, StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutChecker.class);
 
   private boolean shouldReschedule = false;
@@ -48,7 +49,7 @@ final class JobTimeoutChecker implements Task {
     this.clock = clock;
   }
 
-  public void schedule(final Duration idleInterval) {
+  private void schedule(final Duration idleInterval) {
     if (shouldReschedule) {
       processingContext.getScheduleService().runAt(clock.millis() + idleInterval.toMillis(), this);
     }
@@ -92,11 +93,36 @@ final class JobTimeoutChecker implements Task {
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
+    shouldReschedule = true;
+    schedule(pollingInterval);
   }
 
-  public void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
+  @Override
+  public void onClose() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onFailed() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onPaused() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onResumed() {
+    shouldReschedule = true;
+    schedule(pollingInterval);
+  }
+
+  private void cancelTimer() {
+    shouldReschedule = false;
+    LOG.trace("Job timeout checker canceled!");
   }
 }
