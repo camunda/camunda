@@ -8,13 +8,9 @@
 
 import {AppHeader} from 'App/Layout/AppHeader';
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {groupedDecisions} from 'modules/mocks/groupedDecisions';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from '../';
-import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
-import {useEffect} from 'react';
 import {
   selectDecision,
   selectTenant,
@@ -24,13 +20,11 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
+import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return groupedDecisionsStore.reset;
-    }, []);
-
     return (
       <QueryClientProvider client={getMockQueryClient()}>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -65,7 +59,9 @@ const MOCK_FILTERS_PARAMS = {
 
 describe('<Filters />', () => {
   beforeEach(async () => {
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     mockMe().withSuccess(
       createUser({
         tenants: [
@@ -74,14 +70,10 @@ describe('<Filters />', () => {
         ],
       }),
     );
-
-    await groupedDecisionsStore.fetchDecisions();
   });
 
   it('should write filters to url', async () => {
-    vi.stubGlobal('clientConfig', {
-      multiTenancyEnabled: true,
-    });
+    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
 
     const MOCK_VALUES = {
       name: 'invoice-assign-approver',
@@ -89,15 +81,11 @@ describe('<Filters />', () => {
       tenant: 'tenant-A',
     } as const;
 
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
+    const {user} = render(<Filters />, {wrapper: getWrapper()});
 
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     await selectTenant({user, option: 'All tenants'});
 
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
-
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
     );
@@ -109,11 +97,7 @@ describe('<Filters />', () => {
             screen.getByTestId('search').textContent ?? '',
           ).entries(),
         ),
-      ).toEqual(
-        expect.objectContaining({
-          tenant: 'all',
-        }),
-      ),
+      ).toEqual(expect.objectContaining({tenant: 'all'})),
     );
 
     await selectDecision({
@@ -121,8 +105,10 @@ describe('<Filters />', () => {
       option: 'Assign Approver Group for tenant A - Tenant A',
     });
 
-    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
-      'Assign Approver Group for tenant A',
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+        'Assign Approver Group for tenant A',
+      ),
     );
 
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
@@ -140,17 +126,17 @@ describe('<Filters />', () => {
     );
   });
 
-  it('initialise filter values from url', async () => {
-    vi.stubGlobal('clientConfig', {
-      multiTenancyEnabled: true,
-    });
+  it('initialize filter values from url', async () => {
+    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
 
     render(<Filters />, {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue(
-      'Assign Approver Group for tenant A',
+    await waitFor(() =>
+      expect(screen.getByLabelText('Name')).toHaveValue(
+        'Assign Approver Group for tenant A',
+      ),
     );
     expectVersion('2');
 
@@ -176,36 +162,16 @@ describe('<Filters />', () => {
   });
 
   it('should disable decision name field when tenant is not selected', async () => {
-    window.clientConfig = {
-      multiTenancyEnabled: true,
-    };
+    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    render(<Filters />, {wrapper: getWrapper()});
 
-    render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched'),
-    );
     expect(screen.getByLabelText('Name')).toBeDisabled();
   });
 
   it('should clear decision name and version field when tenant filter is changed', async () => {
-    vi.stubGlobal('clientConfig', {
-      multiTenancyEnabled: true,
-    });
+    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    const {user} = render(<Filters />, {wrapper: getWrapper()});
 
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched'),
-    );
     expect(screen.getByLabelText('Name')).toBeDisabled();
 
     await selectTenant({user, option: 'All tenants'});
@@ -220,7 +186,11 @@ describe('<Filters />', () => {
       option: 'Assign Approver Group - Default Tenant',
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Assign Approver Group');
+    await waitFor(() =>
+      expect(screen.getByLabelText('Name')).toHaveValue(
+        'Assign Approver Group',
+      ),
+    );
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('2');
@@ -228,13 +198,10 @@ describe('<Filters />', () => {
       /default tenant/i,
     );
 
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     await selectTenant({user, option: 'Tenant A'});
-    await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched'),
-    );
 
-    expect(screen.getByLabelText('Name')).toHaveValue('');
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a decision version/i);

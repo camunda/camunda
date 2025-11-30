@@ -32,7 +32,10 @@ import {useState} from 'react';
 import {Locations} from 'modules/Routes';
 import {FiltersPanel} from 'modules/components/FiltersPanel';
 import {TenantField} from 'modules/components/TenantField';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {
+  getDefinitionIdentifier,
+  getDefinitionIdFromIdentifier,
+} from 'modules/hooks/decisionDefinition';
 
 const initialValues: DecisionInstanceFilters = {
   evaluated: true,
@@ -47,34 +50,29 @@ const Filters: React.FC = observer(() => {
   const location = useLocation() as LocationType;
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filtersFromUrl = parseDecisionInstancesFilter(location.search);
+  const filterValues = parseDecisionInstancesFilter(location.search);
+  if (filterValues.name && filterValues.tenant !== 'all') {
+    filterValues.name = getDefinitionIdentifier(
+      filterValues.name,
+      filterValues.tenant,
+    );
+  }
+  if (filterValues.tenant === 'all') {
+    delete filterValues.name;
+    delete filterValues.version;
+  }
+
   return (
     <Form<DecisionInstanceFilters>
       onSubmit={(values) => {
         navigate({
           search: updateDecisionsFiltersSearchString(location.search, {
             ...values,
-            ...(values.name !== undefined
-              ? {
-                  name: groupedDecisionsStore.state.decisions.find(
-                    ({key}) => key === values.name,
-                  )?.decisionId,
-                }
-              : {}),
+            name: getDefinitionIdFromIdentifier(values.name),
           }),
         });
       }}
-      initialValues={{
-        ...filtersFromUrl,
-        ...(filtersFromUrl.name !== undefined
-          ? {
-              name: groupedDecisionsStore.getDecision(
-                filtersFromUrl.name,
-                filtersFromUrl.tenant,
-              )?.key,
-            }
-          : {}),
-      }}
+      initialValues={filterValues}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
@@ -105,11 +103,9 @@ const Filters: React.FC = observer(() => {
                     <div>
                       <Title>Tenant</Title>
                       <TenantField
-                        onChange={(selectedItem) => {
+                        onChange={() => {
                           form.change('name', undefined);
                           form.change('version', undefined);
-
-                          groupedDecisionsStore.fetchDecisions(selectedItem);
                         }}
                       />
                     </div>

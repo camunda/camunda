@@ -40,16 +40,20 @@ const queryKeys = {
       'decisionInstancesSearch',
       payload,
     ],
-    searchPaginated: (payload?: QueryDecisionInstancesRequestBody) => [
-      'decisionInstancesSearchPaginated',
-      payload,
-    ],
+    searchPaginated: (payload?: QueryDecisionInstancesRequestBody) =>
+      payload
+        ? ['decisionInstancesSearchPaginated', payload]
+        : ['decisionInstancesSearchPaginated'],
   },
   decisionDefinitions: {
     get: (decisionDefinitionKey: string) => [
       'decisionDefinition',
       decisionDefinitionKey,
     ],
+    search: (payload?: object) =>
+      payload
+        ? ['decisionDefinitionsSearch', payload]
+        : ['decisionDefinitionsSearch'],
   },
   processDefinitionXml: {
     get: (processDefinitionKey?: string) => [
