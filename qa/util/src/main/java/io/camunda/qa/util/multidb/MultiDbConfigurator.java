@@ -12,13 +12,11 @@ import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABAS
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
@@ -282,50 +280,25 @@ public class MultiDbConfigurator {
   }
 
   public void configureRDBMSSupport(
-      final DatabaseType databaseType, final boolean retentionEnabled) {
-    final String shortPrefix = generateTablePrefix();
+      final boolean retentionEnabled,
+      final String url,
+      final String username,
+      final String password,
+      final String driverClass) {
     // db type
     testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
     testApplication.withSecondaryStorageType(SecondaryStorageType.rdbms);
     testApplication.withProperty("camunda.operate.database", DB_TYPE_RDBMS); // compatibility
     testApplication.withProperty("camunda.tasklist.database", DB_TYPE_RDBMS); // compatibility
 
-    testApplication.withProperty("camunda.data.secondary-storage.rdbms.prefix", shortPrefix);
+    testApplication.withProperty(
+        "camunda.data.secondary-storage.rdbms.prefix", generateTablePrefix());
     // --
 
-    if (databaseType == DatabaseType.RDBMS_H2) {
-      testApplication.withProperty(
-          "spring.datasource.url",
-          "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-      testApplication.withProperty("spring.datasource.username", "sa");
-      testApplication.withProperty("spring.datasource.password", "");
-    } else if (databaseType == DatabaseType.RDBMS_MARIADB) {
-      testApplication.withProperty(
-          "spring.datasource.url", "jdbc:mariadb://localhost:3306/camunda");
-      testApplication.withProperty("spring.datasource.username", "camunda");
-      testApplication.withProperty("spring.datasource.password", "camunda");
-    } else if (databaseType == DatabaseType.RDBMS_MYSQL) {
-      testApplication.withProperty("spring.datasource.url", "jdbc:mysql://localhost:3306/camunda");
-      testApplication.withProperty("spring.datasource.username", "camunda");
-      testApplication.withProperty("spring.datasource.password", "camunda");
-    } else if (databaseType == DatabaseType.RDBMS_MSSQL) {
-      testApplication.withProperty(
-          "spring.datasource.url", "jdbc:sqlserver://localhost:1433;Encrypt=false");
-      testApplication.withProperty("spring.datasource.username", "sa");
-      testApplication.withProperty("spring.datasource.password", "Camunda#8_demo");
-    } else if (databaseType == DatabaseType.RDBMS_ORACLE) {
-      testApplication.withProperty(
-          "spring.datasource.url", "jdbc:oracle:thin:@localhost:1521/FREEPDB1");
-      testApplication.withProperty("spring.datasource.username", "camunda");
-      testApplication.withProperty("spring.datasource.password", "camunda");
-    } else if (databaseType == DatabaseType.RDBMS_POSTGRES) {
-      testApplication.withProperty("spring.datasource.url", "jdbc:postgresql:camunda");
-      testApplication.withProperty("spring.datasource.username", "camunda");
-      testApplication.withProperty("spring.datasource.password", "camunda");
-    } else {
-      throw new IllegalArgumentException("RDBMS Database type not supported: " + databaseType);
-    }
-
+    testApplication.withProperty("spring.datasource.url", url);
+    testApplication.withProperty("spring.datasource.driver-class-name", driverClass);
+    testApplication.withProperty("spring.datasource.username", username);
+    testApplication.withProperty("spring.datasource.password", password);
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
 
