@@ -789,19 +789,4 @@ public final class AuthorizationCheckBehavior {
       return new AuthorizationRequest();
     }
   }
-
-  public static class ForbiddenException extends RuntimeException {
-
-    public ForbiddenException(final AuthorizationRequest authRequest) {
-      this(authRequest.build());
-    }
-
-    public ForbiddenException(final AuthorizationRequestMetadata authRequest) {
-      super(authRequest.getForbiddenErrorMessage());
-    }
-
-    public RejectionType getRejectionType() {
-      return RejectionType.FORBIDDEN;
-    }
-  }
 }
