@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -83,6 +84,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     PlatformDefaultEntities.setupDefaultTenant(setupRecord);
     PlatformDefaultEntities.setupDefaultRoles(setupRecord);
+    PlatformDefaultEntities.setupDefaultGroups(setupRecord);
 
     initialization
         .getUsers()
@@ -107,6 +109,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                         .setName(mappingRule.getMappingRuleId())));
 
     setupRoleMembership(initialization, setupRecord);
+    setupGroupMembership(initialization, setupRecord);
     return setupRecord;
   }
 
@@ -130,6 +133,31 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         for (final var entityId : assignmentsForEntityType.getValue()) {
           setupRecord.addRoleMember(
               new RoleRecord().setRoleId(roleId).setEntityType(entityType).setEntityId(entityId));
+        }
+      }
+    }
+  }
+
+  private static void setupGroupMembership(
+      final InitializationConfiguration initialization, final IdentitySetupRecord setupRecord) {
+    for (final var assignmentsForGroup : initialization.getDefaultGroups().entrySet()) {
+      final var groupId = assignmentsForGroup.getKey();
+      for (final var assignmentsForEntityType : assignmentsForGroup.getValue().entrySet()) {
+        final var entityType =
+            switch (assignmentsForEntityType.getKey().toLowerCase()) {
+              case "users" -> EntityType.USER;
+              case "clients" -> EntityType.CLIENT;
+              default ->
+                  throw new IllegalStateException(
+                      "Unexpected entity type for group membership: %s"
+                          .formatted(assignmentsForEntityType.getKey()));
+            };
+        for (final var entityId : assignmentsForEntityType.getValue()) {
+          setupRecord.addGroupMember(
+              new GroupRecord()
+                  .setGroupId(groupId)
+                  .setEntityType(entityType)
+                  .setEntityId(entityId));
         }
       }
     }
