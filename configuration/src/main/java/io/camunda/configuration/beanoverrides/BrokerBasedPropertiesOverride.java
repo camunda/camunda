@@ -480,6 +480,7 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromExport(override);
     populateFromBackup(override);
+    override.getData().setBackupSchedulerCfg(data.getPrimaryStorage().getBackup());
   }
 
   private void populateFromExport(final BrokerBasedProperties override) {
