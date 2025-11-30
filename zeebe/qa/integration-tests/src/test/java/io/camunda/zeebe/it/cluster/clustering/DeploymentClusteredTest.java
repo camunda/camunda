@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.clustering;
 
-import static io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor.DEPLOYMENT_REDISTRIBUTION_INTERVAL;
+import static io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributionScheduler.DEPLOYMENT_REDISTRIBUTION_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.DeploymentEvent;

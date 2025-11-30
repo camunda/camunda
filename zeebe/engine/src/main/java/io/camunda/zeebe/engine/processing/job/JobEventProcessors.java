@@ -47,7 +47,7 @@ public final class JobEventProcessors {
             bpmnBehaviors.stateBehavior());
 
     final var jobBackoffChecker =
-        new JobBackoffChecker(clock, scheduledTaskStateFactory.get().getJobState());
+        new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
     typedRecordProcessors
         .onCommand(
             ValueType.JOB,
@@ -120,7 +120,7 @@ public final class JobEventProcessors {
                 jobMetrics,
                 authCheckBehavior))
         .withListener(
-            new JobTimeoutCheckerScheduler(
+            new JobTimeoutCheckSchedulerScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
                 config.getJobsTimeoutCheckerPollingInterval(),
                 config.getJobsTimeoutCheckerBatchLimit(),

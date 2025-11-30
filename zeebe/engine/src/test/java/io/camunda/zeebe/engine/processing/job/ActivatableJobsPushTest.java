@@ -221,7 +221,7 @@ public class ActivatableJobsPushTest {
     ENGINE.job().withKey(jobKey).withRetries(5).withBackOff(Duration.ofMillis(10L)).fail();
 
     // when job recurs
-    ENGINE.increaseTime(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION));
+    ENGINE.increaseTime(Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION));
 
     // then
     jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).await();
