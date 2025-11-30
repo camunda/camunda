@@ -18,14 +18,6 @@ import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
@@ -35,7 +27,6 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
-import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -67,18 +58,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private boolean isGatewayEnabled = true;
 
   public TestStandaloneBroker() {
-    super(
-        BrokerModuleConfiguration.class,
-        CommonsModuleConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class,
-        NodeIdProviderConfiguration.class,
-        BrokerBasedPropertiesOverride.class,
-        GatewayBasedPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class);
+    super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
 
     unifiedConfig = new Camunda();
 

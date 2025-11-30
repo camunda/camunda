@@ -12,18 +12,6 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
@@ -35,23 +23,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneGateway() {
-    super(
-        // Unified Configuration classes
-        UnifiedConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        TasklistPropertiesOverride.class,
-        OperatePropertiesOverride.class,
-        BrokerBasedPropertiesOverride.class,
-        GatewayBasedPropertiesOverride.class,
-        ActorClockControlledPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        IdleStrategyPropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        // ---
-        GatewayModuleConfiguration.class,
-        CommonsModuleConfiguration.class);
+    super(GatewayModuleConfiguration.class, CommonsModuleConfiguration.class);
 
     unifiedConfig = new Camunda();
 

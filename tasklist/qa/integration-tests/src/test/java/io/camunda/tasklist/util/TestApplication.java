@@ -8,19 +8,10 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
-import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -44,16 +35,8 @@ import org.springframework.context.annotation.Profile;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
-  WebappsModuleConfiguration.class,
   CommonsModuleConfiguration.class,
-  TasklistPropertiesOverride.class,
-  UnifiedConfiguration.class,
-  UnifiedConfigurationHelper.class,
-  GatewayRestPropertiesOverride.class,
-  GatewayBasedPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class,
-  SearchEngineIndexPropertiesOverride.class,
-  SearchEngineRetentionPropertiesOverride.class
+  TasklistModuleConfiguration.class,
 })
 public class TestApplication {
 

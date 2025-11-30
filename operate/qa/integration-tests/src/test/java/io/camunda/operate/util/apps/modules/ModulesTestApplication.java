@@ -7,17 +7,9 @@
  */
 package io.camunda.operate.util.apps.modules;
 
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.util.TestApplication;
-import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -48,19 +40,7 @@ import org.springframework.context.annotation.Import;
           value = OperateModuleConfiguration.class)
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import({
-  // Unified Configuration classes
-  UnifiedConfigurationHelper.class,
-  UnifiedConfiguration.class,
-  SearchEngineConnectPropertiesOverride.class,
-  SearchEngineIndexPropertiesOverride.class,
-  SearchEngineRetentionPropertiesOverride.class,
-  OperatePropertiesOverride.class,
-  GatewayBasedPropertiesOverride.class,
-  GatewayRestPropertiesOverride.class,
-  // ---
-  WebappsModuleConfiguration.class
-})
+@Import({CommonsModuleConfiguration.class, OperateModuleConfiguration.class})
 public class ModulesTestApplication {
 
   public static void main(final String[] args) throws Exception {

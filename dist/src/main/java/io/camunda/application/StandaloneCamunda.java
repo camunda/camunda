@@ -14,18 +14,6 @@ import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
@@ -58,20 +46,6 @@ public class StandaloneCamunda {
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
-                // Unified Configuration classes
-                UnifiedConfiguration.class,
-                UnifiedConfigurationHelper.class,
-                TasklistPropertiesOverride.class,
-                OperatePropertiesOverride.class,
-                GatewayBasedPropertiesOverride.class,
-                BrokerBasedPropertiesOverride.class,
-                ActorClockControlledPropertiesOverride.class,
-                IdleStrategyPropertiesOverride.class,
-                GatewayRestPropertiesOverride.class,
-                SearchEngineConnectPropertiesOverride.class,
-                SearchEngineIndexPropertiesOverride.class,
-                SearchEngineRetentionPropertiesOverride.class,
-                // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
                 TasklistModuleConfiguration.class,

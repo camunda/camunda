@@ -9,6 +9,7 @@ package io.camunda.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneSchemaManager;
+import io.camunda.application.commons.configuration.CommonUnifiedConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -24,7 +25,7 @@ public class TestStandaloneSchemaManager
   private final Camunda unifiedConfig;
 
   public TestStandaloneSchemaManager() {
-    super(StandaloneSchemaManager.class);
+    super(CommonUnifiedConfiguration.class, StandaloneSchemaManager.class);
 
     unifiedConfig = new Camunda();
     //noinspection resource
