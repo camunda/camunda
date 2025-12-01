@@ -14,6 +14,7 @@ message ClusterTopology {
   ClusterChangePlan currentChange = 4;
   RoutingState routingState = 5;
   string clusterId = 6;
+  int64 incarnationNumber = 7;
 }
 
 message RoutingState {
