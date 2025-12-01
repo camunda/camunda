@@ -198,6 +198,18 @@
 				"default": "./dist/8.8/variable.js"
 			}
 		},
+		"./8.9": {
+			"import": {
+				"types": "./dist/8.9.d.ts",
+				"default": "./dist/8.9.js"
+			}
+		},
+		"./8.9/audit-log": {
+			"import": {
+				"types": "./dist/8.9/audit-log.d.ts",
+				"default": "./dist/8.9/audit-log.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {

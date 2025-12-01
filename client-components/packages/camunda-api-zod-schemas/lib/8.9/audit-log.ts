@@ -1,0 +1,182 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {z} from 'zod';
+import {
+  API_VERSION,
+  advancedDateTimeFilterSchema,
+  advancedStringFilterSchema,
+  getEnumFilterSchema,
+  getQueryRequestBodySchema,
+  getQueryResponseBodySchema,
+  type Endpoint,
+} from '../8.8/common';
+import {batchOperationTypeSchema} from '../8.8'
+
+const auditLogEntityTypeSchema = z.enum([
+  'AUTHORIZATION',
+  'BATCH',
+  'DECISION',
+  'GROUP',
+  'INCIDENT',
+  'MAPPING_RULE',
+  'PROCESS_INSTANCE',
+  'ROLE',
+  'TENANT',
+  'USER',
+  'USER_TASK',
+  'RESOURCE',
+  'VARIABLE',
+]);
+
+const auditLogOperationTypeSchema = z.enum([
+  'ASSIGN',
+  'CANCEL',
+  'COMPLETE',
+  'CREATE',
+  'DELETE',
+  'EVALUATE',
+  'MIGRATE',
+  'MODIFY',
+  'RESOLVE',
+  'RESUME',
+  'SUSPEND',
+  'UNASSIGN',
+  'UPDATE',
+]);
+
+const auditLogActorTypeSchema = z.enum(['USER', 'CLIENT']);
+
+const auditLogResultSchema = z.enum(['SUCCESS', 'FAIL']);
+
+const auditLogCategorySchema = z.enum(['OPERATOR', 'USER_TASK', 'ADMIN']);
+
+const auditLogSchema = z.object({
+  auditLogKey: z.string(),
+  entityKey: z.string(),
+  entityType: auditLogEntityTypeSchema,
+  operationType: auditLogOperationTypeSchema,
+  batchOperationKey: z.string().optional(),
+  batchOperationType: batchOperationTypeSchema.optional(),
+  timestamp: z.string(),
+  actorId: z.string(),
+  actorType: auditLogActorTypeSchema,
+  tenantId: z.string().optional(),
+  result: auditLogResultSchema,
+  annotation: z.string().optional(),
+  category: auditLogCategorySchema,
+  processDefinitionId: z.string().optional(),
+  processDefinitionKey: z.string().optional(),
+  processInstanceKey: z.string().optional(),
+  elementInstanceKey: z.string().optional(),
+  jobKey: z.string().optional(),
+  userTaskKey: z.string().optional(),
+  decisionRequirementsId: z.string().optional(),
+  decisionRequirementsKey: z.string().optional(),
+  decisionDefinitionId: z.string().optional(),
+  decisionDefinitionKey: z.string().optional(),
+  decisionEvaluationKey: z.string().optional(),
+});
+type AuditLog = z.infer<typeof auditLogSchema>;
+
+const auditLogFilterSchema = z
+  .object({
+    auditLogKey: advancedStringFilterSchema.optional(),
+    processDefinitionKey: advancedStringFilterSchema.optional(),
+    processInstanceKey: advancedStringFilterSchema.optional(),
+    elementInstanceKey: advancedStringFilterSchema.optional(),
+    operationType: getEnumFilterSchema(auditLogOperationTypeSchema).optional(),
+    result: getEnumFilterSchema(auditLogResultSchema).optional(),
+    timestamp: advancedDateTimeFilterSchema.optional(),
+    actorId: advancedStringFilterSchema.optional(),
+    actorType: getEnumFilterSchema(auditLogActorTypeSchema).optional(),
+    entityType: getEnumFilterSchema(auditLogEntityTypeSchema).optional(),
+    tenantId: advancedStringFilterSchema.optional(),
+    category: getEnumFilterSchema(auditLogCategorySchema).optional(),
+  })
+  .partial();
+
+const auditLogSortFieldEnum = z.enum([
+  'actorId',
+  'actorType',
+  'annotation',
+  'auditLogKey',
+  'batchOperationKey',
+  'batchOperationType',
+  'category',
+  'decisionDefinitionId',
+  'decisionDefinitionKey',
+  'decisionEvaluationKey',
+  'decisionRequirementsId',
+  'decisionRequirementsKey',
+  'elementInstanceKey',
+  'entityKey',
+  'entityType',
+  'jobKey',
+  'operationType',
+  'processDefinitionId',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'result',
+  'tenantId',
+  'timestamp',
+  'userTaskKey',
+]);
+type AuditLogSortField = z.infer<typeof auditLogSortFieldEnum>;
+
+const auditLogSearchRequestBodySchema = getQueryRequestBodySchema({
+  sortFields: auditLogSortFieldEnum.options as [string, ...string[]],
+  filter: auditLogFilterSchema,
+});
+type SearchAuditLogsRequestBody = z.infer<typeof auditLogSearchRequestBodySchema>;
+
+const auditLogSearchResponseBodySchema = getQueryResponseBodySchema(auditLogSchema);
+type SearchAuditLogsResponseBody = z.infer<typeof auditLogSearchResponseBodySchema>;
+
+const searchAuditLogs: Endpoint = {
+  method: 'POST',
+  getUrl() {
+    return `/${API_VERSION}/audit-logs/search`;
+  },
+};
+
+const getAuditLog: Endpoint<{auditLogKey: string}> = {
+  method: 'GET',
+  getUrl(params) {
+    const {auditLogKey} = params;
+
+    return `/${API_VERSION}/audit-logs/${auditLogKey}`;
+  },
+};
+
+const getAuditLogResponseBodySchema = auditLogSchema;
+type GetAuditLogResponseBody = z.infer<typeof getAuditLogResponseBodySchema>;
+
+export {
+  auditLogEntityTypeSchema,
+  auditLogOperationTypeSchema,
+  auditLogActorTypeSchema,
+  auditLogResultSchema,
+  auditLogCategorySchema,
+  batchOperationTypeSchema,
+  auditLogSchema,
+  auditLogFilterSchema,
+  auditLogSortFieldEnum,
+  auditLogSearchRequestBodySchema,
+  auditLogSearchResponseBodySchema,
+  getAuditLogResponseBodySchema,
+  searchAuditLogs,
+  getAuditLog,
+};
+export type {
+  AuditLog,
+  AuditLogSortField,
+  SearchAuditLogsRequestBody,
+  SearchAuditLogsResponseBody,
+  GetAuditLogResponseBody,
+};
