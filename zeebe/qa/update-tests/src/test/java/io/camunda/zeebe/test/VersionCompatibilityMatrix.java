@@ -46,13 +46,22 @@ final class VersionCompatibilityMatrix {
    * Explicitly known incompatible upgrade paths which must be excluded from the compatibility
    * matrix.
    *
-   * <p>IMPORTANT: this is intentionally a whitelist of exceptions, not general logic. Each entry
-   * documents a path that is known to be unsupported.
+   * <p>Each entry encodes a range:
+   *
+   * <ul>
+   *   <li><code>from</code>: the first source patch on a given minor that introduces an
+   *       incompatibility (all later patches on that minor are also affected)
+   *   <li><code>to</code>: the <strong>first compatible</strong> target patch on the next minor
+   *       (all earlier patches on that minor are incompatible)
+   * </ul>
+   *
+   * For example, an entry <code>(8.5.17, 8.6.13)</code> means all upgrades from <code>8.5.[17+]
+   * </code> to <code>8.6.0</code> through <code>8.6.12</code> are incompatible.
    */
   private static final List<UpgradePath> INCOMPATIBLE_UPGRADES =
       List.of(
           // https://camunda.slack.com/archives/C013MEVQ4M9/p1763733819656189?thread_ts=1763726918.300319&cid=C013MEVQ4M9
-          new UpgradePath(parseVersion("8.5.17"), parseVersion("8.6.0"))
+          new UpgradePath(parseVersion("8.5.17"), parseVersion("8.6.13"))
           // add further incompatible combinations here if needed
           );
 
@@ -102,7 +111,7 @@ final class VersionCompatibilityMatrix {
                     new IllegalStateException(
                         "Failed to parse previous version " + VersionUtil.getPreviousVersion()));
 
-    if (isKnownIncompatibleUpgrade(previous, current)) {
+    if (!isCompatible(previous, current)) {
       LOG.info(
           "Skipping known incompatible upgrade path from {} to {} in local version matrix.",
           previous,
@@ -239,14 +248,32 @@ final class VersionCompatibilityMatrix {
             () -> new IllegalArgumentException("Invalid semantic version string: " + version));
   }
 
-  private static boolean isKnownIncompatibleUpgrade(
-      final SemanticVersion from, final SemanticVersion to) {
-    return INCOMPATIBLE_UPGRADES.stream()
-        .anyMatch(path -> path.from.equals(from) && path.to.equals(to));
-  }
-
   private static boolean isCompatible(final SemanticVersion from, final SemanticVersion to) {
-    return !isKnownIncompatibleUpgrade(from, to);
+    // Compatible if no incompatible range matches
+    return INCOMPATIBLE_UPGRADES.stream()
+        .noneMatch(
+            path -> {
+              final var lowerBoundFrom = path.from();
+              final var firstCompatibleTo = path.to();
+
+              // Source side: same major/minor as lowerBoundFrom, and patch >= lowerBoundFrom.patch
+              if (from.major() != lowerBoundFrom.major()
+                  || from.minor() != lowerBoundFrom.minor()
+                  || from.patch() < lowerBoundFrom.patch()) {
+                return false;
+              }
+
+              // Target side: same major/minor as firstCompatibleTo, and patch <
+              // firstCompatibleTo.patch
+              if (to.major() != firstCompatibleTo.major()
+                  || to.minor() != firstCompatibleTo.minor()
+                  || to.patch() >= firstCompatibleTo.patch()) {
+                return false;
+              }
+
+              // From >= lowerBoundFrom AND to < firstCompatibleTo => incompatible
+              return true;
+            });
   }
 
   static class GithubVersionProvider implements VersionProvider {
