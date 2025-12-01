@@ -21,25 +21,24 @@ type IncidentOperationProps = {
 };
 
 const IncidentOperation: React.FC<IncidentOperationProps> = (props) => {
-  const {isPending, mutate} = useResolveIncident(
-    props.incidentKey,
-    props.jobKey,
-  );
+  const {isPending, mutate: resolveIncident} = useResolveIncident({
+    incidentKey: props.incidentKey,
+    jobKey: props.jobKey,
+    onError: (error) => {
+      handleOperationError(error.status);
+    },
+    onSuccess: () => {
+      tracking.track({
+        eventName: 'single-operation',
+        operationType: 'RESOLVE_INCIDENT',
+        source: 'incident-table',
+      });
+    },
+  });
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     e.stopPropagation();
-    mutate(undefined, {
-      onError: (error) => {
-        handleOperationError(error.status);
-      },
-      onSuccess: () => {
-        tracking.track({
-          eventName: 'single-operation',
-          operationType: 'RESOLVE_INCIDENT',
-          source: 'incident-table',
-        });
-      },
-    });
+    resolveIncident();
   };
 
   return (
