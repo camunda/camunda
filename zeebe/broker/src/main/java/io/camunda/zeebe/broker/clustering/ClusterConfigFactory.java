@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.clustering;
 
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.DynamicDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
@@ -23,7 +24,16 @@ import java.util.Collections;
 
 // TODO: move this to BrokerClusterConfiguration in the dist module
 public final class ClusterConfigFactory {
-  public ClusterConfig mapConfiguration(final BrokerCfg config) {
+
+  /**
+   * Maps the broker configuration to a cluster configuration using the provided MemberId.
+   *
+   * @param config the broker configuration
+   * @param memberId the member ID (may be a {@link io.atomix.cluster.VersionedMemberId} for dynamic
+   *     node ID scenarios)
+   * @return the cluster configuration
+   */
+  public ClusterConfig mapConfiguration(final BrokerCfg config, final MemberId memberId) {
     final var cluster = config.getCluster();
     final var name = cluster.getClusterName();
     final var discovery = discoveryConfig(cluster.getInitialContactPoints());
@@ -31,7 +41,7 @@ public final class ClusterConfigFactory {
     final var network = config.getNetwork();
 
     final var messaging = messagingConfig(cluster, network);
-    final var member = memberConfig(network.getInternalApi(), cluster.getNodeId());
+    final var member = memberConfig(network.getInternalApi(), memberId);
 
     return new ClusterConfig()
         .setClusterId(name)
@@ -41,11 +51,11 @@ public final class ClusterConfigFactory {
         .setProtocolConfig(membership);
   }
 
-  private MemberConfig memberConfig(final SocketBindingCfg network, final int nodeId) {
+  private MemberConfig memberConfig(final SocketBindingCfg network, final MemberId memberId) {
     final var advertisedAddress =
         Address.from(network.getAdvertisedHost(), network.getAdvertisedPort());
 
-    return new MemberConfig().setAddress(advertisedAddress).setId(String.valueOf(nodeId));
+    return new MemberConfig().setAddress(advertisedAddress).setId(memberId);
   }
 
   private SwimMembershipProtocolConfig membershipConfig(final MembershipCfg config) {

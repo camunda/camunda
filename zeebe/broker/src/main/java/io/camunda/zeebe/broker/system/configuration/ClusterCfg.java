@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.Broker.LOG;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import java.time.Duration;
 import java.util.Collections;
@@ -57,6 +58,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private RaftCfg raft = new RaftCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
+  private MemberId memberId;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -116,6 +118,16 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setNodeId(final Integer nodeId) {
     this.nodeId = nodeId;
+    memberId = MemberId.from(nodeId, 0);
+  }
+
+  public void setNodeId(final Integer nodeId, final long version) {
+    this.nodeId = nodeId;
+    memberId = MemberId.from(nodeId, version);
+  }
+
+  public MemberId getMemberId() {
+    return memberId;
   }
 
   public int getPartitionsCount() {
