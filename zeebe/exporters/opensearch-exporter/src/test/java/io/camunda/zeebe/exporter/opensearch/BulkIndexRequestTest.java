@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,9 @@ import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistribut
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -503,6 +507,137 @@ final class BulkIndexRequestTest {
           .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs("Expect that the records are serialized with processDefinitionKey")
           .containsExactly(12345);
+    }
+
+    @Test
+    void shouldIndexProcessInstanceModificationRecordWithoutMoveInstructionsOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new ProcessInstanceModificationRecord()
+                              .setProcessInstanceKey(1L)
+                              .addMoveInstruction(
+                                  new ProcessInstanceModificationMoveInstruction()
+                                      .setSourceElementId("foo")
+                                      .setTargetElementId("bar"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("moveInstructions"))
+          .describedAs("Expect that the records are serialized without moveInstructions")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexProcessInstanceModificationRecordWithoutIdInTerminateOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new ProcessInstanceModificationRecord()
+                              .setProcessInstanceKey(1L)
+                              .addTerminateInstruction(
+                                  new ProcessInstanceModificationTerminateInstruction()
+                                      .setElementId("foo")
+                                      .setElementInstanceKey(5L))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("terminateInstructions"))
+          .extracting(
+              source -> {
+                final var values = (Map<String, Object>) (((List<Object>) source).getFirst());
+                return tuple(values.get("elementId"), values.get("elementInstanceKey"));
+              })
+          .describedAs(
+              "Expect that the records are serialized without elementId in terminateInstructions")
+          .containsExactly(tuple(null, 5));
+    }
+
+    @Test
+    void shouldIndexProcessInstanceModificationRecordWithMoveInstructions() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new ProcessInstanceModificationRecord()
+                              .setProcessInstanceKey(1L)
+                              .addMoveInstruction(
+                                  new ProcessInstanceModificationMoveInstruction()
+                                      .setSourceElementId("foo")
+                                      .setTargetElementId("bar"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("moveInstructions"))
+          .extracting(source -> ((List<Object>) source).getFirst())
+          .extracting("sourceElementId", "targetElementId")
+          .describedAs("Expect that the records are serialized with moveInstructions")
+          .containsExactly(tuple("foo", "bar"));
+    }
+
+    @Test
+    void shouldIndexProcessInstanceModificationRecordWithIdInTerminate() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new ProcessInstanceModificationRecord()
+                              .setProcessInstanceKey(1L)
+                              .addTerminateInstruction(
+                                  new ProcessInstanceModificationTerminateInstruction()
+                                      .setElementId("foo")
+                                      .setElementInstanceKey(5L))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("terminateInstructions"))
+          .extracting(source -> ((List<Object>) source).getFirst())
+          .extracting("elementId", "elementInstanceKey")
+          .describedAs(
+              "Expect that the records are serialized with elementId in terminateInstructions")
+          .containsExactly(tuple("foo", 5));
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {
