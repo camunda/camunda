@@ -24,6 +24,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,9 +65,7 @@ public final class IncidentServiceTest {
   @Test
   public void shouldReturnIncidentByKey() {
     // given
-    final var entity = mock(IncidentEntity.class);
-    final var processId = "processId";
-    when(entity.processDefinitionId()).thenReturn(processId);
+    final var entity = Instancio.create(IncidentEntity.class);
     when(client.getIncident(any(Long.class))).thenReturn(entity);
     // when
     final var searchQueryResult = services.getByKey(1L);
@@ -78,9 +77,6 @@ public final class IncidentServiceTest {
   @Test
   public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
     // given
-    final var entity = mock(IncidentEntity.class);
-    final var processId = "processId";
-    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.getIncident(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.INCIDENT_READ_AUTHORIZATION));
     // when
