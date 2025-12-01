@@ -127,11 +127,6 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
    */
   @Override
   public void add(final IndexedBackup newEntry) {
-    final var initialEntries = getEntries();
-    if (initialEntries == Integer.MAX_VALUE) {
-      throw new IllegalStateException(
-          "Backup index is full, can't contain more than " + Integer.MAX_VALUE + " entries");
-    }
     final var existingEntry = byCheckpointId(newEntry.checkpointId());
     if (existingEntry != null) {
       return;
@@ -276,11 +271,21 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
     final var entries = getEntries();
     final var requiredCapacity = (long) (entries + 1) * ENTRY_SIZE + HEADER_SIZE;
     if (buffer.capacity() < requiredCapacity) {
+      if (requiredCapacity > Integer.MAX_VALUE) {
+        throw new IllegalStateException(
+            "Backup index is too large to be mapped into memory: required capacity "
+                + requiredCapacity
+                + " for "
+                + (entries + 1)
+                + " entries exceeds maximum of "
+                + Integer.MAX_VALUE);
+      }
       try {
         final var position = buffer.position();
         final var limit = buffer.limit();
-        // Increase capacity by 50%
-        final var newCapacity = (long) (entries * 1.5) * ENTRY_SIZE + HEADER_SIZE;
+        // Increase capacity by 50% but cap at Integer.MAX_VALUE to avoid overflow
+        final var newCapacity =
+            Math.min((long) (entries * 1.5) * ENTRY_SIZE + HEADER_SIZE, Integer.MAX_VALUE);
         // Remap with the new capacity but keep the current position and limit.
         // The previous buffer is intentionally not unmapped here so that existing streams can still
         // read from it.
