@@ -18,7 +18,9 @@ package io.camunda.client.spring.configuration;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.health.HealthCheck;
 import io.camunda.client.jobhandling.JobWorkerManager;
+import io.camunda.client.metrics.JobWorkerMetricsFactory;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.metrics.MicrometerJobWorkerMetricsFactory;
 import io.camunda.client.metrics.MicrometerMetricsRecorder;
 import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
 import io.camunda.client.spring.actuator.JobWorkerController;
@@ -50,6 +52,12 @@ public class CamundaActuatorConfiguration {
   @ConditionalOnMissingBean
   public MetricsRecorder micrometerMetricsRecorder(@Lazy final MeterRegistry meterRegistry) {
     return new MicrometerMetricsRecorder(meterRegistry);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public JobWorkerMetricsFactory jobWorkerMetricsFactory(@Lazy final MeterRegistry meterRegistry) {
+    return new MicrometerJobWorkerMetricsFactory(meterRegistry);
   }
 
   @Bean

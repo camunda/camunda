@@ -86,6 +86,7 @@ public class JobHandlerInvokingBeansTest {
     when(completeJobCommandStep1.send()).thenReturn(future);
     when(jobClient.newCompleteCommand(anyLong())).thenReturn(completeJobCommandStep1);
     final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
     jobHandler.handle(jobClient, job);
     verify(jobClient, times(1)).newCompleteCommand(anyLong());
     verify(jobClient, times(0)).newFailCommand(anyLong());
@@ -108,6 +109,7 @@ public class JobHandlerInvokingBeansTest {
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
     jobHandler.handle(jobClient, job);
     verify(jobClient, times(0)).newCompleteCommand(anyLong());
     verify(jobClient, times(0)).newFailCommand(anyLong());
@@ -130,6 +132,7 @@ public class JobHandlerInvokingBeansTest {
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
     assertThatThrownBy(() -> jobHandler.handle(jobClient, job))
         .isInstanceOf(JobError.class)
         .hasMessage("test error");
@@ -152,6 +155,7 @@ public class JobHandlerInvokingBeansTest {
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
+    when(job.getType()).thenReturn("test");
     assertThatThrownBy(() -> jobHandler.handle(jobClient, job))
         .isInstanceOf(BpmnError.class)
         .hasMessage("[testCode] test message")
