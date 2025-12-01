@@ -136,7 +136,14 @@ public final class IncidentUpdateTask implements BackgroundTask {
       return CompletableFuture.completedFuture(0);
     }
     logger.trace("Applying the following pending incident updates: {}", batch.newIncidentStates());
-    searchForInstances(data);
+    final var check = searchForInstances(data);
+    if (check != InstancesCheck.OK) {
+      // there was missing data, but this is often transient, so we just skip this batch for now.
+      // we return the batch size so it's clear that we want to try again soon (as there was work
+      // to do, but we just can't do it ATM)
+      return CompletableFuture.completedFuture(batch.newIncidentStates().size());
+    }
+
     data.incidents()
         .forEach(
             (key, incidentDocument) -> {
@@ -163,18 +170,19 @@ public final class IncidentUpdateTask implements BackgroundTask {
             executor);
   }
 
-  private void searchForInstances(final AdditionalData data) {
+  private InstancesCheck searchForInstances(final AdditionalData data) {
     final var incidents = data.incidents().values();
 
-    try {
-      queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(incidents, data, false);
-    } catch (final ExporterException ex) {
+    queryData(incidents, data);
+    if (checkDataAndCollectParentTreePaths(incidents, data, false) != InstancesCheck.OK) {
       // if it failed once we want to give it a chance and to import more data
       // next failure will fail in case ignoring of missing data is not configured
       uncheckedThreadSleep();
       queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData);
+      final var check = checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData);
+      if (check != InstancesCheck.OK) {
+        return check;
+      }
     }
 
     final var flowNodeKeys =
@@ -188,14 +196,15 @@ public final class IncidentUpdateTask implements BackgroundTask {
         .toCompletableFuture()
         .join()
         .forEach(doc -> data.addFlowNodeInstanceInListView(doc.id(), doc.index()));
+
+    return InstancesCheck.OK;
   }
 
-  private void checkDataAndCollectParentTreePaths(
+  private InstancesCheck checkDataAndCollectParentTreePaths(
       final Collection<IncidentDocument> incidents,
       final AdditionalData data,
       final boolean forceIgnoreMissingData) {
 
-    int countMissingInstance = 0;
     final Set<Long> processInstanceKeys =
         incidents.stream()
             .map(IncidentDocument::incident)
@@ -222,14 +231,15 @@ public final class IncidentUpdateTask implements BackgroundTask {
           continue;
         }
         if (!forceIgnoreMissingData) {
-          throw new ExporterException(
+          logger.warn(
               """
-                Process instance %d is not yet imported for incident %s; the update cannot be \
-                correctly applied.
-                """
-                  .formatted(incident.getProcessInstanceKey(), incident.getId()));
+            Process instance {} is not yet imported for incident {}; the update cannot be \
+            correctly applied. Operation will be retried...
+            """,
+              incident.getProcessInstanceKey(),
+              incident.getId());
+          return InstancesCheck.MISSING_DATA;
         } else {
-          countMissingInstance++;
           logger.warn(
               """
                 Process instance {} is not yet imported for incident {}; the update cannot be \
@@ -253,15 +263,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
                   .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey()))
                   .toString());
     }
-
-    if (countMissingInstance > 0 && !ignoreMissingData) {
-      throw new ExporterException(
-          """
-        "%d process instances are not yet imported for incident post processing; operation will \
-        be retried...
-        """
-              .formatted(countMissingInstance));
-    }
+    return InstancesCheck.OK;
   }
 
   private void queryData(final Collection<IncidentDocument> incidents, final AdditionalData data) {
@@ -658,5 +660,10 @@ public final class IncidentUpdateTask implements BackgroundTask {
       Thread.currentThread().interrupt();
       LangUtil.rethrowUnchecked(e);
     }
+  }
+
+  enum InstancesCheck {
+    OK,
+    MISSING_DATA
   }
 }
