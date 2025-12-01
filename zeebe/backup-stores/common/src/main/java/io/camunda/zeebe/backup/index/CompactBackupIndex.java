@@ -137,10 +137,6 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
     } else {
       spliceNewEntry(newEntry);
     }
-
-    // Update the entry count. Use the initially read count because `insertNewEntry` overwrites
-    // it for crash safety.
-    setEntries(initialEntries + 1);
   }
 
   @Override
@@ -387,6 +383,7 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
     // Move to the insertion point
     // Then write the new entry
     writeEntry(newEntry);
+    setEntries(getEntries() + 1);
   }
 
   private void spliceNewEntry(final IndexedBackup newEntry) {
