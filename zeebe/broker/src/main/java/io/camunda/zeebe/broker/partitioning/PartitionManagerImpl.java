@@ -48,6 +48,7 @@ import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -673,8 +674,15 @@ public final class PartitionManagerImpl
     // Leaving 50% of RAM for OS page cache and other processes.
     final long maxRocksDbMem = totalMemorySize / 2;
     final long blockCacheBytes =
-        brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
-            * brokerCfg.getCluster().getPartitionsCount();
+        switch (brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy()) {
+          case PARTITION ->
+              brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
+                  * brokerCfg.getCluster().getPartitionsCount();
+          case BROKER -> brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes();
+          case null ->
+              brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
+                  * brokerCfg.getCluster().getPartitionsCount();
+        };
 
     validateRocksDbMemory(brokerCfg, blockCacheBytes, maxRocksDbMem);
 
