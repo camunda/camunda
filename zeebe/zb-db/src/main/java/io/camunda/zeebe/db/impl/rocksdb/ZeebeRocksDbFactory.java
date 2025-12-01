@@ -221,6 +221,7 @@ public final class ZeebeRocksDbFactory<
     final var totalMemoryBudget = rocksDbConfiguration.getMemoryLimit();
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
+    // TODO: if we unifiy getMemoryLimit we need to divide it furhter here.
     final var blockCacheMemory = totalMemoryBudget / 3;
     // flushing the memtables is done asynchronously, so there may be multiple memtables in memory,
     // although only a single one is writable. once we have too many memtables, writes will stop.
@@ -240,11 +241,7 @@ public final class ZeebeRocksDbFactory<
                 * (1 - memtablePrefixFilterMemory));
 
     return new MemoryConfiguration(
-        totalMemoryBudget,
-        blockCacheMemory,
-        memtableMemory,
-        memtablePrefixFilterMemory,
-        maxConcurrentMemtableCount);
+        memtableMemory, memtablePrefixFilterMemory, maxConcurrentMemtableCount);
   }
 
   /**
@@ -357,9 +354,5 @@ public final class ZeebeRocksDbFactory<
 
   /** Holds calculated memory configuration values to avoid duplication. */
   private record MemoryConfiguration(
-      long totalMemoryBudget,
-      long blockCacheMemory,
-      long memtableMemory,
-      double memtablePrefixFilterMemory,
-      int maxConcurrentMemtableCount) {}
+      long memtableMemory, double memtablePrefixFilterMemory, int maxConcurrentMemtableCount) {}
 }

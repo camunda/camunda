@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
@@ -28,6 +29,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private int ioRateBytesPerSecond = RocksDbConfiguration.DEFAULT_IO_RATE_BYTES_PER_SECOND;
   private boolean disableWal = RocksDbConfiguration.DEFAULT_WAL_DISABLED;
   private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
+  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -71,6 +73,14 @@ public final class RocksdbCfg implements ConfigurationEntry {
 
   public void setMemoryLimit(final DataSize memoryLimit) {
     this.memoryLimit = memoryLimit;
+  }
+
+  public MemoryAllocationStrategy getMemoryAllocationStrategy() {
+    return memoryAllocationStrategy;
+  }
+
+  public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {
+    this.memoryAllocationStrategy = memoryAllocationStrategy;
   }
 
   public int getMaxOpenFiles() {
@@ -139,7 +149,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         .setStatisticsEnabled(enableStatistics)
         .setIoRateBytesPerSecond(ioRateBytesPerSecond)
         .setWalDisabled(disableWal)
-        .setSstPartitioningEnabled(enableSstPartitioning);
+        .setSstPartitioningEnabled(enableSstPartitioning)
+        .setMemoryAllocationStrategy(memoryAllocationStrategy);
   }
 
   @Override
@@ -153,6 +164,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + accessMetrics
         + ", memoryLimit="
         + memoryLimit
+        + ", memoryAllocationStrategy="
+        + memoryAllocationStrategy
         + ", maxOpenFiles="
         + maxOpenFiles
         + ", maxWriteBufferNumber="
