@@ -392,7 +392,7 @@ public class TestContainerUtil {
             .withExposedPorts(exposedPorts)
             .withAccessToHost(true)
             .withExtraHost("host.testcontainers.internal", "host-gateway")
-            .withNetwork(testContext.getNetwork())
+            .withNetwork(Network.SHARED)
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(managementPort)
@@ -422,6 +422,8 @@ public class TestContainerUtil {
   // for newer versions
   private void applyConfiguration(
       final GenericContainer<?> tasklistContainer, final TestContext testContext) {
+    final var indexPrefix =
+        testContext.getIndexPrefix() != null ? testContext.getIndexPrefix() : "";
     if (TestUtil.isOpenSearch()) {
       final String osHost = testContext.getInternalOsHost();
       final Integer osPort = testContext.getInternalOsPort();
@@ -439,7 +441,12 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
           // ---
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort));
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
+          // Prefix Setup
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", indexPrefix)
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", indexPrefix)
+          .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX", indexPrefix)
+          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
     } else {
       final String elsHost = testContext.getInternalElsHost();
       final Integer elsPort = testContext.getInternalElsPort();
@@ -466,7 +473,12 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
-          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com")
+          // Prefix Setup
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
+          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
     }
 
     final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
