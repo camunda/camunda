@@ -9,23 +9,31 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class DocumentBasedSecondaryStorageBackup implements Cloneable {
-
   private static final Set<String> LEGACY_OPERATE_SNAPSHOT_TIMEOUT =
       Set.of("camunda.operate.backup.snapshotTimeout");
-  private static final Set<String> LEGACY_UNIFIED_CONFIG_SNAPSHOT_TIMEOUT =
-      Set.of("camunda.data.backup.snapshot-timeout");
+  private static final Set<Set<String>> LEGACY_UNIFIED_CONFIG_SNAPSHOT_TIMEOUT =
+      LinkedHashSet.newLinkedHashSet(2);
   private static final Set<String> LEGACY_OPERATE_INCOMPLETE_CHECK_TIMEOUT_IN_SECONDS =
       Set.of("camunda.operate.backup.incompleteCheckTimeoutInSeconds");
   private static final Set<String> LEGACY_UNIFIED_CONFIG_INCOMPLETE_CHECK_TIMEOUT =
       Set.of("camunda.data.backup.incomplete-check-timeout");
   private static final Set<String> LEGACY_REPOSITORY_NAME_PROPERTIES =
-      Set.of(
-          "camunda.data.backup.repository-name",
-          "camunda.tasklist.backup.repositoryName",
-          "camunda.operate.backup.repositoryName");
+      Set.of("camunda.tasklist.backup.repositoryName", "camunda.operate.backup.repositoryName");
+  private static final Set<Set<String>> LEGACY_UNIFIED_REPOSITORY_NAME_PROPERTIES =
+      LinkedHashSet.newLinkedHashSet(2);
+  private static final Duration INCOMPLETE_CHECK_TIMEOUT_DEFAULT = Duration.ofMinutes(5);
+
+  static {
+    LEGACY_UNIFIED_REPOSITORY_NAME_PROPERTIES.add(LEGACY_REPOSITORY_NAME_PROPERTIES);
+    LEGACY_UNIFIED_REPOSITORY_NAME_PROPERTIES.add(Set.of("camunda.data.backup.repository-name"));
+
+    LEGACY_UNIFIED_CONFIG_SNAPSHOT_TIMEOUT.add(LEGACY_OPERATE_SNAPSHOT_TIMEOUT);
+    LEGACY_UNIFIED_CONFIG_SNAPSHOT_TIMEOUT.add(Set.of("camunda.data.backup.snapshot-timeout"));
+  }
 
   /**
    * Set the ES / OS snapshot repository name.
@@ -50,7 +58,7 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
    *
    * <p>Note: This setting applies to backups of secondary storage.
    */
-  private Duration incompleteCheckTimeout = Duration.ofMinutes(5);
+  private Duration incompleteCheckTimeout = INCOMPLETE_CHECK_TIMEOUT_DEFAULT;
 
   private final String prefix;
 
@@ -59,12 +67,12 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
   }
 
   public String getRepositoryName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         prefix + ".repository-name",
         repositoryName,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_REPOSITORY_NAME_PROPERTIES);
+        LEGACY_UNIFIED_REPOSITORY_NAME_PROPERTIES);
   }
 
   public void setRepositoryName(final String repositoryName) {
@@ -72,27 +80,12 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
   }
 
   public int getSnapshotTimeout() {
-    final int legacyOperateSnapshotTimeout =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
-            prefix + ".snapshot-timeout",
-            snapshotTimeout,
-            Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED,
-            LEGACY_OPERATE_SNAPSHOT_TIMEOUT);
-
-    final int legacyUnifiedSnapshotTimeout =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
-            prefix + ".snapshot-timeout",
-            snapshotTimeout,
-            Integer.class,
-            BackwardsCompatibilityMode.SUPPORTED,
-            LEGACY_UNIFIED_CONFIG_SNAPSHOT_TIMEOUT);
-
-    // Give precedence to legacy unified configuration value
-    if (legacyUnifiedSnapshotTimeout != snapshotTimeout) {
-      return legacyUnifiedSnapshotTimeout;
-    }
-    return legacyOperateSnapshotTimeout;
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+        prefix + ".snapshot-timeout",
+        snapshotTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_UNIFIED_CONFIG_SNAPSHOT_TIMEOUT);
   }
 
   public void setSnapshotTimeout(final int snapshotTimeout) {
@@ -100,9 +93,14 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
   }
 
   public Duration getIncompleteCheckTimeout() {
-    final long incompleteCheckTimeoutInSeconds =
+
+    // Have to handle both Long (legacy operate) and Duration (legacy unified config) separately
+    // due to type difference. Test legacy with old unified config key first and then against the
+    // updated unified config key.
+    final long legacyIncompleteCheckTimeout =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            prefix + ".incomplete-check-timeout",
+            // Old unified config key kept for backwards compatibility
+            "camunda.data.backup.incomplete-check-timeout",
             incompleteCheckTimeout.getSeconds(),
             Long.class,
             BackwardsCompatibilityMode.SUPPORTED,
@@ -116,12 +114,16 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
             BackwardsCompatibilityMode.SUPPORTED,
             LEGACY_UNIFIED_CONFIG_INCOMPLETE_CHECK_TIMEOUT);
 
-    // Give precedence to legacy unified configuration value
-    if (incompleteCheckTimeoutInDuration.getSeconds() != incompleteCheckTimeout.getSeconds()) {
-      return incompleteCheckTimeoutInDuration;
+    // legacy or old unified config value exists
+    if (legacyIncompleteCheckTimeout != incompleteCheckTimeoutInDuration.getSeconds()) {
+      // New or old unified config value also exists, has higher precedence
+      if (incompleteCheckTimeoutInDuration.getSeconds()
+          != INCOMPLETE_CHECK_TIMEOUT_DEFAULT.getSeconds()) {
+        return incompleteCheckTimeoutInDuration;
+      }
+      return Duration.ofSeconds(legacyIncompleteCheckTimeout);
     }
-
-    return Duration.ofSeconds(incompleteCheckTimeoutInSeconds);
+    return incompleteCheckTimeoutInDuration;
   }
 
   public void setIncompleteCheckTimeout(final Duration incompleteCheckTimeout) {

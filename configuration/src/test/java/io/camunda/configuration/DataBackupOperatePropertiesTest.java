@@ -202,6 +202,94 @@ public class DataBackupOperatePropertiesTest {
             .isEqualTo(180);
       }
     }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // old unified config
+          "camunda.data.backup.incomplete-check-timeout=1m",
+          // legacy configuration operate
+          "camunda.operate.backup.incompleteCheckTimeoutInSeconds=90",
+        })
+    class IncompleteCheckTimeoutOldUnified {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutOldUnified(@Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromOldUnified() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(60);
+      }
+    }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // legacy configuration operate
+          "camunda.operate.backup.incompleteCheckTimeoutInSeconds=90",
+        })
+    class IncompleteCheckTimeoutOnlyLegacy {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutOnlyLegacy(@Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromLegacy() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(90);
+      }
+    }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // new
+          "camunda.data.secondary-storage.opensearch.backup.incomplete-check-timeout=2m",
+          // legacy configuration operate
+          "camunda.operate.backup.incompleteCheckTimeoutInSeconds=90",
+        })
+    class IncompleteCheckTimeoutFromNewWithLegacy {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutFromNewWithLegacy(
+          @Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromNew() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(120);
+      }
+    }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // new
+          "camunda.data.secondary-storage.elasticsearch.backup.incomplete-check-timeout=2m",
+          // old unified config
+          "camunda.data.backup.incomplete-check-timeout=1m",
+        })
+    class IncompleteCheckTimeoutFromNewWithOldUnified {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutFromNewWithOldUnified(
+          @Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromNew() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(120);
+      }
+    }
   }
 
   @Nested
@@ -351,13 +439,13 @@ public class DataBackupOperatePropertiesTest {
           "camunda.data.secondary-storage.elasticsearch.backup.incomplete-check-timeout=3m",
           // old unified config
           "camunda.data.backup.repository-name=repositoryName",
-          "camunda.data.backup.snapshot-timeout=5",
-          "camunda.data.backup.incomplete-check-timeout=3m",
+          "camunda.data.backup.snapshot-timeout=2",
+          "camunda.data.backup.incomplete-check-timeout=1m",
           // legacy configuration tasklist
           "camunda.tasklist.backup.repositoryName=repositoryName",
           // legacy configuration operate
           "camunda.operate.backup.repositoryName=repositoryName",
-          "camunda.operate.backup.snapshotTimeout=2",
+          "camunda.operate.backup.snapshotTimeout=1",
           "camunda.operate.backup.incompleteCheckTimeoutInSeconds=90",
         })
     class WithNewAndLegacySet {
@@ -381,6 +469,94 @@ public class DataBackupOperatePropertiesTest {
       void shouldSetIncompleteCheckTimeoutFromNew() {
         assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
             .isEqualTo(180);
+      }
+    }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // old unified config
+          "camunda.data.backup.incomplete-check-timeout=1m",
+          // legacy configuration operate
+          "camunda.operate.backup.incompleteCheckTimeoutInSeconds=90",
+        })
+    class IncompleteCheckTimeoutOldUnified {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutOldUnified(@Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromOldUnified() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(60);
+      }
+    }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // legacy configuration operate
+          "camunda.operate.backup.incompleteCheckTimeoutInSeconds=90",
+        })
+    class IncompleteCheckTimeoutOnlyLegacy {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutOnlyLegacy(@Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromLegacy() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(90);
+      }
+    }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // new
+          "camunda.data.secondary-storage.elasticsearch.backup.incomplete-check-timeout=2m",
+          // legacy configuration operate
+          "camunda.operate.backup.incompleteCheckTimeoutInSeconds=90",
+        })
+    class IncompleteCheckTimeoutFromNewWithLegacy {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutFromNewWithLegacy(
+          @Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromNew() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(120);
+      }
+    }
+
+    @Nested
+    @TestPropertySource(
+        properties = {
+          // new
+          "camunda.data.secondary-storage.elasticsearch.backup.incomplete-check-timeout=2m",
+          // old unified config
+          "camunda.data.backup.incomplete-check-timeout=1m",
+        })
+    class IncompleteCheckTimeoutFromNewWithOldUnified {
+      final OperateProperties operateProperties;
+
+      IncompleteCheckTimeoutFromNewWithOldUnified(
+          @Autowired final OperateProperties operateProperties) {
+        this.operateProperties = operateProperties;
+      }
+
+      @Test
+      void shouldSetIncompleteCheckTimeoutFromNew() {
+        assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+            .isEqualTo(120);
       }
     }
   }

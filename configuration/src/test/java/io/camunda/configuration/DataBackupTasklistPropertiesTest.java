@@ -173,7 +173,10 @@ public class DataBackupTasklistPropertiesTest {
     @Nested
     @TestPropertySource(
         properties = {
-          "camunda.data.secondary-storage.elasticsearch.backup.repository-name=repositoryNameNew",
+          "camunda.data.secondary-storage.elasticsearch.backup.repository-name=repositoryNameNew3",
+          "camunda.data.backup.repository-name=repositoryNameNew2",
+          "camunda.operate.backup.repositoryName=repositoryNameNew",
+          "camunda.tasklist.backup.repositoryName=repositoryNameNew",
         })
     class WithNewUnifiedConfigSet {
       final TasklistProperties tasklistProperties;
@@ -185,7 +188,7 @@ public class DataBackupTasklistPropertiesTest {
       @Test
       void shouldSetRepositoryName() {
         assertThat(tasklistProperties.getBackup().getRepositoryName())
-            .isEqualTo("repositoryNameNew");
+            .isEqualTo("repositoryNameNew3");
       }
     }
 
