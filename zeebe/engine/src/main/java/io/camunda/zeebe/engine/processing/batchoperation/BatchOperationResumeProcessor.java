@@ -89,7 +89,11 @@ public final class BatchOperationResumeProcessor
   public void processNewCommand(
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
     final var request =
-        new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.UPDATE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.BATCH)
+                    .permissionType(PermissionType.UPDATE));
     final var authorizationResult = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();

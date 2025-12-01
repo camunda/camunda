@@ -61,8 +61,11 @@ public class MappingRuleCreateProcessor
   @Override
   public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
     final var authorizationRequest =
-        new AuthorizationRequest(
-            command, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.MAPPING_RULE)
+                    .permissionType(PermissionType.CREATE));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

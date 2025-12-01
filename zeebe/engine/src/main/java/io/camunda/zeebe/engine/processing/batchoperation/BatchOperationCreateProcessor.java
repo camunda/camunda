@@ -163,14 +163,21 @@ public final class BatchOperationCreateProcessor
           MsgPackConverter.convertToObject(
               command.getValue().getAuthorizationCheckBuffer(), Authorization.class);
       final AuthorizationRequest authorizationRequest =
-          new AuthorizationRequest(
-              command, authorization.resourceType(), authorization.permissionType());
-      authorization.resourceIds().forEach(authorizationRequest::addResourceId);
-      return authCheckBehavior.isAuthorized(authorizationRequest.build());
+          AuthorizationRequest.of(
+              r ->
+                  r.command(command)
+                      .resourceType(authorization.resourceType())
+                      .permissionType(authorization.permissionType())
+                      .addAllResourceIds(authorization.resourceIds()));
+      return authCheckBehavior.isAuthorized(authorizationRequest);
     }
     // first check for general CREATE_BATCH_OPERATION permission
     final var request =
-        new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.CREATE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.BATCH)
+                    .permissionType(PermissionType.CREATE));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
@@ -187,7 +194,11 @@ public final class BatchOperationCreateProcessor
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE;
           };
       return authCheckBehavior.isAuthorized(
-          new AuthorizationRequest(command, AuthorizationResourceType.BATCH, permission).build());
+          AuthorizationRequest.of(
+              r ->
+                  r.command(command)
+                      .resourceType(AuthorizationResourceType.BATCH)
+                      .permissionType(permission)));
     }
 
     return isAuthorized;

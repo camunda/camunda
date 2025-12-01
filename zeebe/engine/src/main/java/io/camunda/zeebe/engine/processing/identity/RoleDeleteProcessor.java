@@ -69,8 +69,12 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     final var record = command.getValue();
     final String roleId = record.getRoleId();
     final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.DELETE)
-            .addResourceId(roleId);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.ROLE)
+                    .permissionType(PermissionType.DELETE)
+                    .addResourceId(roleId));
 
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {

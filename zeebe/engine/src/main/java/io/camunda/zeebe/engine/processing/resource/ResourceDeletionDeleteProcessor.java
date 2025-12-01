@@ -445,9 +445,13 @@ public class ResourceDeletionDeleteProcessor
       final String resourceId,
       final String tenantId) {
     final var authRequest =
-        new AuthorizationRequest(command, resourceType, permissionType, tenantId)
-            .addResourceId(resourceId);
-
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(resourceType)
+                    .permissionType(permissionType)
+                    .tenantId(tenantId)
+                    .addResourceId(resourceId));
     if (authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);
     }

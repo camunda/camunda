@@ -64,7 +64,11 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
     final var authRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.USER)
+                    .permissionType(PermissionType.CREATE));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

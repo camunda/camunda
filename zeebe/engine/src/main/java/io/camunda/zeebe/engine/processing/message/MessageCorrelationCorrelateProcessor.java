@@ -201,14 +201,14 @@ public final class MessageCorrelationCorrelateProcessor
                       : PermissionType.UPDATE_PROCESS_INSTANCE;
 
               request.set(
-                  new AuthorizationRequest(
-                      command,
-                      AuthorizationResourceType.PROCESS_DEFINITION,
-                      permissionType,
-                      tenantId));
+                  AuthorizationRequest.of(
+                      r ->
+                          r.command(command)
+                              .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                              .permissionType(permissionType)
+                              .tenantId(tenantId)
+                              .addResourceId(bufferAsString(subscription.getBpmnProcessId()))));
 
-              final var processIdString = bufferAsString(subscription.getBpmnProcessId());
-              request.get().addResourceId(processIdString);
               final var rejectionOrAuthorized =
                   authCheckBehavior.isAuthorizedOrInternalCommand(request.get());
               rejectionOrAuthorized.ifLeft(rejection::set);

@@ -55,7 +55,11 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.CREATE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.GROUP)
+                    .permissionType(PermissionType.CREATE));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
 
     if (isAuthorized.isLeft()) {

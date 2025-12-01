@@ -91,9 +91,12 @@ public class MappingRuleUpdateProcessor
     }
 
     final var authorizationRequest =
-        new AuthorizationRequest(
-                command, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE)
-            .addResourceId(mappingRuleId);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.MAPPING_RULE)
+                    .permissionType(PermissionType.UPDATE)
+                    .addResourceId(mappingRuleId));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

@@ -67,12 +67,13 @@ public class DecisionEvaluationEvaluteProcessor
       final var decision = decisionOrFailure.get();
       final var decisionId = bufferAsString(decision.getDecisionId());
       final var authRequest =
-          new AuthorizationRequest(
-                  command,
-                  AuthorizationResourceType.DECISION_DEFINITION,
-                  PermissionType.CREATE_DECISION_INSTANCE,
-                  record.getTenantId())
-              .addResourceId(decisionId);
+          AuthorizationRequest.of(
+              r ->
+                  r.command(command)
+                      .resourceType(AuthorizationResourceType.DECISION_DEFINITION)
+                      .permissionType(PermissionType.CREATE_DECISION_INSTANCE)
+                      .tenantId(record.getTenantId())
+                      .addResourceId(decisionId));
 
       final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
       if (isAuthorized.isLeft()) {

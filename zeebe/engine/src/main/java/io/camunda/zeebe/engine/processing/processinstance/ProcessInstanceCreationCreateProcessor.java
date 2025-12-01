@@ -143,12 +143,13 @@ public final class ProcessInstanceCreationCreateProcessor
       final DeployedProcess deployedProcess) {
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
     final var request =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.CREATE_PROCESS_INSTANCE,
-                command.getValue().getTenantId())
-            .addResourceId(processId);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
+                    .tenantId(command.getValue().getTenantId())
+                    .addResourceId(processId));
 
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isRight()) {

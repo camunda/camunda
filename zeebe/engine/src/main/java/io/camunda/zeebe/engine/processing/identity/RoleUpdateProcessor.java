@@ -56,8 +56,12 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
-            .addResourceId(record.getRoleId());
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.ROLE)
+                    .permissionType(PermissionType.UPDATE)
+                    .addResourceId(record.getRoleId()));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

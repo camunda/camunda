@@ -90,12 +90,13 @@ public final class VariableDocumentUpdateProcessor
     }
 
     final var authRequest =
-        new AuthorizationRequest(
-                record,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                scope.getValue().getTenantId())
-            .addResourceId(scope.getValue().getBpmnProcessId());
+        AuthorizationRequest.of(
+            r ->
+                r.command(record)
+                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                    .tenantId(scope.getValue().getTenantId())
+                    .addResourceId(scope.getValue().getBpmnProcessId()));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
