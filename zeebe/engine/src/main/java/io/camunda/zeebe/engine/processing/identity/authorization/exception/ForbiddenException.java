@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.exception;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior.AuthorizationRequestMetadata;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequestMetadata;
 import io.camunda.zeebe.protocol.record.RejectionType;
 
 /**
