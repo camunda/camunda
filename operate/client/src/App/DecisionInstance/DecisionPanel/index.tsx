@@ -9,8 +9,7 @@
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {IncidentBanner, Section} from './styled';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
-import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
-import {useQuery} from '@tanstack/react-query';
+import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 import {useMemo} from 'react';
@@ -38,12 +37,9 @@ const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
     isFetching,
     isError,
     error,
-  } = useQuery(
-    useDecisionDefinitionXmlOptions({
-      decisionDefinitionKey: decisionInstance?.decisionDefinitionKey ?? '',
-      enabled: !!decisionInstance,
-    }),
-  );
+  } = useDecisionDefinitionXml({
+    decisionDefinitionKey: decisionInstance?.decisionDefinitionKey,
+  });
 
   const getStatus = () => {
     if (isFetching) {
