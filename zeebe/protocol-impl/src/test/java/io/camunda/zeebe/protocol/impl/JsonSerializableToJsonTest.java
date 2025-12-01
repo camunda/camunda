@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
@@ -67,6 +66,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
@@ -1739,7 +1739,14 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(key)
                   .addTerminateInstruction(
                       new ProcessInstanceModificationTerminateInstruction()
-                          .setElementInstanceKey(elementInstanceKeyToTerminate))
+                          .setElementInstanceKey(elementInstanceKeyToTerminate)
+                          .setElementId(elementIdToActivate))
+                  .addMoveInstruction(
+                      new ProcessInstanceModificationMoveInstruction()
+                          .setSourceElementId(variableInstructionElementId)
+                          .setTargetElementId(elementIdToActivate)
+                          .setAncestorScopeKey(ancestorScopeKey)
+                          .setUseSourceParentKeyAsAncestorScope(true))
                   .addActivateInstruction(
                       new ProcessInstanceModificationActivateInstruction()
                           .setElementId(elementIdToActivate)
@@ -1754,7 +1761,14 @@ final class JsonSerializableToJsonTest {
                 {
                   "processInstanceKey": 1,
                   "terminateInstructions": [{
-                    "elementInstanceKey": 2
+                    "elementInstanceKey": 2,
+                    "elementId": "activity"
+                  }],
+                  "moveInstructions": [{
+                    "sourceElementId": "sub-process",
+                    "targetElementId": "activity",
+                    "ancestorScopeKey": 3,
+                    "useSourceParentKeyAsAncestorScope": true
                   }],
                   "activateInstructions": [{
                     "ancestorScopeKey": 3,
@@ -1786,6 +1800,7 @@ final class JsonSerializableToJsonTest {
                 {
                   "processInstanceKey": 1,
                   "terminateInstructions": [],
+                  "moveInstructions": [],
                   "activateInstructions": [],
                   "ancestorScopeKeys": [],
                   "tenantId": "<default>"
@@ -3611,9 +3626,11 @@ final class JsonSerializableToJsonTest {
                     .setModificationPlan(
                         new BatchOperationProcessInstanceModificationPlan()
                             .addMoveInstruction(
-                                new BatchOperationProcessInstanceModificationMoveInstruction()
+                                new ProcessInstanceModificationMoveInstruction()
                                     .setSourceElementId("sourceTask")
-                                    .setTargetElementId("targetTask")))
+                                    .setTargetElementId("targetTask")
+                                    .setAncestorScopeKey(55555L)
+                                    .setUseSourceParentKeyAsAncestorScope(true)))
                     .setAuthentication(
                         toMessagePack(
                             """
@@ -3664,12 +3681,12 @@ final class JsonSerializableToJsonTest {
                        {
                          "targetElementId": "targetTask",
                          "sourceElementId": "sourceTask",
-                         "empty": false,
-                         "encodedLength": 55
+                         "ancestorScopeKey": 55555,
+                         "useSourceParentKeyAsAncestorScope": true
                        }
                      ],
                      "empty": false,
-                     "encodedLength": 74
+                     "encodedLength": 130
                    },
                    "authenticationBuffer": {
                      "expandable": false
