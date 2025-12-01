@@ -90,10 +90,7 @@ public final class MessageCorrelationCorrelateProcessor
     final var messageCorrelationRecord = command.getValue();
 
     // Check tenant authorization if not an internal command
-    final var isInternal =
-        authCheckBehavior.isInternalCommand(
-            command.hasRequestMetadata(), command.getBatchOperationReference());
-    if (!isInternal) {
+    if (!command.isInternalCommand()) {
       if (!authCheckBehavior.isAssignedToTenant(command, messageCorrelationRecord.getTenantId())) {
         final var message =
             "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."

@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 
@@ -48,8 +49,25 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
    */
   @JsonIgnore
   default boolean isCommandDistributed() {
-    final boolean isCommand = getRecordType().equals(RecordType.COMMAND);
+    final boolean isCommand = RecordType.COMMAND == getRecordType();
     final long key = getKey();
     return isCommand && key != -1 && Protocol.decodePartitionId(key) != getPartitionId();
+  }
+
+  /**
+   * Determines if the command is an internal command. Internal commands are commands that are
+   * written by Zeebe itself and not by an external user.
+   *
+   * <p>A command is considered internal if it has no request metadata and no batch operation
+   * reference.
+   *
+   * @return {@code true} if the command is an internal, {@code false} otherwise
+   */
+  @JsonIgnore
+  default boolean isInternalCommand() {
+    final boolean isCommand = RecordType.COMMAND == getRecordType();
+    return isCommand
+        && !hasRequestMetadata()
+        && getBatchOperationReference() == RecordMetadataDecoder.batchOperationReferenceNullValue();
   }
 }
