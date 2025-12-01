@@ -25,6 +25,9 @@ jobs:
   integration-tests:
     name: "[IT] Camunda QA Integration Module. Aurora"
     timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
     runs-on: aws-core-8-default
     steps:
       - uses: actions/checkout@v4
