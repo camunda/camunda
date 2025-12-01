@@ -20,6 +20,10 @@ import {
   type FlowNodeInstance,
 } from 'modules/stores/flowNodeInstance';
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const init = (
   rootNode: Selection | null,
   processInstanceKey?: string,
@@ -80,10 +84,18 @@ const init = (
   );
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const clearSelection = (rootNode: Selection | null) => {
   flowNodeSelectionStore.setSelection(rootNode);
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const selectFlowNode = (rootNode: Selection, selection: Selection) => {
   if (
     selection.flowNodeId === undefined ||
@@ -96,6 +108,10 @@ const selectFlowNode = (rootNode: Selection, selection: Selection) => {
   }
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const selectAdHocSubProcessInnerInstance = (
   rootNode: Selection,
   flowNodeInstance: FlowNodeInstance,
@@ -144,6 +160,10 @@ const selectAdHocSubProcessInnerInstance = (
   }
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const getSelectedRunningInstanceCount = ({
   totalRunningInstancesForFlowNode,
   isRootNodeSelected,
@@ -172,6 +192,10 @@ const getSelectedRunningInstanceCount = ({
   return totalRunningInstancesForFlowNode;
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const getSelectedFlowNodeName = ({
   businessObjects,
   processDefinitionName,
