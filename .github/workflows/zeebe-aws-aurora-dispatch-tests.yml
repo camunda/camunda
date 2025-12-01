@@ -12,6 +12,9 @@ on:
   schedule:
     - cron: "0 4 * * Mon-Fri"
 
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
