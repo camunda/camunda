@@ -33,9 +33,8 @@ on:
         type: boolean
         default: false
       includeOptimize:
-        description: 'Legacy parameter for backward compatibility. Optimize is always excluded from the release process regardless of this value. This parameter exists only to prevent failures in older dispatch calls.'
+        description: 'Whether to include Optimize in the release process. When true, Optimize is included in Maven prepare/perform steps. Defaults to false for backward compatibility.'
         type: boolean
-        required: false
         default: false
   workflow_dispatch:
     inputs:
@@ -66,9 +65,8 @@ on:
         type: boolean
         default: false
       includeOptimize:
-        description: 'Legacy parameter for backward compatibility. Optimize is always excluded from the release process regardless of this value. This parameter exists only to prevent failures in older dispatch calls.'
+        description: 'Whether to include Optimize in the release process. When true, Optimize is included in Maven prepare/perform steps. Defaults to false for backward compatibility.'
         type: boolean
-        required: false
         default: false
 defaults:
   run:
@@ -183,6 +181,16 @@ jobs:
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
+          
+          # Conditionally set profile flags based on includeOptimize input
+          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
+            PROFILE_FLAGS=""
+            ARGUMENTS_PROFILE=""
+          else
+            PROFILE_FLAGS="-P\!include-optimize"
+            ARGUMENTS_PROFILE="-P!include-optimize"
+          fi
+          
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -193,8 +201,8 @@ jobs:
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
             -DpreparationGoals="" \
-            -P\!include-optimize \
-            -Darguments='-P!include-optimize'
+            ${PROFILE_FLAGS} \
+            -Darguments="${ARGUMENTS_PROFILE}"
 
       - name: Maven Perform Release
         id: maven-perform-release
@@ -210,6 +218,15 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
+          # Conditionally set profile flags based on includeOptimize input
+          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
+            PROFILE_FLAGS=""
+            ARGUMENTS_PROFILE=""
+          else
+            PROFILE_FLAGS="-P\!include-optimize"
+            ARGUMENTS_PROFILE="-P!include-optimize"
+          fi
+
           # shellcheck disable=SC2016
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -217,8 +234,8 @@ jobs:
             -DlocalCheckout="${{ inputs.dryRun }}" \
             -DskipQaBuild=true \
             -P-autoFormat \
-            -P\!include-optimize \
-            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            ${PROFILE_FLAGS} \
+            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -227,6 +244,19 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+      - name: Debug Optimize Versions
+        if: ${{ inputs.includeOptimize && inputs.dryRun }}
+        run: |
+          echo "=== Optimize Version Information ==="
+          echo "Optimize project.version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout || echo "Failed to get Optimize version"
+          echo ""
+          echo "Zeebe version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=zeebe.version -q -DforceStdout || echo "Failed to get Zeebe version"
+          echo ""
+          echo "Identity version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=identity.version -q -DforceStdout || echo "Failed to get Identity version"
+          echo ""
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
