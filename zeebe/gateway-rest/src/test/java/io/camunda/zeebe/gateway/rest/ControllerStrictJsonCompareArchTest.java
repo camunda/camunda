@@ -14,6 +14,11 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import org.springframework.test.web.reactive.server.WebTestClient.BodyContentSpec;
 
+/**
+ * PS: This his arch test specifically tests the condition only for test classes. Since the
+ * qa/archunit-tests will not scan test directories in the rest of the codebase, this test should
+ * stay in its original location
+ */
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.gateway.rest",
     importOptions = ImportOption.OnlyIncludeTests.class)
