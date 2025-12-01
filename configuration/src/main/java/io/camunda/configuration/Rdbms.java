@@ -55,6 +55,8 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   @NestedConfigurationProperty private RdbmsHistory history = new RdbmsHistory();
 
+  @NestedConfigurationProperty private RdbmsMetrics metrics = new RdbmsMetrics();
+
   public String getPrefix() {
     return prefix;
   }
@@ -128,6 +130,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @Override
   public void setHistory(final RdbmsHistory history) {
     this.history = history;
+  }
+
+  public RdbmsMetrics getMetrics() {
+    return metrics;
+  }
+
+  public void setMetrics(final RdbmsMetrics metrics) {
+    this.metrics = metrics;
   }
 
   @Override
