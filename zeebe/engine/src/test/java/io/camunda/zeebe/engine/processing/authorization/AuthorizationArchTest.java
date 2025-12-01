@@ -22,7 +22,7 @@ import com.tngtech.archunit.lang.conditions.ArchConditions;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
