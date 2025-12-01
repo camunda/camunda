@@ -327,6 +327,7 @@ test.describe.serial('Process Instance Migration', () => {
     operateFiltersPanelPage,
     operateProcessesPage,
     operateProcessMigrationModePage,
+    operateOperationPanelPage
   }) => {
     test.slow();
     const sourceVersion = testProcesses.processV2.version.toString();
@@ -347,6 +348,8 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessesPage.selectProcessInstances(
         MANUAL_MIGRATION_INSTANCE_COUNT,
       );
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
       await operateProcessesPage.startMigration();
     });
 
@@ -495,6 +498,8 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Verify migration operation is created and completes', async () => {
       await operateProcessesPage.waitForOperationToComplete();
+      operateOperationPanelPage.afterOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
@@ -502,7 +507,31 @@ test.describe.serial('Process Instance Migration', () => {
         timeout: 120000,
       });
 
-      await operateProcessesPage.clickLatestOperationLink();
+      // await operateProcessesPage.clickLatestOperationLink();
+
+      migratedIds = getNewOperationIds(
+        operateOperationPanelPage.beforeOperationOperationPanelEntries,
+        operateOperationPanelPage.afterOperationOperationPanelEntries,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          console.log('MIGRATED IDS', migratedIds);
+          expect(migratedIds.length).toBeGreaterThan(0);
+        },
+        onFailure: async () => {
+          await page.waitForTimeout(1000);
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          migratedIds = getNewOperationIds(
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
+          );
+        },
+        maxRetries: 60,
+      });
+
+      await operateOperationPanelPage.clickOperationEntryById(migratedIds[0]);
 
       await validateURL(page, /operationId=/);
 
