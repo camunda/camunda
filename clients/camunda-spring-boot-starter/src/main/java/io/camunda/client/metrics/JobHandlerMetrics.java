@@ -26,16 +26,17 @@ import java.util.Map;
  * <p>These constants are used for recording and tagging job handler metrics such as invocations,
  * execution times, and job actions (activated, completed, failed, BPMN error).
  */
-@SuppressWarnings("checkstyle:InterfaceIsType")
-public interface JobHandlerMetrics {
-  static CounterMetricsContext counter(final ActivatedJob activatedJob) {
+public final class JobHandlerMetrics {
+  private JobHandlerMetrics() {}
+
+  public static CounterMetricsContext counter(final ActivatedJob activatedJob) {
     return new CounterMetricsContext(
         Name.INVOCATION.asString(),
         Map.ofEntries(Map.entry(Tag.TYPE.asString(), activatedJob.getType())),
         1);
   }
 
-  static TimerMetricsContext timer(final ActivatedJob activatedJob) {
+  public static TimerMetricsContext timer(final ActivatedJob activatedJob) {
     return new TimerMetricsContext(
         Name.EXECUTION_TIME.asString(),
         Map.ofEntries(Map.entry(Tag.TYPE.asString(), activatedJob.getType())));
