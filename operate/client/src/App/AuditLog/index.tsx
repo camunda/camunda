@@ -386,7 +386,7 @@ const AuditLog: React.FC = () => {
           }}
         >
           <div style={{padding: 'var(--cds-spacing-05)', paddingBottom: 0}}>
-            <h3 style={{marginBottom: 'var(--cds-spacing-06)'}}>Operations Log</h3>
+            <h3 style={{marginBottom: 'var(--cds-spacing-05)'}}>Operations Log</h3>
           </div>
           <div 
             style={{

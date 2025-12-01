@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useEffect} from 'react';
+import {useState, useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Link, Breadcrumb, BreadcrumbItem, Tooltip} from '@carbon/react';
+import {Link, Breadcrumb, BreadcrumbItem, Tooltip, Pagination} from '@carbon/react';
 import {Checkmark, Error, CircleDash} from '@carbon/icons-react';
 import {
   BatchOperationsFilters,
@@ -46,6 +46,8 @@ const formatCount = (count: number): string => {
 const BatchOperations: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   useEffect(() => {
     document.title = PAGE_TITLE.BATCH_OPERATIONS;
@@ -183,6 +185,17 @@ const BatchOperations: React.FC = () => {
     return result;
   }, [filtersFromUrl, sortBy, sortOrder]);
 
+  // Paginate data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredData.slice(startIndex, startIndex + pageSize);
+  }, [filteredData, currentPage, pageSize]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filtersFromUrl]);
+
   const headers = [
     {key: 'operationType', header: 'Operation', sortKey: 'operationType'},
     {key: 'state', header: 'Batch state', sortKey: 'state'},
@@ -193,7 +206,7 @@ const BatchOperations: React.FC = () => {
 
   const rows = useMemo(
     () =>
-      filteredData.map((operation) => {
+      paginatedData.map((operation) => {
         // Build items display with success/failed/pending counts
         const successCount = operation.completedItems;
         const failedCount = operation.failedItems;
@@ -263,7 +276,7 @@ const BatchOperations: React.FC = () => {
           appliedBy: operation.appliedBy,
         };
       }),
-    [filteredData, navigate],
+    [paginatedData, navigate],
   );
 
   return (
@@ -290,7 +303,7 @@ const BatchOperations: React.FC = () => {
               Processes
             </Link>
           </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>Batch operations</BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>Batch Operations</BreadcrumbItem>
         </Breadcrumb>
       </div>
       <div
@@ -330,7 +343,7 @@ const BatchOperations: React.FC = () => {
           }}
         >
           <div style={{padding: 'var(--cds-spacing-05)', paddingBottom: 0}}>
-            <h3 style={{marginBottom: 'var(--cds-spacing-06)'}}>
+            <h3 style={{marginBottom: 'var(--cds-spacing-05)'}}>
               Batch Operations
             </h3>
           </div>
@@ -338,7 +351,7 @@ const BatchOperations: React.FC = () => {
             style={{
               flex: 1,
               overflow: 'auto',
-              padding: '0 var(--cds-spacing-05) var(--cds-spacing-05)',
+              padding: '0 var(--cds-spacing-05)',
             }}
             className="batch-operations-table-container"
           >
@@ -386,6 +399,16 @@ const BatchOperations: React.FC = () => {
               }}
             />
           </div>
+          <Pagination
+            page={currentPage}
+            pageSize={pageSize}
+            pageSizes={[20, 50, 100]}
+            totalItems={filteredData.length}
+            onChange={({page, pageSize: newPageSize}) => {
+              setCurrentPage(page);
+              setPageSize(newPageSize);
+            }}
+          />
         </div>
       </div>
     </>

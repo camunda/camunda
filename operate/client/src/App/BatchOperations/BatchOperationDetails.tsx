@@ -646,7 +646,7 @@ const BatchOperationDetails: React.FC = () => {
                   navigate(Paths.batchOperations());
                 }}
               >
-                Batch operations
+                Batch Operations
               </Link>
             </BreadcrumbItem>
             <BreadcrumbItem isCurrentPage>Not found</BreadcrumbItem>
@@ -702,7 +702,7 @@ const BatchOperationDetails: React.FC = () => {
                 navigate(Paths.batchOperations());
               }}
             >
-              Batch operations
+              Batch Operations
             </Link>
           </BreadcrumbItem>
           <BreadcrumbItem isCurrentPage>
@@ -906,7 +906,7 @@ const BatchOperationDetails: React.FC = () => {
             </Stack>
 
             {/* Items Section */}
-            <Stack gap={3}>
+            <Stack gap={2}>
               <div
                 style={{
                   display: 'flex',
@@ -932,7 +932,7 @@ const BatchOperationDetails: React.FC = () => {
                   )}
                   <Button
                     kind='ghost'
-                    size="md"
+                    size="sm"
                     renderIcon={Filter}
                     iconDescription="Toggle filters"
                     tooltipPosition="bottom"
@@ -1023,7 +1023,7 @@ const BatchOperationDetails: React.FC = () => {
                   getTableContainerProps,
                 }) => (
                   <TableContainer {...getTableContainerProps()}>
-                    <Table {...getTableProps()} size="lg">
+                    <Table {...getTableProps()} size="md">
                       <TableHead>
                         <TableRow>
                           <TableExpandHeader aria-label="expand row" />

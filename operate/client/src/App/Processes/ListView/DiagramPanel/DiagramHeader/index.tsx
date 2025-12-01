@@ -10,7 +10,7 @@ import {observer} from 'mobx-react';
 import isNil from 'lodash/isNil';
 import {useNavigate} from 'react-router-dom';
 import {Button} from '@carbon/react';
-import {ClassicBatch, List} from '@carbon/icons-react';
+import {ClassicBatch} from '@carbon/icons-react';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {Restricted} from 'modules/components/Restricted';
