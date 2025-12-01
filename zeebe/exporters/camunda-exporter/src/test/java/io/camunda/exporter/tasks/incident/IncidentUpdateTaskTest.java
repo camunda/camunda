@@ -9,7 +9,10 @@ package io.camunda.exporter.tasks.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -88,7 +91,7 @@ final class IncidentUpdateTaskTest {
     task.execute().toCompletableFuture().join();
 
     // then
-    Mockito.verify(repository).getPendingIncidentsBatch(Mockito.eq(5L), Mockito.anyInt());
+    Mockito.verify(repository).getPendingIncidentsBatch(Mockito.eq(5L), anyInt());
   }
 
   @Test
@@ -101,7 +104,7 @@ final class IncidentUpdateTaskTest {
     task.execute().toCompletableFuture().join();
 
     // then
-    Mockito.verify(repository).getPendingIncidentsBatch(Mockito.anyLong(), Mockito.eq(10));
+    Mockito.verify(repository).getPendingIncidentsBatch(anyLong(), Mockito.eq(10));
   }
 
   private IncidentNotifier createIncidentNotifier() {
@@ -315,7 +318,7 @@ final class IncidentUpdateTaskTest {
     }
 
     @Test
-    void shouldFailOnMissingProcessInstance() {
+    void shouldSkipOnMissingProcessInstance() {
       // given
       final var task =
           new IncidentUpdateTask(
@@ -326,12 +329,11 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result)
-          .failsWithin(TIMEOUT)
-          .withThrowableThat()
-          .withRootCauseExactlyInstanceOf(ExporterException.class)
-          .withMessageContaining("Process instance 3 is not yet imported for incident 5");
-      verify(incidentNotifier, times(0)).notifyAsync(any());
+      assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(1);
+
+      verify(repository, never()).bulkUpdate(any());
+      verify(incidentNotifier, never()).notifyAsync(any());
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
     }
 
     @Test
