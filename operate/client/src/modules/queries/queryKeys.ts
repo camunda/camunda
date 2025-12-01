@@ -113,17 +113,15 @@ const queryKeys = {
     search: (payload: {
       elementId: string;
       processInstanceKey: string;
-      elementType: ElementInstance['type'];
-      pageSize: number;
+      elementType?: ElementInstance['type'];
     }) => {
-      const {elementId, processInstanceKey, elementType, pageSize} = payload;
+      const {elementId, processInstanceKey, elementType} = payload;
 
       return [
         'elementInstancesSearch',
         elementId,
         processInstanceKey,
         elementType,
-        pageSize,
       ];
     },
     searchByScope: (
