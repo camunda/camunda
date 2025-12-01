@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.security.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -66,7 +67,7 @@ public final class BatchOperationCreateProcessor
       final RoutingInfo routingInfo,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
-    this.batchOperationState = state.getBatchOperationState();
+    batchOperationState = state.getBatchOperationState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
@@ -153,7 +154,11 @@ public final class BatchOperationCreateProcessor
 
     // first check for general CREATE_BATCH_OPERATION permission
     final var request =
-        new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.CREATE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.BATCH)
+                    .permissionType(PermissionType.CREATE));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
@@ -168,7 +173,11 @@ public final class BatchOperationCreateProcessor
             case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
           };
       return authCheckBehavior.isAuthorized(
-          new AuthorizationRequest(command, AuthorizationResourceType.BATCH, permission));
+          AuthorizationRequest.of(
+              r ->
+                  r.command(command)
+                      .resourceType(AuthorizationResourceType.BATCH)
+                      .permissionType(permission)));
     }
 
     return isAuthorized;

@@ -55,7 +55,11 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.CREATE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.ROLE)
+                    .permissionType(PermissionType.CREATE));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

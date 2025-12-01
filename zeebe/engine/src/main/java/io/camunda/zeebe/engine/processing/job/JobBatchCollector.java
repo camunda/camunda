@@ -100,10 +100,11 @@ final class JobBatchCollector {
     // here and only check if the requester has the correct permissions to access the jobs
     final var authorizedProcessIds =
         authCheckBehavior.getAllAuthorizedScopes(
-            new AuthorizationRequest(
-                record,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE));
+            AuthorizationRequest.of(
+                r ->
+                    r.command(record)
+                        .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                        .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)));
     final var deadline = clock.millis() + value.getTimeout();
 
     jobState.forEachActivatableJobs(

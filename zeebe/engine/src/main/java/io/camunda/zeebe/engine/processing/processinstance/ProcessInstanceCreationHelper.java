@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -153,12 +153,13 @@ public class ProcessInstanceCreationHelper {
       final DeployedProcess deployedProcess) {
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
     final var request =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.CREATE_PROCESS_INSTANCE,
-                command.getValue().getTenantId())
-            .addResourceId(processId);
+        AuthorizationRequest.of(
+            b ->
+                b.command(command)
+                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
+                    .tenantId(command.getValue().getTenantId())
+                    .addResourceId(processId));
 
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isRight()) {
