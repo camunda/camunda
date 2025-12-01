@@ -15,6 +15,8 @@ import { User } from "src/utility/api/users";
 import FormModal from "src/components/modal/FormModal";
 import { Tenant } from "src/utility/api/tenants";
 import TextField from "src/components/form/TextField";
+import { Caption } from "src/pages/authorizations/modals/components.tsx";
+import { DocumentationLink } from "src/components/documentation";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<
@@ -22,7 +24,7 @@ const AssignMemberModal: FC<
     { assignedUsers: User[] }
   >
 > = ({ entity: { tenantId }, onSuccess, open, onClose }) => {
-  const { t } = useTranslate("tenants");
+  const { t, Translate } = useTranslate("tenants");
   const [username, setUsername] = useState("");
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
@@ -64,6 +66,20 @@ const AssignMemberModal: FC<
       <TextField
         label={t("username")}
         placeholder={t("typeUsername")}
+        helperText={
+          <Caption>
+            <Translate i18nKey="usernameDescription">
+              Check the documentation for{" "}
+              <DocumentationLink
+                path="/docs/components/identity/tenant/#assign-users-to-a-tenant"
+                withIcon
+              >
+                how to reference users
+              </DocumentationLink>{" "}
+              .
+            </Translate>
+          </Caption>
+        }
         onChange={setUsername}
         value={username}
         autoFocus
