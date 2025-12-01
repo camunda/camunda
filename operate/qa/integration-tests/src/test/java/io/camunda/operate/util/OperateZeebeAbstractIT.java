@@ -174,7 +174,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     super.before();
 
     zeebeBroker = zeebeRule.getZeebeBroker();
-    assertThat(zeebeBroker).as("zeebeContainer is not null").isNotNull();
+    assertThat(zeebeBroker).as("zeebeBroker is not null").isNotNull();
 
     camundaClient = getClient();
     operateServicesAdapter =

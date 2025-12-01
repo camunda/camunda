@@ -492,6 +492,9 @@ public class TestContainerUtil {
                     cfg.getAuthorizations().setEnabled(false);
                     final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
                     cfg.getInitialization().setUsers(List.of(user));
+                    if (testContext.isMultitenancyEnabled() != null) {
+                      cfg.getMultiTenancy().setChecksEnabled(testContext.isMultitenancyEnabled());
+                    }
                   });
 
       configureCamundaExporter(testContext);
@@ -500,10 +503,7 @@ public class TestContainerUtil {
         broker.withClusterConfig(
             cluster -> cluster.setPartitionCount(testContext.getPartitionCount()));
       }
-      if (testContext.isMultitenancyEnabled() != null) {
-        broker.withSecurityConfig(
-            cfg -> cfg.getMultiTenancy().setChecksEnabled(testContext.isMultitenancyEnabled()));
-      }
+
       broker.start();
 
       testContext.setInternalZeebeContactPoint(
