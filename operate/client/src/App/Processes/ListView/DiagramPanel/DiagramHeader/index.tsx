@@ -93,13 +93,13 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
           <Button
             kind="tertiary"
             onClick={() => navigate(Paths.batchOperations())}
-            iconDescription="View operations"
+            iconDescription="View batch operations"
             renderIcon={ClassicBatch}
-            title="View operations"
-            aria-label="View operations"
+            title="View batch operations"
+            aria-label="View batch operations"
             size="sm"
           >
-            View operations
+            View batch operations
           </Button>
 
           {isVersionSelected && processDefinitionId !== undefined && (

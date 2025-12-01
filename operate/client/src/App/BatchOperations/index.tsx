@@ -290,7 +290,7 @@ const BatchOperations: React.FC = () => {
               Processes
             </Link>
           </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>Operations</BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>Batch operations</BreadcrumbItem>
         </Breadcrumb>
       </div>
       <div
@@ -331,7 +331,7 @@ const BatchOperations: React.FC = () => {
         >
           <div style={{padding: 'var(--cds-spacing-05)', paddingBottom: 0}}>
             <h3 style={{marginBottom: 'var(--cds-spacing-06)'}}>
-              Process Operations
+              Batch Operations
             </h3>
           </div>
           <div
