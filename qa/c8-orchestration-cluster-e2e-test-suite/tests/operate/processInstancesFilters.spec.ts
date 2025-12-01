@@ -403,7 +403,6 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          console.log('MIGRATED IDS', newIds);
           expect(newIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {

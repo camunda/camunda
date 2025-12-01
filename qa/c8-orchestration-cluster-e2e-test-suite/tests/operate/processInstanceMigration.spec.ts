@@ -258,7 +258,6 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          console.log('MIGRATED IDS', migratedIds);
           expect(migratedIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
@@ -516,7 +515,6 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          console.log('MIGRATED IDS', migratedIds);
           expect(migratedIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
