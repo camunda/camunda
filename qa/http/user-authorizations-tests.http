@@ -217,7 +217,7 @@ Accept: application/json
 %}
 
 ###
-# @name create-authorization-positive
+# @name create-process-definition-authorization-positive
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
@@ -255,6 +255,136 @@ Accept: application/json
 %}
 
 ###
+# @name create-decision-requirements-definition-authorization-positive
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "DECISION_REQUIREMENTS_DEFINITION",
+  "resourceId": "test-decision-requirements-definition"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Authorization key should not be empty", function () {
+    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
+  });
+%}
+
+###
+# @name create-decision-requirements-definition-authorization-negative
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ",
+    "DELETE",
+    "UPDATE"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "DECISION_REQUIREMENTS_DEFINITION",
+  "resourceId": "test-resource"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/problem+json"), "Response is not problem+json");
+  });
+%}
+
+###
+# @name create-resource-authorization-positive
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "CREATE",
+    "DELETE_DRD",
+    "DELETE_PROCESS",
+    "DELETE_FORM",
+    "DELETE_RESOURCE",
+    "READ"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "RESOURCE",
+  "resourceId": "*"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Authorization key should not be empty", function () {
+    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
+  });
+%}
+
+###
+# @name create-resource-authorization-negative
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "CREATE",
+    "DELETE_DRD",
+    "DELETE_PROCESS",
+    "DELETE_FORM",
+    "DELETE_RESOURCE",
+    "READ",
+    "UPDATE",
+    "DELETE"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "RESOURCE",
+  "resourceId": "*"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 400, "Response status is not 400");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/problem+json"), "Response is not problem+json");
+  });
+%}
+
+###
 # @name create-authorization-missing-fields
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -268,7 +398,7 @@ Accept: application/json
 > {%
   client.test("Authorization creation should fail due to missing fields", function () {
     client.assert(response.status === 400, "Expected 400, got " + response.status);
-    client.assert(response.body.detail === "No ownerType provided. No resourceId provided. No resourceType provided. No permissionTypes provided.");
+    client.assert(response.body.detail === "At least one of [resourceId, resourcePropertyName] is required");
   });
 %}
 
