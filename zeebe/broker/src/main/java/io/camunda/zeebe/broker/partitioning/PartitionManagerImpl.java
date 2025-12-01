@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import com.sun.management.OperatingSystemMXBean;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -665,11 +666,12 @@ public final class PartitionManagerImpl
   }
 
   private static SharedRocksDbResources getSharedCache(final BrokerCfg brokerCfg) {
-    final long jvmMem = Runtime.getRuntime().maxMemory();
+    final long totalMemorySize =
+        ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
     // Heap by default is 25% of the RAM, and off-heap (unless configured otherwise) is the same.
     // So 50% of your RAM goes to the JVM, for both heap and off-heap (aka direct) memory.
     // Leaving 50% of RAM for OS page cache and other processes.
-    final long maxRocksDbMem = jvmMem * 2;
+    final long maxRocksDbMem = totalMemorySize / 2;
     final long blockCacheBytes =
         brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
             * brokerCfg.getCluster().getPartitionsCount();
