@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -102,8 +101,8 @@ public class CreateClusterVariableAuthorizationTest {
         user,
         AuthorizationResourceType.CLUSTER_VARIABLE,
         PermissionType.CREATE,
-        AuthorizationResourceMatcher.ANY,
-        "*");
+        AuthorizationResourceMatcher.ID,
+        VARIABLE_NAME + "_specific");
 
     // when
     engine
@@ -130,8 +129,8 @@ public class CreateClusterVariableAuthorizationTest {
         user,
         AuthorizationResourceType.CLUSTER_VARIABLE,
         PermissionType.CREATE,
-        AuthorizationResourceMatcher.ANY,
-        "*");
+        AuthorizationResourceMatcher.ID,
+        VARIABLE_NAME + "_specific");
 
     // when
     engine
@@ -170,7 +169,7 @@ public class CreateClusterVariableAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'CREATE' on resource 'CLUSTER_VARIABLE'");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'CLUSTER_VARIABLE', required resource identifiers are one of '[*, myVariable]'");
   }
 
   @Test
@@ -193,7 +192,7 @@ public class CreateClusterVariableAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'CREATE' on resource 'CLUSTER_VARIABLE'");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'CLUSTER_VARIABLE', required resource identifiers are one of '[*, myVariable]'");
   }
 
   private UserRecordValue createUser() {
@@ -223,14 +222,5 @@ public class CreateClusterVariableAuthorizationTest {
         .withResourceMatcher(matcher)
         .withResourceId(resourceId)
         .create();
-  }
-
-  private void assignUserToTenant(final String tenantId, final String username) {
-    engine
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityType(EntityType.USER)
-        .withEntityId(username)
-        .add();
   }
 }

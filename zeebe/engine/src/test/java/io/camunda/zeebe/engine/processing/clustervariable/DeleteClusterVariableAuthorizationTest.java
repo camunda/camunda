@@ -25,7 +25,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -54,11 +53,6 @@ public class DeleteClusterVariableAuthorizationTest {
                   cfg.getInitialization()
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
-
-  @Before
-  public void before() {
-    // Setup completed in engine rule configuration
-  }
 
   @Test
   public void shouldBeAuthorizedToDeleteGlobalScopedClusterVariable() {
@@ -140,8 +134,8 @@ public class DeleteClusterVariableAuthorizationTest {
         user,
         AuthorizationResourceType.CLUSTER_VARIABLE,
         PermissionType.DELETE,
-        AuthorizationResourceMatcher.ANY,
-        "*");
+        AuthorizationResourceMatcher.ID,
+        VARIABLE_NAME + "_specific");
 
     // when
     engine
@@ -175,8 +169,8 @@ public class DeleteClusterVariableAuthorizationTest {
         user,
         AuthorizationResourceType.CLUSTER_VARIABLE,
         PermissionType.DELETE,
-        AuthorizationResourceMatcher.ANY,
-        "*");
+        AuthorizationResourceMatcher.ID,
+        VARIABLE_NAME + "_specific");
 
     // when
     engine

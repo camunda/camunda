@@ -50,6 +50,9 @@ public class ClusterVariableTenancyIT {
   private static final String TENANT_B_VAR_NAME = "clusterVarTenantB";
   private static final String TENANT_B_VAR_VALUE = "tenantBValue";
 
+  private static final String GLOBAL_VAR_NAME = "globalClusterVar";
+  private static final String GLOBAL_VAR_VALUE = "globalValue";
+
   @UserDefinition
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, "password", List.of());
 
@@ -80,6 +83,13 @@ public class ClusterVariableTenancyIT {
         .send()
         .join();
 
+    // Create global cluster variable
+    adminClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(GLOBAL_VAR_NAME, GLOBAL_VAR_VALUE)
+        .send()
+        .join();
+
     waitForClusterVariablesBeingExported(adminClient);
   }
 
@@ -89,10 +99,16 @@ public class ClusterVariableTenancyIT {
     // when
     final var result = camundaClient.newClusterVariableSearchRequest().send().join();
     // then
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(3);
+    final var tenantIds =
+        result.items().stream().map(ClusterVariable::getTenantId).collect(Collectors.toSet());
+    assertThat(tenantIds).containsExactlyInAnyOrder(TENANT_A, TENANT_B, null);
     assertThat(
-            result.items().stream().map(ClusterVariable::getTenantId).collect(Collectors.toSet()))
-        .containsExactlyInAnyOrder(TENANT_A, TENANT_B);
+            result.items().stream()
+                .filter(v -> v.getTenantId() == null)
+                .map(ClusterVariable::getName)
+                .collect(Collectors.toSet()))
+        .containsExactly(GLOBAL_VAR_NAME);
   }
 
   @Test
@@ -100,23 +116,24 @@ public class ClusterVariableTenancyIT {
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
     final var result = camundaClient.newClusterVariableSearchRequest().send().join();
-    // then
-    assertThat(result.items()).hasSize(1);
-    assertThat(
-            result.items().stream().map(ClusterVariable::getTenantId).collect(Collectors.toSet()))
-        .containsExactlyInAnyOrder(TENANT_A);
-    assertThat(result.items().getFirst().getName()).isEqualTo(TENANT_A_VAR_NAME);
-    assertThat(result.items().getFirst().getValue())
-        .isEqualTo(VALUE_RESULT.formatted(TENANT_A_VAR_VALUE));
+    // then - USER1 should see TENANT_A variable and global variable (2 total)
+    assertThat(result.items()).hasSize(2);
+    final var names =
+        result.items().stream().map(ClusterVariable::getName).collect(Collectors.toSet());
+    assertThat(names).containsExactlyInAnyOrder(TENANT_A_VAR_NAME, GLOBAL_VAR_NAME);
   }
 
   @Test
-  public void shouldNotReturnAnyClusterVariables(
+  public void shouldNotReturnAnyTenantClusterVariables(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
     final var result = camundaClient.newClusterVariableSearchRequest().send().join();
-    // then
-    assertThat(result.items()).hasSize(0);
+    // then - USER2 should not see any tenant-scoped variables, but should see global variables
+    assertThat(
+            result.items().stream()
+                .filter(v -> v.getTenantId() != null)
+                .collect(Collectors.toList()))
+        .hasSize(0);
   }
 
   @Test
@@ -342,6 +359,69 @@ public class ClusterVariableTenancyIT {
     assertThat(exception.details().getStatus()).isEqualTo(404);
   }
 
+  // Global Cluster Variable Tests
+
+  @Test
+  void shouldAllowUserWithoutTenantAccessToReadGlobalVariable(
+      @Authenticated(USER2) final CamundaClient camundaClient) {
+    // when
+    final var result =
+        camundaClient
+            .newGloballyScopedClusterVariableGetRequest()
+            .withName(GLOBAL_VAR_NAME)
+            .send()
+            .join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getName()).isEqualTo(GLOBAL_VAR_NAME);
+    assertThat(result.getValue()).isEqualTo(VALUE_RESULT.formatted(GLOBAL_VAR_VALUE));
+    assertThat(result.getTenantId()).isNull();
+  }
+
+  @Test
+  void shouldReturnOnlyGlobalVariableForUserWithoutTenantAccess(
+      @Authenticated(USER2) final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newClusterVariableSearchRequest().send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getName()).isEqualTo(GLOBAL_VAR_NAME);
+    assertThat(result.items().getFirst().getTenantId()).isNull();
+  }
+
+  @Test
+  void shouldReturnTenantAndGlobalVariablesForUserWithTenantAccess(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newClusterVariableSearchRequest().send().join();
+
+    // then - USER1 should see TENANT_A variable and global variable (2 total)
+    assertThat(result.items()).hasSize(2);
+    final var names =
+        result.items().stream().map(ClusterVariable::getName).collect(Collectors.toSet());
+    assertThat(names).containsExactlyInAnyOrder(TENANT_A_VAR_NAME, GLOBAL_VAR_NAME);
+  }
+
+  @Test
+  void shouldAllowUserWithTenantAccessToReadGlobalVariable(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // when
+    final var result =
+        camundaClient
+            .newGloballyScopedClusterVariableGetRequest()
+            .withName(GLOBAL_VAR_NAME)
+            .send()
+            .join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getName()).isEqualTo(GLOBAL_VAR_NAME);
+    assertThat(result.getValue()).isEqualTo(VALUE_RESULT.formatted(GLOBAL_VAR_VALUE));
+    assertThat(result.getTenantId()).isNull();
+  }
+
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
     camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
   }
@@ -358,6 +438,6 @@ public class ClusterVariableTenancyIT {
         .untilAsserted(
             () ->
                 assertThat(camundaClient.newClusterVariableSearchRequest().send().join().items())
-                    .hasSize(2));
+                    .hasSize(3));
   }
 }
