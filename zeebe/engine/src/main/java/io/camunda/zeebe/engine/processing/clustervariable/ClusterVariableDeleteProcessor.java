@@ -23,11 +23,16 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.Either.Left;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public class ClusterVariableDeleteProcessor
     implements DistributedTypedRecordProcessor<ClusterVariableRecord> {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ClusterVariableDeleteProcessor.class);
   private final KeyGenerator keyGenerator;
   private final Writers writers;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -49,18 +54,11 @@ public class ClusterVariableDeleteProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
-    final var isAuthorized = isAuthorized(command);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      writers.rejection().appendRejection(command, rejection.type(), rejection.reason());
-      writers.response().writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-      return;
-    }
-
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
     clusterVariableRecordValidator
         .ensureValidScope(clusterVariableRecord)
         .flatMap(clusterVariableRecordValidator::validateExistence)
+        .flatMap(record -> isAuthorized(record, command))
         .ifRightOrLeft(
             record -> {
               final long key = keyGenerator.nextKey();
@@ -99,40 +97,41 @@ public class ClusterVariableDeleteProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private Either<Rejection, Void> isAuthorized(final TypedRecord<ClusterVariableRecord> command) {
+  private Either<Rejection, ClusterVariableRecord> isAuthorized(
+      final ClusterVariableRecord record, final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
     return switch (clusterVariableRecord.getScope()) {
-      case GLOBAL -> checkAuthorizationForGlobalScope(command);
-      case TENANT -> checkAuthorizationForTenantScope(command);
-      case UNSPECIFIED ->
-          Either.left(
-              new Rejection(
-                  RejectionType.INVALID_ARGUMENT,
-                  "Invalid cluster variable scope. The scope must be either 'GLOBAL' or 'TENANT'."));
+      case GLOBAL -> checkAuthorizationForGlobalScope(command).map(unused -> record);
+      case TENANT -> checkAuthorizationForTenantScope(command).map(unused -> record);
+      default ->
+      // should never happen as scope is validated earlier
+      {
+        LOGGER.warn(
+            "The scope validation has not been performed correctly. A ticket should be created.");
+        yield new Left<>(
+            new Rejection(RejectionType.UNAUTHORIZED, "An unknown authorization issue occurred."));
+      }
     };
   }
 
   private Either<Rejection, Void> checkAuthorizationForTenantScope(
       final TypedRecord<ClusterVariableRecord> command) {
-    final var clusterVariableRecord = command.getValue();
     final var authRequest =
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.CLUSTER_VARIABLE,
                 PermissionType.DELETE,
-                command.getValue().getTenantId(),
-                false)
-            .addResourceId(clusterVariableRecord.getName());
+                command.getValue().getTenantId())
+            .addResourceId(command.getValue().getName());
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 
   private Either<Rejection, Void> checkAuthorizationForGlobalScope(
       final TypedRecord<ClusterVariableRecord> command) {
-    final var clusterVariableRecord = command.getValue();
     final var authRequest =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.CLUSTER_VARIABLE, PermissionType.DELETE, false)
-            .addResourceId(clusterVariableRecord.getName());
+                command, AuthorizationResourceType.CLUSTER_VARIABLE, PermissionType.DELETE)
+            .addResourceId(command.getValue().getName());
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }
