@@ -163,7 +163,6 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -1331,10 +1330,7 @@ public final class SearchQueryResponseMapper {
                 .map(Enum::name)
                 .map(BatchOperationTypeEnum::fromValue)
                 .orElse(null))
-        .timestamp(
-            ofNullable(auditLog.timestamp())
-                .map(ts -> ts.format(DateTimeFormatter.ISO_INSTANT))
-                .orElse(null))
+        .timestamp(formatDate(auditLog.timestamp()))
         .actorId(auditLog.actorId())
         .actorType(
             ofNullable(auditLog.actorType())
