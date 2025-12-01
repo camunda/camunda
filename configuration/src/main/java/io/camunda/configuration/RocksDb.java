@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.util.Properties;
 import java.util.Set;
 import org.springframework.util.unit.DataSize;
@@ -22,6 +23,8 @@ public class RocksDb {
       Set.of("zeebe.broker.experimental.rocksdb.accessMetrics");
   private static final Set<String> LEGACY_MEMORY_LIMIT_PROPERTIES =
       Set.of("zeebe.broker.experimental.rocksdb.memoryLimit");
+  private static final Set<String> LEGACY_MEMORY_ALLOCATION_STRATEGY_PROPERTIES =
+      Set.of("zeebe.broker.experimental.rocksdb.memoryAllocationStrategy");
   private static final Set<String> LEGACY_MAX_OPEN_FILES_PROPERTIES =
       Set.of("zeebe.broker.experimental.rocksdb.maxOpenFiles");
   private static final Set<String> LEGACY_MAX_WRITE_BUFFER_NUMBER_PROPERTIES =
@@ -56,10 +59,20 @@ public class RocksDb {
 
   /**
    * Configures the memory limit, which can be used by RocksDB. Be aware that this setting only
-   * applies to RocksDB, which is used by the Zeebe's state management and that an RocksDB instance
-   * is used per partition.
+   * applies to RocksDB, which is used by the Zeebe's state management with the memory limit being
+   * shared across all partitions in a broker. The memory allocation strategy depends on the
+   * memoryAllocationStrategy setting.
    */
   private DataSize memoryLimit = DataSize.ofBytes(512 * 1024 * 1024L);
+
+  /**
+   * Configures the memory allocation strategy by rocksDB. If set to 'PARTITION', the total memory
+   * allocated to rocksDB will be the number of partitions times the configured memory limit. If the
+   * value is set to 'BROKER', the total memory allocated to rocksDB will be equal to the configured
+   * memory limit.
+   */
+  private final MemoryAllocationStrategy memoryAllocationStrategy =
+      MemoryAllocationStrategy.PARTITION;
 
   /**
    * Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
@@ -159,6 +172,15 @@ public class RocksDb {
 
   public void setMemoryLimit(final DataSize memoryLimit) {
     this.memoryLimit = memoryLimit;
+  }
+
+  public MemoryAllocationStrategy getMemoryAllocationStrategy() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".memory-allocation-strategy",
+        memoryAllocationStrategy,
+        MemoryAllocationStrategy.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_MEMORY_ALLOCATION_STRATEGY_PROPERTIES);
   }
 
   public int getMaxOpenFiles() {
