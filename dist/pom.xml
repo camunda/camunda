@@ -613,6 +613,11 @@
       <artifactId>netty-transport</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>debug-cli</artifactId>
+    </dependency>
+
     <!-- /end -->
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -826,6 +831,10 @@
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
+            <program>
+              <id>cdbg</id>
+              <mainClass>io.camunda.debug.cli.Main</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -880,6 +889,8 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
+            <!-- Needed for the debug CLI tool -->
+            <dependency>io.camunda:debug-cli</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
