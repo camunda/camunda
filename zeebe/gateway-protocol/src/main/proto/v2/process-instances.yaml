@@ -481,7 +481,6 @@ paths:
       description: |
         Delete multiple process instances. This will delete the historic data from secondary storage.
         Only process instances in a final state (COMPLETED or TERMINATED) can be deleted.
-        Any filters for state are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
