@@ -9,8 +9,8 @@ package io.camunda.zeebe.util.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableMap;
 import java.time.Instant;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class HealthReportTest {
@@ -18,15 +18,15 @@ public class HealthReportTest {
   @Test
   public void shouldReportWorstHealthStatusFromChildren() {
     final var children =
-        Map.of(
+        ImmutableMap.of(
             "a",
-            new HealthReport("a", HealthStatus.HEALTHY, null, Map.of()),
+            new HealthReport("a", HealthStatus.HEALTHY, null, ImmutableMap.of()),
             "b",
             new HealthReport(
                 "b",
                 HealthStatus.UNHEALTHY,
                 new HealthIssue("storage is full", null, null, Instant.ofEpochMilli(19201223L)),
-                Map.of()));
+                ImmutableMap.of()));
     final var root = HealthReport.fromChildrenStatus("root", children);
 
     final var expected =
