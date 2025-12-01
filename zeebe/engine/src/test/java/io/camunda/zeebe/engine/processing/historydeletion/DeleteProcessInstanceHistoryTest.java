@@ -42,7 +42,7 @@ public class DeleteProcessInstanceHistoryTest {
         .await();
 
     // when
-    final var deletedEvent = ENGINE.history().processInstance(processInstanceKey).delete();
+    final var deletedEvent = ENGINE.historyDeletion().processInstance(processInstanceKey).delete();
 
     // then
     assertThat(deletedEvent.getValue())
@@ -63,7 +63,7 @@ public class DeleteProcessInstanceHistoryTest {
 
     // when
     final var rejection =
-        ENGINE.history().processInstance(processInstanceKey).expectRejection().delete();
+        ENGINE.historyDeletion().processInstance(processInstanceKey).expectRejection().delete();
 
     // then
     assertThat(rejection)

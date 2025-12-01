@@ -727,7 +727,7 @@ public final class EngineRule extends ExternalResource {
     return new ScaleClient(environmentRule);
   }
 
-  public HistoryDeletionClient history() {
+  public HistoryDeletionClient historyDeletion() {
     return new HistoryDeletionClient(environmentRule);
   }
 
