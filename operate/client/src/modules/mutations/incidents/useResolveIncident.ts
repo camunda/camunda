@@ -15,8 +15,11 @@ import {queryKeys} from 'modules/queries/queryKeys';
 type ResolveIncidentOptions = {
   incidentKey: string;
   jobKey?: string;
-  onSuccess?: () => void | Promise<void>;
-  onError?: (error: {status: number; statusText: string}) => void;
+  onSuccess?: () => Promise<unknown> | unknown;
+  onError?: (error: {
+    status: number;
+    statusText: string;
+  }) => Promise<unknown> | unknown;
 };
 
 function useResolveIncident(options: ResolveIncidentOptions) {
