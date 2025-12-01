@@ -367,7 +367,7 @@ public class CamundaMultiDBExtension
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_URL),
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_USERNAME),
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD),
-              "org.postgresql.Driver");
+              "software.amazon.jdbc.Driver");
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(
