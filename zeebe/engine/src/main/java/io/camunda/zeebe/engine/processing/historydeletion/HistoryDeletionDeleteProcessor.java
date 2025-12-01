@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.historydeletion;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -33,18 +32,14 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
   private final ElementInstanceState elementInstanceState;
 
   public HistoryDeletionDeleteProcessor(
-      final ProcessingState processingState,
-      final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final ProcessingState processingState, final Writers writers) {
     elementInstanceState = processingState.getElementInstanceState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override

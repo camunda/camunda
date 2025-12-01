@@ -356,7 +356,7 @@ public final class EngineProcessors {
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
-        typedRecordProcessors, writers, processingState, authCheckBehavior);
+        typedRecordProcessors, writers, processingState);
 
     return typedRecordProcessors;
   }

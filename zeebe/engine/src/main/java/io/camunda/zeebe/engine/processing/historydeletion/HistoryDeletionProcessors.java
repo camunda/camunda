@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.historydeletion;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -18,11 +17,10 @@ public class HistoryDeletionProcessors {
   public static void addHistoryDeletionProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final ProcessingState processingState) {
     typedRecordProcessors.onCommand(
         ValueType.HISTORY_DELETION,
         HistoryDeletionIntent.DELETE,
-        new HistoryDeletionDeleteProcessor(processingState, writers, authCheckBehavior));
+        new HistoryDeletionDeleteProcessor(processingState, writers));
   }
 }
