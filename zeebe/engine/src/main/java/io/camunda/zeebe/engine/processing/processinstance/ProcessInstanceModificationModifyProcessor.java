@@ -37,6 +37,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -46,20 +47,24 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.Strings;
 
@@ -77,6 +82,9 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final String ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
           + " with an element instance that could not be found: '%s'";
+  private static final String ERROR_MESSAGE_TERMINATE_MULTIPLE_DEFINITIONS =
+      "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
+          + " with an element instance key and element id: '%s'";
   private static final String ERROR_COMMAND_TOO_LARGE =
       "Unable to modify process instance with key '%d' as the size exceeds the maximum batch size."
           + " Please reduce the size by splitting the modification into multiple commands.";
@@ -230,9 +238,30 @@ public final class ProcessInstanceModificationModifyProcessor
         processState.getProcessByKeyAndTenant(
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
-    final var validationResult = validateCommand(command, process, processInstance);
-    if (validationResult.isLeft()) {
-      final var rejection = validationResult.getLeft();
+    final var commandValidationResult = validateCommand(command, process);
+    if (commandValidationResult.isLeft()) {
+      final var rejection = commandValidationResult.getLeft();
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var activateInstructions = new ArrayList<>(value.getActivateInstructions());
+    final var terminateInstructions =
+        new ArrayList<ProcessInstanceModificationTerminateInstructionValue>();
+
+    mapIdInstructions(
+        value.getProcessInstanceKey(),
+        value.getMoveInstructions(),
+        value.getTerminateInstructions(),
+        activateInstructions,
+        terminateInstructions);
+
+    final var instructionsValidationResult =
+        validateInstructions(
+            activateInstructions, terminateInstructions, process, value.getProcessInstanceKey());
+    if (instructionsValidationResult.isLeft()) {
+      final var rejection = instructionsValidationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
@@ -244,7 +273,7 @@ public final class ProcessInstanceModificationModifyProcessor
         .setTenantId(processInstance.getValue().getTenantId());
 
     final var requiredKeysForActivation =
-        value.getActivateInstructions().stream()
+        activateInstructions.stream()
             .flatMap(
                 instruction -> {
                   final var elementToActivate =
@@ -273,24 +302,22 @@ public final class ProcessInstanceModificationModifyProcessor
                 })
             .collect(Collectors.toSet());
 
-    value
-        .getTerminateInstructions()
-        .forEach(
-            instruction -> {
-              extendedRecord.addTerminateInstruction(instruction);
-              final var elementInstance =
-                  elementInstanceState.getInstance(instruction.getElementInstanceKey());
-              if (elementInstance == null) {
-                // at this point this element instance has already been terminated as a result of
-                // one of the previous terminate instructions. As a result we no longer need to
-                // terminate it.
-                return;
-              }
-              final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
+    terminateInstructions.forEach(
+        instruction -> {
+          extendedRecord.addTerminateInstruction(instruction);
+          final var elementInstance =
+              elementInstanceState.getInstance(instruction.getElementInstanceKey());
+          if (elementInstance == null) {
+            // at this point this element instance has already been terminated as a result of
+            // one of the previous terminate instructions. As a result we no longer need to
+            // terminate it.
+            return;
+          }
+          final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
-              terminateElement(elementInstance);
-              terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
-            });
+          terminateElement(elementInstance);
+          terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
+        });
 
     stateWriter.appendFollowUpEvent(
         eventKey,
@@ -348,20 +375,116 @@ public final class ProcessInstanceModificationModifyProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
+  private void mapIdInstructions(
+      final long processInstanceKey,
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructionsInput,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructionsInput,
+      final List<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
+      final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions) {
+    if (moveInstructionsInput.isEmpty() && terminateInstructionsInput.isEmpty()) {
+      return;
+    }
+    // collect move instructions by source element id
+    final var moveInstructions =
+        moveInstructionsInput.stream()
+            .collect(
+                Collectors.toMap(
+                    ProcessInstanceModificationMoveInstructionValue::getSourceElementId,
+                    Function.identity()));
+    // collect terminate-by-id instructions, add key instructions to final list
+    final var terminateInstructionIds = new HashSet<String>();
+    terminateInstructionsInput.forEach(
+        instruction -> {
+          if (instruction.getElementInstanceKey() > 0) {
+            finalTerminateInstructions.add(instruction);
+          } else {
+            terminateInstructionIds.add(instruction.getElementId());
+          }
+        });
+
+    // iterate over all active element instances, including child instances
+    // use a queue to iterate over the descendants, recursion might lead to stackoverflow
+    if (!moveInstructions.isEmpty() || !terminateInstructionIds.isEmpty()) {
+      final var elementInstances =
+          new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
+      while (!elementInstances.isEmpty()) {
+        final var elementInstance = elementInstances.poll();
+        final String elementId = elementInstance.getValue().getElementId();
+        // move element instance
+        if (moveInstructions.containsKey(elementId)) {
+          // don't activate new instances for source multi-instance children
+          final long flowScopeKey = elementInstance.getValue().getFlowScopeKey();
+          if (flowScopeKey > 0
+              && !BpmnElementType.MULTI_INSTANCE_BODY.equals(
+                  elementInstanceState.getInstance(flowScopeKey).getValue().getBpmnElementType())) {
+            final var moveInstruction = moveInstructions.get(elementId);
+            finalActivateInstructions.add(
+                new ProcessInstanceModificationActivateInstruction()
+                    .setElementId(moveInstruction.getTargetElementId())
+                    .setAncestorScopeKey(
+                        moveInstruction.isUseSourceParentKeyAsAncestorScope()
+                            ? elementInstance.getParentKey()
+                            : moveInstruction.getAncestorScopeKey()));
+          }
+          // terminate source element instance
+          finalTerminateInstructions.add(
+              new ProcessInstanceModificationTerminateInstruction()
+                  .setElementInstanceKey(elementInstance.getKey()));
+        }
+        // terminate element instance
+        if (terminateInstructionIds.contains(elementId)) {
+          finalTerminateInstructions.add(
+              new ProcessInstanceModificationTerminateInstruction()
+                  .setElementInstanceKey(elementInstance.getKey()));
+        }
+
+        elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
+      }
+    }
+  }
+
   private Either<Rejection, ?> validateCommand(
-      final TypedRecord<ProcessInstanceModificationRecord> command,
-      final DeployedProcess process,
-      final ElementInstance processInstance) {
+      final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
     final var value = command.getValue();
-    final var activateInstructions = value.getActivateInstructions();
-    final var terminateInstructions = value.getTerminateInstructions();
+
+    final var duplicateDefinitions =
+        value.getTerminateInstructions().stream()
+            .filter(
+                terminateInstruction ->
+                    terminateInstruction.getElementInstanceKey() > 0
+                        && !terminateInstruction.getElementId().isBlank())
+            .map(
+                terminateInstruction ->
+                    "(%s, %s)"
+                        .formatted(
+                            terminateInstruction.getElementInstanceKey(),
+                            terminateInstruction.getElementId()))
+            .toList();
+
+    if (duplicateDefinitions.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TERMINATE_MULTIPLE_DEFINITIONS,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", duplicateDefinitions));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateInstructions(
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions,
+      final DeployedProcess process,
+      final long processInstanceKey) {
 
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementSupported(process, activateInstructions))
         .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
-        .flatMap(valid -> validateAncestorKeys(process, value))
+        .flatMap(valid -> validateAncestorKeys(process, activateInstructions, processInstanceKey))
         .flatMap(
             valid ->
                 validateElementIsNotActivatedForTerminatedFlowScope(
@@ -462,9 +585,11 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private Either<Rejection, ?> validateAncestorKeys(
-      final DeployedProcess process, final ProcessInstanceModificationRecord record) {
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions,
+      final long processInstanceKey) {
     final Map<Long, Optional<ElementInstance>> ancestorInstances =
-        record.getActivateInstructions().stream()
+        activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
             .filter(ancestorKey -> ancestorKey > 0)
             .distinct()
@@ -474,19 +599,24 @@ public final class ProcessInstanceModificationModifyProcessor
                     ancestorKey ->
                         Optional.ofNullable(elementInstanceState.getInstance(ancestorKey))));
 
-    return validateAncestorExistsAndIsActive(process, record, ancestorInstances)
+    return validateAncestorExistsAndIsActive(process, activateInstructions, ancestorInstances)
         .flatMap(
-            valid -> validateAncestorBelongsToProcessInstance(process, record, ancestorInstances))
-        .flatMap(valid -> validateAncestorIsFlowScopeOfElement(process, record, ancestorInstances))
+            valid ->
+                validateAncestorBelongsToProcessInstance(
+                    process, processInstanceKey, ancestorInstances))
+        .flatMap(
+            valid ->
+                validateAncestorIsFlowScopeOfElement(
+                    process, activateInstructions, ancestorInstances))
         .map(valid -> VALID);
   }
 
   private Either<Rejection, ?> validateAncestorExistsAndIsActive(
       final DeployedProcess process,
-      final ProcessInstanceModificationRecord record,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions,
       final Map<Long, Optional<ElementInstance>> ancestorInstances) {
     final Set<String> invalidAncestorKeys =
-        record.getActivateInstructions().stream()
+        activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
             .distinct()
             .filter(ancestorKey -> ancestorKey > 0)
@@ -513,15 +643,14 @@ public final class ProcessInstanceModificationModifyProcessor
 
   private Either<Rejection, ?> validateAncestorBelongsToProcessInstance(
       final DeployedProcess process,
-      final ProcessInstanceModificationRecord record,
+      final long processInstanceKey,
       final Map<Long, Optional<ElementInstance>> ancestorInstances) {
     final Set<String> rejectedAncestorKeys =
         ancestorInstances.values().stream()
             .flatMap(Optional::stream)
             .filter(
                 ancestorInstance ->
-                    ancestorInstance.getValue().getProcessInstanceKey()
-                        != record.getProcessInstanceKey())
+                    ancestorInstance.getValue().getProcessInstanceKey() != processInstanceKey)
             .map(ancestorInstance -> String.valueOf(ancestorInstance.getKey()))
             .collect(Collectors.toSet());
 
@@ -539,12 +668,12 @@ public final class ProcessInstanceModificationModifyProcessor
 
   private Either<Rejection, ?> validateAncestorIsFlowScopeOfElement(
       final DeployedProcess process,
-      final ProcessInstanceModificationRecord record,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions,
       final Map<Long, Optional<ElementInstance>> ancestorInstances) {
     record InstructionDetails(long ancestorScopeKey, String ancestorId, String elementId) {}
 
     final String invalidInstructionMessages =
-        record.getActivateInstructions().stream()
+        activateInstructions.stream()
             .filter(instruction -> instruction.getAncestorScopeKey() > 0)
             .map(
                 instruction -> {
