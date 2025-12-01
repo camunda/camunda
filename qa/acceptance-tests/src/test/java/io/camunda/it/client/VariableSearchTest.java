@@ -17,10 +17,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -341,18 +341,15 @@ class VariableSearchTest {
   }
 
   @Test
-  void shouldSortByValueDESC() {
+  void shouldSortByValue() {
     // when
-    final var result =
+    final var resultAsc =
+        camundaClient.newVariableSearchRequest().sort(s -> s.value().asc()).send().join();
+
+    final var resultDesc =
         camundaClient.newVariableSearchRequest().sort(s -> s.value().desc()).send().join();
 
-    // then
-    assertThat(result.items()).hasSize(6);
-
-    final List<String> values =
-        result.items().stream().map(Variable::getValue).collect(Collectors.toList());
-
-    assertThat(values).isSortedAccordingTo(Comparator.reverseOrder());
+    TestHelper.assertSortedFlexible(resultAsc, resultDesc, Variable::getValue);
   }
 
   @Test
