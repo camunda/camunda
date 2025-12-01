@@ -87,6 +87,7 @@ public class RdbmsWriter {
   private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
 
   private final HistoryCleanupService historyCleanupService;
+  private final RdbmsWriterMetrics metrics;
 
   public RdbmsWriter(
       final RdbmsWriterConfig config,
@@ -113,6 +114,7 @@ public class RdbmsWriter {
       final ClusterVariableMapper clusterVariableMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
+    this.metrics = metrics;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
     auditLogWriter = new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties);
     authorizationWriter = new AuthorizationWriter(executionQueue);
@@ -284,6 +286,10 @@ public class RdbmsWriter {
 
   public ExecutionQueue getExecutionQueue() {
     return executionQueue;
+  }
+
+  public RdbmsWriterMetrics getMetrics() {
+    return metrics;
   }
 
   public void flush() {
