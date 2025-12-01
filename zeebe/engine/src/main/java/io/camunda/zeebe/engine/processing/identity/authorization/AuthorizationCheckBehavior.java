@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -135,8 +133,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
-    final var command = request.getCommand();
-    if (isInternalCommand(command.hasRequestMetadata(), command.getBatchOperationReference())) {
+    if (request.getCommand().isInternalCommand()) {
       return Either.right(null);
     }
     return isAuthorized(request);
@@ -171,23 +168,6 @@ public final class AuthorizationCheckBehavior {
   private boolean shouldSkipAuthorization(final AuthorizationRequestMetadata request) {
     return (!authorizationsEnabled && !multiTenancyEnabled)
         || isAuthorizedAnonymousUser(request.claims());
-  }
-
-  /**
-   * Determines if the command is an internal command. Internal commands are commands that are
-   * written by Zeebe itself and not by an external user. Internal commands should skip the
-   * authorization checks and the tenant checks.
-   *
-   * <p>A command is considered internal if it has no request metadata and no batch operation
-   * reference.
-   *
-   * @param hasRequestMetadata true if the command has request metadata, false otherwise
-   * @param batchOperationReference the batch operation reference of the command
-   * @return true if the command is an internal command, false otherwise
-   */
-  public boolean isInternalCommand(
-      final boolean hasRequestMetadata, final long batchOperationReference) {
-    return !hasRequestMetadata && batchOperationReference == batchOperationReferenceNullValue();
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
