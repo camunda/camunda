@@ -160,13 +160,16 @@ public class ProtoBufSerializer
             ? Optional.empty()
             : Optional.of(encodedClusterTopology.getClusterId());
 
+    final long incarnationNumber = encodedClusterTopology.getIncarnationNumber();
+
     return new ClusterConfiguration(
         encodedClusterTopology.getVersion(),
         members,
         completedChange,
         currentChange,
         routingState,
-        clusterId);
+        clusterId,
+        incarnationNumber);
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -195,6 +198,7 @@ public class ProtoBufSerializer
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
     clusterConfiguration.clusterId().ifPresent(clusterId -> builder.setClusterId(clusterId));
+    builder.setIncarnationNumber(clusterConfiguration.incarnationNumber());
 
     return builder.build();
   }
