@@ -9,6 +9,7 @@
 import {
   queryDecisionInstancesRequestBodySchema,
   type DecisionInstanceState,
+  type QueryDecisionDefinitionsRequestBody,
   type QueryDecisionInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import z from 'zod';
@@ -17,6 +18,10 @@ import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '.';
 
 type DecisionInstancesSearchFilter = NonNullable<
   QueryDecisionInstancesRequestBody['filter']
+>;
+
+type DecisionDefinitionsSearchFilter = NonNullable<
+  QueryDecisionDefinitionsRequestBody['filter']
 >;
 
 type DecisionInstanceFiltersField = keyof DecisionInstanceFilters;
@@ -56,6 +61,21 @@ function parseDecisionInstancesSearchFilter(
     processInstanceKey: filter.processInstanceId,
     tenantId: filter.tenant === 'all' ? undefined : filter.tenant,
     evaluationDate: mapEvaluationDateFilter(filter),
+  };
+}
+
+/**
+ * Parses filter arguments for a decision-definitions search from the given {@linkcode URLSearchParams}.
+ */
+function parseDecisionDefinitionsSearchFilter(
+  search: URLSearchParams,
+): DecisionDefinitionsSearchFilter {
+  const filter = parseDecisionInstancesFilter(search);
+
+  return {
+    decisionDefinitionId: filter.name,
+    version: mapDecisionDefinitionVersionFilter(filter),
+    tenantId: filter.tenant === 'all' ? undefined : filter.tenant,
   };
 }
 
@@ -151,6 +171,7 @@ function updateDecisionsFiltersSearchString(
 
 export {
   parseDecisionInstancesSearchFilter,
+  parseDecisionDefinitionsSearchFilter,
   parseDecisionInstancesFilter,
   parseDecisionInstancesSearchSort,
   updateDecisionsFiltersSearchString,
