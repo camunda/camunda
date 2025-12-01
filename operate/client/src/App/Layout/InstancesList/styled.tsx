@@ -26,6 +26,18 @@ const gridColumnLayout = css<ContainerProps>`
       `;
     }
 
+    if ($hasLeftPanel) {
+      return css`
+        grid-template-columns: auto minmax(0, 1fr);
+      `;
+    }
+
+    if ($hasRightPanel) {
+      return css`
+        grid-template-columns: minmax(0, 1fr) ${COLLAPSABLE_PANEL_MIN_WIDTH};
+      `;
+    }
+
     return css`
       grid-template-columns: 1fr;
     `;
