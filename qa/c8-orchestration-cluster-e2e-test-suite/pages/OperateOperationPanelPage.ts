@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Page, Locator } from '@playwright/test';
-import { OperationEntry } from 'utils/getNewOperationIds';
+import {Page, Locator} from '@playwright/test';
+import {OperationEntry} from 'utils/getNewOperationIds';
 
 export class OperateOperationPanelPage {
   private page: Page;
@@ -23,7 +23,7 @@ export class OperateOperationPanelPage {
     this.page = page;
     this.expandButton = page
       .getByLabel('Operations')
-      .getByRole('button', { name: 'Expand Operations' });
+      .getByRole('button', {name: 'Expand Operations'});
     this.operationList = page.getByTestId('operations-list');
     this.expandedOperationPanel = page
       .getByLabel('Operations')
@@ -53,7 +53,7 @@ export class OperateOperationPanelPage {
   }
 
   async expandOperationIdField(): Promise<void> {
-    await this.expandButton.click({ timeout: 30000 });
+    await this.expandButton.click({timeout: 30000});
   }
 
   async collapseOperationIdField(): Promise<void> {
@@ -62,7 +62,7 @@ export class OperateOperationPanelPage {
 
   async getMigrationOperationId(): Promise<string> {
     const operationEntry = this.getAllOperationEntries()
-      .filter({ hasText: /^Migrate/i })
+      .filter({hasText: /^Migrate/i})
       .first();
 
     return await OperateOperationPanelPage.getOperationID(
@@ -82,7 +82,7 @@ export class OperateOperationPanelPage {
     const isExpanded = await this.expandedOperationPanel.isVisible();
     if (isExpanded) {
       await this.clickCollapseButton();
-      await this.collapsedOperationsPanel.waitFor({ state: 'visible' });
+      await this.collapsedOperationsPanel.waitFor({state: 'visible'});
     }
     return isExpanded;
   }
@@ -99,7 +99,7 @@ export class OperateOperationPanelPage {
     return isCollapsed;
   }
 
-  async operationIdsEntries(): Promise<{ id: string; type: string }[]> {
+  async operationIdsEntries(): Promise<{id: string; type: string}[]> {
     const wasCollapsed = await this.expandOperationsPanel();
     const operationEntries = this.getAllOperationEntries();
     const operationIds: OperationEntry[] = [];
@@ -129,7 +129,7 @@ export class OperateOperationPanelPage {
   async clickOperationEntryById(operationId: string): Promise<void> {
     const meow = this.page
       .getByTestId('operation-id')
-      .filter({ hasText: operationId });
+      .filter({hasText: operationId});
     await meow.click();
   }
 }
