@@ -2,12 +2,26 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
+<<<<<<< HEAD
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:noble"
 ARG BASE_DIGEST="sha256:c35e29c9450151419d9448b0fd75374fec4fff364a27f176fb458d472dfc9e54"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
 ARG JDK_DIGEST="sha256:e2ba4c84f2356d829837f561e171482f5121d75e537e8fe04e91fb4381694641"
+=======
+
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:1374fb954464843a022aa8087e5b21c7ea5c130371b6555e8d63e46b1c52e214"
+ARG JATTACH_VERSION="v2.2"
+ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
+ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
+
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
+#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
+>>>>>>> c961b2f9 (feat: include jattach as part of official distribution)
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
@@ -87,6 +101,30 @@ RUN --mount=type=cache,target=/root/.m2,rw \
     ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
     mv dist/target/camunda-zeebe .
 
+### jattach download stage ###
+# hadolint ignore=DL3006,DL3007
+FROM alpine AS jattach
+ARG TARGETARCH
+ARG JATTACH_VERSION
+ARG JATTACH_CHECKSUM_AMD64
+ARG JATTACH_CHECKSUM_ARM64
+
+# hadolint ignore=DL4006,DL3018
+RUN --mount=type=cache,target=/root/.jattach,rw \
+    apk add -q --no-cache curl 2>/dev/null && \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+      BINARY="linux-x64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
+    else  \
+      BINARY="linux-arm64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
+    fi && \
+    curl -sL "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" -o jattach.tgz && \
+    echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
+    tar -xzf "jattach.tgz" && \
+    chmod +x jattach && \
+    mv jattach /jattach
+
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006
 FROM base AS distball
@@ -160,6 +198,7 @@ RUN groupadd --gid 1001 camunda && \
     chown -R 1001:0 ${CAMUNDA_HOME} && \
     chmod -R 0775 ${CAMUNDA_HOME}
 
+COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
 USER 1001:1001
