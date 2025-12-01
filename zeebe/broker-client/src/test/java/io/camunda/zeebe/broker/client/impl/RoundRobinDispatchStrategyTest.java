@@ -15,7 +15,6 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -60,14 +59,13 @@ final class RoundRobinDispatchStrategyTest {
         .addPartition(2, 1)
         .addPartition(3, 2)
         .withClusterConfiguration(
-            new ClusterConfiguration(
-                1,
-                Map.of(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.of(
-                    new RoutingState(1, new AllPartitions(2), new MessageCorrelation.HashMod(2))),
-                Optional.empty()));
+            ClusterConfiguration.builder()
+                .version(1)
+                .routingState(
+                    Optional.of(
+                        new RoutingState(
+                            1, new AllPartitions(2), new MessageCorrelation.HashMod(2))))
+                .build());
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -86,17 +84,15 @@ final class RoundRobinDispatchStrategyTest {
         .addPartition(2, 1)
         .addPartition(3, 2)
         .withClusterConfiguration(
-            new ClusterConfiguration(
-                1,
-                Map.of(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.of(
-                    new RoutingState(
-                        1,
-                        new ActivePartitions(1, Set.of(3), Set.of()),
-                        new MessageCorrelation.HashMod(3))),
-                Optional.empty()));
+            ClusterConfiguration.builder()
+                .version(1)
+                .routingState(
+                    Optional.of(
+                        new RoutingState(
+                            1,
+                            new ActivePartitions(1, Set.of(3), Set.of()),
+                            new MessageCorrelation.HashMod(3))))
+                .build());
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -113,17 +109,15 @@ final class RoundRobinDispatchStrategyTest {
 
     // when -- starting with routing state version 1, with active partitions 1 and 3
     topologyManager.withClusterConfiguration(
-        new ClusterConfiguration(
-            1,
-            Map.of(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(
-                new RoutingState(
-                    1,
-                    new ActivePartitions(1, Set.of(3), Set.of()),
-                    new MessageCorrelation.HashMod(1))),
-            Optional.empty()));
+        ClusterConfiguration.builder()
+            .version(1)
+            .routingState(
+                Optional.of(
+                    new RoutingState(
+                        1,
+                        new ActivePartitions(1, Set.of(3), Set.of()),
+                        new MessageCorrelation.HashMod(1))))
+            .build());
 
     // then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -131,14 +125,12 @@ final class RoundRobinDispatchStrategyTest {
 
     // when -- updating to routing state version 2, with active partitions 1, 2 and 3
     topologyManager.withClusterConfiguration(
-        new ClusterConfiguration(
-            1,
-            Map.of(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(
-                new RoutingState(2, new AllPartitions(3), new MessageCorrelation.HashMod(1))),
-            Optional.empty()));
+        ClusterConfiguration.builder()
+            .version(1)
+            .routingState(
+                Optional.of(
+                    new RoutingState(2, new AllPartitions(3), new MessageCorrelation.HashMod(1))))
+            .build());
 
     // then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);
