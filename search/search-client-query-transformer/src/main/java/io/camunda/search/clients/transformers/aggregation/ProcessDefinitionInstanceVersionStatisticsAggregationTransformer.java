@@ -8,12 +8,14 @@
 package io.camunda.search.clients.transformers.aggregation;
 
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_FIELD_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_BY_VERSION_TENANT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_PAGE;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_PROCESS_DEFINITION_VERSION;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITH_INCIDENT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_VERSION_CARDINALITY;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.PROCESS_DEFINITION_AND_TENANT_KEY;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.bucketSort;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
@@ -25,7 +27,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 
 import io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
-import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.sort.SortOption.FieldSorting;
@@ -42,22 +43,28 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
           value) {
     final var aggregation = value.getLeft();
 
-    final var byProcessDefinitionVersionAggBuilder =
+    final var byVersionTenantAggBuilder =
         terms()
-            .name(ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_BY_VERSION)
-            .field(PROCESS_VERSION)
+            .name(AGGREGATION_NAME_BY_VERSION_TENANT)
+            .script(PROCESS_DEFINITION_AND_TENANT_KEY)
             .size(AGGREGATION_TERMS_SIZE)
             .sorting(
                 List.of(
                     new FieldSorting(AGGREGATION_FIELD_KEY, io.camunda.search.sort.SortOrder.ASC)));
 
     final Builder<ProcessInstanceForListViewEntity> topHits = topHits();
-    final SearchTopHitsAggregator<ProcessInstanceForListViewEntity> processDefinitionAgg =
+    final var topHitsByProcessDefinition =
         topHits
             .name(AGGREGATION_NAME_PROCESS_DEFINITION_VERSION)
             .field(PROCESS_VERSION)
             .size(1)
             .documentClass(ProcessInstanceForListViewEntity.class)
+            .build();
+
+    final var processDefinitionKeyCardinalityAgg =
+        cardinality()
+            .name(AGGREGATION_NAME_VERSION_CARDINALITY)
+            .script(PROCESS_DEFINITION_AND_TENANT_KEY)
             .build();
 
     final var totalWithIncidentsAgg =
@@ -75,15 +82,15 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
             .build();
 
     final var byProcessDefinitionVersionAgg =
-        byProcessDefinitionVersionAggBuilder
+        byVersionTenantAggBuilder
             .aggregations(
-                processDefinitionAgg, totalWithIncidentsAgg, totalWithoutIncidentsAgg, bucketSort)
+                topHitsByProcessDefinition,
+                totalWithIncidentsAgg,
+                totalWithoutIncidentsAgg,
+                bucketSort)
             .build();
 
-    final var processDefinitionKeyCardinalityAgg =
-        cardinality().name(AGGREGATION_NAME_VERSION_CARDINALITY).field(PROCESS_VERSION).build();
-
-    return List.of(byProcessDefinitionVersionAgg, processDefinitionKeyCardinalityAgg);
+    return List.of(processDefinitionKeyCardinalityAgg, byProcessDefinitionVersionAgg);
   }
 
   private static List<FieldSorting> getCountSuffixSortings(

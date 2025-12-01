@@ -309,4 +309,18 @@ public final class FilterBuilders {
           fn) {
     return fn.apply(correlatedMessageSubscription()).build();
   }
+
+  public static ProcessDefinitionInstanceVersionStatisticsFilter.Builder
+      processDefinitionInstanceVersionStatistics() {
+    return new ProcessDefinitionInstanceVersionStatisticsFilter.Builder();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsFilter
+      processDefinitionInstanceVersionStatistics(
+          final Function<
+                  ProcessDefinitionInstanceVersionStatisticsFilter.Builder,
+                  ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsFilter>>
+              fn) {
+    return fn.apply(processDefinitionInstanceVersionStatistics()).build();
+  }
 }
