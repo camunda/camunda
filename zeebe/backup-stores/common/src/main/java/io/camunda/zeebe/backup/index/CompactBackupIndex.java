@@ -117,12 +117,8 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
    */
   @Override
   public Stream<IndexedBackup> all() {
-    try {
-      final var spliterator = new EntrySpliterator(buffer.duplicate().position(HEADER_SIZE));
-      return StreamSupport.stream(spliterator, true);
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to acquire read lock for backup index", e);
-    }
+    final var spliterator = new EntrySpliterator(buffer.duplicate().position(HEADER_SIZE));
+    return StreamSupport.stream(spliterator, true);
   }
 
   /**
