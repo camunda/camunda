@@ -272,7 +272,7 @@ public class RdbmsConfiguration {
       final TableMetricsMapper tableMetricsMapper, final Camunda configuration) {
     final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
     return new RdbmsTableRowCountMetrics(
-        tableMetricsMapper, metricsConfig.getTableCountCacheDuration());
+        tableMetricsMapper, metricsConfig.getTableRowCountCacheDuration());
   }
 
   @Bean

@@ -19,13 +19,13 @@ public class RdbmsMetrics {
    * The duration for which the table row count metrics are cached before being refreshed from the
    * database. This helps avoid performance impact on the database.
    */
-  private Duration tableCountCacheDuration = DEFAULT_TABLE_ROW_COUNT_CACHE_DURATION;
+  private Duration tableRowCountCacheDuration = DEFAULT_TABLE_ROW_COUNT_CACHE_DURATION;
 
-  public Duration getTableCountCacheDuration() {
-    return tableCountCacheDuration;
+  public Duration getTableRowCountCacheDuration() {
+    return tableRowCountCacheDuration;
   }
 
-  public void setTableCountCacheDuration(final Duration tableCountCacheDuration) {
-    this.tableCountCacheDuration = tableCountCacheDuration;
+  public void setTableRowCountCacheDuration(final Duration tableRowCountCacheDuration) {
+    this.tableRowCountCacheDuration = tableRowCountCacheDuration;
   }
 }
