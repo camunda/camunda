@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
@@ -482,6 +483,27 @@ public final class ProcessInstanceClient {
       record.addTerminateInstruction(
           new ProcessInstanceModificationTerminateInstruction()
               .setElementInstanceKey(elementInstanceKey));
+      return this;
+    }
+
+    public ProcessInstanceModificationClient terminateElements(final String elementId) {
+      record.addTerminateInstruction(
+          new ProcessInstanceModificationTerminateInstruction().setElementId(elementId));
+      return this;
+    }
+
+    public ProcessInstanceModificationClient terminateElements(
+        final ProcessInstanceModificationTerminateInstruction terminateInstruction) {
+      record.addTerminateInstruction(terminateInstruction);
+      return this;
+    }
+
+    public ProcessInstanceModificationClient moveElements(
+        final String sourceElementId, final String targetElementId) {
+      record.addMoveInstruction(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId));
       return this;
     }
 

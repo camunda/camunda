@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -1341,5 +1342,47 @@ public class ModifyProcessInstanceRejectionTest {
             "Expect activation with valid ancestor scope key in event subprocess is accepted")
         .hasRecordType(io.camunda.zeebe.protocol.record.RecordType.EVENT)
         .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+  }
+
+  @Test
+  public void shouldRejectTerminationWithElementIdAndInstanceKeyDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask()
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElements(
+                new ProcessInstanceModificationTerminateInstruction()
+                    .setElementId("A")
+                    .setElementInstanceKey(12345L))
+            .terminateElements(
+                new ProcessInstanceModificationTerminateInstruction()
+                    .setElementId("B")
+                    .setElementInstanceKey(67890L))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that activation is rejected when flow scope is terminated")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more terminate instructions "
+                    + "with an element instance key and element id: '(%s, %s)', '(%s, %s)'")
+                .formatted(PROCESS_ID, 12345L, "A", 67890L, "B"));
   }
 }

@@ -112,6 +112,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -848,6 +849,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append(summarizeActivateInstructions(value.getActivateInstructions()))
         .append(summarizeTerminateInstructions(value.getTerminateInstructions()))
+        .append(summarizeMoveInstructions(value.getMoveInstructions()))
         .toString();
   }
 
@@ -888,7 +890,23 @@ public class CompactRecordLogger {
       return "";
     }
     return terminateInstructions.stream()
-        .map(t -> "terminate [%s]".formatted(shortenKey(t.getElementInstanceKey())))
+        .map(
+            t ->
+                "terminate [%s]"
+                    .formatted(
+                        t.getElementInstanceKey() > 0
+                            ? shortenKey(t.getElementInstanceKey())
+                            : t.getElementId()))
+        .collect(Collectors.joining("> <", "<", "> "));
+  }
+
+  private String summarizeMoveInstructions(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions) {
+    if (moveInstructions.isEmpty()) {
+      return "";
+    }
+    return moveInstructions.stream()
+        .map(t -> "move [%s to %s]".formatted(t.getSourceElementId(), t.getTargetElementId()))
         .collect(Collectors.joining("> <", "<", "> "));
   }
 

@@ -31,8 +31,11 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -340,6 +343,60 @@ public class ModifyProcessInstanceTerminationTest {
   }
 
   @Test
+  public void shouldTerminateOneElementInRootScopeById() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElements("A")
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+  }
+
+  @Test
+  public void shouldTerminateAllElementsInRootScopeById() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("A")
+        .modify();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElements("A")
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A", 2);
+    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+  }
+
+  @Test
   public void shouldTerminateAllElementsOfFlowScope() {
     // given
     ENGINE
@@ -387,6 +444,59 @@ public class ModifyProcessInstanceTerminationTest {
         .containsSubsequence(
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldTerminateAllElementsOfFlowScopeById() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    subprocess ->
+                        subprocess
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .parallelGateway("fork")
+                            .userTask("A")
+                            .moveToNode("fork")
+                            .userTask("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElements("A")
+        .terminateElements("B")
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs("Expect to terminate the elements and propagate to their flow scopes")
+        .containsSubsequence(
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
                 BpmnElementType.SUB_PROCESS,
                 "subprocess",
@@ -1180,16 +1290,28 @@ public class ModifyProcessInstanceTerminationTest {
 
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
+    assertThatElementIsTerminated(processInstanceKey, elementId, 1);
+  }
+
+  private void assertThatElementIsTerminated(
+      final long processInstanceKey, final String elementId, final int times) {
+    final var items =
+        List.of(
+            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+    final var expectedSequence =
+        IntStream.range(0, times)
+            .mapToObj(l -> items.stream())
+            .flatMap(Function.identity())
+            .toList();
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
-                .limit(elementId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .limit(elementId, ProcessInstanceIntent.ELEMENT_TERMINATED, times)
                 .toList())
         .extracting(Record::getIntent)
-        .containsSequence(
-            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+        .containsSequence(expectedSequence);
   }
 
   private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {

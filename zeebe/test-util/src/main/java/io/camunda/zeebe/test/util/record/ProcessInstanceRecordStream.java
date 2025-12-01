@@ -88,6 +88,12 @@ public final class ProcessInstanceRecordStream
         r -> r.getValue().getElementId().equals(elementId) && r.getIntent().equals(intent));
   }
 
+  public ProcessInstanceRecordStream limit(
+      final String elementId, final ProcessInstanceIntent intent, final int times) {
+    return limitByCount(
+        r -> r.getValue().getElementId().equals(elementId) && r.getIntent().equals(intent), times);
+  }
+
   public ProcessInstanceRecordStream withElementType(final BpmnElementType elementType) {
     return valueFilter(v -> v.getBpmnElementType() == elementType);
   }
