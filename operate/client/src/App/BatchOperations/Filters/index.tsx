@@ -143,6 +143,17 @@ const DateTimeRangeField: React.FC<DateTimeRangeFieldProps> = ({
     setIsModalOpen(false);
   };
 
+  const handleReset = () => {
+    setFromDate('');
+    setToDate('');
+    setFromTime('');
+    setToTime('');
+    setFromTimeError(undefined);
+    setToTimeError(undefined);
+    onChange(undefined, undefined);
+    setIsModalOpen(false);
+  };
+
   const validateTime = (time: string, type: 'from' | 'to') => {
     if (!time) {
       return undefined;
@@ -186,6 +197,7 @@ const DateTimeRangeField: React.FC<DateTimeRangeFieldProps> = ({
         title={getInputDisplayValue()}
         placeholder="Enter date range"
         size="sm"
+        light={true}
         buttonLabel="Open date range modal"
         onIconClick={handleOpenModal}
         onClick={handleOpenModal}
@@ -196,10 +208,19 @@ const DateTimeRangeField: React.FC<DateTimeRangeFieldProps> = ({
           <Modal
             data-testid={`${id}-modal`}
             open={isModalOpen}
-            size="xs"
+            size="sm"
             modalHeading={modalTitle}
             primaryButtonText="Apply"
-            secondaryButtonText="Cancel"
+            secondaryButtons={[
+              {
+                buttonText: 'Reset',
+                onClick: handleReset,
+              },
+              {
+                buttonText: 'Cancel',
+                onClick: handleCancel,
+              },
+            ]}
             onRequestClose={handleCancel}
             onRequestSubmit={handleApply}
             primaryButtonDisabled={isApplyDisabled}
@@ -416,18 +437,6 @@ const BatchOperationsFilters: React.FC<BatchOperationsFiltersProps> = observer(
                 style={{width: '100%'}}
                 light={true}
               />
-              <TextInput
-                id="process-instance-key"
-                labelText="Process instance key"
-                placeholder="Search by instance key"
-                value={filters.processInstanceKey || ''}
-                onChange={(e) =>
-                  handleFilterChange('processInstanceKey', e.target.value)
-                }
-                size="sm"
-                style={{width: '100%'}}
-                light={true}
-              />
             </Stack>
             <Stack gap={5} orientation="vertical" style={{width: '100%'}}>
               <Title style={{paddingBottom: '0'}}>Operation</Title>
@@ -484,7 +493,7 @@ const BatchOperationsFilters: React.FC<BatchOperationsFiltersProps> = observer(
               <DateTimeRangeField
                 id="start-date-range"
                 label="Start date range"
-                modalTitle="Filter instances by start date"
+                modalTitle="Filter operations by start date"
                 fromDateTime={filters.startDateFrom}
                 toDateTime={filters.startDateTo}
                 onChange={(from, to) => {
@@ -498,7 +507,7 @@ const BatchOperationsFilters: React.FC<BatchOperationsFiltersProps> = observer(
               <DateTimeRangeField
                 id="end-date-range"
                 label="End date range"
-                modalTitle="Filter instances by end date"
+                modalTitle="Filter operations by end date"
                 fromDateTime={filters.endDateFrom}
                 toDateTime={filters.endDateTo}
                 onChange={(from, to) => {

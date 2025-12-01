@@ -153,6 +153,17 @@ const DateTimeRangeField: React.FC<DateTimeRangeFieldProps> = ({
     setIsModalOpen(false);
   };
 
+  const handleReset = () => {
+    setFromDate('');
+    setToDate('');
+    setFromTime('');
+    setToTime('');
+    setFromTimeError(undefined);
+    setToTimeError(undefined);
+    onChange(undefined, undefined);
+    setIsModalOpen(false);
+  };
+
   const validateTime = (time: string) => {
     if (!time) {
       return undefined;
@@ -206,10 +217,19 @@ const DateTimeRangeField: React.FC<DateTimeRangeFieldProps> = ({
           <Modal
             data-testid={`${id}-modal`}
             open={isModalOpen}
-            size="xs"
+            size="sm"
             modalHeading={modalTitle}
             primaryButtonText="Apply"
-            secondaryButtonText="Cancel"
+            secondaryButtons={[
+              {
+                buttonText: 'Reset',
+                onClick: handleReset,
+              },
+              {
+                buttonText: 'Cancel',
+                onClick: handleCancel,
+              },
+            ]}
             onRequestClose={handleCancel}
             onRequestSubmit={handleApply}
             primaryButtonDisabled={isApplyDisabled}
@@ -626,7 +646,7 @@ const BatchOperationDetails: React.FC = () => {
                   navigate(Paths.batchOperations());
                 }}
               >
-                Operations
+                Batch operations
               </Link>
             </BreadcrumbItem>
             <BreadcrumbItem isCurrentPage>Not found</BreadcrumbItem>
@@ -682,7 +702,7 @@ const BatchOperationDetails: React.FC = () => {
                 navigate(Paths.batchOperations());
               }}
             >
-              Operations
+              Batch operations
             </Link>
           </BreadcrumbItem>
           <BreadcrumbItem isCurrentPage>
