@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.test.broker.protocol.ImmutableRecordValueMapper;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
@@ -122,12 +123,36 @@ final class ElasticsearchExporterIT {
     // then
     final var response = testClient.getExportedDocumentFor(record);
     assertThat(response)
-        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
         .containsExactly(
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
-            record);
+            String.valueOf(record.getPartitionId()));
+
+    final var exportedRecord = response.source();
+    assertThat(exportedRecord)
+        .extracting(
+            Record::getPosition,
+            Record::getKey,
+            Record::getTimestamp,
+            Record::getIntent,
+            Record::getPartitionId,
+            Record::getRecordType,
+            Record::getValueType)
+        .containsExactly(
+            record.getPosition(),
+            record.getKey(),
+            record.getTimestamp(),
+            record.getIntent(),
+            record.getPartitionId(),
+            record.getRecordType(),
+            record.getValueType());
+
+    // Compare the value using its interface methods
+    assertThat(exportedRecord.getValue())
+        // .usingRecursiveComparison().getRecursiveComparisonConfiguration()
+        // .withStrictTypeChecking(false)
+        .isEqualTo(ImmutableRecordValueMapper.toImmutable(record.getValue()));
   }
 
   // both tests below are regression tests for https://github.com/camunda/camunda/issues/4640

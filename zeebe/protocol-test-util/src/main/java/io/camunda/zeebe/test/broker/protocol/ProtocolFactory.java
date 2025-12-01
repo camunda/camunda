@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
@@ -35,10 +39,14 @@ import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
 import org.jeasy.random.FieldPredicates;
 import org.jeasy.random.api.Randomizer;
+import org.jeasy.random.randomizers.number.IntegerRandomizer;
+import org.jeasy.random.randomizers.number.LongRandomizer;
 import org.jeasy.random.randomizers.range.LongRangeRandomizer;
 import org.jeasy.random.randomizers.registry.CustomRandomizerRegistry;
+import org.jeasy.random.randomizers.text.StringRandomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.ResolvableType;
 
 /**
  * A {@link Record} factory which produces randomized records deterministically. A seed can be given
@@ -111,11 +119,55 @@ public final class ProtocolFactory {
   public ProtocolFactory(final long seed, final UnaryOperator<Builder<?>> defaultModifier) {
     this.defaultModifier =
         Objects.requireNonNull(defaultModifier, "must specify a default modifier");
-
     randomizerRegistry = new CustomRandomizerRegistry();
     parameters = getDefaultParameters().seed(seed).scanClasspathForConcreteTypes(true);
     random = new EasyRandom(parameters);
     registerRandomizers();
+  }
+
+  private void registerEnumRandomizers(final long seed) {
+    randomizerRegistry.registerRandomizer(
+        LongProperty.class,
+        () -> new LongProperty(new LongRandomizer().getRandomValue().toString()));
+    randomizerRegistry.registerRandomizer(
+        IntegerProperty.class,
+        () -> new IntegerProperty(new IntegerRandomizer().getRandomValue().toString()));
+    randomizerRegistry.registerRandomizer(
+        StringProperty.class, () -> new StringProperty(new StringRandomizer().getRandomValue()));
+    randomizerRegistry.registerRandomizer(
+        LongProperty.class,
+        () -> new LongProperty(new LongRandomizer().getRandomValue().toString()));
+    try (final var scanResult =
+        new ClassGraph()
+            .enableClassInfo()
+            .enableFieldInfo()
+            .acceptPackages("io.camunda.zeebe.protocol.record")
+            .scan()) {
+
+      scanResult
+          .getAllClasses()
+          .filter(ClassInfo::isEnum)
+          .forEach(
+              enumClass -> {
+                final Class<?> enumType = enumClass.loadClass();
+                LOGGER.debug("Registering randomizer for enum type: {}", enumType.getName());
+                final Enum[] enumValues =
+                    enumClass.getEnumConstantObjects().stream().toArray(Enum[]::new);
+                randomizerRegistry.registerRandomizer(
+                    field -> {
+                      if (field.getType().equals(EnumProperty.class)) {
+                        final ResolvableType resolvableType = ResolvableType.forField(field);
+                        if (resolvableType.hasGenerics()) {
+                          return resolvableType.getGeneric(0).resolve().equals(enumType);
+                        }
+                      }
+                      return false;
+                    },
+                    () -> new EnumRandomizer(seed, enumValues).getRandomValue().name());
+              });
+
+      LOGGER.info("Registered randomizers for enum types in protocol value package");
+    }
   }
 
   /**
@@ -397,6 +449,7 @@ public final class ProtocolFactory {
         // as we have nested types in our protocol, let's give a generous depth here, but let's
         // still limit it to avoid errors/issues with nested collections
         .randomizationDepth(8)
+        .overrideDefaultInitialization(true)
         .excludeField(excludedRecordFields);
   }
 
@@ -415,7 +468,9 @@ public final class ProtocolFactory {
       intent = fixedIntent;
     }
 
-    final var value = generateObject(typeInfo.getValueClass());
+    final Class<? extends RecordValue> valueImplementationClass =
+        getValueImplementationClass(typeInfo.getValueClass());
+    final var value = generateObject(valueImplementationClass);
     final var seedRecord = random.nextObject(Record.class);
 
     //noinspection unchecked
@@ -432,15 +487,40 @@ public final class ProtocolFactory {
         .build();
   }
 
+  private Class<? extends RecordValue> getValueImplementationClass(
+      final Class<? extends RecordValue> valueInterface) {
+    final var implementations =
+        new ClassGraph()
+            .acceptPackages("io.camunda.zeebe.protocol.impl.record.value")
+            .enableAnnotationInfo()
+            .scan()
+            .getClassesImplementing(valueInterface)
+            .directOnly()
+            .loadClasses();
+
+    if (implementations.isEmpty()) {
+      LOGGER.warn(
+          "No implementation found for value interface {}; using interface for random generation",
+          valueInterface.getName());
+      return valueInterface;
+    }
+
+    return (Class<? extends RecordValue>) implementations.getFirst();
+  }
+
   // visible for testing
   static ClassInfoList findProtocolTypes() {
     return new ClassGraph()
-        .acceptPackages(PROTOCOL_PACKAGE_NAME)
+        .acceptPackages(
+            PROTOCOL_PACKAGE_NAME,
+            "io.camunda.zeebe.protocol.impl.record",
+            "io.camunda.zeebe.msgpack.property")
         .enableAnnotationInfo()
         .scan()
-        .getAllInterfaces()
-        .filter(info -> info.hasAnnotation(ImmutableProtocol.class))
-        .directOnly();
+        .getAllClasses();
+    // .getAllInterfaces()
+    // .filter(info -> info.hasAnnotation(ImmutableProtocol.class))
+    // .directOnly();
   }
 
   /**
