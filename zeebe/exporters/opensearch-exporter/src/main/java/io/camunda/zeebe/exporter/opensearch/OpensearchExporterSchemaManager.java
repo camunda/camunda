@@ -165,6 +165,9 @@ public class OpensearchExporterSchemaManager {
       if (index.clusterVariable) {
         createValueIndexTemplate(ValueType.CLUSTER_VARIABLE, version);
       }
+      if (index.conditionalSubscription) {
+        createValueIndexTemplate(ValueType.CONDITIONAL_SUBSCRIPTION, version);
+      }
     }
 
     indexTemplatesCreated.add(version);

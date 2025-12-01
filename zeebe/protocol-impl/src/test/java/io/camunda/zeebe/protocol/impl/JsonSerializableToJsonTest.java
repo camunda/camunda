@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -3934,6 +3935,65 @@ final class JsonSerializableToJsonTest {
         "resourceType": "PROCESS_INSTANCE"
       }
       """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// ConditionalSubscriptionRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ConditionalSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ConditionalSubscriptionRecord()
+                    .setTenantId("tenant-1")
+                    .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(456L)
+                    .setScopeKey(789L)
+                    .setElementInstanceKey(111L)
+                    .setCatchEventId(BufferUtil.wrapString("catchEvent"))
+                    .setCondition(BufferUtil.wrapString("=x > 5"))
+                    .setVariableNames(List.of("x", "y"))
+                    .setVariableEvents(List.of("CREATED", "UPDATED"))
+                    .setInterrupting(true),
+        """
+                {
+                  "processInstanceKey":123,
+                  "elementInstanceKey":111,
+                  "catchEventId":"catchEvent",
+                  "variableNames":["x","y"],
+                  "variableEvents":["CREATED","UPDATED"],
+                  "interrupting":true,
+                  "tenantId":"tenant-1",
+                  "scopeKey":789,
+                  "condition":"=x > 5",
+                  "processDefinitionKey":456
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty ConditionalSubscriptionRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // /////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ConditionalSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>) ConditionalSubscriptionRecord::new,
+        """
+                {
+                "processDefinitionKey":-1,
+                "processInstanceKey":-1,
+                "elementInstanceKey":-1,
+                "catchEventId":"",
+                "variableNames":[],
+                "variableEvents":[],
+                "interrupting":true,
+                "tenantId":"<default>",
+                "scopeKey":-1,
+                "condition":""
+                }
+                """
       },
     };
   }
