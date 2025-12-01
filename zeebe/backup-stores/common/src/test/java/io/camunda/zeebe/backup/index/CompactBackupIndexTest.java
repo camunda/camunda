@@ -41,7 +41,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldCreateNewIndexFile() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -55,7 +55,7 @@ final class CompactBackupIndexTest {
     void shouldOpenExistingIndexFile() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
       final var backup = createBackup(1, 100L, 200L);
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       try (final var index = CompactBackupIndex.open(indexFile)) {
         index.add(backup);
       }
@@ -71,7 +71,7 @@ final class CompactBackupIndexTest {
     void shouldReturnEmptyStreamWhenNoBackups()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -87,7 +87,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldAddSingleBackup() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup = createBackup(1, 100L, 200L);
 
       // when
@@ -103,7 +103,7 @@ final class CompactBackupIndexTest {
     void shouldAddMultipleBackupsInOrder()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -123,7 +123,7 @@ final class CompactBackupIndexTest {
     void shouldAddBackupsOutOfOrderAndMaintainSorting()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -146,7 +146,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldNotAddDuplicateBackup() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -168,7 +168,7 @@ final class CompactBackupIndexTest {
     void shouldHandleInsertionAtBeginning()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup5 = createBackup(5, 500L, 600L);
       final var backup10 = createBackup(10, 1000L, 1100L);
@@ -191,7 +191,7 @@ final class CompactBackupIndexTest {
     void shouldHandleInsertionInMiddle()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup10 = createBackup(10, 1000L, 1100L);
       final var backup20 = createBackup(20, 2000L, 2100L);
@@ -213,7 +213,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldHandleInsertionAtEnd() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup5 = createBackup(5, 500L, 600L);
       final var backup10 = createBackup(10, 1000L, 1100L);
@@ -240,7 +240,7 @@ final class CompactBackupIndexTest {
     void shouldFindBackupByCheckpointId()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -260,7 +260,7 @@ final class CompactBackupIndexTest {
     void shouldReturnNullWhenBackupNotFound()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup3 = createBackup(3, 300L, 400L);
 
@@ -278,7 +278,7 @@ final class CompactBackupIndexTest {
     void shouldReturnNullForEmptyIndex()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -291,7 +291,7 @@ final class CompactBackupIndexTest {
     void shouldHandleEdgeCaseWithSingleEntry()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup = createBackup(5, 500L, 600L);
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -316,7 +316,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldRemoveSingleEntry() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup = createBackup(1, 100L, 200L);
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -335,7 +335,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldRemoveLastEntry() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -357,7 +357,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldRemoveFirstEntry() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -379,7 +379,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldRemoveMiddleEntry() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -402,7 +402,7 @@ final class CompactBackupIndexTest {
     void shouldHandleRemovalFromEmptyIndex()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup = createBackup(1, 100L, 200L);
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -418,7 +418,7 @@ final class CompactBackupIndexTest {
     void shouldHandleRemovalOfNonExistentEntry()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -440,7 +440,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldRemoveMultipleEntries() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -468,7 +468,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldRemoveAllEntries() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -492,7 +492,7 @@ final class CompactBackupIndexTest {
     void shouldRemoveEntryWithSameCheckpointIdButDifferentData()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
 
@@ -513,7 +513,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldHandleAddAfterRemoval() throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -544,7 +544,7 @@ final class CompactBackupIndexTest {
     void shouldPersistDataAcrossReopens()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // Add initial backups
       final var backup1 = createBackup(1, 100L, 200L);
@@ -570,7 +570,7 @@ final class CompactBackupIndexTest {
     void shouldPersistRemovalAcrossReopens()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -598,12 +598,12 @@ final class CompactBackupIndexTest {
     void shouldHandleLargeNumberOfBackups()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
-      final int numBackups = 1000;
+      final var indexFile = tempDir.resolve("backup.index");
+      final var numBackups = 1000;
 
       // when
       try (final var index = CompactBackupIndex.open(indexFile)) {
-        for (int i = numBackups; i > 0; i--) { // Insert in reverse order
+        for (var i = numBackups; i > 0; i--) { // Insert in reverse order
           index.add(createBackup(i, (long) i * 100, (long) i * 200));
         }
 
@@ -612,7 +612,7 @@ final class CompactBackupIndexTest {
         assertThat(allBackups).hasSize(numBackups);
 
         // Verify sorted order
-        for (int i = 0; i < numBackups; i++) {
+        for (var i = 0; i < numBackups; i++) {
           assertThat(allBackups.get(i).checkpointId()).isEqualTo(i + 1);
         }
 
@@ -627,17 +627,17 @@ final class CompactBackupIndexTest {
     void shouldHandleLargeNumberOfRemovals()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
-      final int numBackups = 1000;
+      final var indexFile = tempDir.resolve("backup.index");
+      final var numBackups = 1000;
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
         // Add many backups
-        for (int i = 1; i <= numBackups; i++) {
+        for (var i = 1; i <= numBackups; i++) {
           index.add(createBackup(i, (long) i * 100, (long) i * 200));
         }
 
         // when - remove every other backup
-        for (int i = 2; i <= numBackups; i += 2) {
+        for (var i = 2; i <= numBackups; i += 2) {
           index.remove(createBackup(i, 0, 0)); // Data doesn't matter
         }
 
@@ -646,14 +646,14 @@ final class CompactBackupIndexTest {
           final var allBackups = entries.collect(Collectors.toList());
           assertThat(allBackups).hasSize(numBackups / 2);
 
-          for (int i = 0; i < allBackups.size(); i++) {
-            final long expectedCheckpointId = (long) (i * 2 + 1);
+          for (var i = 0; i < allBackups.size(); i++) {
+            final var expectedCheckpointId = (long) (i * 2 + 1);
             assertThat(allBackups.get(i).checkpointId()).isEqualTo(expectedCheckpointId);
           }
         }
 
         // Verify removed entries are not found
-        for (int i = 2; i <= numBackups; i += 2) {
+        for (var i = 2; i <= numBackups; i += 2) {
           assertThat(index.byCheckpointId(i)).isNull();
         }
       }
@@ -663,11 +663,11 @@ final class CompactBackupIndexTest {
     void shouldIterateThroughHugeIndex()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
-      final int numBackups = 10_000_000;
+      final var indexFile = tempDir.resolve("backup.index");
+      final var numBackups = 10_000_000;
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
-        for (int i = 1; i <= numBackups; i++) {
+        for (var i = 1; i <= numBackups; i++) {
           index.add(createBackup(i, (long) i * 100, (long) i * 200));
         }
         index.flush();
@@ -677,7 +677,7 @@ final class CompactBackupIndexTest {
           final var sum = entries.parallel().mapToLong(IndexedBackup::checkpointId).sum();
 
           // then
-          final long expectedSum = (long) numBackups * (numBackups + 1) / 2; // Sum of 1..n
+          final var expectedSum = (long) numBackups * (numBackups + 1) / 2; // Sum of 1..n
           assertThat(sum).isEqualTo(expectedSum);
         }
       }
@@ -687,7 +687,7 @@ final class CompactBackupIndexTest {
     void iterationCanHandleConcurrentModification()
         throws IndexCorruption, IOException, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
         final var backup1 = createBackup(1, 100L, 200L);
@@ -718,7 +718,7 @@ final class CompactBackupIndexTest {
     void shouldThrowIndexCorruptionForUnsupportedVersion()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       try (final var index = CompactBackupIndex.open(indexFile)) {
         index.add(createBackup(1, 100L, 200L));
       }
@@ -741,7 +741,7 @@ final class CompactBackupIndexTest {
     void shouldThrowIllegalStateExceptionForNegativeEntryCount()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       try (final var index = CompactBackupIndex.open(indexFile)) {
         index.add(createBackup(1, 100L, 200L));
       }
@@ -765,7 +765,7 @@ final class CompactBackupIndexTest {
     void shouldThrowIndexCorruptionForFileTooSmall()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       try (final var index = CompactBackupIndex.open(indexFile)) {
         index.add(createBackup(1, 100L, 200L));
         index.add(createBackup(2, 200L, 300L));
@@ -791,7 +791,7 @@ final class CompactBackupIndexTest {
     void shouldThrowPartialIndexCorruptionForNonZeroBytesInRemainder()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
@@ -799,7 +799,7 @@ final class CompactBackupIndexTest {
       }
 
       // Corrupt by writing non-zero byte in the remainder area (last few bytes)
-      final long fileSize = Files.size(indexFile);
+      final var fileSize = Files.size(indexFile);
       try (final var channel =
           Files.newByteChannel(indexFile, StandardOpenOption.WRITE, StandardOpenOption.READ)) {
         channel.position(fileSize - 1); // Last byte
@@ -820,8 +820,8 @@ final class CompactBackupIndexTest {
     void shouldDeleteTemporaryIndexFileOnOpen()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
-      final Path tempFile = tempDir.resolve("backup.index.tmp");
+      final var indexFile = tempDir.resolve("backup.index");
+      final var tempFile = tempDir.resolve("backup.index.tmp");
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
         index.add(createBackup(1, 100L, 200L));
@@ -843,7 +843,7 @@ final class CompactBackupIndexTest {
     void shouldReturnLastValidEntryInPartialCorruption()
         throws IOException, IndexCorruption, PartialIndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
       final var backup1 = createBackup(1, 100L, 200L);
       final var backup2 = createBackup(2, 200L, 300L);
       final var backup3 = createBackup(3, 300L, 400L);
@@ -876,7 +876,7 @@ final class CompactBackupIndexTest {
     @Test
     void shouldHandlePartialCorruptionWithNoValidEntries() throws IOException, IndexCorruption {
       // given
-      final Path indexFile = tempDir.resolve("backup.index");
+      final var indexFile = tempDir.resolve("backup.index");
 
       // Create an index with header but claim we have entries and corrupt the data area
       try (final var channel =
@@ -907,7 +907,7 @@ final class CompactBackupIndexTest {
           .isInstanceOf(PartialIndexCorruption.class)
           .satisfies(
               ex -> {
-                final PartialIndexCorruption pic = (PartialIndexCorruption) ex;
+                final var pic = (PartialIndexCorruption) ex;
                 assertThat(pic.getLastValidEntry()).isNull();
                 assertThat(pic.getMessage()).contains("no valid entries found");
               });
