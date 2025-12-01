@@ -840,7 +840,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessDefinitionGetRequest newProcessDefinitionGetRequest(long processDefinitionKey);
 
-  /*
+  /**
    * Retrieves the XML representation of a process definition.
    *
    * <pre>
@@ -856,7 +856,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(long processDefinitionKey);
 
-  /*
+  /**
    * Retrieves the Form of a process definition.
    *
    * <pre>
@@ -1072,7 +1072,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   DecisionRequirementsSearchRequest newDecisionRequirementsSearchRequest();
 
-  /*
+  /**
    * Executes a search request to query decision definitions.
    *
    * <pre>
@@ -1106,7 +1106,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   DecisionDefinitionGetRequest newDecisionDefinitionGetRequest(long decisionDefinitionKey);
 
-  /*
+  /**
    * Retrieves the XML representation of a decision definition.
    *
    * <pre>
@@ -1156,11 +1156,11 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
 
-  /*
-   * Executes a search request to query decision definitions.
+  /**
+   * Executes a search request to query incidents.
    *
    * <pre>
-   * long decisionDefinitionKey = ...;
+   * long processInstanceKey = ...;
    *
    * camundaClient
    *  .newIncidentSearchRequest()
@@ -1798,7 +1798,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   UpdateMappingRuleCommandStep1 newUpdateMappingRuleCommand(String mappingRuleId);
 
-  /*
+  /**
    * Retrieves the XML representation of a decision requirements.
    *
    * <pre>
