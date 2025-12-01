@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -545,7 +544,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final var statsEntity =
         new ProcessDefinitionInstanceStatisticsEntity(
-            "complexProcess", "Complex process", true, 5L, 10L);
+            "complexProcess", "<default>", "Complex process", true, 5L, 10L);
     final var statsResult =
         new io.camunda.search.query.SearchQueryResult.Builder<
                 ProcessDefinitionInstanceStatisticsEntity>()
@@ -739,7 +738,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     final String processDefinitionId = "process_definition_id";
     final var statsEntity =
         new ProcessDefinitionInstanceVersionStatisticsEntity(
-            "process_definition_id", 2L, 3, "process_definition_name", 4L, 0L);
+            "process_definition_id", 2L, 3, "process_definition_name", "<default>", 4L, 0L);
     final var statsResult =
         new Builder<ProcessDefinitionInstanceVersionStatisticsEntity>()
             .total(1L)
@@ -748,7 +747,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             .endCursor(null)
             .build();
     when(processDefinitionServices.searchProcessDefinitionInstanceVersionStatistics(
-            eq(processDefinitionId), any(ProcessDefinitionInstanceVersionStatisticsQuery.class)))
+            processDefinitionId, any(ProcessDefinitionInstanceVersionStatisticsQuery.class)))
         .thenReturn(statsResult);
     final var request =
         """
@@ -795,7 +794,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     verify(processDefinitionServices)
         .searchProcessDefinitionInstanceVersionStatistics(
-            eq(processDefinitionId), instanceVersionStatsQueryCaptor.capture());
+            processDefinitionId, instanceVersionStatsQueryCaptor.capture());
     final var capturedQuery = instanceVersionStatsQueryCaptor.getValue();
     assertThat(capturedQuery).isNotNull();
     final var sort = capturedQuery.sort();

@@ -89,7 +89,7 @@ public record SearchTermsAggregator(
     public SearchTermsAggregator build() {
       return new SearchTermsAggregator(
           Objects.requireNonNull(name, "Expected non-null field for name."),
-          Objects.requireNonNull(field, "Expected non-null field for field."),
+          field,
           size,
           minDocCount,
           script,

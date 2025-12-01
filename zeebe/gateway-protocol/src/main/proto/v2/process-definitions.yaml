@@ -204,7 +204,7 @@ paths:
       operationId: getProcessDefinitionInstanceStatistics
       summary: Get process instance statistics
       description: |
-        Get statistics about process instances, grouped by process definition.
+        Get statistics about process instances, grouped by process definition and tenant.
       requestBody:
         required: false
         content:
@@ -533,6 +533,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcessDefinitionInstanceVersionStatisticsQuerySortRequest'
+        filter:
+          description: The process definition instance version statistics search filters.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionInstanceVersionStatisticsFilter'
+
+    ProcessDefinitionInstanceVersionStatisticsFilter:
+      description: Process definition instance version statistics search filter.
+      type: object
+      properties:
+        tenantId:
+          allOf:
+              - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: Tenant ID of this process definition.
 
     ProcessDefinitionInstanceVersionStatisticsQueryResult:
       type: object
@@ -563,6 +576,10 @@ components:
         processDefinitionName:
           description: The name of the process definition.
           type: string
+        tenantId:
+          description: The tenant ID associated with the process definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         processDefinitionVersion:
           description: The version number of the process definition.
           type: integer
@@ -578,6 +595,7 @@ components:
       required:
         - processDefinitionId
         - processDefinitionKey
+        - tenantId
         - processDefinitionName
         - processDefinitionVersion
         - activeInstancesWithIncidentCount
