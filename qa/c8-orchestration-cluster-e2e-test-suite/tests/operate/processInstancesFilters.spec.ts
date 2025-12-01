@@ -13,7 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
-import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
+import {getNewOperationIds} from 'utils/getNewOperationIds';
 
 type ProcessInstance = {processInstanceKey: number};
 
@@ -359,6 +359,9 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+
       await expect(operateProcessesPage.tableLoadingSpinner).toBeHidden({
         timeout: 30000,
       });
@@ -389,28 +392,33 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      var lastOperation = operateOperationPanelPage
-        .getAllOperationEntries()
-        .first();
+      operateOperationPanelPage.afterOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+
+      let newIds = getNewOperationIds(
+        operateOperationPanelPage.beforeOperationOperationPanelEntries,
+        operateOperationPanelPage.afterOperationOperationPanelEntries,
+        'Cancel',
+      );
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(
-            OperateOperationPanelPage.getOperationType(lastOperation),
-          ).toHaveText('Cancel');
+          expect(newIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
-          lastOperation = operateOperationPanelPage
-            .getAllOperationEntries()
-            .first();
-          await page.reload();
+          await page.waitForTimeout(1000);
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          newIds = getNewOperationIds(
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Cancel',
+          );
         },
+        maxRetries: 60,
       });
 
-      const operationId =
-        await OperateOperationPanelPage.getOperationID(
-          lastOperation,
-        ).innerText();
+      const operationId = newIds[0];
 
       await operateOperationPanelPage.collapseOperationIdField();
 

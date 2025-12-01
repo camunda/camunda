@@ -7,20 +7,33 @@
  */
 
 import {Page, Locator} from '@playwright/test';
+import {OperationEntry} from 'utils/getNewOperationIds';
 
 export class OperateOperationPanelPage {
   private page: Page;
   readonly expandButton: Locator;
   readonly collapseButton: Locator;
   readonly operationList: Locator;
+  readonly expandedOperationPanel: Locator;
+  readonly collapsedOperationsPanel: Locator;
+  beforeOperationOperationPanelEntries: OperationEntry[];
+  afterOperationOperationPanelEntries: OperationEntry[];
 
   constructor(page: Page) {
     this.page = page;
-    this.expandButton = page.getByRole('button', {name: 'Expand Operations'});
-    this.collapseButton = page.getByRole('button', {
+    this.expandButton = page
+      .getByLabel('Operations')
+      .getByRole('button', {name: 'Expand Operations'});
+    this.operationList = page.getByTestId('operations-list');
+    this.expandedOperationPanel = page
+      .getByLabel('Operations')
+      .getByTestId('expanded-panel');
+    this.collapseButton = this.expandedOperationPanel.getByRole('button', {
       name: 'Collapse Operations',
     });
-    this.operationList = page.getByTestId('operations-list');
+    this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
+    this.beforeOperationOperationPanelEntries = [];
+    this.afterOperationOperationPanelEntries = [];
   }
 
   getAllOperationEntries(): Locator {
@@ -55,5 +68,68 @@ export class OperateOperationPanelPage {
     return await OperateOperationPanelPage.getOperationID(
       operationEntry,
     ).innerText();
+  }
+
+  async clickCollapseButton(): Promise<void> {
+    await this.collapseButton.click();
+  }
+
+  async clickExpandButton(): Promise<void> {
+    await this.expandButton.click();
+  }
+
+  async collapseOperationsPanel(): Promise<boolean> {
+    const isExpanded = await this.expandedOperationPanel.isVisible();
+    if (isExpanded) {
+      await this.clickCollapseButton();
+      await this.collapsedOperationsPanel.waitFor({state: 'visible'});
+    }
+    return isExpanded;
+  }
+
+  async expandOperationsPanel(): Promise<boolean> {
+    const isCollapsed = await this.collapsedOperationsPanel.isVisible();
+    if (isCollapsed) {
+      await this.clickExpandButton();
+      await this.expandedOperationPanel.waitFor({
+        state: 'visible',
+        timeout: 10000,
+      });
+    }
+    return isCollapsed;
+  }
+
+  async operationIdsEntries(): Promise<{id: string; type: string}[]> {
+    const wasCollapsed = await this.expandOperationsPanel();
+    const operationEntries = this.getAllOperationEntries();
+    const operationIds: OperationEntry[] = [];
+
+    const count = await operationEntries.count();
+    for (let i = 0; i < count; i++) {
+      const operationEntry = operationEntries.nth(i);
+      const operationId =
+        await OperateOperationPanelPage.getOperationID(
+          operationEntry,
+        ).innerText();
+      const operatioType =
+        await OperateOperationPanelPage.getOperationType(
+          operationEntry,
+        ).innerText();
+      operationIds.push({
+        id: operationId,
+        type: operatioType,
+      });
+    }
+    if (wasCollapsed) {
+      await this.collapseOperationsPanel();
+    }
+    return operationIds;
+  }
+
+  async clickOperationEntryById(operationId: string): Promise<void> {
+    const operationEntryById = this.page
+      .getByTestId('operation-id')
+      .filter({hasText: operationId});
+    await operationEntryById.click();
   }
 }
