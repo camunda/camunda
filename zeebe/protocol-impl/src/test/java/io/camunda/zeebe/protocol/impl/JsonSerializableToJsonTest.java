@@ -3927,13 +3927,11 @@ final class JsonSerializableToJsonTest {
             () ->
                 new HistoryDeletionRecord()
                     .setResourceKey(1L)
-                    .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
-                    .setBatchOperationKey(2L),
+                    .setResourceType(HistoryDeletionType.PROCESS_INSTANCE),
         """
       {
         "resourceKey": 1,
-        "resourceType": "PROCESS_INSTANCE",
-        "batchOperationKey": 2
+        "resourceType": "PROCESS_INSTANCE"
       }
       """
       },

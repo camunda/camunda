@@ -39,7 +39,6 @@ public class DeleteProcessInstanceBatchOperationExecutor implements BatchOperati
     final var authentication = batchOperation.getAuthentication();
     final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new HistoryDeletionRecord();
-    command.setBatchOperationKey(batchOperation.getKey());
     command.setResourceKey(itemKey);
     command.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 

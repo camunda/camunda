@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
+import io.camunda.zeebe.engine.util.client.HistoryDeletionClient;
 import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
@@ -724,6 +725,10 @@ public final class EngineRule extends ExternalResource {
 
   public ScaleClient scale() {
     return new ScaleClient(environmentRule);
+  }
+
+  public HistoryDeletionClient historyDeletion() {
+    return new HistoryDeletionClient(environmentRule);
   }
 
   public ActorScheduler actorScheduler() {

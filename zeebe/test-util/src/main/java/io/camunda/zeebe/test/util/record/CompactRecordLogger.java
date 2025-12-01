@@ -1713,9 +1713,7 @@ public class CompactRecordLogger {
     return "Resource key: "
         + shortenKey(value.getResourceKey())
         + ", Resource type: "
-        + value.getResourceType()
-        + ", Batch operation key: "
-        + shortenKey(value.getBatchOperationKey());
+        + value.getResourceType();
   }
 
   private String summarizeForm(final Record<?> record) {
