@@ -176,4 +176,35 @@ describe('hasMultipleScopes', () => {
     );
     expect(result).toBe(false);
   });
+
+  it('should return true if a parent AdHocSubProcess has a scope count greater than 1', () => {
+    const parentFlowNode: BusinessObject = {
+      id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:Process',
+      $parent: {
+        id: 'node2',
+        name: 'Node 2',
+        $type: 'bpmn:AdHocSubProcess',
+        $parent: {
+          id: 'node3',
+          name: 'Node 3',
+          $type: 'bpmn:SubProcess',
+          $parent: undefined,
+        },
+      },
+    };
+
+    const totalRunningInstancesByFlowNode = {
+      node1: 0,
+      node2: 2,
+      node3: 0,
+    };
+
+    const result = hasMultipleScopes(
+      parentFlowNode,
+      totalRunningInstancesByFlowNode,
+    );
+    expect(result).toBe(true);
+  });
 });
