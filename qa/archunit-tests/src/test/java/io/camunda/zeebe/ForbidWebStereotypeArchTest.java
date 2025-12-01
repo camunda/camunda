@@ -37,8 +37,8 @@ import org.springframework.stereotype.Controller;
  */
 @AnalyzeClasses(
     packages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"},
-    importOptions = {ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludeArchives.class})
-public final class ForbidWebStereotypeTest {
+    importOptions = {ImportOption.DoNotIncludeTests.class})
+public final class ForbidWebStereotypeArchTest {
   private static final DescribedPredicate<? super JavaAnnotation<?>> WEB_STEREOTYPES =
       new DescribedPredicate<>("spring web annotations") {
         @Override
