@@ -7,147 +7,146 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.request;
 
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
-public class AuthorizationRequest {
+public record AuthorizationRequest(
+    Map<String, Object> claims,
+    AuthorizationResourceType resourceType,
+    PermissionType permissionType,
+    String tenantId,
+    Set<AuthorizationScope> authorizationScopes,
+    boolean isNewResource,
+    boolean isTenantOwnedResource,
+    boolean isTriggeredByInternalCommand) {
 
-  private TypedRecord<?> command;
-  private Map<String, Object> authorizationClaims;
-  private AuthorizationResourceType resourceType;
-  private PermissionType permissionType;
-  private final Set<AuthorizationScope> authorizationScopes;
-  private String tenantId;
-  private boolean isNewResource;
-  private boolean isTenantOwnedResource;
+  public AuthorizationRequest {
+    authorizationScopes = new HashSet<>(authorizationScopes);
+    // TODO: adjust AuthorizationCheckBehavior to check if `AuthorizationScope.WILDCARD` is present
+    //  among granted scopes, without the need to include `WILDCARD` scope to each request
 
-  public AuthorizationRequest() {
-    authorizationScopes = new HashSet<>();
+    // WILDCARD is added by default to allow matching against wildcard permissions
     authorizationScopes.add(AuthorizationScope.WILDCARD);
-    tenantId = null;
-    isNewResource = false;
-    isTenantOwnedResource = true;
   }
 
-  public AuthorizationRequest(
-      final TypedRecord<?> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String tenantId,
-      final boolean isNewResource,
-      final boolean isTenantOwnedResource) {
-    this.command = command;
-    this.resourceType = resourceType;
-    this.permissionType = permissionType;
-    authorizationScopes = new HashSet<>();
-    authorizationScopes.add(AuthorizationScope.WILDCARD);
-    this.tenantId = tenantId;
-    this.isNewResource = isNewResource;
-    this.isTenantOwnedResource = isTenantOwnedResource;
+  public String getForbiddenErrorMessage() {
+    final var authorizationScopesContainsOnlyWildcard =
+        authorizationScopes.size() == 1
+            && authorizationScopes.contains(AuthorizationScope.WILDCARD);
+    return authorizationScopesContainsOnlyWildcard
+        ? AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
+        : AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+            permissionType,
+            resourceType,
+            authorizationScopes.stream()
+                .filter(scope -> scope.getResourceId() != null && !scope.getResourceId().isEmpty())
+                .map(AuthorizationScope::getResourceId)
+                .sorted()
+                .toList());
   }
 
-  public AuthorizationRequest(
-      final TypedRecord<?> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String tenantId,
-      final boolean isNewResource) {
-    this(command, resourceType, permissionType, tenantId, isNewResource, true);
+  public String getTenantErrorMessage() {
+    final var errorMsg =
+        isNewResource
+            ? AuthorizationCheckBehavior.FORBIDDEN_FOR_TENANT_ERROR_MESSAGE
+            : AuthorizationCheckBehavior.NOT_FOUND_FOR_TENANT_ERROR_MESSAGE;
+    return errorMsg.formatted(permissionType, resourceType, tenantId);
   }
 
-  public AuthorizationRequest(
-      final TypedRecord<?> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String tenantId) {
-    this(command, resourceType, permissionType, tenantId, false, true);
+  public static AuthorizationRequest.Builder builder() {
+    return new AuthorizationRequest.Builder();
   }
 
-  public AuthorizationRequest(
-      final TypedRecord<?> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    this(command, resourceType, permissionType, null, false, false);
+  public static AuthorizationRequest of(final Consumer<Builder> consumer) {
+    final var builder = new AuthorizationRequest.Builder();
+    consumer.accept(builder);
+    return builder.build();
   }
 
-  public AuthorizationRequest command(final TypedRecord<?> command) {
-    this.command = command;
-    return this;
-  }
+  public static final class Builder {
 
-  public AuthorizationRequest authorizationClaims(final Map<String, Object> authorizationClaims) {
-    this.authorizationClaims = authorizationClaims;
-    return this;
-  }
+    private TypedRecord<?> command;
+    private Map<String, Object> authorizationClaims;
+    private AuthorizationResourceType resourceType;
+    private PermissionType permissionType;
+    private final Set<AuthorizationScope> authorizationScopes;
+    private String tenantId;
+    private boolean isNewResource;
 
-  public AuthorizationRequest resourceType(final AuthorizationResourceType resourceType) {
-    this.resourceType = resourceType;
-    return this;
-  }
+    public Builder() {
+      authorizationClaims = new HashMap<>();
+      authorizationScopes = new HashSet<>();
+    }
 
-  public AuthorizationRequest permissionType(final PermissionType permissionType) {
-    this.permissionType = permissionType;
-    return this;
-  }
+    public Builder command(final TypedRecord<?> command) {
+      this.command = command;
+      return this;
+    }
 
-  public AuthorizationRequest tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-    return this;
-  }
+    public Builder authorizationClaims(final Map<String, Object> authorizationClaims) {
+      this.authorizationClaims = authorizationClaims;
+      return this;
+    }
 
-  public AuthorizationRequest isNewResource(final boolean isNewResource) {
-    this.isNewResource = isNewResource;
-    return this;
-  }
+    public Builder resourceType(final AuthorizationResourceType resourceType) {
+      this.resourceType = resourceType;
+      return this;
+    }
 
-  public AuthorizationRequest isTenantOwnedResource(final boolean isTenantOwnedResource) {
-    this.isTenantOwnedResource = isTenantOwnedResource;
-    return this;
-  }
+    public Builder permissionType(final PermissionType permissionType) {
+      this.permissionType = permissionType;
+      return this;
+    }
 
-  public AuthorizationRequest addAuthorizationScope(final AuthorizationScope authorizationScope) {
-    authorizationScopes.add(authorizationScope);
-    return this;
-  }
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
 
-  public AuthorizationRequest addResourceId(final String resourceId) {
-    authorizationScopes.add(AuthorizationScope.of(resourceId));
-    return this;
-  }
+    public Builder isNewResource(final boolean isNewResource) {
+      this.isNewResource = isNewResource;
+      return this;
+    }
 
-  public AuthorizationRequestMetadata build() {
-    if (command != null) {
-      authorizationClaims = command.getAuthorizations();
-      return new AuthorizationRequestMetadata(
-          command.getAuthorizations(),
+    public Builder newResource() {
+      return isNewResource(true);
+    }
+
+    public Builder addResourceId(final String resourceId) {
+      authorizationScopes.add(AuthorizationScope.of(resourceId));
+      return this;
+    }
+
+    public Builder addAllResourceIds(final Collection<String> resourceIds) {
+      resourceIds.forEach(this::addResourceId);
+      return this;
+    }
+
+    public AuthorizationRequest build() {
+      final Map<String, Object> claims =
+          command != null ? command.getAuthorizations() : authorizationClaims;
+      final boolean isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
+      final boolean triggeredByInternalCommand = command != null && command.isInternalCommand();
+
+      return new AuthorizationRequest(
+          Collections.unmodifiableMap(claims),
           resourceType,
           permissionType,
+          tenantId,
+          Collections.unmodifiableSet(authorizationScopes),
           isNewResource,
           isTenantOwnedResource,
-          tenantId,
-          Collections.unmodifiableSet(authorizationScopes));
+          triggeredByInternalCommand);
     }
-    return new AuthorizationRequestMetadata(
-        authorizationClaims,
-        resourceType,
-        permissionType,
-        isNewResource,
-        isTenantOwnedResource,
-        tenantId,
-        Collections.unmodifiableSet(authorizationScopes));
-  }
-
-  public TypedRecord<?> getCommand() {
-    return command;
-  }
-
-  public static AuthorizationRequest builder() {
-    return new AuthorizationRequest();
   }
 }

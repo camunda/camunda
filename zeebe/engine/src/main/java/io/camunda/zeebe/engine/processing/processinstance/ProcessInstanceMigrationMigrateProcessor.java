@@ -141,12 +141,13 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
 
     final var authorizationRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                processInstance.getValue().getTenantId())
-            .addResourceId(processInstance.getValue().getBpmnProcessId());
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                    .tenantId(processInstance.getValue().getTenantId())
+                    .addResourceId(processInstance.getValue().getBpmnProcessId()));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

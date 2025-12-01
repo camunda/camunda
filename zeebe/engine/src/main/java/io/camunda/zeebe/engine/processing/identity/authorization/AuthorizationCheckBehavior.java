@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequestMetadata;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationResult;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
@@ -65,8 +64,7 @@ public final class AuthorizationCheckBehavior {
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
 
-  private final LoadingCache<AuthorizationRequestMetadata, Either<Rejection, Void>>
-      authorizationsCache;
+  private final LoadingCache<AuthorizationRequest, Either<Rejection, Void>> authorizationsCache;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState,
@@ -85,28 +83,10 @@ public final class AuthorizationCheckBehavior {
                 new CacheLoader<>() {
                   @Override
                   public Either<Rejection, Void> load(
-                      final AuthorizationRequestMetadata authorizationRequest) {
+                      final AuthorizationRequest authorizationRequest) {
                     return checkAuthorized(authorizationRequest);
                   }
                 });
-  }
-
-  /**
-   * @deprecated Please use {@link #isAuthorized(AuthorizationRequestMetadata)} instead. The {@link
-   *     AuthorizationRequest} class will be refactored into a builder class.
-   *     <p>Checks if a user is Authorized to perform an action on a resource. The user key is taken
-   *     from the authorizations of the command.
-   *     <p>The caller of this method should provide an {@link AuthorizationRequest}. This object
-   *     contains the data required to do the check.
-   * @param requestBuilder the builder for the authorization request to check authorization for. his
-   *     contains the command, the resource type, the permission type, a set of resource identifiers
-   *     and the tenant id.
-   * @return a {@link Either} containing a {@link RejectionType} if the user is not authorized or
-   *     {@link Void} if the user is authorized
-   */
-  @Deprecated(forRemoval = true, since = "8.8.0")
-  public Either<Rejection, Void> isAuthorized(final AuthorizationRequest requestBuilder) {
-    return isAuthorized(requestBuilder.build());
   }
 
   /**
@@ -121,7 +101,7 @@ public final class AuthorizationCheckBehavior {
    * @return a {@link Either} containing a {@link RejectionType} if the user is not authorized or
    *     {@link Void} if the user is authorized
    */
-  public Either<Rejection, Void> isAuthorized(final AuthorizationRequestMetadata request) {
+  public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
     try {
       return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
@@ -133,13 +113,13 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
-    if (request.getCommand().isInternalCommand()) {
+    if (request.isTriggeredByInternalCommand()) {
       return Either.right(null);
     }
     return isAuthorized(request);
   }
 
-  private Either<Rejection, Void> checkAuthorized(final AuthorizationRequestMetadata request) {
+  private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
 
     if (shouldSkipAuthorization(request)) {
       return Either.right(null);
@@ -165,14 +145,13 @@ public final class AuthorizationCheckBehavior {
   }
 
   // Helper methods
-  private boolean shouldSkipAuthorization(final AuthorizationRequestMetadata request) {
+  private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
     return (!authorizationsEnabled && !multiTenancyEnabled)
         || isAuthorizedAnonymousUser(request.claims());
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
-      final AuthorizationRequestMetadata request,
-      final List<AuthorizationRejection> aggregatedRejections) {
+      final AuthorizationRequest request, final List<AuthorizationRejection> aggregatedRejections) {
     final var username = getUsername(request);
     final var clientId = getClientId(request);
     if (clientId.isPresent()) {
@@ -184,7 +163,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private AuthorizationResult checkAccessForEntity(
-      final AuthorizationRequestMetadata request,
+      final AuthorizationRequest request,
       final EntityType entityType,
       final String entityId,
       final List<AuthorizationRejection> aggregatedRejections) {
@@ -196,7 +175,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private AuthorizationResult checkMappingRuleAuthorization(
-      final AuthorizationRequestMetadata request,
+      final AuthorizationRequest request,
       final AuthorizationResult primaryResult,
       final List<AuthorizationRejection> aggregatedRejections) {
 
@@ -234,9 +213,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Either<AuthorizationRejection, Void> isTenantAssigned(
-      final AuthorizationRequestMetadata request,
-      final EntityType entityType,
-      final Set<String> owners) {
+      final AuthorizationRequest request, final EntityType entityType, final Set<String> owners) {
     if (multiTenancyEnabled && request.isTenantOwnedResource()) {
       final var notAssignedToTenant =
           owners.stream()
@@ -265,7 +242,7 @@ public final class AuthorizationCheckBehavior {
    * @return an {@link Either} containing a {@link Rejection} or {@link Void}
    */
   private Either<AuthorizationRejection, Void> isEntityAuthorized(
-      final AuthorizationRequestMetadata request,
+      final AuthorizationRequest request,
       final EntityType entityType,
       final Collection<String> entityIds) {
 
@@ -359,7 +336,7 @@ public final class AuthorizationCheckBehavior {
     return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
   }
 
-  private Optional<String> getUsername(final AuthorizationRequestMetadata request) {
+  private Optional<String> getUsername(final AuthorizationRequest request) {
     return getUsername(request.claims());
   }
 
@@ -367,7 +344,7 @@ public final class AuthorizationCheckBehavior {
     return Optional.ofNullable((String) authorizationClaims.get(Authorization.AUTHORIZED_USERNAME));
   }
 
-  private Optional<String> getClientId(final AuthorizationRequestMetadata request) {
+  private Optional<String> getClientId(final AuthorizationRequest request) {
     return getClientId(request.claims());
   }
 
@@ -408,11 +385,6 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
-    return getAllAuthorizedScopes(request.build());
-  }
-
-  public Set<AuthorizationScope> getAllAuthorizedScopes(
-      final AuthorizationRequestMetadata request) {
     if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.claims())) {
       return Set.of(AuthorizationScope.WILDCARD);
     }
@@ -539,11 +511,10 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
-    return isAssignedToTenant(
-        AuthorizationRequest.builder().command(command).tenantId(tenantId).build());
+    return isAssignedToTenant(AuthorizationRequest.of(r -> r.command(command).tenantId(tenantId)));
   }
 
-  public boolean isAssignedToTenant(final AuthorizationRequestMetadata request) {
+  public boolean isAssignedToTenant(final AuthorizationRequest request) {
     if (!multiTenancyEnabled) {
       return true;
     }
@@ -591,7 +562,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(
-      final AuthorizationRequestMetadata request) {
+      final AuthorizationRequest request) {
     return getPersistedMappingRules(request.claims());
   }
 

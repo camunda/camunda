@@ -189,13 +189,13 @@ public class AdHocSubProcessInstructionActivateProcessor
       final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final ElementInstance adHocSubProcessElementInstance) {
     final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                adHocSubProcessElementInstance.getValue().getTenantId())
-            .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId());
-
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                    .tenantId(adHocSubProcessElementInstance.getValue().getTenantId())
+                    .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId()));
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

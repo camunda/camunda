@@ -96,8 +96,11 @@ public class MappingRuleDeleteProcessor
     }
 
     final var authorizationRequest =
-        new AuthorizationRequest(
-            command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE);
+        AuthorizationRequest.of(
+            r ->
+                r.command(command)
+                    .resourceType(AuthorizationResourceType.MAPPING_RULE)
+                    .permissionType(PermissionType.DELETE));
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

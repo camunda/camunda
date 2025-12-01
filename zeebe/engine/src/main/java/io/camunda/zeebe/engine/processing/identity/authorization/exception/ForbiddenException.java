@@ -8,20 +8,15 @@
 package io.camunda.zeebe.engine.processing.identity.authorization.exception;
 
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequestMetadata;
 import io.camunda.zeebe.protocol.record.RejectionType;
 
 /**
  * Signals that an authorization check failed, provides a user-facing error message derived from the
- * given authorization request metadata.
+ * given authorization request.
  */
 public class ForbiddenException extends RuntimeException {
 
   public ForbiddenException(final AuthorizationRequest authRequest) {
-    this(authRequest.build());
-  }
-
-  public ForbiddenException(final AuthorizationRequestMetadata authRequest) {
     super(authRequest.getForbiddenErrorMessage());
   }
 
