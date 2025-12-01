@@ -12,6 +12,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
@@ -45,6 +46,7 @@ import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
+import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
@@ -109,6 +111,11 @@ public class RdbmsConfiguration {
   @Bean
   public AuthorizationDbReader authorizationReader(final AuthorizationMapper authorizationMapper) {
     return new AuthorizationDbReader(authorizationMapper);
+  }
+
+  @Bean
+  public AuditLogDbReader auditLogReader(final AuditLogMapper auditLogMapper) {
+    return new AuditLogDbReader(auditLogMapper);
   }
 
   @Bean
@@ -286,6 +293,7 @@ public class RdbmsConfiguration {
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
+      final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
@@ -307,6 +315,7 @@ public class RdbmsConfiguration {
         sqlSessionFactory,
         exporterPositionMapper,
         vendorDatabaseProperties,
+        auditLogMapper,
         decisionInstanceMapper,
         flowNodeInstanceMapper,
         incidentMapper,
@@ -331,6 +340,7 @@ public class RdbmsConfiguration {
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableDbReader variableReader,
       final ClusterVariableDbReader clusterVariableDbReader,
+      final AuditLogDbReader auditLogReader,
       final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionDbReader decisionDefinitionReader,
       final DecisionInstanceDbReader decisionInstanceReader,
@@ -359,6 +369,7 @@ public class RdbmsConfiguration {
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
+        auditLogReader,
         authorizationReader,
         decisionDefinitionReader,
         decisionInstanceReader,

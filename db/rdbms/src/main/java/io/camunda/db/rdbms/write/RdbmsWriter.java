@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
+import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
@@ -25,6 +26,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.db.rdbms.write.service.ClusterVariableWriter;
@@ -57,6 +59,7 @@ public class RdbmsWriter {
 
   private final RdbmsPurger rdbmsPurger;
   private final ExecutionQueue executionQueue;
+  private final AuditLogWriter auditLogWriter;
   private final AuthorizationWriter authorizationWriter;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionInstanceWriter decisionInstanceWriter;
@@ -90,6 +93,7 @@ public class RdbmsWriter {
       final ExecutionQueue executionQueue,
       final ExporterPositionService exporterPositionService,
       final RdbmsWriterMetrics metrics,
+      final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
@@ -110,6 +114,7 @@ public class RdbmsWriter {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
+    auditLogWriter = new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties);
     authorizationWriter = new AuthorizationWriter(executionQueue);
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     decisionInstanceWriter =
@@ -167,6 +172,10 @@ public class RdbmsWriter {
 
   public AuthorizationWriter getAuthorizationWriter() {
     return authorizationWriter;
+  }
+
+  public AuditLogWriter getAuditLogWriter() {
+    return auditLogWriter;
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
