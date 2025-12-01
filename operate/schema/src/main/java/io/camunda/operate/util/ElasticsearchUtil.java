@@ -15,21 +15,26 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.ScrollRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -42,7 +47,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -385,93 +389,54 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static void scroll(
-      final SearchRequest searchRequest,
-      final Consumer<SearchHits> searchHitsProcessor,
-      final RestHighLevelClient esClient)
-      throws IOException {
-    scroll(searchRequest, searchHitsProcessor, esClient, SCROLL_KEEP_ALIVE_MS);
-  }
+  public static <T> Stream<ResponseBody<T>> scrollAllStream(
+      final ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final Class<T> docClass) {
+    final Queue<ResponseBody<T>> batchQueue = new LinkedList<>();
+    final String[] scrollIdHolder = new String[1]; // mutable holder
 
-  public static void scroll(
-      final SearchRequest searchRequest,
-      final Consumer<SearchHits> searchHitsProcessor,
-      final RestHighLevelClient esClient,
-      final long scrollKeepAlive)
-      throws IOException {
-    final var scrollKeepAliveTimeValue = TimeValue.timeValueMillis(scrollKeepAlive);
+    searchRequestBuilder.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms")));
+    final var searchReq = searchRequestBuilder.build();
 
-    searchRequest.scroll(scrollKeepAliveTimeValue);
-    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    return Stream.generate(
+            () -> {
+              // If the queue is empty, fetch the next batch
+              while (batchQueue.isEmpty()) {
+                try {
+                  if (scrollIdHolder[0] == null) {
+                    // First request creates the scroll context
+                    final co.elastic.clients.elasticsearch.core.SearchResponse<T> response =
+                        client.search(searchReq, docClass);
+                    scrollIdHolder[0] = response.scrollId();
+                    batchQueue.add(response);
+                  } else {
+                    // Subsequent requests continue the scroll
+                    final var response =
+                        client.scroll(
+                            ScrollRequest.of(
+                                r ->
+                                    r.scrollId(scrollIdHolder[0])
+                                        .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms")))),
+                            docClass);
 
-    String scrollId = response.getScrollId();
-    SearchHits hits = response.getHits();
+                    scrollIdHolder[0] = response.scrollId();
+                    if (response.hits().hits().isEmpty()) {
+                      // Clear scroll when done
+                      client.clearScroll(cs -> cs.scrollId(scrollIdHolder[0]));
+                      return null;
+                    }
 
-    while (hits.getHits().length != 0) {
+                    batchQueue.add(response);
+                  }
+                } catch (final IOException e) {
+                  throw new ScrollException("Error during scroll with id: " + scrollIdHolder[0], e);
+                }
+              }
 
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
-      }
-
-      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(scrollKeepAliveTimeValue);
-
-      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-      scrollId = response.getScrollId();
-      hits = response.getHits();
-    }
-
-    clearScroll(scrollId, esClient);
-  }
-
-  public static void scrollWith(
-      final SearchRequest searchRequest,
-      final RestHighLevelClient esClient,
-      final Consumer<SearchHits> searchHitsProcessor)
-      throws IOException {
-    scrollWith(searchRequest, esClient, searchHitsProcessor, null, null);
-  }
-
-  public static void scrollWith(
-      final SearchRequest searchRequest,
-      final RestHighLevelClient esClient,
-      final Consumer<SearchHits> searchHitsProcessor,
-      final Consumer<Aggregations> aggsProcessor,
-      final Consumer<SearchHits> firstResponseConsumer)
-      throws IOException {
-
-    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    if (firstResponseConsumer != null) {
-      firstResponseConsumer.accept(response.getHits());
-    }
-
-    // call aggregations processor
-    if (aggsProcessor != null) {
-      aggsProcessor.accept(response.getAggregations());
-    }
-
-    String scrollId = response.getScrollId();
-    SearchHits hits = response.getHits();
-    while (hits.getHits().length != 0) {
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
-      }
-
-      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-      scrollId = response.getScrollId();
-      hits = response.getHits();
-    }
-
-    clearScroll(scrollId, esClient);
+              return batchQueue.poll();
+            })
+        .takeWhile(Objects::nonNull);
   }
 
   public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
@@ -485,68 +450,6 @@ public abstract class ElasticsearchUtil {
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
       }
     }
-  }
-
-  public static List<Long> scrollKeysToList(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final List<Long> result = new ArrayList<>();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
-        };
-
-    scrollWith(request, esClient, collectIds, null, collectIds);
-    return result;
-  }
-
-  public static <T> List<T> scrollFieldToList(
-      final SearchRequest request, final String fieldName, final RestHighLevelClient esClient)
-      throws IOException {
-    final List<T> result = new ArrayList<>();
-    final Function<SearchHit, T> searchHitFieldToString =
-        (searchHit) -> (T) searchHit.getSourceAsMap().get(fieldName);
-
-    final Consumer<SearchHits> collectFields =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), searchHitFieldToString));
-        };
-
-    scrollWith(request, esClient, collectFields, null, collectFields);
-    return result;
-  }
-
-  public static Map<String, String> getIndexNames(
-      final String aliasName, final Collection<String> ids, final RestHighLevelClient esClient) {
-
-    final Map<String, String> indexNames = new HashMap<>();
-
-    final SearchRequest piRequest =
-        new SearchRequest(aliasName)
-            .source(
-                new SearchSourceBuilder()
-                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
-                    .fetchSource(false));
-    try {
-      scrollWith(
-          piRequest,
-          esClient,
-          sh -> {
-            indexNames.putAll(
-                Arrays.stream(sh.getHits())
-                    .collect(
-                        Collectors.toMap(
-                            hit -> {
-                              return hit.getId();
-                            },
-                            hit -> {
-                              return hit.getIndex();
-                            })));
-          });
-    } catch (final IOException e) {
-      throw new OperateRuntimeException(e.getMessage(), e);
-    }
-    return indexNames;
   }
 
   public static RequestOptions requestOptionsFor(final int maxSizeInBytes) {
@@ -577,6 +480,11 @@ public abstract class ElasticsearchUtil {
 
   public static <T> Query termsQuery(final String name, final T value) {
     return termsQuery(name, Collections.singletonList(value));
+  }
+
+  public static SortOptions sortOrder(
+      final String field, final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder)));
   }
 
   public enum QueryType {

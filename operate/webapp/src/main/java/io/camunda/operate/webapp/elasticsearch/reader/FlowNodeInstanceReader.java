@@ -34,9 +34,11 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
@@ -330,18 +332,27 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   @Override
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(processInstanceKeyQuery))
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .query(query)
+            .sort(
+                ElasticsearchUtil.sortOrder(
+                    FlowNodeInstanceTemplate.POSITION,
+                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+
     try {
-      return ElasticsearchUtil.scroll(
-          searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollAllStream(
+              es8client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+    } catch (final ScrollException e) {
       throw new OperateRuntimeException(e);
     }
   }

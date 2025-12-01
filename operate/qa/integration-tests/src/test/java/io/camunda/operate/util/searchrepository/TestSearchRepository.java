@@ -13,7 +13,6 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public interface TestSearchRepository {
@@ -56,9 +55,6 @@ public interface TestSearchRepository {
   <R> List<R> searchTerms(String index, Map<String, Object> fieldValueMap, Class<R> clazz, int size)
       throws IOException;
 
-  List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size)
-      throws IOException;
-
   void deleteByTermsQuery(String index, String fieldName, List<Long> values) throws IOException;
 
   void update(String index, String id, Map<String, Object> fields) throws IOException;
@@ -69,10 +65,6 @@ public interface TestSearchRepository {
       throws IOException;
 
   List<ProcessInstanceForListViewEntity> getProcessInstances(String indexName, List<Long> ids)
-      throws IOException;
-
-  Optional<List<Long>> getIds(
-      String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex)
       throws IOException;
 
   record IndexSettings(Integer shards, Integer replicas) {}
