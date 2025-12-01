@@ -254,6 +254,7 @@ test.describe.serial('Process Instance Migration', () => {
       migratedIds = getNewOperationIds(
         operateOperationPanelPage.beforeOperationOperationPanelEntries,
         operateOperationPanelPage.afterOperationOperationPanelEntries,
+        'Migrate',
       );
 
       await waitForAssertion({
@@ -267,9 +268,10 @@ test.describe.serial('Process Instance Migration', () => {
           migratedIds = getNewOperationIds(
             operateOperationPanelPage.beforeOperationOperationPanelEntries,
             operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Migrate',
           );
         },
-        maxRetries: 60,
+        maxRetries: 30,
       });
 
       await operateOperationPanelPage.clickOperationEntryById(migratedIds[0]);
@@ -306,9 +308,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Get migration operation ID and verify TaskF instances', async () => {
-      const operationId =
-        // await operateOperationPanelPage.getMigrationOperationId();
-        migratedIds[0];
+      const operationId = migratedIds[0];
 
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
@@ -511,6 +511,7 @@ test.describe.serial('Process Instance Migration', () => {
       migratedIds = getNewOperationIds(
         operateOperationPanelPage.beforeOperationOperationPanelEntries,
         operateOperationPanelPage.afterOperationOperationPanelEntries,
+        'Migrate',
       );
 
       await waitForAssertion({
@@ -524,6 +525,7 @@ test.describe.serial('Process Instance Migration', () => {
           migratedIds = getNewOperationIds(
             operateOperationPanelPage.beforeOperationOperationPanelEntries,
             operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Migrate',
           );
         },
         maxRetries: 60,

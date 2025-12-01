@@ -398,6 +398,7 @@ test.describe('Process Instances Filters', () => {
       let newIds = getNewOperationIds(
         operateOperationPanelPage.beforeOperationOperationPanelEntries,
         operateOperationPanelPage.afterOperationOperationPanelEntries,
+        'Cancel',
       );
 
       await waitForAssertion({
@@ -411,6 +412,7 @@ test.describe('Process Instances Filters', () => {
           newIds = getNewOperationIds(
             operateOperationPanelPage.beforeOperationOperationPanelEntries,
             operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Cancel',
           );
         },
         maxRetries: 60,

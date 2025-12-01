@@ -11,10 +11,15 @@ export type OperationEntry = {id: string; type: string};
 export function getNewOperationIds(
   before: OperationEntry[],
   after: OperationEntry[],
+  operationType?: 'Cancel' | 'Migrate' | 'Retry' | 'Modify',
 ): string[] {
   const beforeIds = new Set(before.map((entry) => entry.id));
 
   return after
-    .filter((entry) => !beforeIds.has(entry.id))
+    .filter(
+      (entry) =>
+        !beforeIds.has(entry.id) &&
+        (operationType === undefined || entry.type === operationType),
+    )
     .map((entry) => entry.id);
 }
