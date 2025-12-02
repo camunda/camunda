@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -97,11 +98,13 @@ public class IncidentResolveAuthorizationTest {
     engine.incident().ofInstance(processInstanceKey).resolve(user.getUsername());
 
     // then
-    assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
-                .withProcessInstanceKey(processInstanceKey)
-                .exists())
-        .isTrue();
+    final var record =
+        RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+            .withProcessInstanceKey(processInstanceKey)
+            .findFirst();
+    assertThat(record).isPresent();
+    assertThat(record.get().getAuthorizations())
+        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   @Test
@@ -124,6 +127,8 @@ public class IncidentResolveAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+    assertThat(rejection.getAuthorizations())
+        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   private UserRecordValue createUser() {
