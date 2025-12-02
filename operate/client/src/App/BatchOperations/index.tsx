@@ -23,6 +23,7 @@ import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {FiltersPanel} from 'modules/components/FiltersPanel';
 import {mockBatchOperations} from 'modules/mocks/batchOperations';
 import {Paths} from 'modules/Routes';
+import {IS_BATCH_OPERATIONS_FILTERING_ENABLED} from 'modules/feature-flags';
 
 const formatOperationType = (type: string) => {
   return type
@@ -314,22 +315,24 @@ const BatchOperations: React.FC = () => {
         }}
       >
         {/* Left Panel - Filters */}
-        <FiltersPanel
-          localStorageKey="isBatchOperationsFiltersCollapsed"
-          isResetButtonDisabled={Object.values(filtersFromUrl).every(
-            (value) => value === undefined || (Array.isArray(value) && value.length === 0),
-          )}
-          onResetClick={() => {
-            updateFilters({});
-          }}
-        >
-          <BatchOperationsFilters
-            filters={filtersFromUrl}
-            onFiltersChange={(newFilters) => {
-              updateFilters(newFilters);
+        {IS_BATCH_OPERATIONS_FILTERING_ENABLED && (
+          <FiltersPanel
+            localStorageKey="isBatchOperationsFiltersCollapsed"
+            isResetButtonDisabled={Object.values(filtersFromUrl).every(
+              (value) => value === undefined || (Array.isArray(value) && value.length === 0),
+            )}
+            onResetClick={() => {
+              updateFilters({});
             }}
-          />
-        </FiltersPanel>
+          >
+            <BatchOperationsFilters
+              filters={filtersFromUrl}
+              onFiltersChange={(newFilters) => {
+                updateFilters(newFilters);
+              }}
+            />
+          </FiltersPanel>
+        )}
 
         {/* Right Panel - Table */}
         <div

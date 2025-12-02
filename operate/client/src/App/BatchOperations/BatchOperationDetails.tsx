@@ -62,6 +62,7 @@ import {
 import {BatchOperationStatusTag} from './BatchOperationStatusTag';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Paths} from 'modules/Routes';
+import {IS_BATCH_OPERATIONS_FILTERING_ENABLED} from 'modules/feature-flags';
 
 // Item state options for filter
 const ITEM_STATES: {id: BatchOperationItemState; label: string}[] = [
@@ -879,35 +880,37 @@ const BatchOperationDetails: React.FC = () => {
                 }}
               >
                 <span style={{fontWeight: 600}}>
-                  {hasActiveFilters
+                  {IS_BATCH_OPERATIONS_FILTERING_ENABLED && hasActiveFilters
                     ? `${filteredItems.length} of ${operation.totalItems} item${operation.totalItems !== 1 ? 's' : ''}`
                     : `${operation.totalItems} item${operation.totalItems !== 1 ? 's' : ''}`}
                 </span>
-                <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
-                  {hasActiveFilters && (
+                {IS_BATCH_OPERATIONS_FILTERING_ENABLED && (
+                  <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
+                    {hasActiveFilters && (
+                      <Button
+                        kind="ghost"
+                        size="md"
+                        onClick={clearFilters}
+                      >
+                        Clear filters
+                      </Button>
+                    )}
                     <Button
-                      kind="ghost"
-                      size="md"
-                      onClick={clearFilters}
+                      kind='ghost'
+                      size="sm"
+                      renderIcon={Filter}
+                      iconDescription="Toggle filters"
+                      tooltipPosition="bottom"
+                      onClick={() => setShowFilters(!showFilters)}
                     >
-                      Clear filters
+                      {showFilters ? "Hide filters" : "Show filters"}
                     </Button>
-                  )}
-                  <Button
-                    kind='ghost'
-                    size="sm"
-                    renderIcon={Filter}
-                    iconDescription="Toggle filters"
-                    tooltipPosition="bottom"
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    {showFilters ? "Hide filters" : "Show filters"}
-                  </Button>
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Items Filters */}
-              {showFilters && (
+              {IS_BATCH_OPERATIONS_FILTERING_ENABLED && showFilters && (
                 <Layer>
                   <div
                     style={{
