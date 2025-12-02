@@ -24,6 +24,7 @@ public final class RequestLimiter extends AbstractLimiter<Intent> {
       Set.of(
           JobIntent.COMPLETE,
           JobIntent.FAIL,
+          JobIntent.YIELD,
           ProcessInstanceIntent.CANCEL,
           DeploymentIntent.CREATE,
           DeploymentIntent.DISTRIBUTE,
