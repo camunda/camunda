@@ -7,6 +7,9 @@ camunda:
         url: 'http://localhost:9200'
         cluster-name: 'docker-cluster'
 # ---
+  security:
+    authentication:
+      unprotected-api: true
 
 camunda.tasklist:
   elasticsearch:

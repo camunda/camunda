@@ -47,8 +47,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      "camunda.security.authentication.unprotected-api=true"
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
 @ActiveProfiles({"test"})
 @AutoConfigureMockMvc
