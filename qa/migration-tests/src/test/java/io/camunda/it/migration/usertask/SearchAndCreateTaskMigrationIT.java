@@ -305,9 +305,15 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
       final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
       final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
       assertThat(jsonResponse.get(datedIndex)).isNotNull();
-      assertThat(jsonResponse.get(datedIndex).get("index.plugins.index_state_management.policy_id"))
-          .isNotNull();
-      assertThat(jsonResponse.get(datedIndex).get("policy_id")).isNotNull();
+      final var indexNode = jsonResponse.get(datedIndex);
+      final var deprecatedPolicyId =
+          indexNode.get("index.plugins.index_state_management.policy_id");
+      final var policyId = indexNode.get("policy_id");
+      assertThat(deprecatedPolicyId != null || policyId != null)
+          .as(
+              "Expected ISM policy to be applied to index '%s', but neither 'index.plugins.index_state_management.policy_id' nor 'policy_id' were found",
+              datedIndex)
+          .isTrue();
     } catch (final Exception e) {
       fail("Failed to get ISM policy for index: " + datedIndex, e);
     }
