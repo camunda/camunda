@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
+import java.util.List;
 import java.util.stream.Stream;
 
 public final class ConditionalSubscriptionRecordStream
@@ -67,10 +68,40 @@ public final class ConditionalSubscriptionRecordStream
         });
   }
 
+  public ConditionalSubscriptionRecordStream withVariableNames(final List<String> variableNames) {
+    return valueFilter(
+        v -> {
+          if (v.getVariableNames().size() != variableNames.size()) {
+            return false;
+          }
+          for (final String varName : variableNames) {
+            if (!v.getVariableNames().contains(varName)) {
+              return false;
+            }
+          }
+          return true;
+        });
+  }
+
   public ConditionalSubscriptionRecordStream withVariableEvents(final String... variableEvents) {
     return valueFilter(
         v -> {
           if (v.getVariableEvents().size() != variableEvents.length) {
+            return false;
+          }
+          for (final String varEvent : variableEvents) {
+            if (!v.getVariableEvents().contains(varEvent)) {
+              return false;
+            }
+          }
+          return true;
+        });
+  }
+
+  public ConditionalSubscriptionRecordStream withVariableEvents(final List<String> variableEvents) {
+    return valueFilter(
+        v -> {
+          if (v.getVariableEvents().size() != variableEvents.size()) {
             return false;
           }
           for (final String varEvent : variableEvents) {
