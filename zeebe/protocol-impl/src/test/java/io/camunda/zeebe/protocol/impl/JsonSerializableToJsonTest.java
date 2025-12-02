@@ -2691,7 +2691,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "priority": 80,
                   "tags": [],
-                  "deniedReason": "Reason to deny lifecycle transition"
+                  "deniedReason": "Reason to deny lifecycle transition",
+                  "listenersConfigKey": -1
                 }
                 """
       },
@@ -2728,7 +2729,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "priority": 50,
                   "tags": [],
-                  "deniedReason": ""
+                  "deniedReason": "",
+                  "listenersConfigKey": -1
                 }
                 """
       },
@@ -2770,7 +2772,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "priority": 50,
                   "tags": [],
-                  "deniedReason": ""
+                  "deniedReason": "",
+                  "listenersConfigKey": -1
                 }
                 """
       },
