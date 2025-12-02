@@ -34,7 +34,6 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOp
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -135,7 +134,7 @@ public class ProcessInstanceController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaDeleteMapping(path = "/{processInstanceKey}")
+  @CamundaPostMapping(path = "/{processInstanceKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false) final DeleteProcessInstanceRequest deleteRequest) {
