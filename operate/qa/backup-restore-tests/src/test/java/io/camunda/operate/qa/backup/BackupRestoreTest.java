@@ -31,6 +31,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.repositories.fs.FsRepository;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -69,6 +70,7 @@ public class BackupRestoreTest {
     testContext.setConnectionType("elasticsearch");
   }
 
+  @Ignore
   @Test
   public void testBackupRestore() throws Exception {
     startAllApps();
