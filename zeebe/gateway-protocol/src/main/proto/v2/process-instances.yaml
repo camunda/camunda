@@ -100,7 +100,7 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceSequenceFlows
-      summary: Get process instance sequence flows
+      summary: Get sequence flows
       description: Get sequence flows taken by the process instance.
       parameters:
         - name: processInstanceKey
@@ -131,7 +131,7 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceStatistics
-      summary: Get process instance statistics
+      summary: Get element instance statistics
       description: Get statistics about elements by the process instance key.
       parameters:
         - name: processInstanceKey
@@ -192,7 +192,7 @@ paths:
       tags:
         - Process instance
       operationId: searchProcessInstanceIncidents
-      summary: Search for incidents associated with a process instance
+      summary: Search related incidents
       description: |
         Search for incidents caused by the process instance or any of its called process or decision instances.
 
@@ -241,7 +241,7 @@ paths:
       tags:
         - Process instance
       operationId: resolveProcessInstanceIncidents
-      summary: Resolve process instance incidents
+      summary: Resolve related incidents
       description: Creates a batch operation to resolve multiple incidents of a process instance.
       parameters:
         - name: processInstanceKey
@@ -315,7 +315,7 @@ paths:
       tags:
         - Process instance
       operationId: cancelProcessInstancesBatchOperation
-      summary: Create a batch operation to cancel process instances
+      summary: Cancel process instances (batch)
       description: |
         Cancels multiple running process instances.
         Since only ACTIVE root instances can be cancelled, any given filters for state and
@@ -355,7 +355,7 @@ paths:
       tags:
         - Process instance
       operationId: resolveIncidentsBatchOperation
-      summary: Create a batch operation to resolve incidents of process instances
+      summary: Resolve related incidents (batch)
       description: |
         Resolves multiple instances of process instances.
         Since only process instances with ACTIVE state can have unresolved incidents, any given
@@ -395,7 +395,7 @@ paths:
       tags:
         - Process instance
       operationId: migrateProcessInstancesBatchOperation
-      summary: Create a batch operation to migrate process instances
+      summary: Migrate process instances (batch)
       description: |
         Migrate multiple instances of process instances.
         Since only process instances with ACTIVE state can be migrated, any given
@@ -435,7 +435,7 @@ paths:
       tags:
         - Process instance
       operationId: modifyProcessInstancesBatchOperation
-      summary: Create a batch operation to modify process instances
+      summary: Modify process instances (batch)
       description: |
         Modify multiple process instances.
         Since only process instances with ACTIVE state can be modified, any given
@@ -656,7 +656,7 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceCallHierarchy
-      summary: Get call hierarchy for process instance
+      summary: Get call hierarchy
       description: Returns the call hierarchy for a given process instance, showing its ancestry up to the root instance.
       parameters:
         - name: processInstanceKey
@@ -859,8 +859,11 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
 
     ProcessInstanceCreationRuntimeInstruction:
+      x-polymorphic-schema: true
       discriminator:
         propertyName: type
+        mapping:
+          TERMINATE_PROCESS_INSTANCE: '#/components/schemas/ProcessInstanceCreationTerminateInstruction'
       oneOf:
         - $ref: '#/components/schemas/ProcessInstanceCreationTerminateInstruction'
 
@@ -1353,6 +1356,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceModificationActivateInstruction'
+        moveInstructions:
+          description: Instructions describing which elements should be moved from one scope to another.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceModificationMoveInstruction'
         terminateInstructions:
           description: Instructions describing which elements should be terminated.
           type: array
@@ -1360,7 +1368,7 @@ components:
             $ref: '#/components/schemas/ProcessInstanceModificationTerminateInstruction'
 
     ProcessInstanceModificationActivateInstruction:
-      description: Instructions describing an element that should be activated.
+      description: Instruction describing an element that should be activated.
       type: object
       properties:
         elementId:
@@ -1386,7 +1394,7 @@ components:
 
     ModifyProcessInstanceVariableInstruction:
       type: object
-      description: Instructions describing which variables should be created.
+      description: Instruction describing which variables should be created.
       properties:
         variables:
           description: |
@@ -1403,14 +1411,106 @@ components:
       required:
         - variables
 
-    ProcessInstanceModificationTerminateInstruction:
+    ProcessInstanceModificationMoveInstruction:
       type: object
-      description: Instructions describing which elements should be terminated.
+      description: |
+        Instruction describing a move operation. This instruction will terminate all active element
+        instances with the sourceElementId and activate a new element instance for each terminated
+        one at targetElementId.
+      properties:
+        sourceElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The source element ID.
+        targetElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The target element ID.
+        ancestorScopeInstruction:
+          $ref: '#/components/schemas/AncestorScopeInstruction'
+        variableInstructions:
+          description: Instructions describing which variables should be created.
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
+      required:
+        - ancestorScopeInstruction
+        - sourceElementId
+        - targetElementId
+
+    AncestorScopeInstruction:
+      x-polymorphic-schema: true
+      discriminator:
+        propertyName: ancestorScopeType
+        mapping:
+          direct: '#/components/schemas/DirectAncestorKeyInstruction'
+          sourceParent: '#/components/schemas/SourceParentAncestorKeyInstruction'
+      oneOf:
+        - $ref: "#/components/schemas/DirectAncestorKeyInstruction"
+        - $ref: "#/components/schemas/SourceParentAncestorKeyInstruction"
+
+    DirectAncestorKeyInstruction:
+      type: object
+      description: Provides a concrete key to use as ancestor scope for the created element instance.
+      properties:
+        ancestorScopeType:
+          description: The type of ancestor scope instruction.
+          type: string
+          example: direct
+        ancestorElementInstanceKey:
+          description: |
+            The key of the ancestor scope the element instance should be created in.
+            Set to -1 to create the new element instance within an existing element instance of the
+            flow scope.
+          oneOf:
+            - type: string
+              default: "-1"
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      required:
+        - ancestorElementInstanceKey
+        - ancestorScopeType
+
+    SourceParentAncestorKeyInstruction:
+      type: object
+      description: |
+        Instructs the engine to use the source element's parent key as ancestor key for the creates
+        element instance.
+      properties:
+        ancestorScopeType:
+          description: The type of ancestor scope instruction.
+          type: string
+          example: sourceParent
+      required:
+        - ancestorScopeType
+
+    ProcessInstanceModificationTerminateInstruction:
+      x-polymorphic-schema: true
+      description: Instruction describing which elements should be terminated.
+      oneOf:
+        - $ref: "#/components/schemas/ProcessInstanceModificationTerminateByIdInstruction"
+        - $ref: "#/components/schemas/ProcessInstanceModificationTerminateByKeyInstruction"
+
+    ProcessInstanceModificationTerminateByIdInstruction:
+      description: |
+        Instruction describing which elements should be terminated. The element instances are
+        determined at runtime by the given ID.
+      type: object
+      properties:
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The id of the elements that should be terminated. The element instances are determined at runtime.
+      required:
+        - elementId
+
+    ProcessInstanceModificationTerminateByKeyInstruction:
+      description: Instruction providing the key of the element instance that should be terminated.
+      type: object
       properties:
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-          description: The ID of the element that should be terminated.
+          description: The key of the element instance that should be terminated.
       required:
         - elementInstanceKey
 
