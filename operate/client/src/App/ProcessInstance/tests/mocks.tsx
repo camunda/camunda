@@ -24,7 +24,6 @@ import {
 import {useEffect} from 'react';
 import {waitFor} from '@testing-library/react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockProcess} from 'modules/mocks/api/mocks/process';
@@ -220,7 +219,6 @@ function getWrapper(options?: {
 const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
-    expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
     expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
   });
 };
