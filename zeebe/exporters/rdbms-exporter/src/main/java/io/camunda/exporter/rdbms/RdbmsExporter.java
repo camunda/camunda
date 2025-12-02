@@ -47,6 +47,9 @@ public final class RdbmsExporter {
   private ScheduledTask currentCleanupTask = null;
   private ScheduledTask currentUsageMetricsCleanupTask = null;
 
+  // Track the oldest record timestamp in the current batch for exporting latency calculation
+  private long oldestRecordTimestampInBatch = -1;
+
   private RdbmsExporter(
       final int partitionId,
       final Duration flushInterval,
@@ -86,6 +89,7 @@ public final class RdbmsExporter {
 
     rdbmsWriter.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
     // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
     // itself
@@ -141,14 +145,19 @@ public final class RdbmsExporter {
               handler.getClass(),
               record.getValueType());
         }
-
-        lastPosition = record.getPosition();
       }
+      // Update lastPosition once per record, after all handlers have processed it
+      lastPosition = record.getPosition();
     } else {
       LOG.trace("[RDBMS Exporter] No registered handler found for {}", record.getValueType());
     }
 
     if (exported) {
+      // Track the oldest record timestamp in the current batch
+      final long recordTimestamp = record.getTimestamp();
+      if (oldestRecordTimestampInBatch < 0 || recordTimestamp < oldestRecordTimestampInBatch) {
+        oldestRecordTimestampInBatch = recordTimestamp;
+      }
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here.
       rdbmsWriter.flush(flushAfterEachRecord());
@@ -191,6 +200,15 @@ public final class RdbmsExporter {
               exporterRdbmsPosition.created(),
               LocalDateTime.now());
       rdbmsWriter.getExporterPositionService().update(exporterRdbmsPosition);
+    }
+  }
+
+  private void recordExportingLatency() {
+    if (oldestRecordTimestampInBatch >= 0) {
+      final long latencyMs = System.currentTimeMillis() - oldestRecordTimestampInBatch;
+      rdbmsWriter.getMetrics().recordExportingLatency(latencyMs);
+      // Reset for the next batch
+      oldestRecordTimestampInBatch = -1;
     }
   }
 
