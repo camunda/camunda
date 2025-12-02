@@ -48,7 +48,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -70,7 +69,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
-  static final String DELETE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s";
+  static final String DELETE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/deletion";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
   static final String MODIFY_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/modification";
 
@@ -2320,7 +2319,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             }""";
 
     webClient
-        .method(HttpMethod.DELETE)
+        .post()
         .uri(DELETE_PROCESS_URL.formatted("1"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -2334,7 +2333,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   void shouldDeleteProcessInstanceWithNoBody() {
     // when / then
     webClient
-        .method(HttpMethod.DELETE)
+        .post()
         .uri(DELETE_PROCESS_URL.formatted("1"))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
@@ -2350,7 +2349,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         {}""";
 
     webClient
-        .method(HttpMethod.DELETE)
+        .post()
         .uri(DELETE_PROCESS_URL.formatted("1"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)

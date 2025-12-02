@@ -263,6 +263,8 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1call-hierarchy'
   /process-instances/{processInstanceKey}/cancellation:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1cancellation'
+  /process-instances/{processInstanceKey}/deletion:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1deletion'
   /process-instances/{processInstanceKey}/incident-resolution:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1incident-resolution'
   /process-instances/{processInstanceKey}/incidents/search:
