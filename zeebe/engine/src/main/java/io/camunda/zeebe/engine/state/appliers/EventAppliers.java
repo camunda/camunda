@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.KeyGeneratorResetIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -154,6 +155,7 @@ public final class EventAppliers implements EventApplier {
     registerHistoryDeletionAppliers();
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
+    registerKeyGeneratorResetAppliers(state);
     return this;
   }
 
@@ -720,6 +722,12 @@ public final class EventAppliers implements EventApplier {
 
   private void registerHistoryDeletionAppliers() {
     register(HistoryDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerKeyGeneratorResetAppliers(final MutableProcessingState state) {
+    register(
+        KeyGeneratorResetIntent.RESET_APPLIED,
+        new KeyGeneratorResetAppliedApplier(state.getKeyGenerator()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
