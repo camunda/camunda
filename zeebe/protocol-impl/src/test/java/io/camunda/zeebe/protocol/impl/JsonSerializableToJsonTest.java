@@ -43,6 +43,8 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallisteners.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallisteners.GlobalListenersRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -4077,6 +4079,55 @@ final class JsonSerializableToJsonTest {
                 }
                 """
       },
+      //////////////////////////////////// GlobalListenersRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "GlobalListenersRecord",
+        (Supplier<GlobalListenersRecord>)
+            () ->
+                new GlobalListenersRecord()
+                    .setListenersConfigKey(1)
+                    .addTaskListener(
+                        new GlobalListenerRecord()
+                            .setType("global1")
+                            .setEventTypes(List.of("creating", "assigning"))
+                            .setRetries("5"))
+                    .addTaskListener(
+                        new GlobalListenerRecord()
+                            .setType("global2")
+                            .setEventTypes(List.of("all"))
+                            .setRetries("3")
+                            .setAfterNonGlobal(false)),
+        """
+      {
+        "listenersConfigKey": 1,
+        "taskListeners": [
+          {
+            "type": "global1",
+            "retries": "5",
+            "eventTypes": ["creating", "assigning"],
+            "afterNonGlobal": false
+          },
+          {
+            "type": "global2",
+            "retries": "3",
+            "eventTypes": ["all"],
+            "afterNonGlobal": false
+          }
+        ]
+      }
+      """
+      },
+      {
+        "Empty GlobalListenersRecord",
+        (Supplier<GlobalListenersRecord>) () -> new GlobalListenersRecord(),
+        """
+      {
+        "listenersConfigKey": -1,
+        "taskListeners": []
+      }
+      """
+      }
     };
   }
 
