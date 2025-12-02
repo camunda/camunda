@@ -471,6 +471,45 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
+  /process-instances/deletion:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Process instance
+      operationId: deleteProcessInstancesBatchOperation
+      summary: Create a batch operation to delete process instances
+      description: |
+        Delete multiple process instances. This will delete the historic data from secondary storage.
+        Only process instances in a final state (COMPLETED or TERMINATED) can be deleted.
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceDeletionBatchOperationRequest'
+      responses:
+        "200":
+          description: The batch operation request was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
   /process-instances/{processInstanceKey}/migration:
     post:
       x-eventually-consistent: false

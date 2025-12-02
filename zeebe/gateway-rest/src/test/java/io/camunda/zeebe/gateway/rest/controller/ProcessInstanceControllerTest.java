@@ -42,6 +42,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -2156,6 +2157,145 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  @Disabled("Enable in https://github.com/camunda/camunda/issues/41754")
+  void shouldDeleteProcessInstanceBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    // TODO Uncomment once batch operation type is available
+    // record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.deleteProcessInstancesBatchOperation(
+            any(ProcessInstanceFilter.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter":
+               {
+                  "processDefinitionId": "test-process-definition-id"
+                }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
+
+    verify(processInstanceServices)
+        .deleteProcessInstancesBatchOperation(any(ProcessInstanceFilter.class));
+  }
+
+  @Test
+  void shouldRejectDeleteProcessInstanceBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/process-instances/deletion"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectDeleteProcessInstanceBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/deletion"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectDeleteProcessInstanceBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/deletion"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/deletion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
