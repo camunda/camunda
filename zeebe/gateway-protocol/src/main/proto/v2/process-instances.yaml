@@ -93,6 +93,49 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+    delete:
+      x-eventually-consistent: true
+      tags:
+        - Process instance
+      operationId: deleteProcessInstance
+      summary: Delete process instance
+      description: Deletes a process instance. Only instances that are completed or terminated can be deleted.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to delete.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteProcessInstanceRequest'
+      responses:
+        "204":
+          description: The process instance will be deleted.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The process instance is not in a completed or terminated state and cannot be deleted.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
   /process-instances/{processInstanceKey}/sequence-flows:
     get:
@@ -1179,6 +1222,14 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
     CancelProcessInstanceRequest:
+      type: object
+      nullable: true
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+
+    DeleteProcessInstanceRequest:
       type: object
       nullable: true
       additionalProperties: false
