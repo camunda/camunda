@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -74,6 +75,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       detail =
           INVALID_ENUM_ERROR_MESSAGE.formatted(
               ((HttpMessageNotReadableException) ex).getRootCause().getMessage(), field, options);
+    } else if (isArrayTypeDeserializationError(ex)) {
+      detail = ((HttpMessageNotReadableException) ex).getRootCause().getMessage() + ".";
     } else {
       detail = defaultDetail;
     }
@@ -103,6 +106,12 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     }
 
     return false;
+  }
+
+  private boolean isArrayTypeDeserializationError(final Exception ex) {
+    return ex instanceof final HttpMessageNotReadableException exception
+        && exception.getRootCause() != null
+        && exception.getRootCause() instanceof final DeserializationException dEx;
   }
 
   private boolean isMismatchedInputError(final Exception ex) {
