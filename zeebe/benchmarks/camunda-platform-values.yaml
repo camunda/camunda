@@ -34,7 +34,7 @@ identityKeycloak:
   enabled: false
 
 optimize:
-  enabled: false
+  enabled: true
 
 connectors:
   enabled: false
