@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -284,7 +285,11 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
             });
 
     return new ProcessInstanceModifyRequest(
-        processInstanceKey, activateInstructions, terminateInstructions, operationId);
+        processInstanceKey,
+        activateInstructions,
+        Collections.emptyList(),
+        terminateInstructions,
+        operationId);
   }
 
   private void addActivationInstruction(
