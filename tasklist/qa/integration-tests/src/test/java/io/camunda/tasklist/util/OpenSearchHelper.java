@@ -178,7 +178,9 @@ public class OpenSearchHelper implements NoSqlHelper {
     try {
       final SearchResponse<TaskVariableEntity> response =
           osClient.search(
-              s -> s.query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
+              s ->
+                  s.index(taskVariableTemplate.getAlias())
+                      .query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
               TaskVariableEntity.class);
       return response.hits().total().value() > 0;
     } catch (final IOException e) {
