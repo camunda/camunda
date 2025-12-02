@@ -47,12 +47,7 @@ const mockElementInstance2: ElementInstance = {
 
 const getWrapper = (initialSearchParams?: {[key: string]: string}) => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
-    const searchParams = new URLSearchParams();
-    if (initialSearchParams) {
-      Object.entries(initialSearchParams).forEach(([key, value]) => {
-        searchParams.set(key, value);
-      });
-    }
+    const searchParams = new URLSearchParams(initialSearchParams);
 
     return (
       <QueryClientProvider client={getMockQueryClient()}>
