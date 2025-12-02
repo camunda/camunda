@@ -395,23 +395,13 @@ public class TestContainerUtil {
   private void applyConfiguration(
       final GenericContainer<?> operateContainer, final TestContext testContext) {
     operateContainer
-        // ES
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
-        // OS
-        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", getElasticURL(testContext))
-
-        /* these need to match the URL value even if they're not used */
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", getElasticURL(testContext))
-        .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", getElasticURL(testContext))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
-        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
-        // OS
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", getElasticURL(testContext))
-        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", getElasticURL(testContext));
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
 
@@ -450,11 +440,6 @@ public class TestContainerUtil {
       final String elsHost, final Integer elsPort, final String zeebeContactPoint) {
     final Properties properties = new Properties();
     properties.setProperty("camunda.data.secondary-storage.type", DB_TYPE_ELASTICSEARCH);
-    properties.setProperty("camunda.database.type", DB_TYPE_ELASTICSEARCH);
-    properties.setProperty("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
-    properties.setProperty("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
-    properties.setProperty(
-        "zeebe.broker.exporters.camundaexporter.args.connect.type", DB_TYPE_ELASTICSEARCH);
 
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
@@ -549,38 +534,28 @@ public class TestContainerUtil {
 
     final var secondaryStorageType = SecondaryStorageType.valueOf(dbType);
 
-    broker.withUnifiedConfig(
-        cfg -> {
-          cfg.getData().getSecondaryStorage().setType(secondaryStorageType);
-          if (secondaryStorageType.isOpenSearch()) {
-            cfg.getData().getSecondaryStorage().getOpensearch().setUrl(dbUrl);
-            if (testContext.getIndexPrefix() != null) {
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getOpensearch()
-                  .setIndexPrefix(testContext.getIndexPrefix());
-            }
-          } else {
-            cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(dbUrl);
-            if (testContext.getIndexPrefix() != null) {
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getElasticsearch()
-                  .setIndexPrefix(testContext.getIndexPrefix());
-            }
-          }
-        });
-
-    broker.withAdditionalProperties(
-        Map.of(
-            "camunda.database.type",
-            dbType,
-            "camunda.operate.database",
-            dbType,
-            "camunda.tasklist.database",
-            dbType,
-            "camunda.database.url",
-            dbUrl));
+    broker
+        .withSecondaryStorageType(secondaryStorageType)
+        .withUnifiedConfig(
+            cfg -> {
+              if (secondaryStorageType.isOpenSearch()) {
+                cfg.getData().getSecondaryStorage().getOpensearch().setUrl(dbUrl);
+                if (testContext.getIndexPrefix() != null) {
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getOpensearch()
+                      .setIndexPrefix(testContext.getIndexPrefix());
+                }
+              } else {
+                cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(dbUrl);
+                if (testContext.getIndexPrefix() != null) {
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getElasticsearch()
+                      .setIndexPrefix(testContext.getIndexPrefix());
+                }
+              }
+            });
   }
 
   public void stopZeebeAndOperate(final TestContext testContext) {

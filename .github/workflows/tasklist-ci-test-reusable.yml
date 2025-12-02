@@ -54,13 +54,9 @@ jobs:
         database: [ elasticsearch, opensearch ]
         include:
           - database: elasticsearch
-            capitalizedDatabase: Elasticsearch
             testProfile: docker-es
-            url: http://localhost:9200
           - database: opensearch
-            capitalizedDatabase: Opensearch
             testProfile: docker-os
-            url: http://localhost:9200
     env:
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
@@ -104,15 +100,6 @@ jobs:
             -B --fail-at-end \
             -Dfailsafe.rerunFailingTestsCount=2 \
             -Dcamunda.data.secondary-storage.type=${{ matrix.database }} \
-            -Dcamunda.database.type=${{ matrix.database }} \
-            -Dcamunda.tasklist.database=${{ matrix.database }} \
-            -Dcamunda.operate.database=${{ matrix.database }} \
-            -Dcamunda.data.secondary-storage.${{ matrix.database }}.url=${{ matrix.url }} \
-            -Dcamunda.database.url=${{ matrix.url }} \
-            -Dcamunda.operate.${{ matrix.database }}.url=${{ matrix.url }} \
-            -Dcamunda.tasklist.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
-            -Dcamunda.tasklist.${{ matrix.database }}.url=${{ matrix.url }} \
-            -Dcamunda.operate.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
             -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
             -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
 

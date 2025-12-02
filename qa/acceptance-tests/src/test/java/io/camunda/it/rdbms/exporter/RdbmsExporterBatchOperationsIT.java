@@ -55,10 +55,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",
-      "zeebe.broker.exporters.rdbms.args.queueSize=0",
       "camunda.data.secondary-storage.type=rdbms",
-      "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
-      "camunda.database.index-prefix=C8_"
+      "camunda.data.secondary-storage.rdbms.queue-size=0",
     })
 class RdbmsExporterBatchOperationsIT {
 
