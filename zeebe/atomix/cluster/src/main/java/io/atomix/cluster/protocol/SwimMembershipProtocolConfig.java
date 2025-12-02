@@ -33,6 +33,7 @@ public class SwimMembershipProtocolConfig extends GroupMembershipProtocolConfig 
   private static final int DEFAULT_SUSPECT_PROBES = 3;
   private static final int DEFAULT_FAILURE_TIMEOUT = 10000;
   private static final int DEFAULT_SYNC_INTERVAL = 10_000;
+  private boolean versionedMembers = false;
 
   private boolean broadcastUpdates = DEFAULT_BROADCAST_UPDATES;
   private boolean broadcastDisputes = DEFAULT_BROADCAST_DISPUTES;
@@ -263,5 +264,14 @@ public class SwimMembershipProtocolConfig extends GroupMembershipProtocolConfig 
   @Override
   public GroupMembershipProtocol.Type getType() {
     return SwimMembershipProtocol.TYPE;
+  }
+
+  public boolean areMembersVersioned() {
+    return versionedMembers;
+  }
+
+  public SwimMembershipProtocolConfig setMembersVersioned(final boolean versionedMembers) {
+    this.versionedMembers = versionedMembers;
+    return this;
   }
 }

@@ -139,6 +139,11 @@ public class SwimMembershipProtocolBuilder extends GroupMembershipProtocolBuilde
     return this;
   }
 
+  public SwimMembershipProtocolBuilder withVersionedMembers() {
+    config.setMembersVersioned(true);
+    return this;
+  }
+
   @Override
   public GroupMembershipProtocol build() {
     return new SwimMembershipProtocol(config, "", meterRegistry);

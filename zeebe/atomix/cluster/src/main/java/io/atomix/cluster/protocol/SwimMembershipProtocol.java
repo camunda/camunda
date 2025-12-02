@@ -448,6 +448,7 @@ public class SwimMembershipProtocol
             (response, error) -> {
               if (error == null) {
                 final Collection<ImmutableMember> members = SERIALIZER.decode(response);
+                members.forEach(this::validateMember);
                 SYNC_LOGGER.debug(
                     "{} - Finished synchronizing membership with {}, received: '{}'",
                     localMember.id(),
@@ -491,6 +492,7 @@ public class SwimMembershipProtocol
    */
   private Collection<ImmutableMember> handleSync(final ImmutableMember member) {
     SYNC_LOGGER.trace("{} - Received sync request from {}", localMember.id(), member);
+    validateMember(member);
     updateState(member);
     return members.values().stream().map(SwimMember::copy).collect(Collectors.toList());
   }
@@ -542,7 +544,7 @@ public class SwimMembershipProtocol
         .whenCompleteAsync(
             (response, error) -> {
               if (error == null) {
-                updateState(SERIALIZER.decode(response));
+                updateState(validateMember(SERIALIZER.decode(response)));
               } else {
                 PROBE_LOGGER.trace("{} - Failed to probe {}", localMember.id(), member, error);
                 // Verify that the local member term has not changed and request probes from peers.
@@ -567,8 +569,8 @@ public class SwimMembershipProtocol
    * @return the current term
    */
   private ImmutableMember handleProbe(final Pair<ImmutableMember, ImmutableMember> members) {
-    final ImmutableMember remoteMember = members.getLeft();
-    final ImmutableMember localMember = members.getRight();
+    final ImmutableMember remoteMember = validateMember(members.getLeft());
+    final ImmutableMember localMember = validateMember(members.getRight());
 
     PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
@@ -690,6 +692,7 @@ public class SwimMembershipProtocol
    * @param member the member to probe
    */
   private CompletableFuture<Boolean> handleProbeRequest(final ImmutableMember member) {
+    validateMember(member);
     final CompletableFuture<Boolean> future = new CompletableFuture<>();
     swimScheduler.execute(
         () -> {
@@ -797,7 +800,11 @@ public class SwimMembershipProtocol
   private void handleGossipUpdates(final Collection<ImmutableMember> updates) {
     for (final ImmutableMember update : updates) {
       GOSSIP_LOGGER.trace("{} - Received gossip {}", localMember.id(), update);
-      updateState(update);
+      try {
+        updateState(validateMember(update));
+      } catch (final IllegalStateException e) {
+        LOGGER.warn("Cannot update state for member {}", update, e);
+      }
     }
   }
 
@@ -881,6 +888,17 @@ public class SwimMembershipProtocol
     probeFuture =
         swimScheduler.schedule(
             (Runnable) this::probe, config.getProbeInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private <A extends Member> A validateMember(final A member) {
+    if (config.areMembersVersioned()) {
+      if (!(member.id() instanceof VersionedMemberId)) {
+        throw new IllegalStateException(
+            "Expected memberId to be subclass of  VersionedMemberId, but got "
+                + member.id().getClass().getSimpleName());
+      }
+    }
+    return member;
   }
 
   /** Bootstrap member location provider type. */
