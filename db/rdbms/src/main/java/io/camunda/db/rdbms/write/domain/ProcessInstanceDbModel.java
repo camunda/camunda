@@ -51,6 +51,7 @@ public record ProcessInstanceDbModel(
                 .tenantId(tenantId)
                 .version(version)
                 .partitionId(partitionId)
+                .treePath(treePath)
                 .historyCleanupDate(historyCleanupDate)
                 .tags(tags))
         .build();
