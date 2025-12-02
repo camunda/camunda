@@ -25,6 +25,7 @@ import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.GroupFilter;
+import io.camunda.client.api.search.filter.HeaderValueFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MappingRuleFilter;
@@ -76,6 +77,7 @@ import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.GroupFilterImpl;
+import io.camunda.client.impl.search.filter.HeaderValueFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.JobFilterImpl;
 import io.camunda.client.impl.search.filter.MappingRuleFilterImpl;
@@ -269,6 +271,12 @@ public final class SearchRequestBuilders {
 
   public static VariableValueFilter variableValueFilter(final Consumer<VariableValueFilter> fn) {
     final VariableValueFilterImpl filter = new VariableValueFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static HeaderValueFilter headerValueFilter(final Consumer<HeaderValueFilter> fn) {
+    final HeaderValueFilterImpl filter = new HeaderValueFilterImpl();
     fn.accept(filter);
     return filter;
   }

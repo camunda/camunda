@@ -23,6 +23,7 @@ public class UserTaskProperties {
   private Expression formId;
   private Expression priority;
   private Map<String, String> taskHeaders = Map.of();
+  private Map<String, Expression> taskHeaderExpressions = Map.of();
   private ZeebeBindingType formBindingType;
   private String formVersionTag;
 
@@ -90,6 +91,14 @@ public class UserTaskProperties {
     this.taskHeaders = taskHeaders;
   }
 
+  public Map<String, Expression> getTaskHeaderExpressions() {
+    return taskHeaderExpressions;
+  }
+
+  public void setTaskHeaderExpressions(final Map<String, Expression> taskHeaderExpressions) {
+    this.taskHeaderExpressions = taskHeaderExpressions;
+  }
+
   public ZeebeBindingType getFormBindingType() {
     return formBindingType;
   }
@@ -123,6 +132,7 @@ public class UserTaskProperties {
     setFollowUpDate(userTaskProperties.getFollowUpDate());
     setFormId(userTaskProperties.getFormId());
     setTaskHeaders(userTaskProperties.getTaskHeaders());
+    setTaskHeaderExpressions(userTaskProperties.getTaskHeaderExpressions());
     setFormBindingType(userTaskProperties.getFormBindingType());
     setPriority(userTaskProperties.getPriority());
     setFormVersionTag(userTaskProperties.getFormVersionTag());

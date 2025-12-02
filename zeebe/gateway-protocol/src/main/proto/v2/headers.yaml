@@ -1,0 +1,18 @@
+## Schema definitions for custom header filtering
+
+components:
+  schemas:
+    HeaderValueFilterProperty:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the custom header. System headers (starting with 'io.camunda.zeebe:') are excluded from filtering.
+        value:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The value of the custom header.
+      required:
+        - name
+        - value
+

@@ -40,7 +40,9 @@ import java.time.InstantSource;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -133,7 +135,12 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             p ->
                 evaluatePriorityExpression(userTaskProps.getPriority(), scopeKey, tenantId)
-                    .map(p::priority));
+                    .map(p::priority))
+        .flatMap(
+            p ->
+                evaluateCustomHeaderExpressions(
+                        userTaskProps.getTaskHeaderExpressions(), scopeKey, tenantId)
+                    .map(p::customHeaders));
   }
 
   public UserTaskRecord createNewUserTask(
@@ -142,8 +149,7 @@ public final class BpmnUserTaskBehavior {
       final UserTaskProperties userTaskProperties) {
     final var userTaskKey = keyGenerator.nextKey();
 
-    final var encodedHeaders =
-        headerEncoder.encode(element.getUserTaskProperties().getTaskHeaders());
+    final var encodedHeaders = headerEncoder.encode(userTaskProperties.getCustomHeaders());
 
     final var userTaskRecord =
         new UserTaskRecord()
@@ -263,11 +269,11 @@ public final class BpmnUserTaskBehavior {
                                 new Failure(
                                     String.format(
                                         """
-                                        Expected to use a form with id '%s' with binding type 'deployment', \
-                                        but no such form found in the deployment with key %s which contained the current process. \
-                                        To resolve this incident, migrate the process instance to a process definition \
-                                        that is deployed together with the intended form to use.\
-                                        """,
+                                    Expected to use a form with id '%s' with binding type 'deployment', \
+                                    but no such form found in the deployment with key %s which contained the current process. \
+                                    To resolve this incident, migrate the process instance to a process definition \
+                                    that is deployed together with the intended form to use.\
+                                    """,
                                         formId, deploymentKey),
                                     ErrorType.FORM_NOT_FOUND,
                                     scopeKey))));
@@ -338,6 +344,94 @@ public final class BpmnUserTaskBehavior {
               }
               return Either.right(priority);
             });
+  }
+
+  public Either<Failure, Map<String, String>> evaluateCustomHeaderExpressions(
+      final Map<String, Expression> headerExpressions, final long scopeKey, final String tenantId) {
+    if (headerExpressions == null || headerExpressions.isEmpty()) {
+      return Either.right(Map.of());
+    }
+
+    final Map<String, String> evaluatedHeaders = new HashMap<>();
+
+    for (final var entry : headerExpressions.entrySet()) {
+      final var headerName = entry.getKey();
+      final var expression = entry.getValue();
+
+      // Try to evaluate as string first
+      final var stringResult =
+          expressionBehavior.evaluateStringExpression(expression, scopeKey, tenantId);
+
+      if (stringResult.isRight()) {
+        // Successfully evaluated as string
+        final var value = stringResult.get();
+        if (value != null) {
+          evaluatedHeaders.put(headerName, value);
+        }
+        continue;
+      }
+
+      // If string evaluation failed, check if it's a type error and try other types
+      final var failure = stringResult.getLeft();
+      if (!failure.getMessage().contains("Expected result of the expression")) {
+        // It's not a type error, it's a real failure
+        return Either.left(failure);
+      }
+
+      // Try evaluating as different types and convert to string
+      final var convertedValue = tryConvertNonStringExpression(expression, scopeKey, tenantId);
+      if (convertedValue.isLeft()) {
+        return Either.left(convertedValue.getLeft());
+      }
+
+      final var value = convertedValue.get();
+      if (value != null) {
+        evaluatedHeaders.put(headerName, value);
+      }
+    }
+
+    return Either.right(evaluatedHeaders);
+  }
+
+  private Either<Failure, String> tryConvertNonStringExpression(
+      final Expression expression, final long scopeKey, final String tenantId) {
+    // Try evaluating as number
+    final var numberResult =
+        expressionBehavior.evaluateLongExpression(expression, scopeKey, tenantId);
+    if (numberResult.isRight()) {
+      return Either.right(numberResult.get().toString());
+    }
+
+    // Try evaluating as boolean
+    final var booleanResult =
+        expressionBehavior.evaluateBooleanExpression(expression, scopeKey, tenantId);
+    if (booleanResult.isRight()) {
+      return Either.right(booleanResult.get().toString());
+    }
+
+    // Try evaluating as date-time
+    final var dateTimeResult =
+        expressionBehavior.evaluateDateTimeExpression(expression, scopeKey, tenantId, true);
+    if (dateTimeResult.isRight() && dateTimeResult.get().isPresent()) {
+      return Either.right(dateTimeResult.get().get().toString());
+    }
+
+    // Try evaluating as interval (duration/period)
+    final var intervalResult =
+        expressionBehavior.evaluateIntervalExpression(expression, scopeKey, tenantId);
+    if (intervalResult.isRight()) {
+      return Either.right(intervalResult.get().toString());
+    }
+
+    // If none of the above worked, return a failure with a descriptive message
+    return Either.left(
+        new Failure(
+            String.format(
+                "Expected custom header expression '%s' to evaluate to a simple type"
+                    + " (string, number, boolean, date-time, duration, or period)",
+                expression.getExpression()),
+            ErrorType.EXTRACT_VALUE_ERROR,
+            scopeKey));
   }
 
   public void cancelUserTask(final ElementInstance elementInstance) {
@@ -452,6 +546,7 @@ public final class BpmnUserTaskBehavior {
     private String followUpDate;
     private Long formKey;
     private Integer priority;
+    private Map<String, String> customHeaders;
 
     public String getAssignee() {
       return getOrEmpty(assignee);
@@ -522,6 +617,15 @@ public final class BpmnUserTaskBehavior {
 
     public UserTaskProperties priority(final Integer priority) {
       this.priority = priority;
+      return this;
+    }
+
+    public Map<String, String> getCustomHeaders() {
+      return customHeaders == null ? Map.of() : customHeaders;
+    }
+
+    public UserTaskProperties customHeaders(final Map<String, String> customHeaders) {
+      this.customHeaders = customHeaders;
       return this;
     }
 

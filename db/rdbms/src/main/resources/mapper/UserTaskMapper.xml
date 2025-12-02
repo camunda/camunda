@@ -329,6 +329,20 @@
         </foreach>
         ))
       </if>
+
+      <!-- Custom Headers Filter -->
+      <!-- Note: System headers already filtered out in Java code (UserTaskFilterTransformer) -->
+      <!-- This SQL only queries the user-defined headers that passed validation -->
+      <if test="filter.customHeaderFilters != null and !filter.customHeaderFilters.isEmpty()">
+        <foreach collection="filter.customHeaderFilters" item="headerFilter">
+          <if test="headerFilter.valueOperations != null and !headerFilter.valueOperations.isEmpty()">
+            <foreach collection="headerFilter.valueOperations" item="operation">
+              AND <bind name="columnName" value="'ut.CUSTOM_HEADERS'"/>
+              <include refid="io.camunda.db.rdbms.sql.Commons.jsonHeaderOperationCondition"/>
+            </foreach>
+          </if>
+        </foreach>
+      </if>
     </where>
   </sql>
 

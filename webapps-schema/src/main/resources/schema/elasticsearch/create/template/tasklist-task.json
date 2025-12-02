@@ -95,8 +95,7 @@
         "type": "integer"
       },
       "customHeaders": {
-        "type": "object",
-        "enabled": false
+        "type": "flattened"
       },
       "priority": {
         "type": "integer"

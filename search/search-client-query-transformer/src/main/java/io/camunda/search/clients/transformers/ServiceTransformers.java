@@ -83,6 +83,7 @@ import io.camunda.search.clients.transformers.filter.FlownodeInstanceFilterTrans
 import io.camunda.search.clients.transformers.filter.FormFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupMemberFilterTransformer;
+import io.camunda.search.clients.transformers.filter.HeaderValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingRuleFilterTransformer;
@@ -147,6 +148,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.GroupMemberFilter;
+import io.camunda.search.filter.HeaderValueFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingRuleFilter;
@@ -455,6 +457,7 @@ public final class ServiceTransformers {
         ClusterVariableFilter.class,
         new ClusterVariableFilterTransformer(indexDescriptors.get(ClusterVariableIndex.class)));
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
+    mappers.put(HeaderValueFilter.class, new HeaderValueFilterTransformer());
     mappers.put(
         VariableFilter.class,
         new VariableFilterTransformer(indexDescriptors.get(VariableTemplate.class)));
