@@ -12,7 +12,8 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
+import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -45,7 +46,7 @@ public class ProcessingScheduleServiceImpl
   private final PriorityQueue<ScheduledTaskImpl> scheduledTasks = new PriorityQueue<>();
   private LogStreamWriter logStreamWriter;
   private ActorControl actorControl;
-  private AbortableRetryStrategy writeRetryStrategy;
+  private RetryStrategy writeRetryStrategy;
   private CompletableActorFuture<Void> openFuture;
 
   public ProcessingScheduleServiceImpl(
@@ -113,7 +114,8 @@ public class ProcessingScheduleServiceImpl
     }
 
     openFuture = new CompletableActorFuture<>();
-    writeRetryStrategy = new AbortableRetryStrategy(control);
+    writeRetryStrategy =
+        new BackOffRetryStrategy(control, Duration.ofMillis(5), Duration.ofMillis(1));
 
     logStreamWriter = writerSupplier.get();
     actorControl = control;
