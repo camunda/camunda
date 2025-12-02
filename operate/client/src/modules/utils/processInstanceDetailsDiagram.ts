@@ -11,32 +11,54 @@ import type {
   BusinessObjects,
 } from 'bpmn-js/lib/NavigatedViewer';
 
-const hasMultipleScopes = (
-  parentFlowNode?: BusinessObject,
-  totalRunningInstancesByFlowNode?: Record<string, number>,
+const checkScope = (
+  parentFlowNode: BusinessObject | undefined,
+  totalRunningInstancesByFlowNode: Record<string, number> | undefined,
+  predicate: (count: number) => boolean,
 ): boolean => {
-  if (parentFlowNode === undefined) {
+  if (!parentFlowNode) {
     return false;
   }
 
-  const totalRunningInstancesCount =
-    totalRunningInstancesByFlowNode?.[parentFlowNode.id];
+  const count = totalRunningInstancesByFlowNode?.[parentFlowNode.id] ?? 0;
 
-  const scopeCount = totalRunningInstancesCount ?? 0;
-
-  if (scopeCount > 1) {
+  // If predicate matches, return immediately
+  if (predicate(count)) {
     return true;
   }
 
+  // If not inside a SubProcess, stop recursion
   if (parentFlowNode.$parent?.$type !== 'bpmn:SubProcess') {
     return false;
   }
 
-  return hasMultipleScopes(
+  // Recurse upwards
+  return checkScope(
     parentFlowNode.$parent,
     totalRunningInstancesByFlowNode,
+    predicate,
   );
 };
+
+const hasMultipleScopes = (
+  parentFlowNode?: BusinessObject,
+  totalRunningInstancesByFlowNode?: Record<string, number>,
+): boolean =>
+  checkScope(
+    parentFlowNode,
+    totalRunningInstancesByFlowNode,
+    (count) => count > 1,
+  );
+
+const hasSingleScope = (
+  parentFlowNode?: BusinessObject,
+  totalRunningInstancesByFlowNode?: Record<string, number>,
+): boolean =>
+  checkScope(
+    parentFlowNode,
+    totalRunningInstancesByFlowNode,
+    (count) => count === 1,
+  );
 
 const getFlowNodesInBetween = (
   businessObjects: BusinessObjects,
@@ -74,4 +96,9 @@ const getFlowNodeParents = (
   return getFlowNodesInBetween(businessObjects, flowNodeId, bpmnProcessId);
 };
 
-export {getFlowNodeParents, hasMultipleScopes, getFlowNodesInBetween};
+export {
+  getFlowNodeParents,
+  hasMultipleScopes,
+  hasSingleScope,
+  getFlowNodesInBetween,
+};
