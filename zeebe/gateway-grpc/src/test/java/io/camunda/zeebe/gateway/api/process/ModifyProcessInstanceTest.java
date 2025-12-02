@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.MoveInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
@@ -24,6 +25,7 @@ public class ModifyProcessInstanceTest {
 
   private static final String VALID_VARIABLES = "{ \"test\": \"value\"}";
   // missing closing quote in second variable
+  private static final String VALID_MOVE_VARIABLES = "{ \"testMove\": \"valueMove\"}";
   private static final String INVALID_VARIABLES =
       "{ \"test\": \"value\", \"error\": \"errorrvalue }";
 
@@ -44,7 +46,22 @@ public class ModifyProcessInstanceTest {
                             .build())
                     .build())
             .addTerminateInstructions(
-                TerminateInstruction.newBuilder().setElementInstanceKey(3L).build())
+                TerminateInstruction.newBuilder()
+                    .setElementInstanceKey(3L)
+                    .setElementId("elementId")
+                    .build())
+            .addMoveInstructions(
+                MoveInstruction.newBuilder()
+                    .setSourceElementId("fromElementId")
+                    .setTargetElementId("toElementId")
+                    .setAncestorElementInstanceKey(3L)
+                    .setUseSourceParentKeyAsAncestorScopeKey(true)
+                    .addVariableInstructions(
+                        VariableInstruction.newBuilder()
+                            .setScopeId("scopeIdMove")
+                            .setVariables(VALID_MOVE_VARIABLES)
+                            .build())
+                    .build())
             .build();
 
     // when
@@ -67,6 +84,19 @@ public class ModifyProcessInstanceTest {
     assertThat(terminateInstructions).hasSize(1);
     final var terminateInstruction = terminateInstructions.get(0);
     assertThat(terminateInstruction.getElementInstanceKey()).isEqualTo(3L);
+    assertThat(terminateInstruction.getElementId()).isEqualTo("elementId");
+    final var moveInstructions = record.getMoveInstructions();
+    assertThat(moveInstructions).hasSize(1);
+    final var moveInstruction = moveInstructions.get(0);
+    assertThat(moveInstruction.getSourceElementId()).isEqualTo("fromElementId");
+    assertThat(moveInstruction.getTargetElementId()).isEqualTo("toElementId");
+    assertThat(moveInstruction.getAncestorScopeKey()).isEqualTo(3L);
+    assertThat(moveInstruction.isUseSourceParentKeyAsAncestorScope()).isTrue();
+    final var moveVariableInstructions = moveInstruction.getVariableInstructions();
+    assertThat(moveVariableInstructions).hasSize(1);
+    final var moveVariableInstruction = moveVariableInstructions.get(0);
+    assertThat(moveVariableInstruction.getElementId()).isEqualTo("scopeIdMove");
+    assertThat(moveVariableInstruction.getVariables()).containsOnly(entry("testMove", "valueMove"));
   }
 
   @Test
