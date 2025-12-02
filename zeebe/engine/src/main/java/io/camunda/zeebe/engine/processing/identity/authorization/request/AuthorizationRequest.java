@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.identity.authorization.request;
 
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collection;
@@ -19,40 +18,31 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public record AuthorizationRequest(
     Map<String, Object> claims,
     AuthorizationResourceType resourceType,
     PermissionType permissionType,
     String tenantId,
-    Set<AuthorizationScope> authorizationScopes,
+    Set<String> resourceIds,
     boolean isNewResource,
     boolean isTenantOwnedResource,
     boolean isTriggeredByInternalCommand) {
 
-  public AuthorizationRequest {
-    authorizationScopes = new HashSet<>(authorizationScopes);
-    // TODO: adjust AuthorizationCheckBehavior to check if `AuthorizationScope.WILDCARD` is present
-    //  among granted scopes, without the need to include `WILDCARD` scope to each request
-
-    // WILDCARD is added by default to allow matching against wildcard permissions
-    authorizationScopes.add(AuthorizationScope.WILDCARD);
-  }
-
   public String getForbiddenErrorMessage() {
-    final var authorizationScopesContainsOnlyWildcard =
-        authorizationScopes.size() == 1
-            && authorizationScopes.contains(AuthorizationScope.WILDCARD);
-    return authorizationScopesContainsOnlyWildcard
-        ? AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
-        : AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-            permissionType,
-            resourceType,
-            authorizationScopes.stream()
-                .filter(scope -> scope.getResourceId() != null && !scope.getResourceId().isEmpty())
-                .map(AuthorizationScope::getResourceId)
-                .sorted()
-                .toList());
+    if (resourceIds.isEmpty()) {
+      return AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE.formatted(
+          permissionType, resourceType);
+    }
+
+    return AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+        permissionType,
+        resourceType,
+        resourceIds.stream()
+            .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
+            .sorted()
+            .collect(Collectors.joining(", ")));
   }
 
   public String getTenantErrorMessage() {
@@ -79,13 +69,13 @@ public record AuthorizationRequest(
     private Map<String, Object> authorizationClaims;
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
-    private final Set<AuthorizationScope> authorizationScopes;
+    private Set<String> resourceIds;
     private String tenantId;
     private boolean isNewResource;
 
     public Builder() {
       authorizationClaims = new HashMap<>();
-      authorizationScopes = new HashSet<>();
+      resourceIds = new HashSet<>();
     }
 
     public Builder command(final TypedRecord<?> command) {
@@ -123,7 +113,7 @@ public record AuthorizationRequest(
     }
 
     public Builder addResourceId(final String resourceId) {
-      authorizationScopes.add(AuthorizationScope.of(resourceId));
+      resourceIds.add(resourceId);
       return this;
     }
 
@@ -143,7 +133,7 @@ public record AuthorizationRequest(
           resourceType,
           permissionType,
           tenantId,
-          Collections.unmodifiableSet(authorizationScopes),
+          Collections.unmodifiableSet(resourceIds),
           isNewResource,
           isTenantOwnedResource,
           triggeredByInternalCommand);
