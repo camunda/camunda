@@ -82,9 +82,18 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final String ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
           + " with an element instance that could not be found: '%s'";
+  private static final String ERROR_MESSAGE_TERMINATE_NO_DEFINITIONS =
+      "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
+          + " with neither an element instance key nor element id: '%s'";
   private static final String ERROR_MESSAGE_TERMINATE_MULTIPLE_DEFINITIONS =
       "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
           + " with an element instance key and element id: '%s'";
+  private static final String ERROR_MESSAGE_MOVE_NO_DEFINITIONS =
+      "Expected to modify instance of process '%s' but it contains one or more move instructions"
+          + " with either or both the source or target element id missing: '%s'";
+  private static final String ERROR_MESSAGE_MOVE_MULTIPLE_DEFINITIONS =
+      "Expected to modify instance of process '%s' but it contains multiple move instructions"
+          + " with identical source element ids: '%s'";
   private static final String ERROR_COMMAND_TOO_LARGE =
       "Unable to modify process instance with key '%d' as the size exceeds the maximum batch size."
           + " Please reduce the size by splitting the modification into multiple commands.";
@@ -238,7 +247,12 @@ public final class ProcessInstanceModificationModifyProcessor
         processState.getProcessByKeyAndTenant(
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
-    final var commandValidationResult = validateCommand(command, process);
+    final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions =
+        value.getMoveInstructions();
+    final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructionsInput =
+        value.getTerminateInstructions();
+    final var commandValidationResult =
+        validateCommand(terminateInstructionsInput, moveInstructions, process);
     if (commandValidationResult.isLeft()) {
       final var rejection = commandValidationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -252,8 +266,8 @@ public final class ProcessInstanceModificationModifyProcessor
 
     mapIdInstructions(
         value.getProcessInstanceKey(),
-        value.getMoveInstructions(),
-        value.getTerminateInstructions(),
+        moveInstructions,
+        terminateInstructionsInput,
         activateInstructions,
         terminateInstructions);
 
@@ -444,11 +458,56 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private Either<Rejection, ?> validateCommand(
-      final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
-    final var value = command.getValue();
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions,
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final DeployedProcess process) {
+    return validateTerminateInstructionsInput(terminateInstructions, process)
+        .flatMap(valid -> validateMoveInstructionsInput(moveInstructions, process))
+        .map(valid -> VALID);
+  }
 
+  private Either<Rejection, ?> validateTerminateInstructionsInput(
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions,
+      final DeployedProcess process) {
+    return validateHasTerminateInstructions(terminateInstructions, process)
+        .flatMap(valid -> validateNoDuplicatedTerminateInstructions(terminateInstructions, process))
+        .map(valid -> VALID);
+  }
+
+  private Either<Rejection, ?> validateHasTerminateInstructions(
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions,
+      final DeployedProcess process) {
+    final var noDefinitions =
+        terminateInstructions.stream()
+            .filter(
+                terminateInstruction ->
+                    terminateInstruction.getElementInstanceKey() <= 0
+                        && terminateInstruction.getElementId().isBlank())
+            .map(
+                terminateInstruction ->
+                    "(%s, %s)"
+                        .formatted(
+                            terminateInstruction.getElementInstanceKey(),
+                            terminateInstruction.getElementId()))
+            .toList();
+
+    if (noDefinitions.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TERMINATE_NO_DEFINITIONS,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", noDefinitions));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateNoDuplicatedTerminateInstructions(
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions,
+      final DeployedProcess process) {
     final var duplicateDefinitions =
-        value.getTerminateInstructions().stream()
+        terminateInstructions.stream()
             .filter(
                 terminateInstruction ->
                     terminateInstruction.getElementInstanceKey() > 0
@@ -470,6 +529,68 @@ public final class ProcessInstanceModificationModifyProcessor
             ERROR_MESSAGE_TERMINATE_MULTIPLE_DEFINITIONS,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", duplicateDefinitions));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateMoveInstructionsInput(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final DeployedProcess process) {
+    return validateHasMoveInstructions(moveInstructions, process)
+        .flatMap(valid -> validateNoDuplicatedMoveInstructions(moveInstructions, process))
+        .map(valid -> VALID);
+  }
+
+  private Either<Rejection, ?> validateHasMoveInstructions(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final DeployedProcess process) {
+    final var noDefinitions =
+        moveInstructions.stream()
+            .filter(
+                moveInstruction ->
+                    moveInstruction.getSourceElementId().isBlank()
+                        || moveInstruction.getTargetElementId().isBlank())
+            .map(
+                moveInstruction ->
+                    "(%s, %s)"
+                        .formatted(
+                            moveInstruction.getSourceElementId(),
+                            moveInstruction.getTargetElementId()))
+            .toList();
+
+    if (noDefinitions.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_MOVE_NO_DEFINITIONS,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", noDefinitions));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateNoDuplicatedMoveInstructions(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final DeployedProcess process) {
+    final var duplicateSourceIds =
+        moveInstructions.stream()
+            .map(ProcessInstanceModificationMoveInstructionValue::getSourceElementId)
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+            .entrySet()
+            .stream()
+            .filter(entry -> entry.getValue() > 1)
+            .map(Map.Entry::getKey)
+            .toList();
+
+    if (duplicateSourceIds.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_MOVE_MULTIPLE_DEFINITIONS,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", duplicateSourceIds));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 

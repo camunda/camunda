@@ -153,7 +153,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     return this;
   }
 
-  /** Returns true if this record has activate instructions, otherwise false. */
+  /** Returns true if this record has move instructions, otherwise false. */
   @JsonIgnore
   public boolean hasMoveInstructions() {
     return !moveInstructionsProperty.isEmpty();
