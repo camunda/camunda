@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscript
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.HistoryDeletionTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -86,7 +87,8 @@ public class IndexDescriptors {
                 new MessageTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
-                new AuditLogTemplate(indexPrefix, isElasticsearch))
+                new AuditLogTemplate(indexPrefix, isElasticsearch),
+                new HistoryDeletionTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

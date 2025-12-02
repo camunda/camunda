@@ -40,6 +40,7 @@ import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscript
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.HistoryDeletionTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -141,6 +142,8 @@ public class BackupPriorityConfiguration {
             new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
             // AUDIT LOG
             new AuditLogTemplate(indexPrefix, isElasticsearch),
+            // HISTORY DELETION
+            new HistoryDeletionTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
             new ClusterVariableIndex(indexPrefix, isElasticsearch));
 
