@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
-import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -27,7 +26,6 @@ import io.camunda.zeebe.util.Either.Left;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ExcludeAuthorizationCheck
 public class ClusterVariableCreateProcessor
     implements DistributedTypedRecordProcessor<ClusterVariableRecord> {
 
