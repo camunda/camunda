@@ -126,7 +126,8 @@ For testing, there are two classes you need to consider: `IdentitySetupInitializ
 #### How to extend the permissions for a default role?
 
 To extend the permissions for a default role, you need to modify the `PlatformDefaultEntities` class.
-Locate the `setupYourRole` method and modify existing permissions list or add/remove Authorization for the role.<br>
+Locate the `setupYourRole` method and modify existing permissions list or add/remove Authorization for the role.
+
 For testing, you need to consider two classes: `IdentitySetupInitializeDefaultsTest` and `DefaultRolesIT`.
 * In `IdentitySetupInitializeDefaultsTest`, you should modify the test case to verify that the permission changes are correctly applied during the setup process.
 * You also need to modify or add test case to `DefaultRolesIT` to verify if the expected behavior is implemented.

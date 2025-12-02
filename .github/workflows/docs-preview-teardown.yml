@@ -1,0 +1,81 @@
+# type: Documentation Preview Cleanup
+# owner: @camunda/team-infrastructure-experience
+---
+name: Documentation Preview Teardown
+
+on:
+  pull_request:
+    types:
+      - unlabeled
+      - closed
+
+# Limit workflow to 1 concurrent run per PR
+concurrency:
+  cancel-in-progress: false
+  group: docs-preview-teardown-${{ github.event.pull_request.number }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  teardown-preview:
+    # check whether it's unlabeled from deploy-docs-preview || check whether the PR was closed / merged and had the deploy-docs-preview label
+    if: github.event.label.name == 'deploy-docs-preview' || (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'deploy-docs-preview'))
+    name: Teardown Documentation Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Remove preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          action: remove
+
+      - name: Update preview comment
+        if: github.event.action == 'closed'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            
+            // Find existing preview comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            
+            const existingComment = comments.data.find(comment => 
+              comment.body.includes('📖 Documentation Preview')
+            );
+            
+            if (existingComment) {
+              const commentBody = `## 📖 Documentation Preview
+              
+              ~~Preview has been removed as this PR is now closed.~~`;
+              
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: commentBody
+              });
+            }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

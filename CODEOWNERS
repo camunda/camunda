@@ -38,6 +38,9 @@
 /.github/workflows/check-pr-conflicts.yml                @camunda/monorepo-devops-team
 /.github/workflows/ci*                                   @camunda/monorepo-devops-team
 /.github/workflows/commitlint.yml                        @camunda/monorepo-devops-team
+/.github/workflows/docs-build-deploy.yml                 @camunda/monorepo-devops-team
+/.github/workflows/docs-preview.yml                      @camunda/monorepo-devops-team
+/.github/workflows/docs-preview-teardown.yml             @camunda/monorepo-devops-team
 /.github/workflows/dispatch-release*                     @camunda/monorepo-devops-team
 /.github/workflows/issue-add-support-label.yml           @camunda/monorepo-devops-team
 /.github/workflows/labeler.yml                           @camunda/monorepo-devops-team
