@@ -194,7 +194,6 @@ class VersionCompatibilityMatrixTest {
     final var discoveredVersions = liveMatrix.discoverVersions().map(VersionInfo::version);
     final var legacyDiscoveredVersions =
         new LegacyVersionProvider().discoverVersions().map(VersionInfo::version);
-    ;
 
     assertThat(discoveredVersions)
         .containsExactlyInAnyOrderElementsOf(legacyDiscoveredVersions.toList());

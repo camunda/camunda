@@ -32,14 +32,9 @@ This approach pairs perfectly with GitHub Actions caching - the application crea
 ```
 VersionCompatibilityMatrix
   └── CachedVersionProvider (decorator)
-       └── GithubVersionProvider (delegate)
+       └── AdvancedGithubVersionProvider (decorator)
+            └── GithubVersionProvider (delegate)
 ```
-
-The `CachedVersionProvider`:
-- Intercepts version discovery calls
-- Returns cached data when available
-- Delegates to `GithubVersionProvider` only on cache miss
-- Automatically saves fetched data for future use
 
 ## Cache Location
 
