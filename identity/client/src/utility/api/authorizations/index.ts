@@ -103,8 +103,8 @@ export type GeneralAuthorization = BaseAuthorization & {
 export type Authorization = TaskAuthorization | GeneralAuthorization;
 
 export type NewAuthorization =
-    | Omit<TaskAuthorization, "authorizationKey">
-    | Omit<GeneralAuthorization, "authorizationKey">;
+  | Omit<TaskAuthorization, "authorizationKey">
+  | Omit<GeneralAuthorization, "authorizationKey">;
 
 export enum PatchAuthorizationAction {
   ADD = "ADD",
@@ -118,12 +118,12 @@ export type searchAuthorizationsParams = {
 };
 
 export const searchAuthorization: ApiDefinition<
-    SearchResponse<Authorization>,
-    searchAuthorizationsParams
+  SearchResponse<Authorization>,
+  searchAuthorizationsParams
 > = (param) => apiPost(`${AUTHORIZATIONS_ENDPOINT}/search`, param);
 
 export const createAuthorization: ApiDefinition<undefined, NewAuthorization> = (
-    authorization,
+  authorization,
 ) => apiPost(AUTHORIZATIONS_ENDPOINT, authorization);
 
 export type DeleteAuthorizationParams = {
@@ -131,7 +131,7 @@ export type DeleteAuthorizationParams = {
 };
 
 export const deleteAuthorization: ApiDefinition<
-    undefined,
-    DeleteAuthorizationParams
-> = ({authorizationKey}) =>
-    apiDelete(`${AUTHORIZATIONS_ENDPOINT}/${authorizationKey}`);
+  undefined,
+  DeleteAuthorizationParams
+> = ({ authorizationKey }) =>
+  apiDelete(`${AUTHORIZATIONS_ENDPOINT}/${authorizationKey}`);
