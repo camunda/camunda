@@ -507,6 +507,12 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceModificationClient moveElements(
+        final ProcessInstanceModificationMoveInstruction moveInstruction) {
+      record.addMoveInstruction(moveInstruction);
+      return this;
+    }
+
     public ProcessInstanceModificationClient forAuthorizedTenants(
         final String... authorizedTenants) {
       this.authorizedTenants = authorizedTenants;
