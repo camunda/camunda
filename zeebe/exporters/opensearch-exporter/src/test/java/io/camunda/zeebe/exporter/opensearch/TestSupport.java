@@ -78,6 +78,7 @@ final class TestSupport {
       case RUNTIME_INSTRUCTION -> config.runtimeInstruction = value;
       case CLUSTER_VARIABLE -> config.clusterVariable = value;
       case CONDITIONAL_SUBSCRIPTION -> config.conditionalSubscription = value;
+      case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -134,7 +135,8 @@ final class TestSupport {
             ValueType.USAGE_METRIC,
             ValueType.MULTI_INSTANCE,
             ValueType.HISTORY_DELETION,
-            ValueType.CONDITIONAL_SUBSCRIPTION);
+            ValueType.CONDITIONAL_SUBSCRIPTION,
+            ValueType.CONDITIONAL_EVALUATION);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -147,6 +148,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.RUNTIME_INSTRUCTION, RuntimeInstructionRecord.class);
     registry.put(ValueType.HISTORY_DELETION, HistoryDeletionRecord.class);
     registry.put(ValueType.CONDITIONAL_SUBSCRIPTION, ConditionalSubscriptionRecord.class);
+    registry.put(ValueType.CONDITIONAL_EVALUATION, ConditionalEvaluationRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

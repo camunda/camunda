@@ -168,6 +168,9 @@ public class OpensearchExporterSchemaManager {
       if (index.conditionalSubscription) {
         createValueIndexTemplate(ValueType.CONDITIONAL_SUBSCRIPTION, version);
       }
+      if (index.conditionalEvaluation) {
+        createValueIndexTemplate(ValueType.CONDITIONAL_EVALUATION, version);
+      }
     }
 
     indexTemplatesCreated.add(version);
