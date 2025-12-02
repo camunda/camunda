@@ -33,6 +33,7 @@ import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.GroupEntityAddedHandler;
 import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
+import io.camunda.exporter.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
@@ -103,6 +104,7 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.HistoryDeletionTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -328,7 +330,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
-                    .getFullQualifiedName())));
+                    .getFullQualifiedName()),
+            new HistoryDeletionDeletedHandler(
+                indexDescriptors.get(HistoryDeletionTemplate.class).getFullQualifiedName())));
     addAuditLogHandlers(exportHandlers);
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
