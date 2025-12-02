@@ -10,12 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     implements ProcessInstanceModificationRecordValue {
 
+  public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   // Static StringValue keys to avoid memory waste
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue TERMINATE_INSTRUCTIONS_KEY =
@@ -31,9 +34,11 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new StringValue("activateInstructions");
   private static final StringValue ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY =
       new StringValue("activatedElementInstanceKeys");
-
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final StringProperty tenantIdProp =
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
   private final ArrayProperty<ProcessInstanceModificationTerminateInstruction>
       terminateInstructionsProperty =
           new ArrayProperty<>(
@@ -51,7 +56,8 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
-        .declareProperty(activatedElementInstanceKeys);
+        .declareProperty(activatedElementInstanceKeys)
+        .declareProperty(tenantIdProp);
   }
 
   /**
@@ -159,7 +165,11 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13288): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessInstanceModificationRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

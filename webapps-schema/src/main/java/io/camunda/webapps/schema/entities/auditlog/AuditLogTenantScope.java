@@ -7,19 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.auditlog;
 
-public enum AuditLogEntityType {
-  UNKNOWN,
-  PROCESS_INSTANCE,
-  VARIABLE,
-  INCIDENT,
-  USER_TASK,
-  DECISION,
-  BATCH,
-  USER,
-  MAPPING_RULE,
-  ROLE,
-  GROUP,
-  TENANT,
-  AUTHORIZATION,
-  RESOURCE
+public enum AuditLogTenantScope {
+  GLOBAL,
+  TENANT;
 }
