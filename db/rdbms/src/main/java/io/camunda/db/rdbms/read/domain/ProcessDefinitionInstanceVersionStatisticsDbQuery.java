@@ -11,14 +11,14 @@ import static java.util.Collections.emptyList;
 
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessDefinitionInstanceVersionStatisticsDbQuery(
-    ProcessInstanceFilter filter,
+    ProcessDefinitionInstanceVersionStatisticsFilter filter,
     List<String> authorizedResourceIds,
     List<String> authorizedTenantIds,
     DbQuerySorting<ProcessDefinitionInstanceVersionStatisticsEntity> sort,
@@ -33,23 +33,26 @@ public record ProcessDefinitionInstanceVersionStatisticsDbQuery(
   public static final class Builder
       implements ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsDbQuery> {
 
-    private static final ProcessInstanceFilter EMPTY_FILTER =
-        FilterBuilders.processInstance().build();
+    private static final ProcessDefinitionInstanceVersionStatisticsFilter EMPTY_FILTER =
+        FilterBuilders.processDefinitionInstanceVersionStatistics().build();
 
-    private ProcessInstanceFilter filter;
+    private ProcessDefinitionInstanceVersionStatisticsFilter filter;
     private List<String> authorizedResourceIds = emptyList();
     private List<String> authorizedTenantIds = emptyList();
     private DbQuerySorting<ProcessDefinitionInstanceVersionStatisticsEntity> sort;
     private DbQueryPage page;
 
-    public Builder filter(final ProcessInstanceFilter value) {
+    public Builder filter(final ProcessDefinitionInstanceVersionStatisticsFilter value) {
       filter = value;
       return this;
     }
 
     public Builder filter(
-        final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
-      return filter(FilterBuilders.processInstance(fn));
+        final Function<
+                ProcessDefinitionInstanceVersionStatisticsFilter.Builder,
+                ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsFilter>>
+            fn) {
+      return filter(FilterBuilders.processDefinitionInstanceVersionStatistics(fn));
     }
 
     public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
