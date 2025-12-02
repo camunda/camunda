@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.keygenerator.KeyGeneratorResetRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -3024,6 +3025,37 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "time": 0
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// KeyGeneratorResetRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "KeyGeneratorResetRecord (all properties)",
+        (Supplier<KeyGeneratorResetRecord>)
+            () -> new KeyGeneratorResetRecord().setPartitionId(1).setNewKeyValue(2251799813685250L),
+        """
+                {
+                  "partitionId": 1,
+                  "newKeyValue": 2251799813685250
+                }
+                """
+      },
+      {
+        "KeyGeneratorResetRecord (empty)",
+        (Supplier<KeyGeneratorResetRecord>)
+            () -> {
+              final var record = new KeyGeneratorResetRecord();
+              record.reset();
+              return record;
+            },
+        """
+                {
+                  "partitionId": 0,
+                  "newKeyValue": 0
                 }
                 """
       },

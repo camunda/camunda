@@ -23,6 +23,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION
 import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.IDENTITY_SETUP;
+import static io.camunda.zeebe.protocol.record.ValueType.KEY_GENERATOR_RESET;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MULTI_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
@@ -98,6 +99,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.KeyGeneratorResetRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
@@ -216,6 +218,7 @@ public class CompactRecordLogger {
           entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
           entry(CONDITIONAL_SUBSCRIPTION.name(), "COND_SUB"),
           entry(CONDITIONAL_EVALUATION.name(), "COND_EVAL"),
+          entry(KEY_GENERATOR_RESET.name(), "KEY_RST"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"));
 
@@ -309,6 +312,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
     valueLoggers.put(ValueType.FORM, this::summarizeForm);
     valueLoggers.put(ValueType.HISTORY_DELETION, this::summarizeHistoryDeletion);
+    valueLoggers.put(KEY_GENERATOR_RESET, this::summarizeKeyGeneratorReset);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1749,6 +1753,12 @@ public class CompactRecordLogger {
     final var value = (CheckpointRecordValue) record.getValue();
     return "checkpoint %s @ #%s"
         .formatted(value.getCheckpointId(), formatPosition(value.getCheckpointPosition()));
+  }
+
+  private String summarizeKeyGeneratorReset(final Record<?> record) {
+    final var value = (KeyGeneratorResetRecordValue) record.getValue();
+    return "Reset keygen p%d @ %s"
+        .formatted(value.getPartitionId(), shortenKey(value.getNewKeyValue()));
   }
 
   private String summarizeHistoryDeletion(final Record<?> record) {
