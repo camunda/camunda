@@ -11,7 +11,6 @@ import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.it.schema.strategy.ElasticsearchBackendStrategy;
 import io.camunda.it.schema.strategy.OpenSearchBackendStrategy;

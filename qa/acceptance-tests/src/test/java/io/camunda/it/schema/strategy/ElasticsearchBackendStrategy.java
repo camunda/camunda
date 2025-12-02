@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARC
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
-import io.camunda.application.Profile;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;

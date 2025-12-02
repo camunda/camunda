@@ -9,7 +9,6 @@ package io.camunda.it.schema.strategy;
 
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
 
-import io.camunda.application.Profile;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
