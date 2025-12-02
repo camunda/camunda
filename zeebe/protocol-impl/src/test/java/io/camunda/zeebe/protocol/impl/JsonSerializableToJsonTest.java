@@ -2662,7 +2662,8 @@ final class JsonSerializableToJsonTest {
                     .setElementId("activity")
                     .setElementInstanceKey(5678)
                     .setPriority(80)
-                    .setDeniedReason("Reason to deny lifecycle transition"),
+                    .setDeniedReason("Reason to deny lifecycle transition")
+                    .setListenersConfigKey(42L),
         """
                 {
                   "bpmnProcessId": "test-process",
@@ -2692,7 +2693,7 @@ final class JsonSerializableToJsonTest {
                   "priority": 80,
                   "tags": [],
                   "deniedReason": "Reason to deny lifecycle transition",
-                  "listenersConfigKey": -1
+                  "listenersConfigKey": 42
                 }
                 """
       },
