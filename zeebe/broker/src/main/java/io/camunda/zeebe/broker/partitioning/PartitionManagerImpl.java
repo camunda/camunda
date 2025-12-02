@@ -666,7 +666,7 @@ public final class PartitionManagerImpl
     }
   }
 
-  private static SharedRocksDbResources getSharedCache(final BrokerCfg brokerCfg) {
+  static SharedRocksDbResources getSharedCache(final BrokerCfg brokerCfg) {
     final long totalMemorySize =
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
     // Heap by default is 25% of the RAM, and off-heap (unless configured otherwise) is the same.
@@ -680,10 +680,15 @@ public final class PartitionManagerImpl
                   * brokerCfg.getCluster().getPartitionsCount();
           case BROKER -> brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes();
           case null ->
+              // default to PARTITION strategy for backward compatibility
               brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
                   * brokerCfg.getCluster().getPartitionsCount();
         };
 
+    LOGGER.debug(
+        "Allocating {} bytes for RocksDB, with memory allocation strategy: {}",
+        blockCacheBytes,
+        brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
     validateRocksDbMemory(brokerCfg, blockCacheBytes, maxRocksDbMem);
 
     // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
@@ -694,15 +699,16 @@ public final class PartitionManagerImpl
     return new SharedRocksDbResources(sharedCache, sharedWbm);
   }
 
-  static void validateRocksDbMemory(
+  private static void validateRocksDbMemory(
       final BrokerCfg brokerCfg, final long blockCacheBytes, final long maxRocksDbMem) {
     if (blockCacheBytes > maxRocksDbMem) {
       throw new IllegalArgumentException(
           String.format(
               "Expected the allocated memory for RocksDB to be bellow or "
-                  + "equal half of ram memory, but was %s %%.",
-              (blockCacheBytes / (2 * maxRocksDbMem) * 100)));
+                  + "equal half of ram memory, but was %.2f %%.",
+              ((double) blockCacheBytes / (2 * maxRocksDbMem) * 100)));
     }
+
     if (blockCacheBytes / brokerCfg.getCluster().getPartitionsCount()
         < MINIMUM_PARTITION_MEMORY_LIMIT) {
       throw new IllegalArgumentException(
