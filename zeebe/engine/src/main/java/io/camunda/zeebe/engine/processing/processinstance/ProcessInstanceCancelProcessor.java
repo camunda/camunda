@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -48,6 +49,7 @@ public final class ProcessInstanceCancelProcessor
   private final AsyncRequestState asyncRequestState;
   private final TypedResponseWriter responseWriter;
   private final TypedCommandWriter commandWriter;
+  private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -61,6 +63,7 @@ public final class ProcessInstanceCancelProcessor
     asyncRequestState = processingState.getAsyncRequestState();
     responseWriter = writers.response();
     commandWriter = writers.command();
+    stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
@@ -77,6 +80,8 @@ public final class ProcessInstanceCancelProcessor
     asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
 
     final ProcessInstanceRecord value = elementInstance.getValue();
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), ProcessInstanceIntent.CANCELING, value, command.getAuthorizations());
     commandWriter.appendFollowUpCommand(
         command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
     responseWriter.writeEventOnCommand(
