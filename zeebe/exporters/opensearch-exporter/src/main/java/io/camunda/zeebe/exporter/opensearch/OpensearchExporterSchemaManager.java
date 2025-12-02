@@ -171,6 +171,9 @@ public class OpensearchExporterSchemaManager {
       if (index.conditionalEvaluation) {
         createValueIndexTemplate(ValueType.CONDITIONAL_EVALUATION, version);
       }
+      if (index.globalListeners) {
+        createValueIndexTemplate(ValueType.GLOBAL_LISTENERS, version);
+      }
     }
 
     indexTemplatesCreated.add(version);
