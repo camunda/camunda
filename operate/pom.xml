@@ -30,7 +30,6 @@
     <maven.compiler.source>21</maven.compiler.source>
 
     <skipSurefire>false</skipSurefire>
-    <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
     <excludeUnitTestNames>**/*IT.java</excludeUnitTestNames>
@@ -59,20 +58,6 @@
               </configuration>
             </execution>
           </executions>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <skip>${skipSurefire}</skip>
-            <forkCount>${testForkCount}</forkCount>
-            <reuseForks>true</reuseForks>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <systemPropertyVariables>
-              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            </systemPropertyVariables>
-          </configuration>
         </plugin>
 
         <plugin>
@@ -154,6 +139,21 @@
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-failsafe-plugin</artifactId>
+              <configuration>
+                <environmentVariables>
+                  <CAMUNDA_OPERATE_IMPORTERENABLED>true</CAMUNDA_OPERATE_IMPORTERENABLED>
+                </environmentVariables>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
     </profile>
 
     <profile>
