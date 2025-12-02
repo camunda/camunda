@@ -9,10 +9,9 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.Map;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -45,12 +44,18 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
   }
 
   @Override
-  protected void setSecondaryStorageConfig(final Camunda camunda, final String indexPrefix) {
+  protected void setSecondaryStorageConfig(
+      final TestStandaloneBroker broker, final String indexPrefix) {
     final String dbUrl = "http://host.testcontainers.internal:9200";
 
-    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.opensearch);
-    camunda.getData().getSecondaryStorage().getOpensearch().setUrl(dbUrl);
-    camunda.getData().getSecondaryStorage().getOpensearch().setIndexPrefix(indexPrefix);
+    broker.withAdditionalProperties(
+        Map.of(
+            "camunda.data.secondary-storage.type",
+            "opensearch",
+            "camunda.data.secondary-storage.opensearch.url",
+            dbUrl,
+            "camunda.data.secondary-storage.opensearch.index-prefix",
+            indexPrefix));
   }
 
   @Override

@@ -8,7 +8,6 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.Camunda;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -96,13 +95,12 @@ public abstract class TasklistZeebeExtension
                               "bulk",
                               Map.of("size", 1))));
                 })
-            .withUnifiedConfig(uni -> uni.getCluster().setPartitionCount(2))
+            .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(2))
             .withUnauthenticatedAccess()
             .withAuthorizationsDisabled();
 
-    setSecondaryStorageConfig(app.unifiedConfig(), indexPrefix);
+    setSecondaryStorageConfig(app, indexPrefix);
     getLegacyConfiguration(indexPrefix).forEach(app::withProperty);
-
     zeebeBroker = app.start();
     Testcontainers.exposeHostPorts(getDatabasePort());
 
@@ -119,7 +117,8 @@ public abstract class TasklistZeebeExtension
 
   protected abstract DatabaseType getDatabaseType();
 
-  protected abstract void setSecondaryStorageConfig(Camunda camunda, String indexPrefix);
+  protected abstract void setSecondaryStorageConfig(
+      TestStandaloneBroker broker, String indexPrefix);
 
   protected abstract Map<String, String> getLegacyConfiguration(String indexPrefix);
 

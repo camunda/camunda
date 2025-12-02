@@ -9,7 +9,6 @@ package io.camunda.tasklist.qa.util;
 
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -435,8 +434,6 @@ public class TestContainerUtil {
   // for newer versions
   private void applyConfiguration(
       final GenericContainer<?> tasklistContainer, final TestContext testContext) {
-    final var indexPrefix =
-        testContext.getIndexPrefix() != null ? testContext.getIndexPrefix() : "";
     if (TestUtil.isOpenSearch()) {
       final String osHost = testContext.getInternalOsHost();
       final Integer osPort = testContext.getInternalOsPort();
@@ -454,12 +451,7 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
           // ---
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
-          // Prefix Setup
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort));
     } else {
       final String elsHost = testContext.getInternalElsHost();
       final Integer elsPort = testContext.getInternalElsPort();
@@ -486,12 +478,7 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
-          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com")
-          // Prefix Setup
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
     }
 
     final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
@@ -504,7 +491,7 @@ public class TestContainerUtil {
     if (broker == null) {
       broker =
           new TestStandaloneBroker()
-              .withGatewayEnabled(true)
+              .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
               .withSecurityConfig(
                   cfg -> {
                     cfg.getAuthentication().setUnprotectedApi(true);
@@ -535,6 +522,8 @@ public class TestContainerUtil {
             : "http://%s:%s"
                 .formatted(testContext.getExternalElsHost(), testContext.getExternalElsPort());
     final var type = TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch";
+    final var indexPrefix =
+        testContext.getZeebeIndexPrefix() != null ? testContext.getZeebeIndexPrefix() : "";
 
     zeebeBroker.withExporter(
         CamundaExporter.class.getSimpleName().toLowerCase(),
@@ -549,38 +538,27 @@ public class TestContainerUtil {
                       "type",
                       type,
                       "indexPrefix",
-                      testContext.getIndexPrefix() != null ? testContext.getIndexPrefix() : "",
+                      indexPrefix,
                       "index",
-                      Map.of(
-                          "prefix",
-                          testContext.getIndexPrefix() != null ? testContext.getIndexPrefix() : ""),
+                      Map.of("prefix", indexPrefix),
                       "bulk",
                       Map.of("size", 1)),
                   "history",
                   Map.of("waitPeriodBeforeArchiving", "1s")));
         });
 
-    zeebeBroker.withUnifiedConfig(
-        cfg -> {
-          cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.valueOf(type));
-          if (TestUtil.isOpenSearch()) {
-            cfg.getData().getSecondaryStorage().getOpensearch().setUrl(url);
-            if (testContext.getIndexPrefix() != null) {
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getOpensearch()
-                  .setIndexPrefix(testContext.getIndexPrefix());
-            }
-          } else {
-            cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(url);
-            if (testContext.getIndexPrefix() != null) {
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getElasticsearch()
-                  .setIndexPrefix(testContext.getIndexPrefix());
-            }
-          }
-        });
+    zeebeBroker.withAdditionalProperties(
+        Map.of(
+            "camunda.data.secondary-storage.type",
+            type,
+            "camunda.data.secondary-storage."
+                + (TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch")
+                + ".url",
+            url,
+            "camunda.data.secondary-storage."
+                + (TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch")
+                + ".index-prefix",
+            indexPrefix));
 
     zeebeBroker.withAdditionalProperties(
         Map.of(
