@@ -21,6 +21,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DeleteProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOp
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -130,6 +132,16 @@ public class ProcessInstanceController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaDeleteMapping(path = "/{processInstanceKey}")
+  public CompletableFuture<ResponseEntity<Object>> deleteProcessInstance(
+      @PathVariable("processInstanceKey") final Long processInstanceKey,
+      @RequestBody(required = false) final DeleteProcessInstanceRequest deleteRequest) {
+    // NOOP: The actual implementation will be added in a later issue.
+    // This endpoint is for deleting completed/terminated process instances.
+    return CompletableFuture.completedFuture(ResponseEntity.noContent().build());
   }
 
   @RequiresSecondaryStorage
