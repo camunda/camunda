@@ -88,7 +88,7 @@ public class Azure {
    * runtime error. See more in: <a
    * href="https://learn.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature">...</a>
    */
-  @NestedConfigurationProperty private SasToken sasToken;
+  @NestedConfigurationProperty private SasToken sasToken = new SasToken();
 
   public String getEndpoint() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
