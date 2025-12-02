@@ -78,6 +78,7 @@ public interface Intent {
           MultiInstanceIntent.class,
           RuntimeInstructionIntent.class,
           ClusterVariableIntent.class,
+          ClusterVariableResolverIntent.class,
           HistoryDeletionIntent.class,
           ConditionalSubscriptionIntent.class,
           ConditionalEvaluationIntent.class);
@@ -216,6 +217,8 @@ public interface Intent {
         return ConditionalSubscriptionIntent.from(intent);
       case CONDITIONAL_EVALUATION:
         return ConditionalEvaluationIntent.from(intent);
+      case CLUSTER_VARIABLE_RESOLVER:
+        return ClusterVariableResolverIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -339,6 +342,8 @@ public interface Intent {
         return ConditionalSubscriptionIntent.valueOf(intent);
       case CONDITIONAL_EVALUATION:
         return ConditionalEvaluationIntent.valueOf(intent);
+      case CLUSTER_VARIABLE_RESOLVER:
+        return ClusterVariableResolverIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

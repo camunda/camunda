@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariableresolver.ClusterVariableResolverRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
@@ -4037,6 +4038,45 @@ final class JsonSerializableToJsonTest {
                 "processDefinitionKey":-1,
                 "variables":{},
                 "tenantId":"<default>"
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ClusterVariableResolverRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ClusterVariableResolverRecord",
+        (Supplier<ClusterVariableResolverRecord>)
+            () ->
+                new ClusterVariableResolverRecord()
+                    .setReference("camunda.vars.tenant.MY_KEY")
+                    .setResolvedValue("resolvedValue")
+                    .setTenantId("tenant123"),
+        """
+                {
+                  "reference": "camunda.vars.tenant.MY_KEY",
+                  "resolvedValue": "resolvedValue",
+                  "errorMessage": null,
+                  "tenantId": "tenant123"
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// Empty ClusterVariableResolverRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ClusterVariableResolverRecord",
+        (Supplier<ClusterVariableResolverRecord>) ClusterVariableResolverRecord::new,
+        """
+                {
+                  "reference": "",
+                  "resolvedValue": null,
+                  "errorMessage": null,
+                  "tenantId": ""
                 }
                 """
       },

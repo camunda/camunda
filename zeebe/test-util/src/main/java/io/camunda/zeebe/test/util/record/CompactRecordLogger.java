@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.ASYNC_REQUEST;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.CHECKPOINT;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE_RESOLVER;
 import static io.camunda.zeebe.protocol.record.ValueType.COMMAND_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.COMPENSATION_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.CONDITIONAL_EVALUATION;
@@ -82,6 +83,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableResolverRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
@@ -216,6 +218,7 @@ public class CompactRecordLogger {
           entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
           entry(CONDITIONAL_SUBSCRIPTION.name(), "COND_SUB"),
           entry(CONDITIONAL_EVALUATION.name(), "COND_EVAL"),
+          entry(CLUSTER_VARIABLE_RESOLVER.name(), "CLSTR_VAR_RES"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"));
 
@@ -302,6 +305,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
+    valueLoggers.put(CLUSTER_VARIABLE_RESOLVER, this::summarizeClusterVariableResolver);
     valueLoggers.put(ValueType.CONDITIONAL_SUBSCRIPTION, this::summarizeConditionalSubscription);
     valueLoggers.put(CONDITIONAL_EVALUATION, this::summarizeConditionalEvaluation);
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
@@ -995,6 +999,12 @@ public class CompactRecordLogger {
     result.append(formatVariables(value)).append(formatTenant(value));
 
     return result.toString();
+  }
+
+  private String summarizeClusterVariableResolver(final Record<?> record) {
+    final var value = (ClusterVariableResolverRecordValue) record.getValue();
+    final String result = value.getResolvedValue() != null ? "resolved" : "error";
+    return "%s->%s%s".formatted(value.getReference(), result, formatTenant(value));
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {

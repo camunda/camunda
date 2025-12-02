@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariableresolver.ClusterVariableResolverRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
@@ -73,6 +74,7 @@ public class CommandApiRequestReader implements RequestReader {
     RECORDS_BY_TYPE.put(ValueType.INCIDENT, IncidentRecord::new);
     RECORDS_BY_TYPE.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord::new);
     RECORDS_BY_TYPE.put(ValueType.CLUSTER_VARIABLE, ClusterVariableRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.CLUSTER_VARIABLE_RESOLVER, ClusterVariableResolverRecord::new);
     RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationRecord::new);
     RECORDS_BY_TYPE.put(ValueType.DECISION_EVALUATION, DecisionEvaluationRecord::new);
     RECORDS_BY_TYPE.put(

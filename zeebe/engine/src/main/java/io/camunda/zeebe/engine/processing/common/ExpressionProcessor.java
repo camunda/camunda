@@ -36,7 +36,6 @@ public final class ExpressionProcessor {
   private static final List<ResultType> NULLABLE_DATE_TIME_RESULT_TYPES =
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
-  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> Either.left(null);
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
@@ -422,7 +421,7 @@ public final class ExpressionProcessor {
 
     final EvaluationContext context;
     if (variableScopeKey < 0) {
-      context = EMPTY_EVALUATION_CONTEXT;
+      context = scopedEvaluationContext.tenantScoped(tenantId);
     } else {
       context = scopedEvaluationContext.processScoped(variableScopeKey).tenantScoped(tenantId);
     }

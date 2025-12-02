@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -14,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableResolverIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class ClusterVariableProcessors {
@@ -23,7 +26,9 @@ public class ClusterVariableProcessors {
       final ClusterVariableState clusterVariableState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ExpressionLanguage expressionLanguage,
+      final ExpressionProcessor expressionProcessor) {
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.CREATE,
@@ -34,5 +39,14 @@ public class ClusterVariableProcessors {
         ClusterVariableIntent.DELETE,
         new ClusterVariableDeleteProcessor(
             keyGenerator, writers, authCheckBehavior, distributionBehavior, clusterVariableState));
+
+    final var clusterVariableBehavior =
+        new ClusterVariableBehavior(expressionProcessor, expressionLanguage);
+
+    typedRecordProcessors.onCommand(
+        ValueType.CLUSTER_VARIABLE_RESOLVER,
+        ClusterVariableResolverIntent.RESOLVE,
+        new ClusterVariableResolverProcessor(
+            writers, clusterVariableBehavior, keyGenerator, authCheckBehavior));
   }
 }
