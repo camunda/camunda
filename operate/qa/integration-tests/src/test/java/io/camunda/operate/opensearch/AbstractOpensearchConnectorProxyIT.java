@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
@@ -25,8 +25,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class AbstractOpensearchConnectorProxyIT {
 
   @Container
-  protected static final OpensearchContainer<?> OPENSEARCH_CONTAINER =
-      new OpensearchContainer<>("opensearchproject/opensearch")
+  protected static final OpenSearchContainer<?> OPENSEARCH_CONTAINER =
+      new OpenSearchContainer<>("opensearchproject/opensearch")
           .withEnv(Map.of())
           .withExposedPorts(9200, 9205);
 

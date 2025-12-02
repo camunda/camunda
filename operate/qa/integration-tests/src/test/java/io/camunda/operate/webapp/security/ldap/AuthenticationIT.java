@@ -28,7 +28,8 @@ import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,13 +78,21 @@ import org.testcontainers.containers.GenericContainer;
 @ContextConfiguration(initializers = {AuthenticationIT.Initializer.class})
 public class AuthenticationIT implements AuthenticationTestable {
 
-  @ClassRule
   public static GenericContainer<?> ldapServer =
       // https://github.com/rroemhild/docker-test-openldap
       new GenericContainer<>("rroemhild/test-openldap").withExposedPorts(10389);
-
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private OperateProperties operateProperties;
+
+  @BeforeClass
+  public static void startContainer() {
+    ldapServer.start();
+  }
+
+  @AfterClass
+  public static void stopContainer() {
+    ldapServer.stop();
+  }
 
   @Override
   public TestRestTemplate getTestRestTemplate() {
@@ -128,7 +137,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   static class Initializer
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-    public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
+    @Override
+    public void initialize(final ConfigurableApplicationContext configurableApplicationContext) {
       TestPropertyValues.of(
               "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
               String.format(
