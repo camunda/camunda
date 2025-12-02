@@ -16,7 +16,7 @@ env-h2-up:
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,identity,consolidated-auth
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,identity
 
 .PHONY: env-up
 env-up:
@@ -45,7 +45,7 @@ env-up:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth
+	  -Dspring.profiles.active=operate,broker,dev,dev-data
 
 env-os-up:
 	docker compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
@@ -126,7 +126,7 @@ env-identity-up:
   CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth,identity
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,identity
 
 
 .PHONY: env-down
@@ -181,4 +181,4 @@ start-e2e:
 	MANAGEMENT_SERVER_PORT=9601 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,consolidated-auth
+	  -Dspring.profiles.active=operate,broker

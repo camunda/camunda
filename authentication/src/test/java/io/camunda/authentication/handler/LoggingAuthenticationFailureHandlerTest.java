@@ -33,7 +33,6 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -64,7 +63,6 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       // essential for debugging the flow
       "logging.level.org.springframework.security=TRACE",
     })
-@ActiveProfiles("consolidated-auth")
 @ExtendWith(OutputCaptureExtension.class)
 class LoggingAuthenticationFailureHandlerTest {
   @RegisterExtension

@@ -141,7 +141,6 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
   @Override
   public void configureCamundaApplication(final TestCamundaApplication camunda) {
     camunda
-        .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
         .withProperty(CREATE_SCHEMA_PROPERTY, "false")
         .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
         .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")

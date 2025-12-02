@@ -46,8 +46,7 @@ public class CsrfTokenIT {
                 final var csrfConfig = new CsrfConfiguration();
                 csrfConfig.setEnabled(true);
                 sc.setCsrf(csrfConfig);
-              })
-          .withAdditionalProfile("consolidated-auth");
+              });
 
   // Test endpoints
   private static final List<String> PROTECTED_ENDPOINTS =

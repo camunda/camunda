@@ -39,7 +39,6 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -216,7 +215,6 @@ public class SessionAuthenticationRefreshTest {
   @SpringBootTest(classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class})
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc
-  @ActiveProfiles({"consolidated-auth"})
   class BasicAuthTest extends BaseTest {
 
     // Webapp's endpoints are accessible without authentication only in basic auth mode
@@ -243,7 +241,6 @@ public class SessionAuthenticationRefreshTest {
       properties = {"camunda.security.authentication.method=oidc"})
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc
-  @ActiveProfiles("consolidated-auth")
   class OidcAuthTest extends BaseTest {
     @MockitoBean private MembershipService membershipService;
     @MockitoBean private ClientRegistrationRepository clientRegistrationRepository;

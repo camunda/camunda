@@ -52,7 +52,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private static final String READY_ENDPOINT = "/actuator/health/status";
   private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
 
-  private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth,security";
+  private static final String ACTIVE_SPRING_PROFILES = "broker,security";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
 
   private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";

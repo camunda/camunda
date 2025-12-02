@@ -27,7 +27,7 @@ docker compose -f operate/docker-compose.yml up -d elasticsearch
 3. Run the application with initial setup variables:
 
 ```
-SPRING_PROFILES_ACTIVE=consolidated-auth,broker,identity \
+SPRING_PROFILES_ACTIVE=broker,identity \
 CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false \
 CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC \
 ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
@@ -66,6 +66,6 @@ CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
 If you would like to enable operate and tasklist, you can add their profile to the `SPRING_PROFILES_ACTIVE` variable like this:
 
 ```
-SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity
+SPRING_PROFILES_ACTIVE=operate,tasklist,broker,identity
 ```
 

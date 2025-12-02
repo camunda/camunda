@@ -246,7 +246,7 @@ You can run the Camunda distribution via IntelliJ for development purposes.
    and start a new Spring Boot run configuration with the following settings:
    - **Module**: `camunda-zeebe`
    - **Main class**: `io.camunda.application.StandaloneCamunda`
-   - **Active profiles**: `identity,tasklist,operate,broker,consolidated-auth,dev,insecure`
+   - **Active profiles**: `identity,tasklist,operate,broker,dev,insecure`
    - **Environment variables**:
 
      ```

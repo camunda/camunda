@@ -54,7 +54,6 @@ import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -88,7 +87,6 @@ import org.springframework.web.util.UriComponentsBuilder;
       // essential for debugging the flow
       //      "logging.level.org.springframework.security=TRACE",
     })
-@ActiveProfiles("consolidated-auth")
 class OidcClientSecretBasicKeycloakTest {
 
   @RegisterExtension

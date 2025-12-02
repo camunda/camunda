@@ -466,7 +466,6 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
           // ---
-          .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")

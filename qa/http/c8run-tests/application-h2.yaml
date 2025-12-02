@@ -40,4 +40,4 @@ zeebe:
 
 spring:
   profiles:
-    active: "broker,consolidated-auth,identity,tasklist"
+    active: "broker,identity,tasklist"

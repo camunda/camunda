@@ -54,8 +54,7 @@ public class BasicAuthLogoutIT {
                 final var csrfConfig = new CsrfConfiguration();
                 csrfConfig.setEnabled(false);
                 sc.setCsrf(csrfConfig);
-              })
-          .withAdditionalProfile("consolidated-auth");
+              });
 
   @Test
   public void logout() throws IOException, InterruptedException {

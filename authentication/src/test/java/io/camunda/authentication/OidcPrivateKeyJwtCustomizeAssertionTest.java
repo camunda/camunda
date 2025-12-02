@@ -44,7 +44,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -85,7 +84,6 @@ import org.springframework.web.util.UriComponentsBuilder;
       // essential for debugging the flow
       //      "logging.level.org.springframework.security=TRACE",
     })
-@ActiveProfiles("consolidated-auth")
 class OidcPrivateKeyJwtCustomizeAssertionTest {
 
   @RegisterExtension
