@@ -87,6 +87,9 @@
             },
             "deniedReason": {
               "type": "text"
+            },
+            "listenersConfigKey": {
+              "type": "long"
             }
           }
         }
