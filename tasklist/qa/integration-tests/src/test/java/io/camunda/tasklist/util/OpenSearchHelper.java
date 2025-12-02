@@ -46,6 +46,8 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+
   @Autowired private VariableTemplate variableIndex;
 
   @Autowired
@@ -138,7 +140,9 @@ public class OpenSearchHelper implements NoSqlHelper {
     try {
       final SearchResponse<SnapshotTaskVariableEntity> response =
           osClient.search(
-              s -> s.query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
+              s ->
+                  s.index(taskVariableTemplate.getAlias())
+                      .query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
               SnapshotTaskVariableEntity.class);
       return response.hits().total().value() > 0;
     } catch (final IOException e) {
