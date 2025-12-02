@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
@@ -65,12 +66,14 @@ final class IncidentUpdateTaskTest {
   private final ExporterMetadata metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
   private final IncidentNotifier incidentNotifier = Mockito.spy(createIncidentNotifier());
   private final TestRepository repository = Mockito.spy(new TestRepository());
+  private final CamundaExporterMetrics metrics = Mockito.mock(CamundaExporterMetrics.class);
 
   @Test
   void shouldReturnNothingDoneOnEmptyPendingBatch() {
     // given
     final var task =
-        new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER);
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
 
     // when
     final var result = task.execute();
@@ -84,7 +87,8 @@ final class IncidentUpdateTaskTest {
   void shouldUseMetadataPositionToFetchPendingBatch() {
     // given
     final var task =
-        new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER);
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
     metadata.setLastIncidentUpdatePosition(5);
 
     // when
@@ -98,7 +102,8 @@ final class IncidentUpdateTaskTest {
   void shouldUseBatchSizeToFetchPendingBatch() {
     // given
     final var task =
-        new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER);
+        new IncidentUpdateTask(
+            metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
 
     // when
     task.execute().toCompletableFuture().join();
@@ -271,7 +276,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER);
+              metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
 
       // when
       task.execute().toCompletableFuture().join();
@@ -285,7 +290,7 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER);
+              metadata, repository, false, 10, EXECUTOR, incidentNotifier, metrics, LOGGER);
 
       // when
       final var result = task.execute();
@@ -302,7 +307,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
       repository.incidents = CompletableFuture.completedFuture(Map.of());
 
       // when
@@ -322,7 +335,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
       repository.processInstances = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -331,6 +352,7 @@ final class IncidentUpdateTaskTest {
       // then
       assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(1);
 
+      verify(metrics).recordIncidentUpdatesSkipped(1);
       verify(repository, never()).bulkUpdate(any());
       verify(incidentNotifier, never()).notifyAsync(any());
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
@@ -341,7 +363,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
       repository.flowNodesInListView = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -361,7 +391,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
       repository.flowNodeInstances = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -381,7 +419,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
 
       // when
       final var result = task.execute();
@@ -410,6 +456,7 @@ final class IncidentUpdateTaskTest {
               .setProcessInstanceKey(3L)
               .setState(IncidentState.PENDING);
       verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
     }
 
     @Test
@@ -417,7 +464,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
 
       // when
       final var result = task.execute();
@@ -447,6 +502,7 @@ final class IncidentUpdateTaskTest {
               .setProcessInstanceKey(3L)
               .setState(IncidentState.PENDING);
       verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
     }
 
     @Test
@@ -454,7 +510,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
 
       // when
       final var result = task.execute();
@@ -480,6 +544,7 @@ final class IncidentUpdateTaskTest {
               .setProcessInstanceKey(3L)
               .setState(IncidentState.PENDING);
       verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
     }
 
     @Test
@@ -487,7 +552,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
       repository.activeIncidentsByTreePaths =
           CompletableFuture.completedFuture(
@@ -534,6 +607,7 @@ final class IncidentUpdateTaskTest {
               new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
 
       verify(incidentNotifier, times(0)).notifyAsync(any());
+      verify(metrics).recordIncidentUpdatesProcessed(1);
     }
 
     @Test
@@ -542,7 +616,15 @@ final class IncidentUpdateTaskTest {
       // process instance
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
       repository.activeIncidentsByTreePaths =
           CompletableFuture.completedFuture(
@@ -587,6 +669,7 @@ final class IncidentUpdateTaskTest {
           .containsEntry(
               "4",
               new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
+      verify(metrics).recordIncidentUpdatesProcessed(1);
     }
 
     @Test
@@ -594,7 +677,15 @@ final class IncidentUpdateTaskTest {
       // given
       final var task =
           new IncidentUpdateTask(
-              metadata, repository, false, 10, EXECUTOR, incidentNotifier, LOGGER, Duration.ZERO);
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
       repository.processInstances =
           CompletableFuture.completedFuture(List.of(parentProcessInstance));
       repository.wasProcessInstanceDeleted = CompletableFuture.completedFuture(true);
