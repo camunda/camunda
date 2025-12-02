@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.IdentitySetupInitializer;
@@ -33,6 +34,7 @@ public final class IdentitySetupProcessors {
             new IdentitySetupInitializer(
                 securityConfig,
                 config.isEnableIdentitySetup(),
-                new AuthorizationConfigurer(securityConfig.getCompiledIdValidationPattern())));
+                new AuthorizationConfigurer(
+                    new AuthorizationValidator(securityConfig.getCompiledIdValidationPattern()))));
   }
 }

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.identity.initialize.validate;
+package io.camunda.security.validation;
 
 /**
  * This class is temporary duplicated from gateway-rest and will be refactored in the follow-up

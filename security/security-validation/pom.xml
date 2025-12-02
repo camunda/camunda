@@ -10,21 +10,31 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
-    <version>8.8.9-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
+    <artifactId>camunda-security</artifactId>
+    <version>8.9.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>camunda-security</artifactId>
-  <packaging>pom</packaging>
+  <artifactId>camunda-security-validation</artifactId>
 
-  <name>Camunda Security Parent</name>
+  <dependencies>
 
-  <modules>
-    <module>security-core</module>
-    <module>security-services</module>
-    <module>security-protocol</module>
-    <module>security-validation</module>
-  </modules>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
 
 </project>

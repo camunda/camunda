@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.identity.initialize.validate;
+package io.camunda.security.validation;
 
-import static io.camunda.zeebe.engine.processing.identity.initialize.validate.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.engine.processing.identity.initialize.validate.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
-import static io.camunda.zeebe.engine.processing.identity.initialize.validate.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
+import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
+import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 
 import java.util.List;
 import java.util.function.Function;

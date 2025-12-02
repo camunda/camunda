@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
@@ -448,7 +449,8 @@ public final class SystemContext {
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
     final AuthorizationConfigurer authorizationConfigurer =
-        new AuthorizationConfigurer(securityConfiguration.getCompiledIdValidationPattern());
+        new AuthorizationConfigurer(
+            new AuthorizationValidator(securityConfiguration.getCompiledIdValidationPattern()));
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
         authorizationConfigurer.configureEntities(

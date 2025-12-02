@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredAuthorization;
+import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -37,12 +38,14 @@ class AuthorizationConfigurerTest {
           AuthorizationResourceType.RESOURCE,
           WILDCARD_CHAR,
           Set.of(PermissionType.READ));
+  public static final AuthorizationValidator VALIDATOR =
+      new AuthorizationValidator(Pattern.compile(".*"));
 
   @Test
-  public void shouldValidateOwnerType() {
+  public void shouldReturnViolationOnValidationFailure() {
     // when:
     final Either<List<String>, AuthorizationRecord> result =
-        new AuthorizationConfigurer(Pattern.compile(".*")).configure(INVALID_OWNER_TYPE);
+        new AuthorizationConfigurer(VALIDATOR).configure(INVALID_OWNER_TYPE);
 
     // then:
     assertThat(result.isLeft()).isTrue();
@@ -53,7 +56,7 @@ class AuthorizationConfigurerTest {
   public void shouldSuccessfullyConfigure() {
     // when:
     final Either<List<String>, AuthorizationRecord> result =
-        new AuthorizationConfigurer(Pattern.compile(".*")).configure(VALID_AUTH);
+        new AuthorizationConfigurer(VALIDATOR).configure(VALID_AUTH);
 
     // then:
     assertThat(result.isRight()).isTrue();
@@ -67,7 +70,7 @@ class AuthorizationConfigurerTest {
 
     // when:
     final Either<List<String>, List<AuthorizationRecord>> result =
-        new AuthorizationConfigurer(Pattern.compile(".*")).configureEntities(auths);
+        new AuthorizationConfigurer(VALIDATOR).configureEntities(auths);
 
     // then:
     assertThat(result.isLeft()).isTrue();
@@ -82,7 +85,7 @@ class AuthorizationConfigurerTest {
 
     // when:
     final Either<List<String>, List<AuthorizationRecord>> result =
-        new AuthorizationConfigurer(Pattern.compile(".*")).configureEntities(auths);
+        new AuthorizationConfigurer(VALIDATOR).configureEntities(auths);
 
     // then:
     assertThat(result.isRight()).isTrue();
