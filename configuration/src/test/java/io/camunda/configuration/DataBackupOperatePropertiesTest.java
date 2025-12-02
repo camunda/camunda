@@ -272,7 +272,7 @@ public class DataBackupOperatePropertiesTest {
     @TestPropertySource(
         properties = {
           // new
-          "camunda.data.secondary-storage.elasticsearch.backup.incomplete-check-timeout=2m",
+          "camunda.data.secondary-storage.opensearch.backup.incomplete-check-timeout=2m",
           // old unified config
           "camunda.data.backup.incomplete-check-timeout=1m",
         })
