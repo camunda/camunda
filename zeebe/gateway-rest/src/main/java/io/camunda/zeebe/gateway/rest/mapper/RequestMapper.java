@@ -101,7 +101,6 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOpera
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
@@ -388,8 +387,9 @@ public class RequestMapper {
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
       final AuthorizationRequest request, final Pattern idPattern) {
     return switch (request) {
-      case AuthorizationIdBasedRequest idReq -> toCreateAuthorizationRequest(idReq, idPattern);
-      case AuthorizationPropertyBasedRequest propReq ->
+      case final AuthorizationIdBasedRequest idReq ->
+          toCreateAuthorizationRequest(idReq, idPattern);
+      case final AuthorizationPropertyBasedRequest propReq ->
           toCreateAuthorizationRequest(propReq, idPattern);
       default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
     };
@@ -429,9 +429,9 @@ public class RequestMapper {
   public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
       final long authorizationKey, final AuthorizationRequest request, final Pattern idPattern) {
     return switch (request) {
-      case AuthorizationIdBasedRequest idReq ->
+      case final AuthorizationIdBasedRequest idReq ->
           toUpdateAuthorizationRequest(authorizationKey, idReq, idPattern);
-      case AuthorizationPropertyBasedRequest propReq ->
+      case final AuthorizationPropertyBasedRequest propReq ->
           toUpdateAuthorizationRequest(authorizationKey, propReq, idPattern);
       default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
     };
@@ -1175,7 +1175,8 @@ public class RequestMapper {
   private static List<ProcessInstanceModificationMoveInstruction>
       mapProcessInstanceModificationMoveInstruction(
           final List<
-                  io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction>
+                  io.camunda.zeebe.gateway.protocol.rest
+                      .ProcessInstanceModificationMoveBatchOperationInstruction>
               instructions) {
     return instructions.stream()
         .map(

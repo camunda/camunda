@@ -17,7 +17,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -90,7 +90,7 @@ class RequestMapperTest {
   void shouldMapProcessInstanceModifyBatchOperationRequest() {
     // given
     final var moveInstruction =
-        new ProcessInstanceModificationMoveInstruction()
+        new ProcessInstanceModificationMoveBatchOperationInstruction()
             .sourceElementId("source1")
             .targetElementId("target1");
     final var filter = new ProcessInstanceFilter();
@@ -122,7 +122,7 @@ class RequestMapperTest {
   void shouldNotMapProcessInstanceModifyBatchOperationRequestWhenInvalid() {
     // given
     final var moveInstruction =
-        new ProcessInstanceModificationMoveInstruction().sourceElementId("source1");
+        new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
     final var filter = new ProcessInstanceFilter();
     filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
 
