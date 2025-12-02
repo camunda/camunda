@@ -12,15 +12,31 @@ import {fetchIncident} from 'modules/api/v2/incidents/fetchIncident';
 import {updateJob} from 'modules/api/v2/jobs/updateJob';
 import {queryKeys} from 'modules/queries/queryKeys';
 
-function useResolveIncident(incidentKey: string, jobKey?: string) {
+type ResolveIncidentOptions = {
+  incidentKey: string;
+  jobKey?: string;
+  onSuccess?: () => Promise<unknown> | unknown;
+  onError?: (error: {
+    status: number;
+    statusText: string;
+  }) => Promise<unknown> | unknown;
+};
+
+function useResolveIncident(options: ResolveIncidentOptions) {
   const queryClient = useQueryClient();
 
   return useMutation<void, {status: number; statusText: string}>({
-    scope: {id: incidentKey},
+    scope: {id: options.incidentKey},
+    onError: (error) => {
+      return options.onError?.(error);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: queryKeys.incidents.search()});
+      return options.onSuccess?.();
     },
     mutationFn: async () => {
+      const {incidentKey, jobKey} = options;
+
       if (jobKey) {
         const response = await updateJob(jobKey, {retries: 1});
         if (!response.ok) {
