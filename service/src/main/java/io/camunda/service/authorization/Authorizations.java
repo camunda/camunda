@@ -10,6 +10,7 @@ package io.camunda.service.authorization;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.COMPONENT;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
 
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -94,4 +95,10 @@ public abstract class Authorizations {
 
   public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_ALL_AUTHORIZATION =
+      Authorization.of(a -> a.auditLog().read());
+
+  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_OPERATOR_AUTHORIZATION =
+      Authorization.of(a -> a.auditLog().readOperatorAuditLog());
 }

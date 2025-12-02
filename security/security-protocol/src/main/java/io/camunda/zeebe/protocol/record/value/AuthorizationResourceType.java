@@ -62,7 +62,8 @@ public enum AuthorizationResourceType {
   UNSPECIFIED(),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   USER_TASK(
-      PermissionType.READ, PermissionType.UPDATE, PermissionType.CLAIM, PermissionType.COMPLETE);
+      PermissionType.READ, PermissionType.UPDATE, PermissionType.CLAIM, PermissionType.COMPLETE),
+  AUDIT_LOG(PermissionType.READ, PermissionType.READ_OPERATOR_AUDIT_LOG);
 
   private final Set<PermissionType> supportedPermissionTypes;
 
