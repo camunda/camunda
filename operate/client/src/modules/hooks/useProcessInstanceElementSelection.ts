@@ -44,11 +44,10 @@ const useProcessInstanceElementSelection = () => {
   );
 
   const clearSelection = useCallback(() => {
-    setSearchParams((prevParams) => {
-      const newParams = new URLSearchParams(prevParams);
-      newParams.delete(ELEMENT_ID);
-      newParams.delete(ELEMENT_INSTANCE_KEY);
-      return newParams;
+    setSearchParams((params) => {
+      params.delete(ELEMENT_ID);
+      params.delete(ELEMENT_INSTANCE_KEY);
+      return params;
     });
   }, [setSearchParams]);
 
