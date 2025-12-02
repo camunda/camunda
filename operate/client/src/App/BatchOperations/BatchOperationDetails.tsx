@@ -39,15 +39,8 @@ import {
   Modal,
 } from '@carbon/react';
 import {
-  CheckmarkFilled,
-  ErrorFilled,
-  InProgress,
-  SkipForwardFilled,
-  StopFilledAlt,
   Pause,
   Play,
-  Misuse,
-  Pending,
   Close,
   Checkmark,
   Error,
@@ -64,6 +57,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {
   mockBatchOperations,
   type BatchOperationItemState,
+  type BatchOperationError,
 } from 'modules/mocks/batchOperations';
 import {BatchOperationStatusTag} from './BatchOperationStatusTag';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
@@ -320,66 +314,6 @@ type ItemsFilters = {
   timeTo?: string;
 };
 
-// Item Status Indicator component for batch operation items
-const ItemStatusIndicator: React.FC<{status: BatchOperationItemState}> = ({
-  status,
-}) => {
-  const getStatusConfig = () => {
-    switch (status) {
-      case 'COMPLETED':
-        return {
-          Icon: CheckmarkFilled,
-          color: 'var(--cds-support-success)',
-          text: 'Completed',
-        };
-      case 'FAILED':
-        return {
-          Icon: ErrorFilled,
-          color: 'var(--cds-support-error)',
-          text: 'Failed',
-        };
-      case 'ACTIVE':
-        return {
-          Icon: InProgress,
-          color: 'var(--cds-support-info)',
-          text: 'Active',
-        };
-      case 'SKIPPED':
-        return {
-          Icon: SkipForwardFilled,
-          color: 'var(--cds-text-secondary)',
-          text: 'Skipped',
-        };
-      case 'CANCELLED':
-        return {
-          Icon: Misuse,
-          color: '#ff832b',
-          text: 'Cancelled',
-        };
-      default:
-        return {
-          Icon: Pending,
-          color: 'var(--cds-status-gray)',
-          text: status,
-        };
-    }
-  };
-
-  const {Icon, color, text} = getStatusConfig();
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--cds-spacing-03)',
-      }}
-    >
-      <Icon size={16} style={{color}} />
-      <span>{text}</span>
-    </div>
-  );
-};
 
 // Reusable Summary Tile component
 const SummaryTile: React.FC<{
@@ -893,15 +827,44 @@ const BatchOperationDetails: React.FC = () => {
                 </SummaryTile>
               </div>
 
-              {/* Error message for failed operations */}
-              {operation.state === 'FAILED' && operation.errorMessage && (
-                <InlineNotification
-                  kind="error"
-                  title="Failure reason:"
-                  subtitle={operation.errorMessage}
-                  hideCloseButton
-                  lowContrast
-                />
+              {/* Error messages for failed operations */}
+              {operation.state === 'FAILED' && operation.errors && operation.errors.length > 0 && (
+                <>
+                  <style>{`
+                    .batch-operation-error-notification .cds--inline-notification__text-wrapper {
+                      width: 100%;
+                      display: flex;
+                      flex-direction: column;
+                    }
+                    .batch-operation-error-notification .cds--inline-notification__subtitle {
+                      margin-top: var(--cds-spacing-02);
+                      width: 100%;
+                    }
+                  `}</style>
+                  <div style={{width: '100%'}}>
+                    <InlineNotification
+                      className="batch-operation-error-notification"
+                      kind="error"
+                      title={operation.errors.length > 1 ? 'Multiple errors occured' : `Error occured`}
+                      subtitle={
+                        operation.errors.length > 0 ? (
+                          <div style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-02)'}}>
+                            {operation.errors.map((error, index) => (
+                              <div key={index}>
+                                {error.type}: {error.message}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          operation.errors[0].message
+                        )
+                      }
+                      hideCloseButton
+                      lowContrast
+                      style={{maxWidth: 'unset', width: '100%'}}
+                    />
+                  </div>
+                </>
               )}
             </Stack>
 
@@ -1061,7 +1024,7 @@ const BatchOperationDetails: React.FC = () => {
                             row.cells.map((cell: any) => (
                               <TableCell key={cell.id}>
                                 {cell.info.header === 'state' ? (
-                                  <ItemStatusIndicator status={cell.value} />
+                                  <BatchOperationStatusTag status={cell.value} />
                                 ) : cell.info.header === 'instanceKey' ? (
                                   <Link
                                     href="#"
@@ -1085,11 +1048,7 @@ const BatchOperationDetails: React.FC = () => {
                                   {renderCells()}
                                 </TableExpandRow>
                                 <TableExpandedRow colSpan={headers.length + 1}>
-                                  <div
-                                    style={{
-                                      padding: 'var(--cds-spacing-04)',
-                                    }}
-                                  >
+                                  <div>
                                     <strong>Failure reason: </strong>
                                     {rowData?.errorMessage || 'Operation failed'}
                                   </div>

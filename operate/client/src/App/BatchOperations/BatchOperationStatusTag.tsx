@@ -16,6 +16,7 @@ import {
   CircleDash,
   Misuse,
   PendingFilled,
+  Pending,
 } from '@carbon/icons-react';
 import type {
   BatchOperationState,
@@ -58,7 +59,7 @@ const getStatusConfig = (
     case 'CANCELLED':
       return {
         Icon: Misuse,
-        color: '#ff832b',
+        color: 'var(--cds-support-gray)',
         label: 'Cancelled',
       };
     case 'FAILED':
@@ -69,8 +70,8 @@ const getStatusConfig = (
       };
     case 'CREATED':
       return {
-        Icon: PendingFilled,
-        color: 'var(--cds-status-gray)',
+        Icon: Pending,
+        color: 'var(--cds-status-blue)',
         label: 'Created',
       };
     case 'PARTIALLY_COMPLETED':
@@ -82,7 +83,7 @@ const getStatusConfig = (
     case 'SKIPPED':
       return {
         Icon: SkipForwardFilled,
-        color: 'var(--cds-text-secondary)',
+        color: 'var(--cds-support-warning)',
         label: 'Skipped',
       };
     default:

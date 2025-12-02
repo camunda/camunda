@@ -28,6 +28,17 @@ export type BatchOperationItemState =
   | 'CANCELLED'
   | 'FAILED';
 
+export type BatchOperationErrorType =
+  | 'QUERY_FAILED'
+  | 'RESULT_BUFFER_SIZE_EXCEEDED'
+  | 'UNKNOWN';
+
+export type BatchOperationError = {
+  type: BatchOperationErrorType;
+  message: string;
+  partitionId?: number;
+};
+
 export type BatchOperationItem = {
   id: string;
   processInstanceKey: string;
@@ -51,6 +62,7 @@ export type BatchOperation = {
   processDefinitionName?: string;
   processDefinitionVersion?: number;
   errorMessage?: string;
+  errors?: BatchOperationError[];
   items: BatchOperationItem[];
 };
 
@@ -204,7 +216,14 @@ export const mockBatchOperations: BatchOperation[] = [
     processDefinitionName: 'Legacy Process',
     processDefinitionVersion: 1,
     errorMessage:
-      'Batch operation failed: Target process instances are not in a valid state for cancellation.',
+      'Target process instances are not in a valid state for cancellation.',
+    errors: [
+      {
+        type: 'QUERY_FAILED',
+        message: 'Target process instances are not in a valid state for cancellation.',
+        partitionId: 1,
+      },
+    ],
     items: generateMockItems(25, 'FAILED'),
   },
   // Partially Completed - Migrate Process Instance
@@ -323,7 +342,19 @@ export const mockBatchOperations: BatchOperation[] = [
     processDefinitionName: 'Legacy Workflow',
     processDefinitionVersion: 1,
     errorMessage:
-      'Migration failed: Target process definition not found or incompatible schema version.',
+      'Target process definition not found or incompatible schema version.',
+    errors: [
+      {
+        type: 'QUERY_FAILED',
+        message: 'Target process definition not found or incompatible schema version.',
+        partitionId: 1,
+      },
+      {
+        type: 'RESULT_BUFFER_SIZE_EXCEEDED',
+        message: 'The query result exceeded the maximum buffer size limit.',
+        partitionId: 2,
+      },
+    ],
     items: generateMockItems(150, 'FAILED'),
   },
   // Partially Completed - Resolve Incident
@@ -473,6 +504,12 @@ export const mockBatchOperations: BatchOperation[] = [
     processDefinitionVersion: 2,
     errorMessage:
       'Modification failed: Required variables missing or invalid variable type.',
+    errors: [
+      {
+        type: 'QUERY_FAILED',
+        message: 'Modification failed: Required variables missing or invalid variable type.',
+      },
+    ],
     items: generateMockItems(30, 'FAILED'),
   },
   // Completed - Resolve Incident (with some failures)
