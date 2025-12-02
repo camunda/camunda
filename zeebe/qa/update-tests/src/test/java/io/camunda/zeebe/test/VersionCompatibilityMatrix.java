@@ -201,7 +201,8 @@ rivate final VersionProvider versionProvider;
                         .filter(info2 -> isCompatible(info1.version(), info2.version()))
                         .map(
                             info2 ->
-                                Arguments.of(info1.version.toString(), info2.version.toString())))
+                                Arguments.of(
+                                    info1.version().toString(), info2.version().toString())))
             .toList();
 
     final var index =
@@ -522,19 +523,7 @@ rivate final VersionProvider versionProvider;
     }
   }
 
-  private record UpgradePath(SemanticVersion from, SemanticVersion to) {}
-
-  interface VersionProvider {
-    Stream<VersionInfo> discoverVersions();
-  }
-
-  interface VersionCompatibilityConfig {
-    SemanticVersion getCurrentVersion();
-
-    Optional<SemanticVersion> getPreviousMinorVersion();
-  }
-
-  public class GithubAPI {
+  static class GithubAPI {
 
     final Retry retry =
         Retry.of(
@@ -623,5 +612,17 @@ rivate final VersionProvider versionProvider;
         return SemanticVersion.parse(tag_name).orElse(null);
       }
     }
+  }
+
+  private record UpgradePath(SemanticVersion from, SemanticVersion to) {}
+
+  interface VersionProvider {
+    Stream<VersionInfo> discoverVersions();
+  }
+
+  interface VersionCompatibilityConfig {
+    SemanticVersion getCurrentVersion();
+
+    Optional<SemanticVersion> getPreviousMinorVersion();
   }
 }
