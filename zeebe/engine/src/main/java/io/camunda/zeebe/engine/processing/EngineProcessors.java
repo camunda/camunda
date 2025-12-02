@@ -44,6 +44,7 @@ import io.camunda.zeebe.engine.processing.identity.MappingRuleProcessors;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
+import io.camunda.zeebe.engine.processing.keygenerator.KeyGeneratorResetProcessor;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.UsageMetricsProcessors;
@@ -72,6 +73,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.KeyGeneratorResetIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -357,6 +359,11 @@ public final class EngineProcessors {
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
         typedRecordProcessors, writers, processingState);
+
+    typedRecordProcessors.onCommand(
+        ValueType.KEY_GENERATOR_RESET,
+        KeyGeneratorResetIntent.RESET,
+        new KeyGeneratorResetProcessor(writers, partitionId));
 
     return typedRecordProcessors;
   }
