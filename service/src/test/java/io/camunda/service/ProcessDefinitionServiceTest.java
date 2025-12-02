@@ -124,9 +124,8 @@ public class ProcessDefinitionServiceTest {
                     q != null
                         && q.filter() != null
                         && q.filter().processDefinitionId() != null
-                        && q.filter()
-                            .processDefinitionId()
-                            .equals(originalQuery.filter().processDefinitionId())
+                        && processDefinitionId.equals(q.filter().processDefinitionId())
+                        && q.filter().tenantId() == null
                         && q.page().equals(originalQuery.page())
                         && q.sort().equals(originalQuery.sort())));
   }

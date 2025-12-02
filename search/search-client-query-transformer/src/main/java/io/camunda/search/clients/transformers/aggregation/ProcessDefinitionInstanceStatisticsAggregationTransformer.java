@@ -20,7 +20,6 @@ import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filt
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.topHits;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION;
 
@@ -72,7 +71,6 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
     final var byProcessDefinitionIdAndTenantIdSubAgg =
         terms()
             .name(ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_ID)
-            .field(BPMN_PROCESS_ID)
             .size(AGGREGATION_TERMS_SIZE)
             .script(PROCESS_DEFINITION_AND_TENANT_KEY)
             .lang(SCRIPT_LANGUAGE)
@@ -105,7 +103,6 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
             .name(
                 ProcessDefinitionInstanceStatisticsAggregation
                     .AGGREGATION_NAME_PROCESS_DEFINITION_KEY_CARDINALITY)
-            .field(BPMN_PROCESS_ID)
             .script(PROCESS_DEFINITION_AND_TENANT_KEY)
             .lang(SCRIPT_LANGUAGE)
             .build();
