@@ -13,9 +13,9 @@ import static org.awaitility.Awaitility.await;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
@@ -257,8 +257,11 @@ final class ContinuousBackupIT {
     gcsConfig.setBasePath(basePath);
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
-    cfg.getData().getBackup().setGcs(gcsConfig);
-    cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS);
+    cfg.getData().getPrimaryStorage().getBackup().setGcs(gcsConfig);
+    cfg.getData()
+        .getPrimaryStorage()
+        .getBackup()
+        .setStore(PrimaryStorageBackup.BackupStoreType.GCS);
     cfg.getData().getPrimaryStorage().getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
     cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
     cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
@@ -270,7 +273,10 @@ final class ContinuousBackupIT {
     gcsConfig.setBasePath(basePath);
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
-    cfg.getData().getBackup().setGcs(gcsConfig);
-    cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS);
+    cfg.getData().getPrimaryStorage().getBackup().setGcs(gcsConfig);
+    cfg.getData()
+        .getPrimaryStorage()
+        .getBackup()
+        .setStore(PrimaryStorageBackup.BackupStoreType.GCS);
   }
 }

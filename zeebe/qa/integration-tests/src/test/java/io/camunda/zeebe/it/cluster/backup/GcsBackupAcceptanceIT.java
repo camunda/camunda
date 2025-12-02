@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.Backup;
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
@@ -88,14 +88,17 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withUnifiedConfig(
         cfg -> {
-          cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS);
+          cfg.getData()
+              .getPrimaryStorage()
+              .getBackup()
+              .setStore(PrimaryStorageBackup.BackupStoreType.GCS);
 
           final var config = new Gcs();
           config.setAuth(Gcs.GcsBackupStoreAuth.NONE);
           config.setBasePath(basePath);
           config.setBucketName(BUCKET_NAME);
           config.setHost(GCS.externalEndpoint());
-          cfg.getData().getBackup().setGcs(config);
+          cfg.getData().getPrimaryStorage().getBackup().setGcs(config);
         });
   }
 

@@ -84,4 +84,91 @@ public class DataBackupFilesystemTest {
           .isEqualTo("basePathNew");
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.filesystem.base-path=basePathPrimaryStorage",
+      })
+  class WithOnlyPrimaryStorageConfigSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyPrimaryStorageConfigSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBasePath() {
+      assertThat(brokerCfg.getData().getBackup().getFilesystem().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.filesystem.base-path=basePathPrimaryStorage",
+        // backup (unified)
+        "camunda.data.backup.filesystem.base-path=basePathNew",
+      })
+  class WithPrimaryStorageAndBackupSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPrimaryStorageAndBackupSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getFilesystem().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.filesystem.base-path=basePathPrimaryStorage",
+        // legacy
+        "zeebe.broker.data.backup.filesystem.basePath=basePathLegacy",
+      })
+  class WithPrimaryStorageAndLegacySet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPrimaryStorageAndLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getFilesystem().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.filesystem.base-path=basePathPrimaryStorage",
+        // backup (unified)
+        "camunda.data.backup.filesystem.base-path=basePathNew",
+        // legacy
+        "zeebe.broker.data.backup.filesystem.basePath=basePathLegacy",
+      })
+  class WithAllThreeConfigsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithAllThreeConfigsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getFilesystem().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+  }
 }

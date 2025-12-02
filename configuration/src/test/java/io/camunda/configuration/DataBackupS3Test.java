@@ -308,4 +308,435 @@ public class DataBackupS3Test {
       assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isTrue();
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.s3.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.endpoint=endpointPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.region=regionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.access-key=accessKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.secret-key=secretKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.api-call-timeout=480s",
+        "camunda.data.primary-storage.backup.s3.force-path-style-access=false",
+        "camunda.data.primary-storage.backup.s3.compression=compressionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.max-concurrent-connections=150",
+        "camunda.data.primary-storage.backup.s3.connection-acquisition-timeout=120s",
+        "camunda.data.primary-storage.backup.s3.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.support-legacy-md5=false",
+      })
+  class WithOnlyPrimaryStorageConfigSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyPrimaryStorageConfigSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketName() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetEndpoint() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getEndpoint())
+          .isEqualTo("endpointPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetRegion() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getRegion())
+          .isEqualTo("regionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAccessKey() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getAccessKey())
+          .isEqualTo("accessKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSecretKey() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getSecretKey())
+          .isEqualTo("secretKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetApiCallTimeout() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getApiCallTimeout())
+          .isEqualTo(Duration.ofSeconds(480));
+    }
+
+    @Test
+    void shouldSetForcePathStyleAccess() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isForcePathStyleAccess()).isFalse();
+    }
+
+    @Test
+    void shouldSetCompression() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getCompression())
+          .isEqualTo("compressionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetMaxConcurrentConnection() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getMaxConcurrentConnections())
+          .isEqualTo(150);
+    }
+
+    @Test
+    void shouldSetConnectionAcquisitionTimeout() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getConnectionAcquisitionTimeout())
+          .isEqualTo(Duration.ofSeconds(120));
+    }
+
+    @Test
+    void shouldSetBasePath() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSupportLegacyMd5() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isFalse();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.s3.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.endpoint=endpointPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.region=regionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.access-key=accessKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.secret-key=secretKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.api-call-timeout=480s",
+        "camunda.data.primary-storage.backup.s3.force-path-style-access=false",
+        "camunda.data.primary-storage.backup.s3.compression=compressionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.max-concurrent-connections=150",
+        "camunda.data.primary-storage.backup.s3.connection-acquisition-timeout=120s",
+        "camunda.data.primary-storage.backup.s3.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.support-legacy-md5=false",
+        // backup (unified)
+        "camunda.data.backup.s3.bucket-name=bucketNameNew",
+        "camunda.data.backup.s3.endpoint=endpointNew",
+        "camunda.data.backup.s3.region=regionNew",
+        "camunda.data.backup.s3.access-key=accessKeyNew",
+        "camunda.data.backup.s3.secret-key=secretKeyNew",
+        "camunda.data.backup.s3.api-call-timeout=360s",
+        "camunda.data.backup.s3.force-path-style-access=true",
+        "camunda.data.backup.s3.compression=compressionNew",
+        "camunda.data.backup.s3.max-concurrent-connections=100",
+        "camunda.data.backup.s3.connection-acquisition-timeout=90s",
+        "camunda.data.backup.s3.base-path=basePathNew",
+        "camunda.data.backup.s3.support-legacy-md5=true",
+      })
+  class WithPrimaryStorageAndBackupSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPrimaryStorageAndBackupSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketNameFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetEndpointFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getEndpoint())
+          .isEqualTo("endpointPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetRegionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getRegion())
+          .isEqualTo("regionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAccessKeyFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getAccessKey())
+          .isEqualTo("accessKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSecretKeyFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getSecretKey())
+          .isEqualTo("secretKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetApiCallTimeoutFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getApiCallTimeout())
+          .isEqualTo(Duration.ofSeconds(480));
+    }
+
+    @Test
+    void shouldSetForcePathStyleAccessFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isForcePathStyleAccess()).isFalse();
+    }
+
+    @Test
+    void shouldSetCompressionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getCompression())
+          .isEqualTo("compressionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetMaxConcurrentConnectionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getMaxConcurrentConnections())
+          .isEqualTo(150);
+    }
+
+    @Test
+    void shouldSetConnectionAcquisitionTimeoutFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getConnectionAcquisitionTimeout())
+          .isEqualTo(Duration.ofSeconds(120));
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSupportLegacyMd5FromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isFalse();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.s3.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.endpoint=endpointPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.region=regionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.access-key=accessKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.secret-key=secretKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.api-call-timeout=480s",
+        "camunda.data.primary-storage.backup.s3.force-path-style-access=false",
+        "camunda.data.primary-storage.backup.s3.compression=compressionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.max-concurrent-connections=150",
+        "camunda.data.primary-storage.backup.s3.connection-acquisition-timeout=120s",
+        "camunda.data.primary-storage.backup.s3.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.support-legacy-md5=false",
+        // legacy
+        "zeebe.broker.data.backup.s3.bucketName=bucketNameLegacy",
+        "zeebe.broker.data.backup.s3.endpoint=endpointLegacy",
+        "zeebe.broker.data.backup.s3.region=regionLegacy",
+        "zeebe.broker.data.backup.s3.accessKey=accessKeyLegacy",
+        "zeebe.broker.data.backup.s3.secretKey=secretKeyLegacy",
+        "zeebe.broker.data.backup.s3.apiCallTimeout=720s",
+        "zeebe.broker.data.backup.s3.forcePathStyleAccess=true",
+        "zeebe.broker.data.backup.s3.compression=compressionLegacy",
+        "zeebe.broker.data.backup.s3.maxConcurrentConnections=200",
+        "zeebe.broker.data.backup.s3.connectionAcquisitionTimeout=180s",
+        "zeebe.broker.data.backup.s3.basePath=basePathLegacy",
+        "zeebe.broker.data.backup.s3.supportLegacyMd5=true",
+      })
+  class WithPrimaryStorageAndLegacySet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPrimaryStorageAndLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketNameFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetEndpointFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getEndpoint())
+          .isEqualTo("endpointPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetRegionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getRegion())
+          .isEqualTo("regionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAccessKeyFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getAccessKey())
+          .isEqualTo("accessKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSecretKeyFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getSecretKey())
+          .isEqualTo("secretKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetApiCallTimeoutFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getApiCallTimeout())
+          .isEqualTo(Duration.ofSeconds(480));
+    }
+
+    @Test
+    void shouldSetForcePathStyleAccessFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isForcePathStyleAccess()).isFalse();
+    }
+
+    @Test
+    void shouldSetCompressionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getCompression())
+          .isEqualTo("compressionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetMaxConcurrentConnectionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getMaxConcurrentConnections())
+          .isEqualTo(150);
+    }
+
+    @Test
+    void shouldSetConnectionAcquisitionTimeoutFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getConnectionAcquisitionTimeout())
+          .isEqualTo(Duration.ofSeconds(120));
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSupportLegacyMd5FromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isFalse();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.s3.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.endpoint=endpointPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.region=regionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.access-key=accessKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.secret-key=secretKeyPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.api-call-timeout=480s",
+        "camunda.data.primary-storage.backup.s3.force-path-style-access=false",
+        "camunda.data.primary-storage.backup.s3.compression=compressionPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.max-concurrent-connections=150",
+        "camunda.data.primary-storage.backup.s3.connection-acquisition-timeout=120s",
+        "camunda.data.primary-storage.backup.s3.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.s3.support-legacy-md5=false",
+        // backup (unified)
+        "camunda.data.backup.s3.bucket-name=bucketNameNew",
+        "camunda.data.backup.s3.endpoint=endpointNew",
+        "camunda.data.backup.s3.region=regionNew",
+        "camunda.data.backup.s3.access-key=accessKeyNew",
+        "camunda.data.backup.s3.secret-key=secretKeyNew",
+        "camunda.data.backup.s3.api-call-timeout=360s",
+        "camunda.data.backup.s3.force-path-style-access=true",
+        "camunda.data.backup.s3.compression=compressionNew",
+        "camunda.data.backup.s3.max-concurrent-connections=100",
+        "camunda.data.backup.s3.connection-acquisition-timeout=90s",
+        "camunda.data.backup.s3.base-path=basePathNew",
+        "camunda.data.backup.s3.support-legacy-md5=true",
+        // legacy
+        "zeebe.broker.data.backup.s3.bucketName=bucketNameLegacy",
+        "zeebe.broker.data.backup.s3.endpoint=endpointLegacy",
+        "zeebe.broker.data.backup.s3.region=regionLegacy",
+        "zeebe.broker.data.backup.s3.accessKey=accessKeyLegacy",
+        "zeebe.broker.data.backup.s3.secretKey=secretKeyLegacy",
+        "zeebe.broker.data.backup.s3.apiCallTimeout=720s",
+        "zeebe.broker.data.backup.s3.forcePathStyleAccess=true",
+        "zeebe.broker.data.backup.s3.compression=compressionLegacy",
+        "zeebe.broker.data.backup.s3.maxConcurrentConnections=200",
+        "zeebe.broker.data.backup.s3.connectionAcquisitionTimeout=180s",
+        "zeebe.broker.data.backup.s3.basePath=basePathLegacy",
+        "zeebe.broker.data.backup.s3.supportLegacyMd5=true",
+      })
+  class WithAllThreeConfigsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithAllThreeConfigsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketNameFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetEndpointFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getEndpoint())
+          .isEqualTo("endpointPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetRegionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getRegion())
+          .isEqualTo("regionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAccessKeyFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getAccessKey())
+          .isEqualTo("accessKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSecretKeyFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getSecretKey())
+          .isEqualTo("secretKeyPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetApiCallTimeoutFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getApiCallTimeout())
+          .isEqualTo(Duration.ofSeconds(480));
+    }
+
+    @Test
+    void shouldSetForcePathStyleAccessFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isForcePathStyleAccess()).isFalse();
+    }
+
+    @Test
+    void shouldSetCompressionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getCompression())
+          .isEqualTo("compressionPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetMaxConcurrentConnectionFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getMaxConcurrentConnections())
+          .isEqualTo(150);
+    }
+
+    @Test
+    void shouldSetConnectionAcquisitionTimeoutFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getConnectionAcquisitionTimeout())
+          .isEqualTo(Duration.ofSeconds(120));
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetSupportLegacyMd5FromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isFalse();
+    }
+  }
 }

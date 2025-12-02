@@ -18,9 +18,9 @@ import static org.assertj.core.api.Assertions.fail;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateGroupResponse;
-import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -93,8 +93,8 @@ public class ScaleUpPartitionsTest {
                 b ->
                     b.withUnifiedConfig(
                             cfg -> {
-                              final var backup = cfg.getData().getBackup();
-                              backup.setStore(Backup.BackupStoreType.FILESYSTEM);
+                              final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                              backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
                               backup.getFilesystem().setBasePath(backupPath.toString());
 
                               final var membership = cfg.getCluster().getMembership();
@@ -133,10 +133,11 @@ public class ScaleUpPartitionsTest {
         .setReplicationFactor(brokerCfg.getCluster().getReplicationFactor());
     unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getSize());
 
-    final var backupConfig = unifiedRestoreConfig.getData().getBackup();
-    backupConfig.setStore(Backup.BackupStoreType.FILESYSTEM);
+    final var backupConfig = unifiedRestoreConfig.getData().getPrimaryStorage().getBackup();
+    backupConfig.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
     final var filesystem = new Filesystem();
-    filesystem.setBasePath(brokerCfg.getData().getBackup().getFilesystem().getBasePath());
+    filesystem.setBasePath(
+        brokerCfg.getData().getPrimaryStorage().getBackup().getFilesystem().getBasePath());
     backupConfig.setFilesystem(filesystem);
     return unifiedRestoreConfig;
   }

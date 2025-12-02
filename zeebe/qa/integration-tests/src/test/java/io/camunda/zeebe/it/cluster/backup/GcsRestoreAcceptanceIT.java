@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.cluster.backup;
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -56,8 +57,8 @@ final class GcsRestoreAcceptanceIT implements RestoreAcceptance {
 
   @Override
   public void configureBackupStore(final Camunda cfg) {
-    final var backup = cfg.getData().getBackup();
-    backup.setStore(io.camunda.configuration.Backup.BackupStoreType.GCS);
+    final var backup = cfg.getData().getPrimaryStorage().getBackup();
+    backup.setStore(PrimaryStorageBackup.BackupStoreType.GCS);
 
     final var config = backup.getGcs();
     config.setAuth(Gcs.GcsBackupStoreAuth.NONE);

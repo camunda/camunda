@@ -11,8 +11,8 @@ import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.configuration.Backup.BackupStoreType;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
@@ -96,7 +96,7 @@ class BackupMultiPartitionTest {
 
   private void configureBackupStore(final Camunda config) {
 
-    final var backupConfig = config.getData().getBackup();
+    final var backupConfig = config.getData().getPrimaryStorage().getBackup();
     backupConfig.setStore(BackupStoreType.S3);
 
     final var s3Config = backupConfig.getS3();
@@ -246,10 +246,11 @@ class BackupMultiPartitionTest {
     unifiedRestoreConfig.getCluster().setSize(broker.unifiedConfig().getCluster().getSize());
 
     // backup config s3
-    final var backupConfig = unifiedRestoreConfig.getData().getBackup();
+    final var backupConfig = unifiedRestoreConfig.getData().getPrimaryStorage().getBackup();
     backupConfig.setStore(BackupStoreType.S3);
     final var s3Config = backupConfig.getS3();
-    final var legacyBackupConfig = broker.unifiedConfig().getData().getBackup().getS3();
+    final var legacyBackupConfig =
+        broker.unifiedConfig().getData().getPrimaryStorage().getBackup().getS3();
     s3Config.setBucketName(legacyBackupConfig.getBucketName());
     s3Config.setEndpoint(legacyBackupConfig.getEndpoint());
     s3Config.setRegion(legacyBackupConfig.getRegion());

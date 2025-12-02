@@ -25,9 +25,6 @@ public class Data {
   /** This section allows to configure primary Zeebe's data storage. */
   @NestedConfigurationProperty private PrimaryStorage primaryStorage = new PrimaryStorage();
 
-  /** This section allows configuring a backup store. */
-  @NestedConfigurationProperty private Backup backup = new Backup();
-
   /** This section allows configuring export. */
   @NestedConfigurationProperty private Export export = new Export();
 
@@ -56,14 +53,6 @@ public class Data {
 
   public void setPrimaryStorage(final PrimaryStorage primaryStorage) {
     this.primaryStorage = primaryStorage;
-  }
-
-  public Backup getBackup() {
-    return backup;
-  }
-
-  public void setBackup(final Backup backup) {
-    this.backup = backup;
   }
 
   public Export getExport() {

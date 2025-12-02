@@ -11,10 +11,11 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Backup implements Cloneable {
-  private static final String PREFIX = "camunda.data.backup";
+public class PrimaryStorageBackup implements Cloneable {
+  private static final String PREFIX = "camunda.data.primary-storage.backup";
 
-  private static final String LEGACY_BROKER_STORE = "zeebe.broker.data.backup.store";
+  private static final Set<String> LEGACY_BROKER_STORE =
+      Set.of("zeebe.broker.data.backup.store", "camunda.data.backup.store");
 
   /**
    * Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default
@@ -84,7 +85,7 @@ public class Backup implements Cloneable {
         store,
         BackupStoreType.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_BROKER_STORE));
+        LEGACY_BROKER_STORE);
   }
 
   public void setStore(final BackupStoreType store) {

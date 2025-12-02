@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
@@ -33,8 +34,8 @@ final class AzureRestoreAcceptanceIT implements RestoreAcceptance {
 
   @Override
   public void configureBackupStore(final Camunda cfg) {
-    final var backup = cfg.getData().getBackup();
-    backup.setStore(io.camunda.configuration.Backup.BackupStoreType.AZURE);
+    final var backup = cfg.getData().getPrimaryStorage().getBackup();
+    backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE);
     final var azure = backup.getAzure();
     azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
     azure.setBasePath(CONTAINER_NAME);

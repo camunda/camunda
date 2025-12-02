@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.google.cloud.storage.BucketInfo;
-import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
@@ -128,14 +128,14 @@ public class ClusteredBackupRestoreTest {
   }
 
   private static void configureBackupStore(final Camunda config) {
-    final var backup = config.getData().getBackup();
+    final var backup = config.getData().getPrimaryStorage().getBackup();
 
     final var storeConfig = new Gcs();
     storeConfig.setAuth(Gcs.GcsBackupStoreAuth.NONE);
     storeConfig.setBucketName(BUCKET_NAME);
     storeConfig.setHost(GCS.externalEndpoint());
 
-    backup.setStore(Backup.BackupStoreType.GCS);
+    backup.setStore(PrimaryStorageBackup.BackupStoreType.GCS);
     backup.setGcs(storeConfig);
   }
 }
