@@ -64,18 +64,12 @@ public class MultiDbConfigurator {
     /* Tasklist */
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
-    /* Operate */
-    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
-
     // db type
-    elasticsearchProperties.put("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
     // url
     elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.elasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.operate.elasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.url", elasticsearchUrl);
 
     /* Camunda */
     elasticsearchProperties.put(
@@ -189,19 +183,13 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.tasklist.opensearch.aws.enabled", isAws);
 
     /* Operate */
-    opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", zeebeIndexPrefix());
-    opensearchProperties.put("camunda.operate.opensearch.username", userName);
-    opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
     opensearchProperties.put("camunda.operate.opensearch.aws.enabled", isAws);
 
     // db url
     opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
     // db type
     opensearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
-    opensearchProperties.put("camunda.operate.database", DB_TYPE_OPENSEARCH);
     opensearchProperties.put("camunda.tasklist.database", DB_TYPE_OPENSEARCH);
 
     /* Camunda */
@@ -288,7 +276,6 @@ public class MultiDbConfigurator {
     // db type
     testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
     testApplication.withSecondaryStorageType(SecondaryStorageType.rdbms);
-    testApplication.withProperty("camunda.operate.database", DB_TYPE_RDBMS); // compatibility
     testApplication.withProperty("camunda.tasklist.database", DB_TYPE_RDBMS); // compatibility
 
     testApplication.withProperty(
