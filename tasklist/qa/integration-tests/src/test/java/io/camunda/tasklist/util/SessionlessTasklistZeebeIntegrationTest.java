@@ -18,6 +18,9 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.service.CamundaClientBasedAdapter;
 import io.camunda.tasklist.webapp.service.OrganizationService;
+import io.camunda.tasklist.zeebe.PartitionHolder;
+import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
+import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.micrometer.core.instrument.Meter;
@@ -54,19 +57,20 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   public TasklistZeebeExtension zeebeExtension;
 
   public TestStandaloneBroker zeebeBroker;
-
   @MockitoBean protected OrganizationService organizationService;
   @MockitoBean protected CamundaClient mockedCamundaClient;
   // we don't want to create CamundaClient, we will rather use the one from
   // test rule
   protected CamundaClient camundaClient;
+  @Autowired protected PartitionHolder partitionHolder;
+  @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected TasklistProperties tasklistProperties;
   protected TasklistTester tester;
+  @Autowired private StandalonePartitionSupplier partitionSupplier;
   @Autowired private CamundaClientBasedAdapter tasklistServicesAdapter;
   @Autowired private ProcessCache processCache;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
-
   @Autowired private ObjectMapper objectMapper;
 
   private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -81,16 +85,23 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
     camundaClient = getClient();
     workerName = TestUtil.createRandomString(10);
+    tasklistProperties.getZeebe().setGatewayAddress(zeebeBroker.address(TestZeebePort.GATEWAY));
 
     tester = beanFactory.getBean(TasklistTester.class, camundaClient, databaseTestExtension);
 
     processCache.clearCache();
+    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
+    importPositionHolder.clearCache();
+    importPositionHolder.scheduleImportPositionUpdateTask();
+    ReflectionTestUtils.setField(partitionSupplier, "camundaClient", getClient());
     ReflectionTestUtils.setField(tasklistServicesAdapter, "camundaClient", getClient());
   }
 
   @AfterEach
   public void after() {
     processCache.clearCache();
+    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
+    importPositionHolder.clearCache();
   }
 
   public CamundaClient getClient() {
