@@ -90,7 +90,9 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
     final var idList = underTest.generateIds(record);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(record.getPosition()));
+    assertThat(idList).hasSize(1);
+    assertThat(idList.get(0)).isNotNull();
+    assertThat(idList.get(0)).hasSize(AuditLogHandler.ID_LENGTH);
   }
 
   @Test
