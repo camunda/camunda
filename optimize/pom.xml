@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.0-SNAPSHOT</version> #this
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -47,8 +47,6 @@
     <project.previousVersion>8.8.0</project.previousVersion>
 
     <zeebe.version>${project.version}</zeebe.version>
-    <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <version.identity>${version.identity}</version.identity>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 
