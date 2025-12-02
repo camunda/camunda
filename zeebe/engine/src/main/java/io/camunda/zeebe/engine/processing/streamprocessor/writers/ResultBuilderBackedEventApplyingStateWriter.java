@@ -9,12 +9,14 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -45,6 +47,15 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final Map<String, Object> claims) {
+    appendFollowUpEvent(key, intent, value, m -> m.claims(claims));
+  }
+
+  @Override
+  public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
     appendFollowUpEvent(key, intent, value, m -> m.recordVersion(recordVersion));
   }
@@ -67,6 +78,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
             .recordVersion(recordVersion)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
+            .authorization(new AuthInfo().setClaims(metadata.getClaims()))
             .operationReference(metadata.getOperationReference())
             .batchOperationReference(metadata.getBatchOperationReference());
 
