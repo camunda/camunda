@@ -24,8 +24,9 @@ const useProcessInstanceElementSelection = () => {
 
   const selectElement = useCallback(
     (elementId: string) => {
-      setSearchParams({
-        [ELEMENT_ID]: elementId,
+      setSearchParams((params) => {
+        params.set(ELEMENT_ID, elementId);
+        return params;
       });
     },
     [setSearchParams],
@@ -33,9 +34,10 @@ const useProcessInstanceElementSelection = () => {
 
   const selectElementInstance = useCallback(
     (elementId: string, elementInstanceKey: string) => {
-      setSearchParams({
-        [ELEMENT_ID]: elementId,
-        [ELEMENT_INSTANCE_KEY]: elementInstanceKey,
+      setSearchParams((params) => {
+        params.set(ELEMENT_ID, elementId);
+        params.set(ELEMENT_INSTANCE_KEY, elementInstanceKey);
+        return params;
       });
     },
     [setSearchParams],
