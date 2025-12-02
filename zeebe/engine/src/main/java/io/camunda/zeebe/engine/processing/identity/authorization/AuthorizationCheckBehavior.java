@@ -12,12 +12,12 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationResult;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -60,6 +59,7 @@ public final class AuthorizationCheckBehavior {
   private final AuthorizationState authorizationState;
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
+  private final ClaimsExtractor claimsExtractor;
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
@@ -73,6 +73,7 @@ public final class AuthorizationCheckBehavior {
     authorizationState = processingState.getAuthorizationState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
+    claimsExtractor = new ClaimsExtractor(membershipState);
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
 
@@ -147,13 +148,13 @@ public final class AuthorizationCheckBehavior {
   // Helper methods
   private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
     return (!authorizationsEnabled && !multiTenancyEnabled)
-        || isAuthorizedAnonymousUser(request.claims());
+        || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
       final AuthorizationRequest request, final List<AuthorizationRejection> aggregatedRejections) {
-    final var username = getUsername(request);
-    final var clientId = getClientId(request);
+    final var username = claimsExtractor.getUsername(request);
+    final var clientId = claimsExtractor.getClientId(request);
     if (clientId.isPresent()) {
       return checkAccessForEntity(request, EntityType.CLIENT, clientId.get(), aggregatedRejections);
     } else if (username.isPresent()) {
@@ -345,38 +346,6 @@ public final class AuthorizationCheckBehavior {
         new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
   }
 
-  /**
-   * Returns true, if a command is executed by an anonymous authentication. So that, no
-   * authorization checks and no tenants checks are performed. Basically, it allows to run commands
-   * without authentication safely.
-   *
-   * <p>This provides anyone, i.e., when doing a broker request, with the option to run broker
-   * requests and commands anonymously. This is helpful especially if the gateway, for example,
-   * already checks authorizations and tenancy.
-   */
-  private boolean isAuthorizedAnonymousUser(final Map<String, Object> authorizationClaims) {
-    final var authorizedAnonymousUserClaim =
-        authorizationClaims.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
-    return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
-  }
-
-  private Optional<String> getUsername(final AuthorizationRequest request) {
-    return getUsername(request.claims());
-  }
-
-  private Optional<String> getUsername(final Map<String, Object> authorizationClaims) {
-    return Optional.ofNullable((String) authorizationClaims.get(Authorization.AUTHORIZED_USERNAME));
-  }
-
-  private Optional<String> getClientId(final AuthorizationRequest request) {
-    return getClientId(request.claims());
-  }
-
-  private Optional<String> getClientId(final Map<String, Object> authorizationClaims) {
-    return Optional.ofNullable(
-        (String) authorizationClaims.get(Authorization.AUTHORIZED_CLIENT_ID));
-  }
-
   private Stream<String> getAuthorizedTenantIds(
       final Map<String, Object> authorizations,
       final EntityType entityType,
@@ -384,7 +353,7 @@ public final class AuthorizationCheckBehavior {
     return Stream.concat(
         membershipState.getMemberships(entityType, entityId, RelationType.TENANT).stream(),
         Stream.concat(
-            fetchGroups(authorizations, entityType, entityId).stream()
+            claimsExtractor.getGroups(authorizations, entityType, entityId).stream()
                 .flatMap(
                     groupId ->
                         Stream.concat(
@@ -409,13 +378,13 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
-    if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.claims())) {
+    if (!authorizationsEnabled || claimsExtractor.isAuthorizedAnonymousUser(request.claims())) {
       return Set.of(AuthorizationScope.WILDCARD);
     }
 
     final var authorizedScopes = new HashSet<AuthorizationScope>();
 
-    final var optionalClientId = getClientId(request);
+    final var optionalClientId = claimsExtractor.getClientId(request);
     if (optionalClientId.isPresent()) {
       getAuthorizedScopes(
               request.claims(),
@@ -427,7 +396,8 @@ public final class AuthorizationCheckBehavior {
     }
     // If a clientId was present, don't use the username
     else {
-      getUsername(request)
+      claimsExtractor
+          .getUsername(request)
           .map(
               username ->
                   getAuthorizedScopes(
@@ -496,7 +466,7 @@ public final class AuthorizationCheckBehavior {
                         AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
                         .stream());
     final var viaGroups =
-        fetchGroups(authorizationClaims, ownerType, ownerId).stream()
+        claimsExtractor.getGroups(authorizationClaims, ownerType, ownerId).stream()
             .<AuthorizationScope>mapMulti(
                 (groupId, stream) -> {
                   getDirectAuthorizedAuthorizationScopes(
@@ -513,16 +483,6 @@ public final class AuthorizationCheckBehavior {
                       .forEach(stream);
                 });
     return Stream.concat(direct, Stream.concat(viaRole, viaGroups));
-  }
-
-  private List<String> fetchGroups(
-      final Map<String, Object> authorizations, final EntityType ownerType, final String ownerId) {
-    final List<String> groupsClaims =
-        (List<String>) authorizations.get(Authorization.USER_GROUPS_CLAIMS);
-    if (groupsClaims != null) {
-      return groupsClaims;
-    }
-    return membershipState.getMemberships(ownerType, ownerId, RelationType.GROUP);
   }
 
   /**
@@ -550,7 +510,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private AuthorizedTenants getAuthorizedTenantIds(final Map<String, Object> authorizations) {
-    if (isAuthorizedAnonymousUser(authorizations)) {
+    if (claimsExtractor.isAuthorizedAnonymousUser(authorizations)) {
       return AuthorizedTenants.ANONYMOUS;
     }
 
@@ -559,14 +519,16 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var authorizedTenants = new HashSet<String>();
-    getUsername(authorizations)
+    claimsExtractor
+        .getUsername(authorizations)
         .ifPresent(
             username ->
                 authorizedTenants.addAll(
                     getAuthorizedTenantIds(authorizations, EntityType.USER, username)
                         .collect(Collectors.toSet())));
 
-    getClientId(authorizations)
+    claimsExtractor
+        .getClientId(authorizations)
         .ifPresent(
             clientId ->
                 authorizedTenants.addAll(
@@ -592,9 +554,7 @@ public final class AuthorizationCheckBehavior {
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(
       final Map<String, Object> authorizations) {
-    final var claims =
-        (Map<String, Object>)
-            authorizations.getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
+    final var claims = claimsExtractor.getTokenClaims(authorizations);
     return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), claims);
   }
 
