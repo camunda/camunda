@@ -671,8 +671,13 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "connect.url", database.getUrl());
     setArg(args, "connect.clusterName", database.getClusterName());
     setArg(args, "connect.dateFormat", database.getDateFormat());
-    setArg(args, "connect.socketTimeout", database.getSocketTimeout());
-    setArg(args, "connect.connectTimeout", database.getConnectionTimeout());
+    final var socketTimeout = database.getSocketTimeout();
+    setArg(args, "connect.socketTimeout", socketTimeout != null ? socketTimeout.toMillis() : null);
+    final var connectionTimeout = database.getConnectionTimeout();
+    setArg(
+        args,
+        "connect.connectTimeout",
+        connectionTimeout != null ? connectionTimeout.toMillis() : null);
 
     // Add security configuration mapping
     if (database.getSecurity() != null) {

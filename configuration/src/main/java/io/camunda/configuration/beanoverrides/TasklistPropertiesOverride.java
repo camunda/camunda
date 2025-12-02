@@ -82,10 +82,14 @@ public class TasklistPropertiesOverride {
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
     override.getElasticsearch().setDateFormat(database.getElasticsearch().getDateFormat());
-    override.getElasticsearch().setSocketTimeout(database.getElasticsearch().getSocketTimeout());
-    override
-        .getElasticsearch()
-        .setConnectTimeout(database.getElasticsearch().getConnectionTimeout());
+    final var socketTimeout = database.getElasticsearch().getSocketTimeout();
+    if (socketTimeout != null) {
+      override.getElasticsearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
+    }
+    final var connectionTimeout = database.getElasticsearch().getConnectionTimeout();
+    if (connectionTimeout != null) {
+      override.getElasticsearch().setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
+    }
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -108,8 +112,14 @@ public class TasklistPropertiesOverride {
     override.getOpenSearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpenSearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
     override.getOpenSearch().setDateFormat(database.getOpensearch().getDateFormat());
-    override.getOpenSearch().setSocketTimeout(database.getOpensearch().getSocketTimeout());
-    override.getOpenSearch().setConnectTimeout(database.getOpensearch().getConnectionTimeout());
+    final var socketTimeout = database.getOpensearch().getSocketTimeout();
+    if (socketTimeout != null) {
+      override.getOpenSearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
+    }
+    final var connectionTimeout = database.getOpensearch().getConnectionTimeout();
+    if (connectionTimeout != null) {
+      override.getOpenSearch().setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
+    }
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),
