@@ -86,9 +86,8 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
-          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}"
-          -D test.integration.aurora.aws.username=${{env.AURORA_USERNAME}}
-          -D test.integration.aurora.aws.password=${{env.AURORA_PASSWORD}}
+          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
+          -D test.integration.aurora.aws.username=zeebe-irsa
           -D test.integration.camunda.database.type=rdbms_aurora
           -P parallel-tests,extract-flaky-tests,multi-db-test
           -pl "io.camunda:camunda-qa-acceptance-tests"
