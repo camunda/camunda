@@ -32,6 +32,7 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
@@ -931,6 +932,19 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getCategory())
         .map(mapToOperations(String.class, new AuditLogCategoryConverter()))
         .ifPresent(builder::categoryOperations);
+
+    return builder.build();
+  }
+
+  static ProcessDefinitionInstanceVersionStatisticsFilter
+      toProcessDefinitionInstanceVersionStatisticsFilter(
+          final io.camunda.zeebe.gateway.protocol.rest
+                  .ProcessDefinitionInstanceVersionStatisticsFilter
+              filter) {
+    final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
+    if (filter != null) {
+      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+    }
 
     return builder.build();
   }
