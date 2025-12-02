@@ -377,6 +377,9 @@
       </if>
     </where>
     GROUP BY pi.PROCESS_DEFINITION_ID, pi.TENANT_ID
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
   <select id="processInstanceVersionStatisticsCount" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery" resultType="long">
@@ -390,8 +393,10 @@
     ${prefix}PROCESS_DEFINITION pd
     ON pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY
     <where>
+      pi.PROCESS_DEFINITION_ID = #{filter.processDefinitionId}
+      AND pi.STATE = 'ACTIVE'
       <if test="filter.tenantId != null">
-        pi.TENANT_ID = #{filter.tenantId}
+        AND pi.TENANT_ID = #{filter.tenantId}
       </if>
       <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
         AND pd.PROCESS_DEFINITION_ID IN
@@ -429,8 +434,10 @@
     ${prefix}PROCESS_DEFINITION pd
     ON pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY
     <where>
+      pi.PROCESS_DEFINITION_ID = #{filter.processDefinitionId}
+      AND pi.STATE = 'ACTIVE'
       <if test="filter.tenantId != null">
-        pi.TENANT_ID = #{filter.tenantId}
+        AND pi.TENANT_ID = #{filter.tenantId}
       </if>
       <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
         AND pd.PROCESS_DEFINITION_ID IN
