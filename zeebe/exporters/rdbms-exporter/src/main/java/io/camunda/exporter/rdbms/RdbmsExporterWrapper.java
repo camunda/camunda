@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
+import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
 import io.camunda.exporter.rdbms.handlers.ClusterVariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler;
@@ -210,6 +211,8 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
         new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
             rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
+
+    registerAuditLogHandlers(rdbmsWriter, builder);
   }
 
   private void createBatchOperationHandlers(
@@ -245,5 +248,14 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         new ProcessInstanceModificationBatchOperationExportHandler(
             rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+  }
+
+  private void registerAuditLogHandlers(
+      final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
+    // FIXME: to discuss: register for all vs register one-by-one
+    final var auditLogHandler = new AuditLogExportHandler<>(rdbmsWriter.getAuditLogWriter());
+    for (final var type : ValueType.values()) {
+      builder.withHandler(type, auditLogHandler);
+    }
   }
 }
