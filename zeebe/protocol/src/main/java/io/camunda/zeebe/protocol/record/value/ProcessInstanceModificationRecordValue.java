@@ -124,7 +124,10 @@ public interface ProcessInstanceModificationRecordValue
     /** Returns the id of the element to create a new element instance at. */
     String getTargetElementId();
 
-    /** Returns the key of the ancestor scope to use */
+    /** Returns a list of variable instructions (if available), or an empty list. */
+    List<ProcessInstanceModificationVariableInstructionValue> getVariableInstructions();
+
+    /** Returns the key of the ancestor scope to use. */
     long getAncestorScopeKey();
 
     /**

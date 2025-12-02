@@ -432,13 +432,20 @@ public final class ProcessInstanceModificationModifyProcessor
               && !BpmnElementType.MULTI_INSTANCE_BODY.equals(
                   elementInstanceState.getInstance(flowScopeKey).getValue().getBpmnElementType())) {
             final var moveInstruction = moveInstructions.get(elementId);
-            finalActivateInstructions.add(
+            final var activateInstruction =
                 new ProcessInstanceModificationActivateInstruction()
                     .setElementId(moveInstruction.getTargetElementId())
                     .setAncestorScopeKey(
                         moveInstruction.isUseSourceParentKeyAsAncestorScope()
                             ? elementInstance.getParentKey()
-                            : moveInstruction.getAncestorScopeKey()));
+                            : moveInstruction.getAncestorScopeKey());
+            moveInstruction
+                .getVariableInstructions()
+                .forEach(
+                    vi ->
+                        activateInstruction.addVariableInstruction(
+                            (ProcessInstanceModificationVariableInstruction) vi));
+            finalActivateInstructions.add(activateInstruction);
           }
           // terminate source element instance
           finalTerminateInstructions.add(
