@@ -9,12 +9,15 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({
@@ -27,14 +30,19 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
 
   private final StringProperty sourceElementIdProperty = new StringProperty("sourceElementId", "");
   private final StringProperty targetElementIdProperty = new StringProperty("targetElementId", "");
+  private final ArrayProperty<ProcessInstanceModificationVariableInstruction>
+      variableInstructionsProperty =
+          new ArrayProperty<>(
+              "variableInstructions", ProcessInstanceModificationVariableInstruction::new);
   private final LongProperty ancestorScopeKeyProperty = new LongProperty("ancestorScopeKey", -1);
   private final BooleanProperty useSourceParentKeyAsAncestorScopeProperty =
       new BooleanProperty("useSourceParentKeyAsAncestorScope", false);
 
   public ProcessInstanceModificationMoveInstruction() {
-    super(4);
+    super(5);
     declareProperty(sourceElementIdProperty)
         .declareProperty(targetElementIdProperty)
+        .declareProperty(variableInstructionsProperty)
         .declareProperty(ancestorScopeKeyProperty)
         .declareProperty(useSourceParentKeyAsAncestorScopeProperty);
   }
@@ -47,6 +55,24 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
   @Override
   public String getTargetElementId() {
     return BufferUtil.bufferAsString(getTargetElementIdBuffer());
+  }
+
+  /**
+   * This method is expensive because it copies each element before returning it. It is recommended
+   * to use {@link #hasVariableInstructions()} before calling this.
+   *
+   * <p>{@inheritDoc}
+   */
+  @Override
+  public List<ProcessInstanceModificationVariableInstructionValue> getVariableInstructions() {
+    return variableInstructionsProperty.stream()
+        .map(
+            instruction -> {
+              final var copy = new ProcessInstanceModificationVariableInstruction();
+              copy.copy(instruction);
+              return (ProcessInstanceModificationVariableInstructionValue) copy;
+            })
+        .toList();
   }
 
   @Override
@@ -93,10 +119,25 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
     return sourceElementIdProperty.getValue();
   }
 
+  /** Returns true if this record has variable instructions, otherwise false. */
+  @JsonIgnore
+  public boolean hasVariableInstructions() {
+    return !variableInstructionsProperty.isEmpty();
+  }
+
+  public ProcessInstanceModificationMoveInstruction addVariableInstruction(
+      final ProcessInstanceModificationVariableInstruction variableInstruction) {
+    variableInstructionsProperty.add().copy(variableInstruction);
+    return this;
+  }
+
   public ProcessInstanceModificationMoveInstruction copy(
       final ProcessInstanceModificationMoveInstructionValue object) {
     setSourceElementId(object.getSourceElementId());
     setTargetElementId(object.getTargetElementId());
+    object.getVariableInstructions().stream()
+        .map(ProcessInstanceModificationVariableInstruction.class::cast)
+        .forEach(this::addVariableInstruction);
     setAncestorScopeKey(object.getAncestorScopeKey());
     setUseSourceParentKeyAsAncestorScope(object.isUseSourceParentKeyAsAncestorScope());
     return this;
