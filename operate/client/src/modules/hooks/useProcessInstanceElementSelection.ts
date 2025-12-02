@@ -17,7 +17,8 @@ const ELEMENT_INSTANCE_KEY = 'elementInstanceKey';
 
 const useProcessInstanceElementSelection = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const {processInstanceId} = useProcessInstancePageParams();
+  const {processInstanceId: processInstanceKey} =
+    useProcessInstancePageParams();
   const elementInstanceKey = searchParams.get(ELEMENT_INSTANCE_KEY);
   const elementId = searchParams.get(ELEMENT_ID);
 
@@ -61,10 +62,10 @@ const useProcessInstanceElementSelection = () => {
   const {data: searchResult, isFetching: isFetchingElementInstancesSearch} =
     useElementInstancesSearch(
       elementId ?? '',
-      processInstanceId ?? '',
+      processInstanceKey ?? '',
       undefined,
       {
-        enabled: !!elementId && !elementInstanceKey && !!processInstanceId,
+        enabled: !!elementId && !elementInstanceKey && !!processInstanceKey,
       },
     );
 
