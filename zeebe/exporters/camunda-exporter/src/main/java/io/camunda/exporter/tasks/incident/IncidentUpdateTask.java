@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
@@ -47,6 +48,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final Logger logger;
   private final Duration waitForRefreshInterval;
   private final IncidentNotifier incidentNotifier;
+  private final CamundaExporterMetrics metrics;
 
   public IncidentUpdateTask(
       final ExporterMetadata metadata,
@@ -55,6 +57,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final int batchSize,
       final ScheduledExecutorService executor,
       @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
+      final CamundaExporterMetrics metrics,
       final Logger logger) {
     this(
         metadata,
@@ -63,6 +66,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
         batchSize,
         executor,
         incidentNotifier,
+        metrics,
         logger,
         Duration.ofSeconds(5));
   }
@@ -75,6 +79,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final int batchSize,
       final ScheduledExecutorService executor,
       @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
+      final CamundaExporterMetrics metrics,
       final Logger logger,
       final Duration waitForRefreshInterval) {
     this.metadata = metadata;
@@ -82,6 +87,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     this.ignoreMissingData = ignoreMissingData;
     this.batchSize = batchSize;
     this.executor = executor;
+    this.metrics = metrics;
     this.logger = logger;
     this.waitForRefreshInterval = waitForRefreshInterval;
     this.incidentNotifier = incidentNotifier;
@@ -137,11 +143,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
     logger.trace("Applying the following pending incident updates: {}", batch.newIncidentStates());
     final var check = searchForInstances(data);
+    final int incidentCount = batch.newIncidentStates().size();
     if (check != InstancesCheck.OK) {
       // there was missing data, but this is often transient, so we just skip this batch for now.
       // we return the batch size so it's clear that we want to try again soon (as there was work
       // to do, but we just can't do it ATM)
-      return CompletableFuture.completedFuture(batch.newIncidentStates().size());
+      metrics.recordIncidentUpdatesSkipped(incidentCount);
+      return CompletableFuture.completedFuture(incidentCount);
     }
 
     data.incidents()
@@ -159,12 +167,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
                   """
         Finished applying {} pending incident updates ({} documents updated), updating last \
         incident update position to {}""",
-                  batch.newIncidentStates().size(),
+                  incidentCount,
                   documentsUpdated,
                   batch.highestPosition());
 
               metadata.setLastIncidentUpdatePosition(batch.highestPosition());
 
+              metrics.recordIncidentUpdatesProcessed(incidentCount);
               return CompletableFuture.completedFuture(documentsUpdated);
             },
             executor);
