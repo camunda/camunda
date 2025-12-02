@@ -1,0 +1,48 @@
+{
+  "index_patterns": [
+    "zeebe-record_global-listeners_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-global-listeners": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "listenersConfigKey": {
+              "type": "long"
+            },
+            "taskListeners": {
+              "type": "nested",
+              "dynamic": "strict",
+              "properties": {
+                "type": {
+                  "type": "keyword"
+                },
+                "retries": {
+                  "type": "text"
+                },
+                "eventTypes": {
+                  "type": "keyword"
+                },
+                "afterNonGlobal": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
