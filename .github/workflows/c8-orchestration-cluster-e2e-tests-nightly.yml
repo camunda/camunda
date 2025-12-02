@@ -11,6 +11,7 @@ name: C8 Orchestration Cluster E2E Tests Nightly
 
 on:
   pull_request:
+    types: [opened, edited, synchronize]
 
 permissions:
   contents: read
