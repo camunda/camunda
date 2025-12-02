@@ -376,7 +376,6 @@ const TopPanel: React.FC = observer(() => {
                 }
                 selectedFlowNodeIds={selectedFlowNode}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                  console.log({flowNodeId});
                   if (modificationsStore.state.status === 'moving-token') {
                     const ancestorSelectionRequired = hasMultipleScopes(
                       businessObjects[flowNodeId ?? ''],
