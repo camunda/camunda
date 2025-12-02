@@ -362,6 +362,7 @@ public final class RequestMapper extends RequestUtil {
         new BrokerModifyProcessInstanceRequest()
             .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
             .addActivateInstructions(grpcRequest.getActivateInstructionsList())
+            .addMoveInstructions(grpcRequest.getMoveInstructionsList())
             .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
 
     if (grpcRequest.hasOperationReference()) {
