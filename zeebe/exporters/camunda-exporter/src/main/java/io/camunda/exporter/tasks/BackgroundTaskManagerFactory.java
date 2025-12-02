@@ -309,6 +309,7 @@ public final class BackgroundTaskManagerFactory {
             postExport.getBatchSize(),
             executor,
             incidentNotifier,
+            metrics,
             logger),
         1,
         postExport.getDelayBetweenRuns(),

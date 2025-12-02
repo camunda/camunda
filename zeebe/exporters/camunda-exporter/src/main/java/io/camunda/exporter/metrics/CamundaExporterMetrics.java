@@ -63,6 +63,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of standalone-decisions that have been archived. */
   private final Counter standaloneDecisionsArchived;
 
+  /** Count of incident updates that have been skipped. */
+  private final Counter incidentUpdatesSkipped;
+
+  /** Count of incident updates that were processed. */
+  private final Counter incidentUpdatesProcessed;
+
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
@@ -174,6 +180,17 @@ public class CamundaExporterMetrics implements AutoCloseable {
                 "Duration of how long it takes from resolving to archiving entities, all in all together.")
             .publishPercentileHistogram()
             .register(meterRegistry);
+    incidentUpdatesSkipped =
+        Counter.builder(meterName("incident.updates"))
+            .tag("action", "skipped")
+            .description(
+                "Count of incidents that have been skipped due to matching process instances not being found.")
+            .register(meterRegistry);
+    incidentUpdatesProcessed =
+        Counter.builder(meterName("incident.updates"))
+            .tag("action", "processed")
+            .description("Count of incidents that have been processed.")
+            .register(meterRegistry);
     bulkSize =
         DistributionSummary.builder(meterName("bulk.size"))
             .description("How many items were exported in one bulk request")
@@ -275,6 +292,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
     standaloneDecisionsArchiving.increment(count);
   }
 
+  public void recordIncidentUpdatesSkipped(final int count) {
+    incidentUpdatesSkipped.increment(count);
+  }
+
+  public void recordIncidentUpdatesProcessed(final int count) {
+    incidentUpdatesProcessed.increment(count);
+  }
+
   public void recordFlushFailureType(final String failureType) {
     meterRegistry.counter(meterName("flush.failure.type"), "failure_type", failureType).increment();
   }
@@ -336,6 +361,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
     meterRegistry.remove(recordExportDuration);
+    meterRegistry.remove(incidentUpdatesSkipped);
+    meterRegistry.remove(incidentUpdatesProcessed);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(meterName("since.last.flush.seconds"));
