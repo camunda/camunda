@@ -5,9 +5,12 @@
 ---
 name: C8 Orchestration Cluster E2E Tests Nightly
 
+#on:
+#  schedule:
+#    - cron: "0 0 * * *" # Run all tests at midnight UTC
+
 on:
-  schedule:
-    - cron: "0 0 * * *" # Run all tests at midnight UTC
+  pull_request:
 
 permissions:
   contents: read
@@ -157,7 +160,7 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          INCLUDE_SLACK_REPORTER: true
+          INCLUDE_SLACK_REPORTER: false
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
@@ -181,11 +184,11 @@ jobs:
             fi
           else
             if [[ "${{ matrix.branch }}" == "main" ]]; then
-             echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
-             npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
+              echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
+              npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
             elif [[ "${{ matrix.branch }}" != "stable/8.6" && "${{ matrix.branch }}" != "stable/8.7" ]]; then
-             echo "Running focused tests in V1 mode: Tasklist + HTO flows (including only @v1-only tests)"
-              npm run test -- --project=chromium tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep "@v1-only"
+              echo "Running focused tests in V1 mode
+              npm run test -- --project=chromium --grep "@v1-only"
             else
               echo "Running all tests in V1 mode"
               npm run test -- --project=chromium
