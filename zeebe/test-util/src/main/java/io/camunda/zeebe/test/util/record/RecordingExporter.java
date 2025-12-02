@@ -127,6 +127,7 @@ public final class RecordingExporter implements Exporter {
 
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
+  private static boolean failOnTimeout = true;
 
   private Controller controller;
 
@@ -144,6 +145,14 @@ public final class RecordingExporter implements Exporter {
    */
   public static void disableAwaitingIncomingRecords() {
     setMaximumWaitTime(0);
+  }
+
+  public static void failOnTimeout() {
+    failOnTimeout = true;
+  }
+
+  public static void doNotFailOnTimeout() {
+    failOnTimeout = false;
   }
 
   @Override
@@ -663,6 +672,12 @@ public final class RecordingExporter implements Exporter {
     autoAcknowledge = shouldAcknowledgeRecords;
   }
 
+  public static class AwaitRecordIteratorTimeoutException extends RuntimeException {
+    public AwaitRecordIteratorTimeoutException(final String message) {
+      super(message);
+    }
+  }
+
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {
 
     private int nextIndex = 0;
@@ -679,12 +694,18 @@ public final class RecordingExporter implements Exporter {
         final long endTime = now + maximumWaitTime;
         while (isEmpty() && endTime > now) {
           final long waitTime = endTime - now;
+          boolean timedOut = false;
           try {
-            IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
+            timedOut = !IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
           } catch (final InterruptedException ignored) {
             // ignored
           }
           now = System.currentTimeMillis();
+
+          if (failOnTimeout && timedOut) {
+            throw new AwaitRecordIteratorTimeoutException(
+                "RecordingExporter timed out after " + waitTime + "ms");
+          }
         }
         return !isEmpty();
       } finally {
