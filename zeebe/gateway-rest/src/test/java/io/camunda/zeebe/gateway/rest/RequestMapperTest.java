@@ -8,19 +8,23 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
+import io.camunda.zeebe.gateway.protocol.rest.DirectAncestorKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ProblemDetail;
 
@@ -90,9 +94,17 @@ class RequestMapperTest {
   void shouldMapProcessInstanceModifyBatchOperationRequest() {
     // given
     final var moveInstruction =
-        new ProcessInstanceModificationMoveBatchOperationInstruction()
+        new ProcessInstanceModificationMoveInstruction()
             .sourceElementId("source1")
-            .targetElementId("target1");
+            .targetElementId("target1")
+            .ancestorScopeInstruction(
+                new DirectAncestorKeyInstruction()
+                    .ancestorScopeType("direct")
+                    .ancestorElementInstanceKey("123456"))
+            .addVariableInstructionsItem(
+                new ModifyProcessInstanceVariableInstruction()
+                    .scopeId("scopeId")
+                    .variables(Map.of("foo", "bar")));
     final var filter = new ProcessInstanceFilter();
     filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
 
@@ -115,6 +127,10 @@ class RequestMapperTest {
             instruction -> {
               assertThat(instruction.getSourceElementId()).isEqualTo("source1");
               assertThat(instruction.getTargetElementId()).isEqualTo("target1");
+              assertThat(instruction.getAncestorScopeKey()).isEqualTo(123456L);
+              assertThat(instruction.getVariableInstructions())
+                  .extracting("elementId", "variables")
+                  .containsExactly(tuple("scopeId", Map.of("foo", "bar")));
             });
   }
 
@@ -122,7 +138,7 @@ class RequestMapperTest {
   void shouldNotMapProcessInstanceModifyBatchOperationRequestWhenInvalid() {
     // given
     final var moveInstruction =
-        new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
+        new ProcessInstanceModificationMoveInstruction().sourceElementId("source1");
     final var filter = new ProcessInstanceFilter();
     filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
 
