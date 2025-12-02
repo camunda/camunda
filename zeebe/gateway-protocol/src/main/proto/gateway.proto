@@ -757,6 +757,8 @@ message ModifyProcessInstanceRequest {
   repeated TerminateInstruction terminateInstructions = 3;
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 4;
+  // instructions describing which elements should be moved from one scope to another.
+  repeated MoveInstruction moveInstructions = 5;
 
   message ActivateInstruction {
     // the id of the element that should be activated
@@ -782,8 +784,26 @@ message ModifyProcessInstanceRequest {
   }
 
   message TerminateInstruction {
-    // the id of the element that should be terminated
+    // the key of the element instance that should be terminated
     int64 elementInstanceKey = 1;
+    // the id of the elements that should be terminated
+    string elementId = 2;
+  }
+
+  message MoveInstruction {
+    // the id of the elements that should be moved
+    string sourceElementId = 1;
+    // the id of the element scope that the elements should be moved to
+    string targetElementId = 2;
+    // instructions describing which variables should be created
+    repeated VariableInstruction variableInstructions = 3;
+    // the key of the ancestor scope the element instance should be created in;
+    // set to -1 to create the new element instance within an existing element
+    // instance of the flow scope
+    int64 ancestorElementInstanceKey = 4;
+    // whether to use the source element's parent key as the ancestor element
+    // instance key
+    bool useSourceParentKeyAsAncestorScopeKey = 5;
   }
 }
 
