@@ -45,15 +45,22 @@ const mockElementInstance2: ElementInstance = {
   tenantId: '<default>',
 };
 
-const getWrapper = (
-  initialEntries: React.ComponentProps<
-    typeof MemoryRouter
-  >['initialEntries'] = [Paths.processInstance('123')],
-) => {
+const getWrapper = (initialSearchParams?: {[key: string]: string}) => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
+    const searchParams = new URLSearchParams();
+    if (initialSearchParams) {
+      Object.entries(initialSearchParams).forEach(([key, value]) => {
+        searchParams.set(key, value);
+      });
+    }
+
     return (
       <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={initialEntries}>
+        <MemoryRouter
+          initialEntries={[
+            `${Paths.processInstance('123')}?${searchParams.toString()}`,
+          ]}
+        >
           <Routes>
             <Route path={Paths.processInstance()} element={children} />
           </Routes>
@@ -115,9 +122,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1`,
-        ]),
+        wrapper: getWrapper({elementId: 'service-task-1'}),
       });
 
       await waitFor(() =>
@@ -136,9 +141,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1`,
-        ]),
+        wrapper: getWrapper({elementId: 'service-task-1'}),
       });
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
@@ -153,9 +156,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1`,
-        ]),
+        wrapper: getWrapper({elementId: 'service-task-1'}),
       });
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
@@ -167,9 +168,7 @@ describe('useProcessInstanceElementSelection', () => {
       mockSearchElementInstances().withNetworkError();
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1`,
-        ]),
+        wrapper: getWrapper({elementId: 'service-task-1'}),
       });
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
@@ -217,9 +216,10 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1&elementInstanceKey=2251799813699889`,
-        ]),
+        wrapper: getWrapper({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+        }),
       });
 
       await waitFor(() =>
@@ -235,9 +235,10 @@ describe('useProcessInstanceElementSelection', () => {
       mockFetchElementInstance('2251799813699889').withNetworkError();
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1&elementInstanceKey=2251799813699889`,
-        ]),
+        wrapper: getWrapper({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+        }),
       });
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
@@ -251,20 +252,16 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1&elementInstanceKey=2251799813699889`,
-        ]),
+        wrapper: getWrapper({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+        }),
       });
 
       await waitFor(() =>
         expect(result.current.selectedElementInstance).toEqual(
           mockElementInstance,
         ),
-      );
-
-      // searchElementInstances should not be called
-      expect(result.current.selectedElementInstance).toEqual(
-        mockElementInstance,
       );
     });
   });
@@ -282,9 +279,10 @@ describe('useProcessInstanceElementSelection', () => {
           return {...hook, location};
         },
         {
-          wrapper: getWrapper([
-            `${Paths.processInstance('123')}?elementId=service-task-1&elementInstanceKey=2251799813699889`,
-          ]),
+          wrapper: getWrapper({
+            elementId: 'service-task-1',
+            elementInstanceKey: '2251799813699889',
+          }),
         },
       );
 
@@ -305,9 +303,10 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
-        wrapper: getWrapper([
-          `${Paths.processInstance('123')}?elementId=service-task-1&elementInstanceKey=2251799813699889`,
-        ]),
+        wrapper: getWrapper({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+        }),
       });
 
       await waitFor(() =>
