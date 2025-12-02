@@ -42,3 +42,11 @@ export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {setupProcessInstanceForTests} from './job-requestHelpers';
 export {activateJobToObtainAValidJobKey} from './job-requestHelpers';
+export {
+  createGlobalClusterVariable,
+  createTenantClusterVariable,
+  createGlobalClusterVariablesAndStoreResponseFields,
+  deleteGlobalClusterVariable,
+  deleteTenantClusterVariable,
+  assertClusterVariableInResponse,
+} from './cluster-variable-requestHelpers';
