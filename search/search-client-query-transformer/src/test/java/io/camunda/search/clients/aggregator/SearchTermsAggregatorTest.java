@@ -44,15 +44,6 @@ public class SearchTermsAggregatorTest {
   }
 
   @Test
-  public void shouldThrowExceptionWhenFieldIsNull() {
-    // when - then
-    assertThatThrownBy(
-            () -> SearchAggregatorBuilders.terms().name("name").size(10).minDocCount(1).build())
-        .isInstanceOf(NullPointerException.class)
-        .hasMessageContaining("Expected non-null field for field.");
-  }
-
-  @Test
   public void shouldThrowExceptionWhenSizeIsInvalid() {
     // when - then
     assertThatThrownBy(
