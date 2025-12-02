@@ -30,6 +30,7 @@ const processInstanceSchema = z.object({
 	processDefinitionKey: z.string(),
 	parentProcessInstanceKey: z.string().optional(),
 	parentElementInstanceKey: z.string().optional(),
+	tags: z.array(z.string().min(1).max(100).regex(/^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$/)).max(10).optional(),
 });
 type ProcessInstance = z.infer<typeof processInstanceSchema>;
 
