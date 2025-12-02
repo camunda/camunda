@@ -300,13 +300,13 @@ public class CamundaMultiDBExtension
         multiDbConfigurator.configureElasticsearchSupport(
             elasticSearchUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
-        setupHelper = new ElasticOpenSearchSetupHelper(elasticSearchUrl, expectedDescriptors);
+        setupHelper = new ElasticsearchSetupHelper(elasticSearchUrl, expectedDescriptors);
       }
       case ES -> {
         multiDbConfigurator.configureElasticsearchSupport(
             DEFAULT_ES_URL, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
-        setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
+        setupHelper = new ElasticsearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
       }
       case OS -> {
         multiDbConfigurator.configureOpenSearchSupport(
@@ -317,7 +317,7 @@ public class CamundaMultiDBExtension
             isHistoryRelatedTest,
             false);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
-        setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
+        setupHelper = new OpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
       case RDBMS_H2 ->
           multiDbConfigurator.configureRDBMSSupport(
@@ -376,6 +376,15 @@ public class CamundaMultiDBExtension
         setupHelper = new AWSOpenSearchSetupHelper(awsOSUrl, expectedDescriptors);
       }
       default -> throw new RuntimeException("Database type not supported: " + databaseType);
+    }
+
+    if (isHistoryRelatedTest) {
+      // make sure history clean up policies are applied more often
+      final Duration pollInterval =
+          getDatabaseType(context) == DatabaseType.ES
+              ? Duration.ofSeconds(5)
+              : Duration.ofMinutes(1);
+      setupHelper.applyIndexPoliciesPollInterval(pollInterval);
     }
 
     // we need to close the test application before cleaning up
@@ -707,6 +716,11 @@ public class CamundaMultiDBExtension
     @Override
     public boolean validateConnection() {
       return true;
+    }
+
+    @Override
+    public void applyIndexPoliciesPollInterval(final Duration pollInterval) {
+      // do nothing
     }
 
     @Override
