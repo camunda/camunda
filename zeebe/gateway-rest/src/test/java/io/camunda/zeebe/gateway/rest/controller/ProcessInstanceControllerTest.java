@@ -1234,9 +1234,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"No elementInstanceKey provided.",
+                "detail":"At least one of [elementId, elementInstanceKey] is required.",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 
