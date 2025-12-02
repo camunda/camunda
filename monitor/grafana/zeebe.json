@@ -20709,7 +20709,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(zeebe_backpressure_requests_limit{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})by (partition)",
+              "expr": "sum(zeebe_backpressure_requests_limit{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"} and on(namespace, partition, pod, instance) (atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"} == 3)) by (partition)",
               "hide": false,
               "legendFormat": "Partition: {{partition}}",
               "range": true,
