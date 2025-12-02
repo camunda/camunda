@@ -52,7 +52,7 @@ public final class AuthorizationCheckBehavior {
   public static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
   public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
-      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
+      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '[*, %s]'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
   public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
@@ -250,7 +250,7 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    final var isAuthorizedForResource =
+    final var grantedScopes =
         entityIds.stream()
             .flatMap(
                 entityId ->
@@ -260,15 +260,39 @@ public final class AuthorizationCheckBehavior {
                         entityId,
                         request.resourceType(),
                         request.permissionType()))
-            .anyMatch(
-                authorizationScope -> request.authorizationScopes().contains(authorizationScope));
-    if (isAuthorizedForResource) {
+            .collect(Collectors.toSet());
+
+    if (isAuthorizedByScopes(request, grantedScopes)) {
       return Either.right(null);
     }
 
     return Either.left(
         AuthorizationRejection.ofPermission(
             new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage())));
+  }
+
+  private boolean isAuthorizedByScopes(
+      final AuthorizationRequest request, final Set<AuthorizationScope> grantedScopes) {
+
+    if (grantedScopes.isEmpty()) {
+      return false;
+    }
+
+    // wildcard grants access to all resources
+    if (grantedScopes.contains(AuthorizationScope.WILDCARD)) {
+      return true;
+    }
+
+    // no specific resources requested = need wildcard (already checked above)
+    if (request.resourceIds().isEmpty()) {
+      return false;
+    }
+
+    // check if any granted scope matches any requested `resourceId`
+    return grantedScopes.stream()
+        .map(AuthorizationScope::getResourceId)
+        .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
+        .anyMatch(request.resourceIds()::contains);
   }
 
   /**
