@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
@@ -117,12 +118,14 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .modify(user.getUsername());
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceModificationRecords(
-                    ProcessInstanceModificationIntent.MODIFIED)
-                .withProcessInstanceKey(processInstanceKey)
-                .exists())
-        .isTrue();
+    final var record =
+        RecordingExporter.processInstanceModificationRecords(
+                ProcessInstanceModificationIntent.MODIFIED)
+            .withProcessInstanceKey(processInstanceKey)
+            .findFirst();
+    assertThat(record.isPresent()).isTrue();
+    assertThat(record.get().getAuthorizations())
+        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   @Test
@@ -142,14 +145,15 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .modify(user.getUsername());
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceModificationRecords()
-                .onlyCommandRejections()
-                .getFirst())
+    final var record =
+        RecordingExporter.processInstanceModificationRecords().onlyCommandRejections().getFirst();
+    Assertions.assertThat(record)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'MODIFY_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+    assertThat(record.getAuthorizations())
+        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   private UserRecordValue createUser() {

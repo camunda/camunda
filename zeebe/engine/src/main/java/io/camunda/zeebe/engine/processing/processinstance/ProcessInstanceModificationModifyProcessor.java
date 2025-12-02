@@ -292,7 +292,10 @@ public final class ProcessInstanceModificationModifyProcessor
             });
 
     stateWriter.appendFollowUpEvent(
-        eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord);
+        eventKey,
+        ProcessInstanceModificationIntent.MODIFIED,
+        extendedRecord,
+        command.getAuthorizations());
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord, command);
