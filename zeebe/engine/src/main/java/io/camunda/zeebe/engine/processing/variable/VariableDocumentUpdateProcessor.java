@@ -157,7 +157,8 @@ public final class VariableDocumentUpdateProcessor
                 userTaskRecord.getProcessInstanceKey(),
                 userTaskRecord.getBpmnProcessIdBuffer(),
                 userTaskRecord.getTenantId(),
-                value.getVariablesBuffer());
+                value.getVariablesBuffer(),
+                record.getAuthorizations());
         case PROPAGATE ->
             variableBehavior.mergeDocument(
                 userTaskRecord.getElementInstanceKey(),
@@ -165,7 +166,8 @@ public final class VariableDocumentUpdateProcessor
                 userTaskRecord.getProcessInstanceKey(),
                 userTaskRecord.getBpmnProcessIdBuffer(),
                 userTaskRecord.getTenantId(),
-                value.getVariablesBuffer());
+                value.getVariablesBuffer(),
+                record.getAuthorizations());
         default ->
             throw new IllegalStateException(
                 "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
@@ -197,7 +199,8 @@ public final class VariableDocumentUpdateProcessor
             processInstanceKey,
             bpmnProcessId,
             tenantId,
-            value.getVariablesBuffer());
+            value.getVariablesBuffer(),
+            record.getAuthorizations());
       } else {
         variableBehavior.mergeDocument(
             scope.getKey(),
@@ -205,7 +208,8 @@ public final class VariableDocumentUpdateProcessor
             processInstanceKey,
             bpmnProcessId,
             tenantId,
-            value.getVariablesBuffer());
+            value.getVariablesBuffer(),
+            record.getAuthorizations());
       }
     } catch (final MsgpackReaderException e) {
       final String reason =

@@ -262,7 +262,8 @@ public final class ProcessInstanceModificationModifyProcessor
                                   scopeKey,
                                   processInstance,
                                   process,
-                                  instruction));
+                                  instruction,
+                                  command.getAuthorizations()));
 
                   extendedRecord.addActivateInstruction(
                       ((ProcessInstanceModificationActivateInstruction) instruction)
@@ -762,7 +763,8 @@ public final class ProcessInstanceModificationModifyProcessor
       final Long scopeKey,
       final ElementInstance processInstance,
       final DeployedProcess process,
-      final ProcessInstanceModificationActivateInstructionValue activate) {
+      final ProcessInstanceModificationActivateInstructionValue activate,
+      final Map<String, Object> authorizationClaims) {
     activate.getVariableInstructions().stream()
         .filter(
             instruction ->
