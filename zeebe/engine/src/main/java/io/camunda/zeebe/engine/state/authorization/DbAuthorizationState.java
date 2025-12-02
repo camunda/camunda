@@ -169,8 +169,8 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                   permissionType,
                   Set.of(
                       new AuthorizationScope(
-                          persistedAuthorization.getResourceMatcher(),
-                          persistedAuthorization.getResourceId())));
+                          authorizationToDelete.getResourceMatcher(),
+                          authorizationToDelete.getResourceId())));
             });
 
     // delete the old authorization record
