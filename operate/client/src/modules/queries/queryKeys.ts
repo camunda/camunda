@@ -72,6 +72,10 @@ const queryKeys = {
       'processDefinition',
       processDefinitionKey,
     ],
+    search: (payload?: object) =>
+      payload
+        ? ['processDefinitionsSearch', payload]
+        : ['processDefinitionsSearch'],
   },
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
