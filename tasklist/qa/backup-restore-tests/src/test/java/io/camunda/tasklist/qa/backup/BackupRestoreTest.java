@@ -29,7 +29,6 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.repositories.fs.FsRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
@@ -73,7 +72,6 @@ public class BackupRestoreTest {
     testContext = new BackupRestoreTestContext().setIndexPrefix(INDEX_PREFIX);
   }
 
-  @Disabled
   @Test
   public void testBackupRestore() throws Exception {
     startAllApps();
