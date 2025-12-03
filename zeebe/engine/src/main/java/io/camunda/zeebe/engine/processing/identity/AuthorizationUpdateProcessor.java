@@ -88,7 +88,8 @@ public class AuthorizationUpdateProcessor
               stateWriter.appendFollowUpEvent(
                   command.getValue().getAuthorizationKey(),
                   AuthorizationIntent.UPDATED,
-                  command.getValue());
+                  command.getValue(),
+                  command.getAuthorizations());
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authorizationCheckBehavior.clearAuthorizationsCache();
@@ -108,7 +109,8 @@ public class AuthorizationUpdateProcessor
     stateWriter.appendFollowUpEvent(
         authorizationRecord.getAuthorizationKey(),
         AuthorizationIntent.UPDATED,
-        authorizationRecord);
+        authorizationRecord,
+        command.getAuthorizations());
     distributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
