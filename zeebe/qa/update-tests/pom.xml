@@ -165,6 +165,9 @@
           <excludes>
             <exclude>io.camunda.zeebe.test.migration.**</exclude>
           </excludes>
+          <systemPropertyVariables>
+            <maven.multiModuleProjectDirectory>${maven.multiModuleProjectDirectory}</maven.multiModuleProjectDirectory>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>

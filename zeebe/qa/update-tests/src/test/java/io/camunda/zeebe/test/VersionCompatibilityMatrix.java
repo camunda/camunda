@@ -85,13 +85,6 @@ final class VersionCompatibilityMatrix {
         }
       };
 
-  public VersionCompatibilityMatrix() {
-    final GithubAPI api = new GithubAPI();
-    versionProvider =
-        new CachedVersionProvider(
-            new AdvancedGithubVersionProvider(new GithubVersionProvider(api), api));
-  }
-
   public VersionCompatibilityMatrix(final VersionProvider versionProvider) {
     this.versionProvider = versionProvider;
   }
@@ -100,6 +93,19 @@ final class VersionCompatibilityMatrix {
       final VersionProvider versionProvider, final VersionCompatibilityConfig config) {
     this.versionProvider = versionProvider;
     this.config = config;
+  }
+
+  public static VersionCompatibilityMatrix useCached() {
+    final var api = new GithubAPI();
+    return new VersionCompatibilityMatrix(
+        new CachedVersionProvider(
+            new AdvancedGithubVersionProvider(new GithubVersionProvider(api), api)));
+  }
+
+  public static VersionCompatibilityMatrix useUncached() {
+    final var api = new GithubAPI();
+    return new VersionCompatibilityMatrix(
+        new AdvancedGithubVersionProvider(new GithubVersionProvider(api), api));
   }
 
   /**
@@ -116,16 +122,14 @@ final class VersionCompatibilityMatrix {
    * </ul>
    */
   static Stream<Arguments> auto() {
-    final var matrix = new VersionCompatibilityMatrix();
-
     if (System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY") != null) {
-      return matrix.full();
+      return useCached().full();
     } else if (System.getenv("ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY") != null) {
-      return matrix.fromPreviousPatchesToCurrent();
+      return useCached().fromPreviousPatchesToCurrent();
     } else if (System.getenv("CI") != null) {
-      return matrix.fromFirstAndLastPatchToCurrent();
+      return useCached().fromFirstAndLastPatchToCurrent();
     } else {
-      return matrix.fromPreviousMinorToCurrent();
+      return useUncached().fromPreviousMinorToCurrent();
     }
   }
 
@@ -281,8 +285,7 @@ final class VersionCompatibilityMatrix {
   }
 
   static class CachedVersionProvider implements VersionProvider {
-
-    private static final Path CACHE_FILE = Paths.get(".cache", "camunda-versions.json");
+    private static final Path CACHE_FILE = getCacheFilePath();
 
     private final VersionProvider delegate;
     private final Path cacheFile;
@@ -296,8 +299,27 @@ final class VersionCompatibilityMatrix {
       this.cacheFile = cacheFile;
     }
 
+    private static Path getCacheFilePath() {
+      final var workspace = System.getenv("GITHUB_WORKSPACE");
+      final var mavenMultiModule = System.getProperty("maven.multiModuleProjectDirectory");
+      final var userDir = System.getProperty("user.dir");
+
+      final var baseDir =
+          Objects.requireNonNullElse(
+              workspace, Objects.requireNonNullElse(mavenMultiModule, userDir));
+
+      LOG.info("Cache base directory resolution:");
+      LOG.info("  GITHUB_WORKSPACE = {}", workspace);
+      LOG.info("  maven.multiModuleProjectDirectory = {}", mavenMultiModule);
+      LOG.info("  user.dir = {}", userDir);
+
+      return Paths.get(baseDir, ".cache", "camunda-versions.json");
+    }
+
     @Override
     public Stream<VersionInfo> discoverVersions() {
+      LOG.debug("Cache file location: {}", cacheFile.toAbsolutePath());
+
       // Try to load from cache first
       final var cachedVersions = loadFromCache();
       if (cachedVersions.isPresent()) {
@@ -538,7 +560,6 @@ final class VersionCompatibilityMatrix {
       final var token = System.getenv("GH_TOKEN");
       if (token != null && !token.isEmpty()) {
         builder.header("Authorization", "Bearer " + token);
-        LOG.debug("Using authenticated GitHub API request with GH_TOKEN");
       }
       return builder;
     }
