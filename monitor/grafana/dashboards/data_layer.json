@@ -3397,7 +3397,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3448,7 +3448,7 @@
                   },
                   {
                     "color": "red",
-                    "value": 80
+                    "value": 10485760
                   }
                 ]
               },
@@ -3481,7 +3481,7 @@
             {
               "disableTextWrap": false,
               "editorMode": "builder",
-              "expr": "rate(zeebe_rdbms_exporter_queue_memory_bytes_sum[$__rate_interval])",
+              "expr": "rate(zeebe_rdbms_exporter_queue_memory_bytes_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_queue_memory_bytes_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
               "format": "time_series",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
