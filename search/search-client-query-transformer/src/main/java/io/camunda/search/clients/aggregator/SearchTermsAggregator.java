@@ -85,8 +85,24 @@ public record SearchTermsAggregator(
       return this;
     }
 
+    private void validateFieldOrScript(final String field, final String script) {
+      final boolean fieldProvided = field != null && !field.isBlank();
+      final boolean scriptProvided = script != null && !script.isBlank();
+
+      if (fieldProvided == scriptProvided) {
+        // both true or both false → invalid
+        throw new IllegalArgumentException(
+            "Exactly one of 'field' or 'script' must be provided for SearchTermsAggregator, but received: "
+                + "field="
+                + field
+                + ", script="
+                + script);
+      }
+    }
+
     @Override
     public SearchTermsAggregator build() {
+      validateFieldOrScript(field, script);
       return new SearchTermsAggregator(
           Objects.requireNonNull(name, "Expected non-null field for name."),
           field,
