@@ -160,6 +160,21 @@ public final class CatchEventBehavior {
     unsubscribeFromMessageEvents(
         elementInstanceKey, sub -> elementIdFilter.test(sub.getRecord().getElementIdBuffer()));
     unsubscribeFromSignalEvents(elementInstanceKey, elementIdFilter);
+    unsubscribeFromConditionalEvents(elementInstanceKey, elementIdFilter);
+  }
+
+  private void unsubscribeFromConditionalEvents(
+      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    conditionalSubscriptionState.visitByScopeKey(
+        elementInstanceKey,
+        subscription -> {
+          if (elementIdFilter.test(subscription.getRecord().getCatchEventIdBuffer())) {
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(),
+                ConditionalSubscriptionIntent.DELETED,
+                subscription.getRecord());
+          }
+        });
   }
 
   /**
