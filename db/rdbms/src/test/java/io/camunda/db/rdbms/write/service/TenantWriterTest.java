@@ -1,0 +1,85 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.write.service;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.db.rdbms.write.domain.TenantDbModel;
+import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
+import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class TenantWriterTest {
+
+  private ExecutionQueue executionQueue;
+  private TenantWriter writer;
+
+  @BeforeEach
+  void setUp() {
+    executionQueue = mock(ExecutionQueue.class);
+    writer = new TenantWriter(executionQueue);
+  }
+
+  @Test
+  void shouldCreateTenant() {
+    final var model =
+        new TenantDbModel.Builder()
+            .tenantId("tenant1")
+            .name("Test Tenant")
+            .description("Description")
+            .build();
+
+    writer.create(model);
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void shouldUpdateTenantWhenNotMerged() {
+    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(false);
+
+    final var model = new TenantDbModel.Builder().tenantId("tenant1").name("Updated Name").build();
+
+    writer.update(model);
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void shouldAddMember() {
+    final var member = new TenantMemberDbModel("tenant1", "user1", "USER");
+
+    writer.addMember(member);
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void shouldRemoveMember() {
+    final var member = new TenantMemberDbModel("tenant1", "user1", "USER");
+
+    writer.removeMember(member);
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void shouldDeleteTenant() {
+    final var model = new TenantDbModel.Builder().tenantId("tenant1").build();
+
+    writer.delete(model);
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+}

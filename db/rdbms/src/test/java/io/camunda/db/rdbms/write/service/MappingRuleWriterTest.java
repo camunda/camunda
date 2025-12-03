@@ -1,0 +1,57 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.write.service;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.QueueItem;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class MappingRuleWriterTest {
+
+  private ExecutionQueue executionQueue;
+  private MappingRuleWriter writer;
+
+  @BeforeEach
+  void setUp() {
+    executionQueue = mock(ExecutionQueue.class);
+    writer = new MappingRuleWriter(executionQueue);
+  }
+
+  @Test
+  void shouldCreateMappingRule() {
+    final var model =
+        new MappingRuleDbModel("rule1", 123L, "claim1", "value1", "Test Mapping");
+
+    writer.create(model);
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void shouldUpdateMappingRule() {
+    final var model =
+        new MappingRuleDbModel("rule1", 123L, "claim1", "value1", "Test Mapping");
+
+    writer.update(model);
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+
+  @Test
+  void shouldDeleteMappingRule() {
+    writer.delete("rule1");
+
+    verify(executionQueue).executeInQueue(any(QueueItem.class));
+  }
+}
