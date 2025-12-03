@@ -16,6 +16,7 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -42,12 +43,18 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            // FIXME: Adjust to provide correct resource type, once available
+            //  (see https://github.com/camunda/camunda/issues/41120)
+            .getOrDefault(AuthorizationResourceType.UNSPECIFIED.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         AuditLogDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(dbPage));
