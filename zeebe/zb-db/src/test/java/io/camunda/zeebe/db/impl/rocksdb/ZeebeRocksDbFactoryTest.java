@@ -92,6 +92,7 @@ final class ZeebeRocksDbFactoryTest {
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
@@ -99,7 +100,8 @@ final class ZeebeRocksDbFactoryTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+            defaultPartitionCount);
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -111,7 +113,7 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(101_408_950L, CompactionPriority.OldestSmallestSeqFirst, 4);
+        .containsExactly(50_704_475L, CompactionPriority.OldestSmallestSeqFirst, 4);
 
     // then - user options should override defaults
     assertThat(customOptions)
@@ -137,7 +139,7 @@ final class ZeebeRocksDbFactoryTest {
     assertThat(defaults.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
     assertThat(defaults.minWriteBufferNumberToMerge()).isEqualTo(3);
     assertThat(defaults.maxWriteBufferNumber()).isEqualTo(6);
-    assertThat(defaults.writeBufferSize()).isEqualTo(101_408_950L);
+    assertThat(defaults.writeBufferSize()).isEqualTo(50_704_475L);
     assertThat(defaults.compactionPriority())
         .isEqualTo(org.rocksdb.CompactionPriority.OldestSmallestSeqFirst);
     assertThat(defaults.compactionStyle()).isEqualTo(org.rocksdb.CompactionStyle.LEVEL);
@@ -179,6 +181,7 @@ final class ZeebeRocksDbFactoryTest {
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
@@ -186,7 +189,8 @@ final class ZeebeRocksDbFactoryTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+            defaultPartitionCount);
 
     // expect
     //noinspection resource

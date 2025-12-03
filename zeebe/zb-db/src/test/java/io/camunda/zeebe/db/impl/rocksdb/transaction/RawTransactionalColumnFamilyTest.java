@@ -46,6 +46,7 @@ public class RawTransactionalColumnFamilyTest {
   @BeforeAll
   static void setup() {
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
@@ -53,7 +54,8 @@ public class RawTransactionalColumnFamilyTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+            defaultPartitionCount);
     db = factory.createDb(path.toFile());
     context = db.createContext();
 

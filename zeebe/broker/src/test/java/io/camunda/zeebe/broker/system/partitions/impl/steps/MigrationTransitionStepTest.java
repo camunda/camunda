@@ -44,6 +44,7 @@ public class MigrationTransitionStepTest {
 
   @TempDir Path tempDir;
   final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+  final int defaultPartitionCount = 3;
   ZeebeRocksDbFactory<?> factory =
       new ZeebeRocksDbFactory<ZbColumnFamilies>(
           new RocksDbConfiguration(),
@@ -51,7 +52,8 @@ public class MigrationTransitionStepTest {
           new AccessMetricsConfiguration(Kind.NONE, 1),
           SimpleMeterRegistry::new,
           lruCache,
-          new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
+          new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+          defaultPartitionCount);
 
   @AutoClose ZeebeDb zeebeDb;
   TestPartitionTransitionContext context;

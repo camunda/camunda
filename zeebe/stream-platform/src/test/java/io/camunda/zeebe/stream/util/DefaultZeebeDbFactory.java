@@ -30,12 +30,14 @@ public final class DefaultZeebeDbFactory {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         consistencyChecks,
         new AccessMetricsConfiguration(Kind.NONE, 1),
         SimpleMeterRegistry::new,
         lruCache,
-        new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE, lruCache));
+        new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+        defaultPartitionCount);
   }
 }

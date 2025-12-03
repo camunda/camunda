@@ -79,6 +79,7 @@ final class CheckpointRecordsProcessorTest {
   @BeforeEach
   void setup() {
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
@@ -86,7 +87,8 @@ final class CheckpointRecordsProcessorTest {
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
                 lruCache,
-                new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE, lruCache))
+                new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+                defaultPartitionCount)
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
