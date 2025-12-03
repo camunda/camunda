@@ -53,8 +53,13 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
@@ -102,6 +107,18 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
   @JsonIgnore
   public ValueType valueType() {
     return ClassToValueType.MAP.get(getClass());
+  }
+
+  public static Stream<UnifiedRecordValue> allRecords() {
+    return Arrays.stream(ValueType.values())
+        .map(UnifiedRecordValue::fromValueType)
+        .filter(Objects::nonNull);
+  }
+
+  public static EnumMap<ValueType, UnifiedRecordValue> allRecordsMap() {
+    return new EnumMap<>(
+        UnifiedRecordValue.allRecords()
+            .collect(Collectors.toMap(UnifiedRecordValue::valueType, Function.identity())));
   }
 
   public static UnifiedRecordValue fromValueType(final ValueType valueType) {
