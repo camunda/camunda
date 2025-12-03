@@ -12,19 +12,20 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {ProcessInstanceHeader} from '../index';
-import {mockInstanceDeprecated, mockInstance, Wrapper} from './index.setup';
+import {mockInstance, Wrapper} from './index.setup';
 import {createUser, mockProcessXML} from 'modules/testUtils';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('InstanceHeader', () => {
   beforeEach(() => {
-    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
-    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(createUser());
   });
@@ -34,10 +35,6 @@ describe('InstanceHeader', () => {
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
-    });
-
-    processInstanceDetailsStore.init({
-      id: mockInstanceDeprecated.id,
     });
 
     await waitForElementToBeRemoved(
@@ -63,10 +60,6 @@ describe('InstanceHeader', () => {
       },
     );
 
-    processInstanceDetailsStore.init({
-      id: mockInstanceDeprecated.id,
-    });
-
     await waitForElementToBeRemoved(
       screen.queryByTestId('instance-header-skeleton'),
     );
@@ -89,10 +82,6 @@ describe('InstanceHeader', () => {
         wrapper: Wrapper,
       },
     );
-
-    processInstanceDetailsStore.init({
-      id: mockInstanceDeprecated.id,
-    });
 
     await waitForElementToBeRemoved(
       screen.queryByTestId('instance-header-skeleton'),

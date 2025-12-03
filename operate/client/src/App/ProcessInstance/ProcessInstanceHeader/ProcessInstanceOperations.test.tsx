@@ -11,14 +11,15 @@ import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {createProcessInstance} from 'modules/testUtils';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {Paths} from 'modules/Routes';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -29,9 +30,15 @@ vi.mock('modules/stores/notifications', () => ({
 const getWrapper = () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
-      <MemoryRouter>
+      <MemoryRouter
+        initialEntries={[
+          Paths.processInstance(mockProcessInstance.processInstanceKey),
+        ]}
+      >
         <QueryClientProvider client={getMockQueryClient()}>
-          {children}
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
         </QueryClientProvider>
       </MemoryRouter>
     );
@@ -49,8 +56,11 @@ describe('ProcessInstanceOperations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     modificationsStore.reset();
-    processInstancesStore.reset();
     mockFetchCallHierarchy().withSuccess([]);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   it('should render operations for active instance with incident', () => {
@@ -208,5 +218,28 @@ describe('ProcessInstanceOperations', () => {
         isDismissable: true,
       }),
     );
+  });
+
+  it('should show spinner when process instance has active operation items', async () => {
+    mockQueryBatchOperationItems().withSuccess({
+      items: [
+        {
+          batchOperationKey: 'batch-123',
+          processInstanceKey: '123456789',
+          state: 'ACTIVE',
+          itemKey: '123456789',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+
+    render(
+      <ProcessInstanceOperations processInstance={mockProcessInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    });
   });
 });
