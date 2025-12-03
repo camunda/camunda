@@ -905,7 +905,21 @@ public class SwimMembershipProtocol
     }
   }
 
-  /** Immutable member. */
+  /**
+   * Immutable member.
+   *
+   * <p>This class is serialized with Kryo using {@code CompatibleFieldSerializer} with chunked
+   * encoding, which provides backward and forward compatibility for field changes.
+   *
+   * <h2>Serialization Revisions</h2>
+   *
+   * <ul>
+   *   <li><b>Revision 1:</b> Initial version with fields: id, address, zone, rack, host,
+   *       properties, version, timestamp, state, incarnationNumber
+   *   <li><b>Revision 2:</b> Added {@code nodeVersion} field. Defaults to 0L when deserializing
+   *       messages from older versions.
+   * </ul>
+   */
   static class ImmutableMember extends Member {
     private final Version version;
     private final long timestamp;
@@ -983,7 +997,21 @@ public class SwimMembershipProtocol
     }
   }
 
-  /** Swim member. */
+  /**
+   * Swim member.
+   *
+   * <p>This class is serialized with Kryo using {@code CompatibleFieldSerializer} with chunked
+   * encoding, which provides backward and forward compatibility for field changes.
+   *
+   * <h2>Serialization Revisions</h2>
+   *
+   * <ul>
+   *   <li><b>Revision 1:</b> Initial version with fields: id, address, zone, rack, host,
+   *       properties, version, timestamp, state, incarnationNumber, updated
+   *   <li><b>Revision 2:</b> Added {@code nodeVersion} field. Defaults to 0L when deserializing
+   *       messages from older versions.
+   * </ul>
+   */
   static class SwimMember extends Member {
     private final Version version;
     private final long timestamp;
