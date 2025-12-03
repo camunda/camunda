@@ -45,6 +45,7 @@ final class DbCheckpointStateTest {
   @BeforeEach
   void before() {
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
@@ -52,7 +53,8 @@ final class DbCheckpointStateTest {
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
                 lruCache,
-                new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE, lruCache))
+                new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+                defaultPartitionCount)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
   }

@@ -56,6 +56,7 @@ public class RocksDBSnapshotCopyTest {
   @BeforeEach
   void setup() {
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
@@ -63,7 +64,8 @@ public class RocksDBSnapshotCopyTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+            defaultPartitionCount);
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);
     sourceSnapshotPath = sourcePath.resolve("snapshot");

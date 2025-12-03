@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -55,6 +56,7 @@ public final class ZeebeRocksDbFactory<
   private final Supplier<MeterRegistry> meterRegistryFactory;
   private final LRUCache lruCache;
   private final WriteBufferManager writeBufferManager;
+  private final int partitionCount;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
@@ -62,13 +64,15 @@ public final class ZeebeRocksDbFactory<
       final AccessMetricsConfiguration metricsConfiguration,
       final Supplier<MeterRegistry> meterRegistryFactory,
       final LRUCache lruCache,
-      final WriteBufferManager writeBufferManager) {
+      final WriteBufferManager writeBufferManager,
+      final int partitionCount) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
     this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
     this.lruCache = Objects.requireNonNull(lruCache);
     this.writeBufferManager = Objects.requireNonNull(writeBufferManager);
+    this.partitionCount = partitionCount;
   }
 
   @Override
@@ -218,11 +222,14 @@ public final class ZeebeRocksDbFactory<
    * centralizes memory calculations to avoid duplication.
    */
   MemoryConfiguration calculateMemoryConfiguration() {
-    final var totalMemoryBudget = rocksDbConfiguration.getMemoryLimit();
+    final var totalMemoryBudgetPerPartition =
+        rocksDbConfiguration.getMemoryAllocationStrategy() == MemoryAllocationStrategy.PARTITION
+            ? rocksDbConfiguration.getMemoryLimit()
+            : rocksDbConfiguration.getMemoryLimit() / partitionCount;
+
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
-    // TODO: if we unifiy getMemoryLimit we need to divide it furhter here.
-    final var blockCacheMemory = totalMemoryBudget / 3;
+    final var blockCacheMemory = totalMemoryBudgetPerPartition / 3;
     // flushing the memtables is done asynchronously, so there may be multiple memtables in memory,
     // although only a single one is writable. once we have too many memtables, writes will stop.
     // since prefix iteration is our bread n butter, we will build an additional filter for each
@@ -237,7 +244,8 @@ public final class ZeebeRocksDbFactory<
     final var memtablePrefixFilterMemory = 0.15;
     final var memtableMemory =
         Math.round(
-            ((totalMemoryBudget - blockCacheMemory) / (double) maxConcurrentMemtableCount)
+            ((totalMemoryBudgetPerPartition - blockCacheMemory)
+                    / (double) maxConcurrentMemtableCount)
                 * (1 - memtablePrefixFilterMemory));
 
     return new MemoryConfiguration(
