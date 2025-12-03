@@ -33,7 +33,6 @@ import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequest
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
-import io.camunda.client.protocol.rest.AncestorScopeInstruction;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
@@ -42,7 +41,7 @@ import io.camunda.client.protocol.rest.ProcessInstanceIncidentResolutionBatchOpe
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
-import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +65,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private E filter;
   private final ProcessInstanceMigrationBatchOperationPlan migrationPlan =
       new ProcessInstanceMigrationBatchOperationPlan();
-  private final List<ProcessInstanceModificationMoveInstruction> moveInstructions =
+  private final List<ProcessInstanceModificationMoveBatchOperationInstruction> moveInstructions =
       new ArrayList<>();
 
   public CreateBatchOperationCommandImpl(
@@ -101,11 +100,9 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     Objects.requireNonNull(sourceElementId, "must specify a source element id");
     Objects.requireNonNull(targetElementId, "must specify a target element id");
     moveInstructions.add(
-        new ProcessInstanceModificationMoveInstruction()
+        new ProcessInstanceModificationMoveBatchOperationInstruction()
             .sourceElementId(sourceElementId)
-            .targetElementId(targetElementId)
-            .ancestorScopeInstruction(
-                new AncestorScopeInstruction().ancestorScopeType("sourceParent")));
+            .targetElementId(targetElementId));
     return this;
   }
 

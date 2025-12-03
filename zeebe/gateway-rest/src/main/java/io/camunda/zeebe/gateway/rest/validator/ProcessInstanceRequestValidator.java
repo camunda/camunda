@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstructio
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
@@ -168,7 +169,7 @@ public class ProcessInstanceRequestValidator {
           if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
           } else {
-            validateMoveInstructions(request.getMoveInstructions(), violations);
+            validateMoveBatchInstructions(request.getMoveInstructions(), violations);
           }
         });
   }
@@ -251,6 +252,23 @@ public class ProcessInstanceRequestValidator {
                 direct.getAncestorElementInstanceKey(), "ancestorElementInstanceKey", violations);
           }
         });
+  }
+
+  private static void validateMoveBatchInstructions(
+      final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions,
+      final List<String> violations) {
+    validateInstructions(
+        instructions,
+        instruction ->
+            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isBlank(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
+    validateInstructions(
+        instructions,
+        instruction ->
+            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
   }
 
   private static <T> void validateInstructions(
