@@ -36,16 +36,25 @@ function parseComment(body) {
     let currentTest = {};
 
     for (const line of lines) {
-      //Match method name
-      const methodMatch = line.match(/-\s(?:\[\*\*(.+?)\*\*\]\(.+?\))/);
-      if (methodMatch) {
-        // If no hyperlink exists
+      //Match method name and URL
+      const methodMatchWithUrl = line.match(/-\s\[\*\*(.+?)\*\*\]\((.+?)\)/);
+      const methodMatchPlain = line.match(/-\s\*\*(.+?)\*\*/);
+      
+      if (methodMatchWithUrl || methodMatchPlain) {
+        // Save previous test if any
         if (Object.keys(currentTest).length > 0) {
           flakyTests.push(currentTest);
           currentTest = {};
         }
-        // methodMatch[1] is for the markdown link, methodMatch[2] for plain text
-        currentTest.methodName = methodMatch[1] || methodMatch[2];
+        
+        if (methodMatchWithUrl) {
+          // Test name with URL: [**testName**](url)
+          currentTest.methodName = methodMatchWithUrl[1];
+          currentTest.url = methodMatchWithUrl[2];
+        } else {
+          // Test name without URL: **testName**
+          currentTest.methodName = methodMatchPlain[1];
+        }
       }
 
       // Match jobs
