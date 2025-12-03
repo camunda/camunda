@@ -2,7 +2,9 @@ package start
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
@@ -60,6 +63,35 @@ func getJavaVersion(javaBinary string) (string, error) {
 
 type StartupHandler struct {
 	ProcessHandler *processmanagement.ProcessHandler
+}
+
+func ensurePortAvailable(port int) error {
+	networks := []string{"tcp4", "tcp6"}
+	for _, network := range networks {
+		listener, err := net.Listen(network, fmt.Sprintf(":%d", port))
+		if err != nil {
+			if isNetworkUnsupported(err) {
+				continue
+			}
+			return fmt.Errorf("port %d is already in use (%s)", port, network)
+		}
+		if err := listener.Close(); err != nil {
+			return fmt.Errorf("failed to release temporary port check listener: %w", err)
+		}
+	}
+	return nil
+}
+
+func isNetworkUnsupported(err error) bool {
+	switch {
+	case errors.Is(err, syscall.EAFNOSUPPORT),
+		errors.Is(err, syscall.EPROTONOSUPPORT),
+		errors.Is(err, syscall.EPFNOSUPPORT),
+		errors.Is(err, syscall.EADDRNOTAVAIL):
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath string, stop context.CancelFunc) error {
@@ -200,6 +232,12 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 
 	if err := ensureDefaultConfig(parentDir); err != nil {
 		fmt.Printf("Failed to ensure default config: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := ensurePortAvailable(settings.Port); err != nil {
+		log.Error().Err(err).Int("port", settings.Port).Msg("Camunda Run port is unavailable")
+		fmt.Printf("Port %d is already in use. Stop the other service or run `c8run start --port <free-port>`.\n", settings.Port)
 		os.Exit(1)
 	}
 
