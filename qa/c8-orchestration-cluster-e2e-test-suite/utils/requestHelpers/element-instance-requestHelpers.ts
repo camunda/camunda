@@ -63,7 +63,7 @@ export async function searchElementInstanceByProcessInstance(
   });
 }
 
-async function searchElementInstanceByFilter(
+export async function searchElementInstanceByFilter(
   request: APIRequestContext,
   filter: Record<string, string>,
 ) {
@@ -84,4 +84,16 @@ async function searchElementInstanceByFilter(
     result.body = body;
   }).toPass(defaultAssertionOptions);
   return result;
+}
+
+export async function resolveAdHocSubProcessInstanceKey(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<string> {
+  const result = await searchElementInstanceByFilter(request, {
+    processInstanceKey,
+    elementId: 'AdHoc_Subprocess',
+  });
+
+  return result.body.items[0].elementInstanceKey;
 }
