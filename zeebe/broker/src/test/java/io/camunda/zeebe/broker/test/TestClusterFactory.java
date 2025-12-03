@@ -21,6 +21,6 @@ public final class TestClusterFactory {
       final BrokerCfg config, final MeterRegistry meterRegistry) {
     final var clusterConfig = new ClusterConfigFactory().mapConfiguration(config);
     return new AtomixCluster(
-        clusterConfig, Version.from(VersionUtil.getVersion()), "", meterRegistry);
+        clusterConfig, 0L, Version.from(VersionUtil.getVersion()), "", meterRegistry);
   }
 }

@@ -60,6 +60,7 @@ import java.util.Properties;
 public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   protected final ClusterConfig config;
+  private long nodeVersion;
   private final MeterRegistry meterRegistry;
   private String schedulerPrefix;
 
@@ -109,7 +110,24 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    * @return the cluster builder
    */
   public AtomixClusterBuilder withMemberId(final MemberId localMemberId) {
+    withMemberId(localMemberId, 0L);
+    return this;
+  }
+
+  /**
+   * Sets the local member identifier and nodeVersion
+   *
+   * <p>The member identifier is an optional attribute that can be used to identify and send
+   * messages directly to this node. If no member identifier is provided, a {@link java.util.UUID}
+   * based identifier will be generated.
+   *
+   * @param localMemberId the local member identifier
+   * @param nodeVersion the version of the local member
+   * @return the cluster builder
+   */
+  public AtomixClusterBuilder withMemberId(final MemberId localMemberId, final long nodeVersion) {
     config.getNodeConfig().setId(localMemberId);
+    this.nodeVersion = nodeVersion;
     return this;
   }
 
@@ -261,6 +279,10 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
   @Override
   public AtomixCluster build() {
     return new AtomixCluster(
-        config, Version.from(VersionUtil.getVersion()), schedulerPrefix, meterRegistry);
+        config,
+        nodeVersion,
+        Version.from(VersionUtil.getVersion()),
+        schedulerPrefix,
+        meterRegistry);
   }
 }

@@ -37,6 +37,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.util.Optional;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -198,7 +199,7 @@ final class StandaloneGatewaySecurityTest {
 
     final var clusterConfig = gatewayConfig.clusterConfig();
     final var clusterConfiguration =
-        new AtomixClusterConfiguration(clusterConfig, null, meterRegistry);
+        new AtomixClusterConfiguration(clusterConfig, Optional.empty(), null, meterRegistry);
     atomixCluster = clusterConfiguration.atomixCluster();
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(
