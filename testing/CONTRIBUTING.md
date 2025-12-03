@@ -78,7 +78,7 @@ The default implementation
 is [AwaitilityBehavior](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/assertions/util/AwaitilityBehavior.java),
 which uses [Awaitility](http://www.awaitility.org/).
 
-For testes, we can
+For tests, we can
 use [DevAwaitBehavior](camunda-process-test-java/src/test/java/io/camunda/process/test/utils/DevAwaitBehavior.java)
 to verify assertion messages without waiting for the timeout.
 
@@ -136,7 +136,7 @@ Example: Add a new assertion method `assertProcessInstance(..).isAwesome(true)`.
   , group them in a nested class, and use Mockito to mock the data source.
 - Verify the assertion manually in an integration test, for example in
   [CamundaProcessTestExtensionIT](camunda-process-test-java/src/test/java/io/camunda/process/test/api/CamundaProcessTestExtensionIT.java),
-  and add it optionally to an integration tests or
+  and add it optionally to integration tests or
   the [example project](camunda-process-test-example/src/test/java/io/camunda).
 - Add documentation for the new assertion method in the
   [Camunda docs](https://docs.camunda.io/docs/next/apis-tools/testing/assertions/).
