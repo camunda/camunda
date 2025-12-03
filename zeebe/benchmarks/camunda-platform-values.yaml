@@ -25,13 +25,13 @@ global:
   # By default, we run without Identity
   identity:
     auth:
-      enabled: false
+      enabled: true
 
 identity:
-  enabled: false
+  enabled: true
 
 identityKeycloak:
-  enabled: false
+  enabled: true
 
 optimize:
   enabled: true
