@@ -69,6 +69,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
+  static final String DELETE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/deletion";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
   static final String MODIFY_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/modification";
 
@@ -2306,5 +2307,55 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldDeleteProcessInstance() {
+    // when / then
+    final var request =
+        """
+            {
+              "operationReference": 123
+            }""";
+
+    webClient
+        .post()
+        .uri(DELETE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+  }
+
+  @Test
+  void shouldDeleteProcessInstanceWithNoBody() {
+    // when / then
+    webClient
+        .post()
+        .uri(DELETE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+  }
+
+  @Test
+  void shouldDeleteProcessInstanceWithEmptyBody() {
+    // when / then
+    final var request =
+        """
+        {}""";
+
+    webClient
+        .post()
+        .uri(DELETE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
   }
 }
