@@ -106,7 +106,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
-    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_ADDED, record);
+    stateWriter.appendFollowUpEvent(
+        groupKey, GroupIntent.ENTITY_ADDED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_ADDED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
@@ -125,7 +126,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
               record.getEntityId(), record.getGroupId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
-      stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, record);
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), GroupIntent.ENTITY_ADDED, record, command.getAuthorizations());
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);

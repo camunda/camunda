@@ -90,10 +90,11 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     final var groupKey = persistedGroup.getGroupKey();
     record.setGroupKey(groupKey);
 
-    removeAssignedEntities(record);
-    deleteAuthorizations(record);
+    removeAssignedEntities(command);
+    deleteAuthorizations(command);
 
-    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
+    stateWriter.appendFollowUpEvent(
+        groupKey, GroupIntent.DELETED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.DELETED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
@@ -110,9 +111,10 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
         .get(record.getGroupId())
         .ifPresentOrElse(
             group -> {
-              removeAssignedEntities(command.getValue());
-              deleteAuthorizations(command.getValue());
-              stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
+              removeAssignedEntities(command);
+              deleteAuthorizations(command);
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), GroupIntent.DELETED, record, command.getAuthorizations());
             },
             () -> {
               final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupId());
@@ -122,7 +124,9 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void removeAssignedEntities(final GroupRecord record) {
+  private void removeAssignedEntities(final TypedRecord<GroupRecord> command) {
+    final var record = command.getValue();
+    final var authorizationClaims = command.getAuthorizations();
     final var groupId = record.getGroupId();
     membershipState.forEachMember(
         RelationType.GROUP,
@@ -131,14 +135,14 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
           stateWriter.appendFollowUpEvent(
               record.getGroupKey(),
               GroupIntent.ENTITY_REMOVED,
-              new GroupRecord()
-                  .setGroupId(groupId)
-                  .setEntityType(entityType)
-                  .setEntityId(entityId));
+              new GroupRecord().setGroupId(groupId).setEntityType(entityType).setEntityId(entityId),
+              authorizationClaims);
         });
   }
 
-  private void deleteAuthorizations(final GroupRecord record) {
+  private void deleteAuthorizations(final TypedRecord<GroupRecord> command) {
+    final var record = command.getValue();
+    final var authorizationClaims = command.getAuthorizations();
     final var groupId = record.getGroupId();
     final var authorizationKeysForGroup =
         authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.GROUP, groupId);
@@ -150,7 +154,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
                   .setAuthorizationKey(authorizationKey)
                   .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
-              authorizationKey, AuthorizationIntent.DELETED, authorization);
+              authorizationKey, AuthorizationIntent.DELETED, authorization, authorizationClaims);
         });
   }
 }
