@@ -36,7 +36,7 @@ public class ConditionalTriggerProcessor
           + "for process instance with key '%d' and catch event id '%s'.";
 
   private static final String NO_ACTIVE_ELEMENT_FOUND_FOR_CONDITIONAL_MESSAGE =
-      "Expected to trigger condition subscription with key '%d', but the element with key '%s' is "
+      "Expected to trigger condition subscription with key '%d', but the element with key '%d' is "
           + "not active anymore for process instance with key '%d' and catch event id '%s'.";
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
