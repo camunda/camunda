@@ -14,7 +14,6 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import java.util.EnumMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,10 +31,7 @@ public final class LogStreamPrinter {
     sb.append(logStream.getPartitionId());
     sb.append(":\n");
 
-    final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
-    for (final var t : ValueType.values()) {
-      eventCache.put(t, UnifiedRecordValue.fromValueType(t));
-    }
+    final Map<ValueType, UnifiedRecordValue> eventCache = UnifiedRecordValue.allRecordsMap();
 
     try (final LogStreamReader streamReader = logStream.newLogStreamReader()) {
       streamReader.seekToFirstEvent();
@@ -51,7 +47,7 @@ public final class LogStreamPrinter {
   }
 
   private static void writeRecord(
-      final Map<ValueType, UnpackedObject> eventCache,
+      final Map<ValueType, UnifiedRecordValue> eventCache,
       final LoggedEvent event,
       final StringBuilder sb) {
     sb.append(HEADER_INDENTATION);
