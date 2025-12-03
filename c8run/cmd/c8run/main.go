@@ -60,6 +60,89 @@ func getC8RunPlatform() types.C8Run {
 	panic("Unsupported operating system")
 }
 
+<<<<<<< HEAD
+=======
+func validateKeystore(settings types.C8RunSettings, parentDir string) error {
+	if settings.Keystore == "" {
+		return nil
+	}
+
+	if settings.KeystorePassword == "" {
+		return fmt.Errorf("you must provide a password with --keystorePassword to unlock your keystore")
+	}
+
+	if !strings.HasPrefix(settings.Keystore, "/") {
+		settings.Keystore = filepath.Join(parentDir, settings.Keystore)
+	}
+
+	return nil
+}
+
+func validatePort(port int) error {
+	if port < 1 || port > 65535 {
+		return fmt.Errorf("--port must be between 1 and 65535 (got %d)", port)
+	}
+	return nil
+}
+
+func runDockerCommand(composeExtractedFolder string, args ...string) error {
+	err := os.Chdir(composeExtractedFolder)
+	if err != nil {
+		return fmt.Errorf("failed to chdir to %s: %w", composeExtractedFolder, err)
+	}
+
+	_, err = exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+
+	composeCmd := exec.Command("docker", append([]string{"compose"}, args...)...)
+	composeCmd.Stdout = os.Stdout
+	composeCmd.Stderr = os.Stderr
+
+	err = composeCmd.Run()
+	if err != nil {
+		return err
+	}
+
+	err = os.Chdir("..")
+	if err != nil {
+		return fmt.Errorf("failed to chdir back: %w", err)
+	}
+
+	return nil
+}
+
+var helpTemplate = `Usage:
+  %[1]s [command] [options]
+
+Commands:
+  start                 Start Camunda 8 Run
+  stop                  Stop any running Camunda 8 Run processes
+  help                  Show this help message
+
+Options:
+  --config <path>           Use a custom Zeebe application.yaml
+  --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
+  --keystorePassword <pw>  Password for the provided keystore
+  --port <number>           Set the main Camunda port (default: 8080)
+  --log-level <level>       Set log level (e.g., info, debug)
+  --docker                  Start using Docker Compose
+
+Examples:
+  %[1]s start
+  %[1]s start --docker
+  %[1]s start --config ./my-config.yaml
+  %[1]s stop
+  %[1]s stop --docker
+
+Docs & Support:
+  https://docs.camunda.io/docs/guides/getting-started-java-spring/
+  https://docs.camunda.io/docs/next/guides/getting-started-agentic-orchestration/
+  https://forum.camunda.io
+`
+
+>>>>>>> e3ee4aab (fix: add port validation)
 func usage(exitcode int) {
 	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n", os.Args[0])
 	os.Exit(exitcode)
@@ -92,7 +175,20 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, error) {
 	case "start":
 		err := startFlagSet.Parse(os.Args[2:])
 		if err != nil {
+<<<<<<< HEAD
 			return settings, fmt.Errorf("error parsing start argument: %w", err)
+=======
+			return settings, startupURLProvided, fmt.Errorf("error parsing start argument: %w", err)
+		}
+		startupURLProvided = flagPassed(startFlagSet, "startup-url")
+		if err := validatePort(settings.Port); err != nil {
+			return settings, startupURLProvided, err
+		}
+	case "stop":
+		err := stopFlagSet.Parse(os.Args[2:])
+		if err != nil {
+			return settings, startupURLProvided, fmt.Errorf("error parsing stop argument: %w", err)
+>>>>>>> e3ee4aab (fix: add port validation)
 		}
 	}
 
