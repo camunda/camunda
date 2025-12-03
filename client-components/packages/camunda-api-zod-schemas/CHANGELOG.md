@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.20
+
+### 🚀 Enhancements
+
+- add Zod schemas for audit log entities and operations ([#41866](https://github.com/camunda/camunda/pull/41866))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.19
 
 ### 🩹 Fixes
