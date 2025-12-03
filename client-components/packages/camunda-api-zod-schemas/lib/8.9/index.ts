@@ -6,28 +6,30 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getAuditLog, searchAuditLogs} from './audit-log';
+import {getAuditLog, queryAuditLogs} from './audit-log';
 
 const endpoints = {
-  searchAuditLogs,
-  getAuditLog,
+	queryAuditLogs,
+	getAuditLog,
 } as const;
 
 export {endpoints};
 
 export {
-  auditLogEntityTypeSchema,
-  auditLogOperationTypeSchema,
-  auditLogActorTypeSchema,
-  auditLogResultSchema,
-  auditLogCategorySchema,
-  auditLogSearchRequestBodySchema,
-  auditLogSearchResponseBodySchema,
-  auditLogSchema,
-  auditLogFilterSchema,
-  getAuditLogResponseBodySchema,
-  type AuditLog,
-  type SearchAuditLogsRequestBody,
-  type SearchAuditLogsResponseBody,
-  type GetAuditLogResponseBody,
+	auditLogEntityTypeSchema,
+	auditLogOperationTypeSchema,
+	auditLogActorTypeSchema,
+	auditLogResultSchema,
+	auditLogCategorySchema,
+	auditLogSchema,
+	auditLogFilterSchema,
+	auditLogSortFieldEnum,
+	queryAuditLogsRequestBodySchema,
+	queryAuditLogsResponseBodySchema,
+	getAuditLogResponseBodySchema,
+	type AuditLog,
+	type AuditLogSortField,
+	type QueryAuditLogsRequestBody,
+	type QueryAuditLogsResponseBody,
+	type GetAuditLogResponseBody,
 } from './audit-log';
