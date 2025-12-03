@@ -129,20 +129,18 @@ const auditLogSortFieldEnum = z.enum([
 ]);
 type AuditLogSortField = z.infer<typeof auditLogSortFieldEnum>;
 
-const auditLogSearchRequestBodySchema = getQueryRequestBodySchema({
+const queryAuditLogsRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: auditLogSortFieldEnum.options as [string, ...string[]],
 	filter: auditLogFilterSchema,
 });
-type SearchAuditLogsRequestBody = z.infer<typeof auditLogSearchRequestBodySchema>;
+type QueryAuditLogsRequestBody = z.infer<typeof queryAuditLogsRequestBodySchema>;
 
-const auditLogSearchResponseBodySchema = getQueryResponseBodySchema(auditLogSchema);
-type SearchAuditLogsResponseBody = z.infer<typeof auditLogSearchResponseBodySchema>;
+const queryAuditLogsResponseBodySchema = getQueryResponseBodySchema(auditLogSchema);
+type QueryAuditLogsResponseBody = z.infer<typeof queryAuditLogsResponseBodySchema>;
 
-const searchAuditLogs: Endpoint = {
+const queryAuditLogs: Endpoint = {
 	method: 'POST',
-	getUrl() {
-		return `/${API_VERSION}/audit-logs/search`;
-	},
+	getUrl: () => `/${API_VERSION}/audit-logs/search`,
 };
 
 const getAuditLog: Endpoint<{auditLogKey: string}> = {
@@ -159,20 +157,19 @@ export {
 	auditLogActorTypeSchema,
 	auditLogResultSchema,
 	auditLogCategorySchema,
-	batchOperationTypeSchema,
 	auditLogSchema,
 	auditLogFilterSchema,
 	auditLogSortFieldEnum,
-	auditLogSearchRequestBodySchema,
-	auditLogSearchResponseBodySchema,
+	queryAuditLogsRequestBodySchema,
+	queryAuditLogsResponseBodySchema,
 	getAuditLogResponseBodySchema,
-	searchAuditLogs,
+	queryAuditLogs,
 	getAuditLog,
 };
 export type {
 	AuditLog,
 	AuditLogSortField,
-	SearchAuditLogsRequestBody,
-	SearchAuditLogsResponseBody,
+	QueryAuditLogsRequestBody,
+	QueryAuditLogsResponseBody,
 	GetAuditLogResponseBody,
 };
