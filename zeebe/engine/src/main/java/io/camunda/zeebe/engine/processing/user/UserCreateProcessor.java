@@ -86,7 +86,8 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     final long key = keyGenerator.nextKey();
     command.getValue().setUserKey(key);
 
-    stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
+    stateWriter.appendFollowUpEvent(
+        key, UserIntent.CREATED, command.getValue(), command.getAuthorizations());
     addUserPermissions(key, username);
     responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
 
@@ -108,7 +109,8 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
             },
             () -> {
-              stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, record);
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), UserIntent.CREATED, record, command.getAuthorizations());
             });
 
     distributionBehavior.acknowledgeCommand(command);

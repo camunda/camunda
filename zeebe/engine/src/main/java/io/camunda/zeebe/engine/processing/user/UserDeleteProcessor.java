@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Map;
 
 public class UserDeleteProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
@@ -107,7 +108,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    deleteUser(user);
+    deleteUser(user, command.getAuthorizations());
     responseWriter.writeEventOnCommand(
         user.getUserKey(), UserIntent.DELETED, command.getValue(), command);
 
@@ -124,7 +125,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     userState
         .getUser(username)
         .ifPresentOrElse(
-            this::deleteUser,
+            user -> deleteUser(user, command.getAuthorizations()),
             () -> {
               final var message = USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(username);
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
@@ -133,10 +134,10 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     distributionBehavior.acknowledgeCommand(command);
   }
 
-  private void deleteUser(final PersistedUser user) {
+  private void deleteUser(final PersistedUser user, final Map<String, Object> authorizationClaims) {
     final var userKey = user.getUserKey();
     final var username = user.getUsername();
-    deleteAuthorizations(username);
+    deleteAuthorizations(username, authorizationClaims);
     for (final var tenantId :
         membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT)) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
@@ -146,7 +147,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           new TenantRecord()
               .setTenantId(tenantId)
               .setEntityId(user.getUsername())
-              .setEntityType(EntityType.USER));
+              .setEntityType(EntityType.USER),
+          authorizationClaims);
     }
 
     for (final var roleId :
@@ -159,7 +161,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
               .setEntityId(username)
-              .setEntityType(EntityType.USER));
+              .setEntityType(EntityType.USER),
+          authorizationClaims);
     }
 
     for (final var groupId :
@@ -172,13 +175,16 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
               .setGroupKey(group.getGroupKey())
               .setGroupId(groupId)
               .setEntityId(username)
-              .setEntityType(EntityType.USER));
+              .setEntityType(EntityType.USER),
+          authorizationClaims);
     }
 
-    stateWriter.appendFollowUpEvent(userKey, UserIntent.DELETED, user.getUser());
+    stateWriter.appendFollowUpEvent(
+        userKey, UserIntent.DELETED, user.getUser(), authorizationClaims);
   }
 
-  private void deleteAuthorizations(final String username) {
+  private void deleteAuthorizations(
+      final String username, final Map<String, Object> authorizationClaims) {
     final var authorizationKeysForGroup =
         authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.USER, username);
 
@@ -189,7 +195,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
                   .setAuthorizationKey(authorizationKey)
                   .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
-              authorizationKey, AuthorizationIntent.DELETED, authorization);
+              authorizationKey, AuthorizationIntent.DELETED, authorization, authorizationClaims);
         });
   }
 }
