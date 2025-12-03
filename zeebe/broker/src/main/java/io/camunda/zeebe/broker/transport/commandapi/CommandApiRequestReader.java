@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.ValueTypes;
 import org.agrona.DirectBuffer;
 
 public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequestDecoder> {
@@ -57,13 +58,16 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         messageHeaderDecoder.version());
 
     metadata.protocolVersion(messageHeaderDecoder.version());
-    final var record = UnifiedRecordValue.fromValueType(commandRequestDecoder.valueType());
-    if (record != null) {
-      final int valueOffset =
-          commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
-      final int valueLength = commandRequestDecoder.valueLength();
-      value = record;
-      value.wrap(buffer, valueOffset, valueLength);
+    final var valueType = commandRequestDecoder.valueType();
+    if (ValueTypes.isUserCommand(valueType)) {
+      final var record = UnifiedRecordValue.fromValueType(valueType);
+      if (record != null) {
+        final int valueOffset =
+            commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
+        final int valueLength = commandRequestDecoder.valueLength();
+        value = record;
+        value.wrap(buffer, valueOffset, valueLength);
+      }
     }
 
     commandRequestDecoder.skipValue();
