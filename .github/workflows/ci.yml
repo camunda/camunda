@@ -796,10 +796,10 @@ jobs:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: "Docker / Tool / Checks"
     needs: [ detect-changes ]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-4-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       security-events: write
     services:
