@@ -16,6 +16,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -71,12 +72,16 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.AUTHORIZATION.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         AuthorizationDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .sort(dbSort)
                     .page(dbPage));
 
@@ -110,6 +115,6 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
   @Override
   protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
     return resourceAccessChecks.authorizationCheck().enabled()
-        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty();
+        && !resourceAccessChecks.hasAnyResourceId();
   }
 }

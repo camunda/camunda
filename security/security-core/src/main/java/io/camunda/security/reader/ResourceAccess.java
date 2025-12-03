@@ -8,8 +8,13 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.auth.Authorization;
+import java.util.Objects;
 
 public record ResourceAccess(boolean allowed, boolean wildcard, Authorization<?> authorization) {
+
+  public ResourceAccess {
+    Objects.requireNonNull(authorization, "Authorization must not be null");
+  }
 
   /** Returns true if access to the resource is denied. */
   public boolean denied() {

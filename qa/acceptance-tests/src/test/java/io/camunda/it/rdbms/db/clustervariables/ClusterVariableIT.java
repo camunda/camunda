@@ -27,6 +27,7 @@ import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.sort.ClusterVariableSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -52,7 +53,10 @@ public class ClusterVariableIT {
             .getTenantScopedClusterVariable(
                 randomizedVariable.name(),
                 randomizedVariable.tenantId(),
-                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
+                    AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -72,7 +76,10 @@ public class ClusterVariableIT {
             .getClusterVariableReader()
             .getGloballyScopedClusterVariable(
                 randomizedVariable.name(),
-                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
+                    AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -96,7 +103,10 @@ public class ClusterVariableIT {
             .getTenantScopedClusterVariable(
                 randomizedVariable.name(),
                 randomizedVariable.tenantId(),
-                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
+                    AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertThat(instance.isPreview()).isTrue();
@@ -119,7 +129,10 @@ public class ClusterVariableIT {
             .getClusterVariableReader()
             .getGloballyScopedClusterVariable(
                 randomizedVariable.name(),
-                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    // FIXME: change resource type to CLUSTER_VARIABLE once available
+                    //  (see https://github.com/camunda/camunda/issues/39054)
+                    AuthorizationResourceType.UNSPECIFIED, randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertThat(instance.isPreview()).isTrue();

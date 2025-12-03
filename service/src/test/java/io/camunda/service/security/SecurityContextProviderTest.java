@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.condition.AuthorizationConditions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +26,7 @@ class SecurityContextProviderTest {
   }
 
   @Test
-  void shouldProvideSecurityContextWithAuthorizationWhenDisabled() {
+  void shouldProvideSecurityContextWithSingleAuthorizationCondition() {
     // given
     final var authentication = mock(CamundaAuthentication.class);
     final var authorization = mock(Authorization.class);
@@ -35,7 +36,26 @@ class SecurityContextProviderTest {
         securityContextProvider.provideSecurityContext(authentication, authorization);
 
     // then
-    assertThat(securityContext.authorization()).isEqualTo(authorization);
+    assertThat(securityContext.authorizationCondition())
+        .isEqualTo(AuthorizationConditions.single(authorization));
+    assertThat(securityContext.authentication()).isEqualTo(authentication);
+  }
+
+  @Test
+  void shouldProvideSecurityContextWithAnyOfAuthorizationCondition() {
+    // given
+    final var authentication = mock(CamundaAuthentication.class);
+    final var authorizationA = mock(Authorization.class);
+    final var authorizationB = mock(Authorization.class);
+
+    // when
+    final var securityContext =
+        securityContextProvider.provideSecurityContext(
+            authentication, AuthorizationConditions.anyOf(authorizationA, authorizationB));
+
+    // then
+    assertThat(securityContext.authorizationCondition())
+        .isEqualTo(AuthorizationConditions.anyOf(authorizationA, authorizationB));
     assertThat(securityContext.authentication()).isEqualTo(authentication);
   }
 }

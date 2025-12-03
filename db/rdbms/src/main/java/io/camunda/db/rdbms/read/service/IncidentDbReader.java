@@ -15,6 +15,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -46,12 +47,16 @@ public class IncidentDbReader extends AbstractEntityReader<IncidentEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         IncidentDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(dbPage));

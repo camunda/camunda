@@ -146,12 +146,22 @@
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
-      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        AND ut.PROCESS_DEFINITION_ID IN
-        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
-          close=")">
-          #{resourceId}
-        </foreach>
+      <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()) or (authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty())">
+        AND
+        <trim prefix="(" suffix=")" prefixOverrides="OR">
+          <if test="authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()">
+            OR ut.PROCESS_DEFINITION_ID IN
+            <foreach collection="authorizedProcessDefinitionIds" item="processDefinitionId" open="(" separator="," close=")">
+              #{processDefinitionId}
+            </foreach>
+          </if>
+          <if test="authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty()">
+            OR ut.USER_TASK_KEY IN
+            <foreach collection="authorizedUserTaskKeys" item="userTaskKey" open="(" separator="," close=")">
+              #{userTaskKey}
+            </foreach>
+          </if>
+        </trim>
       </if>
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
         AND ut.TENANT_ID IN
@@ -159,6 +169,7 @@
           #{tenantId}
         </foreach>
       </if>
+
       <!-- basic filters -->
       <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
         AND ut.USER_TASK_KEY IN

@@ -30,8 +30,6 @@ public class ErrorMessages {
 
   public static final String ERROR_RESOURCE_ACCESS_CONTROLLER_NO_MATCHING_FOUND =
       "Failed to find a matching ResourceAccessController, make sure to set a security context using #withSecurityContext()";
-  public static final String ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION =
-      "Resource Access %s does not include an authorization";
   public static final String ERROR_RESOURCE_ACCESS_CONTROLLER_NO_TENANT_ACCESS =
       "Tenant access was denied";
 
