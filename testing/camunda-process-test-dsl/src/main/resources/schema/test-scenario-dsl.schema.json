@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://camunda.com/schema/20251202/test-scenario-dsl.schema.json",
+  "title": "Test Scenario DSL",
+  "description": "A test scenario with test cases to validate the business process.",
+  "type": "object",
+  "properties": {
+    "testCases": {
+      "description": "The test cases of the scenario.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestCase"
+      }
+    }
+  },
+  "required": [
+    "testCases"
+  ],
+  "additionalProperties": true,
+  "definitions": {
+    "TestCase": {
+      "description": "A test case with instructions to validate the business process.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the test case.",
+          "type": "string"
+        },
+        "description": {
+          "description": "The description of the test case.",
+          "type": "string"
+        },
+        "instructions": {
+          "description": "The instructions of the test case.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCaseInstruction"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "instructions"
+      ],
+      "additionalProperties": true
+    },
+    "TestCaseInstruction": {
+      "description": "An instruction to define an action or an assertion to be performed in a test case.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/CreateProcessInstanceInstruction"
+        }
+      ]
+    },
+    "CreateProcessInstanceInstruction": {
+      "description": "An instruction to create a new process instance.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "CREATE_PROCESS_INSTANCE"
+        },
+        "variables": {
+          "description": "The variables to create the process instance with.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

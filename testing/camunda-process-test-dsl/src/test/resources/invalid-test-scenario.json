@@ -1,0 +1,13 @@
+{
+  "testCases": [
+    {
+      "name": "An invalid test case",
+      "instructions": [
+        {
+          "type": "unknown type",
+          "isValid": false
+        }
+      ]
+    }
+  ]
+}
