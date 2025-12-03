@@ -1940,7 +1940,7 @@ public class ModifyProcessInstanceTest {
 
   @Test
   public void shouldMoveAllMultiInstanceElementsByIds() {
-    // given
+    // given a multi-instance user task
     ENGINE
         .deployment()
         .withXmlResource(
@@ -1968,7 +1968,7 @@ public class ModifyProcessInstanceTest {
         .moveElements("A", "B")
         .modify();
 
-    // then
+    // then only the multi-instance parent creates a new token at the target
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(

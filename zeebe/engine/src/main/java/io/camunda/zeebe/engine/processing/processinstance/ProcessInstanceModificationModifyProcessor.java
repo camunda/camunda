@@ -407,10 +407,12 @@ public final class ProcessInstanceModificationModifyProcessor
                     Function.identity()));
     // collect terminate-by-id instructions, add key instructions to final list
     final var terminateInstructionIds = new HashSet<String>();
+    final var terminateInstanceKeys = new HashSet<Long>();
     terminateInstructionsInput.forEach(
         instruction -> {
           if (instruction.getElementInstanceKey() > 0) {
             finalTerminateInstructions.add(instruction);
+            terminateInstanceKeys.add(instruction.getElementInstanceKey());
           } else {
             terminateInstructionIds.add(instruction.getElementId());
           }
@@ -423,7 +425,8 @@ public final class ProcessInstanceModificationModifyProcessor
           new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
       while (!elementInstances.isEmpty()) {
         final var elementInstance = elementInstances.poll();
-        final String elementId = elementInstance.getValue().getElementId();
+        final var elementId = elementInstance.getValue().getElementId();
+        var elementTerminated = false;
         // move element instance
         if (moveInstructions.containsKey(elementId)) {
           final var moveInstruction = moveInstructions.get(elementId);
@@ -445,18 +448,21 @@ public final class ProcessInstanceModificationModifyProcessor
           finalTerminateInstructions.add(
               new ProcessInstanceModificationTerminateInstruction()
                   .setElementInstanceKey(elementInstance.getKey()));
+          elementTerminated = true;
         }
         // terminate element instance
-        if (terminateInstructionIds.contains(elementId)) {
+        if (terminateInstructionIds.contains(elementId) && !elementTerminated) {
           finalTerminateInstructions.add(
               new ProcessInstanceModificationTerminateInstruction()
                   .setElementInstanceKey(elementInstance.getKey()));
+          elementTerminated = true;
         }
-        // don't handle multi-instance children explicitly, they are terminated by the stream
-        // processor automatically and we don't want an activation for them either, only for the
-        // body
-        if (!BpmnElementType.MULTI_INSTANCE_BODY.equals(
-            elementInstance.getValue().getBpmnElementType())) {
+        /*
+         * Don't handle children explicitly anymore when the parent is terminated. The child
+         * elements are terminated by the stream processor automatically, so we don't need to handle
+         * them any further.
+         */
+        if (!elementTerminated && !terminateInstanceKeys.contains(elementInstance.getKey())) {
           elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
         }
       }
