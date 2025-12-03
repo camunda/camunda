@@ -7,15 +7,13 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.stream.impl.TypedEventRegistry.EVENT_REGISTRY;
-
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.ReflectUtil;
 import java.util.EnumMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -35,7 +33,9 @@ public final class LogStreamPrinter {
     sb.append(":\n");
 
     final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
-    EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
+    for (final var t : ValueType.values()) {
+      eventCache.put(t, UnifiedRecordValue.fromValueType(t));
+    }
 
     try (final LogStreamReader streamReader = logStream.newLogStreamReader()) {
       streamReader.seekToFirstEvent();

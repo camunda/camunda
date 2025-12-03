@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -110,8 +111,7 @@ final class CommandApiRequestHandler
     }
 
     if (value == null) {
-      errorWriter.unsupportedMessage(
-          valueType.name(), CommandApiRequestReader.RECORDS_BY_TYPE.keySet().toArray());
+      errorWriter.unsupportedMessage(valueType.name(), ValueType.values());
       return Either.left(errorWriter);
     }
 

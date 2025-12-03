@@ -52,8 +52,25 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
+
+  private static final Map<Class<? extends RecordValue>, ValueType> classToValueType =
+      new HashMap<>();
+
+  static {
+    Arrays.stream(ValueType.values())
+        .forEach(
+            v -> {
+              final var record = fromValueType(v);
+              if (record != null) {
+                classToValueType.put(record.getClass(), v);
+              }
+            });
+  }
 
   /**
    * Creates a new {@link UnifiedRecordValue}.
@@ -88,6 +105,19 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
   }
 
+  /**
+   * NOTE: this is different from {@link CommandDistributionRecord#getValueType()} as that is
+   * referring to the value they are wrapping.
+   *
+   * <p>It needs to be a different method, otherwise those methods will be ignored in the json.
+   *
+   * @return the valueType associated to this record
+   */
+  @JsonIgnore
+  public ValueType valueType() {
+    return ClassToValueType.MAP.get(getClass());
+  }
+
   public static UnifiedRecordValue fromValueType(final ValueType valueType) {
     return switch (valueType) {
       case ValueType.DEPLOYMENT -> new DeploymentRecord();
@@ -95,30 +125,30 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.PROCESS_INSTANCE -> new ProcessInstanceRecord();
       case ValueType.MESSAGE -> new MessageRecord();
       case ValueType.MESSAGE_BATCH -> new MessageBatchRecord();
-      case PROCESS_MESSAGE_SUBSCRIPTION -> new ProcessMessageSubscriptionRecord();
+      case ValueType.PROCESS_MESSAGE_SUBSCRIPTION -> new ProcessMessageSubscriptionRecord();
       case ValueType.JOB_BATCH -> new JobBatchRecord();
       case ValueType.INCIDENT -> new IncidentRecord();
-      case TIMER -> new TimerRecord();
-      case MESSAGE_START_EVENT_SUBSCRIPTION -> new MessageStartEventSubscriptionRecord();
-      case VARIABLE -> new VariableRecord();
+      case ValueType.TIMER -> new TimerRecord();
+      case ValueType.MESSAGE_START_EVENT_SUBSCRIPTION -> new MessageStartEventSubscriptionRecord();
+      case ValueType.VARIABLE -> new VariableRecord();
       case ValueType.VARIABLE_DOCUMENT -> new VariableDocumentRecord();
       case ValueType.PROCESS_INSTANCE_CREATION -> new ProcessInstanceCreationRecord();
-      case ERROR -> new ErrorRecord();
-      case PROCESS_INSTANCE_RESULT -> new ProcessInstanceResultRecord();
-      case PROCESS -> new ProcessRecord();
-      case DEPLOYMENT_DISTRIBUTION -> new DeploymentDistributionRecord();
-      case PROCESS_EVENT -> new ProcessEventRecord();
-      case DECISION -> new DecisionRecord();
-      case DECISION_REQUIREMENTS -> new DecisionRequirementsRecord();
+      case ValueType.ERROR -> new ErrorRecord();
+      case ValueType.PROCESS_INSTANCE_RESULT -> new ProcessInstanceResultRecord();
+      case ValueType.PROCESS -> new ProcessRecord();
+      case ValueType.DEPLOYMENT_DISTRIBUTION -> new DeploymentDistributionRecord();
+      case ValueType.PROCESS_EVENT -> new ProcessEventRecord();
+      case ValueType.DECISION -> new DecisionRecord();
+      case ValueType.DECISION_REQUIREMENTS -> new DecisionRequirementsRecord();
       case ValueType.DECISION_EVALUATION -> new DecisionEvaluationRecord();
       case ValueType.PROCESS_INSTANCE_MODIFICATION -> new ProcessInstanceModificationRecord();
-      case ESCALATION -> new EscalationRecord();
-      case SIGNAL_SUBSCRIPTION -> new SignalSubscriptionRecord();
+      case ValueType.ESCALATION -> new EscalationRecord();
+      case ValueType.SIGNAL_SUBSCRIPTION -> new SignalSubscriptionRecord();
       case ValueType.SIGNAL -> new SignalRecord();
       case ValueType.COMMAND_DISTRIBUTION -> new CommandDistributionRecord();
       case ValueType.PROCESS_INSTANCE_BATCH -> new ProcessInstanceBatchRecord();
       case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();
-      case FORM -> new FormRecord();
+      case ValueType.FORM -> new FormRecord();
       case ValueType.USER_TASK -> new UserTaskRecord();
       case ValueType.PROCESS_INSTANCE_MIGRATION -> new ProcessInstanceMigrationRecord();
       case ValueType.COMPENSATION_SUBSCRIPTION -> new CompensationSubscriptionRecord();

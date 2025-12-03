@@ -23,9 +23,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.ReflectUtil;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -164,12 +162,11 @@ final class InterPartitionCommandReceiverImpl {
           messageDecoder.limit() + InterPartitionMessageDecoder.commandHeaderLength();
       final var commandLength = messageDecoder.commandLength();
 
-      final var valueClass = TypedEventRegistry.EVENT_REGISTRY.get(valueType);
-      if (valueClass == null) {
+      final var value = UnifiedRecordValue.fromValueType(valueType);
+      if (value == null) {
         throw new IllegalArgumentException(
             "No value type mapped to %s, can't decode message".formatted(valueType));
       }
-      final var value = ReflectUtil.newInstance(valueClass);
 
       value.wrap(messageBuffer, commandOffset, commandLength);
       return new DecodedMessage(checkpointId, recordKey, recordMetadata, value);
