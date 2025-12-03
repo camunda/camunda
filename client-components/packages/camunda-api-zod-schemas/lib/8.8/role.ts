@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
 import {groupSchema, roleSchema, type Group, type Role} from './group-role';
 import {mappingRuleSchema, type MappingRule} from './mapping-rule';
 import {userSchema} from './user';

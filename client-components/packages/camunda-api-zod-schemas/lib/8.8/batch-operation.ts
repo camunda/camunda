@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
 
 const batchOperationTypeSchema = z.enum([
 	'CANCEL_PROCESS_INSTANCE',

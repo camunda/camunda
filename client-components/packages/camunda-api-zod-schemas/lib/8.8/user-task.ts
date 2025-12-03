@@ -16,7 +16,7 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
-} from './common';
+} from '../common';
 import {variableSchema} from './variable';
 
 const userTaskVariableFilterSchema = variableSchema.pick({

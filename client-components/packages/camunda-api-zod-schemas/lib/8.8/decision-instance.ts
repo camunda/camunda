@@ -14,8 +14,8 @@ import {
 	advancedDateTimeFilterSchema,
 	basicStringFilterSchema,
 	type Endpoint,
-  getEnumFilterSchema,
-} from './common';
+	getEnumFilterSchema,
+} from '../common';
 import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
 
 const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION']);

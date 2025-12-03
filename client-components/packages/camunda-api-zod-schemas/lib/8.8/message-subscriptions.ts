@@ -16,7 +16,7 @@ import {
 	getEnumFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
-} from './common';
+} from '../common';
 
 const messageSubscriptionStateSchema = z.enum(['CORRELATED', 'CREATED', 'DELETED', 'MIGRATED']);
 type MessageSubscriptionState = z.infer<typeof messageSubscriptionStateSchema>;
