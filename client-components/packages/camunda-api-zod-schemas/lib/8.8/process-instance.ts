@@ -69,7 +69,15 @@ const queryProcessInstancesFilterSchema = z
 		elementId: advancedStringFilterSchema,
 		hasElementInstanceIncident: z.boolean(),
 		incidentErrorHashCode: advancedIntegerFilterSchema,
-		tags: z.array(z.string().min(1).max(100).regex(/^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$/)).max(10),
+		tags: z
+			.array(
+				z
+					.string()
+					.min(1)
+					.max(100)
+					.regex(/^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$/),
+			)
+			.max(10),
 	})
 	.partial();
 
@@ -340,9 +348,7 @@ const resolveProcessInstanceIncidentsResponseBodySchema = z.object({
 	batchOperationType: batchOperationTypeSchema,
 });
 
-type ResolveProcessInstanceIncidentsResponseBody = z.infer<
-	typeof resolveProcessInstanceIncidentsResponseBodySchema
->;
+type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcessInstanceIncidentsResponseBodySchema>;
 
 const resolveProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
 	method: 'POST',

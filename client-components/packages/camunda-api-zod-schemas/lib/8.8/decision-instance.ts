@@ -14,7 +14,7 @@ import {
 	advancedDateTimeFilterSchema,
 	basicStringFilterSchema,
 	type Endpoint,
-  getEnumFilterSchema,
+	getEnumFilterSchema,
 } from '../common';
 import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
 

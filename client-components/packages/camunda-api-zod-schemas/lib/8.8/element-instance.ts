@@ -164,8 +164,8 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
-  queryElementInstanceIncidentsRequestBodySchema,
-  queryElementInstanceIncidentsResponseBodySchema,
+	queryElementInstanceIncidentsRequestBodySchema,
+	queryElementInstanceIncidentsResponseBodySchema,
 	queryElementInstanceIncidents,
 };
 export type {
@@ -176,6 +176,6 @@ export type {
 	QueryElementInstancesResponseBody,
 	GetElementInstanceResponseBody,
 	UpdateElementInstanceVariablesRequestBody,
-  QueryElementInstanceIncidentsRequestBody,
-  QueryElementInstanceIncidentsResponseBody,
+	QueryElementInstanceIncidentsRequestBody,
+	QueryElementInstanceIncidentsResponseBody,
 };
