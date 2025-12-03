@@ -9,9 +9,12 @@
 package io.camunda.zeebe.engine.state.globallistener;
 
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 
 public interface MutableGlobalListenersState extends GlobalListenersState {
   void updateCurrentConfiguration(final GlobalListenerBatchRecord record);
 
-  public void pinCurrentConfiguration();
+  void pinCurrentConfiguration(final UserTaskRecord userTaskRecord);
+
+  void unpinConfiguration(final UserTaskRecord userTaskRecord);
 }
