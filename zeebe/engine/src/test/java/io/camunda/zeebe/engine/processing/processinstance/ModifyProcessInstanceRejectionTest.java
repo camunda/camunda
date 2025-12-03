@@ -1384,7 +1384,7 @@ public class ModifyProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             ("Expected to modify instance of process '%s' but it contains one or more terminate instructions "
-                    + "with an element instance key and element id: '(%s, %s)', '(%s, %s)'")
+                    + "with both element instance key and element id, but only one of them is allowed: '(%s, %s)', '(%s, %s)'")
                 .formatted(PROCESS_ID, 12345L, "A", 67890L, "B"));
   }
 

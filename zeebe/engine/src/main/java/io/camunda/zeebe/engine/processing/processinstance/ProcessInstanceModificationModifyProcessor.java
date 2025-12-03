@@ -87,7 +87,7 @@ public final class ProcessInstanceModificationModifyProcessor
           + " with neither an element instance key nor element id: '%s'";
   private static final String ERROR_MESSAGE_TERMINATE_MULTIPLE_DEFINITIONS =
       "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
-          + " with an element instance key and element id: '%s'";
+          + " with both element instance key and element id, but only one of them is allowed: '%s'";
   private static final String ERROR_MESSAGE_MOVE_NO_DEFINITIONS =
       "Expected to modify instance of process '%s' but it contains one or more move instructions"
           + " with either or both the source or target element id missing: '%s'";
