@@ -143,6 +143,12 @@ const queryKeys = {
   batchOperations: {
     get: (batchOperationKey: string) => ['batchOperation', batchOperationKey],
   },
+  batchOperationItems: {
+    searchByProcessInstanceKey: (processInstanceKey?: string) => [
+      'batchOperationItemsSearchByProcessInstanceKey',
+      processInstanceKey,
+    ],
+  },
 };
 
 export {queryKeys};
