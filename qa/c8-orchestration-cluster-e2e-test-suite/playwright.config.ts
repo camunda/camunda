@@ -1,5 +1,5 @@
 /* eslint-disable */
-import {devices, defineConfig} from '@playwright/test';
+import { devices, defineConfig } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -13,7 +13,7 @@ const testRailOptions = {
 const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
-  ['html', {outputFolder: 'html-report'}],
+  ['html', { outputFolder: 'html-report' }],
 ];
 
 // Define reporters with SlackReporter
@@ -63,13 +63,22 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'api-e2e',
+      use: devices['Desktop Chrome'],
+      testMatch: ['tests/api/**/*.spec.ts'],
+    },
+    {
       name: 'chromium',
       use: devices['Desktop Chrome'],
+      dependencies: ['api-e2e'],
       // Specify only tests in the changed folders for the 'chromium' project
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
         : undefined,
-      testIgnore: 'task-panel.spec.ts',
+      testIgnore: [
+        'task-panel.spec.ts',
+        'tests/api/**/*.spec.ts',
+      ],
       grep: /^(?!.*@v2-only).*$/,
       teardown: 'chromium-subset',
     },
@@ -82,7 +91,11 @@ export default defineConfig({
     {
       name: 'firefox',
       use: devices['Desktop Firefox'],
-      testIgnore: 'task-panel.spec.ts',
+      dependencies: ['api-e2e'],
+      testIgnore: [
+        'task-panel.spec.ts',
+        'tests/api/**/*.spec.ts',
+      ],
       grep: /^(?!.*@v2-only).*$/,
       teardown: 'firefox-subset',
     },
@@ -95,7 +108,11 @@ export default defineConfig({
     {
       name: 'msedge',
       use: devices['Desktop Edge'],
-      testIgnore: 'task-panel.spec.ts',
+      dependencies: ['api-e2e'],
+      testIgnore: [
+        'task-panel.spec.ts',
+        'tests/api/**/*.spec.ts',
+      ],
       grep: /^(?!.*@v2-only).*$/,
       teardown: 'msedge-subset',
     },
@@ -120,11 +137,13 @@ export default defineConfig({
       testIgnore: ['task-panel.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
       grep: /^(?!.*@v1-only).*$/,
       teardown: 'chromium-subset',
+      dependencies: ['api-e2e'],
     },
     {
       name: 'identity-e2e',
       testMatch: ['tests/identity/*.spec.ts'],
       use: devices['Desktop Chrome'],
+      dependencies: ['api-e2e'],
     },
   ],
   reporter:
