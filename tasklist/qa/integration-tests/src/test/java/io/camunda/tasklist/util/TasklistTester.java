@@ -423,7 +423,7 @@ public class TasklistTester {
   }
 
   public TasklistTester variablesExist(final String... varNames) {
-    databaseTestExtension.waitFor(variablesExist, varNames);
+    databaseTestExtension.waitFor(variablesExist, processInstanceId, varNames);
     return this;
   }
 
