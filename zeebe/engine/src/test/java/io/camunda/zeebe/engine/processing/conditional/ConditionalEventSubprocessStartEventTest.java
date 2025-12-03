@@ -11,12 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -35,6 +39,7 @@ public final class ConditionalEventSubprocessStartEventTest {
   public void shouldTriggerOnEventSubprocessStartEventActivationWhenConditionIsTrue() {
     // given
     final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
     final var deployment =
         engine
             .deployment()
@@ -44,7 +49,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .endEvent()
                     .moveToProcess(processId)
                     .eventSubProcess()
-                    .startEvent("catchEvent")
+                    .startEvent(catchEventId)
                     .condition(
                         c ->
                             c.condition("=x > y")
@@ -67,26 +72,40 @@ public final class ConditionalEventSubprocessStartEventTest {
             .create();
 
     // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
     final long subscriptionKey =
         RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
             .getFirst()
             .getKey();
 
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
+            RecordingExporter.conditionalSubscriptionRecords()
                 .withRecordKey(subscriptionKey)
                 .withScopeKey(processInstanceKey)
                 .withElementInstanceKey(processInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
-                .withCatchEventId("catchEvent")
+                .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
                 .withVariableNames("x", "y")
                 .withVariableEvents("create", "update")
                 .isInterrupting(true)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                .limit(1))
-        .hasSize(1);
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED,
+            ConditionalSubscriptionIntent.TRIGGER,
+            ConditionalSubscriptionIntent.TRIGGERED);
   }
 
   @Test
@@ -94,6 +113,7 @@ public final class ConditionalEventSubprocessStartEventTest {
       shouldTriggerOnEventSubprocessStartEventActivationWhenConditionIsTrueWithoutFilters() {
     // given
     final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
     final var deployment =
         engine
             .deployment()
@@ -103,7 +123,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .endEvent()
                     .moveToProcess(processId)
                     .eventSubProcess()
-                    .startEvent("catchEvent")
+                    .startEvent(catchEventId)
                     .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .subProcessDone()
@@ -122,26 +142,40 @@ public final class ConditionalEventSubprocessStartEventTest {
             .create();
 
     // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
     final long subscriptionKey =
         RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
             .getFirst()
             .getKey();
 
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
+            RecordingExporter.conditionalSubscriptionRecords()
                 .withRecordKey(subscriptionKey)
                 .withScopeKey(processInstanceKey)
                 .withElementInstanceKey(processInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
-                .withCatchEventId("catchEvent")
+                .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
                 .withVariableNames(List.of())
                 .withVariableEvents(List.of())
                 .isInterrupting(true)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                .limit(1))
-        .hasSize(1);
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED,
+            ConditionalSubscriptionIntent.TRIGGER,
+            ConditionalSubscriptionIntent.TRIGGERED);
   }
 
   @Test
@@ -149,16 +183,19 @@ public final class ConditionalEventSubprocessStartEventTest {
       shouldTriggerOnEventSubprocessStartEventActivationWhenConditionIsTrueForNonInterrupting() {
     // given
     final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
+    final String serviceTaskId = "task";
     final var deployment =
         engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
+                    .serviceTask(serviceTaskId, t -> t.zeebeJobType(serviceTaskId))
                     .endEvent()
                     .moveToProcess(processId)
                     .eventSubProcess()
-                    .startEvent("catchEvent")
+                    .startEvent(catchEventId)
                     .interrupting(false)
                     .condition(
                         c ->
@@ -181,27 +218,55 @@ public final class ConditionalEventSubprocessStartEventTest {
             .withVariables(Map.of("x", 2, "y", 1))
             .create();
 
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskId)
+        .await();
+
+    final Record<JobBatchRecordValue> batchRecord =
+        engine.jobs().withType(serviceTaskId).activate();
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    engine.job().withKey(jobKey).complete();
+
     // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
     final long subscriptionKey =
         RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
             .getFirst()
             .getKey();
 
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
+            RecordingExporter.conditionalSubscriptionRecords()
                 .withRecordKey(subscriptionKey)
                 .withScopeKey(processInstanceKey)
                 .withElementInstanceKey(processInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
-                .withCatchEventId("catchEvent")
+                .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
                 .withVariableNames("x", "y")
                 .withVariableEvents("create", "update")
                 .isInterrupting(false)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                .limit(1))
-        .hasSize(1);
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED,
+            ConditionalSubscriptionIntent.TRIGGER,
+            ConditionalSubscriptionIntent.TRIGGERED);
   }
 
   @Test
@@ -210,6 +275,7 @@ public final class ConditionalEventSubprocessStartEventTest {
     // given
     final String processId = helper.getBpmnProcessId();
     final String tenantId = "tenant1";
+    final String catchEventId = "catchEvent";
     final var deployment =
         engine
             .deployment()
@@ -219,7 +285,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .endEvent()
                     .moveToProcess(processId)
                     .eventSubProcess()
-                    .startEvent("catchEvent")
+                    .startEvent(catchEventId)
                     .condition(
                         c ->
                             c.condition("=x > y")
@@ -244,58 +310,80 @@ public final class ConditionalEventSubprocessStartEventTest {
             .create();
 
     // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
     final long subscriptionKey =
         RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
             .getFirst()
             .getKey();
 
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
+            RecordingExporter.conditionalSubscriptionRecords()
                 .withRecordKey(subscriptionKey)
                 .withScopeKey(processInstanceKey)
                 .withElementInstanceKey(processInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
-                .withCatchEventId("catchEvent")
+                .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
                 .withVariableNames("x", "y")
                 .withVariableEvents("create", "update")
                 .isInterrupting(true)
                 .withTenantId(tenantId)
-                .limit(1))
-        .hasSize(1);
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED,
+            ConditionalSubscriptionIntent.TRIGGER,
+            ConditionalSubscriptionIntent.TRIGGERED);
   }
 
   @Test
   public void shouldTriggerMultipleTimesOnEventSubprocessStartEventActivationWhenConditionIsTrue() {
     // given
     final String processId = helper.getBpmnProcessId();
+    final String serviceTaskId = "task";
+    final String catchEventId1 = "catchEvent1";
+    final String catchEventId2 = "catchEvent2";
+    final String catchEventEndId1 = "end1";
+    final String catchEventEndId2 = "end2";
     final var deployment =
         engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
+                    .serviceTask(serviceTaskId, t -> t.zeebeJobType(serviceTaskId))
                     .endEvent()
                     .moveToProcess(processId)
                     .eventSubProcess()
-                    .startEvent("catchEvent1")
+                    .startEvent(catchEventId1)
+                    .interrupting(false)
                     .condition(
                         c ->
                             c.condition("=x > y")
                                 .zeebeVariableNames("x, y")
                                 .zeebeVariableEvents("create, update"))
-                    .endEvent()
+                    .endEvent(catchEventEndId1)
                     .subProcessDone()
                     .moveToProcess(processId)
                     .eventSubProcess()
-                    .startEvent("catchEvent2")
+                    .startEvent(catchEventId2)
+                    .interrupting(false)
                     .condition(
                         c ->
                             c.condition("=x != y")
                                 .zeebeVariableNames("x, y")
                                 .zeebeVariableEvents("create, update"))
-                    .endEvent()
+                    .endEvent(catchEventEndId2)
                     .subProcessDone()
                     .done())
             .deploy();
@@ -311,21 +399,194 @@ public final class ConditionalEventSubprocessStartEventTest {
             .withVariables(Map.of("x", 2, "y", 1))
             .create();
 
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskId)
+        .await();
+
+    final Record<JobBatchRecordValue> batchRecord =
+        engine.jobs().withType(serviceTaskId).activate();
+    engine.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
     // then
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(catchEventId1, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId1, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(catchEventId2, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId2, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(catchEventEndId1, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventEndId1, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(catchEventEndId2, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventEndId2, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withScopeKey(processInstanceKey)
+                .withElementInstanceKey(processInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(processDefinitionKey)
                 .withVariableNames("x", "y")
                 .withVariableEvents("create", "update")
-                .isInterrupting(true)
+                .isInterrupting(false)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                .limit(2))
-        .extracting(Record::getValue)
+                .limit(6))
         .extracting(
-            ConditionalSubscriptionRecordValue::getCatchEventId,
-            ConditionalSubscriptionRecordValue::getCondition)
-        .containsExactlyInAnyOrder(tuple("catchEvent1", "=x > y"), tuple("catchEvent2", "=x != y"));
+            Record::getIntent,
+            r -> r.getValue().getCatchEventId(),
+            r -> r.getValue().getCondition())
+        .containsSubsequence(
+            tuple(ConditionalSubscriptionIntent.CREATED, catchEventId1, "=x > y"),
+            tuple(ConditionalSubscriptionIntent.TRIGGER, catchEventId1, "=x > y"),
+            tuple(ConditionalSubscriptionIntent.CREATED, catchEventId2, "=x != y"),
+            tuple(ConditionalSubscriptionIntent.TRIGGER, catchEventId2, "=x != y"),
+            tuple(ConditionalSubscriptionIntent.TRIGGERED, catchEventId1, "=x > y"),
+            tuple(ConditionalSubscriptionIntent.TRIGGERED, catchEventId2, "=x != y"));
+  }
+
+  @Test
+  public void shouldRejectConditionalEventTriggerCommandWhenSubscriptionDeleted() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
+    final String serviceTaskId = "task";
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(serviceTaskId, t -> t.zeebeJobType(serviceTaskId))
+                .endEvent()
+                .moveToProcess(processId)
+                .eventSubProcess()
+                .startEvent(catchEventId)
+                .condition(
+                    c ->
+                        c.condition("=x > y")
+                            .zeebeVariableNames("x, y")
+                            .zeebeVariableEvents("create, update"))
+                .endEvent()
+                .subProcessDone()
+                .done())
+        .deploy();
+
+    // when
+    // do not set variables yet to avoid triggering the condition
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskId)
+        .await();
+
+    engine.pauseProcessing(1);
+    engine.stop();
+
+    final var conditionalRecord =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst();
+    final long subscriptionKey = conditionalRecord.getKey();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .conditional(ConditionalSubscriptionIntent.DELETED, conditionalRecord.getValue())
+            .key(subscriptionKey),
+        RecordToWrite.command()
+            .conditional(ConditionalSubscriptionIntent.TRIGGER, conditionalRecord.getValue())
+            .key(subscriptionKey));
+
+    engine.start();
+
+    // then
+    final var rejection =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
+            .onlyCommandRejections()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            String.format(
+                "Expected to trigger condition subscription with key '%d', but no such subscription was "
+                    + "found for process instance with key '%d' and catch event id '%s'.",
+                subscriptionKey, processInstanceKey, catchEventId));
+  }
+
+  @Test
+  public void shouldRejectConditionalEventTriggerCommandWhenSubscriptionTriggered() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
+    final String serviceTaskId = "task";
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(serviceTaskId, t -> t.zeebeJobType(serviceTaskId))
+                .endEvent()
+                .moveToProcess(processId)
+                .eventSubProcess()
+                .startEvent(catchEventId)
+                .condition(
+                    c ->
+                        c.condition("=x > y")
+                            .zeebeVariableNames("x, y")
+                            .zeebeVariableEvents("create, update"))
+                .endEvent()
+                .subProcessDone()
+                .done())
+        .deploy();
+
+    // when
+    // do not set variables yet to avoid triggering the condition
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskId)
+        .await();
+
+    engine.pauseProcessing(1);
+    engine.stop();
+
+    final var conditionalRecord =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst();
+    final long subscriptionKey = conditionalRecord.getKey();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .conditional(ConditionalSubscriptionIntent.TRIGGERED, conditionalRecord.getValue())
+            .key(subscriptionKey),
+        RecordToWrite.command()
+            .conditional(ConditionalSubscriptionIntent.TRIGGER, conditionalRecord.getValue())
+            .key(subscriptionKey));
+
+    engine.start();
+
+    // then
+    final var rejection =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
+            .onlyCommandRejections()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            String.format(
+                "Expected to trigger condition subscription with key '%d', but no such subscription was "
+                    + "found for process instance with key '%d' and catch event id '%s'.",
+                subscriptionKey, processInstanceKey, catchEventId));
   }
 
   @Test

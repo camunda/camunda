@@ -31,12 +31,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class ConditionalTriggerProcessor
     implements TypedRecordProcessor<ConditionalSubscriptionRecord> {
 
-  private static final String NO_CONDITIONAL_FOUND_MESSAGE =
+  private static final String NO_CONDITIONAL_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to trigger condition subscription with key '%d', but no such subscription was found "
           + "for process instance with key '%d' and catch event id '%s'.";
 
   private static final String NO_ACTIVE_ELEMENT_FOUND_FOR_CONDITIONAL_MESSAGE =
-      "Expected to trigger condition subscription with key '%d', but the element with key '%s' is "
+      "Expected to trigger condition subscription with key '%d', but the element with key '%d' is "
           + "not active anymore for process instance with key '%d' and catch event id '%s'.";
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
@@ -80,7 +80,7 @@ public class ConditionalTriggerProcessor
           record,
           RejectionType.NOT_FOUND,
           String.format(
-              NO_CONDITIONAL_FOUND_MESSAGE,
+              NO_CONDITIONAL_SUBSCRIPTION_FOUND_MESSAGE,
               record.getKey(),
               subscription.getProcessInstanceKey(),
               subscription.getCatchEventId()));
@@ -115,11 +115,11 @@ public class ConditionalTriggerProcessor
           subscription.getCatchEventIdBuffer(),
           NO_VARIABLES, // TODO - this needs to updated to pass variables from the condition
           tenantId);
-    } else {
-      stateWriter.appendFollowUpEvent(
-          record.getKey(), ConditionalSubscriptionIntent.TRIGGERED, subscription);
+      return;
     }
 
+    stateWriter.appendFollowUpEvent(
+        record.getKey(), ConditionalSubscriptionIntent.TRIGGERED, subscription);
     final var catchEvent =
         processState.getFlowElement(
             subscription.getProcessDefinitionKey(),

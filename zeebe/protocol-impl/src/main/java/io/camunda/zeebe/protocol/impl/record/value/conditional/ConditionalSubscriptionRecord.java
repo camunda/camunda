@@ -149,12 +149,6 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  @JsonIgnore
-  public DirectBuffer getCatchEventIdBuffer() {
-    return catchEventIdProp.getValue();
-  }
-
-  @Override
   public String getCondition() {
     return BufferUtil.bufferAsString(conditionProp.getValue());
   }
@@ -205,6 +199,11 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   public ConditionalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
     catchEventIdProp.setValue(catchEventId);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCatchEventIdBuffer() {
+    return catchEventIdProp.getValue();
   }
 
   @Override
