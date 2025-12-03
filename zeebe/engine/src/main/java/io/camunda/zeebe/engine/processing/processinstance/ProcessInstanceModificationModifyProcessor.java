@@ -426,27 +426,21 @@ public final class ProcessInstanceModificationModifyProcessor
         final String elementId = elementInstance.getValue().getElementId();
         // move element instance
         if (moveInstructions.containsKey(elementId)) {
-          // don't activate new instances for source multi-instance children
-          final long flowScopeKey = elementInstance.getValue().getFlowScopeKey();
-          if (flowScopeKey > 0
-              && !BpmnElementType.MULTI_INSTANCE_BODY.equals(
-                  elementInstanceState.getInstance(flowScopeKey).getValue().getBpmnElementType())) {
-            final var moveInstruction = moveInstructions.get(elementId);
-            final var activateInstruction =
-                new ProcessInstanceModificationActivateInstruction()
-                    .setElementId(moveInstruction.getTargetElementId())
-                    .setAncestorScopeKey(
-                        moveInstruction.isUseSourceParentKeyAsAncestorScope()
-                            ? elementInstance.getParentKey()
-                            : moveInstruction.getAncestorScopeKey());
-            moveInstruction
-                .getVariableInstructions()
-                .forEach(
-                    vi ->
-                        activateInstruction.addVariableInstruction(
-                            (ProcessInstanceModificationVariableInstruction) vi));
-            finalActivateInstructions.add(activateInstruction);
-          }
+          final var moveInstruction = moveInstructions.get(elementId);
+          final var activateInstruction =
+              new ProcessInstanceModificationActivateInstruction()
+                  .setElementId(moveInstruction.getTargetElementId())
+                  .setAncestorScopeKey(
+                      moveInstruction.isUseSourceParentKeyAsAncestorScope()
+                          ? elementInstance.getParentKey()
+                          : moveInstruction.getAncestorScopeKey());
+          moveInstruction
+              .getVariableInstructions()
+              .forEach(
+                  vi ->
+                      activateInstruction.addVariableInstruction(
+                          (ProcessInstanceModificationVariableInstruction) vi));
+          finalActivateInstructions.add(activateInstruction);
           // terminate source element instance
           finalTerminateInstructions.add(
               new ProcessInstanceModificationTerminateInstruction()
@@ -458,8 +452,13 @@ public final class ProcessInstanceModificationModifyProcessor
               new ProcessInstanceModificationTerminateInstruction()
                   .setElementInstanceKey(elementInstance.getKey()));
         }
-
-        elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
+        // don't handle multi-instance children explicitly, they are terminated by the stream
+        // processor automatically and we don't want an activation for them either, only for the
+        // body
+        if (!BpmnElementType.MULTI_INSTANCE_BODY.equals(
+            elementInstance.getValue().getBpmnElementType())) {
+          elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
+        }
       }
     }
   }
