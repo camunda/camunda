@@ -27,6 +27,9 @@ global:
   # By default, we run without Identity
   identity:
     auth:
+      optimize:
+        secret:
+          inlineSecret: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       enabled: true
 
 identity:
