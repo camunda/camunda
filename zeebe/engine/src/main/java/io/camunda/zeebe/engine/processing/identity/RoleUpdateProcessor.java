@@ -75,7 +75,8 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
 
     final var persistedRole = persistedRecord.get();
     record.setRoleKey(persistedRole.getRoleKey());
-    stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.UPDATED, record);
+    stateWriter.appendFollowUpEvent(
+        record.getRoleKey(), RoleIntent.UPDATED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(record.getRoleKey(), RoleIntent.UPDATED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
@@ -88,7 +89,10 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getValue().getRoleKey(), RoleIntent.UPDATED, command.getValue());
+        command.getValue().getRoleKey(),
+        RoleIntent.UPDATED,
+        command.getValue(),
+        command.getAuthorizations());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }
