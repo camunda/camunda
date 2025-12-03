@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+<<<<<<< HEAD
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
@@ -36,14 +37,13 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+=======
+>>>>>>> cab50db9 (feat: add factory method for records in UnifiedRecorValue)
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.ValueType;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
+<<<<<<< HEAD
 public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequestDecoder> {
   static final Map<ValueType, Supplier<UnifiedRecordValue>> RECORDS_BY_TYPE =
       new EnumMap<>(ValueType.class);
@@ -73,6 +73,9 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.CLOCK, ClockRecord::new);
     RECORDS_BY_TYPE.put(ValueType.AUTHORIZATION, AuthorizationRecord::new);
   }
+=======
+public class CommandApiRequestReader implements RequestReader {
+>>>>>>> cab50db9 (feat: add factory method for records in UnifiedRecorValue)
 
   private UnifiedRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
@@ -111,12 +114,12 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         messageHeaderDecoder.version());
 
     metadata.protocolVersion(messageHeaderDecoder.version());
-    final var recordSupplier = RECORDS_BY_TYPE.get(commandRequestDecoder.valueType());
-    if (recordSupplier != null) {
+    final var record = UnifiedRecordValue.fromValueType(commandRequestDecoder.valueType());
+    if (record != null) {
       final int valueOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
       final int valueLength = commandRequestDecoder.valueLength();
-      value = recordSupplier.get();
+      value = record;
       value.wrap(buffer, valueOffset, valueLength);
     }
 
