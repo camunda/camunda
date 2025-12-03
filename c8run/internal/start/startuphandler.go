@@ -223,17 +223,13 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		os.Exit(1)
 	}
 
-<<<<<<< HEAD
 	err = overrides.SetEnvVars(javaHome)
-=======
 	if err := ensurePortAvailable(settings.Port); err != nil {
 		log.Error().Err(err).Int("port", settings.Port).Msg("Camunda Run port is unavailable")
 		fmt.Printf("Port %d is already in use. Stop the other service or run `c8run start --port <free-port>`.\n", settings.Port)
 		os.Exit(1)
 	}
 
-	err = overrides.SetEnvVars(javaHome, shouldStartElasticsearch)
->>>>>>> a003eb41 (feat: added warning to user about port for Camunda in already use)
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
