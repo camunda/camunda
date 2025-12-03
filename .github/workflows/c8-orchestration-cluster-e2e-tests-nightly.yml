@@ -5,13 +5,9 @@
 ---
 name: C8 Orchestration Cluster E2E Tests Nightly
 
-#on:
-#  schedule:
-#    - cron: "0 0 * * *" # Run all tests at midnight UTC
-
 on:
-  pull_request:
-    types: [opened, edited, synchronize]
+  schedule:
+    - cron: "0 0 * * *" # Run all tests at midnight UTC
 
 permissions:
   contents: read

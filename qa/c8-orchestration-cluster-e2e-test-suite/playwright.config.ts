@@ -189,7 +189,7 @@ export default defineConfig({
   projects: isV2StatelessTestsOnly ? v2StatelessProjects : normalProjects,
   reporter:
     process.env.INCLUDE_SLACK_REPORTER === 'true'
-      ? useReportersWithoutSlack
+      ? useReportersWithSlack
       : useReportersWithoutSlack,
 });
 
