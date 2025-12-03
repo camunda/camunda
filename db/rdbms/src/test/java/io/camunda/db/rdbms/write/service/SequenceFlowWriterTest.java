@@ -15,21 +15,13 @@ import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class SequenceFlowWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private SequenceFlowMapper mapper;
-  private SequenceFlowWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(SequenceFlowMapper.class);
-    writer = new SequenceFlowWriter(executionQueue, mapper);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final SequenceFlowMapper mapper = mock(SequenceFlowMapper.class);
+  private final SequenceFlowWriter writer = new SequenceFlowWriter(executionQueue, mapper);
 
   @Test
   void shouldCreateSequenceFlow() {

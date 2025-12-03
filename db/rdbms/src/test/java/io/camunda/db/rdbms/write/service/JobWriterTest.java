@@ -16,23 +16,15 @@ import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class JobWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private JobMapper mapper;
-  private VendorDatabaseProperties vendorDatabaseProperties;
-  private JobWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(JobMapper.class);
-    vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
-    writer = new JobWriter(executionQueue, mapper, vendorDatabaseProperties);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final JobMapper mapper = mock(JobMapper.class);
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      mock(VendorDatabaseProperties.class);
+  private final JobWriter writer = new JobWriter(executionQueue, mapper, vendorDatabaseProperties);
 
   @Test
   void shouldCreateJob() {

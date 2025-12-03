@@ -17,19 +17,12 @@ import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GroupWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private GroupWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new GroupWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final GroupWriter writer = new GroupWriter(executionQueue);
 
   @Test
   void shouldCreateGroup() {

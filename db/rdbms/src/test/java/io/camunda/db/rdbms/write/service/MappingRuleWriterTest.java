@@ -14,19 +14,12 @@ import static org.mockito.Mockito.verify;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class MappingRuleWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private MappingRuleWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new MappingRuleWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final MappingRuleWriter writer = new MappingRuleWriter(executionQueue);
 
   @Test
   void shouldCreateMappingRule() {

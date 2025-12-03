@@ -15,19 +15,12 @@ import static org.mockito.Mockito.verify;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AuthorizationWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private AuthorizationWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new AuthorizationWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final AuthorizationWriter writer = new AuthorizationWriter(executionQueue);
 
   @Test
   void shouldCreateAuthorization() {

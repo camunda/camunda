@@ -14,19 +14,12 @@ import static org.mockito.Mockito.verify;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ProcessDefinitionWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private ProcessDefinitionWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new ProcessDefinitionWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final ProcessDefinitionWriter writer = new ProcessDefinitionWriter(executionQueue);
 
   @Test
   void shouldCreateProcessDefinition() {

@@ -16,19 +16,12 @@ import io.camunda.db.rdbms.write.domain.UserDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class UserWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private UserWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new UserWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final UserWriter writer = new UserWriter(executionQueue);
 
   @Test
   void shouldCreateUser() {

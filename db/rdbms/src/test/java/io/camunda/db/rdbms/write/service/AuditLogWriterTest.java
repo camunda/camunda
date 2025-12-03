@@ -16,23 +16,16 @@ import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AuditLogWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private AuditLogMapper mapper;
-  private VendorDatabaseProperties vendorDatabaseProperties;
-  private AuditLogWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(AuditLogMapper.class);
-    vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
-    writer = new AuditLogWriter(executionQueue, mapper, vendorDatabaseProperties);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final AuditLogMapper mapper = mock(AuditLogMapper.class);
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      mock(VendorDatabaseProperties.class);
+  private final AuditLogWriter writer =
+      new AuditLogWriter(executionQueue, mapper, vendorDatabaseProperties);
 
   @Test
   void shouldCreateAuditLog() {

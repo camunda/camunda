@@ -17,19 +17,12 @@ import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class RoleWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private RoleWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new RoleWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final RoleWriter writer = new RoleWriter(executionQueue);
 
   @Test
   void shouldCreateRole() {

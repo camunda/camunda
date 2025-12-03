@@ -17,21 +17,13 @@ import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class UserTaskWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private UserTaskMapper mapper;
-  private UserTaskWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(UserTaskMapper.class);
-    writer = new UserTaskWriter(executionQueue, mapper);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final UserTaskMapper mapper = mock(UserTaskMapper.class);
+  private final UserTaskWriter writer = new UserTaskWriter(executionQueue, mapper);
 
   @Test
   void shouldCreateUserTaskWithoutCandidatesOrTags() {

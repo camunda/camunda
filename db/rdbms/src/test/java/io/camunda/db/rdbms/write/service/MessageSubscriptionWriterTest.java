@@ -15,21 +15,14 @@ import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class MessageSubscriptionWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private MessageSubscriptionMapper mapper;
-  private MessageSubscriptionWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(MessageSubscriptionMapper.class);
-    writer = new MessageSubscriptionWriter(executionQueue, mapper);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final MessageSubscriptionMapper mapper = mock(MessageSubscriptionMapper.class);
+  private final MessageSubscriptionWriter writer =
+      new MessageSubscriptionWriter(executionQueue, mapper);
 
   @Test
   void shouldCreateMessageSubscription() {

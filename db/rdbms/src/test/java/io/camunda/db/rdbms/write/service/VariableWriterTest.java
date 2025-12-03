@@ -16,23 +16,16 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class VariableWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private VariableMapper mapper;
-  private VendorDatabaseProperties vendorDatabaseProperties;
-  private VariableWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(VariableMapper.class);
-    vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
-    writer = new VariableWriter(executionQueue, mapper, vendorDatabaseProperties);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final VariableMapper mapper = mock(VariableMapper.class);
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      mock(VendorDatabaseProperties.class);
+  private final VariableWriter writer =
+      new VariableWriter(executionQueue, mapper, vendorDatabaseProperties);
 
   @Test
   void shouldCreateVariable() {

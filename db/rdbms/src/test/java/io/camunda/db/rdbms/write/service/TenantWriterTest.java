@@ -17,19 +17,12 @@ import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TenantWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private TenantWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new TenantWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final TenantWriter writer = new TenantWriter(executionQueue);
 
   @Test
   void shouldCreateTenant() {

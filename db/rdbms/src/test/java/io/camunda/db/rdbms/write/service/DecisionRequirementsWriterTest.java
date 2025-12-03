@@ -14,19 +14,12 @@ import static org.mockito.Mockito.verify;
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class DecisionRequirementsWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private DecisionRequirementsWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new DecisionRequirementsWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final DecisionRequirementsWriter writer = new DecisionRequirementsWriter(executionQueue);
 
   @Test
   void shouldCreateDecisionRequirements() {

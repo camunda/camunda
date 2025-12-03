@@ -15,21 +15,15 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class CorrelatedMessageSubscriptionWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private CorrelatedMessageSubscriptionMapper mapper;
-  private CorrelatedMessageSubscriptionWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(CorrelatedMessageSubscriptionMapper.class);
-    writer = new CorrelatedMessageSubscriptionWriter(executionQueue, mapper);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final CorrelatedMessageSubscriptionMapper mapper =
+      mock(CorrelatedMessageSubscriptionMapper.class);
+  private final CorrelatedMessageSubscriptionWriter writer =
+      new CorrelatedMessageSubscriptionWriter(executionQueue, mapper);
 
   @Test
   void shouldCreateCorrelatedMessageSubscription() {

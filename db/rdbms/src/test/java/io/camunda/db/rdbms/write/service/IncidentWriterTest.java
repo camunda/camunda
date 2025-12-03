@@ -18,23 +18,16 @@ import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class IncidentWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private IncidentMapper mapper;
-  private VendorDatabaseProperties vendorDatabaseProperties;
-  private IncidentWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(IncidentMapper.class);
-    vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
-    writer = new IncidentWriter(executionQueue, mapper, vendorDatabaseProperties);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final IncidentMapper mapper = mock(IncidentMapper.class);
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      mock(VendorDatabaseProperties.class);
+  private final IncidentWriter writer =
+      new IncidentWriter(executionQueue, mapper, vendorDatabaseProperties);
 
   @Test
   void shouldCreateIncident() {

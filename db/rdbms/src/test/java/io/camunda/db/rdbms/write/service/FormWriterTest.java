@@ -14,19 +14,12 @@ import static org.mockito.Mockito.verify;
 import io.camunda.db.rdbms.write.domain.FormDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class FormWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private FormWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    writer = new FormWriter(executionQueue);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final FormWriter writer = new FormWriter(executionQueue);
 
   @Test
   void shouldCreateForm() {

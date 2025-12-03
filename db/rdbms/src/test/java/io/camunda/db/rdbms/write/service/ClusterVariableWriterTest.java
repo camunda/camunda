@@ -15,21 +15,15 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ClusterVariableWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private VendorDatabaseProperties vendorDatabaseProperties;
-  private ClusterVariableWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
-    writer = new ClusterVariableWriter(executionQueue, vendorDatabaseProperties);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      mock(VendorDatabaseProperties.class);
+  private final ClusterVariableWriter writer =
+      new ClusterVariableWriter(executionQueue, vendorDatabaseProperties);
 
   @Test
   void shouldCreateClusterVariable() {

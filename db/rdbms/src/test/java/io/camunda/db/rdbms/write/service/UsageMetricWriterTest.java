@@ -15,21 +15,13 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class UsageMetricWriterTest {
 
-  private ExecutionQueue executionQueue;
-  private UsageMetricMapper mapper;
-  private UsageMetricWriter writer;
-
-  @BeforeEach
-  void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
-    mapper = mock(UsageMetricMapper.class);
-    writer = new UsageMetricWriter(executionQueue, mapper);
-  }
+  private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
+  private final UsageMetricMapper mapper = mock(UsageMetricMapper.class);
+  private final UsageMetricWriter writer = new UsageMetricWriter(executionQueue, mapper);
 
   @Test
   void shouldCreateUsageMetric() {
