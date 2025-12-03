@@ -51,8 +51,25 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
+
+  private static final Map<Class<? extends RecordValue>, ValueType> classToValueType =
+      new HashMap<>();
+
+  static {
+    Arrays.stream(ValueType.values())
+        .forEach(
+            v -> {
+              final var record = fromValueType(v);
+              if (record != null) {
+                classToValueType.put(record.getClass(), v);
+              }
+            });
+  }
 
   /**
    * Creates a new {@link UnifiedRecordValue}.
@@ -85,6 +102,19 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
   @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
+  }
+
+  /**
+   * NOTE: this is different from {@link CommandDistributionRecord#getValueType()} as that is
+   * referring to the value they are wrapping
+   *
+   * <p>It needs to be a different method, otherwise those methods will be ignored in the json.
+   *
+   * @return the valueType associated to this record
+   */
+  @JsonIgnore
+  public ValueType valueType() {
+    return ClassToValueType.MAP.get(getClass());
   }
 
   public static UnifiedRecordValue fromValueType(final ValueType valueType) {

@@ -49,7 +49,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
-import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
@@ -84,12 +83,7 @@ import org.slf4j.Logger;
 public final class TestStreams {
 
   private static final String SNAPSHOT_FOLDER = "snapshot";
-  private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
-
-  static {
-    TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
-  }
 
   private final TemporaryFolder dataDirectory;
   private final AutoCloseableRule closeables;
@@ -452,7 +446,7 @@ public final class TestStreams {
     }
 
     public FluentLogWriter event(final UnifiedRecordValue event) {
-      final ValueType eventType = VALUE_TYPES.get(event.getClass());
+      final ValueType eventType = event.valueType();
       if (eventType == null) {
         throw new RuntimeException("No event type registered for getValue " + event.getClass());
       }
