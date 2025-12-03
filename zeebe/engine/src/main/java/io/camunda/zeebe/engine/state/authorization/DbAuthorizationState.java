@@ -147,6 +147,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                   this.authorizationKey.wrapLong(key);
                   return authorizationByAuthorizationKeyColumnFamily.get(this.authorizationKey);
                 })
+            .filter(Objects::nonNull)
             .filter(
                 storedAuthorization ->
                     filterMatchingAuthorization(authorizationToDelete, storedAuthorization))
@@ -173,11 +174,9 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                           authorizationToDelete.getResourceId())));
             });
 
-    // delete the old authorization record
     this.authorizationKey.wrapLong(authorizationToDelete.getAuthorizationKey());
     authorizationByAuthorizationKeyColumnFamily.deleteExisting(this.authorizationKey);
 
-    // remove authorization key from owner
     final var keys = authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId);
     keys.removeAuthorizationKey(authorizationKey);
     authorizationKeysByOwnerColumnFamily.update(ownerTypeAndOwnerId, keys);

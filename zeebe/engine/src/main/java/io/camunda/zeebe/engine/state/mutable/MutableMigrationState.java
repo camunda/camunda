@@ -54,4 +54,6 @@ public interface MutableMigrationState extends MigrationState {
   void migrateOrderedCommandDistribution();
 
   void migrateIdempotentCommandDistribution();
+
+  void migrateMissingPermissionsForAuthorizations();
 }
