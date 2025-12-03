@@ -8,8 +8,8 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.sql.UserTaskMapper;
@@ -34,12 +34,13 @@ class UserTaskWriterTest {
   }
 
   @Test
-  void shouldCreateUserTask() {
+  void shouldCreateUserTaskWithoutCandidatesOrTags() {
     final var model = new UserTaskDbModel.Builder().userTaskKey(123L).elementId("task1").build();
 
     writer.create(model);
 
-    verify(executionQueue, atLeast(1)).executeInQueue(any(QueueItem.class));
+    // Should execute 1 queue item when no candidates or tags are present
+    verify(executionQueue, times(1)).executeInQueue(any(QueueItem.class));
   }
 
   @Test
@@ -48,7 +49,8 @@ class UserTaskWriterTest {
 
     writer.update(model);
 
-    verify(executionQueue, atLeast(1)).executeInQueue(any(QueueItem.class));
+    // Update executes: 1 update + 2 delete operations (candidates + groups) = 3 items minimum
+    verify(executionQueue, times(3)).executeInQueue(any(QueueItem.class));
   }
 
   @Test
