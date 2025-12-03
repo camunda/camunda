@@ -41,21 +41,8 @@ async function buildComment(mergedData, github, branchName) {
 
   mergedData.sort((a, b) => b.overallRetries - a.overallRetries);
 
-  // Process tests with a small delay between API calls to respect rate limits
-  for (let i = 0; i < mergedData.length; i++) {
-    const test = mergedData[i];
-    
-    const result = await generateTestSourceUrl(test, github, branchName);
-    const url = result.url;
-    const wasCached = result.cached;
-    
-    // Add a delay after each actual API call (not cache hits) to respect rate limits
-    // GitHub Code Search API has a rate limit of 30 requests per minute for authenticated requests
-    // To be safe, we limit to ~20 requests per minute (one request every 3 seconds)
-    if (!wasCached) {
-      console.log(`[flaky-tests] Adding 3-second delay after API call to respect rate limits...`);
-      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay after each API call
-    }
+  for (const test of mergedData) {
+    const url = await generateTestSourceUrl(test, github, branchName);
 
     const testName = test.methodName || test.fullName;
     const formattedName = url ? `[**${testName}**](${url})` : `**${testName}**`;
@@ -79,21 +66,16 @@ async function buildComment(mergedData, github, branchName) {
 }
 
 async function generateTestSourceUrl(test, github, branchName) {
-    const result = await githubApi.getTestSourceUrl(test, github);
-    const originalUrl = result?.url;
-    const wasCached = result?.cached || false;
+    const originalUrl = await githubApi.getTestSourceUrl(test, github);
     const testName = test.methodName || test.fullName;
-    console.log(`[flaky-tests] URL for test ${testName}: ${originalUrl} (cached: ${wasCached})`);
+    console.log(`[flaky-tests] Original URL for test ${testName}: ${originalUrl}`);
 
     if (!originalUrl || typeof originalUrl !== 'string') {
         console.warn(`[flaky-tests] No valid source URL found for test: ${testName}`);
-        return { url: '', cached: wasCached };
+        return '';
     }
 
-    return {
-        url: originalUrl.replace(/blob\/[^/]+/, `tree/${branchName}`),
-        cached: wasCached
-    };
+    return originalUrl.replace(/blob\/[^/]+/, `tree/${branchName}`);
 }
 
 module.exports = { createOrUpdateComment };
