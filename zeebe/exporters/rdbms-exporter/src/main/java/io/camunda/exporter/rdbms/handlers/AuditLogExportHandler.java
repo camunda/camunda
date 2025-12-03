@@ -7,14 +7,15 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.AuditLogActorType;
-import io.camunda.search.entities.AuditLogEntityType;
-import io.camunda.search.entities.AuditLogOperationCategory;
-import io.camunda.search.entities.AuditLogOperationResult;
-import io.camunda.search.entities.AuditLogOperationType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -31,9 +32,13 @@ import org.apache.commons.lang3.RandomStringUtils;
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
 
   private final AuditLogWriter auditLogWriter;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
-  public AuditLogExportHandler(final AuditLogWriter auditLogWriter) {
+  public AuditLogExportHandler(
+      final AuditLogWriter auditLogWriter,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     this.auditLogWriter = auditLogWriter;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   @Override
@@ -53,9 +58,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
         new AuditLogDbModel.Builder()
             .auditLogKey(
                 RandomStringUtils.insecure()
-                    .nextAlphabetic(
-                        8)) // FIXME: generate correct ID.., and do we need to have it as a primary
-            // key?
+                    .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize()))
             .entityKey(String.valueOf(record.getKey()))
             .entityType(getEntityType(record.getValueType()))
             .operationType(getOperationType(record.getIntent()))
@@ -166,7 +169,6 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   }
 
   private void setActorData(final AuditLogDbModel.Builder builder, final Record<R> record) {
-    // FIXME: actors are not mapped correctly when using desktop modeler... or should it be there?
     final var authorizations = record.getAuthorizations();
     final var clientId = getClientId(authorizations);
     final var username = getUsername(authorizations);

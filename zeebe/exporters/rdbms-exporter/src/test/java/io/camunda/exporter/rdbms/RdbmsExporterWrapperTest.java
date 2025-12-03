@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.zeebe.exporter.api.context.Context;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,8 @@ class RdbmsExporterWrapperTest {
         .thenReturn(configuration);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(Mockito.mock(RdbmsService.class));
+        new RdbmsExporterWrapper(
+            Mockito.mock(RdbmsService.class), Mockito.mock(VendorDatabaseProperties.class));
 
     // when
     assertThatThrownBy(() -> exporterWrapper.configure(context))

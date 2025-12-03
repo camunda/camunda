@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
@@ -65,6 +66,7 @@ public class RdbmsExporterWrapper implements Exporter {
   public static final String NAMESPACE = "camunda.rdbms.exporter.cache";
 
   private final RdbmsService rdbmsService;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private RdbmsExporter exporter;
 
@@ -72,7 +74,9 @@ public class RdbmsExporterWrapper implements Exporter {
   private ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
   private ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
-  public RdbmsExporterWrapper(final RdbmsService rdbmsService) {
+  public RdbmsExporterWrapper(
+      final RdbmsService rdbmsService, final VendorDatabaseProperties vendorDatabaseProperties) {
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.rdbmsService = rdbmsService;
   }
 
@@ -253,7 +257,8 @@ public class RdbmsExporterWrapper implements Exporter {
   private void registerAuditLogHandlers(
       final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
     // FIXME: to discuss: register for all vs register one-by-one
-    final var auditLogHandler = new AuditLogExportHandler<>(rdbmsWriter.getAuditLogWriter());
+    final var auditLogHandler =
+        new AuditLogExportHandler<>(rdbmsWriter.getAuditLogWriter(), vendorDatabaseProperties);
     for (final var type : ValueType.values()) {
       builder.withHandler(type, auditLogHandler);
     }
