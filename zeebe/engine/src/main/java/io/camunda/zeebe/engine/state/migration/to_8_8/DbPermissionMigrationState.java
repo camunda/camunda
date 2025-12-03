@@ -71,21 +71,24 @@ public class DbPermissionMigrationState {
                       resourceType.wrapString(authorization.getResourceType().name());
 
                       final var existingPermissionsForOwner =
-                          permissionsColumnFamily
-                              .get(ownerTypeOwnerIdAndResourceType, Permissions::new)
-                              .getPermissions();
+                          permissionsColumnFamily.get(
+                              ownerTypeOwnerIdAndResourceType, Permissions::new);
 
-                      if (existingPermissionsForOwner.get(permissionType) == null) {
+                      if (existingPermissionsForOwner.getPermissions().get(permissionType)
+                          == null) {
                         final var permissionsToStore =
-                            buildPermissionsToStore(authorization, permissionType);
+                            buildPermissionsToStore(
+                                existingPermissionsForOwner, authorization, permissionType);
 
                         permissionsColumnFamily.upsert(
                             ownerTypeOwnerIdAndResourceType, permissionsToStore);
                       } else if (!resourceMatchersContainAuthorizationScope(
-                          authorization, existingPermissionsForOwner.get(permissionType))) {
+                          authorization,
+                          existingPermissionsForOwner.getPermissions().get(permissionType))) {
 
                         final var permissionsToStore =
-                            buildPermissionsToStore(authorization, permissionType);
+                            buildPermissionsToStore(
+                                existingPermissionsForOwner, authorization, permissionType);
                         permissionsColumnFamily.upsert(
                             ownerTypeOwnerIdAndResourceType, permissionsToStore);
                       }
@@ -105,16 +108,15 @@ public class DbPermissionMigrationState {
   }
 
   private Permissions buildPermissionsToStore(
-      final PersistedAuthorization authorization, final PermissionType permissionType) {
-    final var permissions = permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType);
-
-    permissions.addAuthorizationScope(
+      final Permissions existingPermissions,
+      final PersistedAuthorization authorization,
+      final PermissionType permissionType) {
+    existingPermissions.addAuthorizationScope(
         permissionType,
         new AuthorizationScope(
             authorization.getResourceMatcher(),
             authorization.getResourceId(),
             authorization.getResourcePropertyName()));
-
-    return permissions;
+    return existingPermissions;
   }
 }
