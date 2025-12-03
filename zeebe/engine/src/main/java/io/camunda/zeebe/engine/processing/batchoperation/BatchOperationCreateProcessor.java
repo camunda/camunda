@@ -69,7 +69,7 @@ public final class BatchOperationCreateProcessor
       final RoutingInfo routingInfo,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
-    this.batchOperationState = state.getBatchOperationState();
+    batchOperationState = state.getBatchOperationState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
@@ -113,7 +113,8 @@ public final class BatchOperationCreateProcessor
         key,
         BatchOperationIntent.CREATED,
         recordWithKey,
-        FollowUpEventMetadata.of(b -> b.batchOperationReference(key)));
+        FollowUpEventMetadata.of(
+            b -> b.batchOperationReference(key).claims(command.getAuthorizations())));
     responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
     commandDistributionBehavior
         .withKey(key)
@@ -146,7 +147,10 @@ public final class BatchOperationCreateProcessor
                     command.getKey(),
                     BatchOperationIntent.CREATED,
                     command.getValue(),
-                    FollowUpEventMetadata.of(b -> b.batchOperationReference(command.getKey()))));
+                    FollowUpEventMetadata.of(
+                        b ->
+                            b.batchOperationReference(command.getKey())
+                                .claims(command.getAuthorizations()))));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
