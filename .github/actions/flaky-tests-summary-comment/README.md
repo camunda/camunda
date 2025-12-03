@@ -69,9 +69,8 @@ This action does not produce outputs. It creates or updates a PR comment directl
 - Updates existing comments to avoid spam
 - Handles empty or invalid data gracefully
 - Provides detailed logging for debugging
-- **Rate limit protection**: Implements caching and throttling to prevent GitHub API rate limit errors
+- **Rate limit protection**: Implements caching to prevent GitHub API rate limit errors
   - Caches test source URLs to avoid duplicate searches
-  - Adds automatic delays between API calls (3 seconds between each test)
   - Gracefully handles rate limit errors without failing the workflow
 
 ## Internal Implementation
