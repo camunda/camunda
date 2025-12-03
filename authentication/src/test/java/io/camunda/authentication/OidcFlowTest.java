@@ -30,7 +30,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebM
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -57,7 +56,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       //       uncomment to debug the filter chain
       //      "logging.level.org.springframework.security=TRACE",
     })
-@ActiveProfiles("consolidated-auth")
 @Testcontainers
 class OidcFlowTest {
 

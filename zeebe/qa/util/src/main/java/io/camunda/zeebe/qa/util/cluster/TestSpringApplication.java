@@ -169,7 +169,6 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   public T withBasicAuth() {
     withProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
-    withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
     return self();
   }
 
@@ -179,8 +178,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withAuthenticationMethod(final AuthenticationMethod authenticationMethod) {
-    return withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
-        .withProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
+    return withProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
   }
 
   protected T withUnauthenticatedAccess(final boolean unprotectedApi) {

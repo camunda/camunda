@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARC
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
-import io.camunda.application.Profile;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -141,7 +140,6 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
   @Override
   public void configureCamundaApplication(final TestCamundaApplication camunda) {
     camunda
-        .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
         .withProperty(CREATE_SCHEMA_PROPERTY, "false")
         .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
         .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")

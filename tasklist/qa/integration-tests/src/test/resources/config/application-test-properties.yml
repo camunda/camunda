@@ -7,6 +7,9 @@ camunda:
         url: 'http://localhost:9200'
         cluster-name: 'clusterName'
   # ---
+  security:
+    authentication:
+      unprotected-api: true
   tasklist:
     elasticsearch:
       dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ

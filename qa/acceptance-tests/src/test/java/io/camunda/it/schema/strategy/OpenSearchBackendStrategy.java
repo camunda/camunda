@@ -9,7 +9,6 @@ package io.camunda.it.schema.strategy;
 
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
 
-import io.camunda.application.Profile;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -106,7 +105,6 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
   @Override
   public void configureCamundaApplication(final TestCamundaApplication camunda) {
     camunda
-        .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
         .withUnauthenticatedAccess()
         .withProperty("camunda.database.url", url)
         .withProperty("camunda.database.type", "opensearch")

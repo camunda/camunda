@@ -425,7 +425,7 @@ services:
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
       - ZEEBE_BROKER_NETWORK_HOST=camunda
-      - SPRING_PROFILES_ACTIVE=consolidated-auth,tasklist,broker,operate
+      - SPRING_PROFILES_ACTIVE=tasklist,broker,operate
       - CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
     ports:
       - 26500:26500

@@ -20,12 +20,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(AuthenticationController.class)
-@ActiveProfiles("consolidated-auth")
 public class AuthenticationControllerTest extends RestControllerTest {
 
   @MockitoBean private CamundaUserService camundaUserService;

@@ -7,6 +7,9 @@ camunda:
         url: 'http://someHost:12345'
         cluster-name: 'clusterName'
   # ---
+  security:
+    authentication:
+      unprotected-api: true
 
   operate:
     batchOperationMaxSize: 500
