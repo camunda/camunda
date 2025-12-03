@@ -9,7 +9,7 @@ async function getTestSourceUrl(test, github) {
   const cacheKey = `${test.className}:${test.methodName || test.fullName}`;
   if (urlCache.has(cacheKey)) {
     console.log(`[flaky-tests] Using cached URL for test: ${cacheKey}`);
-    return urlCache.get(cacheKey);
+    return { url: urlCache.get(cacheKey), cached: true };
   }
 
   console.log(`[flaky-tests] Searching for test source with query: ${query}`);
@@ -22,18 +22,20 @@ async function getTestSourceUrl(test, github) {
     if (!data.items || data.items.length === 0) {
       console.warn(`[flaky-tests] No match found for test: ${query}`);
       urlCache.set(cacheKey, null);
-      return null;
+      return { url: null, cached: false };
     }
 
     const url = data.items[0].html_url;
     urlCache.set(cacheKey, url);
-    return url;
+    return { url, cached: false };
   } catch (error) {
     // Handle rate limit errors gracefully
     // Check for rate limit by status code and headers
+    const rateLimitRemaining = error.response?.headers?.['x-ratelimit-remaining'];
     const isRateLimited = error.status === 403 && (
       error.message?.toLowerCase().includes('rate limit') ||
-      error.response?.headers?.['x-ratelimit-remaining'] === '0'
+      rateLimitRemaining === '0' ||
+      rateLimitRemaining === 0
     );
     
     if (isRateLimited) {
@@ -44,12 +46,12 @@ async function getTestSourceUrl(test, github) {
       });
       // Cache the failure to avoid retrying immediately
       urlCache.set(cacheKey, null);
-      return null;
+      return { url: null, cached: false };
     }
     // For other errors, log and return null
     console.error(`[flaky-tests] Error searching for test source: ${error.message}`);
     urlCache.set(cacheKey, null);
-    return null;
+    return { url: null, cached: false };
   }
 }
 
