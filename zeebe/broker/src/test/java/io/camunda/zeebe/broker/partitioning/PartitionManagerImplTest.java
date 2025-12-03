@@ -54,7 +54,7 @@ class PartitionManagerImplTest {
   }
 
   @Test
-  void shouldNotThrowIfMemoryAllocationBellowOrEqualHalfOfRam() {
+  void shouldNotThrowIfMemoryAllocationBelowOrEqualHalfOfRam() {
     // when
     Mockito.when(clusterCfg.getPartitionsCount()).thenReturn(2);
     Mockito.when(dataSize.toBytes()).thenReturn(64L * 1024 * 1024); // 64MB
@@ -78,7 +78,7 @@ class PartitionManagerImplTest {
       assertThatThrownBy(() -> PartitionManagerImpl.getSharedCache(brokerCfg))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Expected the allocated memory for RocksDB to be bellow or equal half of ram memory, but was 78.13 %");
+              "Expected the allocated memory for RocksDB to be below or equal half of ram memory, but was 78.13 %");
     }
   }
 

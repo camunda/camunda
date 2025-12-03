@@ -159,14 +159,14 @@ public final class RocksDbConfiguration {
     return this;
   }
 
+  public MemoryAllocationStrategy getMemoryAllocationStrategy() {
+    return memoryAllocationStrategy;
+  }
+
   public RocksDbConfiguration setMemoryAllocationStrategy(
       final MemoryAllocationStrategy memoryAllocationStrategy) {
     this.memoryAllocationStrategy = memoryAllocationStrategy;
     return this;
-  }
-
-  public MemoryAllocationStrategy getMemoryStrategyAllocation() {
-    return memoryAllocationStrategy;
   }
 
   public enum MemoryAllocationStrategy {

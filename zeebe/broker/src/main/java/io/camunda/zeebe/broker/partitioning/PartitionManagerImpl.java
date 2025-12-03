@@ -704,7 +704,7 @@ public final class PartitionManagerImpl
     if (blockCacheBytes > maxRocksDbMem) {
       throw new IllegalArgumentException(
           String.format(
-              "Expected the allocated memory for RocksDB to be bellow or "
+              "Expected the allocated memory for RocksDB to be below or "
                   + "equal half of ram memory, but was %.2f %%.",
               ((double) blockCacheBytes / (2 * maxRocksDbMem) * 100)));
     }

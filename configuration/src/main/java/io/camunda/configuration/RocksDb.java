@@ -66,9 +66,9 @@ public class RocksDb {
   private DataSize memoryLimit = DataSize.ofBytes(512 * 1024 * 1024L);
 
   /**
-   * Configures the memory allocation strategy by rocksDB. If set to 'PARTITION', the total memory
-   * allocated to rocksDB will be the number of partitions times the configured memory limit. If the
-   * value is set to 'BROKER', the total memory allocated to rocksDB will be equal to the configured
+   * Configures the memory allocation strategy by RocksDB. If set to 'PARTITION', the total memory
+   * allocated to RocksDB will be the number of partitions times the configured memory limit. If the
+   * value is set to 'BROKER', the total memory allocated to RocksDB will be equal to the configured
    * memory limit.
    */
   private final MemoryAllocationStrategy memoryAllocationStrategy =
