@@ -114,6 +114,7 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       const rowRef = useRef<HTMLDivElement>(null);
       const latestMigrationDate = undefined;
       const isRoot = elementType === 'PROCESS';
+      const {processInstance} = useElementInstanceHistoryTree();
 
       const rootNode = useRootNode();
       const isSelected = flowNodeSelectionStore.isSelected({
@@ -124,6 +125,9 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
 
       const handleSelect = () => {
         if (isRoot) {
+          selectFlowNode(rootNode, {
+            processInstanceId: processInstance.processInstanceKey,
+          });
           return;
         }
 
@@ -454,6 +458,9 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
 
       const handleSelect = async () => {
         if (isRoot) {
+          selectFlowNode(rootNode, {
+            processInstanceId: processInstance.processInstanceKey,
+          });
           return;
         }
 
