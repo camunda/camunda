@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
@@ -763,5 +764,77 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .withIntent(ConditionalSubscriptionIntent.TRIGGER)
                 .toList())
         .isEmpty();
+  }
+
+  @Test
+  public void shouldDeleteSubscriptionOnScopeTermination() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
+    final String timerStartEventId = "timerStartEvent";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .intermediateCatchEvent(timerStartEventId)
+                    .timerWithDuration(Duration.ofSeconds(1))
+                    .endEvent()
+                    .moveToProcess(processId)
+                    .eventSubProcess()
+                    .startEvent(catchEventId)
+                    .condition(
+                        c ->
+                            c.condition("=x > y")
+                                .zeebeVariableNames("x, y")
+                                .zeebeVariableEvents("create, update"))
+                    .endEvent()
+                    .subProcessDone()
+                    .done())
+            .deploy();
+
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // do not set variables yet to avoid triggering the condition
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(timerStartEventId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(timerStartEventId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(timerStartEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(timerStartEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final long subscriptionKey =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withRecordKey(subscriptionKey)
+                .withScopeKey(processInstanceKey)
+                .withElementInstanceKey(processInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withCatchEventId(catchEventId)
+                .withCondition("=x > y")
+                .withVariableNames("x", "y")
+                .withVariableEvents("create", "update")
+                .isInterrupting(true)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED, ConditionalSubscriptionIntent.DELETED);
   }
 }
