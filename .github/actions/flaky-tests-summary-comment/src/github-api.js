@@ -30,9 +30,18 @@ async function getTestSourceUrl(test, github) {
     return url;
   } catch (error) {
     // Handle rate limit errors gracefully
-    if (error.status === 403 && error.message?.includes('rate limit')) {
+    // Check for rate limit by status code and headers
+    const isRateLimited = error.status === 403 && (
+      error.message?.toLowerCase().includes('rate limit') ||
+      error.response?.headers?.['x-ratelimit-remaining'] === '0'
+    );
+    
+    if (isRateLimited) {
       console.warn(`[flaky-tests] GitHub API rate limit exceeded while searching for test: ${query}`);
-      console.warn(`[flaky-tests] Rate limit info:`, error.response?.headers);
+      console.warn(`[flaky-tests] Rate limit info:`, {
+        remaining: error.response?.headers?.['x-ratelimit-remaining'],
+        reset: error.response?.headers?.['x-ratelimit-reset']
+      });
       // Cache the failure to avoid retrying immediately
       urlCache.set(cacheKey, null);
       return null;
