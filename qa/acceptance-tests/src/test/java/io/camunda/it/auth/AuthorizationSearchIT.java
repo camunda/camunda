@@ -28,6 +28,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -37,9 +38,10 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
+@CompatibilityTest(enableAuthorization = true, setupKeycloak = true)
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-class AuthorizationSearchIT {
+public class AuthorizationSearchIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -135,7 +137,13 @@ class AuthorizationSearchIT {
   @Test
   void searchShouldReturnEmptyListForRestrictedUser(
       @Authenticated(RESTRICTED) final CamundaClient client) throws Exception {
+    System.out.println("=== TEST METHOD ===");
+    System.out.println("Received client: " + client);
+    System.out.println("Client hash: " + System.identityHashCode(client));
+
+    // Try to make a request and see what happens
     final var response = client.newAuthorizationSearchRequest().send().join();
+    System.out.println("Found " + response.items().size() + " authorizations");
     assertThat(response.items()).isEmpty();
   }
 

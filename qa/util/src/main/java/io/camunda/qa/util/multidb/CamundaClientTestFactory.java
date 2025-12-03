@@ -8,8 +8,9 @@
 package io.camunda.qa.util.multidb;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import java.net.URI;
 
 public interface CamundaClientTestFactory extends AutoCloseable {
 
@@ -23,5 +24,8 @@ public interface CamundaClientTestFactory extends AutoCloseable {
   CamundaClient getCamundaClient(final String id);
 
   /** Returns a Camunda client for the given gateway and authenticated user */
-  CamundaClient getCamundaClient(final TestGateway<?> gateway, final Authenticated authenticated);
+  CamundaClient getCamundaClient(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final Authenticated authenticated);
 }

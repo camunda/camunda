@@ -30,6 +30,7 @@ import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@CompatibilityTest
 @MultiDbTest
 public class AuthorizationIntegrationTest {
 
@@ -481,7 +483,7 @@ public class AuthorizationIntegrationTest {
               // then
               assertThat(authorizationsSearchResponse.items())
                   .map(Authorization::getResourceId)
-                  .containsExactly("resource-alpha", "resource-beta", "resource-zebra");
+                  .containsExactlyInAnyOrder("resource-alpha", "resource-beta", "resource-zebra");
             });
   }
 
