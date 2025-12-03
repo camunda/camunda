@@ -501,6 +501,7 @@ public class TestContainerUtil {
                   });
       LOGGER.info("************ Starting StandaloneBroker ************");
       addConfig(broker, testContext);
+      broker.withCreateSchema(testContext.isCreateSchema());
       broker.start();
       LOGGER.info("************ StandaloneBroker started  ************");
 
@@ -571,6 +572,8 @@ public class TestContainerUtil {
 
     zeebeBroker.withAdditionalProperties(
         Map.of(
+            "camunda.data.secondary-storage.type",
+            type,
             "camunda.database.type",
             type,
             "camunda.operate.database",
