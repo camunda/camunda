@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.expression.EvaluateExpressionProcessor;
 import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionProcessors;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
@@ -72,6 +74,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -251,6 +254,7 @@ public final class EngineProcessors {
         processingState,
         commandDistributionBehavior,
         authCheckBehavior);
+
     addCommandDistributionProcessors(
         commandDistributionBehavior,
         scheduledTaskStateFactory,
@@ -357,6 +361,13 @@ public final class EngineProcessors {
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
         typedRecordProcessors, writers, processingState);
+
+    addExpressionEvaluationProcessor(
+        typedRecordProcessors,
+        bpmnBehaviors.expressionBehavior(),
+        processingState,
+        writers,
+        authCheckBehavior);
 
     return typedRecordProcessors;
   }
@@ -659,5 +670,21 @@ public final class EngineProcessors {
         new CommandDistributionContinueProcessor(distributionState, writers));
 
     typedRecordProcessors.withListener(commandDistributionBehavior);
+  }
+
+  private static void addExpressionEvaluationProcessor(
+      final TypedRecordProcessors typedRecordProcessors,
+      final ExpressionProcessor expressionProcessor,
+      final ProcessingState processingState,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+    final var evaluateExpressionProcessor =
+        new EvaluateExpressionProcessor(
+            expressionProcessor,
+            processingState,
+            writers,
+            authCheckBehavior);
+    typedRecordProcessors.onCommand(
+        ValueType.EXPRESSION, ExpressionIntent.EVALUATE, evaluateExpressionProcessor);
   }
 }
