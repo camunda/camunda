@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.KeyGeneratorResetIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -76,6 +77,7 @@ import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.KeyGeneratorResetRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
@@ -673,6 +675,16 @@ public final class RecordingExporter implements Exporter {
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
     autoAcknowledge = shouldAcknowledgeRecords;
+  }
+
+  public static KeyGeneratorResetRecordStream keyGeneratorResetRecords() {
+    return new KeyGeneratorResetRecordStream(
+        records(ValueType.KEY_GENERATOR_RESET, KeyGeneratorResetRecordValue.class));
+  }
+
+  public static KeyGeneratorResetRecordStream keyGeneratorResetRecords(
+      final KeyGeneratorResetIntent keyGeneratorResetIntent) {
+    return keyGeneratorResetRecords().withIntent(keyGeneratorResetIntent);
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {

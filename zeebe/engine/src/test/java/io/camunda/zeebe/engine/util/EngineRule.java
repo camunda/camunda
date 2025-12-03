@@ -38,6 +38,7 @@ import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
+import io.camunda.zeebe.engine.util.client.KeyGeneratorResetClient;
 import io.camunda.zeebe.engine.util.client.MappingRuleClient;
 import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
@@ -721,6 +722,10 @@ public final class EngineRule extends ExternalResource {
 
   public ClockClient clock() {
     return new ClockClient(environmentRule);
+  }
+
+  public KeyGeneratorResetClient keyGeneratorReset() {
+    return new KeyGeneratorResetClient(environmentRule);
   }
 
   public ScaleClient scale() {

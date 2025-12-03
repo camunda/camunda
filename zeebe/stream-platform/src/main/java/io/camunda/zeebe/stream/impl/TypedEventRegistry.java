@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.keygenerator.KeyGeneratorResetRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -149,6 +150,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.HISTORY_DELETION, HistoryDeletionRecord.class);
     registry.put(ValueType.CONDITIONAL_SUBSCRIPTION, ConditionalSubscriptionRecord.class);
     registry.put(ValueType.CONDITIONAL_EVALUATION, ConditionalEvaluationRecord.class);
+    registry.put(ValueType.KEY_GENERATOR_RESET, KeyGeneratorResetRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
