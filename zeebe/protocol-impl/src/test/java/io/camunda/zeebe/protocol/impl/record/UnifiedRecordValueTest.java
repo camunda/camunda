@@ -37,9 +37,9 @@ final class UnifiedRecordValueTest {
       assertThat(result)
           .as("Expected non-null record value for ValueType.%s", valueType.name())
           .isNotNull();
+      assertThat(result.valueType()).isEqualTo(valueType);
 
       // Enforce the naming convention "${camelCase(valueType)}Record"
-      // Checks that every value type is mapped to the right record
       assertThat(result.getClass().getSimpleName())
           .isEqualTo(snakeCaseToCamelCase(valueType.name().toLowerCase()) + "Record");
     }
