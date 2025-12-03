@@ -147,7 +147,16 @@ public final class DiscoveryMembershipProtocol
 
     @Override
     public GroupMembershipProtocol newProtocol(
-        final Config config, final String actorSchedulerName, final MeterRegistry registry) {
+        final Config config,
+        final long nodeVersion,
+        final String actorSchedulerName,
+        final MeterRegistry registry) {
+      if (nodeVersion > 0) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected nodeVersion to be 0, but got %d: DiscoveryMembershipProtocol is not compatible with node versions, please use SwimMembershipProtocol",
+                nodeVersion));
+      }
       return new DiscoveryMembershipProtocol(config);
     }
   }

@@ -46,6 +46,8 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   private List<Integer> partitionIds;
   private Integer nodeId = 0;
+  // TODO add javaDoc
+  private Long nodeVersion = 0L;
   private String clusterId;
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
@@ -283,5 +285,13 @@ public final class ClusterCfg implements ConfigurationEntry {
         + ", configManagerCfg="
         + configManager
         + '}';
+  }
+
+  public Long getNodeVersion() {
+    return nodeVersion;
+  }
+
+  public void setNodeVersion(final Long nodeVersion) {
+    this.nodeVersion = nodeVersion;
   }
 }

@@ -77,6 +77,6 @@ public interface GroupMembershipProtocol
      * @return the protocol instance
      */
     GroupMembershipProtocol newProtocol(
-        C config, final String actorSchedulerName, final MeterRegistry registry);
+        C config, long nodeVersion, final String actorSchedulerName, final MeterRegistry registry);
   }
 }

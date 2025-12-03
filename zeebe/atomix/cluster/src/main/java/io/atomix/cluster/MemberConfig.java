@@ -29,6 +29,11 @@ public class MemberConfig extends NodeConfig {
   private Properties properties = new Properties();
 
   /**
+   * The version of this node when it's deployed in an environment without static node id assignment
+   */
+  private long nodeVersion = 0L;
+
+  /**
    * Returns the member identifier.
    *
    * @return the member identifier
@@ -174,5 +179,13 @@ public class MemberConfig extends NodeConfig {
   public MemberConfig setProperties(final Properties properties) {
     this.properties = properties;
     return this;
+  }
+
+  public long getNodeVersion() {
+    return nodeVersion;
+  }
+
+  public void setNodeVersion(final long nodeVersion) {
+    this.nodeVersion = nodeVersion;
   }
 }

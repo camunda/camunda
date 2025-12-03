@@ -336,10 +336,15 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   @SuppressWarnings("unchecked")
   protected static GroupMembershipProtocol buildMembershipProtocol(
       final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
+
     return config
         .getProtocolConfig()
         .getType()
-        .newProtocol(config.getProtocolConfig(), actorSchedulerName, registry);
+        .newProtocol(
+            config.getProtocolConfig(),
+            config.getNodeConfig().getNodeVersion(),
+            actorSchedulerName,
+            registry);
   }
 
   /** Builds a cluster service. */
