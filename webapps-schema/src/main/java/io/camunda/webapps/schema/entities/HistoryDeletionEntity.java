@@ -12,9 +12,16 @@ import java.util.Objects;
 
 public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEntity> {
 
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String id;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private long resourceKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private HistoryDeletionType resourceType;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private long batchOperationKey;
 
   @Override
