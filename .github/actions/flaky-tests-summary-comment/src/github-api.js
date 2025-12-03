@@ -1,19 +1,47 @@
+// Cache for test source URLs to avoid duplicate API calls
+const urlCache = new Map();
+
 async function getTestSourceUrl(test, github) {
   const repo = 'camunda/camunda';
   const query = `repo:${repo} ${test.className.replace(/\$/g, ' ')} ${test.methodName || test.fullName}`;
 
-  console.log(`[flaky-tests] Searching for test source with query: ${query}`);
-
-  const { data } = await github.rest.search.code({
-    q: `${query}`,
-  });
-
-  if (!data.items || data.items.length === 0) {
-    console.warn(`[flaky-tests] No match found for test: ${query}`);
-    return null;
+  // Check cache first to avoid duplicate API calls
+  const cacheKey = `${test.className}:${test.methodName || test.fullName}`;
+  if (urlCache.has(cacheKey)) {
+    console.log(`[flaky-tests] Using cached URL for test: ${cacheKey}`);
+    return urlCache.get(cacheKey);
   }
 
-  return data.items[0].html_url;
+  console.log(`[flaky-tests] Searching for test source with query: ${query}`);
+
+  try {
+    const { data } = await github.rest.search.code({
+      q: `${query}`,
+    });
+
+    if (!data.items || data.items.length === 0) {
+      console.warn(`[flaky-tests] No match found for test: ${query}`);
+      urlCache.set(cacheKey, null);
+      return null;
+    }
+
+    const url = data.items[0].html_url;
+    urlCache.set(cacheKey, url);
+    return url;
+  } catch (error) {
+    // Handle rate limit errors gracefully
+    if (error.status === 403 && error.message?.includes('rate limit')) {
+      console.warn(`[flaky-tests] GitHub API rate limit exceeded while searching for test: ${query}`);
+      console.warn(`[flaky-tests] Rate limit info:`, error.response?.headers);
+      // Cache the failure to avoid retrying immediately
+      urlCache.set(cacheKey, null);
+      return null;
+    }
+    // For other errors, log and return null
+    console.error(`[flaky-tests] Error searching for test source: ${error.message}`);
+    urlCache.set(cacheKey, null);
+    return null;
+  }
 }
 
 async function getExistingComment(github, owner, repo, prNumber) {
