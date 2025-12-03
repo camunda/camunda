@@ -5,13 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
+
 package io.camunda.zeebe.backup.index;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -57,7 +51,6 @@ public class BackupIndexPropertyTest {
                       .as("The compact backup index should match the in-memory set")
                       .containsExactlyElementsOf(inMemoryBackups);
                 })
-            .withInvariant(index -> {})
             .run();
 
     resultingModel.close();
@@ -85,13 +78,13 @@ public class BackupIndexPropertyTest {
                     .lessOrEqual(backupId - 1)
                     .withoutEdgeCases()
                     .flatMap(
-                        previousBackupId ->
+                        firstLogPosition ->
                             Arbitraries.longs()
                                 .greaterOrEqual(backupId + 1)
                                 .withoutEdgeCases()
                                 .map(
-                                    nextBackupId ->
-                                        Tuple.of(backupId, previousBackupId, nextBackupId))));
+                                    lastLogPosition ->
+                                        Tuple.of(backupId, firstLogPosition, lastLogPosition))));
   }
 
   static final class RemoveAction implements Action.Dependent<TestModel> {
