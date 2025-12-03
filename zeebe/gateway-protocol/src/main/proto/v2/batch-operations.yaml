@@ -544,13 +544,33 @@ components:
         moveInstructions:
           type: array
           items:
-            $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceModificationMoveInstruction'
+            $ref: '#/components/schemas/ProcessInstanceModificationMoveBatchOperationInstruction'
           description: Instructions for moving tokens between elements.
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - filter
         - moveInstructions
+
+    ProcessInstanceModificationMoveBatchOperationInstruction:
+      description: |
+        Instructions describing a move operation. This instruction will terminate all active
+        element instances at `sourceElementId` and activate a new element instance for each
+        terminated one at `targetElementId`. The new element instances are created in the parent
+        scope of the source element instances.
+      type: object
+      properties:
+        sourceElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The source element ID.
+        targetElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The target element ID.
+      required:
+        - sourceElementId
+        - targetElementId
 
     ## Enums
 

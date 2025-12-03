@@ -1103,7 +1103,7 @@ public class RequestMapper {
         () ->
             new ProcessInstanceModifyBatchOperationRequest(
                 toRequiredProcessInstanceFilter(request.getFilter()).get(),
-                mapProcessInstanceModificationMoveInstruction(request.getMoveInstructions())));
+                mapProcessInstanceModificationMoveBatchInstruction(request.getMoveInstructions())));
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
@@ -1262,6 +1262,22 @@ public class RequestMapper {
                   .forEach(mappedInstruction::addVariableInstruction);
               return mappedInstruction;
             })
+        .toList();
+  }
+
+  private static List<ProcessInstanceModificationMoveInstruction>
+      mapProcessInstanceModificationMoveBatchInstruction(
+          final List<
+                  io.camunda.zeebe.gateway.protocol.rest
+                      .ProcessInstanceModificationMoveBatchOperationInstruction>
+              instructions) {
+    return instructions.stream()
+        .map(
+            instruction ->
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId(instruction.getSourceElementId())
+                    .setTargetElementId(instruction.getTargetElementId())
+                    .setUseSourceParentKeyAsAncestorScope(true))
         .toList();
   }
 
