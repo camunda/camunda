@@ -33,6 +33,7 @@ const auditLogEntityTypeSchema = z.enum([
 	'RESOURCE',
 	'VARIABLE',
 ]);
+type AuditLogEntityType = z.infer<typeof auditLogEntityTypeSchema>;
 
 const auditLogOperationTypeSchema = z.enum([
 	'ASSIGN',
@@ -49,12 +50,16 @@ const auditLogOperationTypeSchema = z.enum([
 	'UNASSIGN',
 	'UPDATE',
 ]);
+type AuditLogOperationType = z.infer<typeof auditLogOperationTypeSchema>;
 
 const auditLogActorTypeSchema = z.enum(['USER', 'CLIENT']);
+type AuditLogActorType = z.infer<typeof auditLogActorTypeSchema>;
 
 const auditLogResultSchema = z.enum(['SUCCESS', 'FAIL']);
+type AuditLogResult = z.infer<typeof auditLogResultSchema>;
 
 const auditLogCategorySchema = z.enum(['OPERATOR', 'USER_TASK', 'ADMIN']);
+type AuditLogCategory = z.infer<typeof auditLogCategorySchema>;
 
 const auditLogSchema = z.object({
 	auditLogKey: z.string(),
@@ -168,6 +173,11 @@ export {
 };
 export type {
 	AuditLog,
+	AuditLogEntityType,
+	AuditLogOperationType,
+	AuditLogActorType,
+	AuditLogResult,
+	AuditLogCategory,
 	AuditLogSortField,
 	QueryAuditLogsRequestBody,
 	QueryAuditLogsResponseBody,
