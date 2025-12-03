@@ -59,6 +59,7 @@ public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
             .taskIsCreated("task1")
             .taskIsCreated("task2")
             .taskIsCreated("task3")
+            .variablesExist("someText", "someNumber", "unmapped")
             .getProcessInstanceId();
 
     // then

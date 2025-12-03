@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -94,6 +95,7 @@ public class TaskCompletionConcurrencyIT extends TasklistZeebeIntegrationTest {
             .startProcessInstance(bpmnProcessId, "{\"process_var_0\": 0, \"process_var_1\": 1}")
             .then()
             .taskIsCreated(flowNodeBpmnId)
+            .variablesExist("process_var_0", "process_var_1")
             .getTaskId();
 
     final var completeRequest =
@@ -140,20 +142,24 @@ public class TaskCompletionConcurrencyIT extends TasklistZeebeIntegrationTest {
             });
 
     // when - fetch task variables via search API
-    final var result =
-        mockMvcHelper.doRequest(
-            post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId));
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  mockMvcHelper.doRequest(
+                      post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId));
 
-    // then
-    assertThat(result)
-        .hasOkHttpStatus()
-        .hasApplicationJsonContentType()
-        .extractingListContent(objectMapper, VariableSearchResponse.class)
-        .extracting("name", "value", "previewValue")
-        .containsExactlyInAnyOrder(
-            tuple("process_var_0", "0", "0"),
-            tuple("process_var_1", "11", "11"),
-            tuple("task_var_2", "22", "22"));
+              // then
+              assertThat(result)
+                  .hasOkHttpStatus()
+                  .hasApplicationJsonContentType()
+                  .extractingListContent(objectMapper, VariableSearchResponse.class)
+                  .extracting("name", "value", "previewValue")
+                  .containsExactlyInAnyOrder(
+                      tuple("process_var_0", "0", "0"),
+                      tuple("process_var_1", "11", "11"),
+                      tuple("task_var_2", "22", "22"));
+            });
   }
 
   /**
