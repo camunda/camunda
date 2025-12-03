@@ -176,7 +176,7 @@ jobs:
               echo "Running all tests in V2 mode on main branch, excluding V1-specific tests"
               npm run test -- --project=chromium --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
             else
-              echo "Running focused tests in V2 mode: Tasklist + HTO flows (excluding @v1-only tests)"
+              echo "Running all tests in V2 mode: excluding @v1-only tests"
               npm run test -- --project=chromium --grep-invert "@v1-only"
             fi
           else
