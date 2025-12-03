@@ -27,10 +27,12 @@ global:
   # By default, we run without Identity
   identity:
     auth:
-      optimize:
-        secret:
-          inlineSecret: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       enabled: true
+      optimize:
+        clientId: optimize
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-optimize-client-token
 
 identity:
   enabled: true
