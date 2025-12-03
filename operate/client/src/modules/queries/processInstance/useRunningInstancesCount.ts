@@ -31,7 +31,7 @@ const useRunningInstancesCount = ({
         page: {from: 0, limit: 0},
       });
 
-      return response?.page.totalItems ?? 0;
+      return response?.page.totalItems ?? -1;
     },
     enabled,
     refetchOnWindowFocus: true,
