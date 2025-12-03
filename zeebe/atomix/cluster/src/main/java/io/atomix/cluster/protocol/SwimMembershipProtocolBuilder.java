@@ -22,6 +22,7 @@ import java.time.Duration;
 /** SWIM membership protocol builder. */
 public class SwimMembershipProtocolBuilder extends GroupMembershipProtocolBuilder {
   private final SwimMembershipProtocolConfig config = new SwimMembershipProtocolConfig();
+  private long nodeVersion;
   private final MeterRegistry meterRegistry;
 
   public SwimMembershipProtocolBuilder(final MeterRegistry meterRegistry) {
@@ -139,8 +140,13 @@ public class SwimMembershipProtocolBuilder extends GroupMembershipProtocolBuilde
     return this;
   }
 
+  public SwimMembershipProtocolBuilder withNodeVersion(final long nodeVersion) {
+    this.nodeVersion = nodeVersion;
+    return this;
+  }
+
   @Override
   public GroupMembershipProtocol build() {
-    return new SwimMembershipProtocol(config, "", meterRegistry);
+    return new SwimMembershipProtocol(config, nodeVersion, "", meterRegistry);
   }
 }
