@@ -501,6 +501,7 @@ public class TestContainerUtil {
                   });
       LOGGER.info("************ Starting StandaloneBroker ************");
       addConfig(broker, testContext);
+      broker.withCreateSchema(testContext.isCreateSchema());
       broker.start();
       LOGGER.info("************ StandaloneBroker started  ************");
 
