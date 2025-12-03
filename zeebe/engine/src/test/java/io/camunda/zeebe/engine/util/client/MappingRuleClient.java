@@ -123,6 +123,12 @@ public class MappingRuleClient {
       return expectation.apply(position);
     }
 
+    public Record<MappingRuleRecordValue> delete(final String username) {
+      final long position =
+          writer.writeCommand(MappingRuleIntent.DELETE, username, mappingRuleRecord);
+      return expectation.apply(position);
+    }
+
     public MappingRuleDeleteClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
