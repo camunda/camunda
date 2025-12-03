@@ -48,7 +48,6 @@ public class ZeebeConnectorSecureIT {
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";
   private static final String PRIVATE_KEY_FILE = "zeebe-test-server.key.pem";
   @Autowired ZeebeConnector zeebeConnector;
-  @Autowired TasklistProperties tasklistProperties;
   private TestStandaloneBroker broker;
   private CamundaClient camundaClient;
 

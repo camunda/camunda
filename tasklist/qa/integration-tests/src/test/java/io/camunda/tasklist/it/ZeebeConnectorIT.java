@@ -9,55 +9,60 @@ package io.camunda.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TasklistZeebeExtension;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.zeebe.ZeebeConnector;
-import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
-import java.time.Duration;
+import io.camunda.tasklist.zeebe.PartitionHolder;
+import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     properties = {
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      TasklistProperties.PREFIX + ".importer-enabled = true",
       TasklistProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500",
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
-  @RegisterExtension @Autowired DatabaseTestExtension databaseTestExtension;
+  @RegisterExtension @Autowired private DatabaseTestExtension databaseTestExtension;
 
   @Autowired private TasklistZeebeExtension zeebeExtension;
 
+  @Autowired private ZeebeImporter zeebeImporter;
+
+  @Autowired private PartitionHolder partitionHolder;
+
+  @Autowired private StandalonePartitionSupplier partitionSupplier;
+
+  @Autowired private TasklistProperties tasklistProperties;
+
+  @Autowired private BeanFactory beanFactory;
+
   @Autowired private TestRestTemplate testRestTemplate;
-
-  @Autowired private ZeebeConnector zeebeConnector;
-
-  private CamundaClient camundaClient;
 
   @LocalManagementPort private int managementPort;
 
   @AfterEach
   public void cleanup() {
-    if (camundaClient != null) {
-      camundaClient.close();
-    }
     zeebeExtension.afterEach(null);
   }
 
@@ -68,22 +73,22 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
     // then 1
     // application context must be successfully started
+    //                                                                             zz
     testRequest("http://localhost:" + managementPort + "/actuator/health/liveness");
+    // import is working fine
+    zeebeImporter.performOneRoundOfImport();
+    // partition list is empty
+    assertThat(partitionHolder.getPartitionIds()).isEmpty();
 
     // when 2
     // Zeebe is started
     startZeebe();
 
-    camundaClient =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(zeebeExtension.getZeebeBroker().grpcAddress())
-            .restAddress(zeebeExtension.getZeebeBroker().restAddress())
-            .defaultRequestTimeout(Duration.ofSeconds(15))
-            .build();
-
     // then 2
-    assertThat(camundaClient.newTopologyRequest().send().join().getBrokers()).isNotEmpty();
+    // data import is working
+    zeebeImporter.performOneRoundOfImport();
+    // partition list is not empty
+    assertThat(partitionHolder.getPartitionIds()).isNotEmpty();
   }
 
   private void testRequest(final String url) {
@@ -94,6 +99,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private void startZeebe() {
     zeebeExtension.beforeEach(null);
+    ReflectionTestUtils.setField(partitionSupplier, "camundaClient", zeebeExtension.getClient());
   }
 
   @Test
@@ -102,30 +108,17 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     // Zeebe is started
     startZeebe();
 
-    camundaClient =
-        zeebeConnector.newCamundaClient(
-            new ZeebeProperties()
-                .setGatewayAddress(zeebeExtension.getZeebeBroker().address(TestZeebePort.GATEWAY)));
-
     // then 1
-    assertThat(camundaClient.newTopologyRequest().send().join().getBrokers()).isNotEmpty();
-
-    camundaClient.close();
+    // data import is working
+    zeebeImporter.performOneRoundOfImport();
 
     // when 2
     // Zeebe is restarted
     zeebeExtension.afterEach(null);
     zeebeExtension.beforeEach(null);
 
-    camundaClient =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(zeebeExtension.getZeebeBroker().grpcAddress())
-            .restAddress(zeebeExtension.getZeebeBroker().restAddress())
-            .defaultRequestTimeout(Duration.ofSeconds(15))
-            .build();
-
     // then 2
-    assertThat(camundaClient.newTopologyRequest().send().join().getBrokers()).isNotEmpty();
+    // data import is still working
+    zeebeImporter.performOneRoundOfImport();
   }
 }

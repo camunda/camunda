@@ -72,7 +72,7 @@ public abstract class TasklistZeebeExtension
         new TestStandaloneBroker()
             .withAdditionalProperties(
                 Map.of(
-                    "zeebe.log.level", "ERROR",
+                    "zeebe.log.level", "DEBUG",
                     "atomix.log.level", "ERROR",
                     "zeebe.clock.controlled", "true",
                     "zeebe.broker.gateway.enable", "true"))
