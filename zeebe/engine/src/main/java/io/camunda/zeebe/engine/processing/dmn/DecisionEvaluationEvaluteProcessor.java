@@ -111,7 +111,8 @@ public class DecisionEvaluationEvaluteProcessor
               stateWriter.appendFollowUpEvent(
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),
-                  evaluationRecordTuple.getRight());
+                  evaluationRecordTuple.getRight(),
+                  command.getAuthorizations());
               responseWriter.writeEventOnCommand(
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),

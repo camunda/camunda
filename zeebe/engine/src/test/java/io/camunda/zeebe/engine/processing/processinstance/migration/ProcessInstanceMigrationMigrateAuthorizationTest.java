@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -132,12 +133,13 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
         .migrate(user.getUsername());
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceMigrationRecords(
-                    ProcessInstanceMigrationIntent.MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .exists())
-        .isTrue();
+    final var record =
+        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .findFirst();
+    assertThat(record).isPresent();
+    assertThat(record.get().getAuthorizations())
+        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   @Test
@@ -157,12 +159,15 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
         .migrate(user.getUsername());
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst())
+    final var record =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+    Assertions.assertThat(record)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+    assertThat(record.getAuthorizations())
+        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   private UserRecordValue createUser() {

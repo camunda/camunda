@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +140,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
         final var variableDocumentState = optionalVariableDocumentState.get();
         final var variableDocumentRecord = variableDocumentState.getRecord();
-        mergeVariables(userTaskRecord, variableDocumentRecord);
+        mergeVariables(userTaskRecord, variableDocumentRecord, command.getAuthorizations());
 
         // Write follow-up events
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
@@ -167,7 +168,9 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   }
 
   private void mergeVariables(
-      final UserTaskRecord userTaskRecord, final VariableDocumentRecord variableRecord) {
+      final UserTaskRecord userTaskRecord,
+      final VariableDocumentRecord variableRecord,
+      final Map<String, Object> authorizationClaims) {
     switch (variableRecord.getUpdateSemantics()) {
       case LOCAL ->
           variableBehavior.mergeLocalDocument(
@@ -176,7 +179,8 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
-              variableRecord.getVariablesBuffer());
+              variableRecord.getVariablesBuffer(),
+              authorizationClaims);
       case PROPAGATE ->
           variableBehavior.mergeDocument(
               userTaskRecord.getElementInstanceKey(),
@@ -184,7 +188,8 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
-              variableRecord.getVariablesBuffer());
+              variableRecord.getVariablesBuffer(),
+              authorizationClaims);
       default ->
           throw new IllegalStateException(
               "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
