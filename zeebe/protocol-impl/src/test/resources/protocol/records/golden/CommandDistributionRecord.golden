@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.distribution;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
@@ -61,6 +62,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
   private static final StringValue AUTH_INFO_KEY = new StringValue("authInfo");
+  private static final StringValue START_TIME_KEY = new StringValue("timestamp");
 
   // You'll need to register any of the records value's that you want to distribute
   static {
@@ -97,6 +99,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
       new ObjectProperty<>(AUTH_INFO_KEY, new AuthInfo());
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
+  private final LongProperty startTimeProperty = new LongProperty(START_TIME_KEY, -1L);
 
   public CommandDistributionRecord() {
     super(5);
@@ -105,7 +108,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty)
-        .declareProperty(authInfoProperty);
+        .declareProperty(authInfoProperty)
+        .declareProperty(startTimeProperty);
   }
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
@@ -216,6 +220,15 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
+    return this;
+  }
+
+  public long getStartTime() {
+    return startTimeProperty.getValue();
+  }
+
+  public CommandDistributionRecord setStartTime(final long startTimeProperty) {
+    this.startTimeProperty.setValue(startTimeProperty);
     return this;
   }
 
