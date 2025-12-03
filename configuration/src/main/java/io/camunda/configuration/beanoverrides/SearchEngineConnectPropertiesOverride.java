@@ -101,8 +101,14 @@ public class SearchEngineConnectPropertiesOverride {
       final SearchEngineConnectProperties override) {
     override.setClusterName(database.getClusterName());
     override.setDateFormat(database.getDateFormat());
-    override.setSocketTimeout(database.getSocketTimeout());
-    override.setConnectTimeout(database.getConnectionTimeout());
+    final var socketTimeout = database.getSocketTimeout();
+    if (socketTimeout != null) {
+      override.setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
+    }
+    final var connectionTimeout = database.getConnectionTimeout();
+    if (connectionTimeout != null) {
+      override.setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
+    }
     override.setIndexPrefix(database.getIndexPrefix());
   }
 

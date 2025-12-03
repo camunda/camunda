@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,10 +30,10 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private String dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   /** The socket timeout for ES and OS connector */
-  private Integer socketTimeout;
+  private Duration socketTimeout;
 
   /** The connection timeout for ES and OS connector */
-  private Integer connectionTimeout;
+  private Duration connectionTimeout;
 
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
@@ -257,29 +258,33 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.dateFormat = dateFormat;
   }
 
-  public Integer getSocketTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix() + ".socket-timeout",
-        socketTimeout,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacySocketTimeoutProperties());
+  public Duration getSocketTimeout() {
+    final var socketTimeout =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            prefix() + ".socket-timeout",
+            this.socketTimeout != null ? Math.toIntExact(this.socketTimeout.toMillis()) : null,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            legacySocketTimeoutProperties());
+    return socketTimeout != null ? Duration.ofMillis(socketTimeout) : null;
   }
 
-  public void setSocketTimeout(final Integer socketTimeout) {
+  public void setSocketTimeout(final Duration socketTimeout) {
     this.socketTimeout = socketTimeout;
   }
 
-  public Integer getConnectionTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix() + ".connection-timeout",
-        connectionTimeout,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyConnectionTimeoutProperties());
+  public Duration getConnectionTimeout() {
+    final var connectionTimeoutInt =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            prefix() + ".connection-timeout",
+            connectionTimeout != null ? Math.toIntExact(connectionTimeout.toMillis()) : null,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+            legacyConnectionTimeoutProperties());
+    return connectionTimeoutInt != null ? Duration.ofMillis(connectionTimeoutInt) : null;
   }
 
-  public void setConnectionTimeout(final Integer connectionTimeout) {
+  public void setConnectionTimeout(final Duration connectionTimeout) {
     this.connectionTimeout = connectionTimeout;
   }
 
