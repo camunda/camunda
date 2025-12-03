@@ -314,7 +314,7 @@ public class ElasticsearchChecks {
         final String taskId = (String) objects[0];
         final String varName = (String) objects[1];
         try {
-          return elasticsearchHelper.checkVariableExists(taskId, varName);
+          return elasticsearchHelper.checkTaskVariableExists(taskId, varName);
         } catch (final NotFoundApiException ex) {
           return false;
         }
@@ -333,9 +333,13 @@ public class ElasticsearchChecks {
 
       @Override
       public boolean test(final Object[] objects) {
-        final String[] varNames = (String[]) objects;
+        assertThat(objects).hasSize(2);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String[].class);
+        final String processInstanceId = (String) objects[0];
+        final String[] varNames = (String[]) objects[1];
         try {
-          return elasticsearchHelper.checkVariablesExist(varNames);
+          return elasticsearchHelper.checkVariablesExist(processInstanceId, varNames);
         } catch (final NotFoundApiException ex) {
           return false;
         }
