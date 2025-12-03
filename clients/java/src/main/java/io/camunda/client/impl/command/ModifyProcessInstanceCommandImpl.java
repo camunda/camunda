@@ -191,7 +191,6 @@ public final class ModifyProcessInstanceCommandImpl
     httpRequestObject.addMoveInstructionsItem(moveInstructionRest);
     return this;
   }
-  ;
 
   @Override
   public ModifyProcessInstanceCommandStep1 and() {
