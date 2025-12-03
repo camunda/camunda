@@ -168,7 +168,8 @@ public final class ZeebePartitionFactory {
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             lruCache,
-            writeBufferManager);
+            writeBufferManager,
+            brokerCfg.getCluster().getPartitionsCount());
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 

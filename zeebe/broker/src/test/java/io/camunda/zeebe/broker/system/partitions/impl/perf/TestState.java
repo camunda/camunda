@@ -90,13 +90,15 @@ final class TestState {
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
     final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
         SimpleMeterRegistry::new,
         lruCache,
-        new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE, lruCache));
+        new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+        defaultPartitionCount);
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {
