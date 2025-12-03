@@ -12,6 +12,7 @@ import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -97,14 +99,31 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
   private TasklistTester createTask(
       final String bpmnProcessId, final String flowNodeBpmnId, final String payload) {
-    return tester
-        .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
-        .then()
-        .processIsDeployed()
-        .and()
-        .startProcessInstance(bpmnProcessId, payload)
-        .then()
-        .taskIsCreated(flowNodeBpmnId);
+    var testerChain =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .then()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(bpmnProcessId, payload)
+            .then()
+            .taskIsCreated(flowNodeBpmnId);
+
+    // Extract variable names from JSON payload if present
+    if (payload != null && !payload.isBlank()) {
+      try {
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> variableMap = objectMapper.readValue(payload, Map.class);
+        final var variableNames = variableMap.keySet().toArray(new String[0]);
+        if (variableNames.length > 0) {
+          testerChain = testerChain.variablesExist(variableNames);
+        }
+      } catch (final JsonProcessingException e) {
+        fail("Could not parse payload JSON: " + payload, e);
+      }
+    }
+
+    return testerChain;
   }
 
   private TasklistTester createTaskWithCandidateGroup(
@@ -384,7 +403,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var taskId =
           createTask(
                   bpmnProcessId, flowNodeBpmnId, "{\"var1\": 111, \"var2\": 22.2, \"var2\": 22.2}")
-              .variablesExist("var1", "var2")
               .getTaskId();
 
       // when
