@@ -189,7 +189,7 @@ class VersionCompatibilityMatrixTest {
       "During releases some tags might not be fully published yet and would make this and the rolling update test fail")
   @Test
   void testCompareLegacyToCurrentVersionDiscovery() {
-    final var liveMatrix = new VersionCompatibilityMatrix();
+    final var liveMatrix = VersionCompatibilityMatrix.useUncached();
 
     final var discoveredVersions = liveMatrix.discoverVersions().map(VersionInfo::version);
     final var legacyDiscoveredVersions =

@@ -1,13 +1,11 @@
 # Version Compatibility Matrix Caching
 
-## Overview
-
 The `VersionCompatibilityMatrix` uses a two-level caching strategy to minimize GitHub API calls:
 
 1. **Application-level cache**: The `CachedVersionProvider` decorator caches discovered versions (with metadata) to a local JSON file
 2. **CI-level cache**: GitHub Actions can cache this file across workflow runs for even faster execution
 
-### How It Works
+## How It Works
 
 **First discovery** (cold start):
 - Fetches version tags from GitHub API
@@ -19,73 +17,51 @@ The `VersionCompatibilityMatrix` uses a two-level caching strategy to minimize G
 - Zero GitHub API calls
 - Instant version discovery
 
-**With GitHub Actions caching**:
-- First workflow run: Creates cache file
-- Later workflow runs: Restores cache file from GitHub Actions cache
-- Cache persists across workflow runs (until manually invalidated or expired)
-- **Recommended**: Use hourly cache refresh to balance freshness and performance
-
-This approach pairs perfectly with GitHub Actions caching - the application creates the cache file, and GitHub Actions persists it across runs.
-
-### Architecture
-
-```
-VersionCompatibilityMatrix
-  └── CachedVersionProvider (decorator)
-       └── AdvancedGithubVersionProvider (decorator)
-            └── GithubVersionProvider (delegate)
-```
-
 ## Cache Location
 
-The cache file is stored at: `.cache/camunda-versions.json`
+The cache file is stored at: `.cache/camunda-versions.json` (relative to a given location, see below)
 
-This file contains a JSON array of version metadata objects (version, isReleased, isLatest) discovered from GitHub tags.
+**Path Resolution Strategy** (in priority order):
+1. **`GITHUB_WORKSPACE`**: Environment variable set in GitHub Actions workflows
+2. **`maven.multiModuleProjectDirectory`**: Maven property pointing to the multi-module project root
+- This is passed to the test JVM via `maven-failsafe-plugin` configuration in `pom.xml`
+3. **Fallback to `user.dir`**: If none of the above work (should never happen in normal scenarios)
 
-## Cache Behavior
+**Note for GitHub Actions**:
+- Make sure the `GH_TOKEN` is set in order to not run into GitHub API rate limits
+- Configure cache actions to use path `.cache` relative to the repository root and `GITHUB_WORKSPACE` is set
+- The cache action's "save" step runs **after** tests complete, so the directory will exist if tests ran successfully
+- On first run (no cache), the directory is created during test execution
 
-### GitHub API Authentication
+## Local Development
 
-The version discovery automatically uses the `GH_TOKEN` environment variable if available for authenticated GitHub API requests. This provides:
-- **Higher rate limits**: 5,000 requests/hour (vs 60 for unauthenticated)
-- **More reliable**: Less likely to hit rate limiting issues
-- **Better for CI**: Reduces the chance of hitting rate limits in workflows
-
-**Local usage:**
+### View Cached Versions
 
 ```bash
-export GH_TOKEN=your_github_token
+cat .cache/camunda-versions.json | jq .
 ```
 
-**In GitHub Actions:**
+### Force Cache Refresh
 
-```yaml
-env:
-  GH_TOKEN: ${{ github.token }}
+```bash
+rm -f .cache/camunda-versions.json
+./mvnw test -pl zeebe/qa/update-tests
 ```
 
-### Application Cache
+### Disable Caching (for debugging)
 
-**Cache Miss** (file doesn't exist):
-1. Fetches version tags from GitHub
-2. Filters pre-releases and null versions
-3. Identifies latest patch for each minor version
-4. Checks release status (only for latest patches)
-5. Saves metadata to `.cache/camunda-versions.json`
+Option 1: Delete the cache file before running tests
 
-**Cache Hit** (file exists):
-1. Loads data from `.cache/camunda-versions.json`
-2. Zero GitHub API calls
-3. Returns cached version metadata
+```bash
+rm -rf .cache
+```
 
-### With GitHub Actions
+Option 2: Use the provider directly in your test:
 
-GitHub Actions can persist the `.cache/` directory across workflow runs:
-- **First run**: Creates cache, saves to GitHub Actions cache
-- **Later runs**: Restores from GitHub Actions cache, instant results
-- **Manual refresh**: Delete cache artifact or `.cache/` directory
-
-This two-level caching (application + CI) ensures minimal API usage and fast test execution.
+```java
+// Bypass caching by passing the provider directly
+new VersionCompatibilityMatrix(new GithubVersionProvider())
+```
 
 ## GitHub Actions Integration
 
@@ -154,59 +130,5 @@ jobs:
 
       - name: Run tests
         run: ./mvnw verify -pl zeebe/qa/update-tests
-```
-
-## Local Development
-
-### View Cached Versions
-
-```bash
-cat .cache/camunda-versions.json | jq .
-```
-
-### Force Cache Refresh
-
-```bash
-rm -f .cache/camunda-versions.json
-./mvnw test -pl zeebe/qa/update-tests
-```
-
-### Disable Caching (for debugging)
-
-Option 1: Delete the cache file before running tests
-
-```bash
-rm -rf .cache
-```
-
-Option 2: Use the provider directly in your test:
-
-```java
-// Bypass caching by passing the provider directly
-new VersionCompatibilityMatrix(new GithubVersionProvider())
-```
-
-## Cache File Format
-
-The cache file (`.cache/camunda-versions.json`) is a JSON array of version metadata:
-
-```json
-[
-  {
-    "version": "8.0.0",
-    "isReleased": true,
-    "isLatest": false
-  },
-  {
-    "version": "8.0.1",
-    "isReleased": true,
-    "isLatest": true
-  },
-  {
-    "version": "8.1.0",
-    "isReleased": false,
-    "isLatest": true
-  }
-]
 ```
 
