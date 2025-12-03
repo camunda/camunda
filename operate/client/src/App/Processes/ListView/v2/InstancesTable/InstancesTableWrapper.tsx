@@ -7,7 +7,6 @@
  */
 
 import {observer} from 'mobx-react';
-import {useMemo} from 'react';
 import {useProcessInstancesPaginated} from 'modules/queries/processInstance/useProcessInstancesPaginated';
 import type {
   ProcessInstance,
@@ -15,12 +14,13 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {useFilters} from 'modules/hooks/useFilters';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {InstancesTable} from './index';
-import {parseProcessInstancesSearchSort} from 'modules/utils/filter/v2/processInstancesSearchSort';
+import {
+  useProcessInstancesSearchFilter,
+  useProcessInstancesSearchSort,
+} from 'modules/hooks/processInstancesSearch';
 import {useSearchParams} from 'react-router-dom';
-import {useProcessInstancesStoreSync} from 'modules/hooks/useProcessInstancesStoreSync';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -38,45 +38,25 @@ type ProcessInstancesHandle = {
 };
 
 const InstancesTableWrapper: React.FC = observer(() => {
-  const [params] = useSearchParams();
-  const {getFilters, areProcessInstanceStatesApplied} = useFilters();
-  const filters = getFilters();
+  const [searchParams] = useSearchParams();
+  const hasActiveFilter = searchParams.get('active') === 'true';
+  const hasIncidentsFilter = searchParams.get('incidents') === 'true';
 
-  const {process, tenant, version, active, incidents} = filters;
-  const sort = parseProcessInstancesSearchSort(params);
-
-  const processDefinitionKey = processesStore.getProcessId({
-    process,
-    tenant,
-    version,
-  });
-
-  const processDefinitionKeys = useMemo(() => {
-    if (processDefinitionKey) {
-      return [processDefinitionKey];
-    }
-    return undefined;
-  }, [processDefinitionKey]);
+  const filter = useProcessInstancesSearchFilter();
+  const sort = useProcessInstancesSearchSort();
+  const {areProcessInstanceStatesApplied} = useFilters();
 
   const enablePeriodicRefetch =
-    (active === true || incidents === true) &&
+    (hasActiveFilter || hasIncidentsFilter) &&
     !batchModificationStore.state.isEnabled;
 
   const result = useProcessInstancesPaginated({
-    filters,
-    processDefinitionKeys,
+    payload: {filter, sort},
     enablePeriodicRefetch,
-    sort,
-    enabled: !!areProcessInstanceStatesApplied(),
+    enabled: filter !== undefined && !!areProcessInstanceStatesApplied(),
   });
 
   const handle = mapQueryResultToProcessInstancesHandle(result);
-
-  useProcessInstancesStoreSync(
-    handle.processInstances,
-    handle.totalProcessInstancesCount,
-    result.isSuccess,
-  );
 
   return (
     <InstancesTable

@@ -6,23 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useFilters} from 'modules/hooks/useFilters';
+import {useSearchParams} from 'react-router-dom';
 import {type GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
-import {
-  buildProcessInstanceFilter,
-  type BuildProcessInstanceFilterOptions,
-} from 'modules/utils/filter/v2/processInstanceFilterBuilder';
+import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
 
-function useProcessInstanceStatisticsFilters(
-  options: Omit<
-    BuildProcessInstanceFilterOptions,
-    'includeIds' | 'excludeIds'
-  > = {},
-): GetProcessDefinitionStatisticsRequestBody {
-  const {getFilters} = useFilters();
-  const filters = getFilters();
+function useProcessInstanceStatisticsFilters(): GetProcessDefinitionStatisticsRequestBody {
+  const [searchParams] = useSearchParams();
+  const fullFilter = parseProcessInstancesSearchFilter(searchParams);
 
-  const fullFilter = buildProcessInstanceFilter(filters, options);
+  if (!fullFilter) {
+    return {filter: undefined};
+  }
 
   // Exclude processDefinitionVersion - not supported by statistics endpoint
   const {processDefinitionVersion: _, ...statisticsFilter} = fullFilter;

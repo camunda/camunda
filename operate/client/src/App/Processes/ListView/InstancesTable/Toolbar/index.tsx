@@ -20,7 +20,7 @@ import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
 import {tracking} from 'modules/tracking';
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
+import {useSearchParams} from 'react-router-dom';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {buildMutationRequestBody} from './buildMutationRequestBody';
 import {handleOperationError} from 'modules/utils/notifications';
@@ -37,6 +37,7 @@ const ACTION_NAMES: Readonly<
 };
 
 const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
+  const [searchParams] = useSearchParams();
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
@@ -79,7 +80,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       return;
     }
 
-    const baseFilter = getProcessInstancesRequestFilters();
     const {
       selectedProcessInstanceIds,
       excludedProcessInstanceIds,
@@ -89,10 +89,10 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     const includeIds =
       selectedProcessInstanceIds.length > 0
         ? checkedRunningProcessInstanceIds
-        : (baseFilter.ids ?? []);
+        : [];
 
     const requestBody = buildMutationRequestBody({
-      baseFilter,
+      searchParams,
       includeIds,
       excludeIds: excludedProcessInstanceIds,
     });

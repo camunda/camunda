@@ -10,14 +10,13 @@ import {InstancesList} from '../../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from '../Filters';
 import {InstancesTableWrapper} from './InstancesTable/InstancesTableWrapper';
-import {DiagramPanel} from './DiagramPanel';
+import {DiagramPanel} from '../DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
@@ -61,7 +60,6 @@ const ListView: React.FC = observer(() => {
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
-      processInstancesStore.reset();
       processesStore.reset();
     };
   }, []);
