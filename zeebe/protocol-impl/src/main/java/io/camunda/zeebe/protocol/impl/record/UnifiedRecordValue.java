@@ -58,20 +58,6 @@ import java.util.Map;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
-  private static final Map<Class<? extends RecordValue>, ValueType> classToValueType =
-      new HashMap<>();
-
-  static {
-    Arrays.stream(ValueType.values())
-        .forEach(
-            v -> {
-              final var record = fromValueType(v);
-              if (record != null) {
-                classToValueType.put(record.getClass(), v);
-              }
-            });
-  }
-
   /**
    * Creates a new {@link UnifiedRecordValue}.
    *
@@ -163,5 +149,24 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };
+  }
+
+  /**
+   * Because of how java static initializers works, it need to be in a separate class: /* inside the
+   * static{} block we use {@link UnifiedRecordValue#fromValueType} from the outer class
+   */
+  private static final class ClassToValueType {
+    private static final Map<Class<? extends RecordValue>, ValueType> MAP = new HashMap<>();
+
+    static {
+      Arrays.stream(ValueType.values())
+          .forEach(
+              v -> {
+                final var record = fromValueType(v);
+                if (record != null) {
+                  MAP.put(record.getClass(), v);
+                }
+              });
+    }
   }
 }
