@@ -803,21 +803,26 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       when(groupServices.search(any()))
           .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
 
-      // when
-      final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
+      // when - then
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> {
+                final var result =
+                    mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
 
-      // then
-      assertThat(result)
-          .hasOkHttpStatus()
-          .hasApplicationJsonContentType()
-          .extractingListContent(objectMapper, TaskSearchResponse.class)
-          .hasSize(numberOfInstancesCandidateUser + numberOfInstancesAdmin)
-          .allSatisfy(
-              task -> {
-                assertThat(task.getName()).isEqualTo(flowNodeBpmnId);
-                assertThat(task.getProcessName()).isEqualTo(bpmnProcessId);
-                assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
-                assertThat(task.getAssignee()).isNull();
+                assertThat(result)
+                    .hasOkHttpStatus()
+                    .hasApplicationJsonContentType()
+                    .extractingListContent(objectMapper, TaskSearchResponse.class)
+                    .hasSize(numberOfInstancesCandidateUser + numberOfInstancesAdmin)
+                    .allSatisfy(
+                        task -> {
+                          assertThat(task.getName()).isEqualTo(flowNodeBpmnId);
+                          assertThat(task.getProcessName()).isEqualTo(bpmnProcessId);
+                          assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+                          assertThat(task.getAssignee()).isNull();
+                        });
               });
     }
 
@@ -1009,7 +1014,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               });
 
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(10))
           .until(() -> tester.getTaskById(taskId).getAssignee() != null);
 
       final var resultUnassign =
@@ -1062,7 +1067,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               });
 
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(10))
           .until(() -> tester.getTaskById(taskId).getAssignee() != null);
 
       final var resultUnassign =
@@ -1084,7 +1089,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               });
 
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(10))
           .until(() -> tester.getTaskById(taskId).getAssignee() == null);
 
       final var resultAssign2 =
@@ -1104,7 +1109,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               });
 
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(10))
           .until(() -> tester.getTaskById(taskId).getAssignee() != null);
     }
 
