@@ -18,7 +18,7 @@ import {
 	basicStringFilterSchema,
 	getOrFilterSchema,
 	advancedIntegerFilterSchema,
-} from './common';
+} from '../common';
 import {
 	processDefinitionSchema,
 	processDefinitionStatisticSchema,

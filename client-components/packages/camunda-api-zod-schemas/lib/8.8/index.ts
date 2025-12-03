@@ -667,7 +667,7 @@ export {
 	type QueryPage,
 	type QuerySortOrder,
 	type ProblemDetailsResponse,
-} from './common';
+} from '../common';
 export {
 	createDeploymentResponseBodySchema,
 	deleteResourceRequestBodySchema,

@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from '../common';
 
 const partitionRoleSchema = z.enum(['leader', 'follower', 'inactive']);
 type PartitionRole = z.infer<typeof partitionRoleSchema>;

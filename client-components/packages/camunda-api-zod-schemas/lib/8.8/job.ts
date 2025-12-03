@@ -15,7 +15,7 @@ import {
 	getEnumFilterSchema,
 	type Endpoint,
 	basicStringFilterSchema,
-} from './common';
+} from '../common';
 
 const jobStateSchema = z.enum([
 	'CREATED',

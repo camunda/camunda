@@ -14,7 +14,7 @@ import {
 	getEnumFilterSchema,
 	type Endpoint,
 	advancedDateTimeFilterSchema,
-} from './common';
+} from '../common';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 
 const elementInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);

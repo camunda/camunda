@@ -18,7 +18,7 @@ import {
 	basicStringFilterSchema,
 	getOrFilterSchema,
 	type Endpoint,
-} from './common';
+} from '../common';
 import {variableSchema} from './variable';
 import {
 	processInstanceSchema,

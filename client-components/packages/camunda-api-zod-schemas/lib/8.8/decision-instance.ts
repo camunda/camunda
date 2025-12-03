@@ -15,7 +15,7 @@ import {
 	basicStringFilterSchema,
 	type Endpoint,
   getEnumFilterSchema,
-} from './common';
+} from '../common';
 import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
 
 const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION']);

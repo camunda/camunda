@@ -13,7 +13,7 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
-} from './common';
+} from '../common';
 
 const variableSchema = z.object({
 	name: z.string(),
