@@ -130,7 +130,7 @@ public class WebSecurityConfig {
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
-  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**");
+  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public

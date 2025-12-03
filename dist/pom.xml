@@ -131,6 +131,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-mcp</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
     </dependency>
 
@@ -942,6 +947,8 @@
             <dependency>io.camunda:operate-webapp</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
+
+            <dependency>io.camunda:zeebe-gateway-mcp</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
