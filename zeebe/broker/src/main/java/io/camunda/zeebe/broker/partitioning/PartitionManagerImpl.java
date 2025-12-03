@@ -692,8 +692,9 @@ public final class PartitionManagerImpl
     validateRocksDbMemory(brokerCfg, blockCacheBytes, maxRocksDbMem);
 
     // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
-    // with headroom for memtable bloom/filter overhead.
-    final long wbmLimitBytes = blockCacheBytes / 2;
+    // with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
+    // zeebeRocksDBFactory.
+    final long wbmLimitBytes = blockCacheBytes / 4;
     final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
     final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
     return new SharedRocksDbResources(sharedCache, sharedWbm);
