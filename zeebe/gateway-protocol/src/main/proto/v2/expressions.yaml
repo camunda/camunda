@@ -1,0 +1,198 @@
+## Endpoint definitions
+
+paths:
+  /expressions/evaluation:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Expression
+      operationId: evaluateExpression
+      summary: Evaluate FEEL expression
+      description: |
+        Evaluates a FEEL expression using the engine's expression evaluator.
+
+        This endpoint allows you to test and validate FEEL expressions exactly as the engine would evaluate them,
+        ensuring consistency with process execution behavior. The expression can be evaluated in different scopes:
+
+        - **NONE**: Evaluate with only the provided context variables.
+        - **CLUSTER**: Evaluate with provided context variables and cluster variables.
+        - **PROCESS_INSTANCE**: Evaluate with provided context variables, cluster variables, and process instance variables.
+
+        The evaluation does not cause any side effects and uses the same FEEL engine as process execution.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpressionEvaluationRequest'
+            examples:
+              Simple expression:
+                summary: Evaluate a simple arithmetic expression with context variables.
+                value:
+                  expression: "=x + y"
+                  context:
+                    x: 10
+                    y: 20
+                  scope:
+                    type: "NONE"
+              Expression with cluster scope:
+                summary: Evaluate an expression with access to cluster variables.
+                value:
+                  expression: "=orderTotal * taxRate"
+                  context:
+                    orderTotal: 100
+                  scope:
+                    type: "CLUSTER"
+              Expression with process instance scope:
+                summary: Evaluate an expression within a process instance context.
+                value:
+                  expression: "=customer.name"
+                  context: {}
+                  scope:
+                    type: "PROCESS_INSTANCE"
+                    processInstanceKey: "2251799813685249"
+      responses:
+        "200":
+          description: The expression was successfully evaluated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpressionEvaluationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The process instance specified in the scope was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+## Schema definitions
+
+components:
+  schemas:
+    ExpressionEvaluationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expression:
+          type: string
+          description: |
+            The FEEL expression to evaluate.
+        context:
+          type: object
+          additionalProperties: true
+          description: |
+            The context variables to use for expression evaluation as a JSON object.
+            These variables are available during evaluation and take precedence over cluster and process instance variables.
+        scope:
+          $ref: '#/components/schemas/ExpressionEvaluationScope'
+      required:
+        - expression
+
+    ExpressionEvaluationScope:
+      type: object
+      additionalProperties: false
+      description: |
+        The scope in which to evaluate the expression.
+        Determines which variables are available during evaluation.
+        If not provided, defaults to NONE scope.
+      properties:
+        type:
+          type: string
+          enum:
+            - NONE
+            - CLUSTER
+            - PROCESS_INSTANCE
+          default: NONE
+          description: |
+            The type of scope for evaluation:
+            - **NONE**: Only the provided context variables are available.
+            - **CLUSTER**: Context variables and cluster variables are available.
+            - **PROCESS_INSTANCE**: Context variables, cluster variables, and process instance variables are available.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: |
+            The key of the process instance to use as the evaluation scope.
+            Required when scope type is PROCESS_INSTANCE.
+      required:
+        - type
+
+    ExpressionEvaluationResult:
+      type: object
+      required:
+        - expression
+        - result
+      properties:
+        expression:
+          type: string
+          description: The original expression that was evaluated.
+        result:
+          $ref: '#/components/schemas/ExpressionResult'
+        warnings:
+          type: array
+          description: |
+            Warnings generated during expression evaluation.
+            These do not prevent successful evaluation but may indicate potential issues.
+          items:
+            $ref: '#/components/schemas/ExpressionEvaluationWarning'
+
+    ExpressionResult:
+      type: object
+      description: The result of the expression evaluation.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - NULL
+            - BOOLEAN
+            - NUMBER
+            - STRING
+            - ARRAY
+            - OBJECT
+            - DURATION
+            - PERIOD
+            - DATE
+            - DATE_TIME
+            - UNKNOWN
+          description: The type of the evaluation result.
+        value:
+          description: |
+            The actual result value.
+            The format depends on the result type:
+            - **NULL**: null
+            - **BOOLEAN**: true or false
+            - **NUMBER**: numeric value (integer or decimal)
+            - **STRING**: string value
+            - **ARRAY**: JSON array
+            - **OBJECT**: JSON object
+            - **DURATION**: ISO-8601 duration string (e.g., "PT2H30M")
+            - **PERIOD**: ISO-8601 period string (e.g., "P1Y2M")
+            - **DATE**: ISO-8601 date string (e.g., "2025-12-03")
+            - **DATE_TIME**: ISO-8601 date-time string (e.g., "2025-12-03T10:15:30Z")
+
+    ExpressionEvaluationWarning:
+      type: object
+      required:
+        - type
+        - message
+      properties:
+        type:
+          type: string
+          description: The type or category of the warning.
+        message:
+          type: string
+          description: A description of the warning.
