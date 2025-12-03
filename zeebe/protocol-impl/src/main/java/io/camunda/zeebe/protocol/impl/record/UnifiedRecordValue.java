@@ -71,100 +71,133 @@ import io.camunda.zeebe.protocol.record.ValueType;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
-	/**
-	 * Creates a new {@link UnifiedRecordValue}.
-	 *
-	 * @param expectedDeclaredProperties the expected number of declared properties.
-	 *                                   Providing the correct number helps to avoid
-	 *                                   allocations and memory copies.
-	 */
-	public UnifiedRecordValue(final int expectedDeclaredProperties) {
-		super(expectedDeclaredProperties);
-	}
+  /**
+   * Creates a new {@link UnifiedRecordValue}.
+   *
+   * @param expectedDeclaredProperties the expected number of declared properties. Providing the
+   *     correct number helps to avoid allocations and memory copies.
+   */
+  public UnifiedRecordValue(final int expectedDeclaredProperties) {
+    super(expectedDeclaredProperties);
+  }
 
-	@Override
-	@JsonIgnore
-	public int getLength() {
-		return super.getLength();
-	}
+  @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
+  }
 
-	@Override
-	@JsonIgnore
-	public int getEncodedLength() {
-		return super.getEncodedLength();
-	}
+  @Override
+  @JsonIgnore
+  public int getEncodedLength() {
+    return super.getEncodedLength();
+  }
 
-	@Override
-	@JsonIgnore
-	public boolean isEmpty() {
-		return super.isEmpty();
-	}
+  @Override
+  @JsonIgnore
+  public boolean isEmpty() {
+    return super.isEmpty();
+  }
 
-	@Override
-	public String toJson() {
-		return MsgPackConverter.convertJsonSerializableObjectToJson(this);
-	}
+  @Override
+  public String toJson() {
+    return MsgPackConverter.convertJsonSerializableObjectToJson(this);
+  }
 
-	public static UnifiedRecordValue fromValueType(final ValueType valueType) {
-		return switch (valueType) {
-		case ValueType.DEPLOYMENT -> new DeploymentRecord();
-		case ValueType.JOB -> new JobRecord();
-		case ValueType.PROCESS_INSTANCE -> new ProcessInstanceRecord();
-		case ValueType.MESSAGE -> new MessageRecord();
-		case ValueType.MESSAGE_BATCH -> new MessageBatchRecord();
-		case PROCESS_MESSAGE_SUBSCRIPTION -> new ProcessMessageSubscriptionRecord();
-		case ValueType.JOB_BATCH -> new JobBatchRecord();
-		case ValueType.INCIDENT -> new IncidentRecord();
-		case TIMER -> new TimerRecord();
-		case MESSAGE_START_EVENT_SUBSCRIPTION -> new MessageStartEventSubscriptionRecord();
-		case VARIABLE -> new VariableRecord();
-		case ValueType.VARIABLE_DOCUMENT -> new VariableDocumentRecord();
-		case ValueType.PROCESS_INSTANCE_CREATION -> new ProcessInstanceCreationRecord();
-		case ERROR -> new ErrorRecord();
-		case PROCESS_INSTANCE_RESULT -> new ProcessInstanceResultRecord();
-		case PROCESS -> new ProcessRecord();
-		case DEPLOYMENT_DISTRIBUTION -> new DeploymentDistributionRecord();
-		case PROCESS_EVENT -> new ProcessEventRecord();
-		case DECISION -> new DecisionRecord();
-		case DECISION_REQUIREMENTS -> new DecisionRequirementsRecord();
-		case ValueType.DECISION_EVALUATION -> new DecisionEvaluationRecord();
-		case ValueType.PROCESS_INSTANCE_MODIFICATION -> new ProcessInstanceModificationRecord();
-		case ESCALATION -> new EscalationRecord();
-		case SIGNAL_SUBSCRIPTION -> new SignalSubscriptionRecord();
-		case ValueType.SIGNAL -> new SignalRecord();
-		case ValueType.COMMAND_DISTRIBUTION -> new CommandDistributionRecord();
-		case ValueType.PROCESS_INSTANCE_BATCH -> new ProcessInstanceBatchRecord();
-		case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();
-		case FORM -> new FormRecord();
-		case ValueType.USER_TASK -> new UserTaskRecord();
-		case ValueType.PROCESS_INSTANCE_MIGRATION -> new ProcessInstanceMigrationRecord();
-		case BATCH_OPERATION_EXECUTION -> new BatchOperationExecutionRecord();
-		case BATCH_OPERATION_CHUNK -> new BatchOperationChunkRecord();
-		case ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION -> new AdHocSubProcessInstructionRecord();
-		case ValueType.COMPENSATION_SUBSCRIPTION -> new CompensationSubscriptionRecord();
-		case ValueType.MESSAGE_CORRELATION -> new MessageCorrelationRecord();
-		case ValueType.USER -> new UserRecord();
-		case ValueType.CLOCK -> new ClockRecord();
-		case ValueType.AUTHORIZATION -> new AuthorizationRecord();
-		case ValueType.ROLE -> new RoleRecord();
-		case ValueType.TENANT -> new TenantRecord();
-		case ValueType.SCALE -> new ScaleRecord();
-		case ValueType.GROUP -> new GroupRecord();
-		case ValueType.MAPPING_RULE -> new MappingRuleRecord();
-		case ValueType.IDENTITY_SETUP -> new IdentitySetupRecord();
-		case ValueType.RESOURCE -> new ResourceRecord();
-		case ValueType.BATCH_OPERATION_CREATION -> new BatchOperationCreationRecord();
-		case ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> new BatchOperationLifecycleManagementRecord();
-		case BATCH_OPERATION_PARTITION_LIFECYCLE -> new BatchOperationPartitionLifecycleRecord();
-		case ASYNC_REQUEST -> new AsyncRequestRecord();
-		case ValueType.USAGE_METRIC -> new UsageMetricRecord();
-		case MULTI_INSTANCE -> new MultiInstanceRecord();
-		case RUNTIME_INSTRUCTION -> new RuntimeInstructionRecord();
-		case BATCH_OPERATION_INITIALIZATION -> new BatchOperationInitializationRecord();
-		case CHECKPOINT -> new CheckpointRecord();
-		case MESSAGE_SUBSCRIPTION -> new MessageSubscriptionRecord();
-		case SBE_UNKNOWN -> null;
-		case NULL_VAL -> null;
-		};
-	}
+  /**
+   * NOTE: this is different from {@link CommandDistributionRecord#getValueType()} or {@link
+   * AsyncRequestRecord#getValueType()} as that is referring to the value they are wrapping
+   *
+   * <p>It needs to be a different method, otherwise those methods will be ignored in the json.
+   *
+   * @return the valueType associated to this record
+   */
+  @JsonIgnore
+  public ValueType valueType() {
+    return ClassToValueType.MAP.get(getClass());
+  }
+
+  public static UnifiedRecordValue fromValueType(final ValueType valueType) {
+    return switch (valueType) {
+      case ValueType.DEPLOYMENT -> new DeploymentRecord();
+      case ValueType.JOB -> new JobRecord();
+      case ValueType.PROCESS_INSTANCE -> new ProcessInstanceRecord();
+      case ValueType.MESSAGE -> new MessageRecord();
+      case ValueType.MESSAGE_BATCH -> new MessageBatchRecord();
+      case ValueType.PROCESS_MESSAGE_SUBSCRIPTION -> new ProcessMessageSubscriptionRecord();
+      case ValueType.JOB_BATCH -> new JobBatchRecord();
+      case ValueType.INCIDENT -> new IncidentRecord();
+      case ValueType.TIMER -> new TimerRecord();
+      case ValueType.MESSAGE_START_EVENT_SUBSCRIPTION -> new MessageStartEventSubscriptionRecord();
+      case ValueType.VARIABLE -> new VariableRecord();
+      case ValueType.VARIABLE_DOCUMENT -> new VariableDocumentRecord();
+      case ValueType.PROCESS_INSTANCE_CREATION -> new ProcessInstanceCreationRecord();
+      case ValueType.ERROR -> new ErrorRecord();
+      case ValueType.PROCESS_INSTANCE_RESULT -> new ProcessInstanceResultRecord();
+      case ValueType.PROCESS -> new ProcessRecord();
+      case ValueType.DEPLOYMENT_DISTRIBUTION -> new DeploymentDistributionRecord();
+      case ValueType.PROCESS_EVENT -> new ProcessEventRecord();
+      case ValueType.DECISION -> new DecisionRecord();
+      case ValueType.DECISION_REQUIREMENTS -> new DecisionRequirementsRecord();
+      case ValueType.DECISION_EVALUATION -> new DecisionEvaluationRecord();
+      case ValueType.PROCESS_INSTANCE_MODIFICATION -> new ProcessInstanceModificationRecord();
+      case ValueType.ESCALATION -> new EscalationRecord();
+      case ValueType.SIGNAL_SUBSCRIPTION -> new SignalSubscriptionRecord();
+      case ValueType.SIGNAL -> new SignalRecord();
+      case ValueType.COMMAND_DISTRIBUTION -> new CommandDistributionRecord();
+      case ValueType.PROCESS_INSTANCE_BATCH -> new ProcessInstanceBatchRecord();
+      case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();
+      case ValueType.FORM -> new FormRecord();
+      case ValueType.USER_TASK -> new UserTaskRecord();
+      case ValueType.PROCESS_INSTANCE_MIGRATION -> new ProcessInstanceMigrationRecord();
+      case ValueType.BATCH_OPERATION_EXECUTION -> new BatchOperationExecutionRecord();
+      case ValueType.BATCH_OPERATION_CHUNK -> new BatchOperationChunkRecord();
+      case ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION -> new AdHocSubProcessInstructionRecord();
+      case ValueType.COMPENSATION_SUBSCRIPTION -> new CompensationSubscriptionRecord();
+      case ValueType.MESSAGE_CORRELATION -> new MessageCorrelationRecord();
+      case ValueType.USER -> new UserRecord();
+      case ValueType.CLOCK -> new ClockRecord();
+      case ValueType.AUTHORIZATION -> new AuthorizationRecord();
+      case ValueType.ROLE -> new RoleRecord();
+      case ValueType.TENANT -> new TenantRecord();
+      case ValueType.SCALE -> new ScaleRecord();
+      case ValueType.GROUP -> new GroupRecord();
+      case ValueType.MAPPING_RULE -> new MappingRuleRecord();
+      case ValueType.IDENTITY_SETUP -> new IdentitySetupRecord();
+      case ValueType.RESOURCE -> new ResourceRecord();
+      case ValueType.BATCH_OPERATION_CREATION -> new BatchOperationCreationRecord();
+      case ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT ->
+          new BatchOperationLifecycleManagementRecord();
+      case ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE ->
+          new BatchOperationPartitionLifecycleRecord();
+      case ValueType.ASYNC_REQUEST -> new AsyncRequestRecord();
+      case ValueType.USAGE_METRIC -> new UsageMetricRecord();
+      case ValueType.MULTI_INSTANCE -> new MultiInstanceRecord();
+      case ValueType.RUNTIME_INSTRUCTION -> new RuntimeInstructionRecord();
+      case ValueType.BATCH_OPERATION_INITIALIZATION -> new BatchOperationInitializationRecord();
+      case ValueType.CHECKPOINT -> new CheckpointRecord();
+      case ValueType.MESSAGE_SUBSCRIPTION -> new MessageSubscriptionRecord();
+      case ValueType.SBE_UNKNOWN -> null;
+      case ValueType.NULL_VAL -> null;
+    };
+  }
+
+  /**
+   * Because of how java static initializers works, it need to be in a separate class: /* inside the
+   * static{} block we use {@link UnifiedRecordValue#fromValueType} from the outer class
+   */
+  private static final class ClassToValueType {
+    private static final Map<Class<? extends RecordValue>, ValueType> MAP = new HashMap<>();
+
+    static {
+      Arrays.stream(ValueType.values())
+          .forEach(
+              v -> {
+                final var record = fromValueType(v);
+                if (record != null) {
+                  MAP.put(record.getClass(), v);
+                }
+              });
+    }
+  }
 }
