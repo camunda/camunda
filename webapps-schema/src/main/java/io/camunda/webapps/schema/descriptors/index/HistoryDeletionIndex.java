@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.template;
+package io.camunda.webapps.schema.descriptors.index;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
 
-import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 
-public class HistoryDeletionTemplate extends AbstractTemplateDescriptor implements Prio5Backup {
+public class HistoryDeletionIndex extends AbstractIndexDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "history-deletion";
   public static final String INDEX_VERSION = "8.9.0";
@@ -21,7 +21,7 @@ public class HistoryDeletionTemplate extends AbstractTemplateDescriptor implemen
   public static final String RESOURCE_TYPE = "resourceType";
   public static final String BATCH_OPERATION_KEY = "batchOperationKey";
 
-  public HistoryDeletionTemplate(final String indexPrefix, final boolean isElasticsearch) {
+  public HistoryDeletionIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 

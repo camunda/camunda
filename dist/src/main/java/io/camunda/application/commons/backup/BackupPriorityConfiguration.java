@@ -25,6 +25,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
@@ -40,7 +41,6 @@ import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscript
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.HistoryDeletionTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -86,7 +86,9 @@ public class BackupPriorityConfiguration {
     final List<Prio1Backup> prio1 =
         List.of(
             // OPERATE
-            new MetadataIndex(indexPrefix, isElasticsearch));
+            new MetadataIndex(indexPrefix, isElasticsearch),
+            // HISTORY DELETION
+            new HistoryDeletionIndex(indexPrefix, isElasticsearch));
 
     final List<Prio2Backup> prio2 =
         List.of(
@@ -142,8 +144,6 @@ public class BackupPriorityConfiguration {
             new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
             // AUDIT LOG
             new AuditLogTemplate(indexPrefix, isElasticsearch),
-            // HISTORY DELETION
-            new HistoryDeletionTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
             new ClusterVariableIndex(indexPrefix, isElasticsearch));
 
