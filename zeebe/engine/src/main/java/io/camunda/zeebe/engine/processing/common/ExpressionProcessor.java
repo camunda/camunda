@@ -149,6 +149,14 @@ public final class ExpressionProcessor {
         .map(EvaluationResult::getBoolean);
   }
 
+  public Either<Failure, Boolean> evaluateBooleanExpression(
+      final Expression expression, final EvaluationContext context) {
+    return evaluateExpressionAsEither(expression, context)
+        // scopeKey is -1 because the context is already provided
+        .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, -1))
+        .map(EvaluationResult::getBoolean);
+  }
+
   /**
    * Evaluates the given expression and returns the result as an Interval. If the evaluation fails
    * or the result is not an interval then a failure is returned.
@@ -435,6 +443,14 @@ public final class ExpressionProcessor {
     final var result = evaluateExpression(expression, variableScopeKey, tenantId);
     return result.isFailure()
         ? Either.left(createFailureMessage(result, result.getFailureMessage(), variableScopeKey))
+        : Either.right(result);
+  }
+
+  private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
+      final Expression expression, final EvaluationContext context) {
+    final var result = expressionLanguage.evaluateExpression(expression, context);
+    return result.isFailure()
+        ? Either.left(createFailureMessage(result, result.getFailureMessage(), -1))
         : Either.right(result);
   }
 
