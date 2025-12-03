@@ -74,13 +74,13 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       metadata.batchOperationReference(batchOperationReference);
     }
 
-    final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
-    if (valueType == null) {
-      // usually happens when the record is not registered at the TypedStreamEnvironment
-      throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
-    }
-
     if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
+      final var valueType = unifiedRecordValue.valueType();
+      if (valueType == null) {
+        // usually happens when the record is not registered at the TypedStreamEnvironment
+        throw new IllegalStateException(
+            "Missing value type mapping for record: " + value.getClass());
+      }
       final var metadataWithValueType = metadata.valueType(valueType);
       final var either =
           mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
