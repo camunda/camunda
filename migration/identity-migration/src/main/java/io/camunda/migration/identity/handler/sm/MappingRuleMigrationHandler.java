@@ -86,13 +86,13 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
               final var firstRule = mappingRulesWithSameClaim.getFirst();
               final var mappingRuleId =
                   normalizeID(firstRule.name(), entitiesProperties, MAPPING_RULE);
+              final var mappingRuleDTO =
+                  new MappingRuleDTO(
+                      firstRule.claimName(),
+                      firstRule.claimValue(),
+                      firstRule.name(),
+                      mappingRuleId);
               try {
-                final var mappingRuleDTO =
-                    new MappingRuleDTO(
-                        firstRule.claimName(),
-                        firstRule.claimValue(),
-                        firstRule.name(),
-                        mappingRuleId);
                 retryOnBackpressure(
                     () -> mappingRuleServices.createMappingRule(mappingRuleDTO).join(),
                     "Failed to create mapping rule with ID: " + mappingRuleId);
@@ -107,9 +107,9 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
               }
               // Assign all roles and tenants from all mappingRulesWithSameClaim members
               mappingRulesWithSameClaim.forEach(
-                  rule -> assignRolesToMappingRule(rule.appliedRoles(), mappingRuleId));
+                  rule -> assignRolesToMappingRule(rule.appliedRoles(), mappingRuleDTO));
               mappingRulesWithSameClaim.forEach(
-                  rule -> assignTenantsToMappingRule(rule.appliedTenants(), mappingRuleId));
+                  rule -> assignTenantsToMappingRule(rule.appliedTenants(), mappingRuleDTO));
             });
   }
 
@@ -125,10 +125,12 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
         totalTenantAssignmentAttempts.get());
   }
 
-  private void assignRolesToMappingRule(final Set<Role> appliedRoles, final String mappingRuleId) {
+  private void assignRolesToMappingRule(
+      final Set<Role> appliedRoles, final MappingRuleDTO mappingRule) {
     appliedRoles.forEach(
         role -> {
           final var roleId = normalizeID(role.name(), entitiesProperties, ROLE);
+          final var mappingRuleId = mappingRule.mappingRuleId();
           try {
             final var roleMember =
                 new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
@@ -140,21 +142,29 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
                     + mappingRuleId);
             assignedRoleCount.incrementAndGet();
           } catch (final Exception e) {
-            if (!isConflictError(e)) {
+            if (isConflictError(e)) {
+              logger.debug(
+                  "Role '{}' already assigned to mapping rule '{}', skipping assignment.",
+                  roleId,
+                  mappingRuleId);
+            } else if (isNotFoundError(e)) {
+              // This likely indicates a conflicting mapping rule ID as the role must exist given
+              // the Role Migration is required to run before this handler
+              // see https://github.com/camunda/camunda/issues/38405
+              throw new MigrationException(
+                  createConflictingMappingRuleIdMessage(mappingRule, roleId, "role"), e);
+            } else {
               throw new MigrationException(
                   "Failed to assign role: " + roleId + " to mapping rule: " + mappingRuleId, e);
             }
-            logger.debug(
-                "Role '{}' already assigned to mapping rule '{}', skipping assignment.",
-                roleId,
-                mappingRuleId);
           }
           totalRoleAssignmentAttempts.incrementAndGet();
         });
   }
 
   private void assignTenantsToMappingRule(
-      final Set<Tenant> appliedTenants, final String mappingRuleId) {
+      final Set<Tenant> appliedTenants, final MappingRuleDTO mappingRule) {
+    final var mappingRuleId = mappingRule.mappingRuleId();
     appliedTenants.forEach(
         tenant -> {
           final var tenantId = tenant.tenantId();
@@ -172,13 +182,39 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
             if (!isConflictError(e)) {
               throw new MigrationException(
                   "Failed to assign tenant: " + tenantId + " to mapping rule: " + mappingRuleId, e);
+            } else if (isNotFoundError(e)) {
+              // This likely indicates a conflicting mapping rule ID as the tenant must exist given
+              // the Tenant Migration is required to run before this handler.
+              // see https://github.com/camunda/camunda/issues/38405
+              throw new MigrationException(
+                  createConflictingMappingRuleIdMessage(mappingRule, tenantId, "tenant"), e);
+            } else {
+              logger.debug(
+                  "Tenant '{}' already assigned to mapping rule '{}', skipping assignment.",
+                  tenantId,
+                  mappingRuleId);
             }
-            logger.debug(
-                "Tenant '{}' already assigned to mapping rule '{}', skipping assignment.",
-                tenantId,
-                mappingRuleId);
           }
           totalTenantAssignmentAttempts.incrementAndGet();
         });
+  }
+
+  private static String createConflictingMappingRuleIdMessage(
+      final MappingRuleDTO mappingRule, final String entityId, final String entityType) {
+    return """
+        Failed to assign %s with ID: "%s" to mapping rule with ID: "%s" as the mapping rule could not be found.
+        This is likely caused by an inconsistency between the mapping rule state in Management Identity and the Orchestration Cluster.
+        Please check whether there is an existing mapping rule with the claimName: "%s" and claimValue: "%s" but a different id than "%s" \
+        present the Orchestration Cluster, either setup statically via configuration or created manually.
+        It needs to get deleted manually and if required recreated with the same ID: "%s" before re-running the migration to establish a consistent state.
+        """
+        .formatted(
+            entityType,
+            entityId,
+            mappingRule.mappingRuleId(),
+            mappingRule.claimName(),
+            mappingRule.claimValue(),
+            mappingRule.mappingRuleId(),
+            mappingRule.mappingRuleId());
   }
 }

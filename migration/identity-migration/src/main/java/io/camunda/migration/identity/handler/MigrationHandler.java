@@ -28,10 +28,18 @@ public abstract class MigrationHandler<T> {
   }
 
   protected boolean isConflictError(final Throwable e) {
+    return isErrorWithStatus(e, Status.ALREADY_EXISTS);
+  }
+
+  protected boolean isNotFoundError(final Throwable e) {
+    return isErrorWithStatus(e, Status.NOT_FOUND);
+  }
+
+  private boolean isErrorWithStatus(final Throwable e, final Status status) {
     return (e instanceof final CompletionException completionException
-            && isConflictError(completionException.getCause()))
+            && isErrorWithStatus(completionException.getCause(), status))
         || (e instanceof final ServiceException serviceException
-            && serviceException.getStatus() == Status.ALREADY_EXISTS);
+            && serviceException.getStatus() == status);
   }
 
   protected boolean isNotImplementedError(final Throwable e) {
