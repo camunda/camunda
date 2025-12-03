@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createContext, useContext, useRef} from 'react';
+import {createContext, useContext, useMemo, useRef} from 'react';
 import type {
   ElementInstance,
   ProcessInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
-import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';
 import {ElementInstanceIcon} from './styled';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -23,6 +23,14 @@ import {Bar} from './Bar';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
 import {notificationsStore} from 'modules/stores/notifications';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {
+  getVisibleChildPlaceholders,
+  hasChildPlaceholders,
+} from 'modules/utils/instanceHistoryModification';
+import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {VirtualBar} from './VirtualBar';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const TREE_NODE_HEIGHT = 32;
@@ -30,9 +38,36 @@ const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
   'PROCESS',
   'MULTI_INSTANCE_BODY',
   'SUB_PROCESS',
+  'EVENT_SUB_PROCESS',
   'AD_HOC_SUB_PROCESS',
   'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
 ];
+
+type VirtualElementInstance = {
+  isVirtual: true;
+  elementId: string;
+  elementName?: string;
+  type: ElementType;
+  elementInstanceKey: string;
+};
+
+function convertToVirtualElementInstance(params: {
+  flowNodeInstances: FlowNodeInstance[];
+  businessObjects: BusinessObjects;
+}): VirtualElementInstance[] {
+  const {flowNodeInstances, businessObjects} = params;
+
+  return flowNodeInstances.map((flowNodeInstance) => {
+    const businessObject = businessObjects[flowNodeInstance.flowNodeId];
+    return {
+      isVirtual: true,
+      elementId: flowNodeInstance.flowNodeId,
+      elementName: businessObject?.name,
+      type: businessObject?.$type,
+      elementInstanceKey: flowNodeInstance.id,
+    };
+  });
+}
 
 const ElementInstanceHistoryTree = createContext<{
   processInstance: ProcessInstance;
@@ -93,40 +128,97 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
         });
       };
 
-      const elementProps = {
-        ...rest,
-        'data-testid': `tree-node-${scopeKey}`,
-        selected: isSelected ? [scopeKey] : [],
-        active: isSelected ? scopeKey : undefined,
-        id: scopeKey,
-        value: scopeKey,
-        'aria-label': elementName,
-        renderIcon,
-        isExpanded: false,
-        onSelect: handleSelect,
-        label: (
-          <Bar
-            elementInstanceKey={scopeKey}
-            elementId={elementId}
-            elementName={elementName}
-            elementInstanceState={elementInstanceState}
-            hasIncident={hasIncident}
-            endDate={endDate}
-            isTimestampLabelVisible={false}
-            isRoot={isRoot}
-            latestMigrationDate={latestMigrationDate}
-            ref={rowRef}
-          />
-        ),
+      return (
+        <TreeNode
+          {...rest}
+          key={scopeKey}
+          data-testid={`tree-node-${scopeKey}`}
+          selected={isSelected ? [scopeKey] : []}
+          active={isSelected ? scopeKey : undefined}
+          id={scopeKey}
+          value={scopeKey}
+          aria-label={elementName}
+          renderIcon={renderIcon}
+          isExpanded={false}
+          onSelect={handleSelect}
+          label={
+            <Bar
+              elementInstanceKey={scopeKey}
+              elementId={elementId}
+              elementName={elementName}
+              elementInstanceState={elementInstanceState}
+              hasIncident={hasIncident}
+              endDate={endDate}
+              isTimestampLabelVisible={false}
+              isRoot={isRoot}
+              latestMigrationDate={latestMigrationDate}
+              ref={rowRef}
+            />
+          }
+        />
+      );
+    },
+  );
+
+type NonFoldableVirtualElementInstanceNodeProps = {
+  scopeKey: string;
+  elementId: string;
+  elementName: string;
+  elementType: ElementType;
+  renderIcon: () => React.ReactNode | null;
+};
+
+const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementInstanceNodeProps> =
+  observer(
+    ({scopeKey, elementId, elementName, elementType, renderIcon, ...rest}) => {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const isRoot = elementType === 'bpmn:Process';
+      const {businessObjects} = useElementInstanceHistoryTree();
+      const businessObject = businessObjects[elementId];
+
+      const rootNode = useRootNode();
+      const isSelected = flowNodeSelectionStore.isSelected({
+        flowNodeId: isRoot ? undefined : elementId,
+        flowNodeInstanceId: scopeKey,
+        isMultiInstance: isMultiInstance(businessObject),
+      });
+
+      const handleSelect = () => {
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: false,
+        });
       };
 
-      return <TreeNode {...elementProps} key={scopeKey} />;
+      return (
+        <TreeNode
+          {...rest}
+          key={scopeKey}
+          data-testid={`tree-node-${scopeKey}`}
+          selected={isSelected ? [scopeKey] : []}
+          active={isSelected ? scopeKey : undefined}
+          id={scopeKey}
+          value={scopeKey}
+          aria-label={elementName}
+          renderIcon={renderIcon}
+          isExpanded={false}
+          onSelect={handleSelect}
+          label={
+            <VirtualBar
+              elementInstanceKey={scopeKey}
+              elementName={elementName}
+              ref={rowRef}
+            />
+          }
+        />
+      );
     },
   );
 
 const ScrollableNodes: React.FC<
   Omit<React.ComponentProps<typeof InfiniteScroller>, 'children'> & {
-    visibleChildren: ElementInstance[];
+    visibleChildren: (ElementInstance | VirtualElementInstance)[];
   }
 > = ({
   onVerticalScrollEndReach,
@@ -142,35 +234,134 @@ const ScrollableNodes: React.FC<
       scrollableContainerRef={scrollableContainerRef}
     >
       <ul>
-        {visibleChildren.map(
-          ({
-            elementInstanceKey,
-            elementName,
-            type,
-            elementId,
-            state,
-            hasIncident,
-            endDate,
-          }) => {
-            return (
-              <ElementInstanceSubTreeRoot
-                key={elementInstanceKey}
-                scopeKey={elementInstanceKey}
-                elementName={elementName ?? elementId}
-                elementId={elementId}
-                elementInstanceState={state}
-                hasIncident={hasIncident}
-                endDate={endDate}
-                elementType={type}
-                {...carbonTreeNodeProps}
-              />
-            );
-          },
-        )}
+        {visibleChildren.map((elementInstance) => {
+          return (
+            <ElementInstanceSubTreeRoot
+              key={elementInstance.elementInstanceKey}
+              elementInstance={elementInstance}
+              {...carbonTreeNodeProps}
+            />
+          );
+        })}
       </ul>
     </InfiniteScroller>
   );
 };
+
+type FoldableVirtualElementInstanceNodeProps = {
+  scopeKey: string;
+  elementId: string;
+  elementName: string;
+  elementType: ElementType;
+  renderIcon: () => React.ReactNode;
+};
+
+const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanceNodeProps> =
+  observer(
+    ({
+      scopeKey,
+      elementId,
+      elementName,
+      elementType,
+      renderIcon,
+      ...carbonTreeNodeProps
+    }) => {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const {scrollableContainerRef, businessObjects, processInstance} =
+        useElementInstanceHistoryTree();
+      const businessObject = businessObjects[elementId];
+      const isRoot = elementType === 'bpmn:Process';
+
+      const rootNode = useRootNode();
+      const isSelected = flowNodeSelectionStore.isSelected({
+        flowNodeId: isRoot ? undefined : elementId,
+        flowNodeInstanceId: scopeKey,
+        isMultiInstance: isMultiInstance(businessObject),
+      });
+      const virtualChildren = convertToVirtualElementInstance({
+        flowNodeInstances: getVisibleChildPlaceholders(
+          scopeKey,
+          elementId,
+          businessObjects,
+          processInstance.processDefinitionId,
+          processInstance.processInstanceKey,
+          elementType === 'bpmn:Process',
+        ),
+        businessObjects,
+      });
+      const isExpanded =
+        instanceHistoryModificationStore.state.expandedFlowNodeInstanceIds.includes(
+          scopeKey,
+        );
+
+      const handleSelect = async () => {
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: isMultiInstance(businessObject),
+        });
+      };
+
+      const elementProps = {
+        ...carbonTreeNodeProps,
+        'data-testid': `tree-node-${scopeKey}`,
+        selected: isSelected ? [scopeKey] : [],
+        active: isSelected ? scopeKey : undefined,
+        id: scopeKey,
+        value: scopeKey,
+        'aria-label': elementName,
+        renderIcon,
+        isExpanded,
+        onSelect: handleSelect,
+        label: (
+          <VirtualBar
+            elementInstanceKey={scopeKey}
+            elementName={elementName}
+            ref={rowRef}
+          />
+        ),
+      };
+
+      return (
+        <TreeNode
+          {...elementProps}
+          key={scopeKey}
+          onToggle={() => {
+            if (isExpanded) {
+              instanceHistoryModificationStore.removeFromExpandedFlowNodeInstanceIds(
+                scopeKey,
+              );
+            } else {
+              instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
+                scopeKey,
+              );
+            }
+          }}
+        >
+          <ScrollableNodes
+            onVerticalScrollEndReach={async (scrollUp) => {
+              const newPageItemsCount =
+                await elementInstancesTreeStore.fetchNextPage(scopeKey);
+              if (newPageItemsCount > 0) {
+                scrollUp(
+                  newPageItemsCount * (rowRef.current?.offsetHeight ?? 0),
+                );
+              }
+            }}
+            onVerticalScrollStartReach={async (scrollDown) => {
+              const newPageItemsCount =
+                await elementInstancesTreeStore.fetchPreviousPage(scopeKey);
+              if (newPageItemsCount > 0) {
+                scrollDown(newPageItemsCount * TREE_NODE_HEIGHT);
+              }
+            }}
+            scrollableContainerRef={scrollableContainerRef}
+            visibleChildren={virtualChildren}
+          />
+        </TreeNode>
+      );
+    },
+  );
 
 type FoldableElementInstancesNodeProps = {
   scopeKey: string;
@@ -197,7 +388,8 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       ...carbonTreeNodeProps
     }) => {
       const rowRef = useRef<HTMLDivElement>(null);
-      const {scrollableContainerRef} = useElementInstanceHistoryTree();
+      const {scrollableContainerRef, businessObjects, processInstance} =
+        useElementInstanceHistoryTree();
       const {refetch: fetchFirstChild} = useSearchElementInstancesByScope(
         {
           elementInstanceScopeKey: scopeKey,
@@ -216,6 +408,18 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
       });
       const isExpanded = elementInstancesTreeStore.isNodeExpanded(scopeKey);
+
+      const virtualChildren = convertToVirtualElementInstance({
+        flowNodeInstances: getVisibleChildPlaceholders(
+          scopeKey,
+          elementId,
+          businessObjects,
+          processInstance.processDefinitionId,
+          processInstance.processInstanceKey,
+          false,
+        ),
+        businessObjects,
+      });
 
       const handleSelect = async () => {
         if (elementType !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
@@ -315,60 +519,116 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
               }
             }}
             scrollableContainerRef={scrollableContainerRef}
-            visibleChildren={elementInstancesTreeStore.getItems(scopeKey)}
+            visibleChildren={
+              elementInstancesTreeStore.hasNextPage(scopeKey)
+                ? elementInstancesTreeStore.getItems(scopeKey)
+                : [
+                    ...elementInstancesTreeStore.getItems(scopeKey),
+                    ...virtualChildren,
+                  ]
+            }
           />
         </TreeNode>
       );
     },
   );
 
+function isVirtualElementInstance(
+  elementInstance: ElementInstance | VirtualElementInstance,
+): elementInstance is VirtualElementInstance {
+  return 'isVirtual' in elementInstance && elementInstance.isVirtual;
+}
+
 type Props = {
-  scopeKey: string;
-  elementName: string;
-  elementId: string;
-  elementInstanceState: ElementInstance['state'];
-  hasIncident: boolean;
-  endDate: string | undefined;
-  elementType: ElementInstance['type'];
+  elementInstance: ElementInstance | VirtualElementInstance;
 };
 
-const ElementInstanceSubTreeRoot: React.FC<Props> = observer((props) => {
-  const {elementType, elementId, scopeKey, ...rest} = props;
-  const {businessObjects} = useElementInstanceHistoryTree();
-  const isFoldable = FOLDABLE_ELEMENT_TYPES.includes(elementType);
+const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
+  ({elementInstance, ...rest}) => {
+    const {businessObjects, processInstance} = useElementInstanceHistoryTree();
 
-  if (isFoldable) {
+    if (isVirtualElementInstance(elementInstance)) {
+      const hasChildren = hasChildPlaceholders(
+        elementInstance.elementInstanceKey,
+        businessObjects,
+        processInstance.processDefinitionId,
+        processInstance.processInstanceKey,
+      );
+      const nodeProps = {
+        ...rest,
+        scopeKey: elementInstance.elementInstanceKey,
+        elementId: elementInstance.elementId,
+        elementName: elementInstance.elementName ?? elementInstance.elementId,
+        elementType: elementInstance.type,
+      };
+
+      if (hasChildren) {
+        return (
+          <FoldableVirtualElementInstanceNode
+            {...nodeProps}
+            renderIcon={() => (
+              <ElementInstanceIcon
+                diagramBusinessObject={
+                  businessObjects[elementInstance.elementId]
+                }
+                $hasLeftMargin={false}
+              />
+            )}
+          />
+        );
+      }
+
+      return (
+        <NonFoldableVirtualElementInstanceNode
+          {...nodeProps}
+          renderIcon={() => (
+            <ElementInstanceIcon
+              diagramBusinessObject={businessObjects[elementInstance.elementId]}
+              $hasLeftMargin
+            />
+          )}
+        />
+      );
+    }
+
+    const nodeProps = {
+      ...rest,
+      scopeKey: elementInstance.elementInstanceKey,
+      elementId: elementInstance.elementId,
+      elementName: elementInstance.elementName ?? elementInstance.elementId,
+      elementType: elementInstance.type,
+      elementInstanceState: elementInstance.state,
+      hasIncident: elementInstance.hasIncident,
+      endDate: elementInstance.endDate,
+    };
+    const isFoldable = FOLDABLE_ELEMENT_TYPES.includes(elementInstance.type);
+    if (isFoldable) {
+      return (
+        <FoldableElementInstancesNode
+          {...nodeProps}
+          renderIcon={() => (
+            <ElementInstanceIcon
+              diagramBusinessObject={businessObjects[elementInstance.elementId]}
+              $hasLeftMargin={false}
+            />
+          )}
+        />
+      );
+    }
+
     return (
-      <FoldableElementInstancesNode
-        {...rest}
-        scopeKey={scopeKey}
-        elementType={elementType}
-        elementId={elementId}
+      <NonFoldableElementInstancesNode
+        {...nodeProps}
         renderIcon={() => (
           <ElementInstanceIcon
-            diagramBusinessObject={businessObjects[elementId]}
-            $hasLeftMargin={false}
+            diagramBusinessObject={businessObjects[elementInstance.elementId]}
+            $hasLeftMargin
           />
         )}
       />
     );
-  }
-
-  return (
-    <NonFoldableElementInstancesNode
-      {...rest}
-      scopeKey={scopeKey}
-      elementType={elementType}
-      elementId={elementId}
-      renderIcon={() => (
-        <ElementInstanceIcon
-          diagramBusinessObject={businessObjects[elementId]}
-          $hasLeftMargin
-        />
-      )}
-    />
-  );
-});
+  },
+);
 
 type ElementInstancesTreeProps = {
   processInstance: ProcessInstance;
@@ -379,8 +639,24 @@ type ElementInstancesTreeProps = {
 const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
     const {processInstance, scrollableContainerRef, ...rest} = props;
-
     const {data: businessObjects} = useBusinessObjects();
+    const rootElementInstance = useMemo<ElementInstance>(() => {
+      const {
+        processInstanceKey,
+        processDefinitionId,
+        processDefinitionName,
+        ...rest
+      } = processInstance;
+      return {
+        ...rest,
+        type: 'PROCESS',
+        processInstanceKey,
+        processDefinitionId,
+        elementInstanceKey: processInstanceKey,
+        elementId: processDefinitionId,
+        elementName: processDefinitionName ?? processDefinitionId,
+      };
+    }, [processInstance]);
 
     elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey);
 
@@ -398,16 +674,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       >
         <ElementInstanceSubTreeRoot
           {...rest}
-          elementId={processInstance.processDefinitionId}
-          elementName={
-            processInstance.processDefinitionName ??
-            processInstance.processDefinitionId
-          }
-          elementInstanceState={processInstance.state}
-          hasIncident={processInstance.hasIncident}
-          endDate={processInstance.endDate}
-          elementType="PROCESS"
-          scopeKey={processInstance.processInstanceKey}
+          elementInstance={rootElementInstance}
         />
       </ElementInstanceHistoryTree.Provider>
     );
