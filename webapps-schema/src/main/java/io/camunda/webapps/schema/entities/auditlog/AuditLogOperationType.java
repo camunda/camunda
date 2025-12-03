@@ -8,7 +8,6 @@
 package io.camunda.webapps.schema.entities.auditlog;
 
 public enum AuditLogOperationType {
-  UNKNOWN,
   CREATE,
   UPDATE,
   DELETE,

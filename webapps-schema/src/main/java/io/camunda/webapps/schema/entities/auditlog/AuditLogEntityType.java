@@ -8,7 +8,6 @@
 package io.camunda.webapps.schema.entities.auditlog;
 
 public enum AuditLogEntityType {
-  UNKNOWN,
   PROCESS_INSTANCE,
   VARIABLE,
   INCIDENT,

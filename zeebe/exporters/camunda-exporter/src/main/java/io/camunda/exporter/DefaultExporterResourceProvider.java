@@ -65,8 +65,6 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
-import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -98,7 +96,6 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
-import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -329,7 +326,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
-    addAuditLogHandlers(exportHandlers);
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
@@ -412,11 +408,5 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache() {
     return formCache;
-  }
-
-  private void addAuditLogHandlers(final Set<ExportHandler<?, ?>> exportHandlers) {
-    final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
-    exportHandlers.add(
-        new AuditLogHandler(indexName, new ProcessInstanceModificationAuditLogTransformer()));
   }
 }

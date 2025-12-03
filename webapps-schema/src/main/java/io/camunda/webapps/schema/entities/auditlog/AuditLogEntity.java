@@ -9,14 +9,19 @@ package io.camunda.webapps.schema.entities.auditlog;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
-import java.time.OffsetDateTime;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 
 public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   // the key of the affected entity
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String entityKey;
+  private Long entityKey;
+
+  // the id of the affected entity, if applicable (ex. Identity-related entities)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String entityId;
 
   // the type of the affected entity
   @SinceVersion(value = "8.9.0", requireDefault = false)
@@ -38,13 +43,17 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Short entityOperationIntent;
 
+  // the key of the batch operation, if applicable
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long batchOperationKey;
+
+  // the type of the batch operation, if applicable
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private BatchOperationType batchOperationType;
+
   // the creation timestamp of the Zeebe event that triggered the audit log entry
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private OffsetDateTime timestamp;
-
-  // the category of the operation (ADMIN, OPERATOR, USER_TASK)
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogOperationCategory category;
+  private Long timestamp;
 
   // the type of the actor that performed the operation, (USER or CLIENT)
   @SinceVersion(value = "8.9.0", requireDefault = false)
@@ -54,32 +63,47 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String actorId;
 
-  // marks if the operations was successful or failed
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogOperationResult result;
-
-  // the key of the batch operation, if applicable
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long batchOperationKey;
-
-  // the type of the batch operation, if applicable
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private BatchOperationType batchOperationType;
-
   // the id of the tenant the operation was performed in
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String tenantId;
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogTenantScope tenantScope;
+  private ClusterVariableScope tenantScope;
+
+  // marks if the operations was successful or failed
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private AuditLogOperationResult result;
+
+  // details
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String details;
 
   // the explanation on why the operation was performed
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String annotation;
 
+  // the category of the operation (ADMIN, OPERATOR, USER_TASK)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private AuditLogOperationCategory category;
+
   // searchable fields dependent on the entity type
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String processDefinitionId;
+  private String bpmnProcessId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String decisionRequirementsId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String decisionId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long deploymentKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long formKey;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long resourceKey;
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long processDefinitionKey;
@@ -97,34 +121,20 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   private Long userTaskKey;
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String decisionRequirementsId;
-
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long decisionRequirementsKey;
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String decisionDefinitionId;
+  private Long decisionKey;
 
+  // join relation for batch operation parent and items
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long decisionDefinitionKey;
+  private EntityJoinRelation join;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long decisionEvaluationKey;
-
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long deploymentKey;
-
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long formKey;
-
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long resourceKey;
-
-  public String getEntityKey() {
+  public Long getEntityKey() {
     return entityKey;
   }
 
-  public AuditLogEntity setEntityKey(final String entityKey) {
+  public AuditLogEntity setEntityKey(final Long entityKey) {
     this.entityKey = entityKey;
     return this;
   }
@@ -135,6 +145,15 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setEntityType(final AuditLogEntityType auditLogEntityType) {
     entityType = auditLogEntityType;
+    return this;
+  }
+
+  public String getEntityId() {
+    return entityId;
+  }
+
+  public AuditLogEntity setEntityId(final String entityId) {
+    this.entityId = entityId;
     return this;
   }
 
@@ -192,11 +211,11 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return this;
   }
 
-  public OffsetDateTime getTimestamp() {
+  public Long getTimestamp() {
     return timestamp;
   }
 
-  public AuditLogEntity setTimestamp(final OffsetDateTime timestamp) {
+  public AuditLogEntity setTimestamp(final Long timestamp) {
     this.timestamp = timestamp;
     return this;
   }
@@ -243,6 +262,15 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setAnnotation(final String annotation) {
     this.annotation = annotation;
+    return this;
+  }
+
+  public String getDetails() {
+    return details;
+  }
+
+  public AuditLogEntity setDetails(final String details) {
+    this.details = details;
     return this;
   }
 
@@ -336,30 +364,39 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return this;
   }
 
-  public Long getDecisionDefinitionKey() {
-    return decisionDefinitionKey;
+  public Long getDecisionKey() {
+    return decisionKey;
   }
 
-  public AuditLogEntity setDecisionDefinitionKey(final Long decisionDefinitionKey) {
-    this.decisionDefinitionKey = decisionDefinitionKey;
+  public AuditLogEntity setDecisionKey(final Long decisionKey) {
+    this.decisionKey = decisionKey;
     return this;
   }
 
-  public AuditLogTenantScope getTenantScope() {
+  public EntityJoinRelation getJoin() {
+    return join;
+  }
+
+  public AuditLogEntity setJoin(final EntityJoinRelation join) {
+    this.join = join;
+    return this;
+  }
+
+  public ClusterVariableScope getTenantScope() {
     return tenantScope;
   }
 
-  public AuditLogEntity setTenantScope(final AuditLogTenantScope tenantScope) {
+  public AuditLogEntity setTenantScope(final ClusterVariableScope tenantScope) {
     this.tenantScope = tenantScope;
     return this;
   }
 
-  public String getProcessDefinitionId() {
-    return processDefinitionId;
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
-  public AuditLogEntity setProcessDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
+  public AuditLogEntity setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
@@ -372,20 +409,12 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return this;
   }
 
-  public String getDecisionDefinitionId() {
-    return decisionDefinitionId;
+  public String getDecisionId() {
+    return decisionId;
   }
 
-  public AuditLogEntity setDecisionDefinitionId(final String decisionDefinitionId) {
-    this.decisionDefinitionId = decisionDefinitionId;
+  public AuditLogEntity setDecisionId(final String decisionId) {
+    this.decisionId = decisionId;
     return this;
-  }
-
-  public Long getDecisionEvaluationKey() {
-    return decisionEvaluationKey;
-  }
-
-  public void setDecisionEvaluationKey(final Long decisionEvaluationKey) {
-    this.decisionEvaluationKey = decisionEvaluationKey;
   }
 }

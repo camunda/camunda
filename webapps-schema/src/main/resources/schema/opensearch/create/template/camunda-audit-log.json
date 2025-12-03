@@ -6,6 +6,9 @@
         "type": "keyword"
       },
       "entityKey": {
+        "type": "long"
+      },
+      "entityId": {
         "type": "keyword"
       },
       "entityType": {
@@ -48,29 +51,24 @@
       "result": {
         "type": "keyword"
       },
+      "details": {
+        "type": "object",
+        "enabled": false
+      },
       "annotation": {
         "type": "text"
       },
       "category": {
         "type": "keyword"
       },
-      "processDefinitionId": {
+      "bpmnProcessId": {
         "type": "keyword"
       },
       "decisionRequirementsId": {
         "type": "keyword"
       },
-      "decisionRequirementsKey": {
-        "type": "long"
-      },
-      "decisionDefinitionKey": {
-        "type": "long"
-      },
-      "decisionDefinitionId": {
+      "decisionId": {
         "type": "keyword"
-      },
-      "decisionEvaluationKey": {
-        "type": "long"
       },
       "deploymentKey": {
         "type": "long"
@@ -95,6 +93,18 @@
       },
       "userTaskKey": {
         "type": "long"
+      },
+      "decisionRequirementsKey": {
+        "type": "long"
+      },
+      "decisionKey": {
+        "type": "long"
+      },
+      "join": {
+        "type": "join",
+        "relations": {
+          "batchOperation": ["batchItem"]
+        }
       }
     }
   }

@@ -239,9 +239,7 @@ public final class ProcessInstanceModificationModifyProcessor
     }
 
     final var extendedRecord = new ProcessInstanceModificationRecord();
-    extendedRecord
-        .setProcessInstanceKey(value.getProcessInstanceKey())
-        .setTenantId(processInstance.getValue().getTenantId());
+    extendedRecord.setProcessInstanceKey(value.getProcessInstanceKey());
 
     final var requiredKeysForActivation =
         value.getActivateInstructions().stream()
