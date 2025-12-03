@@ -903,4 +903,196 @@ public final class ConditionalBoundaryEventTest {
                 .toList())
         .isEmpty();
   }
+
+  @Test
+  public void shouldDeleteSubscriptionOnAttachedActivityCompletion() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String serviceTaskId = "task";
+    final String catchEventId = "boundary";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(serviceTaskId)
+                    .zeebeJobType(serviceTaskId)
+                    .boundaryEvent(catchEventId)
+                    .condition(
+                        c ->
+                            c.condition("=x > y")
+                                .zeebeVariableNames("x, y")
+                                .zeebeVariableEvents("create, update"))
+                    .endEvent()
+                    .moveToActivity(serviceTaskId)
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // no variables set to avoid triggering the condition
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskId)
+        .await();
+
+    final Record<JobBatchRecordValue> batchRecord =
+        engine.jobs().withType(serviceTaskId).activate();
+    engine.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final long serviceTaskKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(serviceTaskId)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .doesNotContainSubsequence(
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+
+    final long subscriptionKey =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withRecordKey(subscriptionKey)
+                .withScopeKey(serviceTaskKey)
+                .withElementInstanceKey(serviceTaskKey)
+                .withProcessInstanceKey(processInstanceKey)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withCatchEventId(catchEventId)
+                .withCondition("=x > y")
+                .withVariableNames("x", "y")
+                .withVariableEvents("create", "update")
+                .isInterrupting(true)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED, ConditionalSubscriptionIntent.DELETED);
+  }
+
+  @Test
+  public void shouldDeleteNonInterruptingSubscriptionOnAttachedActivityCompletion() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String serviceTaskId = "task";
+    final String catchEventId = "boundary";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(serviceTaskId)
+                    .zeebeJobType(serviceTaskId)
+                    .boundaryEvent(catchEventId)
+                    .cancelActivity(false)
+                    .condition(
+                        c ->
+                            c.condition("=x > y")
+                                .zeebeVariableNames("x, y")
+                                .zeebeVariableEvents("create, update"))
+                    .endEvent()
+                    .moveToActivity(serviceTaskId)
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // no variables set to avoid triggering the condition
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("x", 2, "y", 1))
+            .create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskId)
+        .await();
+
+    final Record<JobBatchRecordValue> batchRecord =
+        engine.jobs().withType(serviceTaskId).activate();
+    engine.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final long serviceTaskKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(serviceTaskId)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final long subscriptionKey =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withRecordKey(subscriptionKey)
+                .withScopeKey(serviceTaskKey)
+                .withElementInstanceKey(serviceTaskKey)
+                .withProcessInstanceKey(processInstanceKey)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withCatchEventId(catchEventId)
+                .withCondition("=x > y")
+                .withVariableNames("x", "y")
+                .withVariableEvents("create", "update")
+                .isInterrupting(false)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limit(4))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED,
+            ConditionalSubscriptionIntent.TRIGGER,
+            ConditionalSubscriptionIntent.TRIGGERED,
+            ConditionalSubscriptionIntent.DELETED);
+  }
 }
