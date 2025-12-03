@@ -326,6 +326,7 @@ jobs:
     name: Zeebe docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -424,6 +425,7 @@ jobs:
     name: Operate Docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -525,6 +527,7 @@ jobs:
     name: Tasklist Docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -736,6 +739,7 @@ jobs:
     name: Camunda Docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
