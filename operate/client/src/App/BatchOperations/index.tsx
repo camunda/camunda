@@ -9,7 +9,7 @@
 import {useState, useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Link, Breadcrumb, BreadcrumbItem, Tooltip, Pagination} from '@carbon/react';
-import {Checkmark, Error, CircleDash} from '@carbon/icons-react';
+import {Checkmark, Error, CircleDash, ErrorOutline} from '@carbon/icons-react';
 import {
   BatchOperationsFilters,
   type BatchOperationsFilters as BatchOperationsFiltersType,
@@ -220,7 +220,7 @@ const BatchOperations: React.FC = () => {
           // Show only pending count when nothing has started yet
           itemsDisplay = (
             <Tooltip description={`${pendingCount.toLocaleString()} not started`} align="bottom">
-              <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default'}}>
+              <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default', minWidth: '48px'}}>
                 <CircleDash size={16} />
                 {formatCount(pendingCount)}
               </span>
@@ -229,26 +229,26 @@ const BatchOperations: React.FC = () => {
         } else {
           // Show breakdown of success / failed / pending
           itemsDisplay = (
-            <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-04)'}}>
               {successCount > 0 && (
                 <Tooltip description={`${successCount.toLocaleString()} successful`} align="bottom">
-                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
-                    <Checkmark size={16} style={{color: 'var(--cds-support-success)'}} />
+                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default', minWidth: '48px'}}>
+                    <Checkmark size={16} style={{color: 'var(--cds-status-green)'}} />
                     {formatCount(successCount)}
                   </span>
                 </Tooltip>
               )}
               {failedCount > 0 && (
                 <Tooltip description={`${failedCount.toLocaleString()} failed`} align="bottom">
-                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
-                    <Error size={16} style={{color: 'var(--cds-support-error)'}} />
+                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default', minWidth: '48px'}}>
+                    <ErrorOutline size={16} style={{color: 'var(--cds-status-red)'}} />
                     {formatCount(failedCount)}
                   </span>
                 </Tooltip>
               )}
               {pendingCount > 0 && (
                 <Tooltip description={`${pendingCount.toLocaleString()} not started`} align="bottom">
-                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default'}}>
+                  <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', color: 'var(--cds-text-secondary)', cursor: 'default', minWidth: '48px'}}>
                     <CircleDash size={16} />
                     {formatCount(pendingCount)}
                   </span>

@@ -46,6 +46,7 @@ import {
   Error,
   CircleDash,
   Filter,
+  ErrorOutline,
 } from '@carbon/icons-react';
 import {Calendar} from '@carbon/react/icons';
 import {createPortal} from 'react-dom';
@@ -785,7 +786,7 @@ const BatchOperationDetails: React.FC = () => {
                         {successCount > 0 && (
                           <Tooltip description={`${successCount} successful`} align="bottom">
                             <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
-                              <Checkmark size={16} style={{color: 'var(--cds-support-success)'}} />
+                              <Checkmark size={16} style={{color: 'var(--cds-status-green)'}} />
                               {successCount}
                             </span>
                           </Tooltip>
@@ -793,7 +794,7 @@ const BatchOperationDetails: React.FC = () => {
                         {failedCount > 0 && (
                           <Tooltip description={`${failedCount} failed`} align="bottom">
                             <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)', cursor: 'default'}}>
-                              <Error size={16} style={{color: 'var(--cds-support-error)'}} />
+                              <ErrorOutline size={16} style={{color: 'var(--cds-status-red)'}} />
                               {failedCount}
                             </span>
                           </Tooltip>

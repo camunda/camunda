@@ -6,18 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  CheckmarkFilled,
-  ErrorFilled,
-  InProgress,
-  PauseFilled,
-  WarningAltFilled,
-  SkipForwardFilled,
-  CircleDash,
-  Misuse,
-  PendingFilled,
-  Pending,
-} from '@carbon/icons-react';
+import IconIndicator from '@carbon/react/lib/components/IconIndicator';
+import type {IconIndicatorProps} from '@carbon/react/lib/components/IconIndicator';
+import {MisuseOutline, PauseFilled, PauseOutlineFilled, SkipForwardOutlineSolid} from '@carbon/icons-react';
 import type {
   BatchOperationState,
   BatchOperationItemState,
@@ -28,11 +19,18 @@ type BatchOperationStatusTagProps = {
   size?: 'sm' | 'md';
 };
 
-type StatusConfig = {
-  Icon: typeof CheckmarkFilled;
-  color: string;
-  label: string;
-};
+type StatusConfig =
+  | {
+      useIconIndicator: true;
+      kind: IconIndicatorProps['kind'];
+      label: string;
+    }
+  | {
+      useIconIndicator: false;
+      Icon: typeof PauseFilled;
+      color: string;
+      label: string;
+    };
 
 const getStatusConfig = (
   status: BatchOperationState | BatchOperationItemState,
@@ -40,56 +38,59 @@ const getStatusConfig = (
   switch (status) {
     case 'COMPLETED':
       return {
-        Icon: CheckmarkFilled,
-        color: 'var(--cds-support-success)',
+        useIconIndicator: true,
+        kind: 'succeeded',
         label: 'Completed',
       };
     case 'ACTIVE':
       return {
-        Icon: InProgress,
-        color: 'var(--cds-support-info)',
+        useIconIndicator: true,
+        kind: 'in-progress',
         label: 'Active',
       };
     case 'SUSPENDED':
       return {
-        Icon: PauseFilled,
-        color: 'var(--cds-support-warning)',
+        useIconIndicator: false,
+        Icon: PauseOutlineFilled,
+        color: 'var(--cds-status-gray)',
         label: 'Suspended',
       };
     case 'CANCELLED':
       return {
-        Icon: Misuse,
-        color: 'var(--cds-support-gray)',
+        useIconIndicator: false,
+        Icon: MisuseOutline,
+        color: 'var(--cds-status-red)',
         label: 'Cancelled',
       };
     case 'FAILED':
       return {
-        Icon: ErrorFilled,
-        color: 'var(--cds-support-error)',
+        useIconIndicator: true,
+        kind: 'failed',
         label: 'Failed',
       };
     case 'CREATED':
       return {
-        Icon: Pending,
-        color: 'var(--cds-status-blue)',
+        useIconIndicator: true,
+        kind: 'not-started',
         label: 'Created',
       };
     case 'PARTIALLY_COMPLETED':
       return {
-        Icon: WarningAltFilled,
-        color: 'var(--cds-support-warning)',
+        useIconIndicator: true,
+        kind: 'caution-minor',
         label: 'Partially completed',
       };
     case 'SKIPPED':
       return {
-        Icon: SkipForwardFilled,
-        color: 'var(--cds-support-warning)',
+        useIconIndicator: false,
+        Icon: SkipForwardOutlineSolid,
+        color: 'var(--cds-status-gray)',
         label: 'Skipped',
       };
     default:
       return {
-        Icon: CircleDash,
-        color: 'var(--cds-text-secondary)',
+        useIconIndicator: true,
+        kind: 'unknown',
         label: status,
       };
   }
@@ -97,19 +98,25 @@ const getStatusConfig = (
 
 const BatchOperationStatusTag: React.FC<BatchOperationStatusTagProps> = ({
   status,
+  size = 'sm',
 }) => {
-  const {Icon, color, label} = getStatusConfig(status);
+  const config = getStatusConfig(status);
+  const iconSize = size === 'sm' ? 16 : 20;
+
+  if (config.useIconIndicator) {
+    return (
+      <IconIndicator kind={config.kind} label={config.label} size={iconSize} />
+    );
+  }
+
+  // Custom icon rendering for states that don't have IconIndicator support
+  const {Icon, color, label} = config;
+  const classNames = `cds--icon-indicator${iconSize === 20 ? ' cds--icon-indicator--20' : ''}`;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--cds-spacing-03)',
-      }}
-    >
-      <Icon size={16} style={{color}} />
-      <span>{label}</span>
+    <div className={classNames}>
+      <Icon size={iconSize} style={{color}} />
+      {label}
     </div>
   );
 };
