@@ -196,6 +196,9 @@ public class ElasticsearchExporterSchemaManager {
       if (index.conditionalEvaluation) {
         createValueIndexTemplate(ValueType.CONDITIONAL_EVALUATION, version);
       }
+      if (index.keyGeneratorReset) {
+        createValueIndexTemplate(ValueType.KEY_GENERATOR_RESET, version);
+      }
     }
 
     indexTemplatesCreated.add(version);

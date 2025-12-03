@@ -222,6 +222,7 @@ public class OpensearchExporterConfiguration {
     public boolean clusterVariable = true;
     public boolean conditionalSubscription = false;
     public boolean conditionalEvaluation = false;
+    public boolean keyGeneratorReset = false;
 
     // index settings
     private Integer numberOfShards = null;
