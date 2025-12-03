@@ -7,7 +7,16 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
+
 public interface ConditionalSubscriptionState {
 
   boolean exists(String tenantId, long subscriptionKey);
+
+  void visitByScopeKey(long scopeKey, ConditionalSubscriptionVisitor visitor);
+
+  @FunctionalInterface
+  interface ConditionalSubscriptionVisitor {
+    void visit(ConditionalSubscription subscription);
+  }
 }
