@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.keygenerator;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -27,6 +28,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * operation must be used with caution and is intended to be used only to recover the cluster from
  * specific failures.
  */
+// We skip authorization checks as this operation will be exposed only via command line debug-tool
+@ExcludeAuthorizationCheck
 public final class KeyGeneratorResetProcessor
     implements TypedRecordProcessor<KeyGeneratorResetRecord> {
 
@@ -49,9 +52,6 @@ public final class KeyGeneratorResetProcessor
 
   @Override
   public void processRecord(final TypedRecord<KeyGeneratorResetRecord> command) {
-    // For now, we skip authorization. But can be added later when this operation is supported via
-    // api
-
     final var record = command.getValue();
 
     // Validate partition ID matches current partition
