@@ -299,7 +299,7 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
    * @param checkpointId the checkpoint id to search for
    * @return the found entry, or null if not found
    */
-  public IndexedBackup byCheckpointId(final long checkpointId) {
+  IndexedBackup byCheckpointId(final long checkpointId) {
     return searchFor(entry -> Long.compare(entry.checkpointId(), checkpointId));
   }
 
@@ -366,10 +366,10 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
   }
 
   void removeLastEntry() {
-    final IndexedBackup entry = new IndexedBackup(0, 0, 0);
-    buffer.putLong(entry.checkpointId());
-    buffer.putLong(entry.firstLogPosition());
-    buffer.putLong(entry.lastLogPosition());
+    // Directly write zeros to remove the last entry for clarity and efficiency
+    buffer.putLong(0L);
+    buffer.putLong(0L);
+    buffer.putLong(0L);
     setEntries(getEntries() - 1);
     buffer.limit(buffer.position());
   }
@@ -380,7 +380,7 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
     buffer.position(buffer.limit());
     // Extend the limit to make space for the new entry
     buffer.limit(buffer.limit() + ENTRY_SIZE);
-    // Move to the insertion point
+
     // Then write the new entry
     writeEntry(newEntry);
     setEntries(getEntries() + 1);
