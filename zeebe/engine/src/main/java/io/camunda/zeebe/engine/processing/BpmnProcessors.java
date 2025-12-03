@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstruc
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.conditional.ConditionalTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -101,6 +103,7 @@ public final class BpmnProcessors {
         transientProcessMessageSubscriptionState);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
+    addConditionalStreamProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -135,6 +138,17 @@ public final class BpmnProcessors {
         typedRecordProcessors, processingState, writers, authCheckBehavior, bpmnBehaviors);
 
     return bpmnStreamProcessor;
+  }
+
+  private static void addConditionalStreamProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final BpmnBehaviors bpmnBehaviors,
+      final Writers writers) {
+    typedRecordProcessors.onCommand(
+        ValueType.CONDITIONAL_SUBSCRIPTION,
+        ConditionalSubscriptionIntent.TRIGGER,
+        new ConditionalTriggerProcessor(processingState, bpmnBehaviors, writers));
   }
 
   private static void addProcessInstanceCommandProcessor(

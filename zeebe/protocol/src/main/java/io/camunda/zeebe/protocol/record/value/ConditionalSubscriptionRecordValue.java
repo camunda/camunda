@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
+import org.agrona.DirectBuffer;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -62,6 +63,11 @@ public interface ConditionalSubscriptionRecordValue
    * @return the id of the catch event tied to the subscription
    */
   String getCatchEventId();
+
+  /**
+   * @return the id of the catch event tied to the subscription as a DirectBuffer
+   */
+  DirectBuffer getCatchEventIdBuffer();
 
   /**
    * The condition expression

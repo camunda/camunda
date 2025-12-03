@@ -61,4 +61,12 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
 
     conditionalKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
   }
+
+  @Override
+  public boolean exists(final String tenantId, final long subscriptionKey) {
+    this.subscriptionKey.wrapLong(subscriptionKey);
+    tenantIdKey.wrapString(tenantId);
+
+    return conditionalKeyColumnFamily.exists(tenantAwareSubscriptionKey);
+  }
 }

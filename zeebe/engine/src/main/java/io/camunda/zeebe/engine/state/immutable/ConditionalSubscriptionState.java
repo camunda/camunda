@@ -7,4 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface ConditionalSubscriptionState {}
+public interface ConditionalSubscriptionState {
+
+  boolean exists(String tenantId, long subscriptionKey);
+}
