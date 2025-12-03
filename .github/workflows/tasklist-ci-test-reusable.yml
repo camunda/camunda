@@ -92,16 +92,6 @@ jobs:
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild
-      - uses: ./.github/actions/build-platform-docker
-        id: build-camunda-docker
-        with:
-          # we use a local registry for pushing
-          repository: ${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
-          version: ${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }}
-          # push is needed to make accessible for integration tests
-          push: true
-
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
