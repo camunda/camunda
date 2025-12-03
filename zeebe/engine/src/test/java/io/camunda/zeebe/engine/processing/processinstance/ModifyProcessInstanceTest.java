@@ -1883,10 +1883,26 @@ public class ModifyProcessInstanceTest {
     // given
     ENGINE
         .deployment()
-        .withXmlClasspathResource("/processes/non-interrupting-boundary.bpmn")
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .boundaryEvent(
+                    "signalEvent",
+                    b ->
+                        b.signal("foo")
+                            .cancelActivity(false)
+                            .userTask("B")
+                            .zeebeUserTask()
+                            .endEvent())
+                .moveToNode("A")
+                .userTask("C")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
         .deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("non-interrupting-boundary").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     ENGINE.signal().withSignalName("foo").broadcast();
     ENGINE.signal().withSignalName("foo").broadcast();
