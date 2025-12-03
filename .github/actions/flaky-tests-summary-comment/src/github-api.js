@@ -3,10 +3,13 @@ const urlCache = new Map();
 
 async function getTestSourceUrl(test, github) {
   const repo = 'camunda/camunda';
-  const query = `repo:${repo} ${test.className.replace(/\$/g, ' ')} ${test.methodName || test.fullName}`;
+  const query = `repo:${repo} ${test.className?.replace(/\$/g, ' ') || "Class name couldn't be parsed"} ${test.methodName || test.fullName}`;
 
   // Check cache first to avoid duplicate API calls
-  const cacheKey = `${test.className}:${test.methodName || test.fullName}`;
+  // Use same key logic as getTestKey() in helpers.js
+  const cacheKey = test.fullName
+    ? test.fullName
+    : `${test.packageName}.${test.className}.${test.methodName || ''}`;
   if (urlCache.has(cacheKey)) {
     console.log(`[flaky-tests] Using cached URL for test: ${cacheKey}`);
     return urlCache.get(cacheKey);
@@ -38,10 +41,12 @@ async function getTestSourceUrl(test, github) {
     
     if (isRateLimitedByHeader || isRateLimitedByMessage) {
       console.warn(`[flaky-tests] GitHub API rate limit exceeded while searching for test: ${query}`);
-      console.warn(`[flaky-tests] Rate limit info:`, {
-        remaining: rateLimitRemaining,
-        reset: error.response?.headers?.['x-ratelimit-reset']
-      });
+      if (error.response?.headers) {
+        console.warn(`[flaky-tests] Rate limit info:`, {
+          remaining: rateLimitRemaining,
+          reset: error.response.headers['x-ratelimit-reset']
+        });
+      }
       // Cache the failure to avoid retrying immediately
       urlCache.set(cacheKey, null);
       return null;

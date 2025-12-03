@@ -36,7 +36,7 @@ function parseComment(body) {
     let currentTest = {};
 
     for (const line of lines) {
-      //Match method name and URL
+      // Match method name and URL
       const methodMatchWithUrl = line.match(/-\s\[\*\*(.+?)\*\*\]\((.+?)\)/);
       const methodMatchPlain = line.match(/-\s\*\*(.+?)\*\*/);
       
