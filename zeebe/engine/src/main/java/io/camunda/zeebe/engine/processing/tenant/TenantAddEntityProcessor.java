@@ -115,7 +115,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
+    stateWriter.appendFollowUpEvent(
+        tenantKey, TenantIntent.ENTITY_ADDED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
     sideEffectWriter.appendSideEffect(
         () -> {
@@ -133,7 +134,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       createAlreadyAssignedRejectCommand(
           command, record.getEntityId(), record.getEntityType(), record.getTenantId());
     } else {
-      stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.ENTITY_ADDED, record);
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), TenantIntent.ENTITY_ADDED, record, command.getAuthorizations());
       sideEffectWriter.appendSideEffect(
           () -> {
             authCheckBehavior.clearAuthorizationsCache();

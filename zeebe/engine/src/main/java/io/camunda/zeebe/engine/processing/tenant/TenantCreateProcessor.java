@@ -82,7 +82,9 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
                   TENANT_ALREADY_EXISTS_ERROR_MESSAGE.formatted(tenant.getTenantId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
-            () -> stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.CREATED, record));
+            () ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), TenantIntent.CREATED, record, command.getAuthorizations()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -105,7 +107,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   private void createTenant(final TypedRecord<TenantRecord> command, final TenantRecord record) {
     final long key = keyGenerator.nextKey();
     record.setTenantKey(key);
-    stateWriter.appendFollowUpEvent(key, TenantIntent.CREATED, record);
+    stateWriter.appendFollowUpEvent(key, TenantIntent.CREATED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(key, TenantIntent.CREATED, record, command);
   }
 
