@@ -45,11 +45,12 @@ async function buildComment(mergedData, github, branchName) {
   for (let i = 0; i < mergedData.length; i++) {
     const test = mergedData[i];
     
-    // Add a small delay between API calls to avoid rate limiting
+    // Add a delay between API calls to avoid rate limiting
     // GitHub Code Search API has a rate limit of 30 requests per minute for authenticated requests
-    if (i > 0 && i % 10 === 0) {
+    // To be safe, we limit to ~20 requests per minute (one request every 3 seconds)
+    if (i > 0) {
       console.log(`[flaky-tests] Processed ${i} tests, adding brief delay to respect rate limits...`);
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay every 10 tests
+      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay between each test
     }
     
     const url = await generateTestSourceUrl(test, github, branchName);
