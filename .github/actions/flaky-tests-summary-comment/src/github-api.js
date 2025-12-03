@@ -3,7 +3,7 @@ const urlCache = new Map();
 
 async function getTestSourceUrl(test, github) {
   const repo = 'camunda/camunda';
-  const query = `repo:${repo} ${test.className?.replace(/\$/g, ' ') || "Class name couldn't be parsed"} ${test.methodName || test.fullName}`;
+  const query = `repo:${repo} ${test.className?.replace(/\$/g, ' ') || ''} ${test.methodName || test.fullName}`;
 
   // Check cache first to avoid duplicate API calls
   // Use same key logic as getTestKey() in helpers.js
