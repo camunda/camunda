@@ -8,7 +8,7 @@
 package io.camunda.operate.util;
 
 import io.camunda.client.CamundaClient;
-import io.zeebe.containers.ZeebeContainer;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Instant;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -63,8 +63,8 @@ public class OperateZeebeRule extends TestWatcher {
   //    this.prefix = prefix;
   //  }
   //
-  public ZeebeContainer getZeebeContainer() {
-    return operateZeebeRuleProvider.getZeebeContainer();
+  public TestStandaloneBroker getZeebeBroker() {
+    return operateZeebeRuleProvider.getZeebeBroker();
   }
 
   //  public void setOperateProperties(final OperateProperties operateProperties) {
