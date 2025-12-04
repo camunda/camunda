@@ -310,6 +310,7 @@
   <select id="countItems" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}BATCH_OPERATION_ITEM bi
+    JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
   </select>
 
