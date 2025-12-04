@@ -47,6 +47,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
@@ -582,4 +583,18 @@ public class CamundaServicesConfiguration {
         configuration.getApiExecutor().getKeepAliveSeconds(),
         configuration.getApiExecutor().getQueueCapacity());
   }
+
+  @Bean
+  public ExpressionServices expressionServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ExpressionServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  })
 }

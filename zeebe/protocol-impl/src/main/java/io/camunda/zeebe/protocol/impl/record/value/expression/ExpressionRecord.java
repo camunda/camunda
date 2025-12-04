@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionScopeType;
+import io.camunda.zeebe.protocol.record.value.ImmutableEvaluationWarning;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -157,8 +158,8 @@ public final class ExpressionRecord extends UnifiedRecordValue
     for (final EvaluationWarningRecord warning : warningsProp) {
       warnings.add(
           ImmutableEvaluationWarning.builder()
-              .type(warning.getType())
-              .message(warning.getMessage())
+              .withType(warning.getType())
+              .withMessage(warning.getMessage())
               .build());
     }
     return warnings;

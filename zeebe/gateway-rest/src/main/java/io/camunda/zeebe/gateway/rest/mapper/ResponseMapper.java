@@ -47,6 +47,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
+import io.camunda.zeebe.gateway.protocol.rest.ExpressionResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
@@ -765,6 +766,44 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toClusterVariableDeleteResponse(
       final ClusterVariableRecord unused) {
     return ResponseEntity.noContent().build();
+  }
+
+  public static ResponseEntity<Object> toExpressionEvaluationResponse(
+      final BrokerResponse<io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord>
+          brokerResponse) {
+    final var expressionRecord = brokerResponse.getResponse();
+
+    final var expressionResult = new ExpressionResult().type();
+
+    final var response =
+        new io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationResult()
+            .getResult()
+            .type(mapResultType(expressionRecord.getResultType()))
+            .value(expressionRecord.getResult());
+
+    // Add warnings if any
+    if (expressionRecord.warnings() != null && !expressionRecord.warnings().isEmpty()) {
+      expressionRecord
+          .warnings()
+          .forEach(
+              warning ->
+                  response.addWarningsItem(
+                      new io.camunda.zeebe.gateway.protocol.rest.EvaluationWarning()
+                          .type(warning.getType())
+                          .message(warning.getMessage())));
+    }
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  private static io.camunda.zeebe.gateway.protocol.rest.ExpressionResult.TypeEnum mapResultType(
+      final String resultType) {
+    try {
+      return io.camunda.zeebe.gateway.protocol.rest.ExpressionResult.TypeEnum.valueOf(resultType);
+    } catch (final IllegalArgumentException e) {
+      // If result type is unknown, default to STRING
+      return io.camunda.zeebe.gateway.protocol.rest.ExpressionResult.TypeEnum.STRING;
+    }
   }
 
   static class RestJobActivationResult

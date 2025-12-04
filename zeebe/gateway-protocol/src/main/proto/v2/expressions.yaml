@@ -97,6 +97,9 @@ components:
             These variables are available during evaluation and take precedence over cluster and process instance variables.
         scope:
           $ref: '#/components/schemas/ExpressionEvaluationScope'
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+
       required:
         - expression
 
