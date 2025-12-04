@@ -11,23 +11,13 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
-import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.exporter.common.handlers.AuditLogCommonHandler;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.util.DateUtil;
-import java.util.Map;
-import java.util.Optional;
-import org.apache.commons.lang3.RandomStringUtils;
+import java.util.UUID;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
 
@@ -48,25 +38,24 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
 
   @Override
   public void export(final Record<R> record) {
-    System.out.println("Exporting audit log for record starting: " + record.getRecordType().name());
     auditLogWriter.create(map(record));
-    System.out.println("Exported audit log for record completed: " + record.getRecordType().name());
   }
 
   private AuditLogDbModel map(final Record<R> record) {
     final var auditLog =
         new AuditLogDbModel.Builder()
-            .auditLogKey(
-                RandomStringUtils.insecure()
-                    .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize()))
+            //            .auditLogKey( // TODO: bug here, in clarification
+            //                RandomStringUtils.insecure()
+            //                    .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize()))
+            .auditLogKey(UUID.randomUUID().toString())
             .entityKey(String.valueOf(record.getKey()))
-            .entityType(getEntityType(record.getValueType()))
-            .operationType(getOperationType(record.getIntent()))
+            .entityType(AuditLogCommonHandler.getEntityType(record.getValueType()))
+            .operationType(AuditLogCommonHandler.getOperationType(record.getIntent()))
             .entityVersion(record.getRecordVersion())
             .entityValueType(record.getValueType().value())
             .entityOperationIntent(record.getIntent().value())
             .timestamp(DateUtil.toOffsetDateTime(record.getTimestamp()))
-            .category(getOperationCategory(record.getValueType()));
+            .category(AuditLogCommonHandler.getOperationCategory(record.getValueType()));
     setActorData(auditLog, record);
     setBatchOperationData(auditLog, record);
 
@@ -79,83 +68,10 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
     return auditLog.build();
   }
 
-  private AuditLogEntityType getEntityType(final ValueType valueType) {
-    switch (valueType) {
-      case PROCESS_INSTANCE:
-      case PROCESS_INSTANCE_CREATION:
-      case PROCESS_INSTANCE_MODIFICATION:
-      case PROCESS_INSTANCE_MIGRATION:
-        return AuditLogEntityType.PROCESS_INSTANCE;
-      case INCIDENT:
-        return AuditLogEntityType.INCIDENT;
-      case VARIABLE:
-        return AuditLogEntityType.VARIABLE;
-      case DECISION_EVALUATION:
-        return AuditLogEntityType.DECISION;
-      case BATCH_OPERATION_CREATION:
-      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
-        return AuditLogEntityType.BATCH;
-      case USER:
-        return AuditLogEntityType.USER;
-      case MAPPING_RULE:
-        return AuditLogEntityType.MAPPING_RULE;
-      case AUTHORIZATION:
-        return AuditLogEntityType.AUTHORIZATION;
-      case GROUP:
-        return AuditLogEntityType.GROUP;
-      case ROLE:
-        return AuditLogEntityType.ROLE;
-      case TENANT:
-        return AuditLogEntityType.TENANT;
-      case USER_TASK:
-        return AuditLogEntityType.USER_TASK;
-      default:
-        return AuditLogEntityType.UNKNOWN;
-    }
-  }
-
-  private AuditLogOperationType getOperationType(final Intent intent) {
-    switch (intent) {
-      case ProcessInstanceModificationIntent.MODIFIED:
-        return AuditLogOperationType.MODIFY;
-      // TODO: map additional intents to operations here
-      default:
-        return AuditLogOperationType.UNKNOWN;
-    }
-  }
-
-  private AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
-    switch (valueType) {
-      case PROCESS_INSTANCE:
-      case PROCESS_INSTANCE_CREATION:
-      case PROCESS_INSTANCE_MODIFICATION:
-      case PROCESS_INSTANCE_MIGRATION:
-      case INCIDENT:
-      case VARIABLE:
-      case DECISION_EVALUATION:
-      case BATCH_OPERATION_CREATION:
-      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
-        return AuditLogOperationCategory.OPERATOR;
-      case USER:
-      case MAPPING_RULE:
-      case AUTHORIZATION:
-      case GROUP:
-      case ROLE:
-      case TENANT:
-        return AuditLogOperationCategory.ADMIN;
-      case USER_TASK:
-        return AuditLogOperationCategory.USER_TASK;
-      default:
-        return AuditLogOperationCategory.UNKNOWN;
-    }
-  }
-
   private void setBatchOperationData(
       final AuditLogDbModel.Builder builder, final Record<R> record) {
-    final var batchOperationKey = record.getBatchOperationReference();
-    if (RecordMetadataDecoder.batchOperationReferenceNullValue() != batchOperationKey) {
-      builder.batchOperationKey(batchOperationKey);
-    }
+    final var batchOperationKey = AuditLogCommonHandler.extractBatchOperationKey(record);
+    batchOperationKey.ifPresent(builder::batchOperationKey);
   }
 
   private void setRejectionData(final AuditLogDbModel.Builder builder, final Record<R> record) {
@@ -163,38 +79,8 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
     // TODO: set rejection type and reason to AuditLogEntity#details
   }
 
-  private boolean hasActorData(final Record<R> record) {
-    final var authorizations = record.getAuthorizations();
-    return getClientId(authorizations).isPresent() || getUsername(authorizations).isPresent();
-  }
-
   private void setActorData(final AuditLogDbModel.Builder builder, final Record<R> record) {
-    final var authorizations = record.getAuthorizations();
-    final var clientId = getClientId(authorizations);
-    final var username = getUsername(authorizations);
-
-    final String actorId;
-    final AuditLogActorType actorType;
-    if (clientId.isPresent()) {
-      actorId = clientId.get();
-      actorType = AuditLogActorType.CLIENT;
-    } else if (username.isPresent()) {
-      actorId = username.get();
-      actorType = AuditLogActorType.USER;
-    } else {
-      actorId = "unknown";
-      actorType = AuditLogActorType.UNKNOWN;
-    }
-
-    builder.actorId(actorId).actorType(actorType);
-  }
-
-  private Optional<String> getUsername(final Map<String, Object> authorizationClaims) {
-    return Optional.ofNullable((String) authorizationClaims.get(Authorization.AUTHORIZED_USERNAME));
-  }
-
-  private Optional<String> getClientId(final Map<String, Object> authorizationClaims) {
-    return Optional.ofNullable(
-        (String) authorizationClaims.get(Authorization.AUTHORIZED_CLIENT_ID));
+    final var actorData = AuditLogCommonHandler.extractActorData(record);
+    builder.actorId(actorData.actorId()).actorType(actorData.actorType());
   }
 }
