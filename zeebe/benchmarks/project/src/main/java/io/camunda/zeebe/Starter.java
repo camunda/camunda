@@ -24,17 +24,18 @@ import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployReso
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -53,59 +54,29 @@ public class Starter extends App {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final AppCfg appCfg;
+  private final StarterCfg starterCfg;
 
   Starter(final AppCfg appCfg) {
     this.appCfg = appCfg;
+    starterCfg = appCfg.getStarter();
   }
 
   @Override
   public void run() {
-    final StarterCfg starterCfg = appCfg.getStarter();
     final int rate = starterCfg.getRate();
     final String processId = starterCfg.getProcessId();
-    final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(5_000);
-
     final ZeebeClient client = createZeebeClient();
 
+    // init - check for topology and deploy process
     printTopology(client);
-
-    final ScheduledExecutorService executorService =
-        Executors.newScheduledThreadPool(starterCfg.getThreads());
-
     deployProcess(client, starterCfg);
 
-    // start instances
-    final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, rate);
-    LOG.info("Creating an instance every {}ns", intervalNanos);
-
-    final String variablesString = readVariables(starterCfg.getPayloadPath());
-    final HashMap<String, Object> variables = deserializeVariables(variablesString);
-
-    final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
-
+    // setup to start instances on given rate
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    final AtomicLong businessKey = new AtomicLong(0);
-
-    final ScheduledFuture scheduledTask =
-        executorService.scheduleAtFixedRate(
-            () -> {
-              variables.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-              runStarter(
-                  starterCfg,
-                  processId,
-                  requestFutures,
-                  client,
-                  serializeVariables(variables),
-                  shouldContinue,
-                  countDownLatch);
-              return;
-            },
-            0,
-            intervalNanos,
-            TimeUnit.NANOSECONDS);
-
-    final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
-    responseChecker.start();
+    final ScheduledExecutorService executorService =
+        Executors.newScheduledThreadPool(starterCfg.getThreads());
+    final ScheduledFuture<?> scheduledTask =
+        scheduleProcessInstanceCreation(executorService, countDownLatch, client);
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -118,9 +89,6 @@ public class Starter extends App {
                     } catch (final InterruptedException e) {
                       LOG.error("Shutdown executor service was interrupted", e);
                     }
-                  }
-                  if (responseChecker.isAlive()) {
-                    responseChecker.close();
                   }
                 }));
 
@@ -135,7 +103,95 @@ public class Starter extends App {
 
     scheduledTask.cancel(true);
     executorService.shutdown();
-    responseChecker.close();
+  }
+
+  private ScheduledFuture<?> scheduleProcessInstanceCreation(
+      final ScheduledExecutorService executorService,
+      final CountDownLatch countDownLatch,
+      final ZeebeClient client) {
+
+    final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, starterCfg.getRate());
+    LOG.info("Creating an instance every {}ns", intervalNanos);
+
+    final String variablesString = readVariables(starterCfg.getPayloadPath());
+    final HashMap<String, Object> variables = deserializeVariables(variablesString);
+
+    final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
+    final AtomicLong businessKey = new AtomicLong(0);
+
+    return executorService.scheduleAtFixedRate(
+        () -> {
+          if (!shouldContinue.getAsBoolean()) {
+            // signal completion of starter
+            countDownLatch.countDown();
+            return;
+          }
+
+          try {
+            variables.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+
+            final CompletionStage<?> requestFuture;
+            if (starterCfg.isStartViaMessage()) {
+              requestFuture = startInstanceByMessagePublishing(client, variables);
+            } else if (starterCfg.isWithResults()) {
+              requestFuture =
+                  startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), variables);
+            } else {
+              requestFuture = startInstance(client, starterCfg.getProcessId(), variables);
+            }
+            requestFuture.exceptionally(
+                (error) -> {
+                  if (error instanceof final StatusRuntimeException statusRuntimeException) {
+                    if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+                      // we don't want to flood the log
+                      THROTTLED_LOGGER.warn(
+                          "Error on creating new process instance with business key {}",
+                          businessKey.get(),
+                          error);
+                    }
+                  }
+                  return null;
+                });
+          } catch (final Exception e) {
+            THROTTLED_LOGGER.error("Error on creating new process instance", e);
+          }
+        },
+        0,
+        intervalNanos,
+        TimeUnit.NANOSECONDS);
+  }
+
+  private static CompletionStage<?> startInstance(
+      final ZeebeClient client, final String processId, final HashMap<String, Object> variables) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .send();
+  }
+
+  private CompletionStage<?> startInstanceWithAwaitingResult(
+      final ZeebeClient client, final String processId, final HashMap<String, Object> variables) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .withResult()
+        .requestTimeout(starterCfg.getWithResultsTimeout())
+        .send();
+  }
+
+  private CompletionStage<?> startInstanceByMessagePublishing(
+      final ZeebeClient client, final Map<String, Object> variables) {
+    return client
+        .newPublishMessageCommand()
+        .messageName(starterCfg.getMsgName())
+        .correlationKey(UUID.randomUUID().toString())
+        .variables(variables)
+        .timeToLive(Duration.ZERO)
+        .send();
   }
 
   private static HashMap<String, Object> deserializeVariables(final String variablesString) {
@@ -147,74 +203,6 @@ public class Starter extends App {
       throw new RuntimeException(e);
     }
     return variables;
-  }
-
-  private static String serializeVariables(final HashMap<String, Object> variables) {
-    try {
-      return OBJECT_MAPPER.writeValueAsString(variables);
-    } catch (final JsonProcessingException e) {
-      LOG.error(String.format("Failed to convert variables to string: '%s' ", variables), e);
-      throw new RuntimeException(e);
-    }
-  }
-
-  private void runStarter(
-      final StarterCfg starterCfg,
-      final String processId,
-      final BlockingQueue<Future<?>> requestFutures,
-      final ZeebeClient client,
-      final String variables,
-      final BooleanSupplier shouldContinue,
-      final CountDownLatch countDownLatch) {
-    if (shouldContinue.getAsBoolean()) {
-      try {
-        if (starterCfg.isStartViaMessage()) {
-          requestFutures.put(
-              client
-                  .newPublishMessageCommand()
-                  .messageName(starterCfg.getMsgName())
-                  .correlationKey(UUID.randomUUID().toString())
-                  .variables(variables)
-                  .timeToLive(Duration.ZERO)
-                  .send());
-        } else {
-          startViaCommand(starterCfg, processId, requestFutures, client, variables);
-        }
-
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.error("Error on creating new process instance", e);
-      }
-    } else {
-      countDownLatch.countDown();
-    }
-  }
-
-  private static void startViaCommand(
-      final StarterCfg starterCfg,
-      final String processId,
-      final BlockingQueue<Future<?>> requestFutures,
-      final ZeebeClient client,
-      final String variables)
-      throws InterruptedException {
-    if (starterCfg.isWithResults()) {
-      requestFutures.put(
-          client
-              .newCreateInstanceCommand()
-              .bpmnProcessId(processId)
-              .latestVersion()
-              .variables(variables)
-              .withResult()
-              .requestTimeout(starterCfg.getWithResultsTimeout())
-              .send());
-    } else {
-      requestFutures.put(
-          client
-              .newCreateInstanceCommand()
-              .bpmnProcessId(processId)
-              .latestVersion()
-              .variables(variables)
-              .send());
-    }
   }
 
   private ZeebeClient createZeebeClient() {
