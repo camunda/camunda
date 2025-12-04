@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.Decision;
+import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -74,7 +74,10 @@ public class DecisionDefinitionTenancyIT {
     final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(Decision::getTenantId).collect(Collectors.toSet()))
+    assertThat(
+            result.items().stream()
+                .map(DecisionDefinition::getTenantId)
+                .collect(Collectors.toSet()))
         .containsExactlyInAnyOrder(TENANT_A, TENANT_B);
   }
 
@@ -85,7 +88,10 @@ public class DecisionDefinitionTenancyIT {
     final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().stream().map(Decision::getTenantId).collect(Collectors.toSet()))
+    assertThat(
+            result.items().stream()
+                .map(DecisionDefinition::getTenantId)
+                .collect(Collectors.toSet()))
         .containsExactlyInAnyOrder(TENANT_A);
   }
 

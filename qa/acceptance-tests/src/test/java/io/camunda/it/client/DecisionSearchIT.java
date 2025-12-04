@@ -15,46 +15,43 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DecisionRequirements;
-import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.DecisionDefinition;
-import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-class DecisionSearchIT {
-  private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
-  private static final List<DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
-      new ArrayList<>();
+class DecisionSearchTest {
+  private static final Map<Long, Decision> DEPLOYED_DECISIONS = new HashMap<>();
+  private static final Map<Long, DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
+      new HashMap<>();
   private static CamundaClient camundaClient;
+  private static Decision exampleDecision;
+  private static DecisionRequirements exampleDecisionRequirements;
+
+  private static Decision multiVersionDecisionV1;
+  private static Decision multiVersionDecisionV2;
 
   @BeforeAll
   static void beforeAll() {
-    Stream.of(
-            "decisions/decision_model.dmn",
-            "decisions/decision_model_1.dmn",
-            "decisions/decision_model_1_v2.dmn")
-        .map(dmn -> deployResource(dmn))
-        .forEach(
-            deploymentEvent -> {
-              DEPLOYED_DECISIONS.addAll(deploymentEvent.getDecisions());
-              DEPLOYED_DECISION_REQUIREMENTS.addAll(deploymentEvent.getDecisionRequirements());
-            });
-    assertThat(DEPLOYED_DECISIONS.size()).isEqualTo(3);
-    assertThat(DEPLOYED_DECISION_REQUIREMENTS.size()).isEqualTo(3);
+    exampleDecision = deployResource("decisions/decision_model.dmn");
+    multiVersionDecisionV1 = deployResource("decisions/decision_model_1.dmn");
+    multiVersionDecisionV2 = deployResource("decisions/decision_model_1_v2.dmn");
+    assertThat(DEPLOYED_DECISIONS).hasSize(3);
+    assertThat(DEPLOYED_DECISION_REQUIREMENTS).hasSize(3);
+    exampleDecisionRequirements =
+        DEPLOYED_DECISION_REQUIREMENTS.get(exampleDecision.getDecisionRequirementsKey());
     waitForDecisionsBeingExported();
   }
 
@@ -75,42 +72,93 @@ class DecisionSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items())
-        .isEqualTo(
-            DEPLOYED_DECISIONS.stream()
-                .map(this::toDecisionDefinition)
-                .sorted(Comparator.comparing(DecisionDefinition::getDecisionKey))
-                .toList());
+    assertThat(result.items()).hasSize(3);
+    for (final DecisionDefinition dd : result.items()) {
+      validateDecisionFields(dd);
+      validateDecisionRequirementsFields(dd);
+    }
   }
 
   @Test
   void shouldSearchDecisionDefinitionsByDecisionDefinitionKey() {
     // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
     final var result =
         camundaClient
             .newDecisionDefinitionSearchRequest()
-            .filter(f -> f.decisionDefinitionKey(decisionKey))
+            .filter(f -> f.decisionDefinitionKey(exampleDecision.getDecisionKey()))
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.get(0)));
+    assertThat(result.items()).hasSize(1);
+    validateDecisionFields(result.items().getFirst());
+  }
+
+  @Test
+  void shouldSearchDecisionDefinitionsByDecisionRequirementsName() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .filter(
+                f ->
+                    f.decisionRequirementsName(
+                        exampleDecisionRequirements.getDmnDecisionRequirementsName()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    validateDecisionFields(result.items().getFirst());
+    validateDecisionRequirementsFields(result.items().getFirst());
+  }
+
+  @Test
+  void shouldSearchDecisionDefinitionsByDecisionRequirementsVersion() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .filter(f -> f.decisionRequirementsVersion(multiVersionDecisionV2.getVersion()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    validateDecisionFields(result.items().getFirst());
+  }
+
+  @Test
+  void shouldRetrieveDecisionDefinitionWithDdrVersionReverseSorting() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .filter(f -> f.decisionDefinitionId(multiVersionDecisionV1.getDmnDecisionId()))
+            .sort(s -> s.decisionRequirementsVersion().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items().get(0).getDecisionRequirementsVersion()).isEqualTo(2);
+    assertThat(result.items().get(1).getDecisionRequirementsVersion()).isOne();
   }
 
   @Test
   void shouldRetrieveDecisionDefinitionWithFullFilter() {
     // when
-    final Decision decisionDef = DEPLOYED_DECISIONS.get(1);
-    final long decisionKey = decisionDef.getDecisionKey();
-    final String dmnDecisionId = decisionDef.getDmnDecisionId();
-    final String dmnDecisionRequirementsId = decisionDef.getDmnDecisionRequirementsId();
-    final long decisionRequirementsKey = decisionDef.getDecisionRequirementsKey();
-    final String dmnDecisionName = decisionDef.getDmnDecisionName();
-    final int version = decisionDef.getVersion();
-    final String tenantId = decisionDef.getTenantId();
+    final long decisionKey = exampleDecision.getDecisionKey();
+    final String dmnDecisionId = exampleDecision.getDmnDecisionId();
+    final String dmnDecisionRequirementsId = exampleDecision.getDmnDecisionRequirementsId();
+    final long decisionRequirementsKey = exampleDecision.getDecisionRequirementsKey();
+    final String dmnDecisionName = exampleDecision.getDmnDecisionName();
+    final int version = exampleDecision.getVersion();
+    final String tenantId = exampleDecision.getTenantId();
+    final var drd =
+        DEPLOYED_DECISION_REQUIREMENTS.get(exampleDecision.getDecisionRequirementsKey());
+    final String drdName = drd.getDmnDecisionRequirementsName();
+    final int drdVersion = drd.getVersion();
     final var result =
         camundaClient
             .newDecisionDefinitionSearchRequest()
@@ -122,40 +170,43 @@ class DecisionSearchIT {
                         .name(dmnDecisionName)
                         .decisionRequirementsId(dmnDecisionRequirementsId)
                         .version(version)
+                        .decisionRequirementsName(drdName)
+                        .decisionRequirementsVersion(drdVersion)
                         .tenantId(tenantId))
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(decisionDef));
+    assertThat(result.items()).hasSize(1);
+    validateDecisionFields(result.items().getFirst());
+    validateDecisionRequirementsFields(result.items().getFirst());
   }
 
   @Test
   void shouldRetrieveDecisionDefinitionWithVersionReverseSorting() {
     // when
-    final Decision decisionDefV1 = DEPLOYED_DECISIONS.get(1);
-    final Decision decisionDefV2 = DEPLOYED_DECISIONS.get(2);
-    final String dmnDecisionId = decisionDefV1.getDmnDecisionId();
     final var result =
         camundaClient
             .newDecisionDefinitionSearchRequest()
-            .filter(f -> f.decisionDefinitionId(dmnDecisionId))
+            .filter(f -> f.decisionDefinitionId(multiVersionDecisionV1.getDmnDecisionId()))
             .sort(s -> s.version().desc())
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
-    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(decisionDefV2));
-    assertThat(result.items().get(1)).isEqualTo(toDecisionDefinition(decisionDefV1));
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items().get(0).getVersion()).isEqualTo(2);
+    assertThat(result.items().get(1).getVersion()).isOne();
   }
 
   @Test
   void shouldGetDecisionDefinitionXml() throws IOException {
     // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
-    final var result = camundaClient.newDecisionDefinitionGetXmlRequest(decisionKey).send().join();
+    final var result =
+        camundaClient
+            .newDecisionDefinitionGetXmlRequest(exampleDecision.getDecisionKey())
+            .send()
+            .join();
 
     // then
     final String expected =
@@ -164,8 +215,7 @@ class DecisionSearchIT {
                 Objects.requireNonNull(
                         getClass().getClassLoader().getResource("decisions/decision_model.dmn"))
                     .getPath()));
-    assertThat(result).isNotEmpty();
-    assertThat(result).isEqualTo(expected);
+    assertThat(result).isNotEmpty().isEqualTo(expected);
   }
 
   @Test
@@ -186,11 +236,14 @@ class DecisionSearchIT {
   @Test
   void shouldGetDecisionDefinition() {
     // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
-    final var result = camundaClient.newDecisionDefinitionGetRequest(decisionKey).send().join();
+    final var result =
+        camundaClient
+            .newDecisionDefinitionGetRequest(exampleDecision.getDecisionKey())
+            .send()
+            .join();
 
     // then
-    assertThat(result).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.get(0)));
+    validateDecisionFields(result);
   }
 
   @Test
@@ -214,37 +267,33 @@ class DecisionSearchIT {
     final var result = camundaClient.newDecisionRequirementsSearchRequest().send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items()).hasSize(3);
   }
 
   @Test
-  void shouldRetrieveByDecisionRequirementsKey() {
-    // given
-    final long decisionRequirementKey =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDecisionRequirementsKey();
-
+  void shouldRetrieveDrdByDecisionRequirementsKey() {
     // when
     final var result =
         camundaClient
             .newDecisionRequirementsSearchRequest()
-            .filter(f -> f.decisionRequirementsKey(decisionRequirementKey))
+            .filter(f -> f.decisionRequirementsKey(exampleDecision.getDecisionRequirementsKey()))
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionRequirementsKey())
-        .isEqualTo(decisionRequirementKey);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getDecisionRequirementsKey())
+        .isEqualTo(exampleDecision.getDecisionRequirementsKey());
   }
 
   @Test
   void shouldGetDecisionRequirementsXml() throws IOException {
     // when
-    final long decisionRequirementKey =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDecisionRequirementsKey();
-
     final var result =
-        camundaClient.newDecisionRequirementsGetXmlRequest(decisionRequirementKey).send().join();
+        camundaClient
+            .newDecisionRequirementsGetXmlRequest(exampleDecision.getDecisionRequirementsKey())
+            .send()
+            .join();
 
     // then
     final String expected =
@@ -253,48 +302,42 @@ class DecisionSearchIT {
                 Objects.requireNonNull(
                         getClass().getClassLoader().getResource("decisions/decision_model.dmn"))
                     .getPath()));
-    assertThat(result).isNotEmpty();
-    assertThat(result).isEqualTo(expected);
+    assertThat(result).isNotEmpty().isEqualTo(expected);
   }
 
   @Test
-  void shouldRetrieveByDecisionRequirementsId() {
-    // given
-    final String decisionRequirementId =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDmnDecisionRequirementsId();
-
+  void shouldRetrieveDrdByDecisionRequirementsId() {
     // when
     final var result =
         camundaClient
             .newDecisionRequirementsSearchRequest()
-            .filter(f -> f.decisionRequirementsId(decisionRequirementId))
+            .filter(f -> f.decisionRequirementsId(exampleDecision.getDmnDecisionRequirementsId()))
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDmnDecisionRequirementsId())
-        .isEqualTo(decisionRequirementId);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getDmnDecisionRequirementsId())
+        .isEqualTo(exampleDecision.getDmnDecisionRequirementsId());
   }
 
   @Test
-  void shouldRetrieveByDecisionRequirementsName() {
-    // given
-    final String decisionRequirementName =
-        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDmnDecisionRequirementsName();
-
+  void shouldRetrieveDrdByDecisionRequirementsName() {
     // when
     final var result =
         camundaClient
             .newDecisionRequirementsSearchRequest()
-            .filter(f -> f.decisionRequirementsName(decisionRequirementName))
+            .filter(
+                f ->
+                    f.decisionRequirementsName(
+                        exampleDecisionRequirements.getDmnDecisionRequirementsName()))
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDmnDecisionRequirementsName())
-        .isEqualTo(decisionRequirementName);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getDmnDecisionRequirementsName())
+        .isEqualTo(exampleDecisionRequirements.getDmnDecisionRequirementsName());
   }
 
   @Test
@@ -315,8 +358,8 @@ class DecisionSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(resultWithNoTenant.items().size()).isEqualTo(0);
+    assertThat(result.items()).hasSize(3);
+    assertThat(resultWithNoTenant.items()).isEmpty();
     result.items().forEach(item -> assertThat(item.getTenantId()).isEqualTo("<default>"));
   }
 
@@ -331,7 +374,7 @@ class DecisionSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     result
         .items()
         .forEach(
@@ -383,19 +426,19 @@ class DecisionSearchIT {
     // As we have 2 process with the same definition, it is necessary check the full list of IDs
     final List<String> uniqueAscIds =
         resultAsc.items().stream()
-            .map(item -> item.getDmnDecisionRequirementsId())
+            .map(DecisionRequirements::getDmnDecisionRequirementsId)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
     final List<String> uniqueDescIds =
         resultDesc.items().stream()
-            .map(item -> item.getDmnDecisionRequirementsId())
+            .map(DecisionRequirements::getDmnDecisionRequirementsId)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
     // Ensure there are at least two unique IDs to compare
-    assertThat(uniqueAscIds.size()).isGreaterThan(1);
-    assertThat(uniqueDescIds.size()).isGreaterThan(1);
+    assertThat(uniqueAscIds).hasSizeGreaterThan(1);
+    assertThat(uniqueDescIds).hasSizeGreaterThan(1);
 
     // Assert that the first unique ID in ascending order is less than the second unique ID
     assertThat(uniqueAscIds.get(0)).isLessThan(uniqueAscIds.get(1));
@@ -423,19 +466,19 @@ class DecisionSearchIT {
     // Extract unique names from the results
     final List<String> uniqueAscNames =
         resultAsc.items().stream()
-            .map(item -> item.getDmnDecisionRequirementsName())
+            .map(DecisionRequirements::getDmnDecisionRequirementsName)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
     final List<String> uniqueDescNames =
         resultDesc.items().stream()
-            .map(item -> item.getDmnDecisionRequirementsName())
+            .map(DecisionRequirements::getDmnDecisionRequirementsName)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
     // Ensure there are at least two unique names to compare
-    assertThat(uniqueAscNames.size()).isGreaterThan(1);
-    assertThat(uniqueDescNames.size()).isGreaterThan(1);
+    assertThat(uniqueAscNames).hasSizeGreaterThan(1);
+    assertThat(uniqueDescNames).hasSizeGreaterThan(1);
 
     // Assert that the first unique name in ascending order is less than the second unique name
     assertThat(uniqueAscNames.get(0)).isLessThan(uniqueAscNames.get(1));
@@ -462,20 +505,14 @@ class DecisionSearchIT {
 
     // Extract unique names from the results
     final List<Integer> uniqueAscVersions =
-        resultAsc.items().stream()
-            .map(item -> item.getVersion())
-            .distinct()
-            .collect(Collectors.toList());
+        resultAsc.items().stream().map(DecisionRequirements::getVersion).distinct().toList();
 
     final List<Integer> uniqueDescVersions =
-        resultDesc.items().stream()
-            .map(item -> item.getVersion())
-            .distinct()
-            .collect(Collectors.toList());
+        resultDesc.items().stream().map(DecisionRequirements::getVersion).distinct().toList();
 
     // Ensure there are at least two unique names to compare
-    assertThat(uniqueAscVersions.size()).isGreaterThan(1);
-    assertThat(uniqueDescVersions.size()).isGreaterThan(1);
+    assertThat(uniqueAscVersions).hasSizeGreaterThan(1);
+    assertThat(uniqueDescVersions).hasSizeGreaterThan(1);
 
     // Assert that the first unique name in ascending order is less than the second unique name
     assertThat(uniqueAscVersions.get(0)).isLessThan(uniqueAscVersions.get(1));
@@ -488,7 +525,7 @@ class DecisionSearchIT {
   public void shouldValidatePagination() {
     final var result =
         camundaClient.newDecisionRequirementsSearchRequest().page(p -> p.limit(1)).send().join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     final var key = result.items().getFirst().getDecisionRequirementsKey();
     // apply searchAfter
     final var resultAfter =
@@ -498,7 +535,7 @@ class DecisionSearchIT {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(2);
+    assertThat(resultAfter.items()).hasSize(2);
 
     // apply searchBefore
     final var resultBefore =
@@ -507,64 +544,23 @@ class DecisionSearchIT {
             .page(p -> p.before(resultAfter.page().startCursor()))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
     assertThat(resultBefore.items().getFirst().getDecisionRequirementsKey()).isEqualTo(key);
-  }
-
-  private static void waitForDecisionsBeingExported() {
-    Awaitility.await("should receive data from ES")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      camundaClient
-                          .newDecisionDefinitionSearchRequest()
-                          .send()
-                          .join()
-                          .items()
-                          .size())
-                  .isEqualTo(DEPLOYED_DECISIONS.size());
-              assertThat(
-                      camundaClient
-                          .newDecisionRequirementsSearchRequest()
-                          .send()
-                          .join()
-                          .items()
-                          .size())
-                  .isEqualTo(DEPLOYED_DECISION_REQUIREMENTS.size());
-            });
-  }
-
-  private static DeploymentEvent deployResource(final String resourceName) {
-    return camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath(resourceName)
-        .send()
-        .join();
-  }
-
-  private DecisionDefinition toDecisionDefinition(final Decision decision) {
-    return new DecisionDefinitionImpl(
-        decision.getDmnDecisionId(),
-        decision.getDmnDecisionName(),
-        decision.getVersion(),
-        decision.getDecisionKey(),
-        decision.getDmnDecisionRequirementsId(),
-        decision.getDecisionRequirementsKey(),
-        decision.getTenantId());
   }
 
   @Test
   void shouldGetDecisionRequirements() {
     // when
-    final long decisionRequirementsKey = DEPLOYED_DECISIONS.get(0).getDecisionRequirementsKey();
     final var result =
-        camundaClient.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
+        camundaClient
+            .newDecisionRequirementsGetRequest(
+                exampleDecisionRequirements.getDecisionRequirementsKey())
+            .send()
+            .join();
 
     // then
     assertThat(result.getDecisionRequirementsKey())
-        .isEqualTo(DEPLOYED_DECISIONS.get(0).getDecisionRequirementsKey());
+        .isEqualTo(exampleDecisionRequirements.getDecisionRequirementsKey());
   }
 
   @Test
@@ -594,7 +590,7 @@ class DecisionSearchIT {
 
     final var resultWithLimit =
         camundaClient.newDecisionRequirementsSearchRequest().page(p -> p.limit(2)).send().join();
-    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+    assertThat(resultWithLimit.items()).hasSize(2);
 
     final var thirdKey = resultAll.items().get(2).getDecisionRequirementsKey();
 
@@ -608,5 +604,59 @@ class DecisionSearchIT {
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionRequirementsKey())
         .isEqualTo(thirdKey);
+  }
+
+  private static void waitForDecisionsBeingExported() {
+    Awaitility.await("should receive data from ES")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(camundaClient.newDecisionDefinitionSearchRequest().send().join().items())
+                  .hasSameSizeAs(DEPLOYED_DECISIONS.keySet());
+              assertThat(camundaClient.newDecisionRequirementsSearchRequest().send().join().items())
+                  .hasSameSizeAs(DEPLOYED_DECISION_REQUIREMENTS.keySet());
+            });
+  }
+
+  private static Decision deployResource(final String resourceName) {
+    final var deploymentEvent =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(resourceName)
+            .send()
+            .join();
+
+    DEPLOYED_DECISIONS.putAll(
+        deploymentEvent.getDecisions().stream()
+            .collect(Collectors.toMap(Decision::getDecisionKey, d -> d)));
+    DEPLOYED_DECISION_REQUIREMENTS.putAll(
+        deploymentEvent.getDecisionRequirements().stream()
+            .collect(Collectors.toMap(DecisionRequirements::getDecisionRequirementsKey, dr -> dr)));
+    return deploymentEvent.getDecisions().getFirst();
+  }
+
+  private void validateDecisionFields(final DecisionDefinition decisionDefinition) {
+    assertThat(DEPLOYED_DECISIONS).containsKey(decisionDefinition.getDecisionKey());
+    final Decision decision = DEPLOYED_DECISIONS.get(decisionDefinition.getDecisionKey());
+    assertThat(decisionDefinition.getDecisionKey()).isEqualTo(decision.getDecisionKey());
+    assertThat(decisionDefinition.getDmnDecisionId()).isEqualTo(decision.getDmnDecisionId());
+    assertThat(decisionDefinition.getDmnDecisionName()).isEqualTo(decision.getDmnDecisionName());
+    assertThat(decisionDefinition.getVersion()).isEqualTo(decision.getVersion());
+    assertThat(decisionDefinition.getDmnDecisionRequirementsId())
+        .isEqualTo(decision.getDmnDecisionRequirementsId());
+    assertThat(decisionDefinition.getDecisionRequirementsKey())
+        .isEqualTo(decision.getDecisionRequirementsKey());
+    assertThat(decisionDefinition.getTenantId()).isEqualTo(decision.getTenantId());
+  }
+
+  private void validateDecisionRequirementsFields(final DecisionDefinition decisionDefinition) {
+    assertThat(DEPLOYED_DECISION_REQUIREMENTS)
+        .containsKey(decisionDefinition.getDecisionRequirementsKey());
+    final DecisionRequirements drd =
+        DEPLOYED_DECISION_REQUIREMENTS.get(decisionDefinition.getDecisionRequirementsKey());
+    assertThat(decisionDefinition.getDecisionRequirementsName())
+        .isEqualTo(drd.getDmnDecisionRequirementsName());
+    assertThat(decisionDefinition.getDecisionRequirementsVersion()).isEqualTo(drd.getVersion());
   }
 }

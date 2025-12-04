@@ -795,6 +795,10 @@ public class BrokerBasedPropertiesOverride {
     setArg(
         args, "batchOperationCache.maxCacheSize", database.getBatchOperationCache().getMaxSize());
     setArg(args, "processCache.maxCacheSize", database.getProcessCache().getMaxSize());
+    setArg(
+        args,
+        "decisionRequirementsCache.maxCacheSize",
+        database.getDecisionRequirementsCache().getMaxSize());
     setArg(args, "formCache.maxCacheSize", database.getFormCache().getMaxSize());
 
     setArg(args, "postExport.batchSize", database.getPostExport().getBatchSize());

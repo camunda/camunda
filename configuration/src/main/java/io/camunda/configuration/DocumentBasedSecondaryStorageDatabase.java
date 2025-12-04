@@ -72,6 +72,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   @NestedConfigurationProperty private Cache processCache = new Cache(databaseName(), "process");
 
+  @NestedConfigurationProperty
+  private Cache decisionRequirementsCache = new Cache(databaseName(), "decisionRequirements");
+
   @NestedConfigurationProperty private Cache formCache = new Cache(databaseName(), "form");
 
   @NestedConfigurationProperty private PostExport postExport = new PostExport(databaseName());
@@ -148,6 +151,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setProcessCache(final Cache processCache) {
     this.processCache = processCache;
+  }
+
+  public Cache getDecisionRequirementsCache() {
+    return decisionRequirementsCache;
+  }
+
+  public void setDecisionRequirementsCache(final Cache decisionRequirementsCache) {
+    this.decisionRequirementsCache = decisionRequirementsCache;
   }
 
   public Cache getFormCache() {

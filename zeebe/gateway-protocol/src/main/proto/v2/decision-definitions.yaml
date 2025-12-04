@@ -171,6 +171,8 @@ components:
             - version
             - decisionRequirementsId
             - decisionRequirementsKey
+            - decisionRequirementsName
+            - decisionRequirementsVersion
             - tenantId
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
@@ -222,6 +224,12 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key of the decision requirements graph that the decision definition is part of.
+        decisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements that the decision definition is part of.
+        decisionRequirementsVersion:
+          type: integer
+          description: The assigned version of the decision requirements that the decision definition is part of.
 
     DecisionDefinitionSearchQueryResult:
       type: object
@@ -262,6 +270,12 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key of the decision requirements graph that the decision definition is part of.
+        decisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements that the decision definition is part of.
+        decisionRequirementsVersion:
+          type: integer
+          description: The assigned version of the decision requirements that the decision definition is part of.
 
     DecisionEvaluationInstruction:
       x-polymorphic-schema: true

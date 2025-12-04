@@ -33,6 +33,7 @@ public class ExporterConfiguration {
 
   // caches
   private CacheConfiguration processCache = new CacheConfiguration();
+  private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
 
   public Duration getFlushInterval() {
@@ -92,6 +93,14 @@ public class ExporterConfiguration {
     this.processCache = processCache;
   }
 
+  public CacheConfiguration getDecisionRequirementsCache() {
+    return decisionRequirementsCache;
+  }
+
+  public void setDecisionRequirementsCache(final CacheConfiguration decisionRequirementsCache) {
+    this.decisionRequirementsCache = decisionRequirementsCache;
+  }
+
   public CacheConfiguration getBatchOperationCache() {
     return batchOperationCache;
   }
@@ -130,6 +139,13 @@ public class ExporterConfiguration {
       errors.add(
           String.format(
               "processCache.maxSize must be greater than 0 but was %d", processCache.getMaxSize()));
+    }
+
+    if (decisionRequirementsCache.getMaxSize() < 1) {
+      errors.add(
+          String.format(
+              "decisionRequirementsCache.maxSize must be greater than 0 but was %d",
+              decisionRequirementsCache.getMaxSize()));
     }
 
     if (batchOperationCache.getMaxSize() < 1) {
