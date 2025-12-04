@@ -14,12 +14,16 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {queryKeys} from '../queryKeys';
 
-const useElementInstancesSearch = (
-  elementId: string,
-  processInstanceKey: string,
-  elementType?: ElementInstance['type'],
-  options: {enabled: boolean} = {enabled: true},
-) => {
+type UseElementInstancesSearchParams = {
+  elementId: string;
+  processInstanceKey: string;
+  elementType?: ElementInstance['type'];
+  enabled: boolean;
+};
+
+const useElementInstancesSearch = (params: UseElementInstancesSearchParams) => {
+  const {elementId, processInstanceKey, elementType, enabled = true} = params;
+
   return useQuery({
     queryKey: [
       queryKeys.elementInstances.search({
@@ -43,7 +47,7 @@ const useElementInstancesSearch = (
       }
       throw error;
     },
-    ...options,
+    enabled,
   });
 };
 
