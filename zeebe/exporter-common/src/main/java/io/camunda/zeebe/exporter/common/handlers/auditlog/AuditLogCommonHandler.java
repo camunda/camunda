@@ -23,16 +23,6 @@ import java.util.Optional;
 
 /**
  * Common handler logic for audit log processing shared between different exporter implementations.
- *
- * <p>This class provides utility methods for:
- *
- * <ul>
- *   <li>Mapping {@link ValueType} to {@link AuditLogEntityType}
- *   <li>Mapping {@link Intent} to {@link AuditLogOperationType}
- *   <li>Mapping {@link ValueType} to {@link AuditLogOperationCategory}
- *   <li>Extracting actor information from record authorizations
- *   <li>Determining batch operation references
- * </ul>
  */
 public class AuditLogCommonHandler {
 
@@ -156,7 +146,8 @@ public class AuditLogCommonHandler {
       actorId = username.get();
       actorType = AuditLogActorType.USER;
     } else {
-      actorId = "unknown"; // FIXME: shall we consider null or empty here?
+      // FIXME / TO DISCUSS: some events do not have actors
+      actorId = "unknown"; // FIXME / TO DISCUSS: shall we consider null or empty here?
       actorType = AuditLogActorType.UNKNOWN;
     }
 

@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.DateUtil;
-import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
 
@@ -58,10 +58,9 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   private AuditLogDbModel map(final Record<R> record) {
     final var auditLog =
         new AuditLogDbModel.Builder()
-            //            .auditLogKey( // TODO: bug here, in clarification
-            //                RandomStringUtils.insecure()
-            //                    .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize()))
-            .auditLogKey(UUID.randomUUID().toString())
+            .auditLogKey(
+                RandomStringUtils.insecure()
+                    .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize()))
             .entityKey(String.valueOf(record.getKey()))
             .entityType(AuditLogCommonHandler.getEntityType(record.getValueType()))
             .operationType(AuditLogCommonHandler.getOperationType(record.getIntent()))
