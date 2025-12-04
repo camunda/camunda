@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
-import static io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState.MAX_DB_CHUNK_SIZE;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -414,7 +414,9 @@ public class BatchOperationStateTest {
 
     // when
     final var keys =
-        LongStream.range(0, MAX_DB_CHUNK_SIZE * 3 + 1).boxed().collect(Collectors.toSet());
+        LongStream.range(0, DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 3 + 1)
+            .boxed()
+            .collect(Collectors.toSet());
     state.appendItemKeys(batchOperationKey, keys);
 
     // then
@@ -438,15 +440,18 @@ public class BatchOperationStateTest {
     // when
     state.appendItemKeys(
         batchOperationKey,
-        LongStream.range(0, MAX_DB_CHUNK_SIZE).boxed().collect(Collectors.toSet()));
-    state.appendItemKeys(
-        batchOperationKey,
-        LongStream.range(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE * 2)
+        LongStream.range(0, DEFAULT_BATCH_OPERATION_CHUNK_SIZE)
             .boxed()
             .collect(Collectors.toSet()));
     state.appendItemKeys(
         batchOperationKey,
-        LongStream.range(MAX_DB_CHUNK_SIZE * 2, MAX_DB_CHUNK_SIZE * 3)
+        LongStream.range(DEFAULT_BATCH_OPERATION_CHUNK_SIZE, DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 2)
+            .boxed()
+            .collect(Collectors.toSet()));
+    state.appendItemKeys(
+        batchOperationKey,
+        LongStream.range(
+                DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 2, DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 3)
             .boxed()
             .collect(Collectors.toSet()));
 
@@ -455,14 +460,15 @@ public class BatchOperationStateTest {
 
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
-    assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(MAX_DB_CHUNK_SIZE * 3);
+    assertThat(persistedBatchOperation.getNumTotalItems())
+        .isEqualTo(DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 3);
     assertThat(persistedBatchOperation.getNumExecutedItems()).isEqualTo(0);
   }
 
   @Test
   void shouldReturnNextNonRemovedItems() {
     // given
-    final var batchOperationKey = createDefaultBatch(1, MAX_DB_CHUNK_SIZE * 3);
+    final var batchOperationKey = createDefaultBatch(1, DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 3);
 
     // when
     state.removeItemKeys(
@@ -477,18 +483,21 @@ public class BatchOperationStateTest {
     final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 5);
     assertThat(nextItemKeys).hasSize(5);
     assertThat(nextItemKeys).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
-    assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(MAX_DB_CHUNK_SIZE * 3);
+    assertThat(persistedBatchOperation.getNumTotalItems())
+        .isEqualTo(DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 3);
   }
 
   @Test
   void shouldRemoveChunkWhenAllItemsHasBeenRemoved() {
     // given
-    final var batchOperationKey = createDefaultBatch(1, MAX_DB_CHUNK_SIZE * 3);
+    final var batchOperationKey = createDefaultBatch(1, DEFAULT_BATCH_OPERATION_CHUNK_SIZE * 3);
 
     // when
     state.removeItemKeys(
         batchOperationKey,
-        LongStream.range(0, MAX_DB_CHUNK_SIZE).boxed().collect(Collectors.toSet()));
+        LongStream.range(0, DEFAULT_BATCH_OPERATION_CHUNK_SIZE)
+            .boxed()
+            .collect(Collectors.toSet()));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -499,7 +508,10 @@ public class BatchOperationStateTest {
     final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 3);
     assertThat(nextItemKeys)
         .containsSequence(
-            List.of(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE + 1L, MAX_DB_CHUNK_SIZE + 2L));
+            List.of(
+                (long) DEFAULT_BATCH_OPERATION_CHUNK_SIZE,
+                DEFAULT_BATCH_OPERATION_CHUNK_SIZE + 1L,
+                DEFAULT_BATCH_OPERATION_CHUNK_SIZE + 2L));
   }
 
   private long createDefaultBatch(final long batchOperationKey, final long numKeys) {

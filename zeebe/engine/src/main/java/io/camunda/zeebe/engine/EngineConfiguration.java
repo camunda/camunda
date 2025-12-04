@@ -41,8 +41,6 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
   public static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 100;
-  // key has 8 bytes, stay below 32KB block size
-  public static final int DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE = 3500;
   // ES/OS have max 10000 entities per query
   public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
   // Oracle can only have 1000 elements in `IN` clause

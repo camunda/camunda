@@ -46,9 +46,11 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -92,6 +94,27 @@ public final class SystemContext {
           + "' or the legacy property '"
           + LEGACY_INITIAL_CONTACT_POINTS_PROPERTY
           + "'.";
+
+  /**
+   * The maximum number of items stored in a single batch operation chunk. This value is limited by
+   * two factors:
+   *
+   * <ul>
+   *   <li>The hard-coded max record size of 4MB in the engine
+   *   <li>The RocksDB block size configured at 32KB. Chunks significantly larger than this would
+   *       span multiple blocks, which is not optimal for read/write performance.
+   *       <p>This value is chosen to balance between the number of database entries and the size of
+   *       each entry. A chunk size of 3000 item keys results in a chunk size of approximately 24KB
+   *       (31KB with overhead), which is reasonable for RocksDB to handle efficiently. Larger chunk
+   *       sizes could lead to increased memory usage and potential performance degradation, while
+   *       smaller chunk sizes would increase the number of database entries, leading to higher
+   *       overhead in managing them.
+   * </ul>
+   *
+   * @see ZeebeRocksDbFactory
+   * @see PersistedBatchOperationChunk
+   */
+  private static final long MAX_CHUNK_SIZE = 3000;
 
   private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
@@ -313,8 +336,7 @@ public final class SystemContext {
               config.getChunkSize()));
     }
 
-    // this is due to the hard-coded max record size of 4MB in the engine. For larger values
-    if (config.getChunkSize() > 5000) {
+    if (config.getChunkSize() > MAX_CHUNK_SIZE) {
       LOG.warn(
           "Setting experimental.engine.batchOperation.chunkSize higher than 5000 "
               + "is not recommended since it may lead to performance issues in the exporters.");

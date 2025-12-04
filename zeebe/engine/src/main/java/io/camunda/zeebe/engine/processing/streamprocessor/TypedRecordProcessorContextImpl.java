@@ -103,7 +103,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             partitionId,
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            clock);
+            clock,
+            config);
   }
 
   @Override
