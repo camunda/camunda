@@ -54,9 +54,6 @@ type ProcessInstancesSearchFilter = NonNullable<
 const parseProcessInstancesFilter = (
   search: URLSearchParams,
 ): ProcessInstancesFilter => {
-  if (typeof search === 'string') {
-    search = new URLSearchParams(search);
-  }
   return ProcessInstancesFilterSchema.parse(Object.fromEntries(search));
 };
 

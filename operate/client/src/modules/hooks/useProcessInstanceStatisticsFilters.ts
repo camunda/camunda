@@ -18,8 +18,17 @@ function useProcessInstanceStatisticsFilters(): GetProcessDefinitionStatisticsRe
     return {filter: undefined};
   }
 
-  // Exclude processDefinitionVersion - not supported by statistics endpoint
-  const {processDefinitionVersion: _, ...statisticsFilter} = fullFilter;
+  // Exclude fields not supported by statistics endpoint
+  // ProcessDefinitionStatisticsFilter only extends BaseProcessInstanceFilterFields,
+  // which does not include processDefinition* fields (they're passed via URL path parameter)
+  const {
+    processDefinitionId,
+    processDefinitionName,
+    processDefinitionKey,
+    processDefinitionVersion,
+    processDefinitionVersionTag,
+    ...statisticsFilter
+  } = fullFilter;
 
   return {
     filter: statisticsFilter,
