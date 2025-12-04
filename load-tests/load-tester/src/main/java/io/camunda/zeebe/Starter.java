@@ -49,6 +49,7 @@ public class Starter extends App {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final StarterCfg starterCfg;
   private Timer dataAvailabilityLatencyTimer;
+  private Timer responseLatencyTimer;
 
   Starter(final AppCfg config) {
     super(config);
@@ -60,6 +61,8 @@ public class Starter extends App {
     dataAvailabilityLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
             .register(registry);
+    responseLatencyTimer =
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
     final CamundaClient client = createCamundaClient();
 
     // init - check for topology and deploy process
@@ -127,6 +130,7 @@ public class Starter extends App {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
 
+            final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(client, vars);
@@ -134,10 +138,12 @@ public class Starter extends App {
               requestFuture =
                   startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), vars);
             } else {
-              requestFuture = startInstance(client, starterCfg.getProcessId(), vars);
+              requestFuture = startInstance(client, startTime, starterCfg.getProcessId(), vars);
             }
-            requestFuture.exceptionally(
-                (error) -> {
+            requestFuture.whenComplete(
+                (noop, error) -> {
+                  final long durationNanos = System.nanoTime() - startTime;
+                  responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
                     if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
                       // we don't want to flood the log
@@ -147,7 +153,6 @@ public class Starter extends App {
                           error);
                     }
                   }
-                  return null;
                 });
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
@@ -159,8 +164,10 @@ public class Starter extends App {
   }
 
   private CompletionStage<?> startInstance(
-      final CamundaClient client, final String processId, final HashMap<String, Object> variables) {
-    final var startTime = System.nanoTime();
+      final CamundaClient client,
+      final long startTime,
+      final String processId,
+      final HashMap<String, Object> variables) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)

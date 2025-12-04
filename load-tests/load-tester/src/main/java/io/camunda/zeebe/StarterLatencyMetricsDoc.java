@@ -52,5 +52,45 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     public Duration[] getTimerSLOs() {
       return BUCKETS;
     }
+  },
+
+  /**
+   * The response latency when starting process instances. It measures the time from sending the
+   * request to receiving the response.
+   */
+  RESPONSE_LATENCY {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(10),
+      Duration.ofMillis(25),
+      Duration.ofMillis(50),
+      Duration.ofMillis(75),
+      Duration.ofMillis(100),
+      Duration.ofMillis(250),
+      Duration.ofMillis(500),
+      Duration.ofMillis(750),
+      Duration.ofSeconds(1),
+      Duration.ofMillis(2500),
+      Duration.ofSeconds(5)
+    };
+
+    @Override
+    public String getDescription() {
+      return "The response latency when starting process instances. It measures the time from sending the request to receiving the response.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.response.latency";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
   };
 }
