@@ -313,7 +313,7 @@ rivate final VersionProvider versionProvider;
       LOG.info("  maven.multiModuleProjectDirectory = {}", mavenMultiModule);
       LOG.info("  user.dir = {}", userDir);
 
-      return Paths.get(baseDir, ".cache", "camunda-versions.json");
+      return Paths.get(baseDir, ".cache/camunda", "camunda-versions.json");
     }
 
     @Override

@@ -880,7 +880,7 @@ jobs:
         if: matrix.group == 'qa-update'
         uses: actions/cache@v4
         with:
-          path: .cache
+          path: .cache/camunda
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
           restore-keys: |
             zeebe-versions-
