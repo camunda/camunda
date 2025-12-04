@@ -90,6 +90,7 @@ public final class PartitionManagerImpl
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
+  private final SharedRocksDbResources sharedRocksDbResources;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -127,7 +128,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    final SharedRocksDbResources sharedRocksDbResources = getSharedCache(brokerCfg);
+    sharedRocksDbResources = getSharedCache(brokerCfg);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -294,6 +295,7 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
+            sharedRocksDbResources.close();
             topologyManager.closeAsync().onComplete(result);
           }
         });
