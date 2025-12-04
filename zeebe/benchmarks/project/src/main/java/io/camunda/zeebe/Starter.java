@@ -30,6 +30,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -114,7 +115,8 @@ public class Starter extends App {
     LOG.info("Creating an instance every {}ns", intervalNanos);
 
     final String variablesString = readVariables(starterCfg.getPayloadPath());
-    final HashMap<String, Object> variables = deserializeVariables(variablesString);
+    final Map<String, Object> baseVariables =
+        Collections.unmodifiableMap(deserializeVariables(variablesString));
 
     final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
     final AtomicLong businessKey = new AtomicLong(0);
@@ -128,16 +130,17 @@ public class Starter extends App {
           }
 
           try {
-            variables.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+            final var vars = new HashMap<>(baseVariables);
+            vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
 
             final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
-              requestFuture = startInstanceByMessagePublishing(client, variables);
+              requestFuture = startInstanceByMessagePublishing(client, vars);
             } else if (starterCfg.isWithResults()) {
               requestFuture =
-                  startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), variables);
+                  startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), vars);
             } else {
-              requestFuture = startInstance(client, starterCfg.getProcessId(), variables);
+              requestFuture = startInstance(client, starterCfg.getProcessId(), vars);
             }
             requestFuture.exceptionally(
                 (error) -> {
