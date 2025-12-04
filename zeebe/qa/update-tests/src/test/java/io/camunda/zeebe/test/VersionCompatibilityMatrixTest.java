@@ -396,6 +396,22 @@ class VersionCompatibilityMatrixTest {
       assertThat(versions1).containsExactlyInAnyOrderElementsOf(versions);
       assertThat(versions2).containsExactlyInAnyOrderElementsOf(versions);
       verify(baseProvider, times(1)).discoverVersions();
+
+      // Verify cache file exists and has proper contents
+      assertThat(cacheFile).exists();
+      final var cacheContent = Files.readString(cacheFile);
+      assertThat(cacheContent)
+          .isEqualTo(
+              """
+              [ {
+                "version" : "8.7.9",
+                "isReleased" : true,
+                "isLatest" : false
+              }, {
+                "version" : "8.8.0",
+                "isReleased" : true,
+                "isLatest" : true
+              } ]""");
     }
   }
 }
