@@ -37,9 +37,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConditionalEvaluationProcessor
     implements TypedRecordProcessor<ConditionalEvaluationRecord> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ConditionalEvaluationProcessor.class);
 
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
@@ -213,8 +217,18 @@ public class ConditionalEvaluationProcessor
                   expressionProcessor.evaluateBooleanExpression(
                       conditionExpression, new InMemoryVariableEvaluationContext(variables));
 
-              if (result.isRight() && result.get()) {
-                matches.add(new MatchedStartEvent(process, startEvent.getId()));
+              if (result.isRight()) {
+                if (Boolean.TRUE.equals(result.get())) {
+                  matches.add(new MatchedStartEvent(process, startEvent.getId()));
+                }
+              } else {
+                // log and ignore evaluation failures
+                // conditional events are re-evaluated on variable changes
+                LOG.debug(
+                    "Failed to evaluate condition on conditional start event '{}' in process '{}': {}",
+                    BufferUtil.bufferAsString(startEvent.getId()),
+                    BufferUtil.bufferAsString(process.getBpmnProcessId()),
+                    result.getLeft().getMessage());
               }
             });
 
