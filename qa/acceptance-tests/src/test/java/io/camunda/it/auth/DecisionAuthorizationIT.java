@@ -14,6 +14,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -84,7 +85,7 @@ class DecisionAuthorizationIT {
 
     // then
     assertThat(decisionDefinitions).hasSize(1);
-    assertThat(decisionDefinitions.stream().map(p -> p.getDmnDecisionId()).toList())
+    assertThat(decisionDefinitions.stream().map(Decision::getDmnDecisionId).toList())
         .containsOnly(DECISION_DEFINITION_ID_1);
   }
 

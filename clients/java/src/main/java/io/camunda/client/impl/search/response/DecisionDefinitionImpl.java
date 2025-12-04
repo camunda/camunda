@@ -21,12 +21,14 @@ import java.util.Objects;
 
 public final class DecisionDefinitionImpl implements DecisionDefinition {
 
-  private final String dmnDecisionId;
-  private final String dmnDecisionName;
+  private final String decisionDefinitionId;
+  private final String name;
   private final int version;
-  private final long decisionKey;
-  private final String dmnDecisionRequirementsId;
+  private final long decisionDefinitionKey;
+  private final String decisionRequirementsId;
   private final long decisionRequirementsKey;
+  private final String decisionRequirementsName;
+  private final int decisionRequirementsVersion;
   private final String tenantId;
 
   public DecisionDefinitionImpl(final DecisionDefinitionResult item) {
@@ -37,34 +39,40 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
         Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionRequirementsId(),
         Long.parseLong(item.getDecisionRequirementsKey()),
+        item.getDecisionRequirementsName(),
+        item.getDecisionRequirementsVersion(),
         item.getTenantId());
   }
 
   public DecisionDefinitionImpl(
-      final String dmnDecisionId,
-      final String dmnDecisionName,
+      final String decisionDefinitionId,
+      final String name,
       final int version,
-      final long decisionKey,
-      final String dmnDecisionRequirementsId,
+      final long decisionDefinitionKey,
+      final String decisionRequirementsId,
       final long decisionRequirementsKey,
+      final String decisionRequirementsName,
+      final int decisionRequirementsVersion,
       final String tenantId) {
-    this.dmnDecisionId = dmnDecisionId;
-    this.dmnDecisionName = dmnDecisionName;
+    this.decisionDefinitionId = decisionDefinitionId;
+    this.name = name;
     this.version = version;
-    this.decisionKey = decisionKey;
-    this.dmnDecisionRequirementsId = dmnDecisionRequirementsId;
+    this.decisionDefinitionKey = decisionDefinitionKey;
+    this.decisionRequirementsId = decisionRequirementsId;
     this.decisionRequirementsKey = decisionRequirementsKey;
+    this.decisionRequirementsName = decisionRequirementsName;
+    this.decisionRequirementsVersion = decisionRequirementsVersion;
     this.tenantId = tenantId;
   }
 
   @Override
   public String getDmnDecisionId() {
-    return dmnDecisionId;
+    return decisionDefinitionId;
   }
 
   @Override
   public String getDmnDecisionName() {
-    return dmnDecisionName;
+    return name;
   }
 
   @Override
@@ -74,12 +82,12 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
 
   @Override
   public long getDecisionKey() {
-    return decisionKey;
+    return decisionDefinitionKey;
   }
 
   @Override
   public String getDmnDecisionRequirementsId() {
-    return dmnDecisionRequirementsId;
+    return decisionRequirementsId;
   }
 
   @Override
@@ -93,14 +101,26 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
   }
 
   @Override
+  public String getDecisionRequirementsName() {
+    return decisionRequirementsName;
+  }
+
+  @Override
+  public int getDecisionRequirementsVersion() {
+    return decisionRequirementsVersion;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
-        dmnDecisionId,
-        dmnDecisionName,
+        decisionDefinitionId,
+        name,
         version,
-        decisionKey,
-        dmnDecisionRequirementsId,
+        decisionDefinitionKey,
+        decisionRequirementsId,
         decisionRequirementsKey,
+        decisionRequirementsName,
+        decisionRequirementsVersion,
         tenantId);
   }
 
@@ -112,34 +132,41 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final DecisionDefinitionImpl decisionDefinition = (DecisionDefinitionImpl) o;
-    return version == decisionDefinition.version
-        && decisionKey == decisionDefinition.decisionKey
-        && decisionRequirementsKey == decisionDefinition.decisionRequirementsKey
-        && Objects.equals(dmnDecisionId, decisionDefinition.dmnDecisionId)
-        && Objects.equals(dmnDecisionName, decisionDefinition.dmnDecisionName)
-        && Objects.equals(dmnDecisionRequirementsId, decisionDefinition.dmnDecisionRequirementsId)
-        && Objects.equals(tenantId, decisionDefinition.tenantId);
+    final DecisionDefinitionImpl that = (DecisionDefinitionImpl) o;
+    return version == that.version
+        && decisionDefinitionKey == that.decisionDefinitionKey
+        && decisionRequirementsKey == that.decisionRequirementsKey
+        && decisionRequirementsVersion == that.decisionRequirementsVersion
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(decisionRequirementsName, that.decisionRequirementsName)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public String toString() {
     return "DecisionDefinitionImpl{"
-        + "dmnDecisionId='"
-        + dmnDecisionId
+        + "decisionDefinitionId='"
+        + decisionDefinitionId
         + '\''
-        + ", dmnDecisionName='"
-        + dmnDecisionName
+        + ", name='"
+        + name
         + '\''
         + ", version="
         + version
-        + ", decisionKey="
-        + decisionKey
-        + ", dmnDecisionRequirementsId='"
-        + dmnDecisionRequirementsId
+        + ", decisionDefinitionKey="
+        + decisionDefinitionKey
+        + ", decisionRequirementsId='"
+        + decisionRequirementsId
         + '\''
         + ", decisionRequirementsKey="
         + decisionRequirementsKey
+        + ", decisionRequirementsName='"
+        + decisionRequirementsName
+        + '\''
+        + ", decisionRequirementsVersion="
+        + decisionRequirementsVersion
         + ", tenantId='"
         + tenantId
         + '\''
