@@ -10,7 +10,7 @@ package io.camunda.debug.cli;
 import java.nio.file.Path;
 import picocli.CommandLine.Option;
 
-abstract class CommonOptions {
+public abstract class CommonOptions {
 
   @Option(
       names = {"-r", "--root"},
