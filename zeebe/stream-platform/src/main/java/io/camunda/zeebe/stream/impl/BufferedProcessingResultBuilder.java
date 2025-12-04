@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperat
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
@@ -45,18 +47,21 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final long operationReference;
   private boolean processInASeparateBatch = false;
   private final long batchOperationReference;
+  private final Map<String, Object> authorizationClaims;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
-    this(predicate, operationReferenceNullValue(), batchOperationReferenceNullValue());
+    this(predicate, operationReferenceNullValue(), batchOperationReferenceNullValue(), Map.of());
   }
 
   BufferedProcessingResultBuilder(
       final RecordBatchSizePredicate predicate,
       final long operationReference,
-      final long batchOperationReference) {
+      final long batchOperationReference,
+      final Map<String, Object> authorizationClaims) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.operationReference = operationReference;
     this.batchOperationReference = batchOperationReference;
+    this.authorizationClaims = authorizationClaims;
   }
 
   @Override
@@ -72,6 +77,10 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
     if (batchOperationReference != batchOperationReferenceNullValue()) {
       metadata.batchOperationReference(batchOperationReference);
+    }
+
+    if (authorizationClaims != null && !authorizationClaims.isEmpty()) {
+      metadata.authorization(new AuthInfo().setClaims(authorizationClaims));
     }
 
     if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
