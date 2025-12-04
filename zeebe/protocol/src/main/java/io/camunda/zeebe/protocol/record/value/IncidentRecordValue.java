@@ -104,4 +104,14 @@ public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated
    *     entry is a reference to the call activity in BPMN model containing an incident.
    */
   List<Integer> getCallingElementPath();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For incidents in top-level
+   * process instances, this is equal to {@link #getProcessInstanceKey()}. For incidents in child
+   * process instances (created via call activities), this is the key of the topmost parent process
+   * instance.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  long getRootProcessInstanceKey();
 }

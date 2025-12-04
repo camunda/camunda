@@ -55,4 +55,14 @@ public interface ProcessEventRecordValue
    * @return the key of the deployed process this instance belongs to.
    */
   long getProcessDefinitionKey();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For process events in top-level
+   * process instances, this is equal to {@link #getProcessInstanceKey()}. For process events in
+   * child process instances (created via call activities), this is the key of the topmost parent
+   * process instance.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  long getRootProcessInstanceKey();
 }

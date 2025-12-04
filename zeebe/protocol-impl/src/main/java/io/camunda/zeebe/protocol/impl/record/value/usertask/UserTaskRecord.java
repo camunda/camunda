@@ -149,9 +149,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
   private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>("tags", StringValue::new);
   private final LongProperty listenersConfigKeyProp = new LongProperty("listenersConfigKey", -1L);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey", -1L);
 
   public UserTaskRecord() {
-    super(24);
+    super(25);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -175,7 +177,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(priorityProp)
         .declareProperty(deniedReasonProp)
         .declareProperty(tagsProp)
-        .declareProperty(listenersConfigKeyProp);
+        .declareProperty(listenersConfigKeyProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -772,6 +775,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord resetChangedAttributes() {
     changedAttributesProp.reset();
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public UserTaskRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 }

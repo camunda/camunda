@@ -179,4 +179,13 @@ public interface ProcessInstanceRecordValue
    * @return a set of tags associated with this process instance
    */
   Set<String> getTags();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For top-level process instances,
+   * this is equal to {@link #getProcessInstanceKey()}. For child process instances (created via
+   * call activities), this is the key of the topmost parent process instance.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  long getRootProcessInstanceKey();
 }

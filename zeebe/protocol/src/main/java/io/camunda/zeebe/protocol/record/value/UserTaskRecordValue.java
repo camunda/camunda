@@ -88,4 +88,14 @@ public interface UserTaskRecordValue
    * @return the tags that were set for this user task.
    */
   Set<String> getTags();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For user tasks in top-level
+   * process instances, this is equal to {@link #getProcessInstanceKey()}. For user tasks in child
+   * process instances (created via call activities), this is the key of the topmost parent process
+   * instance.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  long getRootProcessInstanceKey();
 }
