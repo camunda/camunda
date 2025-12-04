@@ -65,16 +65,18 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   }
 
   @Override
-  public Optional<GlobalListenerBatchRecord> getCurrentConfig() {
+  public GlobalListenerBatchRecord getCurrentConfig() {
     return Optional.ofNullable(currentConfigColumnFamily.get(key))
-        .map(PersistedGlobalListenersConfig::getGlobalListeners);
+        .map(PersistedGlobalListenersConfig::getGlobalListeners)
+        .orElse(null);
   }
 
   @Override
-  public Optional<GlobalListenerBatchRecord> getVersionedConfig(final long versionKey) {
+  public GlobalListenerBatchRecord getVersionedConfig(final long versionKey) {
     this.versionKey.wrapLong(versionKey);
     return Optional.ofNullable(versionedConfigColumnFamily.get(this.versionKey))
-        .map(PersistedGlobalListenersConfig::getGlobalListeners);
+        .map(PersistedGlobalListenersConfig::getGlobalListeners)
+        .orElse(null);
   }
 
   @Override

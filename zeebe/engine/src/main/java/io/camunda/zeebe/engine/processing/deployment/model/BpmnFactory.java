@@ -30,7 +30,7 @@ public final class BpmnFactory {
     if (configuration != null) {
       listenerConfig =
           Objects.requireNonNullElse(
-              configuration.getListeners(), GlobalListenersConfiguration.empty());
+              configuration.getGlobalListeners(), GlobalListenersConfiguration.empty());
     } else {
       listenerConfig = GlobalListenersConfiguration.empty();
     }
