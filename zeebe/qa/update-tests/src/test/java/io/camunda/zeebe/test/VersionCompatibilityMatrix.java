@@ -71,7 +71,7 @@ final class VersionCompatibilityMatrix {
           // add further incompatible combinations here if needed
           );
 
-rivate final VersionProvider versionProvider;
+  private final VersionProvider versionProvider;
   private VersionCompatibilityConfig config =
       new VersionCompatibilityConfig() {
         @Override
