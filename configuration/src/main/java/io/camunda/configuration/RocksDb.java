@@ -71,8 +71,7 @@ public class RocksDb {
    * value is set to 'BROKER', the total memory allocated to RocksDB will be equal to the configured
    * memory limit.
    */
-  private final MemoryAllocationStrategy memoryAllocationStrategy =
-      MemoryAllocationStrategy.PARTITION;
+  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
 
   /**
    * Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
@@ -181,6 +180,10 @@ public class RocksDb {
         MemoryAllocationStrategy.class,
         BackwardsCompatibilityMode.SUPPORTED,
         LEGACY_MEMORY_ALLOCATION_STRATEGY_PROPERTIES);
+  }
+
+  public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {
+    this.memoryAllocationStrategy = memoryAllocationStrategy;
   }
 
   public int getMaxOpenFiles() {

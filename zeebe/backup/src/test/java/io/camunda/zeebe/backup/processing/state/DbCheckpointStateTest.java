@@ -8,6 +8,8 @@
 package io.camunda.zeebe.backup.processing.state;
 
 import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKPOINT;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -27,7 +29,6 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBufferManager;
 
 final class DbCheckpointStateTest {
-  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
@@ -44,7 +45,7 @@ final class DbCheckpointStateTest {
 
   @BeforeEach
   void before() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -53,7 +54,7 @@ final class DbCheckpointStateTest {
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
                 lruCache,
-                new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+                new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
                 defaultPartitionCount)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());

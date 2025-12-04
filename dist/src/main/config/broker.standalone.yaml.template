@@ -1295,13 +1295,6 @@
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         # memoryLimit: 512MB
 
-        # Configures the memory allocation strategy by rocksDB. Supported values are [PARTITION, BROKER].
-        # If set to 'PARTITION', the total memory allocated to rocksDB will be the number of partitions times the configured memory limit.
-        # If the value is set to 'BROKER', the total memory allocated to rocksDB will be equal to the configured memory limit.
-        # If left unset, the default value is 'PARTITION'.
-        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYALLOCATIONSTRATEGY
-        # memoryAllocationStrategy: PARTITION
-
         # Configures how many files are kept open by RocksDB, per default it is unlimited (-1).
         # This is a performance optimization: if you set a value greater than zero, it will keep track and cap the number of open
         # files in the TableCache. On accessing the files it needs to look them up in the cache.
