@@ -720,7 +720,14 @@ public final class PartitionManagerImpl
     }
   }
 
-  private record SharedRocksDbResources(LRUCache sharedCache, WriteBufferManager sharedWbm) {}
+  record SharedRocksDbResources(LRUCache sharedCache, WriteBufferManager sharedWbm)
+      implements AutoCloseable {
+    @Override
+    public void close() {
+      sharedWbm.close();
+      sharedCache.close();
+    }
+  }
 
   public final class PartitionAlreadyExistsException extends RuntimeException {
 

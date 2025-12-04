@@ -56,7 +56,12 @@ class PartitionManagerImplTest {
     // memory. 2 * 64MB = 128MB which is 50% of 256MB. The default memory allocation strategy is per
     // partition.
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
-      assertThatCode(() -> PartitionManagerImpl.getSharedCache(brokerCfg))
+      assertThatCode(
+              () -> {
+                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                  // ensure resources are closed
+                }
+              })
           .doesNotThrowAnyException();
     }
   }
@@ -71,7 +76,15 @@ class PartitionManagerImplTest {
 
     // then when we allocate more than half of the memory to rocks db, we expect an exception
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
-      assertThatThrownBy(() -> PartitionManagerImpl.getSharedCache(brokerCfg))
+      final var throwable =
+          catchThrowable(
+              () -> {
+                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                  // we expect this to fail, but if it doesn't, the resources are closed
+                }
+              });
+
+      assertThat(throwable)
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
               "Expected the allocated memory for RocksDB to be below or equal half of ram memory, but was 78.13 %");
@@ -89,7 +102,15 @@ class PartitionManagerImplTest {
 
     // then it should throw since the memory per partition is too small
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
-      assertThatThrownBy(() -> PartitionManagerImpl.getSharedCache(brokerCfg))
+      final var throwable =
+          catchThrowable(
+              () -> {
+                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                  // we expect this to fail, but if it doesn't, the resources are closed
+                }
+              });
+
+      assertThat(throwable)
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
               "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
@@ -113,7 +134,12 @@ class PartitionManagerImplTest {
     // should still be valid even with 2 partitions since we allocate per broker, we will only
     // allocate 128mb
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
-      assertThatCode(() -> PartitionManagerImpl.getSharedCache(brokerCfg))
+      assertThatCode(
+              () -> {
+                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                  // ensure resources are closed
+                }
+              })
           .doesNotThrowAnyException();
     }
   }
