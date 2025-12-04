@@ -680,10 +680,7 @@ public final class EngineProcessors {
       final AuthorizationCheckBehavior authCheckBehavior) {
     final var evaluateExpressionProcessor =
         new EvaluateExpressionProcessor(
-            expressionProcessor,
-            processingState,
-            writers,
-            authCheckBehavior);
+            expressionProcessor, processingState, writers, authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.EXPRESSION, ExpressionIntent.EVALUATE, evaluateExpressionProcessor);
   }
