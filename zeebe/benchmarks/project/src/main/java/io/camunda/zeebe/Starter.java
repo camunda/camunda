@@ -197,7 +197,7 @@ public class Starter extends App {
     try {
       variables = OBJECT_MAPPER.readValue(variablesString, VARIABLES_TYPE_REF);
     } catch (final JsonProcessingException e) {
-      LOG.error(String.format("Failed to parse variables '%s'.", variablesString), e);
+      LOG.error("Failed to parse variables '{}'.", variablesString, e);
       throw new RuntimeException(e);
     }
     return variables;
