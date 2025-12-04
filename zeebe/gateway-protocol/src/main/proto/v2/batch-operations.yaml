@@ -403,6 +403,10 @@ components:
           description: The state of the batch operation.
           allOf:
             - $ref: '#/components/schemas/BatchOperationItemStateFilterProperty'
+        operationType:
+          description: The type of the batch operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeFilterProperty'
 
     BatchOperationItemSearchQueryResult:
       type: object

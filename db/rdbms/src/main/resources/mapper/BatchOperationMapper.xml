@@ -365,6 +365,13 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if
+      test="filter.operationTypeOperations != null and !filter.operationTypeOperations.isEmpty()">
+      <foreach collection="filter.operationTypeOperations" item="operation">
+        AND bo.OPERATION_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <update id="updateHistoryCleanupDate">

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.BatchOperationItemSearchQuerySortRequest.FieldEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -68,7 +69,8 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
                 f.batchOperationKey("123")
                     .state(BatchOperationItemState.ACTIVE)
                     .processInstanceKey(123L)
-                    .itemKey(456L))
+                    .itemKey(456L)
+                    .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE))
         .send()
         .join();
 
@@ -80,6 +82,8 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
         .isEqualTo(BatchOperationItemStateEnum.ACTIVE);
     assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("123");
     assertThat(request.getFilter().getItemKey().get$Eq()).isEqualTo("456");
+    assertThat(request.getFilter().getOperationType().get$Eq())
+        .isEqualTo(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE);
   }
 
   @Test

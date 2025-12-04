@@ -333,6 +333,36 @@ public class BatchOperationSearchIT {
   }
 
   @Test
+  void shouldSearchBatchOperationItemsByOperationType() {
+    // when
+    final var page =
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE))
+            .send()
+            .join();
+
+    // then
+    assertThat(page).isNotNull();
+    assertItems(page, ACTIVE_PROCESS_INSTANCES_1);
+  }
+
+  @Test
+  void shouldSearchBatchOperationItemsByOperationTypeWithNeq() {
+    // when
+    final var page =
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.operationType(p -> p.neq(BatchOperationType.CANCEL_PROCESS_INSTANCE)))
+            .send()
+            .join();
+
+    // then
+    assertThat(page).isNotNull();
+    assertItems(page, ACTIVE_PROCESS_INSTANCES_2);
+  }
+
+  @Test
   void shouldSearchProcessInstanceByBatchOperationKey() {
     // when
     final var page =
