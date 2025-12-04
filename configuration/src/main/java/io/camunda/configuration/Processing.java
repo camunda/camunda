@@ -115,15 +115,15 @@ public class Processing {
   private boolean enableForeignKeyChecks = DEFAULT_ENABLE_FOREIGN_KEY_CHECKS;
 
   /**
-   * Changes the DueDateTimerChecker to give yield to other processing steps in situations where it
-   * has many (i.e. millions of) timers to process. If set to false (default) the
-   * DueDateTimerChecker will activate all due timers. In the worst case, this can lead to the node
-   * being blocked for indefinite amount of time, being subsequently flagged as unhealthy.
+   * Changes the DueDateTimerCheckScheduler to give yield to other processing steps in situations
+   * where it has many (i.e. millions of) timers to process. If set to false (default) the
+   * DueDateTimerCheckScheduler will activate all due timers. In the worst case, this can lead to
+   * the node being blocked for indefinite amount of time, being subsequently flagged as unhealthy.
    * Currently, there is no known way to recover from this situation If set to true, the
-   * DueDateTimerChecker will give yield to other processing steps. This avoids the worst case
-   * described above. However, under consistent high load it may happen that the activated timers
-   * will fall behind real time, if more timers become due than can be activated during a certain
-   * time period.
+   * DueDateTimerCheckScheduler will give yield to other processing steps. This avoids the worst
+   * case described above. However, under consistent high load it may happen that the activated
+   * timers will fall behind real time, if more timers become due than can be activated during a
+   * certain time period.
    */
   private boolean enableYieldingDueDateChecker = DEFAULT_ENABLE_YIELDING_DUEDATE_CHECKER;
 

@@ -49,7 +49,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     scheduleMessageTtlChecker(context);
-    schedulePendingMessageSubscriptionChecker(context);
+    schedulePendingMessageSubscriptionCheckScheduler(context);
   }
 
   private void scheduleMessageTtlChecker(final ReadonlyStreamProcessorContext context) {
@@ -57,7 +57,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     final var messageState = scheduledTaskStateFactory.get().getMessageState();
     final var timestamp = clock.millis() + messagesTtlCheckerInterval.toMillis();
     final var timeToLiveChecker =
-        new MessageTimeToLiveChecker(
+        new MessageTimeToLiveCheckScheduler(
             messagesTtlCheckerInterval,
             messagesTtlCheckerBatchLimit,
             enableMessageTtlCheckerAsync,
@@ -71,11 +71,11 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     }
   }
 
-  private void schedulePendingMessageSubscriptionChecker(
+  private void schedulePendingMessageSubscriptionCheckScheduler(
       final ReadonlyStreamProcessorContext context) {
     final var scheduleService = context.getScheduleService();
     final var pendingSubscriptionChecker =
-        new PendingMessageSubscriptionChecker(
+        new PendingMessageSubscriptionCheckScheduler(
             subscriptionCommandSender,
             pendingState,
             SUBSCRIPTION_TIMEOUT.toMillis(),
