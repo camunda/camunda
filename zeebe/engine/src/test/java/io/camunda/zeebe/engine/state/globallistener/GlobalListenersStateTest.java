@@ -11,9 +11,8 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
-import io.camunda.zeebe.protocol.impl.record.value.globallisteners.GlobalListenerRecord;
-import io.camunda.zeebe.protocol.impl.record.value.globallisteners.GlobalListenerBatchRecord;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import java.util.List;
 import java.util.Random;
 import org.assertj.core.api.Assertions;
@@ -64,80 +63,96 @@ public class GlobalListenersStateTest {
   }
 
   @Test
-  public void shouldStoreCopyOfPinnedConfiguration() {
-    // given a global listeners configuration stored in state
+  public void shouldStoreConfigurationVersion() {
+    // when a configuration is stored as a versioned configuration
     final GlobalListenerBatchRecord expectedConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(expectedConfig);
+    final long versionKey = globalListenersState.storeConfigurationVersion(expectedConfig);
 
-    // when a user task pins the current configuration
-    final UserTaskRecord userTaskRecord = newUserTask();
-    globalListenersState.pinCurrentConfiguration(userTaskRecord);
-
-    // then the pinned configuration can be retrieved from state
-    final var pinnedConfig =
-        globalListenersState
-            .getVersionedConfig(userTaskRecord.getListenersConfigKey())
-            .orElseThrow();
-    assertThat(pinnedConfig).isNotNull().isEqualTo(expectedConfig);
+    // then the versioned configuration can be retrieved from state
+    Assertions.assertThat(globalListenersState.isConfigurationVersionStored(versionKey)).isTrue();
+    final var versioned = globalListenersState.getVersionedConfig(versionKey).orElseThrow();
+    assertThat(versioned).isNotNull().isEqualTo(expectedConfig);
   }
 
   @Test
-  public void shouldNotChangePinnedConfigurationIfGlobalConfigurationChanges() {
-    // given a global listeners configuration stored in state and pinned by a user task
-    final GlobalListenerBatchRecord firstConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(firstConfig);
+  public void shouldNotChangeStoredConfigurationVersionIfGlobalConfigurationChanges() {
+    // given a configuration stored as a versioned configuration
+    final GlobalListenerBatchRecord expectedConfig = newGlobalListeners();
+    final long versionKey = globalListenersState.storeConfigurationVersion(expectedConfig);
 
-    final UserTaskRecord userTaskRecord = newUserTask();
-    globalListenersState.pinCurrentConfiguration(userTaskRecord);
-
-    // when the global configuration is updated
+    // whe the current global listeners configuration is updated
     final GlobalListenerBatchRecord newConfig = newGlobalListeners();
     globalListenersState.updateCurrentConfiguration(newConfig);
 
-    // then the old configuration should still be pinned for the user task
-    final var pinnedConfig =
-        globalListenersState
-            .getVersionedConfig(userTaskRecord.getListenersConfigKey())
-            .orElseThrow();
-    assertThat(pinnedConfig).isNotNull().isEqualTo(firstConfig);
+    // then the versioned configuration can still be retrieved from state
+    Assertions.assertThat(globalListenersState.isConfigurationVersionStored(versionKey)).isTrue();
+    final var versioned = globalListenersState.getVersionedConfig(versionKey).orElseThrow();
+    assertThat(versioned).isNotNull().isEqualTo(expectedConfig);
   }
 
   @Test
-  public void shouldKeepACopyOfTheConfigurationIfItIsUnpinnedFromOneTaskButReferencedByAnother() {
-    // given a global listeners configuration stored in state and pinned by two user tasks
+  public void shouldDeleteConfigurationVersion() {
+    // given a configuration stored as a versioned configuration
     final GlobalListenerBatchRecord expectedConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(expectedConfig);
-    final UserTaskRecord task1 = newUserTask();
-    globalListenersState.pinCurrentConfiguration(task1);
-    final UserTaskRecord task2 = newUserTask();
-    globalListenersState.pinCurrentConfiguration(task2);
+    final long versionKey = globalListenersState.storeConfigurationVersion(expectedConfig);
 
-    // when one user task unpins the configuration
-    globalListenersState.unpinConfiguration(task1);
+    // whe the versioned copy is explicitly deleted
+    globalListenersState.deleteConfigurationVersion(versionKey);
 
-    // then
-    final var pinnedConfig =
-        globalListenersState.getVersionedConfig(task2.getListenersConfigKey()).orElseThrow();
-    assertThat(pinnedConfig).isNotNull().isEqualTo(expectedConfig);
+    // then the versioned configuration is no longer available
+    Assertions.assertThat(globalListenersState.isConfigurationVersionStored(versionKey)).isFalse();
+    final var versioned = globalListenersState.getVersionedConfig(versionKey);
+    Assertions.assertThat(versioned).isEmpty();
   }
 
   @Test
-  public void shouldRemoveCopyOfTheConfigurationIfItIsUnpinnedFromAllReferencingTasks() {
-    // given a global listeners configuration stored in state and pinned by two user tasks
+  public void shouldPinConfigurationVersion() {
+    // given a configuration stored as a versioned configuration
     final GlobalListenerBatchRecord expectedConfig = newGlobalListeners();
-    globalListenersState.updateCurrentConfiguration(expectedConfig);
-    final UserTaskRecord task1 = newUserTask();
-    globalListenersState.pinCurrentConfiguration(task1);
-    final UserTaskRecord task2 = newUserTask();
-    globalListenersState.pinCurrentConfiguration(task2);
+    final long versionKey = globalListenersState.storeConfigurationVersion(expectedConfig);
+
+    // whe the version is pinned by an element
+    final long elementKey = newKey();
+    globalListenersState.pinConfiguration(versionKey, elementKey);
+
+    // then the versioned configuration should be marked as pinned
+    Assertions.assertThat(globalListenersState.isConfigurationVersionPinned(versionKey)).isTrue();
+  }
+
+  @Test
+  public void
+      shouldKeepConfigurationVersionPinnedIfItIsUnpinnedFromOneElementButReferencedByAnother() {
+    // given a configuration stored as a versioned configuration and pinned by two elements
+    final GlobalListenerBatchRecord expectedConfig = newGlobalListeners();
+    final long versionKey = globalListenersState.storeConfigurationVersion(expectedConfig);
+    final long elementKey1 = newKey();
+    final long elementKey2 = newKey();
+    globalListenersState.pinConfiguration(versionKey, elementKey1);
+    globalListenersState.pinConfiguration(versionKey, elementKey2);
+
+    // whe the version is unpinned by one of the element
+    globalListenersState.unpinConfiguration(versionKey, elementKey1);
+
+    // then the versioned configuration should still be marked as pinned
+    Assertions.assertThat(globalListenersState.isConfigurationVersionPinned(versionKey)).isTrue();
+  }
+
+  @Test
+  public void shouldUnpinConfigurationVersionIfItIsUnpinnedFromAllReferencingElements() {
+    // given a configuration stored as a versioned configuration and pinned by two elements
+    final GlobalListenerBatchRecord expectedConfig = newGlobalListeners();
+    final long versionKey = globalListenersState.storeConfigurationVersion(expectedConfig);
+    final long elementKey1 = newKey();
+    final long elementKey2 = newKey();
+    globalListenersState.pinConfiguration(versionKey, elementKey1);
+    globalListenersState.pinConfiguration(versionKey, elementKey2);
 
     // when both user tasks unpin the configuration
-    globalListenersState.unpinConfiguration(task1);
-    globalListenersState.unpinConfiguration(task2);
+    globalListenersState.unpinConfiguration(versionKey, elementKey1);
+    globalListenersState.unpinConfiguration(versionKey, elementKey2);
 
     // then
-    final var pinnedConfig = globalListenersState.getVersionedConfig(task2.getListenersConfigKey());
-    Assertions.assertThat(pinnedConfig).isEmpty();
+    Assertions.assertThat(globalListenersState.isConfigurationVersionPinned(versionKey)).isFalse();
   }
 
   private GlobalListenerBatchRecord newGlobalListeners() {
@@ -153,16 +168,6 @@ public class GlobalListenersStateTest {
               .setAfterNonGlobal(i % 2 == 0));
     }
     return record;
-  }
-
-  private UserTaskRecord newUserTask() {
-    return new UserTaskRecord()
-        .setElementInstanceKey(newKey())
-        .setBpmnProcessId("process_" + newKey())
-        .setElementId("task_" + newKey())
-        .setProcessInstanceKey(newKey())
-        .setProcessDefinitionKey(newKey())
-        .setUserTaskKey(newKey());
   }
 
   private long newKey() {
