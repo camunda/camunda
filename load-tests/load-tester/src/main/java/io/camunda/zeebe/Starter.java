@@ -33,7 +33,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +49,7 @@ public class Starter extends App {
   private final StarterCfg starterCfg;
   private Timer dataAvailabilityLatencyTimer;
   private Timer responseLatencyTimer;
+  private ScheduledExecutorService executorService;
 
   Starter(final AppCfg config) {
     super(config);
@@ -71,8 +71,7 @@ public class Starter extends App {
 
     // setup to start instances on given rate
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    final ScheduledExecutorService executorService =
-        Executors.newScheduledThreadPool(starterCfg.getThreads());
+    executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch, client);
 
@@ -190,9 +189,12 @@ public class Starter extends App {
         .whenCompleteAsync(
             (resp, err) -> {
               if (err != null) {
+                // on error, we need to retry
+                executorService.schedule(
+                    () -> checkForProcessInstanceExistence(client, startTime, processInstanceKey),
+                    100,
+                    TimeUnit.MILLISECONDS);
                 LOG.trace("Failed to get process instance {}", processInstanceKey, err);
-                LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
-                checkForProcessInstanceExistence(client, startTime, processInstanceKey);
               } else {
                 final long durationNanos = System.nanoTime() - startTime;
                 LOG.debug(
