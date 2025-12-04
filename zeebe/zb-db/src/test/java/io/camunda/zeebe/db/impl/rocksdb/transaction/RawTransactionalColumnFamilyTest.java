@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -37,7 +39,6 @@ public class RawTransactionalColumnFamilyTest {
   @AutoClose static ZeebeTransactionDb<ZbColumnFamilies> db;
   static Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies = new HashMap<>();
   private static TransactionContext context;
-  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
@@ -45,7 +46,7 @@ public class RawTransactionalColumnFamilyTest {
 
   @BeforeAll
   static void setup() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
@@ -54,7 +55,7 @@ public class RawTransactionalColumnFamilyTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
             defaultPartitionCount);
     db = factory.createDb(path.toFile());
     context = db.createContext();

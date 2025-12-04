@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,7 +44,6 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBufferManager;
 
 final class ZeebeRocksDbFactoryTest {
-  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
@@ -91,7 +92,7 @@ final class ZeebeRocksDbFactoryTest {
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
-    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
@@ -100,7 +101,7 @@ final class ZeebeRocksDbFactoryTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
             defaultPartitionCount);
 
     // when
@@ -180,7 +181,7 @@ final class ZeebeRocksDbFactoryTest {
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
-    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
@@ -189,7 +190,7 @@ final class ZeebeRocksDbFactoryTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
             defaultPartitionCount);
 
     // expect
