@@ -215,7 +215,7 @@ When we look at an example release process instance from the past, we can find t
 | `benchmark_name`    | `release-8-7-x` | The name of the load test              |
 | `stable_vms`        | `true`          | Whether to use stable VM types or not  |
 
-In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to the update our existing load test.
+In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to update our existing load test.
 
 #### Weekly load tests
 
