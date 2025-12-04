@@ -120,6 +120,7 @@ EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
+VOLUME ${ZB_HOME}/documents
 VOLUME /driver-lib
 
 # Switch to root to allow setting up our own user
@@ -131,6 +132,7 @@ RUN addgroup --gid 1001 camunda && \
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${ZB_HOME}/data && \
     mkdir ${ZB_HOME}/logs && \
+    mkdir ${ZB_HOME}/documents && \
     chown -R 1001:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
 
