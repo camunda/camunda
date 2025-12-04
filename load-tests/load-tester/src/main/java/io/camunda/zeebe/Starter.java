@@ -190,8 +190,7 @@ public class Starter extends App {
         .whenCompleteAsync(
             (resp, err) -> {
               if (err != null) {
-                THROTTLED_LOGGER.error(
-                    "Failed to get process instance {}", processInstanceKey, err);
+                LOG.trace("Failed to get process instance {}", processInstanceKey, err);
                 LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
                 checkForProcessInstanceExistence(client, startTime, processInstanceKey);
               } else {
