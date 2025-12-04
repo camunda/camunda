@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum GlobalListenersIntent implements Intent {
+public enum GlobalListenerBatchIntent implements Intent {
   CONFIGURE(0, false),
   CONFIGURED(1, true);
 
   private final short value;
   private final boolean event;
 
-  GlobalListenersIntent(final int value, final boolean event) {
+  GlobalListenerBatchIntent(final int value, final boolean event) {
     this.value = (short) value;
     this.event = event;
   }

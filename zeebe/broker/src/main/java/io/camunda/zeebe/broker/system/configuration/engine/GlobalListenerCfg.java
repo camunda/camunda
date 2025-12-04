@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
-import io.camunda.zeebe.protocol.impl.record.value.globallisteners.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import java.util.ArrayList;
 import java.util.List;
 
