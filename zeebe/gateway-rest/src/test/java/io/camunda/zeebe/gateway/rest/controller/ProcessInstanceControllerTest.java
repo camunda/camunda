@@ -42,7 +42,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -2171,13 +2170,11 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Enable in https://github.com/camunda/camunda/issues/41754")
   void shouldDeleteProcessInstanceBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
     record.setBatchOperationKey(123L);
-    // TODO Uncomment once batch operation type is available
-    // record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
 
     when(processInstanceServices.deleteProcessInstancesBatchOperation(
             any(ProcessInstanceFilter.class)))
