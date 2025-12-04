@@ -11,7 +11,9 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ClusterVariableServices;
+import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateClusterVariableRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
@@ -37,62 +39,50 @@ public class ClusterVariableController {
 
   private final ClusterVariableServices clusterVariableServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final SecurityConfiguration securityConfiguration;
 
   public ClusterVariableController(
       final ClusterVariableServices clusterVariableServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final SecurityConfiguration securityConfiguration) {
     this.clusterVariableServices = clusterVariableServices;
     this.authenticationProvider = authenticationProvider;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @CamundaPostMapping(path = "/global")
   public CompletableFuture<ResponseEntity<Object>> createGlobalClusterVariable(
       @RequestBody final CreateClusterVariableRequest createClusterVariableRequest) {
-    return RequestMapper.executeServiceMethod(
-        () ->
-            clusterVariableServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createGloballyScopedClusterVariable(
-                    createClusterVariableRequest.getName(),
-                    createClusterVariableRequest.getValue()),
-        ResponseMapper::toClusterVariableCreateResponse);
+    return RequestMapper.toGlobalClusterVariableCreateRequest(
+            createClusterVariableRequest, securityConfiguration.getCompiledIdValidationPattern())
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGlobalClusterVariable);
   }
 
   @CamundaPostMapping(path = "/tenants/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> createTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId,
       @RequestBody final CreateClusterVariableRequest createClusterVariableRequest) {
-    return RequestMapper.executeServiceMethod(
-        () ->
-            clusterVariableServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createTenantScopedClusterVariable(
-                    createClusterVariableRequest.getName(),
-                    createClusterVariableRequest.getValue(),
-                    tenantId),
-        ResponseMapper::toClusterVariableCreateResponse);
+    return RequestMapper.toTenantClusterVariableCreateRequest(
+            createClusterVariableRequest,
+            tenantId,
+            securityConfiguration.getCompiledIdValidationPattern())
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenantClusterVariable);
   }
 
   @CamundaDeleteMapping(path = "/global/{name}")
   public CompletableFuture<ResponseEntity<Object>> deleteGlobalClusterVariable(
       @PathVariable("name") final String name) {
-    return RequestMapper.executeServiceMethod(
-        () ->
-            clusterVariableServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteGloballyScopedClusterVariable(name),
-        ResponseMapper::toClusterVariableDeleteResponse);
+    return RequestMapper.toGlobalClusterVariableRequest(
+            name, securityConfiguration.getCompiledIdValidationPattern())
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deleteGlobalClusterVariable);
   }
 
   @CamundaDeleteMapping(path = "/tenants/{tenantId}/{name}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
-    return RequestMapper.executeServiceMethod(
-        () ->
-            clusterVariableServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteTenantScopedClusterVariable(name, tenantId),
-        ResponseMapper::toClusterVariableDeleteResponse);
+    return RequestMapper.toTenantClusterVariableRequest(
+            name, tenantId, securityConfiguration.getCompiledIdValidationPattern())
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deleteTenantClusterVariable);
   }
 
   @CamundaPostMapping(path = "/search")
@@ -120,30 +110,82 @@ public class ClusterVariableController {
 
   @CamundaGetMapping(path = "/global/{name}")
   public ResponseEntity<Object> getGlobalClusterVariable(@PathVariable("name") final String name) {
-    try {
-      return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toClusterVariableResult(
-                  clusterVariableServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getGloballyScopedClusterVariable(name)));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
+    return RequestMapper.toGlobalClusterVariableRequest(
+            name, securityConfiguration.getCompiledIdValidationPattern())
+        .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalClusterVariable);
   }
 
   @CamundaGetMapping(path = "/tenants/{tenantId}/{name}")
   public ResponseEntity<Object> getTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
+    return RequestMapper.toTenantClusterVariableRequest(
+            name, tenantId, securityConfiguration.getCompiledIdValidationPattern())
+        .fold(RestErrorMapper::mapProblemToResponse, this::getTenantClusterVariable);
+  }
+
+  private ResponseEntity<Object> getGlobalClusterVariable(final ClusterVariableRequest request) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toClusterVariableResult(
                   clusterVariableServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getTenantScopedClusterVariable(name, tenantId)));
+                      .getGloballyScopedClusterVariable(request)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  private ResponseEntity<Object> getTenantClusterVariable(final ClusterVariableRequest request) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toClusterVariableResult(
+                  clusterVariableServices
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                      .getTenantScopedClusterVariable(request)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createGlobalClusterVariable(
+      final ClusterVariableRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            clusterVariableServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .createGloballyScopedClusterVariable(request),
+        ResponseMapper::toClusterVariableCreateResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createTenantClusterVariable(
+      final ClusterVariableRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            clusterVariableServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .createTenantScopedClusterVariable(request),
+        ResponseMapper::toClusterVariableCreateResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> deleteGlobalClusterVariable(
+      final ClusterVariableRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            clusterVariableServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .deleteGloballyScopedClusterVariable(request),
+        ResponseMapper::toClusterVariableDeleteResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> deleteTenantClusterVariable(
+      final ClusterVariableRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            clusterVariableServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .deleteTenantScopedClusterVariable(request),
+        ResponseMapper::toClusterVariableDeleteResponse);
   }
 }

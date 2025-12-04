@@ -84,7 +84,7 @@ public class ClusterVariableSearchIT {
     tenantVarValue1 = "testValue1_" + UUID.randomUUID();
     tenantVarName2 = "tenantVarSearch2_" + UUID.randomUUID();
     tenantVarValue2 = "testValue2_" + UUID.randomUUID();
-    tenantId = "tenant_" + UUID.randomUUID();
+    tenantId = "tenant_1";
 
     camundaClient
         .newTenantScopedClusterVariableCreateRequest(tenantId)
@@ -103,7 +103,7 @@ public class ClusterVariableSearchIT {
     globalVarValueMixed = "globalValue_" + UUID.randomUUID();
     tenantVarNameMixed = "tenantVarSearchOnly_" + UUID.randomUUID();
     tenantVarValueMixed = "tenantValue_" + UUID.randomUUID();
-    tenantIdMixed = "tenant_" + UUID.randomUUID();
+    tenantIdMixed = "tenant_2";
 
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()
@@ -122,7 +122,7 @@ public class ClusterVariableSearchIT {
     globalVarValueTenantOnly = "globalValue_" + UUID.randomUUID();
     tenantVarNameTenantOnly = "tenantVarTenantSearch_" + UUID.randomUUID();
     tenantVarValueTenantOnly = "tenantValue_" + UUID.randomUUID();
-    tenantIdTenantOnly = "tenant_" + UUID.randomUUID();
+    tenantIdTenantOnly = "tenant_3";
 
     camundaClient
         .newGloballyScopedClusterVariableCreateRequest()

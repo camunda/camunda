@@ -42,6 +42,7 @@ import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivat
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
+import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -73,6 +74,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CreateClusterVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
@@ -114,6 +116,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
+import io.camunda.zeebe.gateway.rest.validator.ClusterVariableRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.MappingRuleRequestValidator;
@@ -681,6 +684,40 @@ public class RequestMapper {
         () ->
             new MappingRuleDTO(
                 request.getClaimName(), request.getClaimValue(), request.getName(), mappingRuleId));
+  }
+
+  public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
+      final CreateClusterVariableRequest request, final Pattern identifierPattern) {
+    return getResult(
+        ClusterVariableRequestValidator.validateGlobalClusterVariableCreateRequest(
+            request, identifierPattern),
+        () -> new ClusterVariableRequest(request.getName(), request.getValue(), null));
+  }
+
+  public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableRequest(
+      final String name, final Pattern identifierPattern) {
+    return getResult(
+        ClusterVariableRequestValidator.validateGlobalClusterVariableRequest(
+            name, identifierPattern),
+        () -> new ClusterVariableRequest(name, null, null));
+  }
+
+  public static Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableCreateRequest(
+      final CreateClusterVariableRequest request,
+      final String tenantId,
+      final Pattern identifierPattern) {
+    return getResult(
+        ClusterVariableRequestValidator.validateTenantClusterVariableCreateRequest(
+            request, tenantId, identifierPattern),
+        () -> new ClusterVariableRequest(request.getName(), request.getValue(), tenantId));
+  }
+
+  public static Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableRequest(
+      final String name, final String tenantId, final Pattern identifierPattern) {
+    return getResult(
+        ClusterVariableRequestValidator.validateTenantClusterVariableRequest(
+            name, tenantId, identifierPattern),
+        () -> new ClusterVariableRequest(name, null, tenantId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
