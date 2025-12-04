@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import java.util.HashMap;
@@ -83,7 +83,7 @@ final class BackupStoreCfgTest {
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("backup-cfg", new HashMap<>());
-    final BackupStoreCfg backup = cfg.getData().getBackup();
+    final BackupCfg backup = cfg.getData().getBackup();
 
     // then
     assertThat(backup.getStore()).isEqualTo(BackupStoreType.S3);

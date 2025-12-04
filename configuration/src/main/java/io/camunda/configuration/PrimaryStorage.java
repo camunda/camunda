@@ -37,6 +37,7 @@ public class PrimaryStorage {
   @NestedConfigurationProperty private Disk disk = new Disk();
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
+  @NestedConfigurationProperty private PrimaryStorageBackup backup = new PrimaryStorageBackup();
 
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -86,5 +87,13 @@ public class PrimaryStorage {
 
   public void setRocksDb(final RocksDb rocksDb) {
     this.rocksDb = rocksDb;
+  }
+
+  public PrimaryStorageBackup getBackup() {
+    return backup;
+  }
+
+  public void setBackup(final PrimaryStorageBackup primaryStorageBackup) {
+    backup = primaryStorageBackup;
   }
 }

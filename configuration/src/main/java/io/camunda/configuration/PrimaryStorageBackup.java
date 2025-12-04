@@ -8,45 +8,14 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.time.Duration;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Backup implements Cloneable {
-  private static final String PREFIX = "camunda.data.backup";
+public class PrimaryStorageBackup implements Cloneable {
+  private static final String PREFIX = "camunda.data.primary-storage.backup";
 
-  private static final String LEGACY_OPERATE_SNAPSHOT_TIMEOUT =
-      "camunda.operate.backup.snapshotTimeout";
-  private static final String LEGACY_OPERATE_INCOMPLETE_CHECK_TIMEOUT_IN_SECONDS =
-      "camunda.operate.backup.incompleteCheckTimeoutInSeconds";
-  private static final Set<String> LEGACY_REPOSITORY_NAME_PROPERTIES =
-      Set.of("camunda.tasklist.backup.repositoryName", "camunda.operate.backup.repositoryName");
-  private static final String LEGACY_BROKER_STORE = "zeebe.broker.data.backup.store";
-
-  /**
-   * Set the ES / OS snapshot repository name.
-   *
-   * <p>Note: This setting applies to backups of secondary storage.
-   */
-  private String repositoryName;
-
-  /**
-   * A backup of history data consists of multiple Elasticsearch/Opensearch snapshots.
-   * snapshotTimeout controls the maximum time to wait for a snapshot operation to complete during
-   * backup creation. When set to 0, the system will wait indefinitely for snapshots to finish.
-   *
-   * <p>Note: This setting applies to backups of secondary storage.
-   */
-  private int snapshotTimeout = 0;
-
-  /**
-   * Defines the timeout period for determining whether an incomplete backup should be considered as
-   * failed or still in progress. This property helps distinguish between backups that are actively
-   * running versus those that may have stalled or failed silently.
-   *
-   * <p>Note: This setting applies to backups of secondary storage.
-   */
-  private Duration incompleteCheckTimeout = Duration.ofMinutes(5);
+  private static final Set<String> LEGACY_BROKER_STORE =
+      Set.of("zeebe.broker.data.backup.store", "camunda.data.backup.store");
 
   /**
    * Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default
@@ -77,48 +46,6 @@ public class Backup implements Cloneable {
 
   /** Configuration for backup store Azure */
   @NestedConfigurationProperty private Azure azure = new Azure();
-
-  public String getRepositoryName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".repository-name",
-        repositoryName,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_REPOSITORY_NAME_PROPERTIES);
-  }
-
-  public void setRepositoryName(final String repositoryName) {
-    this.repositoryName = repositoryName;
-  }
-
-  public int getSnapshotTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".snapshot-timeout",
-        snapshotTimeout,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_OPERATE_SNAPSHOT_TIMEOUT));
-  }
-
-  public void setSnapshotTimeout(final int snapshotTimeout) {
-    this.snapshotTimeout = snapshotTimeout;
-  }
-
-  public Duration getIncompleteCheckTimeout() {
-    final long incompleteCheckTimeoutInSeconds =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
-            PREFIX + ".incomplete-check-timeout",
-            incompleteCheckTimeout.getSeconds(),
-            Long.class,
-            BackwardsCompatibilityMode.SUPPORTED,
-            Set.of(LEGACY_OPERATE_INCOMPLETE_CHECK_TIMEOUT_IN_SECONDS));
-
-    return Duration.ofSeconds(incompleteCheckTimeoutInSeconds);
-  }
-
-  public void setIncompleteCheckTimeout(final Duration incompleteCheckTimeout) {
-    this.incompleteCheckTimeout = incompleteCheckTimeout;
-  }
 
   public S3 getS3() {
     return s3;
@@ -158,7 +85,7 @@ public class Backup implements Cloneable {
         store,
         BackupStoreType.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_BROKER_STORE));
+        LEGACY_BROKER_STORE);
   }
 
   public void setStore(final BackupStoreType store) {

@@ -12,7 +12,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import feign.FeignException;
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Backup;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -117,8 +117,12 @@ final class ConcurrentBackupScalingIT {
   private void configureBackup(final TestStandaloneBroker broker) {
     broker.withUnifiedConfig(
         cfg -> {
-          cfg.getData().getBackup().setStore(Backup.BackupStoreType.FILESYSTEM);
           cfg.getData()
+              .getPrimaryStorage()
+              .getBackup()
+              .setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+          cfg.getData()
+              .getPrimaryStorage()
               .getBackup()
               .getFilesystem()
               .setBasePath(backupBasePath.toAbsolutePath().toString());

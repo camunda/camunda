@@ -8,7 +8,7 @@
 
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.Backup;
+import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -54,22 +54,22 @@ public class TasklistPropertiesOverride {
     final TasklistProperties override = new TasklistProperties();
     BeanUtils.copyProperties(legacyTasklistProperties, override);
 
-    populateFromBackup(override);
-
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
     if (SecondaryStorageType.elasticsearch == database.getType()) {
       populateFromElasticsearch(override, database);
+      populateFromBackup(override, database.getElasticsearch().getBackup());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       populateFromOpensearch(override, database);
+      populateFromBackup(override, database.getOpensearch().getBackup());
     }
 
     return override;
   }
 
-  private void populateFromBackup(final TasklistProperties override) {
-    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
+  private void populateFromBackup(
+      final TasklistProperties override, final DocumentBasedSecondaryStorageBackup backup) {
     override.getBackup().setRepositoryName(backup.getRepositoryName());
   }
 

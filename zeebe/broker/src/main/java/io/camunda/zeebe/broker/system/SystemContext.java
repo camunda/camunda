@@ -29,7 +29,7 @@ import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -364,7 +364,7 @@ public final class SystemContext {
     }
   }
 
-  private void validateBackupCfg(final BackupStoreCfg backup) {
+  private void validateBackupCfg(final BackupCfg backup) {
     try {
       switch (backup.getStore()) {
         case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");

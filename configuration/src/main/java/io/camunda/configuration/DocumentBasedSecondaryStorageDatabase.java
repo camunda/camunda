@@ -84,6 +84,10 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   @NestedConfigurationProperty private Bulk bulk = new Bulk(databaseName());
 
+  @NestedConfigurationProperty
+  private DocumentBasedSecondaryStorageBackup backup =
+      new DocumentBasedSecondaryStorageBackup(databaseName());
+
   @Override
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -362,6 +366,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setTemplatePriority(final Integer templatePriority) {
     this.templatePriority = templatePriority;
+  }
+
+  public DocumentBasedSecondaryStorageBackup getBackup() {
+    return backup;
+  }
+
+  public void setBackup(final DocumentBasedSecondaryStorageBackup backup) {
+    this.backup = backup;
   }
 
   private String prefix() {

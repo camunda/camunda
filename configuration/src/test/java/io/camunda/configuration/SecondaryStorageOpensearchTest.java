@@ -94,6 +94,10 @@ public class SecondaryStorageOpensearchTest {
   private static final int EXPECTED_BULK_SIZE = 2_000;
   private static final int EXPECTED_BULK_MEMORY_LIMIT = 50;
 
+  private static final String EXPECTED_BACKUP_REPOSITORY_NAME = "backup-repo";
+  private static final int EXPECTED_BACKUP_SNAPSHOT_TIMEOUT = 10;
+  private static final int EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT = 10;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -157,7 +161,12 @@ public class SecondaryStorageOpensearchTest {
             + EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION,
         "camunda.data.secondary-storage.opensearch.bulk.delay=10s",
         "camunda.data.secondary-storage.opensearch.bulk.size=" + EXPECTED_BULK_SIZE,
-        "camunda.data.secondary-storage.opensearch.bulk.memory-limit=50MB"
+        "camunda.data.secondary-storage.opensearch.bulk.memory-limit=50MB",
+        "camunda.data.secondary-storage.opensearch.backup.repository-name="
+            + EXPECTED_BACKUP_REPOSITORY_NAME,
+        "camunda.data.secondary-storage.opensearch.backup.snapshot-timeout="
+            + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
+        "camunda.data.secondary-storage.opensearch.backup.incomplete-check-timeout=PT10S",
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -198,6 +207,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(operateProperties.getOpensearch().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(operateProperties.getBackup().getSnapshotTimeout())
+          .isEqualTo(EXPECTED_BACKUP_SNAPSHOT_TIMEOUT);
+      assertThat(operateProperties.getBackup().getRepositoryName())
+          .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
+      assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+          .isEqualTo(EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT);
     }
 
     @Test
@@ -481,6 +496,16 @@ public class SecondaryStorageOpensearchTest {
         "camunda.database.index.replicasByIndexName.my-index=3",
         "camunda.data.secondary-storage.opensearch.number-of-shards-per-index.my-index=2",
         "camunda.database.index.shardsByIndexName.my-index=2",
+
+        // backup configuration
+        "camunda.data.secondary-storage.opensearch.backup.repository-name="
+            + EXPECTED_BACKUP_REPOSITORY_NAME,
+        "camunda.data.secondary-storage.opensearch.backup.snapshot-timeout="
+            + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
+        "camunda.data.secondary-storage.opensearch.backup.incomplete-check-timeout=10s",
+        "camunda.operate.backup.repositoryName=" + EXPECTED_BACKUP_REPOSITORY_NAME,
+        "camunda.operate.backup.snapshotTimeout=" + EXPECTED_BACKUP_SNAPSHOT_TIMEOUT,
+        "camunda.operate.backup.incompleteCheckTimeoutInSeconds=10",
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -521,6 +546,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(operateProperties.getOpensearch().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(operateProperties.getBackup().getSnapshotTimeout())
+          .isEqualTo(EXPECTED_BACKUP_SNAPSHOT_TIMEOUT);
+      assertThat(operateProperties.getBackup().getRepositoryName())
+          .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
+      assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+          .isEqualTo(EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT);
     }
 
     @Test
@@ -543,6 +574,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(tasklistProperties.getBackup().getRepositoryName())
+          .isEqualTo(EXPECTED_BACKUP_REPOSITORY_NAME);
     }
 
     @Test

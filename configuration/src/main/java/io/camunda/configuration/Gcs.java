@@ -8,18 +8,29 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class Gcs {
-  private static final String PREFIX = "camunda.data.backup.gcs";
-  private static final Set<String> LEGACY_BUCKETNAME_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.bucketName");
-  private static final Set<String> LEGACY_BASEPATH_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.basePath");
-  private static final Set<String> LEGACY_HOST_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.host");
-  private static final Set<String> LEGACY_AUTH_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.auth");
+  private static final String PREFIX = "camunda.data.primary-storage.backup.gcs";
+  private static final Set<Set<String>> LEGACY_BUCKETNAME_PROPERTIES = new LinkedHashSet<>(2);
+  private static final Set<Set<String>> LEGACY_BASEPATH_PROPERTIES = new LinkedHashSet<>(2);
+  private static final Set<Set<String>> LEGACY_HOST_PROPERTIES = new LinkedHashSet<>(2);
+  private static final Set<Set<String>> LEGACY_AUTH_PROPERTIES = new LinkedHashSet<>(2);
+
+  static {
+    LEGACY_BUCKETNAME_PROPERTIES.add(Set.of("zeebe.broker.data.backup.gcs.bucketName"));
+    LEGACY_BUCKETNAME_PROPERTIES.add(Set.of("camunda.data.backup.gcs.bucket-name"));
+
+    LEGACY_BASEPATH_PROPERTIES.add(Set.of("zeebe.broker.data.backup.gcs.basePath"));
+    LEGACY_BASEPATH_PROPERTIES.add(Set.of("camunda.data.backup.gcs.base-path"));
+
+    LEGACY_HOST_PROPERTIES.add(Set.of("zeebe.broker.data.backup.gcs.host"));
+    LEGACY_HOST_PROPERTIES.add(Set.of("camunda.data.backup.gcs.host"));
+
+    LEGACY_AUTH_PROPERTIES.add(Set.of("zeebe.broker.data.backup.gcs.auth"));
+    LEGACY_AUTH_PROPERTIES.add(Set.of("camunda.data.backup.gcs.auth"));
+  }
 
   /**
    * Name of the bucket where the backup will be stored. The bucket must already exist. The bucket
@@ -51,7 +62,7 @@ public class Gcs {
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
   public String getBucketName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".bucket-name",
         bucketName,
         String.class,
@@ -64,7 +75,7 @@ public class Gcs {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".base-path",
         basePath,
         String.class,
@@ -77,7 +88,7 @@ public class Gcs {
   }
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".host",
         host,
         String.class,
@@ -90,7 +101,7 @@ public class Gcs {
   }
 
   public GcsBackupStoreAuth getAuth() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".auth",
         auth,
         GcsBackupStoreAuth.class,

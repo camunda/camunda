@@ -146,4 +146,187 @@ public class DataBackupGcsTest {
           .isEqualTo(GcsBackupStoreAuth.NONE);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.gcs.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.host=hostPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.auth=auto",
+      })
+  class WithOnlyPrimaryStorageConfigSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyPrimaryStorageConfigSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketName() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetBasePath() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetHost() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getHost())
+          .isEqualTo("hostPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAuth() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getAuth())
+          .isEqualTo(GcsBackupStoreAuth.AUTO);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.gcs.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.host=hostPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.auth=auto",
+        // backup (unified)
+        "camunda.data.backup.gcs.bucket-name=bucketNameNew",
+        "camunda.data.backup.gcs.base-path=basePathNew",
+        "camunda.data.backup.gcs.host=hostNew",
+        "camunda.data.backup.gcs.auth=none",
+      })
+  class WithPrimaryStorageAndBackupSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPrimaryStorageAndBackupSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketNameFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetHostFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getHost())
+          .isEqualTo("hostPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAuthFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getAuth())
+          .isEqualTo(GcsBackupStoreAuth.AUTO);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.gcs.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.host=hostPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.auth=auto",
+        // legacy
+        "zeebe.broker.data.backup.gcs.bucketName=bucketNameLegacy",
+        "zeebe.broker.data.backup.gcs.basePath=basePathLegacy",
+        "zeebe.broker.data.backup.gcs.host=hostLegacy",
+        "zeebe.broker.data.backup.gcs.auth=none",
+      })
+  class WithPrimaryStorageAndLegacySet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPrimaryStorageAndLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketNameFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetHostFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getHost())
+          .isEqualTo("hostPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAuthFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getAuth())
+          .isEqualTo(GcsBackupStoreAuth.AUTO);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // primary-storage
+        "camunda.data.primary-storage.backup.gcs.bucket-name=bucketNamePrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.base-path=basePathPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.host=hostPrimaryStorage",
+        "camunda.data.primary-storage.backup.gcs.auth=auto",
+        // backup (unified)
+        "camunda.data.backup.gcs.bucket-name=bucketNameNew",
+        "camunda.data.backup.gcs.base-path=basePathNew",
+        "camunda.data.backup.gcs.host=hostNew",
+        "camunda.data.backup.gcs.auth=none",
+        // legacy
+        "zeebe.broker.data.backup.gcs.bucketName=bucketNameLegacy",
+        "zeebe.broker.data.backup.gcs.basePath=basePathLegacy",
+        "zeebe.broker.data.backup.gcs.host=hostLegacy",
+        "zeebe.broker.data.backup.gcs.auth=none",
+      })
+  class WithAllThreeConfigsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithAllThreeConfigsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBucketNameFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBucketName())
+          .isEqualTo("bucketNamePrimaryStorage");
+    }
+
+    @Test
+    void shouldSetBasePathFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBasePath())
+          .isEqualTo("basePathPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetHostFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getHost())
+          .isEqualTo("hostPrimaryStorage");
+    }
+
+    @Test
+    void shouldSetAuthFromPrimaryStorage() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getAuth())
+          .isEqualTo(GcsBackupStoreAuth.AUTO);
+    }
+  }
 }

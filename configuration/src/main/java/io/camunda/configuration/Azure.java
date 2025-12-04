@@ -8,23 +8,44 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Azure {
-  private static final String PREFIX = "camunda.data.backup.azure";
-  private static final Set<String> LEGACY_ENDPOINT_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.endpoint");
-  private static final Set<String> LEGACY_ACCOUNTNAME_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.accountName");
-  private static final Set<String> LEGACY_ACCOUNTKEY_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.accountKey");
-  private static final Set<String> LEGACY_CONNECTIONSTRING_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.connectionString");
-  private static final Set<String> LEGACY_BASEPATH_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.basePath");
-  private static final Set<String> LEGACY_CREATECONTAINER_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.createContainer");
+  private static final String PREFIX = "camunda.data.primary-storage.backup.azure";
+  private static final Set<Set<String>> LEGACY_ENDPOINT_PROPERTIES = new LinkedHashSet<>(2);
+
+  private static final Set<Set<String>> LEGACY_ACCOUNTNAME_PROPERTIES = new LinkedHashSet<>(2);
+
+  private static final Set<Set<String>> LEGACY_ACCOUNTKEY_PROPERTIES = new LinkedHashSet<>(2);
+
+  private static final Set<Set<String>> LEGACY_CONNECTIONSTRING_PROPERTIES = new LinkedHashSet<>(2);
+
+  private static final Set<Set<String>> LEGACY_BASEPATH_PROPERTIES = new LinkedHashSet<>(2);
+
+  private static final Set<Set<String>> LEGACY_CREATECONTAINER_PROPERTIES = new LinkedHashSet<>(2);
+
+  static {
+    LEGACY_ENDPOINT_PROPERTIES.add(Set.of("zeebe.broker.data.backup.azure.endpoint"));
+    LEGACY_ENDPOINT_PROPERTIES.add(Set.of("camunda.data.backup.azure.endpoint"));
+
+    LEGACY_ACCOUNTNAME_PROPERTIES.add(Set.of("zeebe.broker.data.backup.azure.accountName"));
+    LEGACY_ACCOUNTNAME_PROPERTIES.add(Set.of("camunda.data.backup.azure.account-name"));
+
+    LEGACY_ACCOUNTKEY_PROPERTIES.add(Set.of("zeebe.broker.data.backup.azure.accountKey"));
+    LEGACY_ACCOUNTKEY_PROPERTIES.add(Set.of("camunda.data.backup.azure.account-key"));
+
+    LEGACY_CONNECTIONSTRING_PROPERTIES.add(
+        Set.of("zeebe.broker.data.backup.azure.connectionString"));
+    LEGACY_CONNECTIONSTRING_PROPERTIES.add(Set.of("camunda.data.backup.azure.connection-string"));
+
+    LEGACY_BASEPATH_PROPERTIES.add(Set.of("zeebe.broker.data.backup.azure.basePath"));
+    LEGACY_BASEPATH_PROPERTIES.add(Set.of("camunda.data.backup.azure.base-path"));
+
+    LEGACY_CREATECONTAINER_PROPERTIES.add(Set.of("zeebe.broker.data.backup.azure.createContainer"));
+    LEGACY_CREATECONTAINER_PROPERTIES.add(Set.of("camunda.data.backup.azure.create-container"));
+  }
 
   /** Azure endpoint to connect to. Required unless a connection string is specified. */
   private String endpoint;
@@ -67,10 +88,10 @@ public class Azure {
    * runtime error. See more in: <a
    * href="https://learn.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature">...</a>
    */
-  @NestedConfigurationProperty private SasToken sasToken;
+  @NestedConfigurationProperty private SasToken sasToken = new SasToken();
 
   public String getEndpoint() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".endpoint",
         endpoint,
         String.class,
@@ -83,7 +104,7 @@ public class Azure {
   }
 
   public String getAccountName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".account-name",
         accountName,
         String.class,
@@ -96,7 +117,7 @@ public class Azure {
   }
 
   public String getAccountKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".account-key",
         accountKey,
         String.class,
@@ -109,7 +130,7 @@ public class Azure {
   }
 
   public String getConnectionString() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".connection-string",
         connectionString,
         String.class,
@@ -122,7 +143,7 @@ public class Azure {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".base-path",
         basePath,
         String.class,
@@ -135,7 +156,7 @@ public class Azure {
   }
 
   public boolean isCreateContainer() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".create-container",
         createContainer,
         Boolean.class,

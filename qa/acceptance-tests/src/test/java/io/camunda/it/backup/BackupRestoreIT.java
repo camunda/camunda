@@ -14,9 +14,9 @@ import feign.FeignException.NotFound;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.configuration.Backup;
-import io.camunda.configuration.Backup.BackupStoreType;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.it.document.DocumentClient;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
@@ -127,7 +127,8 @@ public class BackupRestoreIT {
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
             .withUnauthenticatedAccess();
     configurator = new MultiDbConfigurator(testStandaloneApplication);
-    testStandaloneApplication.withUnifiedConfig(this::configureZeebeBackupStore);
+    testStandaloneApplication.withUnifiedConfig(
+        cfg -> configureZeebeBackupStore(cfg, config.databaseType));
     final String dbUrl;
     searchContainer =
         switch (config.databaseType) {
@@ -238,22 +239,34 @@ public class BackupRestoreIT {
     generator.verifyAllExported(ProcessInstanceState.COMPLETED);
   }
 
-  private void configureZeebeBackupStore(final Camunda cfg) {
-    final var backup = cfg.getData().getBackup();
+  private void configureZeebeBackupStore(final Camunda cfg, final DatabaseType databaseType) {
+    final var backup = cfg.getData().getPrimaryStorage().getBackup();
     final var azure = backup.getAzure();
 
     backup.setStore(BackupStoreType.AZURE);
     azure.setBasePath(containerName);
     azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
 
-    cfg.getData().getBackup().setRepositoryName(REPOSITORY_NAME);
+    if (databaseType.isElasticSearch()) {
+      cfg.getData()
+          .getSecondaryStorage()
+          .getElasticsearch()
+          .getBackup()
+          .setRepositoryName(REPOSITORY_NAME);
+    } else {
+      cfg.getData()
+          .getSecondaryStorage()
+          .getOpensearch()
+          .getBackup()
+          .setRepositoryName(REPOSITORY_NAME);
+    }
   }
 
   private void restoreZeebe() {
     final var unifiedRestoreConfig = new Camunda();
-    final var backup = unifiedRestoreConfig.getData().getBackup();
+    final var backup = unifiedRestoreConfig.getData().getPrimaryStorage().getBackup();
 
-    backup.setStore(Backup.BackupStoreType.AZURE); // We are configuring Azure always
+    backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE); // We are configuring Azure always
     backup.getAzure().setBasePath(containerName);
     backup.getAzure().setConnectionString(AZURITE_CONTAINER.getConnectString());
 

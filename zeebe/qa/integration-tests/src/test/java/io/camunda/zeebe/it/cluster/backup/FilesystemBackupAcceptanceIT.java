@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.Backup;
 import io.camunda.configuration.Filesystem;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -55,11 +55,14 @@ final class FilesystemBackupAcceptanceIT implements BackupAcceptance {
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withUnifiedConfig(
         cfg -> {
-          cfg.getData().getBackup().setStore(Backup.BackupStoreType.FILESYSTEM);
+          cfg.getData()
+              .getPrimaryStorage()
+              .getBackup()
+              .setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
 
           final var config = new Filesystem();
           config.setBasePath(basePath.toAbsolutePath().toString());
-          cfg.getData().getBackup().setFilesystem(config);
+          cfg.getData().getPrimaryStorage().getBackup().setFilesystem(config);
         });
   }
 }
