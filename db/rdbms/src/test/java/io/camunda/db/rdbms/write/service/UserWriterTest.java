@@ -8,14 +8,17 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.UserDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class UserWriterTest {
@@ -36,7 +39,15 @@ class UserWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.USER,
+                    WriteStatementType.INSERT,
+                    model.userKey(),
+                    "io.camunda.db.rdbms.sql.UserMapper.insert",
+                    model)));
   }
 
   @Test
@@ -53,13 +64,31 @@ class UserWriterTest {
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.USER,
+                    WriteStatementType.UPDATE,
+                    model.username(),
+                    "io.camunda.db.rdbms.sql.UserMapper.update",
+                    model)));
   }
 
   @Test
   void shouldDeleteUser() {
-    writer.delete("testuser");
+    final String username = "testuser";
+    
+    writer.delete(username);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.USER,
+                    WriteStatementType.DELETE,
+                    username,
+                    "io.camunda.db.rdbms.sql.UserMapper.delete",
+                    username)));
   }
 }

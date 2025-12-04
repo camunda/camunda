@@ -8,15 +8,18 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class TenantWriterTest {
@@ -35,7 +38,15 @@ class TenantWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.TENANT,
+                    WriteStatementType.INSERT,
+                    model.tenantId(),
+                    "io.camunda.db.rdbms.sql.TenantMapper.insert",
+                    model)));
   }
 
   @Test
@@ -46,7 +57,15 @@ class TenantWriterTest {
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.TENANT,
+                    WriteStatementType.UPDATE,
+                    model.tenantId(),
+                    "io.camunda.db.rdbms.sql.TenantMapper.update",
+                    model)));
   }
 
   @Test
@@ -55,7 +74,15 @@ class TenantWriterTest {
 
     writer.addMember(member);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.TENANT,
+                    WriteStatementType.INSERT,
+                    member.tenantId(),
+                    "io.camunda.db.rdbms.sql.TenantMapper.insertMember",
+                    member)));
   }
 
   @Test
@@ -64,7 +91,15 @@ class TenantWriterTest {
 
     writer.removeMember(member);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.TENANT,
+                    WriteStatementType.DELETE,
+                    member.tenantId(),
+                    "io.camunda.db.rdbms.sql.TenantMapper.deleteMember",
+                    member)));
   }
 
   @Test
@@ -73,6 +108,14 @@ class TenantWriterTest {
 
     writer.delete(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.TENANT,
+                    WriteStatementType.DELETE,
+                    model.tenantId(),
+                    "io.camunda.db.rdbms.sql.TenantMapper.delete",
+                    model.tenantId())));
   }
 }

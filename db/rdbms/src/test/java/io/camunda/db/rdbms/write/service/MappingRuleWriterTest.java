@@ -7,13 +7,15 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class MappingRuleWriterTest {
@@ -28,7 +30,15 @@ class MappingRuleWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.MAPPING_RULE,
+                    WriteStatementType.INSERT,
+                    model.mappingRuleId(),
+                    "io.camunda.db.rdbms.sql.MappingRuleMapper.insert",
+                    model)));
   }
 
   @Test
@@ -38,13 +48,31 @@ class MappingRuleWriterTest {
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.MAPPING_RULE,
+                    WriteStatementType.UPDATE,
+                    model.mappingRuleId(),
+                    "io.camunda.db.rdbms.sql.MappingRuleMapper.update",
+                    model)));
   }
 
   @Test
   void shouldDeleteMappingRule() {
-    writer.delete("rule1");
+    final String ruleId = "rule1";
+    
+    writer.delete(ruleId);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.MAPPING_RULE,
+                    WriteStatementType.DELETE,
+                    ruleId,
+                    "io.camunda.db.rdbms.sql.MappingRuleMapper.delete",
+                    ruleId)));
   }
 }

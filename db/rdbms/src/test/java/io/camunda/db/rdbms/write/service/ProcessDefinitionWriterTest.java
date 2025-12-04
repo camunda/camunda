@@ -7,13 +7,15 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class ProcessDefinitionWriterTest {
@@ -23,10 +25,28 @@ class ProcessDefinitionWriterTest {
 
   @Test
   void shouldCreateProcessDefinition() {
-    final var model = mock(ProcessDefinitionDbModel.class);
+    final var model =
+        new ProcessDefinitionDbModel(
+            123L,
+            "process1",
+            "resource.bpmn",
+            "Process Name",
+            "<default>",
+            "1.0",
+            1,
+            "<bpmn>...</bpmn>",
+            "form1");
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.PROCESS_DEFINITION,
+                    WriteStatementType.INSERT,
+                    model.processDefinitionKey(),
+                    "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.insert",
+                    model)));
   }
 }

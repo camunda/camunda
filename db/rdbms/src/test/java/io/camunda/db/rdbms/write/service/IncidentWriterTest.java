@@ -8,6 +8,8 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,9 +17,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import org.junit.jupiter.api.Test;
 
 class IncidentWriterTest {
@@ -31,20 +36,48 @@ class IncidentWriterTest {
 
   @Test
   void shouldCreateIncident() {
-    final var model = new IncidentDbModel.Builder().incidentKey(123L).errorMessage("error").build();
+    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
+
+    final var model = mock(IncidentDbModel.class);
+    final var truncatedModel = mock(IncidentDbModel.class);
+    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.incidentKey()).thenReturn(123L);
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.INCIDENT,
+                    WriteStatementType.INSERT,
+                    123L,
+                    "io.camunda.db.rdbms.sql.IncidentMapper.insert",
+                    truncatedModel)));
   }
 
   @Test
   void shouldUpdateIncident() {
-    final var model = new IncidentDbModel.Builder().incidentKey(123L).errorMessage("error").build();
+    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
+
+    final var model = mock(IncidentDbModel.class);
+    final var truncatedModel = mock(IncidentDbModel.class);
+    when(model.truncateErrorMessage(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.incidentKey()).thenReturn(123L);
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.INCIDENT,
+                    WriteStatementType.UPDATE,
+                    123L,
+                    "io.camunda.db.rdbms.sql.IncidentMapper.update",
+                    truncatedModel)));
   }
 
   @Test
@@ -53,6 +86,14 @@ class IncidentWriterTest {
 
     writer.resolve(123L);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.INCIDENT,
+                    WriteStatementType.UPDATE,
+                    123L,
+                    "io.camunda.db.rdbms.sql.IncidentMapper.updateState",
+                    new IncidentMapper.IncidentStateDto(123L, IncidentState.RESOLVED, null, null))));
   }
 }

@@ -7,15 +7,17 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class AuditLogWriterTest {
@@ -33,6 +35,14 @@ class AuditLogWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.AUDIT_LOG,
+                    WriteStatementType.INSERT,
+                    model.entityKey(),
+                    "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
+                    model)));
   }
 }

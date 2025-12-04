@@ -7,14 +7,16 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class CorrelatedMessageSubscriptionWriterTest {
@@ -32,9 +34,18 @@ class CorrelatedMessageSubscriptionWriterTest {
             .messageKey(123L)
             .subscriptionKey(456L)
             .build();
+    final String compositeId = model.messageKey() + "_" + model.subscriptionKey();
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CORRELATED_MESSAGE_SUBSCRIPTION,
+                    WriteStatementType.INSERT,
+                    compositeId,
+                    "io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.insert",
+                    model)));
   }
 }

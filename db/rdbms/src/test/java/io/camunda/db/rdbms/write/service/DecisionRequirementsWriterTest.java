@@ -7,13 +7,15 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class DecisionRequirementsWriterTest {
@@ -31,6 +33,14 @@ class DecisionRequirementsWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.DECISION_DEFINITION,
+                    WriteStatementType.INSERT,
+                    model.decisionRequirementsKey(),
+                    "io.camunda.db.rdbms.sql.DecisionRequirementsMapper.insert",
+                    model)));
   }
 }

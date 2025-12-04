@@ -7,14 +7,16 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class MessageSubscriptionWriterTest {
@@ -31,7 +33,15 @@ class MessageSubscriptionWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.MESSAGE_SUBSCRIPTION,
+                    WriteStatementType.INSERT,
+                    model.messageSubscriptionKey(),
+                    "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.insert",
+                    model)));
   }
 
   @Test
@@ -41,6 +51,14 @@ class MessageSubscriptionWriterTest {
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.MESSAGE_SUBSCRIPTION,
+                    WriteStatementType.UPDATE,
+                    model.messageSubscriptionKey(),
+                    "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.update",
+                    model)));
   }
 }

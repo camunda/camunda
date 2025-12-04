@@ -8,15 +8,18 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class GroupWriterTest {
@@ -35,7 +38,15 @@ class GroupWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.GROUP,
+                    WriteStatementType.INSERT,
+                    model.groupId(),
+                    "io.camunda.db.rdbms.sql.GroupMapper.insert",
+                    model)));
   }
 
   @Test
@@ -47,7 +58,15 @@ class GroupWriterTest {
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.GROUP,
+                    WriteStatementType.UPDATE,
+                    model.groupId(),
+                    "io.camunda.db.rdbms.sql.GroupMapper.update",
+                    model)));
   }
 
   @Test
@@ -56,7 +75,15 @@ class GroupWriterTest {
 
     writer.addMember(member);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.GROUP,
+                    WriteStatementType.INSERT,
+                    member.groupId(),
+                    "io.camunda.db.rdbms.sql.GroupMapper.insertMember",
+                    member)));
   }
 
   @Test
@@ -65,13 +92,31 @@ class GroupWriterTest {
 
     writer.removeMember(member);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.GROUP,
+                    WriteStatementType.DELETE,
+                    member.groupId(),
+                    "io.camunda.db.rdbms.sql.GroupMapper.deleteMember",
+                    member)));
   }
 
   @Test
   void shouldDeleteGroup() {
-    writer.delete("group1");
+    final String groupId = "group1";
+    
+    writer.delete(groupId);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.GROUP,
+                    WriteStatementType.DELETE,
+                    groupId,
+                    "io.camunda.db.rdbms.sql.GroupMapper.delete",
+                    groupId)));
   }
 }

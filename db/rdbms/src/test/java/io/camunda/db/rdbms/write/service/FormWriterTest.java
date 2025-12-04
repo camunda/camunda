@@ -7,13 +7,15 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.FormDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class FormWriterTest {
@@ -23,19 +25,35 @@ class FormWriterTest {
 
   @Test
   void shouldCreateForm() {
-    final var model = mock(FormDbModel.class);
+    final var model = new FormDbModel(123L, "form1", "Form Name", "schema", 1L, false);
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.FORM,
+                    WriteStatementType.INSERT,
+                    model.formKey(),
+                    "io.camunda.db.rdbms.sql.FormMapper.insert",
+                    model)));
   }
 
   @Test
   void shouldUpdateForm() {
-    final var model = mock(FormDbModel.class);
+    final var model = new FormDbModel(123L, "form1", "Updated Form", "schema", 1L, false);
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.FORM,
+                    WriteStatementType.UPDATE,
+                    model.formKey(),
+                    "io.camunda.db.rdbms.sql.FormMapper.update",
+                    model)));
   }
 }

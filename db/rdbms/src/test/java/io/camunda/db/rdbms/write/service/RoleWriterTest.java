@@ -8,15 +8,18 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class RoleWriterTest {
@@ -35,7 +38,15 @@ class RoleWriterTest {
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.ROLE,
+                    WriteStatementType.INSERT,
+                    model.roleId(),
+                    "io.camunda.db.rdbms.sql.RoleMapper.insert",
+                    model)));
   }
 
   @Test
@@ -46,7 +57,15 @@ class RoleWriterTest {
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.ROLE,
+                    WriteStatementType.UPDATE,
+                    model.roleId(),
+                    "io.camunda.db.rdbms.sql.RoleMapper.update",
+                    model)));
   }
 
   @Test
@@ -55,7 +74,15 @@ class RoleWriterTest {
 
     writer.addMember(member);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.ROLE,
+                    WriteStatementType.INSERT,
+                    member.roleId(),
+                    "io.camunda.db.rdbms.sql.RoleMapper.insertMember",
+                    member)));
   }
 
   @Test
@@ -64,13 +91,31 @@ class RoleWriterTest {
 
     writer.removeMember(member);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.ROLE,
+                    WriteStatementType.DELETE,
+                    member.roleId(),
+                    "io.camunda.db.rdbms.sql.RoleMapper.deleteMember",
+                    member)));
   }
 
   @Test
   void shouldDeleteRole() {
-    writer.delete("role1");
+    final String roleId = "role1";
+    
+    writer.delete(roleId);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.ROLE,
+                    WriteStatementType.DELETE,
+                    roleId,
+                    "io.camunda.db.rdbms.sql.RoleMapper.delete",
+                    roleId)));
   }
 }
