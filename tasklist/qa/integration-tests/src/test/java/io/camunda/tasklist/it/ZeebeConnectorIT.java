@@ -73,7 +73,6 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
     // then 1
     // application context must be successfully started
-    //                                                                             zz
     testRequest("http://localhost:" + managementPort + "/actuator/health/liveness");
     // import is working fine
     zeebeImporter.performOneRoundOfImport();
