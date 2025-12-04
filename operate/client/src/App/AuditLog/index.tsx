@@ -8,7 +8,7 @@
 
 import {useState, useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Link} from '@carbon/react';
+import {Link, Pagination} from '@carbon/react';
 import {AuditLogFilters} from './Filters';
 import {
   type AuditLogSearchFilters,
@@ -38,6 +38,8 @@ type DetailsModalState = {
 const AuditLog: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     open: false,
@@ -125,14 +127,19 @@ const AuditLog: React.FC = () => {
       ],
       filter: filtersFromUrl,
       page: {
-        from: 0,
-        limit: 50,
+        from: (currentPage - 1) * pageSize,
+        limit: pageSize,
       },
     }),
-    [filtersFromUrl, sortBy, sortOrder],
+    [filtersFromUrl, sortBy, sortOrder, currentPage, pageSize],
   );
 
   const {data, isLoading, error} = useAuditLog(request);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filtersFromUrl]);
 
   const openDetailsModal = (entry: MockAuditLogEntry) => {
     setDetailsModal({open: true, entry});
@@ -392,7 +399,7 @@ const AuditLog: React.FC = () => {
             style={{
               flex: 1, 
               overflow: 'auto', 
-              padding: '0 var(--cds-spacing-05) var(--cds-spacing-05)'
+              padding: '0 var(--cds-spacing-05)'
             }}
             className="audit-log-table-container"
           >
@@ -431,6 +438,16 @@ const AuditLog: React.FC = () => {
               }}
             />
           </div>
+          <Pagination
+            page={currentPage}
+            pageSize={pageSize}
+            pageSizes={[20, 50, 100]}
+            totalItems={data?.totalCount || 0}
+            onChange={({page, pageSize: newPageSize}) => {
+              setCurrentPage(page);
+              setPageSize(newPageSize);
+            }}
+          />
         </div>
       </div>
 
