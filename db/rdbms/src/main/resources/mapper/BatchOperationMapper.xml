@@ -310,6 +310,7 @@
   <select id="countItems" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}BATCH_OPERATION_ITEM bi
+    JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
   </select>
 
@@ -362,6 +363,13 @@
       test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
       <foreach collection="filter.stateOperations" item="operation">
         AND bi.STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.operationTypeOperations != null and !filter.operationTypeOperations.isEmpty()">
+      <foreach collection="filter.operationTypeOperations" item="operation">
+        AND bo.OPERATION_TYPE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>

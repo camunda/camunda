@@ -366,6 +366,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getOperationType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::operationTypeOperations);
     }
 
     return builder.build();

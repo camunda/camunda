@@ -21,7 +21,8 @@ public record BatchOperationItemFilter(
     List<Operation<String>> batchOperationKeyOperations,
     List<Operation<Long>> itemKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
-    List<Operation<String>> stateOperations)
+    List<Operation<String>> stateOperations,
+    List<Operation<String>> operationTypeOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<BatchOperationItemFilter> {
@@ -30,6 +31,7 @@ public record BatchOperationItemFilter(
     private List<Operation<Long>> itemKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<String>> stateOperations;
+    private List<Operation<String>> operationTypeOperations;
 
     public Builder batchOperationKeyOperations(final List<Operation<String>> operations) {
       batchOperationKeyOperations = addValuesToList(batchOperationKeyOperations, operations);
@@ -111,13 +113,34 @@ public record BatchOperationItemFilter(
       return stateOperations(collectValues(operation, operations));
     }
 
+    public Builder operationTypeOperations(final List<Operation<String>> operations) {
+      operationTypeOperations = addValuesToList(operationTypeOperations, operations);
+      return this;
+    }
+
+    public Builder operationTypes(final String value, final String... values) {
+      return operationTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceOperationTypeOperations(final List<Operation<String>> operations) {
+      operationTypeOperations = new ArrayList<>(operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder operationTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return operationTypeOperations(collectValues(operation, operations));
+    }
+
     @Override
     public BatchOperationItemFilter build() {
       return new BatchOperationItemFilter(
           Objects.requireNonNullElse(batchOperationKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(itemKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(stateOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(operationTypeOperations, Collections.emptyList()));
     }
   }
 }
