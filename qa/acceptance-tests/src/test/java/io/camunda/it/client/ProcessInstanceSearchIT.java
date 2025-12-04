@@ -504,14 +504,17 @@ public class ProcessInstanceSearchIT {
             .newProcessInstanceSearchRequest()
             .filter(
                 f ->
-                    f.endDate(d -> d.exists(false)).orFilters(List.of(f2 -> f2.hasIncident(false))))
+                    f.processDefinitionId(pid -> pid.eq("service_tasks_v1"))
+                        .orFilters(List.of(f2 -> f2.hasIncident(false))))
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items()).filteredOn(pi -> pi.getEndDate() == null).hasSize(3);
-    assertThat(result.items()).filteredOn(pi -> !pi.getHasIncident()).hasSize(3);
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .filteredOn(pi -> pi.getProcessDefinitionId().equals("service_tasks_v1"))
+        .hasSize(2);
+    assertThat(result.items()).filteredOn(pi -> !pi.getHasIncident()).hasSize(2);
   }
 
   @Test
