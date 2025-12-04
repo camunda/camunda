@@ -97,14 +97,11 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               // DB url
               "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
               "camunda.database.url=" + elsUrl,
-              "camunda.operate.elasticsearch.url=" + elsUrl,
-              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
               // DB type
               "camunda.data.secondary-storage.type=elasticsearch",
               "camunda.database.type=elasticsearch",
               "camunda.tasklist.database=elasticsearch",
-              "camunda.operate.database=elasticsearch",
               //
               "camunda.tasklist.elasticsearch.username=elastic",
               "camunda.tasklist.elasticsearch.password=elastic",
