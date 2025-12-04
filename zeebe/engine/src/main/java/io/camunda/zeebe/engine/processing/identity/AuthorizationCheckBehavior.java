@@ -17,6 +17,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
@@ -791,14 +792,12 @@ public final class AuthorizationCheckBehavior {
 
   /**
    * Exception thrown when a command is rejected due to authorization failure. This exception
-   * extends {@link io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException}
-   * and triggers automatic rollback of state changes, discarding of follow-up events, and writing
-   * of a rejection record.
+   * extends {@link CommandRejectionException} and triggers automatic rollback of state changes,
+   * discarding of follow-up events, and writing of a rejection record.
    *
    * <p>This is a stackless exception (inherited from the base class) for performance reasons.
    */
-  public static class ForbiddenException
-      extends io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException {
+  public static class ForbiddenException extends CommandRejectionException {
 
     public ForbiddenException(final AuthorizationRequest authRequest) {
       this(authRequest.build());

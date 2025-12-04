@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -75,8 +76,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
     return switch (error) {
       case final NoSuchResourceException exception ->
           rejectCommand(command, RejectionType.NOT_FOUND, exception.getMessage());
-      case final io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException
-              exception ->
+      case final CommandRejectionException exception ->
           rejectCommand(command, exception.getRejectionType(), exception.getMessage());
       default -> ProcessingError.UNEXPECTED_ERROR;
     };
