@@ -15,6 +15,9 @@ public interface ConditionalSubscriptionState {
 
   void visitByScopeKey(long scopeKey, ConditionalSubscriptionVisitor visitor);
 
+  void visitStartEventSubscriptionsByProcessDefinitionKey(
+      long processDefinitionKey, ConditionalSubscriptionVisitor visitor);
+
   @FunctionalInterface
   interface ConditionalSubscriptionVisitor {
     void visit(ConditionalSubscription subscription);
