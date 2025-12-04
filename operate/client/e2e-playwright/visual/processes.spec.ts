@@ -11,6 +11,7 @@ import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
   mockGroupedProcesses,
+  mockProcessDefinitions,
   mockProcessInstances,
   mockProcessInstancesWithOperationError,
   mockProcessXml,
@@ -48,6 +49,7 @@ test.describe('processes page', () => {
       mockResponses({
         batchOperations: {items: [], page: {totalItems: 0}},
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         statisticsV2: {
           items: [],
         },
@@ -84,6 +86,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
       }),
     );
 
@@ -112,6 +115,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -152,6 +156,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -191,6 +196,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -233,6 +239,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -260,6 +267,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -288,6 +296,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstancesWithOperationError,
         statisticsV2: mockStatisticsV2,
@@ -322,6 +331,7 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstancesWithOperationError,
         statisticsV2: mockStatisticsV2,

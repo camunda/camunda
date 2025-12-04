@@ -12,6 +12,7 @@ import {
   mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockDeleteProcess,
+  mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {
   mockDecisionXml,
@@ -38,6 +39,7 @@ test.describe.skip('delete resource definitions', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
           totalCount: 0,

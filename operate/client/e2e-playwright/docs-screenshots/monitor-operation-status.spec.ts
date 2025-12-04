@@ -14,6 +14,7 @@ import {
   mockResponses as mockProcessesResponses,
   mockMigrationOperation,
   mockOrderProcessInstancesWithFailedOperations,
+  mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
@@ -39,6 +40,12 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
+        processDefinitions: {
+          ...mockProcessDefinitions,
+          items: mockProcessDefinitions.items.filter(
+            (d) => d.processDefinitionId === 'orderProcess',
+          ),
+        },
         batchOperations: {
           items: [
             {
