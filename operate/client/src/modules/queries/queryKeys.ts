@@ -9,6 +9,7 @@
 import type {
   ElementInstance,
   ProcessInstance,
+  QueryBatchOperationItemsRequestBody,
   QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
@@ -152,6 +153,10 @@ const queryKeys = {
     searchByProcessInstanceKey: (processInstanceKey?: string) => [
       'batchOperationItemsSearchByProcessInstanceKey',
       processInstanceKey,
+    ],
+    query: (payload: QueryBatchOperationItemsRequestBody) => [
+      'batchOperationItems',
+      payload,
     ],
   },
 };

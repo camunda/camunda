@@ -33,7 +33,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {VirtualBar} from './VirtualBar';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {useBatchOperations} from 'modules/queries/batch-operations/useBatchOperations';
+import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 
 const TREE_NODE_HEIGHT = 32;
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
@@ -699,15 +699,18 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
     const {processInstance, scrollableContainerRef, ...rest} = props;
     const {data: businessObjects} = useBusinessObjects();
-    const {data: {items: operations} = {items: []}} = useBatchOperations({
-      filter: {
-        operationType: 'MIGRATE_PROCESS_INSTANCE',
-      },
-      sort: [{field: 'endDate', order: 'desc'}],
-      page: {limit: 1, from: 0},
-    });
+    const {data: {items: migrationItems} = {items: []}} =
+      useBatchOperationItems({
+        filter: {
+          processInstanceKey: processInstance.processInstanceKey,
+          operationType: 'MIGRATE_PROCESS_INSTANCE',
+          state: 'COMPLETED',
+        },
+        sort: [{field: 'processedDate', order: 'desc'}],
+        page: {limit: 1, from: 0},
+      });
     const latestMigrationDate =
-      operations.length > 0 ? operations[0].endDate : undefined;
+      migrationItems.length > 0 ? migrationItems[0].processedDate : undefined;
     const rootElementInstance = useMemo<ElementInstance>(() => {
       const {
         processInstanceKey,
