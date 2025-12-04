@@ -22,6 +22,7 @@ import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
+import io.camunda.configuration.Limit;
 import io.camunda.configuration.Membership;
 import io.camunda.configuration.Metrics;
 import io.camunda.configuration.NodeIdProvider.Type;
@@ -47,6 +48,7 @@ import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.RateLimitCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.ThrottleCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -189,7 +191,61 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromFlowControl(final BrokerBasedProperties override) {
+    populateFromBackpressureLimitRequest(override);
     populateFromWrite(override);
+  }
+
+  private void populateFromBackpressureLimitRequest(final BrokerBasedProperties override) {
+    final Limit request =
+        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getRequest();
+
+    if (request == null) {
+      return;
+    }
+
+    final LimitCfg limitCfg =
+        Optional.ofNullable(override.getFlowControl().getRequest()).orElse(new LimitCfg());
+    limitCfg.setEnabled(request.isEnabled());
+    limitCfg.setUseWindowed(request.isWindowed());
+    // Convert kebab-case to uppercase with underscores for enum compatibility
+    limitCfg.setAlgorithm(
+        request.getAlgorithm() == null
+            ? "AIMD"
+            : request.getAlgorithm().replace("-", "_").toUpperCase());
+
+    // AIMD algorithm properties
+    limitCfg.getAimd().setRequestTimeout(request.getAimdRequestTimeout());
+    limitCfg.getAimd().setInitialLimit(request.getAimdInitialLimit());
+    limitCfg.getAimd().setMinLimit(request.getAimdMinLimit());
+    limitCfg.getAimd().setMaxLimit(request.getAimdMaxLimit());
+    limitCfg.getAimd().setBackoffRatio(request.getAimdBackoffRatio());
+
+    // Fixed algorithm properties
+    limitCfg.getFixed().setLimit(request.getFixedLimit());
+
+    // Vegas algorithm properties
+    limitCfg.getVegas().setAlpha(request.getVegasAlpha());
+    limitCfg.getVegas().setBeta(request.getVegasBeta());
+    limitCfg.getVegas().setInitialLimit(request.getVegasInitialLimit());
+
+    // Gradient algorithm properties
+    limitCfg.getGradient().setMinLimit(request.getGradientMinLimit());
+    limitCfg.getGradient().setInitialLimit(request.getGradientInitialLimit());
+    limitCfg.getGradient().setRttTolerance(request.getGradientRttTolerance());
+
+    // Gradient2 algorithm properties
+    limitCfg.getGradient2().setMinLimit(request.getGradient2MinLimit());
+    limitCfg.getGradient2().setInitialLimit(request.getGradient2InitialLimit());
+    limitCfg.getGradient2().setRttTolerance(request.getGradient2RttTolerance());
+    limitCfg.getGradient2().setLongWindow(request.getGradient2LongWindow());
+
+    // Legacy Vegas algorithm properties
+    limitCfg.getLegacyVegas().setInitialLimit(request.getLegacyVegasInitialLimit());
+    limitCfg.getLegacyVegas().setMaxConcurrency(request.getLegacyVegasMaxConcurrency());
+    limitCfg.getLegacyVegas().setAlphaLimit(request.getLegacyVegasAlphaLimit());
+    limitCfg.getLegacyVegas().setBetaLimit(request.getLegacyVegasBetaLimit());
+
+    override.getFlowControl().setRequest(limitCfg);
   }
 
   private void populateFromWrite(final BrokerBasedProperties override) {
