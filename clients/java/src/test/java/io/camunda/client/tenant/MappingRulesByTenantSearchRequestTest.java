@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.role;
+package io.camunda.client.tenant;
 
 import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
