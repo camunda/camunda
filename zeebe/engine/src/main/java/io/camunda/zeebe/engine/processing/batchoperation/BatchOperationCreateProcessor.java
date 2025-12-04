@@ -69,7 +69,7 @@ public final class BatchOperationCreateProcessor
       final RoutingInfo routingInfo,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
-    this.batchOperationState = state.getBatchOperationState();
+    batchOperationState = state.getBatchOperationState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
