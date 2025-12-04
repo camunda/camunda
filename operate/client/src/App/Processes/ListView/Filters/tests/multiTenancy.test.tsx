@@ -8,24 +8,25 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {
+  createProcessDefinition,
   createUser,
-  groupedProcessesMock,
   mockProcessXML,
+  searchResult,
 } from 'modules/testUtils';
 import {Filters} from '../index';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {
   selectProcess,
   selectTenant,
 } from 'modules/testUtils/selectComboBoxOption';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('Filters', () => {
-  beforeEach(async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+  beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
@@ -36,13 +37,29 @@ describe('Filters', () => {
         ],
       }),
     );
-    processesStore.fetchProcesses();
   });
 
   it('should load values from the URL when multi tenancy is enabled', async () => {
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, tenantId: '<tenant-A>'}),
+        createProcessDefinition({version: 1, tenantId: '<tenant-A>'}),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 1, tenantId: '<tenant-A>'}),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, tenantId: '<tenant-A>'}),
+        createProcessDefinition({version: 1, tenantId: '<tenant-A>'}),
+      ]),
+    );
 
     const MOCK_PARAMS = {
       process: 'bigVarProcess',
@@ -111,6 +128,13 @@ describe('Filters', () => {
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, tenantId: '<tenant-A>'}),
+        createProcessDefinition({version: 1, tenantId: '<default>'}),
+      ]),
+    );
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const MOCK_VALUES = {
       process: 'bigVarProcess',
@@ -121,8 +145,12 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, tenantId: '<tenant-A>'}),
+        createProcessDefinition({version: 1, tenantId: '<default>'}),
+      ]),
+    );
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
@@ -144,12 +172,20 @@ describe('Filters', () => {
 
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, tenantId: '<tenant-A>'}),
+        createProcessDefinition({version: 1, tenantId: '<tenant-A>'}),
+      ]),
+    );
     await selectProcess({
       user,
       option: 'Big variable process - Tenant A',
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Big variable process');
+    await waitFor(() =>
+      expect(screen.getByLabelText('Name')).toHaveValue('Big variable process'),
+    );
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /tenant a/i,
     );
@@ -174,9 +210,6 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
-    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
     expect(screen.getByLabelText('Name')).toBeDisabled();
   });
 
@@ -184,14 +217,18 @@ describe('Filters', () => {
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, tenantId: 'tenant-b'}),
+        createProcessDefinition({version: 2, tenantId: '<tenant-A>'}),
+        createProcessDefinition({version: 1, tenantId: '<default>'}),
+      ]),
+    );
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
-    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
     expect(screen.getByLabelText('Name')).toBeDisabled();
 
     await selectTenant({user, option: 'All tenants'});
@@ -201,12 +238,27 @@ describe('Filters', () => {
 
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, tenantId: '<default>'}),
+        createProcessDefinition({version: 1, tenantId: '<default>'}),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 1, tenantId: '<default>'}),
+      ]),
+    );
     await selectProcess({
       user,
       option: 'Big variable process - Default Tenant',
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Big variable process');
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+        'Big variable process',
+      ),
+    );
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
@@ -214,9 +266,12 @@ describe('Filters', () => {
       /default tenant/i,
     );
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 1, tenantId: 'tenant-b'}),
+      ]),
+    );
     await selectTenant({user, option: 'Tenant B'});
-    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
 
     expect(screen.getByLabelText('Name')).toHaveValue('');
     expect(

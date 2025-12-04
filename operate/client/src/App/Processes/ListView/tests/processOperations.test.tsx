@@ -13,6 +13,7 @@ import {
   groupedProcessesMock,
   mockProcessXML,
   createUser,
+  searchResult,
 } from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
@@ -20,9 +21,12 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
       totalCount: 0,
