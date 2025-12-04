@@ -14,6 +14,7 @@ import {
   mockResponses as mockProcessesResponses,
   mockOrderProcessInstances,
   mockStatisticsV2,
+  mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
@@ -34,6 +35,7 @@ test.describe('selections and operations', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -84,6 +86,7 @@ test.describe('selections and operations', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
