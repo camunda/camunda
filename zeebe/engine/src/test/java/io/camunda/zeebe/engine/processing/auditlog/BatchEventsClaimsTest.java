@@ -37,13 +37,14 @@ public class BatchEventsClaimsTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                cfg.getAuthorizations().setEnabled(true);
+                cfg.getInitialization().setUsers(List.of(DEFAULT_USER));
+                cfg.getInitialization()
+                    .getDefaultRoles()
+                    .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+              });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
