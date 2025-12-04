@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
@@ -86,7 +87,8 @@ public class IndexDescriptors {
                 new MessageTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
-                new AuditLogTemplate(indexPrefix, isElasticsearch))
+                new AuditLogTemplate(indexPrefix, isElasticsearch),
+                new HistoryDeletionIndex(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

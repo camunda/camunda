@@ -25,6 +25,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
@@ -85,7 +86,9 @@ public class BackupPriorityConfiguration {
     final List<Prio1Backup> prio1 =
         List.of(
             // OPERATE
-            new MetadataIndex(indexPrefix, isElasticsearch));
+            new MetadataIndex(indexPrefix, isElasticsearch),
+            // HISTORY DELETION
+            new HistoryDeletionIndex(indexPrefix, isElasticsearch));
 
     final List<Prio2Backup> prio2 =
         List.of(
