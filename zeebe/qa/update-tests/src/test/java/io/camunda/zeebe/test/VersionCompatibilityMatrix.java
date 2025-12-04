@@ -99,13 +99,13 @@ rivate final VersionProvider versionProvider;
     final var api = new GithubAPI();
     return new VersionCompatibilityMatrix(
         new CachedVersionProvider(
-            new AdvancedGithubVersionProvider(new GithubVersionProvider(api), api)));
+            new ReleaseVerifiedGithubVersionProvider(new GithubVersionProvider(api), api)));
   }
 
   public static VersionCompatibilityMatrix useUncached() {
     final var api = new GithubAPI();
     return new VersionCompatibilityMatrix(
-        new AdvancedGithubVersionProvider(new GithubVersionProvider(api), api));
+        new ReleaseVerifiedGithubVersionProvider(new GithubVersionProvider(api), api));
   }
 
   /**
@@ -383,12 +383,13 @@ rivate final VersionProvider versionProvider;
     record CachedVersionInfo(String version, boolean isReleased, boolean isLatest) {}
   }
 
-  static class AdvancedGithubVersionProvider implements VersionProvider {
+  static class ReleaseVerifiedGithubVersionProvider implements VersionProvider {
 
     private final VersionProvider delegate;
     private final GithubAPI api;
 
-    public AdvancedGithubVersionProvider(final VersionProvider delegate, final GithubAPI api) {
+    public ReleaseVerifiedGithubVersionProvider(
+        final VersionProvider delegate, final GithubAPI api) {
       this.delegate = delegate;
       this.api = api;
     }
