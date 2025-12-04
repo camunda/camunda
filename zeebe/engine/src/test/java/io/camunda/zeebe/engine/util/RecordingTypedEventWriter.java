@@ -13,7 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -32,15 +31,6 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     appendFollowUpEvent(key, intent, value, RecordMetadata.DEFAULT_RECORD_VERSION);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final Map<String, Object> claims) {
-    appendFollowUpEvent(key, intent, value, FollowUpEventMetadata.builder().claims(claims).build());
   }
 
   @Override

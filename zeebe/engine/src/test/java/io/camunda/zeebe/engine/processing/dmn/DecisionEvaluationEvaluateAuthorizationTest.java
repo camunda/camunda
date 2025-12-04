@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -90,8 +89,6 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
 
     // then
     assertThat(response.getValue().getDecisionOutput()).isEqualTo("\"Sith\"");
-    assertThat(response.getAuthorizations())
-        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   @Test
@@ -114,8 +111,6 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(DECISION_ID));
-    assertThat(rejection.getAuthorizations())
-        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   private UserRecordValue createUser() {

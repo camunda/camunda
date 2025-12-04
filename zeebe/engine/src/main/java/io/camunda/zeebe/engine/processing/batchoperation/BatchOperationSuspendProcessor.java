@@ -109,7 +109,7 @@ public final class BatchOperationSuspendProcessor
       return;
     }
 
-    suspendBatchOperation(suspendKey, command);
+    suspendBatchOperation(suspendKey, recordValue);
     responseWriter.writeEventOnCommand(
         suspendKey, BatchOperationIntent.SUSPENDED, command.getValue(), command);
     commandDistributionBehavior
@@ -133,7 +133,7 @@ public final class BatchOperationSuspendProcessor
           "Processing distributed command to suspend with key '{}': {}",
           batchOperationKey,
           recordValue);
-      suspendBatchOperation(batchOperationKey, command);
+      suspendBatchOperation(batchOperationKey, recordValue);
     } else {
       LOGGER.debug(
           "Distributed command to suspend batch operation with key '{}' will be ignored: {}",
@@ -145,15 +145,13 @@ public final class BatchOperationSuspendProcessor
   }
 
   private void suspendBatchOperation(
-      final Long suspendKey, final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
-    final var recordValue = command.getValue();
-    final var claims = command.getAuthorizations();
+      final Long suspendKey, final BatchOperationLifecycleManagementRecord recordValue) {
     stateWriter.appendFollowUpEvent(
         suspendKey,
         BatchOperationIntent.SUSPENDED,
         recordValue,
         FollowUpEventMetadata.of(
-            b -> b.batchOperationReference(recordValue.getBatchOperationKey()).claims(claims)));
+            b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
   }
 
   private void rejectInvalidState(

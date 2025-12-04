@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Iterator;
-import java.util.Map;
 import org.agrona.DirectBuffer;
 
 /**
@@ -65,24 +64,6 @@ public final class VariableBehavior {
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document) {
-    mergeLocalDocument(
-        scopeKey,
-        processDefinitionKey,
-        processInstanceKey,
-        bpmnProcessId,
-        tenantId,
-        document,
-        Map.of());
-  }
-
-  public void mergeLocalDocument(
-      final long scopeKey,
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer bpmnProcessId,
-      final String tenantId,
-      final DirectBuffer document,
-      final Map<String, Object> authorizationClaims) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
@@ -96,7 +77,7 @@ public final class VariableBehavior {
         .setTenantId(tenantId);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      setLocalVariable(variableRecord, authorizationClaims);
+      setLocalVariable(variableRecord);
     }
   }
 
@@ -128,46 +109,6 @@ public final class VariableBehavior {
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document) {
-    mergeDocument(
-        scopeKey,
-        processDefinitionKey,
-        processInstanceKey,
-        bpmnProcessId,
-        tenantId,
-        document,
-        Map.of());
-  }
-
-  /**
-   * Merges the given document, propagating its changes from the bottom to the top of the scope
-   * hierarchy.
-   *
-   * <p>Starting at the given {@code scopeKey}, it will overwrite any variables that exist in that
-   * scope with the corresponding values from the given document. Variables that were not set
-   * because they did not exist in the current scope are collected as a sub document, which will
-   * then be merged with the parent scope, recursively, until there are no more. If we reach a scope
-   * with no parent, then any remaining variables are created there.
-   *
-   * <p>If any variable from the document already exists on the current scope, a {@code
-   * Variable.UPDATED} record is produced as a follow up event.
-   *
-   * <p>For all variables from the document which do not exist in the current scope, a {@code
-   * Variable.CREATED} record is produced as a follow up event.
-   *
-   * @param scopeKey the scope key for each variable
-   * @param processDefinitionKey the process key to be associated with each variable
-   * @param processInstanceKey the process instance key to be associated with each variable
-   * @param document the document to merge
-   * @param authorizationClaims the authorization claims to include with each follow-up event
-   */
-  public void mergeDocument(
-      final long scopeKey,
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer bpmnProcessId,
-      final String tenantId,
-      final DirectBuffer document,
-      final Map<String, Object> authorizationClaims) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
@@ -193,10 +134,7 @@ public final class VariableBehavior {
         if (variableInstance != null && !variableInstance.getValue().equals(entry.getValue())) {
           applyEntryToRecord(entry);
           stateWriter.appendFollowUpEvent(
-              variableInstance.getKey(),
-              VariableIntent.UPDATED,
-              variableRecord,
-              authorizationClaims);
+              variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
           entryIterator.remove();
         }
       }
@@ -207,7 +145,7 @@ public final class VariableBehavior {
     variableRecord.setScopeKey(currentScope);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      setLocalVariable(variableRecord, authorizationClaims);
+      setLocalVariable(variableRecord);
     }
   }
 
@@ -247,19 +185,17 @@ public final class VariableBehavior {
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 
-    setLocalVariable(variableRecord, Map.of()); // no authorization claims in internal usage
+    setLocalVariable(variableRecord);
   }
 
-  private void setLocalVariable(
-      final VariableRecord record, final Map<String, Object> authorizationClaims) {
+  private void setLocalVariable(final VariableRecord record) {
     final VariableInstance variableInstance =
         variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
     if (variableInstance == null) {
       final long key = keyGenerator.nextKey();
-      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record, authorizationClaims);
+      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
     } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
-      stateWriter.appendFollowUpEvent(
-          variableInstance.getKey(), VariableIntent.UPDATED, record, authorizationClaims);
+      stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
     }
   }
 

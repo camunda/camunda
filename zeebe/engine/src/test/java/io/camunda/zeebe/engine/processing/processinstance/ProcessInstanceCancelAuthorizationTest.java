@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
@@ -97,14 +96,6 @@ public class ProcessInstanceCancelAuthorizationTest {
     engine.processInstance().withInstanceKey(processInstanceKey).cancel(user.getUsername());
 
     // then
-    final var record =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCELING)
-            .withProcessInstanceKey(processInstanceKey)
-            .findFirst();
-    assertThat(record).isPresent();
-    assertThat(record.get().getAuthorizations())
-        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
-
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -132,8 +123,6 @@ public class ProcessInstanceCancelAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CANCEL_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
-    assertThat(rejection.getAuthorizations())
-        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
   }
 
   private UserRecordValue createUser() {

@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -39,6 +40,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   private final TenantState tenantState;
   private final MappingRuleState mappingRuleState;
+  private final GroupState groupState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -56,6 +58,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
+    groupState = state.getGroupState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -96,8 +99,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     }
 
     final var tenantKey = persistedTenant.get().getTenantKey();
-    stateWriter.appendFollowUpEvent(
-        tenantKey, TenantIntent.ENTITY_REMOVED, record, command.getAuthorizations());
+    stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
     sideEffectWriter.appendSideEffect(
         () -> {
@@ -112,10 +114,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
     if (validateEntityAssignment(command, command.getValue().getTenantId())) {
       stateWriter.appendFollowUpEvent(
-          command.getKey(),
-          TenantIntent.ENTITY_REMOVED,
-          command.getValue(),
-          command.getAuthorizations());
+          command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
       sideEffectWriter.appendSideEffect(
           () -> {
             authCheckBehavior.clearAuthorizationsCache();

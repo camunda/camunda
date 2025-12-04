@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public interface TypedEventWriter {
@@ -38,31 +37,6 @@ public interface TypedEventWriter {
    * @throws ExceededBatchRecordSizeException if the appended event doesn't fit into the RecordBatch
    */
   void appendFollowUpEvent(long key, Intent intent, RecordValue value);
-
-  /**
-   * Append a follow-up event to the result builder.
-   *
-   * <p>Different versions of event records may be applied by different {@link
-   * io.camunda.zeebe.engine.state.EventApplier EventApplier}s, leading to differing state changes.
-   * This allows fixing bugs in event appliers because every event applier must produce the same
-   * state changes for an event both when writing it and when replaying it, even on newer versions
-   * of Zeebe.
-   *
-   * <p>This method always uses the latest available {@link
-   * io.camunda.zeebe.engine.state.EventApplier}. If a specific version needs to be used, consider
-   * using {@link #appendFollowUpEvent(long, Intent, RecordValue, int)} instead.
-   *
-   * <p>For advanced use cases requiring enriched metadata such as {@code operationReference},
-   * consider using {@link #appendFollowUpEvent(long, Intent, RecordValue, FollowUpEventMetadata)}.
-   *
-   * @param key the key of the event
-   * @param intent the intent of the event
-   * @param value the record of the event
-   * @param claims the authorization claims to set in the event's metadata
-   * @throws ExceededBatchRecordSizeException if the appended event doesn't fit into the RecordBatch
-   */
-  void appendFollowUpEvent(
-      long key, Intent intent, RecordValue value, final Map<String, Object> claims);
 
   /**
    * Append a specific version of a follow-up event to the result builder.

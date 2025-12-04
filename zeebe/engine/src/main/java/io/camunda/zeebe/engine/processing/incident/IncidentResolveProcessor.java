@@ -115,8 +115,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
-        key, IncidentIntent.RESOLVED, incident, command.getAuthorizations());
+    stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     publishIncidentRelatedJob(jobKey);
