@@ -10,7 +10,7 @@ The `VersionCompatibilityMatrix` uses a two-level caching strategy to minimize G
 **First discovery** (cold start):
 - Fetches version tags from GitHub API
 - For each latest patch: checks if a release exists (additional API call)
-- Saves complete metadata (version, isReleased, isLatest) to `.cache/camunda-versions.json`
+- Saves complete metadata (version, isReleased, isLatest) to `.cache/camunda/camunda-versions.json`
 
 **Subsequent runs** (warm cache):
 - Reads from cached file
@@ -19,7 +19,7 @@ The `VersionCompatibilityMatrix` uses a two-level caching strategy to minimize G
 
 ## Cache Location
 
-The cache file is stored at: `.cache/camunda-versions.json` (relative to a given location, see below)
+The cache file is stored at: `.cache/camunda/camunda-versions.json` (relative to a given location, see below)
 
 **Path Resolution Strategy** (in priority order):
 1. **`GITHUB_WORKSPACE`**: Environment variable set in GitHub Actions workflows
@@ -29,7 +29,7 @@ The cache file is stored at: `.cache/camunda-versions.json` (relative to a given
 
 **Note for GitHub Actions**:
 - Make sure the `GH_TOKEN` is set in order to not run into GitHub API rate limits
-- Configure cache actions to use path `.cache` relative to the repository root and `GITHUB_WORKSPACE` is set
+- Configure cache actions to use path `.cache/camunda` relative to the repository root and `GITHUB_WORKSPACE` is set
 - The cache action's "save" step runs **after** tests complete, so the directory will exist if tests ran successfully
 - On first run (no cache), the directory is created during test execution
 
@@ -38,13 +38,13 @@ The cache file is stored at: `.cache/camunda-versions.json` (relative to a given
 ### View Cached Versions
 
 ```bash
-cat .cache/camunda-versions.json | jq .
+cat .cache/camunda/camunda-versions.json | jq .
 ```
 
 ### Force Cache Refresh
 
 ```bash
-rm -f .cache/camunda-versions.json
+rm -f .cache/camunda/camunda-versions.json
 ./mvnw test -pl zeebe/qa/update-tests
 ```
 
@@ -53,7 +53,7 @@ rm -f .cache/camunda-versions.json
 Option 1: Delete the cache file before running tests
 
 ```bash
-rm -rf .cache
+rm -rf .cache/camunda
 ```
 
 Option 2: Use the provider directly in your test:
@@ -77,7 +77,7 @@ To automatically refresh the cache every hour while still benefiting from cachin
 - name: Cache Zeebe versions (hourly refresh)
   uses: actions/cache@v4
   with:
-    path: .cache
+    path: .cache/camunda
     key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
     restore-keys: |
       zeebe-versions-
@@ -114,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: version-cache
-          path: .cache/camunda-versions.json
+          path: .cache/camunda/camunda-versions.json
 
   test:
     needs: prepare-versions
@@ -126,7 +126,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: version-cache
-          path: .cache
+          path: .cache/camunda
 
       - name: Run tests
         run: ./mvnw verify -pl zeebe/qa/update-tests
