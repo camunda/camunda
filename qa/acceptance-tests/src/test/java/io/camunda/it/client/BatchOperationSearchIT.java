@@ -30,6 +30,7 @@ import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -379,6 +380,37 @@ public class BatchOperationSearchIT {
             all.stream().filter(Objects::nonNull).sorted(Comparator.reverseOrder()).toList());
   }
 
+  @ParameterizedTest(name = "{argumentSetName}")
+  @MethodSource("sortItemOptions")
+  <T extends Comparable<? super T>> void shouldSortBatchOperationItemsByAttribute(
+      final Function<BatchOperationItem, T> attributeExtractor,
+      final Function<BatchOperationItemSort, BatchOperationItemSort> sortOption) {
+    // given
+    final var all =
+        camundaClient.newBatchOperationItemsSearchRequest().execute().items().stream()
+            .map(attributeExtractor)
+            .toList();
+    // when
+    final var resultAsc =
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .sort(s -> sortOption.apply(s).asc())
+            .execute();
+    final var resultDesc =
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .sort(s -> sortOption.apply(s).desc())
+            .execute();
+
+    // then
+    assertThat(resultAsc.items().stream().map(attributeExtractor).filter(Objects::nonNull))
+        .containsExactlyElementsOf(
+            all.stream().filter(Objects::nonNull).sorted(Comparator.naturalOrder()).toList());
+    assertThat(resultDesc.items().stream().map(attributeExtractor).filter(Objects::nonNull))
+        .containsExactlyElementsOf(
+            all.stream().filter(Objects::nonNull).sorted(Comparator.reverseOrder()).toList());
+  }
+
   private static void assertCancelBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
     assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey1);
@@ -480,9 +512,51 @@ public class BatchOperationSearchIT {
             new SortTestArguments<>(BatchOperation::getStatus, BatchOperationSort::state).get()));
   }
 
+  static Stream<Arguments> sortItemOptions() {
+    return Stream.of(
+        argumentSet(
+            "batchOperationKey",
+            new SortItemTestArguments<>(
+                    BatchOperationItem::getBatchOperationKey,
+                    BatchOperationItemSort::batchOperationKey)
+                .get()),
+        argumentSet(
+            "processInstanceKey",
+            new SortItemTestArguments<>(
+                    BatchOperationItem::getProcessInstanceKey,
+                    BatchOperationItemSort::processInstanceKey)
+                .get()),
+        argumentSet(
+            "itemKey",
+            new SortItemTestArguments<>(
+                    BatchOperationItem::getItemKey, BatchOperationItemSort::itemKey)
+                .get()),
+        argumentSet(
+            "processedDate",
+            new SortItemTestArguments<>(
+                    BatchOperationItem::getProcessedDate, BatchOperationItemSort::processedDate)
+                .get()),
+        argumentSet(
+            "state",
+            new SortItemTestArguments<>(
+                    BatchOperationItem::getStatus, BatchOperationItemSort::state)
+                .get()));
+  }
+
   record SortTestArguments<T extends Comparable<? super T>>(
       Function<BatchOperation, T> attributeExtractor,
       Function<BatchOperationSort, BatchOperationSort> sortOption)
+      implements Arguments {
+
+    @Override
+    public Object[] get() {
+      return new Object[] {attributeExtractor, sortOption};
+    }
+  }
+
+  record SortItemTestArguments<T extends Comparable<? super T>>(
+      Function<BatchOperationItem, T> attributeExtractor,
+      Function<BatchOperationItemSort, BatchOperationItemSort> sortOption)
       implements Arguments {
 
     @Override

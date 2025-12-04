@@ -300,6 +300,7 @@ public class SearchQuerySortRequestMapper {
         case BATCH_OPERATION_KEY -> builder.batchOperationKey();
         case ITEM_KEY -> builder.itemKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case PROCESSED_DATE -> builder.processedDate();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

@@ -358,6 +358,7 @@ components:
             - batchOperationKey
             - itemKey
             - processInstanceKey
+            - processedDate
             - state
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
