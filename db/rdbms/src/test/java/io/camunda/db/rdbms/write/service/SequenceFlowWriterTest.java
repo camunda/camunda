@@ -7,14 +7,17 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class SequenceFlowWriterTest {
@@ -26,27 +29,54 @@ class SequenceFlowWriterTest {
   @Test
   void shouldCreateSequenceFlow() {
     final var model = mock(SequenceFlowDbModel.class);
+    when(model.sequenceFlowId()).thenReturn("flow1");
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.SEQUENCE_FLOW,
+                    WriteStatementType.INSERT,
+                    "flow1",
+                    "io.camunda.db.rdbms.sql.SequenceFlowMapper.insert",
+                    model)));
   }
 
   @Test
   void shouldCreateSequenceFlowIfNotExists() {
     final var model = mock(SequenceFlowDbModel.class);
+    when(model.sequenceFlowId()).thenReturn("flow1");
 
     writer.createIfNotExists(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.SEQUENCE_FLOW,
+                    WriteStatementType.INSERT,
+                    "flow1",
+                    "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists",
+                    model)));
   }
 
   @Test
   void shouldDeleteSequenceFlow() {
     final var model = mock(SequenceFlowDbModel.class);
+    when(model.sequenceFlowId()).thenReturn("flow1");
 
     writer.delete(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.SEQUENCE_FLOW,
+                    WriteStatementType.DELETE,
+                    "flow1",
+                    "io.camunda.db.rdbms.sql.SequenceFlowMapper.delete",
+                    model)));
   }
 }

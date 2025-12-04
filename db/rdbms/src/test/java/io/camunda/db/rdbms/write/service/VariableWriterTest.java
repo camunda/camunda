@@ -7,15 +7,19 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
 
 class VariableWriterTest {
@@ -29,19 +33,47 @@ class VariableWriterTest {
 
   @Test
   void shouldCreateVariable() {
+    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+
     final var model = mock(VariableDbModel.class);
+    final var truncatedModel = mock(VariableDbModel.class);
+    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.variableKey()).thenReturn(123L);
 
     writer.create(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.VARIABLE,
+                    WriteStatementType.INSERT,
+                    123L,
+                    "io.camunda.db.rdbms.sql.VariableMapper.insert",
+                    truncatedModel)));
   }
 
   @Test
   void shouldUpdateVariable() {
+    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+
     final var model = mock(VariableDbModel.class);
+    final var truncatedModel = mock(VariableDbModel.class);
+    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.variableKey()).thenReturn(123L);
 
     writer.update(model);
 
-    verify(executionQueue).executeInQueue(any(QueueItem.class));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.VARIABLE,
+                    WriteStatementType.UPDATE,
+                    123L,
+                    "io.camunda.db.rdbms.sql.VariableMapper.update",
+                    truncatedModel)));
   }
 }
