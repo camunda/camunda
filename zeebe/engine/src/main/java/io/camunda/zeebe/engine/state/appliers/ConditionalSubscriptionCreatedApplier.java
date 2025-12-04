@@ -23,7 +23,14 @@ public final class ConditionalSubscriptionCreatedApplier
   }
 
   @Override
-  public void applyState(final long key, final ConditionalSubscriptionRecord value) {
-    conditionalSubscriptionState.put(key, value);
+  public void applyState(final long key, final ConditionalSubscriptionRecord record) {
+    // root level conditional start event
+    if (record.getScopeKey() == -1) {
+      conditionalSubscriptionState.putStart(key, record);
+      return;
+    }
+
+    // regular conditional subscription
+    conditionalSubscriptionState.put(key, record);
   }
 }
