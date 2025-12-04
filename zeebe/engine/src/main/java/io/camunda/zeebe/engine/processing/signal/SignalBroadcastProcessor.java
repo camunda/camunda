@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -170,10 +171,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<SignalRecord> command, final Throwable error) {
-    if (error
-        instanceof
-        final io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException
-            exception) {
+    if (error instanceof final CommandRejectionException exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(

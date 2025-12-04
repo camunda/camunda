@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -140,10 +141,7 @@ public class ResourceDeletionDeleteProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ResourceDeletionRecord> command, final Throwable error) {
-    if (error
-        instanceof
-        final io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException
-            exception) {
+    if (error instanceof final CommandRejectionException exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(
