@@ -10,11 +10,7 @@
 
 import {authenticationStore} from 'modules/stores/authentication';
 import {operationsStore} from 'modules/stores/operations';
-import {
-  createBatchOperation,
-  createInstance,
-  createProcessInstance,
-} from 'modules/testUtils';
+import {createBatchOperation, createProcessInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -24,8 +20,6 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const mockOperationCreated = createBatchOperation();
-
-const mockInstanceDeprecated = createInstance();
 
 const mockInstance = createProcessInstance();
 
@@ -59,7 +53,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 export {
   mockInstance,
   mockInstanceWithParentInstance,
-  mockInstanceDeprecated,
   mockOperationCreated,
   Wrapper,
 };
