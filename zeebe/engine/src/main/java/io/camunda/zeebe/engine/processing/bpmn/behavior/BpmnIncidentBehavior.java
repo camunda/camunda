@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.common.RootProcessInstanceKeyResolver;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -81,7 +82,10 @@ public final class BpmnIncidentBehavior {
         .setTenantId(context.getTenantId())
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
-        .setCallingElementPath(treePathProperties.callingElementPath());
+        .setCallingElementPath(treePathProperties.callingElementPath())
+        .setRootProcessInstanceKey(
+            RootProcessInstanceKeyResolver.fromElementInstancePath(
+                treePathProperties.elementInstancePath()));
 
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);

@@ -178,12 +178,21 @@ public final class BpmnDecisionBehavior {
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementInstanceKey(context.getElementInstanceKey())
-        .setElementId(context.getElementId());
+        .setElementId(context.getElementId())
+        .setRootProcessInstanceKey(getRootProcessInstanceKey(context));
 
     stateWriter.appendFollowUpEvent(
         newDecisionEvaluationKey,
         decisionEvaluationEventTuple.getLeft(),
         decisionEvaluationEventTuple.getRight());
+  }
+
+  private long getRootProcessInstanceKey(final BpmnElementContext context) {
+    final var processInstanceRecord = context.getRecordValue();
+    if (processInstanceRecord != null) {
+      return processInstanceRecord.getRootProcessInstanceKey();
+    }
+    return -1L;
   }
 
   private void triggerProcessEventWithResultVariable(
