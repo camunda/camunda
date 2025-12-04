@@ -25,7 +25,7 @@ import org.immutables.value.Value;
 public interface GlobalListenerRecordValue extends RecordValue {
   String getType();
 
-  String getRetries();
+  int getRetries();
 
   List<String> getEventTypes();
 

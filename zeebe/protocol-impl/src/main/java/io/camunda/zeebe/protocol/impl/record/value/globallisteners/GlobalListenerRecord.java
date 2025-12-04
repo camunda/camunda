@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -23,8 +24,10 @@ import java.util.stream.StreamSupport;
 public final class GlobalListenerRecord extends UnifiedRecordValue
     implements GlobalListenerRecordValue {
 
+  public static final int DEFAULT_RETRIES = 3;
+
   private final StringProperty typeProp = new StringProperty("type");
-  private final StringProperty retriesProp = new StringProperty("retries");
+  private final IntegerProperty retriesProp = new IntegerProperty("retries", DEFAULT_RETRIES);
   private final ArrayProperty<StringValue> eventTypesProp =
       new ArrayProperty<>("eventTypes", StringValue::new);
   private final BooleanProperty afterNonGlobalProp = new BooleanProperty("afterNonGlobal", false);
@@ -48,11 +51,11 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getRetries() {
-    return bufferAsString(retriesProp.getValue());
+  public int getRetries() {
+    return retriesProp.getValue();
   }
 
-  public GlobalListenerRecord setRetries(final String retries) {
+  public GlobalListenerRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
     return this;
   }
