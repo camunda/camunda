@@ -7,8 +7,6 @@
  */
 package io.camunda.application;
 
-import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
-
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
@@ -32,29 +30,16 @@ import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.boot.SpringBootConfiguration;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneCamunda {
-
-  private static final String SPRING_PROFILES_ACTIVE_PROPERTY = ACTIVE_PROFILES_PROPERTY_NAME;
-  private static final String DEFAULT_CAMUNDA_PROFILES =
-      String.join(
-          ",",
-          Profile.OPERATE.getId(),
-          Profile.TASKLIST.getId(),
-          Profile.BROKER.getId(),
-          Profile.IDENTITY.getId(),
-          Profile.CONSOLIDATED_AUTH.getId());
 
   public static void main(final String[] args) {
     MainSupport.setDefaultGlobalConfiguration();
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    final var defaultProperties = getDefaultProperties();
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
@@ -81,7 +66,6 @@ public class StandaloneCamunda {
                 GatewayModuleConfiguration.class)
             // https://docs.spring.io/spring-boot/docs/2.3.9.RELEASE/reference/html/spring-boot-features.html#boot-features-external-config
             // Default properties are only used, if not overridden by any other config
-            .properties(defaultProperties)
             .initializers(
                 new DefaultAuthenticationInitializer(),
                 new HealthConfigurationInitializer(),
@@ -90,11 +74,5 @@ public class StandaloneCamunda {
             .build(args);
 
     standaloneCamundaApplication.run(args);
-  }
-
-  public static Map<String, Object> getDefaultProperties() {
-    final var defaultProperties = new HashMap<String, Object>();
-    defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
-    return defaultProperties;
   }
 }
