@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
+import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.COMPLETED_DATE;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ITEM_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.PROCESS_INSTANCE_KEY;
@@ -22,6 +23,7 @@ public class BatchOperationItemFieldSortingTransformer implements FieldSortingTr
       case "state" -> STATE;
       case "itemKey" -> ITEM_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
+      case "processedDate" -> COMPLETED_DATE;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };
   }

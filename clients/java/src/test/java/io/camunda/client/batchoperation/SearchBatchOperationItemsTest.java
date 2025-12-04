@@ -96,14 +96,16 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
                     .processInstanceKey()
                     .desc()
                     .itemKey()
-                    .asc())
+                    .asc()
+                    .processedDate()
+                    .desc())
         .send()
         .join();
 
     // then
     final BatchOperationItemSearchQuery request =
         gatewayService.getLastRequest(BatchOperationItemSearchQuery.class);
-    assertThat(request.getSort().size()).isEqualTo(4);
+    assertThat(request.getSort().size()).isEqualTo(5);
     assertThat(request.getSort().get(0).getField()).isEqualTo(FieldEnum.BATCH_OPERATION_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
     assertThat(request.getSort().get(1).getField()).isEqualTo(FieldEnum.STATE);
@@ -112,5 +114,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     assertThat(request.getSort().get(2).getOrder()).isEqualTo(SortOrderEnum.DESC);
     assertThat(request.getSort().get(3).getField()).isEqualTo(FieldEnum.ITEM_KEY);
     assertThat(request.getSort().get(3).getOrder()).isEqualTo(SortOrderEnum.ASC);
+    assertThat(request.getSort().get(4).getField()).isEqualTo(FieldEnum.PROCESSED_DATE);
+    assertThat(request.getSort().get(4).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }

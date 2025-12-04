@@ -26,4 +26,6 @@ public interface BatchOperationItemSort extends SearchRequestSort<BatchOperation
   BatchOperationItemSort itemKey();
 
   BatchOperationItemSort processInstanceKey();
+
+  BatchOperationItemSort processedDate();
 }
