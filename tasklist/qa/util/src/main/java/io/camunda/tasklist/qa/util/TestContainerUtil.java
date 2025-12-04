@@ -492,6 +492,7 @@ public class TestContainerUtil {
       broker =
           new TestStandaloneBroker()
               .withGatewayEnabled(true)
+              .withCreateSchema(testContext.isCreateSchema())
               .withSecurityConfig(
                   cfg -> {
                     cfg.getAuthentication().setUnprotectedApi(true);
@@ -571,6 +572,8 @@ public class TestContainerUtil {
 
     zeebeBroker.withAdditionalProperties(
         Map.of(
+            "camunda.data.secondary-storage.type",
+            type,
             "camunda.database.type",
             type,
             "camunda.operate.database",

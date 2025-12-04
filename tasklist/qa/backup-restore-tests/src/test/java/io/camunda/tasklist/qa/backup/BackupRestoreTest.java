@@ -94,6 +94,7 @@ public class BackupRestoreTest {
   }
 
   private void startAllApps() throws IOException {
+    testContext.setCreateSchema(true);
     if (TestUtil.isOpenSearch()) {
       startOsApps();
     } else {

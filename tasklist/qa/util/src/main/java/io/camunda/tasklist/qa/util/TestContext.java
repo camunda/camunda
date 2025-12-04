@@ -44,6 +44,7 @@ public class TestContext<T extends TestContext<T>> {
   private String internalZeebeContactPoint;
 
   private String indexPrefix;
+  private boolean createSchema = true;
 
   private String externalTasklistHost;
   private Integer externalTasklistPort;
@@ -342,5 +343,14 @@ public class TestContext<T extends TestContext<T>> {
 
   public String getExternalIdentityBaseUrl() {
     return String.format("http://%s:%d", externalIdentityHost, externalIdentityPort);
+  }
+
+  public boolean isCreateSchema() {
+    return createSchema;
+  }
+
+  public TestContext<T> setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
+    return this;
   }
 }
