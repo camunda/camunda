@@ -8,6 +8,8 @@
 
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,14 +38,13 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBufferManager;
 
 public class MigrationTransitionStepTest {
-  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
   }
 
   @TempDir Path tempDir;
-  final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+  final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
   final int defaultPartitionCount = 3;
   ZeebeRocksDbFactory<?> factory =
       new ZeebeRocksDbFactory<ZbColumnFamilies>(
@@ -52,7 +53,7 @@ public class MigrationTransitionStepTest {
           new AccessMetricsConfiguration(Kind.NONE, 1),
           SimpleMeterRegistry::new,
           lruCache,
-          new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+          new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
           defaultPartitionCount);
 
   @AutoClose ZeebeDb zeebeDb;

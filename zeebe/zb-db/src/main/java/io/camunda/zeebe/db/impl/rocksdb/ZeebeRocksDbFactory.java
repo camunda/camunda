@@ -46,6 +46,9 @@ public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
 
+  public static final long DEFAULT_CACHE_SIZE = 64 * 1024 * 1024;
+  public static final long DEFAULT_WRITE_BUFFER_SIZE = DEFAULT_CACHE_SIZE / 4;
+
   static {
     RocksDB.loadLibrary();
   }
