@@ -49,7 +49,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
         new DbTenantAwareKey<>(tenantIdKey, subscriptionKey, DbTenantAwareKey.PlacementType.PREFIX);
     conditionalKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_CONDITIONAL_KEY,
+            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_SUBSCRIPTION_KEY,
             transactionContext,
             tenantAwareSubscriptionKey,
             conditionalSubscription);
@@ -154,7 +154,9 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
         (key, nil) -> {
           tenantIdKey.wrapString(key.second().tenantKey().toString());
           subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
-          final var subscription = conditionalKeyColumnFamily.get(tenantAwareSubscriptionKey);
+          final var subscription =
+              conditionalKeyColumnFamily.get(
+                  tenantAwareSubscriptionKey, ConditionalSubscription::new);
           if (subscription != null) {
             visitor.visit(subscription);
           }
