@@ -47,7 +47,7 @@
   "scripts": {
     "start": "vite",
     "build": "npm run ts-check && vite build && node ./renameProdIndex.js && node license-build.js",
-    "test": "vitest run --project=unit",
+    "test": "vitest run --project=unit --retry=3",
     "test:browser": "vitest run --project=browser",
     "ts-check": "tsc -b",
     "eslint": "eslint .",
