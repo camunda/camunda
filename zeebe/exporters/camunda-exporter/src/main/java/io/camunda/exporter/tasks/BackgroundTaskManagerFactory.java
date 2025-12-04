@@ -40,6 +40,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -378,13 +379,20 @@ public final class BackgroundTaskManagerFactory {
   }
 
   private ReschedulingTask buildStandaloneDecisionArchiverJob() {
+    final var dependantTemplates = new ArrayList<DecisionInstanceDependant>();
+    resourceProvider.getIndexTemplateDescriptors().stream()
+        .filter(DecisionInstanceDependant.class::isInstance)
+        .map(DecisionInstanceDependant.class::cast)
+        .forEach(dependantTemplates::add);
+
     return buildReschedulingArchiverTask(
         new StandaloneDecisionArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class),
             metrics,
             logger,
-            executor));
+            executor,
+            dependantTemplates));
   }
 
   private ReschedulingTask buildReschedulingArchiverTask(final BackgroundTask task) {
