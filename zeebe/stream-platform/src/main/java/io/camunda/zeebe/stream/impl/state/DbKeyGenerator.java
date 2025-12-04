@@ -52,7 +52,11 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
             keyStartValue, zeebeDb, transactionContext, ZbColumnFamilies.KEY, LATEST_KEY);
 
     maxKeyValueKey = new DbString();
+<<<<<<< HEAD
     maxKeyValueKey.wrapString(MAX_KEY);
+=======
+    maxKeyValueKey.wrapString("maxKeyValue");
+>>>>>>> 20eff7de (feat: allow overwriting next key in the state and set a max key)
     // Reuse the column family of next key, but use a different key name.
     maxValueColumnFamily =
         zeebeDb.createColumnFamily(
@@ -76,12 +80,15 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
       // exhaust the entire key space and provide more options for recovery.
       maxKeyValue = Protocol.encodePartitionId(partitionId, 1L << (Protocol.KEY_BITS - 1));
     }
+<<<<<<< HEAD
     LOGGER.debug("DBKeyGenerator set key={} and maxKey={}", getCurrentKey(), maxKeyValue);
   }
 
   @Override
   public int partitionId() {
     return partitionId;
+=======
+>>>>>>> 20eff7de (feat: allow overwriting next key in the state and set a max key)
   }
 
   @Override
@@ -111,7 +118,10 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
    *
    * @return the current key from the state
    */
+<<<<<<< HEAD
   @Override
+=======
+>>>>>>> 20eff7de (feat: allow overwriting next key in the state and set a max key)
   public long getCurrentKey() {
     return nextValueManager.getCurrentValue();
   }
