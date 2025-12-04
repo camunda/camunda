@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.IdentitySetupInitializer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -28,6 +30,11 @@ public final class IdentitySetupProcessors {
             ValueType.IDENTITY_SETUP,
             IdentitySetupIntent.INITIALIZE,
             new IdentitySetupInitializeProcessor(writers, keyGenerator))
-        .withListener(new IdentitySetupInitializer(securityConfig, config.isEnableIdentitySetup()));
+        .withListener(
+            new IdentitySetupInitializer(
+                securityConfig,
+                config.isEnableIdentitySetup(),
+                new AuthorizationConfigurer(
+                    new AuthorizationValidator(securityConfig.getCompiledIdValidationPattern()))));
   }
 }
