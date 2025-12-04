@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -43,15 +42,6 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     final int latestVersion = eventApplier.getLatestVersion(intent);
     appendFollowUpEvent(key, intent, value, latestVersion);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final Map<String, Object> claims) {
-    appendFollowUpEvent(key, intent, value, m -> m.claims(claims));
   }
 
   @Override

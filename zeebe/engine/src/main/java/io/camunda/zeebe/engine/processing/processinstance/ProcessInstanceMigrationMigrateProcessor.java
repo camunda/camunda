@@ -194,10 +194,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     stateWriter.appendFollowUpEvent(
-        processInstanceKey,
-        ProcessInstanceMigrationIntent.MIGRATED,
-        value,
-        command.getAuthorizations());
+        processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
     responseWriter.writeEventOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
   }
