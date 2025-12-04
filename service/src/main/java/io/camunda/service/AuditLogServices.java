@@ -7,15 +7,24 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_ALL_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_OPERATOR_AUTHORIZATION;
+
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogOperationCategory;
+import io.camunda.search.filter.AuditLogFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.condition.AuthorizationCondition;
+import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
 
 public class AuditLogServices
     extends SearchQueryService<AuditLogServices, AuditLogQuery, AuditLogEntity> {
@@ -43,7 +52,9 @@ public class AuditLogServices
     return executeSearchRequest(
         () ->
             auditLogSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, decideAuthorizationCondition(query.filter())))
                 .searchAuditLogs(query));
   }
 
@@ -62,7 +73,39 @@ public class AuditLogServices
     return executeSearchRequest(
         () ->
             auditLogSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        AuthorizationConditions.anyOf(
+                            AUDIT_LOG_READ_ALL_AUTHORIZATION,
+                            AUDIT_LOG_READ_OPERATOR_AUTHORIZATION)))
                 .getAuditLog(auditLogKey));
+  }
+
+  private AuthorizationCondition decideAuthorizationCondition(final AuditLogFilter filter) {
+    final List<Operation<String>> categoryOperations = filter.categoryOperations();
+
+    if (isUserTaskCategory(categoryOperations)) {
+      // TODO add AUDIT_LOG_READ_USER_TASK_AUTHORIZATION authorization when available with #41211
+      return AuthorizationConditions.anyOf(
+          AUDIT_LOG_READ_ALL_AUTHORIZATION, AUDIT_LOG_READ_OPERATOR_AUTHORIZATION);
+    }
+    if (isOperatorCategory(categoryOperations)) {
+      return AuthorizationConditions.anyOf(
+          AUDIT_LOG_READ_ALL_AUTHORIZATION, AUDIT_LOG_READ_OPERATOR_AUTHORIZATION);
+    }
+    return AuthorizationConditions.single(AUDIT_LOG_READ_ALL_AUTHORIZATION);
+  }
+
+  private static boolean isUserTaskCategory(final List<Operation<String>> categoryOperations) {
+    return categoryOperations.contains(Operation.in(AuditLogOperationCategory.USER_TASK))
+        || categoryOperations.contains(Operation.eq(AuditLogOperationCategory.USER_TASK));
+  }
+
+  private static boolean isOperatorCategory(final List<Operation<String>> categoryOperations) {
+    return categoryOperations.contains(
+            Operation.in(AuditLogOperationCategory.OPERATOR, AuditLogOperationCategory.USER_TASK))
+        || categoryOperations.contains(Operation.in(AuditLogOperationCategory.OPERATOR))
+        || categoryOperations.contains(Operation.eq(AuditLogOperationCategory.OPERATOR));
   }
 }
