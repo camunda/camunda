@@ -60,7 +60,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -481,8 +480,8 @@ public final class SystemContext {
     configuredAuthorizations.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured entities: \n- %s"
-                  .formatted(StringUtils.join(violations, "\n- ")));
+              "Cannot initialize configured entities: %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
   }
 
