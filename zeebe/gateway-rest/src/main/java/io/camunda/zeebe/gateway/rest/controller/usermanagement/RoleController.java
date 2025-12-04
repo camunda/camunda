@@ -13,13 +13,11 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
-import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchQueryRequest;
@@ -60,9 +58,7 @@ public class RoleController {
 
   public RoleController(
       final RoleServices roleServices,
-      final UserServices userServices,
       final MappingRuleServices mappingServices,
-      final GroupServices groupServices,
       final CamundaAuthenticationProvider authenticationProvider,
       final SecurityConfiguration securityConfiguration) {
     this.roleServices = roleServices;
