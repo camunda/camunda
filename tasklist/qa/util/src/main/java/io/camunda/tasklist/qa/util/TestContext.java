@@ -49,6 +49,7 @@ public class TestContext<T extends TestContext<T>> {
   private Integer externalTasklistPort;
   private Integer externalTasklistMgmtPort;
   private String externalTasklistContextPath = "/";
+  private boolean createSchema = true;
 
   private List<String> processesToAssert = new ArrayList<>();
 
@@ -342,5 +343,14 @@ public class TestContext<T extends TestContext<T>> {
 
   public String getExternalIdentityBaseUrl() {
     return String.format("http://%s:%d", externalIdentityHost, externalIdentityPort);
+  }
+
+  public boolean isCreateSchema() {
+    return createSchema;
+  }
+
+  public TestContext<T> setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
+    return this;
   }
 }
