@@ -14,15 +14,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.test.VersionCompatibilityMatrix.AdvancedGithubVersionProvider;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.CachedVersionProvider;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.GithubAPI;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.GithubVersionProvider;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.LegacyVersionProvider;
+import io.camunda.zeebe.test.VersionCompatibilityMatrix.ReleaseVerifiedGithubVersionProvider;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.VersionCompatibilityConfig;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.VersionInfo;
 import io.camunda.zeebe.test.VersionCompatibilityMatrix.VersionProvider;
 import io.camunda.zeebe.util.SemanticVersion;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -334,7 +335,7 @@ class VersionCompatibilityMatrixTest {
     void shouldPassThroughReleasedLatestVersions() {
       final var api = mock(GithubAPI.class);
       final var baseProvider = mock(VersionProvider.class);
-      final var provider = new AdvancedGithubVersionProvider(baseProvider, api);
+      final var provider = new ReleaseVerifiedGithubVersionProvider(baseProvider, api);
 
       final var info = VersionInfo.of("8.8.0").asLatest();
       when(baseProvider.discoverVersions()).thenReturn(Stream.of(info));
@@ -348,7 +349,7 @@ class VersionCompatibilityMatrixTest {
     void shouldFilterUnReleasedLatestVersions() {
       final var api = mock(GithubAPI.class);
       final var baseProvider = mock(VersionProvider.class);
-      final var provider = new AdvancedGithubVersionProvider(baseProvider, api);
+      final var provider = new ReleaseVerifiedGithubVersionProvider(baseProvider, api);
 
       final var info = VersionInfo.of("8.8.0").asLatest();
       when(baseProvider.discoverVersions()).thenReturn(Stream.of(info));
@@ -361,7 +362,7 @@ class VersionCompatibilityMatrixTest {
     void shouldUpdateLatestToLatestReleasedVersion() {
       final var api = mock(GithubAPI.class);
       final var baseProvider = mock(VersionProvider.class);
-      final var provider = new AdvancedGithubVersionProvider(baseProvider, api);
+      final var provider = new ReleaseVerifiedGithubVersionProvider(baseProvider, api);
 
       final var releasedVersion = VersionInfo.of("8.7.11");
       final var unreleasedVersion = VersionInfo.of("8.7.12").asLatest();
@@ -381,7 +382,7 @@ class VersionCompatibilityMatrixTest {
   @Nested
   class CachedVersionProviderTest {
     @Test
-    void shouldCacheOnDisk(@org.junit.jupiter.api.io.TempDir final Path tempDir) {
+    void shouldCacheOnDisk(@org.junit.jupiter.api.io.TempDir final Path tempDir) throws Exception {
       final var baseProvider = mock(VersionProvider.class);
       final var cacheFile = tempDir.resolve("camunda-versions.json");
       final var provider = new CachedVersionProvider(baseProvider, cacheFile);
