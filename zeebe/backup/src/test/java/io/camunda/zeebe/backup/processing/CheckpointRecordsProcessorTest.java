@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -57,7 +59,6 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBufferManager;
 
 final class CheckpointRecordsProcessorTest {
-  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
@@ -78,7 +79,7 @@ final class CheckpointRecordsProcessorTest {
 
   @BeforeEach
   void setup() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -87,7 +88,7 @@ final class CheckpointRecordsProcessorTest {
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
                 lruCache,
-                new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+                new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
                 defaultPartitionCount)
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);

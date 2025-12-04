@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.state;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
+
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -20,7 +23,6 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBufferManager;
 
 public final class DefaultZeebeDbFactory {
-  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
@@ -29,7 +31,7 @@ public final class DefaultZeebeDbFactory {
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
@@ -37,7 +39,7 @@ public final class DefaultZeebeDbFactory {
         new AccessMetricsConfiguration(Kind.NONE, 1),
         SimpleMeterRegistry::new,
         lruCache,
-        new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache),
+        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
         defaultPartitionCount);
   }
 }
