@@ -824,7 +824,7 @@ const BatchOperationDetails: React.FC = () => {
                   </span>
                 </SummaryTile>
 
-                <SummaryTile label="Applied by">
+                <SummaryTile label="Actor">
                   <span style={{fontWeight: 500}}>{operation.appliedBy}</span>
                 </SummaryTile>
               </div>
@@ -918,7 +918,7 @@ const BatchOperationDetails: React.FC = () => {
                       display: 'grid',
                       gridTemplateColumns: 'repeat(4, 1fr)',
                       gap: 'var(--cds-spacing-05)',
-                      padding: 'var(--cds-spacing-02)',
+                      padding: 'var(--cds-spacing-02) var(--cds-spacing-04)',
                     }}
                   >
                     <TextInput

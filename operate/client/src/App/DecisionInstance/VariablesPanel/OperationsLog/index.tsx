@@ -53,7 +53,7 @@ const OperationsLog: React.FC = () => {
   const headers = [
     {key: 'operationType', header: 'Operation'},
     {key: 'operationState', header: 'Status'},
-    {key: 'user', header: 'Applied by'},
+    {key: 'user', header: 'Actor'},
     {key: 'startTimestamp', header: 'Time'},
     {key: 'actions', header: ' '},
   ];

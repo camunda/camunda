@@ -482,7 +482,7 @@ const BatchOperationsFilters: React.FC<BatchOperationsFiltersProps> = observer(
               </div>
               <TextInput
                 id="user"
-                labelText="Applied by"
+                labelText="Actor"
                 placeholder="Username or client ID"
                 value={filters.user || ''}
                 onChange={(e) => handleFilterChange('user', e.target.value)}

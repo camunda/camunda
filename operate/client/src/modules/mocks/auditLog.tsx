@@ -96,7 +96,7 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     operationState: 'success',
     startTimestamp: '2024-01-16T09:00:00.000+0000',
     endTimestamp: '2024-01-16T09:12:30.000+0000',
-    user: 'Incident Manager',
+    user: 'Tim Resolver',
     isMultiInstanceOperation: true,
     batchOperationId: '2251799813688003',
     affectedInstancesCount: 89,

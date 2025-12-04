@@ -223,7 +223,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, operation}) => {
                       }}
                     >
                       <UserAvatar />
-                      Applied by
+                      Actor
                     </div>
                   </FirstColumn>
                   <StructuredListCell>{operation.appliedBy}</StructuredListCell>

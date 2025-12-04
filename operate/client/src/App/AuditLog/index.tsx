@@ -154,7 +154,7 @@ const AuditLog: React.FC = () => {
     {key: 'operationType', header: 'Operation'},
     {key: 'operationState', header: 'Status'},
     {key: 'processes', header: 'Applied to'},
-    {key: 'user', header: 'Applied by'},
+    {key: 'user', header: 'Actor'},
     {key: 'startTimestamp', header: 'Time'},
     {key: 'actions', header: ' '},
   ];

@@ -84,7 +84,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                       }}
                     >
                       <UserAvatar />
-                      Applied by
+                      Actor
                     </div>
                   </FirstColumn>
                   <StructuredListCell>{entry.user}</StructuredListCell>
