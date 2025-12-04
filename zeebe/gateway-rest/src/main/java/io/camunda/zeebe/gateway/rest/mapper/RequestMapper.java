@@ -79,6 +79,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
+import io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
@@ -1317,6 +1318,72 @@ public class RequestMapper {
     return value == null ? defaultValue : value;
   }
 
+  public static Either<ProblemDetail, ExpressionEvaluationRequestDto> toExpressionEvaluationRequest(
+      final ExpressionEvaluationRequest request, final boolean multiTenancyEnabled) {
+
+    // Validate tenant ID
+    final Either<ProblemDetail, String> tenantValidation =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Expression");
+
+    if (tenantValidation.isLeft()) {
+      return Either.left(tenantValidation.getLeft());
+    }
+
+    // Validate expression is not empty
+    if (request.getExpression() == null || request.getExpression().trim().isEmpty()) {
+      return Either.left(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              "Expression must not be null or empty",
+              "Please provide a valid FEEL expression to evaluate."));
+    }
+
+    // Validate scope type
+    final var scopeType = request.getScope();
+    if (scopeType == null) {
+      return Either.left(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              "Scope must not be null",
+              "Please provide a valid evaluation scope (NONE, CLUSTER, or PROCESS_INSTANCE)."));
+    }
+
+    // Map scope enum
+    final io.camunda.zeebe.protocol.record.value.ExpressionScopeType protocolScopeType;
+    try {
+      protocolScopeType =
+          io.camunda.zeebe.protocol.record.value.ExpressionScopeType.valueOf(scopeType.name());
+    } catch (final IllegalArgumentException e) {
+      return Either.left(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              "Invalid scope type: " + scopeType,
+              "Valid values are: NONE, CLUSTER, PROCESS_INSTANCE"));
+    }
+
+    // Validate process instance key for PROCESS_INSTANCE scope
+    Long processInstanceKey = null;
+    if (protocolScopeType
+        == io.camunda.zeebe.protocol.record.value.ExpressionScopeType.PROCESS_INSTANCE) {
+      if (request.getProcessInstanceKey() == null || request.getProcessInstanceKey() <= 0) {
+        return Either.left(
+            RestErrorMapper.createProblemDetail(
+                HttpStatus.BAD_REQUEST,
+                "Process instance key is required for PROCESS_INSTANCE scope",
+                "Please provide a valid process instance key."));
+      }
+      processInstanceKey = request.getProcessInstanceKey();
+    }
+
+    return Either.right(
+        new ExpressionEvaluationRequestDto(
+            request.getExpression(),
+            protocolScopeType,
+            processInstanceKey,
+            getMapOrEmpty(request, ExpressionEvaluationRequest::getContext),
+            tenantValidation.get()));
+  }
+
   public record CompleteUserTaskRequest(
       long userTaskKey, Map<String, Object> variables, String action) {}
 
@@ -1345,4 +1412,11 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  public record ExpressionEvaluationRequestDto(
+      String expression,
+      io.camunda.zeebe.protocol.record.value.ExpressionScopeType scopeType,
+      Long processInstanceKey,
+      Map<String, Object> context,
+      String tenantId) {}
 }
