@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
 
 public class UnwrittenRecord implements TypedRecord {
@@ -109,6 +110,11 @@ public class UnwrittenRecord implements TypedRecord {
   }
 
   @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
+  }
+
+  @Override
   public int getRequestStreamId() {
     return metadata.getRequestStreamId();
   }
@@ -122,4 +128,17 @@ public class UnwrittenRecord implements TypedRecord {
   public int getLength() {
     return metadata.getLength() + value.getLength();
   }
+<<<<<<< HEAD
+=======
+
+  @Override
+  public String toString() {
+    return "UnwrittenRecord{"
+        + "metadata="
+        + metadata
+        + ", value="
+        + StringUtil.limitString(value.toString(), 1024)
+        + '}';
+  }
+>>>>>>> cc8bc029 (feat: trace log processed and replayed records)
 }
