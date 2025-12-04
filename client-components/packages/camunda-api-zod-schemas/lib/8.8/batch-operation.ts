@@ -73,7 +73,7 @@ const queryBatchOperationsResponseBodySchema = getQueryResponseBodySchema(batchO
 type QueryBatchOperationsResponseBody = z.infer<typeof queryBatchOperationsResponseBodySchema>;
 
 const queryBatchOperationItemsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['batchOperationKey', 'itemKey', 'processInstanceKey', 'state'] as const,
+	sortFields: ['batchOperationKey', 'itemKey', 'processedDate', 'processInstanceKey', 'state'] as const,
 	filter: z
 		.object({
 			batchOperationKey: z.string(),

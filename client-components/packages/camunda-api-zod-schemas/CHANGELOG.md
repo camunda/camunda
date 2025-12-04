@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.21
+
+### 🚀 Enhancements
+
+- add processedDate to sortFields in queryBatchOperationItemsRequestBodySchema ([#42081](https://github.com/camunda/camunda/pull/42081))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.20
 
 ### 🚀 Enhancements
