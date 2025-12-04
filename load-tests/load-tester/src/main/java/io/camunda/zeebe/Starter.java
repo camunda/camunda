@@ -15,8 +15,10 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -31,6 +33,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +48,7 @@ public class Starter extends App {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final StarterCfg starterCfg;
+  private Timer dataAvailabilityLatencyTimer;
 
   Starter(final AppCfg config) {
     super(config);
@@ -53,6 +57,9 @@ public class Starter extends App {
 
   @Override
   public void run() {
+    dataAvailabilityLatencyTimer =
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
+            .register(registry);
     final CamundaClient client = createCamundaClient();
 
     // init - check for topology and deploy process
@@ -151,14 +158,45 @@ public class Starter extends App {
         TimeUnit.NANOSECONDS);
   }
 
-  private static CompletionStage<?> startInstance(
+  private CompletionStage<?> startInstance(
       final CamundaClient client, final String processId, final HashMap<String, Object> variables) {
+    final var startTime = System.nanoTime();
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
         .variables(variables)
-        .send();
+        .send()
+        .thenApply(
+            (response) -> {
+              final long processInstanceKey = response.getProcessInstanceKey();
+              checkForProcessInstanceExistence(client, startTime, processInstanceKey);
+              return response;
+            });
+  }
+
+  private void checkForProcessInstanceExistence(
+      final CamundaClient client, final long startTime, final long processInstanceKey) {
+    client
+        .newProcessInstanceGetRequest(processInstanceKey)
+        .send()
+        .whenCompleteAsync(
+            (resp, err) -> {
+              if (err != null) {
+                THROTTLED_LOGGER.error(
+                    "Failed to get process instance {}", processInstanceKey, err);
+                LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
+                checkForProcessInstanceExistence(client, startTime, processInstanceKey);
+              } else {
+                final long durationNanos = System.nanoTime() - startTime;
+                LOG.debug(
+                    "Process instance {} retrieved in {} ms",
+                    processInstanceKey,
+                    durationNanos / 1_000_000);
+
+                dataAvailabilityLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+              }
+            });
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
