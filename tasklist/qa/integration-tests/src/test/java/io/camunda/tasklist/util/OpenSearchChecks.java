@@ -67,7 +67,7 @@ public class OpenSearchChecks {
         try {
           final ProcessEntity process = processStore.getProcess(processId);
           return process != null;
-        } catch (TasklistRuntimeException ex) {
+        } catch (final TasklistRuntimeException ex) {
           return false;
         }
       }
@@ -91,9 +91,9 @@ public class OpenSearchChecks {
         try {
           processStore.getProcess(processId);
           return false;
-        } catch (NotFoundException nfe) {
+        } catch (final NotFoundException nfe) {
           return true;
-        } catch (TasklistRuntimeException ex) {
+        } catch (final TasklistRuntimeException ex) {
           return false;
         }
       }
@@ -117,7 +117,7 @@ public class OpenSearchChecks {
         try {
           final TaskEntity taskEntity = openSearchHelper.getTask(taskId);
           return TaskState.CREATED.equals(taskEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -143,7 +143,7 @@ public class OpenSearchChecks {
           final String taskId = (String) objects[0];
           final TaskEntity taskEntity = openSearchHelper.getTask(taskId);
           return taskEntity.getCandidateGroups().length > 0;
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -167,7 +167,7 @@ public class OpenSearchChecks {
         try {
           final TaskEntity taskEntity = openSearchHelper.getTask(taskId);
           return taskEntity.getAssignee() != null;
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -200,7 +200,7 @@ public class OpenSearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.CREATED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -233,7 +233,7 @@ public class OpenSearchChecks {
                   .map(TaskEntity::getState)
                   .collect(Collectors.toList())
                   .contains(TaskState.CREATED));
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -266,7 +266,7 @@ public class OpenSearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.CANCELED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -299,7 +299,7 @@ public class OpenSearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.COMPLETED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -326,7 +326,7 @@ public class OpenSearchChecks {
           final ProcessInstanceEntity wfiEntity =
               openSearchHelper.getProcessInstance(processInstanceId);
           return ProcessInstanceState.COMPLETED.equals(wfiEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -353,7 +353,7 @@ public class OpenSearchChecks {
           final ProcessInstanceEntity wfiEntity =
               openSearchHelper.getProcessInstance(processInstanceId);
           return ProcessInstanceState.CANCELED.equals(wfiEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -377,8 +377,8 @@ public class OpenSearchChecks {
         final String taskId = (String) objects[0];
         final String varName = (String) objects[1];
         try {
-          return openSearchHelper.checkVariableExists(taskId, varName);
-        } catch (NotFoundApiException ex) {
+          return openSearchHelper.checkTaskVariableExists(taskId, varName);
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -396,10 +396,14 @@ public class OpenSearchChecks {
 
       @Override
       public boolean test(final Object[] objects) {
-        final String[] varNames = (String[]) objects;
+        assertThat(objects).hasSize(2);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String[].class);
+        final String processInstanceId = (String) objects[0];
+        final String[] varNames = (String[]) objects[1];
         try {
-          return openSearchHelper.checkVariablesExist(varNames);
-        } catch (NotFoundApiException ex) {
+          return openSearchHelper.checkVariablesExist(processInstanceId, varNames);
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
