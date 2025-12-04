@@ -181,7 +181,7 @@ As of today (16 Jun 2025), we have load tests running:
 
 The release load tests are created as part of the [release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn#L7-L18).
 
-There exist a separate process (called as sub process) to set up the load test, called "Setup benchmark".
+There exists a separate process (called as sub process) to set up the load test, called "Setup benchmark".
 
 ![setup-benchmark](assets/setup_benchmark.png)
 
