@@ -88,6 +88,26 @@ const OPERATIONS: Record<
     operationsCompletedCount: 1,
     state: 'COMPLETED',
   },
+  ADD_VARIABLE: {
+    batchOperationKey: 'add-var-44444-55555-66666',
+    batchOperationType: 'ADD_VARIABLE',
+    startDate: '2023-11-22T10:00:00.000+0100',
+    endDate: '2023-11-22T10:05:00.000+0100',
+    operationsFailedCount: 0,
+    operationsTotalCount: 2,
+    operationsCompletedCount: 2,
+    state: 'COMPLETED',
+  },
+  UPDATE_VARIABLE: {
+    batchOperationKey: 'update-var-77777-88888-99999',
+    batchOperationType: 'UPDATE_VARIABLE',
+    startDate: '2023-11-22T11:00:00.000+0100',
+    endDate: '2023-11-22T11:05:00.000+0100',
+    operationsFailedCount: 0,
+    operationsTotalCount: 1,
+    operationsCompletedCount: 1,
+    state: 'COMPLETED',
+  },
 } as const;
 
 const mockProps = {
