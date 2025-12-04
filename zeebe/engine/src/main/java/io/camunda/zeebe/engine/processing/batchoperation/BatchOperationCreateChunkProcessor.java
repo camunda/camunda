@@ -36,8 +36,8 @@ public final class BatchOperationCreateChunkProcessor
     final var recordValue = command.getValue();
     LOGGER.debug(
         "Creating a new chunk with {} items for batch operation {}",
-        recordValue.getBatchOperationKey(),
-        recordValue.getItems().size());
+        recordValue.getItems().size(),
+        recordValue.getBatchOperationKey());
 
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationChunkIntent.CREATED, recordValue);
