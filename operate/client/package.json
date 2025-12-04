@@ -36,6 +36,7 @@
     "stylis": "4.3.6"
   },
   "scripts": {
+<<<<<<< HEAD
     "start": "cross-env TSC_COMPILE_ON_ERROR=true GENERATE_SOURCEMAP=false react-app-rewired start",
     "start:e2e": "cross-env GENERATE_SOURCEMAP=false BROWSER=none PORT=3001 IS_E2E=true react-app-rewired start",
     "build": "cross-env GENERATE_SOURCEMAP=false react-app-rewired build && node license-build.js",
@@ -45,6 +46,15 @@
     "ts-check": "tsc",
     "eslint": "eslint src/ e2e-playwright/ --max-warnings=0",
     "lint": "yarn ts-check && yarn eslint",
+=======
+    "start": "vite",
+    "build": "npm run ts-check && vite build && node ./renameProdIndex.js && node license-build.js",
+    "test": "vitest run --project=unit --retry=3",
+    "test:browser": "vitest run --project=browser",
+    "ts-check": "tsc -b",
+    "eslint": "eslint .",
+    "lint": "npm run ts-check && npm run eslint",
+>>>>>>> 48a49f45 (ci: add vitest retries to frontend unit tests)
     "fix:prettier": "prettier --write \"**/*.ts\"",
     "test:e2e": "cross-env IS_E2E=true PORT=8081 ZEEBE_GATEWAY_ADDRESS=localhost:26503 yarn playwright e2e-playwright/tests",
     "test:a11y": "cross-env IS_A11Y=true yarn playwright e2e-playwright/a11y",

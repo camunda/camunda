@@ -42,10 +42,18 @@
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build && node ./renameProdIndex.mjs",
+<<<<<<< HEAD
     "test": "TZ=utc vitest",
     "test:ci": "CI=true yarn test",
     "test:e2e": "IS_E2E=true ZEEBE_GATEWAY_ADDRESS=localhost:26503 yarn playwright e2e/tests",
     "test:e2e:ci": "IS_E2E=true ZEEBE_GATEWAY_ADDRESS=localhost:26500 yarn playwright e2e/tests",
+=======
+    "test": "TZ=utc vitest run --retry=3",
+    "test:ci": "CI=true npm run test",
+    "test:visual": "playwright test --project=visual",
+    "test:a11y": "IS_A11Y=true playwright test --project=a11y",
+    "test:docs": "CI=true IS_E2E=true playwright test --project=docs",
+>>>>>>> 48a49f45 (ci: add vitest retries to frontend unit tests)
     "ts-check": "tsc && tsc -p ./e2e/tsconfig.json",
     "eslint": "eslint .",
     "stylelint": "stylelint \"src/**/*.?(s)css\"",
