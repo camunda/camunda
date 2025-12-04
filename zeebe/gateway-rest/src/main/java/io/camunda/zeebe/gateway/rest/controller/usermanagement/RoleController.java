@@ -43,6 +43,7 @@ import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -258,11 +259,14 @@ public class RoleController {
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
+    final boolean hasGroupClaimConfigured = hasGroupClaimConfigured();
     return RequestMapper.toRoleMemberRequest(
             roleId,
             groupId,
             EntityType.GROUP,
-            securityConfiguration.getCompiledIdValidationPattern())
+            hasGroupClaimConfigured
+                ? Pattern.compile(".*", Pattern.DOTALL)
+                : securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
@@ -363,5 +367,18 @@ public class RoleController {
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .removeMember(request));
+  }
+
+  private boolean hasGroupClaimConfigured() {
+    final var authentication = securityConfiguration.getAuthentication();
+    if (authentication == null) {
+      return false;
+    }
+    final var oidcConfiguration = authentication.getOidc();
+    if (oidcConfiguration == null) {
+      return false;
+    }
+    final var groupsClaim = oidcConfiguration.getGroupsClaim();
+    return groupsClaim != null && !groupsClaim.isEmpty();
   }
 }
