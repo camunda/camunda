@@ -146,6 +146,7 @@ const queryKeys = {
       payload !== undefined
         ? ['batchOperations', payload]
         : ['batchOperations'],
+    get: (batchOperationKey: string) => ['batchOperation', batchOperationKey],
   },
   batchOperationItems: {
     searchByProcessInstanceKey: (processInstanceKey?: string) => [
