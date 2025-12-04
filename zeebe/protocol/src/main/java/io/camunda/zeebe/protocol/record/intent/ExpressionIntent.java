@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum ExpressionIntent implements Intent{
+public enum ExpressionIntent implements Intent {
   EVALUATE(0),
   EVALUATED(1),
   REJECTED(2);

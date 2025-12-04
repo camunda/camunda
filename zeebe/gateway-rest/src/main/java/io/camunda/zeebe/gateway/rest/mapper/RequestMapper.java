@@ -1352,7 +1352,7 @@ public class RequestMapper {
     final io.camunda.zeebe.protocol.record.value.ExpressionScopeType protocolScopeType;
     try {
       protocolScopeType =
-          io.camunda.zeebe.protocol.record.value.ExpressionScopeType.valueOf(scopeType.name());
+          io.camunda.zeebe.protocol.record.value.ExpressionScopeType.valueOf(scopeType.getType().getValue());
     } catch (final IllegalArgumentException e) {
       return Either.left(
           RestErrorMapper.createProblemDetail(
@@ -1365,14 +1365,14 @@ public class RequestMapper {
     Long processInstanceKey = null;
     if (protocolScopeType
         == io.camunda.zeebe.protocol.record.value.ExpressionScopeType.PROCESS_INSTANCE) {
-      if (request.getProcessInstanceKey() == null || request.getProcessInstanceKey() <= 0) {
+      if (request.getScope().getProcessInstanceKey() == null || Long.parseLong(request.getScope().getProcessInstanceKey()) <= 0) {
         return Either.left(
             RestErrorMapper.createProblemDetail(
                 HttpStatus.BAD_REQUEST,
                 "Process instance key is required for PROCESS_INSTANCE scope",
                 "Please provide a valid process instance key."));
       }
-      processInstanceKey = request.getProcessInstanceKey();
+      processInstanceKey = Long.parseLong(request.getScope().getProcessInstanceKey());
     }
 
     return Either.right(

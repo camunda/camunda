@@ -596,5 +596,5 @@ public class CamundaServicesConfiguration {
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);
-  })
+  }
 }

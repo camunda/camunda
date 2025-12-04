@@ -93,7 +93,8 @@ public final class EvaluateExpressionProcessor implements TypedRecordProcessor<E
     }
 
     // Parse expression first
-    final var expression = baseExpressionProcessor.parseExpression(expressionRecord.getExpression());
+    final var expression =
+        baseExpressionProcessor.parseExpression(expressionRecord.getExpression());
     if (!expression.isValid()) {
       final var message =
           "Failed to parse expression '%s': %s"
@@ -123,8 +124,7 @@ public final class EvaluateExpressionProcessor implements TypedRecordProcessor<E
             : -1;
 
     final var evaluationResult =
-        scopedProcessor.evaluateAnyExpression(
-            expression, scopeKey, expressionRecord.getTenantId());
+        scopedProcessor.evaluateAnyExpression(expression, scopeKey, expressionRecord.getTenantId());
 
     // Build response record
     final var responseRecord = new ExpressionRecord();

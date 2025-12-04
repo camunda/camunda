@@ -773,10 +773,10 @@ public final class ResponseMapper {
           brokerResponse) {
     final var expressionRecord = brokerResponse.getResponse();
 
-    final var expressionResult = new ExpressionResult().type();
+    final var expressionResult = new ExpressionResult();
 
-    final var response =
-        new io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationResult()
+    final var response = new io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationResult();
+        response
             .getResult()
             .type(mapResultType(expressionRecord.getResultType()))
             .value(expressionRecord.getResult());
@@ -788,7 +788,7 @@ public final class ResponseMapper {
           .forEach(
               warning ->
                   response.addWarningsItem(
-                      new io.camunda.zeebe.gateway.protocol.rest.EvaluationWarning()
+                      new io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationWarning()
                           .type(warning.getType())
                           .message(warning.getMessage())));
     }

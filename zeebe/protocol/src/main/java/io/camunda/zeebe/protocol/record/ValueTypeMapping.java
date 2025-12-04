@@ -344,8 +344,7 @@ public final class ValueTypeMapping {
         ValueType.CONDITIONAL_EVALUATION,
         new Mapping<>(ConditionalEvaluationRecordValue.class, ConditionalEvaluationIntent.class));
     mapping.put(
-        ValueType.EXPRESSION,
-        new Mapping<>(ExpressionRecordValue.class, ExpressionIntent.class));
+        ValueType.EXPRESSION, new Mapping<>(ExpressionRecordValue.class, ExpressionIntent.class));
     return mapping;
   }
 
