@@ -11,18 +11,18 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
-import io.camunda.zeebe.protocol.record.value.GlobalListenersRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class GlobalListenersRecord extends UnifiedRecordValue
-    implements GlobalListenersRecordValue {
+public final class GlobalListenerBatchRecord extends UnifiedRecordValue
+    implements GlobalListenerBatchRecordValue {
 
   private final LongProperty listenersConfigKey = new LongProperty("listenersConfigKey", -1L);
   private final ArrayProperty<GlobalListenerRecord> taskListenersProp =
       new ArrayProperty<>("taskListeners", GlobalListenerRecord::new);
 
-  public GlobalListenersRecord() {
+  public GlobalListenerBatchRecord() {
     super(2);
     declareProperty(listenersConfigKey).declareProperty(taskListenersProp);
   }
@@ -32,7 +32,7 @@ public final class GlobalListenersRecord extends UnifiedRecordValue
     return listenersConfigKey.getValue();
   }
 
-  public GlobalListenersRecord setListenersConfigKey(final long listenersConfigKey) {
+  public GlobalListenerBatchRecord setListenersConfigKey(final long listenersConfigKey) {
     this.listenersConfigKey.setValue(listenersConfigKey);
     return this;
   }
@@ -42,7 +42,7 @@ public final class GlobalListenersRecord extends UnifiedRecordValue
     return taskListenersProp.stream().collect(Collectors.toList());
   }
 
-  public GlobalListenersRecord addTaskListener(final GlobalListenerRecord listener) {
+  public GlobalListenerBatchRecord addTaskListener(final GlobalListenerRecord listener) {
     taskListenersProp.add().copyFrom(listener);
     return this;
   }

@@ -38,7 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
-import io.camunda.zeebe.protocol.record.intent.GlobalListenersIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -172,7 +172,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerGlobalListenersEventAppliers(final MutableProcessingState state) {
-    register(GlobalListenersIntent.CONFIGURED, NOOP_EVENT_APPLIER);
+    register(GlobalListenerBatchIntent.CONFIGURED, NOOP_EVENT_APPLIER);
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {

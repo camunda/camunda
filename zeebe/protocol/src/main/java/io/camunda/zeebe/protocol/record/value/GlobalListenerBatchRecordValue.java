@@ -21,8 +21,8 @@ import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableGlobalListenersRecordValue.Builder.class)
-public interface GlobalListenersRecordValue extends RecordValue {
+@ImmutableProtocol(builder = ImmutableGlobalListenerBatchRecordValue.Builder.class)
+public interface GlobalListenerBatchRecordValue extends RecordValue {
   long getListenersConfigKey();
 
   List<GlobalListenerRecordValue> getTaskListeners();

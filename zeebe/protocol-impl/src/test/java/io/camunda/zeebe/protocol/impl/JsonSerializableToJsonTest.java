@@ -43,8 +43,8 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.globallisteners.GlobalListenerRecord;
-import io.camunda.zeebe.protocol.impl.record.value.globallisteners.GlobalListenersRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -4079,13 +4079,13 @@ final class JsonSerializableToJsonTest {
                 }
                 """
       },
-      //////////////////////////////////// GlobalListenersRecord //////////////////////////////////
+      //////////////////////////////////// GlobalListenerBatchRecord /////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "GlobalListenersRecord",
-        (Supplier<GlobalListenersRecord>)
+        "GlobalListenerBatchRecord",
+        (Supplier<GlobalListenerBatchRecord>)
             () ->
-                new GlobalListenersRecord()
+                new GlobalListenerBatchRecord()
                     .setListenersConfigKey(1)
                     .addTaskListener(
                         new GlobalListenerRecord()
@@ -4119,8 +4119,8 @@ final class JsonSerializableToJsonTest {
       """
       },
       {
-        "Empty GlobalListenersRecord",
-        (Supplier<GlobalListenersRecord>) () -> new GlobalListenersRecord(),
+        "Empty GlobalListenerBatchRecord",
+        (Supplier<GlobalListenerBatchRecord>) () -> new GlobalListenerBatchRecord(),
         """
       {
         "listenersConfigKey": -1,

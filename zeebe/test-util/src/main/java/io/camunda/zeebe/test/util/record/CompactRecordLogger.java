@@ -21,7 +21,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
-import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENERS;
+import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENER_BATCH;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.IDENTITY_SETUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
@@ -92,8 +92,8 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
-import io.camunda.zeebe.protocol.record.value.GlobalListenersRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
@@ -222,7 +222,7 @@ public class CompactRecordLogger {
           entry(CONDITIONAL_EVALUATION.name(), "COND_EVAL"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"),
-          entry(GLOBAL_LISTENERS.name(), "GL"));
+          entry(GLOBAL_LISTENER_BATCH.name(), "GL_BATCH"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -314,7 +314,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
     valueLoggers.put(ValueType.FORM, this::summarizeForm);
     valueLoggers.put(ValueType.HISTORY_DELETION, this::summarizeHistoryDeletion);
-    valueLoggers.put(ValueType.GLOBAL_LISTENERS, this::summarizeGlobalListeners);
+    valueLoggers.put(ValueType.GLOBAL_LISTENER_BATCH, this::summarizeGlobalListenerBatch);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1792,8 +1792,8 @@ public class CompactRecordLogger {
         value.isAfterNonGlobal() ? " [after]" : "");
   }
 
-  private String summarizeGlobalListeners(final Record<?> record) {
-    final var value = (GlobalListenersRecordValue) record.getValue();
+  private String summarizeGlobalListenerBatch(final Record<?> record) {
+    final var value = (GlobalListenerBatchRecordValue) record.getValue();
     final StringBuilder summary = new StringBuilder();
     if (record.getKey() != value.getListenersConfigKey()) {
       summary.append("configKey: ").append(shortenKey(value.getListenersConfigKey())).append(" ");

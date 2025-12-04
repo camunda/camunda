@@ -35,7 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
-import io.camunda.zeebe.protocol.record.intent.GlobalListenersIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -94,7 +94,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
-import io.camunda.zeebe.protocol.record.value.GlobalListenersRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
@@ -344,8 +344,8 @@ public final class ValueTypeMapping {
         ValueType.CONDITIONAL_EVALUATION,
         new Mapping<>(ConditionalEvaluationRecordValue.class, ConditionalEvaluationIntent.class));
     mapping.put(
-        ValueType.GLOBAL_LISTENERS,
-        new Mapping<>(GlobalListenersRecordValue.class, GlobalListenersIntent.class));
+        ValueType.GLOBAL_LISTENER_BATCH,
+        new Mapping<>(GlobalListenerBatchRecordValue.class, GlobalListenerBatchIntent.class));
     return mapping;
   }
 
