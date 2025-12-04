@@ -18,7 +18,7 @@ type UseElementInstancesSearchParams = {
   elementId: string;
   processInstanceKey: string;
   elementType?: ElementInstance['type'];
-  enabled: boolean;
+  enabled?: boolean;
 };
 
 const useElementInstancesSearch = (params: UseElementInstancesSearchParams) => {
