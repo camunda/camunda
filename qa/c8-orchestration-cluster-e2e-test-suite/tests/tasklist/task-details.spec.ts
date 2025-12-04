@@ -549,5 +549,7 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Big Variable Usertask');
     await expect(page.getByText('Variables are too large')).toBeVisible();
+
+    // TODO: check for actual variable value
   });
 });
