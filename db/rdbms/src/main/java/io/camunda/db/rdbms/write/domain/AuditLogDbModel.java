@@ -7,14 +7,14 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.search.entities.AuditLogActorType;
-import io.camunda.search.entities.AuditLogEntityType;
-import io.camunda.search.entities.AuditLogOperationCategory;
-import io.camunda.search.entities.AuditLogOperationResult;
-import io.camunda.search.entities.AuditLogOperationType;
-import io.camunda.search.entities.AuditLogTenantScope;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 

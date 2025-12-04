@@ -9,6 +9,11 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
