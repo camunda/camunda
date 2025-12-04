@@ -12,7 +12,8 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.zeebe.exporter.common.handlers.AuditLogCommonHandler;
+import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogCommonHandler;
+import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogOperationTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -41,11 +42,13 @@ import java.util.List;
 public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogEntity, R> {
 
   private final String indexName;
-  private final AuditLogOperationTransformer<? extends Intent, R> operationTransformer;
+  private final AuditLogOperationTransformer<? extends Intent, R, AuditLogEntity>
+      operationTransformer;
 
   public AuditLogHandler(
       final String indexName,
-      final AuditLogOperationTransformer<? extends Intent, R> operationTransformer) {
+      final AuditLogOperationTransformer<? extends Intent, R, AuditLogEntity>
+          operationTransformer) {
     this.indexName = indexName;
     this.operationTransformer = operationTransformer;
   }

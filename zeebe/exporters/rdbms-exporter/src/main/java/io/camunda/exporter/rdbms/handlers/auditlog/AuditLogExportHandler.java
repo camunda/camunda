@@ -5,17 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms.handlers;
+package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.zeebe.exporter.common.handlers.AuditLogCommonHandler;
+import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogCommonHandler;
+import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogOperationTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.UUID;
 
@@ -23,17 +25,29 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
 
   private final AuditLogWriter auditLogWriter;
   private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final AuditLogOperationTransformer<? extends Intent, R, AuditLogDbModel.Builder>
+      operationTransformer;
 
   public AuditLogExportHandler(
       final AuditLogWriter auditLogWriter,
-      final VendorDatabaseProperties vendorDatabaseProperties) {
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final AuditLogOperationTransformer<? extends Intent, R, AuditLogDbModel.Builder>
+          operationTransformer) {
     this.auditLogWriter = auditLogWriter;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
+    this.operationTransformer = operationTransformer;
   }
 
   @Override
   public boolean canExport(final Record<R> record) {
-    return record.getIntent() != null; // TODO: make it more specific
+    final var recordIntent = record.getIntent();
+    return AuditLogCommonHandler.hasActorData(record)
+        && (operationTransformer.getSupportedIntents().contains(recordIntent)
+            || (operationTransformer.getSupportedCommandRejections().contains(recordIntent)
+                && RecordType.COMMAND_REJECTION.equals(record.getRecordType())
+                && operationTransformer
+                    .getSupportedRejectionTypes()
+                    .contains(record.getRejectionType())));
   }
 
   @Override
@@ -63,7 +77,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
       setRejectionData(auditLog, record);
     } else {
       auditLog.result(AuditLogOperationResult.SUCCESS);
-      // operationTransformer.transform(auditLog, record); // FIXME: add transformer
+      operationTransformer.transform(auditLog, record);
     }
     return auditLog.build();
   }
