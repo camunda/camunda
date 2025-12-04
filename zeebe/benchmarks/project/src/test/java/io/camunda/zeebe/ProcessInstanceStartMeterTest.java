@@ -1,0 +1,194 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
+
+import io.camunda.zeebe.protocol.Protocol;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+public class ProcessInstanceStartMeterTest {
+
+  @BeforeAll
+  public static void setup() {}
+
+  @Test
+  public void shouldRecordInstanceAvailability() {
+    // given
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    final ProcessInstanceStartMeter processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            meterRegistry, Executors.newScheduledThreadPool(1), CompletableFuture::completedFuture);
+
+    // when
+    processInstanceStartMeter.start();
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+
+    // then
+    await()
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                meterRegistry
+                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                    .timer()
+                    .count(),
+            (count) -> assertThat(count).isOne());
+
+    assertThat(
+            meterRegistry
+                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                .timer()
+                .totalTime(TimeUnit.MILLISECONDS))
+        .isGreaterThan(100);
+    processInstanceStartMeter.stop();
+  }
+
+  @Test
+  public void shouldNotRecordInstanceAvailability() throws InterruptedException {
+    // given
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    final ProcessInstanceStartMeter processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            (list) -> {
+              countDownLatch.countDown();
+              return CompletableFuture.completedFuture(list);
+            });
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then
+    countDownLatch.await(1, TimeUnit.SECONDS);
+
+    assertThatThrownBy(
+            () ->
+                meterRegistry
+                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                    .timer())
+        .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
+
+    processInstanceStartMeter.stop();
+  }
+
+  @Test
+  public void shouldNotRecordInstanceAvailabilityWhenNotAvailable() throws InterruptedException {
+    // given
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    final ProcessInstanceStartMeter processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            (list) -> {
+              countDownLatch.countDown();
+              // return empty list to simulate no available instances
+              return CompletableFuture.completedFuture(List.of());
+            });
+
+    // when
+    processInstanceStartMeter.start();
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+
+    // then
+    countDownLatch.await(1, TimeUnit.SECONDS);
+
+    assertThatThrownBy(
+            () ->
+                meterRegistry
+                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                    .timer())
+        .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
+
+    processInstanceStartMeter.stop();
+  }
+
+  @Test
+  public void shouldNotRecordInstanceAvailabilityWhenNotStarted() throws InterruptedException {
+    // given
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    final ProcessInstanceStartMeter processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            meterRegistry, Executors.newScheduledThreadPool(1), CompletableFuture::completedFuture);
+
+    // when
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+
+    // then
+    assertThatThrownBy(
+            () ->
+                meterRegistry
+                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                    .timer())
+        .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
+
+    processInstanceStartMeter.stop();
+  }
+
+  @Test
+  public void shouldOnlyRecordAvailableInstances() throws InterruptedException {
+    // given
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    final ProcessInstanceStartMeter processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            (list) -> {
+              countDownLatch.countDown();
+
+              // return only the first instance as available
+              return CompletableFuture.completedFuture(
+                  list.isEmpty() ? List.of() : List.of(list.getFirst()));
+            });
+
+    // when
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 2), System.nanoTime());
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 3), System.nanoTime());
+    processInstanceStartMeter.start();
+
+    // then
+    countDownLatch.await(1, TimeUnit.SECONDS);
+    await()
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                meterRegistry
+                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                    .timer()
+                    .count(),
+            (count) -> assertThat(count).isOne());
+
+    assertThat(
+            meterRegistry
+                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                .timer()
+                .totalTime(TimeUnit.MILLISECONDS))
+        .isGreaterThan(100);
+    processInstanceStartMeter.stop();
+  }
+}
