@@ -49,7 +49,9 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
@@ -318,6 +320,31 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  @Override
+  public CompletableFuture<Map<String, Long>> getDocumentCountsPerIndex() {
+    final var indexAliases =
+        allTemplatesDescriptors.stream().map(IndexTemplateDescriptor::getAlias).toList();
+
+    return client
+        .indices()
+        .stats(request -> request.index(indexAliases).metric("docs"))
+        .thenApplyAsync(
+            response -> {
+              final Map<String, Long> counts = new HashMap<>();
+              response
+                  .indices()
+                  .forEach(
+                      (indexName, indexStats) -> {
+                        final var docsStats = indexStats.primaries().docs();
+                        if (docsStats != null) {
+                          counts.put(indexName, docsStats.count());
+                        }
+                      });
+              return counts;
+            },
+            executor);
   }
 
   private Query finishedProcessInstancesQuery(
