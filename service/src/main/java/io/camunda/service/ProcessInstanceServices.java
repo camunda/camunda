@@ -365,7 +365,12 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord> deleteProcessInstancesBatchOperation(
       final ProcessInstanceFilter filter) {
-    throw new UnsupportedOperationException("Batch deletion of process instances is coming soon!");
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+    return sendBrokerRequest(brokerRequest);
   }
 
   public SearchQueryResult<IncidentEntity> searchIncidents(
