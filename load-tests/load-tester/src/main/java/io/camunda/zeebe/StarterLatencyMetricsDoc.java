@@ -18,19 +18,16 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
    */
   DATA_AVAILABILITY_LATENCY {
     private static final Duration[] BUCKETS = {
-      Duration.ofMillis(50),
-      Duration.ofMillis(75),
-      Duration.ofMillis(100),
-      Duration.ofMillis(250),
       Duration.ofMillis(500),
-      Duration.ofMillis(750),
       Duration.ofSeconds(1),
       Duration.ofMillis(2500),
       Duration.ofSeconds(5),
       Duration.ofSeconds(10),
       Duration.ofSeconds(15),
       Duration.ofSeconds(30),
-      Duration.ofSeconds(45)
+      Duration.ofSeconds(45),
+      Duration.ofSeconds(60),
+      Duration.ofSeconds(90),
     };
 
     @Override
