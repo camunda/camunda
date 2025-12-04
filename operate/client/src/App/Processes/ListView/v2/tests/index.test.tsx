@@ -14,6 +14,7 @@ import {
   mockProcessXML,
   mockProcessInstancesV2 as mockProcessInstances,
   createUser,
+  searchResult,
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes/processes.list';
@@ -29,6 +30,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -68,6 +70,8 @@ function getWrapper(initialPath: string = Paths.processes()) {
 
 describe('Instances', () => {
   beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockSearchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
