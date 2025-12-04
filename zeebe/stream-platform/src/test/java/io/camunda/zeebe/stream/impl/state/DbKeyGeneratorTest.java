@@ -95,6 +95,7 @@ class DbKeyGeneratorTest {
     // then
     assertThat(dbKeyGenerator.getCurrentKey()).isEqualTo(currentKey);
   }
+<<<<<<< HEAD
 
   @Test
   void shouldGenerateSequentialKeys() {
@@ -222,4 +223,6 @@ class DbKeyGeneratorTest {
     // then
     assertThat(dbKeyGenerator.getCurrentKey()).isEqualTo(validHigherKey);
   }
+=======
+>>>>>>> 20eff7de (feat: allow overwriting next key in the state and set a max key)
 }
