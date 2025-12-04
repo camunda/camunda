@@ -495,4 +495,36 @@ public final class ProcessInstanceServiceTest {
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
     verifyNoInteractions(incidentServices);
   }
+
+  @Test
+  void shouldDeleteProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result = services.deleteProcessInstancesBatchOperation(filter).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
+  }
 }

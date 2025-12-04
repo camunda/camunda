@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
@@ -51,7 +52,12 @@ public final class DeleteProcessInstanceBatchExecutorTest extends AbstractBatchO
     final var batchOperationKey =
         createDeleteProcessInstanceBatchOperation(List.of(processInstanceKey), claims);
 
-    // TODO assert HistoryDeletionIntent.DELETE is appended
+    assertThat(
+            RecordingExporter.historyDeletionRecords()
+                .withResourceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == HistoryDeletionIntent.DELETED))
+        .extracting(Record::getIntent)
+        .containsSequence(HistoryDeletionIntent.DELETE, HistoryDeletionIntent.DELETED);
 
     // then we have completed event
     assertThat(
