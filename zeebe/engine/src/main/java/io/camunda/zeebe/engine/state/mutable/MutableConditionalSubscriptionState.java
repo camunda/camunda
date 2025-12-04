@@ -14,5 +14,9 @@ public interface MutableConditionalSubscriptionState extends ConditionalSubscrip
 
   void put(final long key, ConditionalSubscriptionRecord subscription);
 
+  void putStart(final long key, ConditionalSubscriptionRecord subscription);
+
   void delete(final long key, ConditionalSubscriptionRecord subscription);
+
+  void deleteStart(long key, ConditionalSubscriptionRecord record);
 }
