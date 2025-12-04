@@ -75,7 +75,8 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
     return switch (error) {
       case final NoSuchResourceException exception ->
           rejectCommand(command, RejectionType.NOT_FOUND, exception.getMessage());
-      case final ForbiddenException exception ->
+      case final io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException
+              exception ->
           rejectCommand(command, exception.getRejectionType(), exception.getMessage());
       default -> ProcessingError.UNEXPECTED_ERROR;
     };

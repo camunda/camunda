@@ -170,7 +170,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<SignalRecord> command, final Throwable error) {
-    if (error instanceof final ForbiddenException exception) {
+    if (error instanceof final io.camunda.zeebe.engine.processing.streamprocessor
+            .CommandRejectionException
+        exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(
