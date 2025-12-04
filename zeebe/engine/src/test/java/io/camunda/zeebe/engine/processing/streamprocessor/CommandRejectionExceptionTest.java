@@ -9,8 +9,12 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -73,18 +77,14 @@ public class CommandRejectionExceptionTest {
   @Test
   public void forbiddenExceptionShouldBeACommandRejectionException() {
     // given
-    final io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException
-        forbiddenException =
-            new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
-                .ForbiddenException(
-                new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
-                        .AuthorizationRequest(
-                        null,
-                        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType
-                            .PROCESS_DEFINITION,
-                        io.camunda.zeebe.protocol.record.value.PermissionType.CREATE,
-                        "<default>")
-                    .addResourceId("test"));
+    final ForbiddenException forbiddenException =
+        new ForbiddenException(
+            new AuthorizationRequest(
+                    null,
+                    AuthorizationResourceType.PROCESS_DEFINITION,
+                    PermissionType.CREATE,
+                    "<default>")
+                .addResourceId("test"));
 
     // then - instanceof check works via inheritance
     assertThat(forbiddenException).isInstanceOf(CommandRejectionException.class);
@@ -151,14 +151,11 @@ public class CommandRejectionExceptionTest {
   public void forbiddenExceptionShouldBeCatchableAsCommandRejectionException() {
     // given
     final Throwable exception =
-        new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
-            .ForbiddenException(
-            new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
-                    .AuthorizationRequest(
+        new ForbiddenException(
+            new AuthorizationRequest(
                     null,
-                    io.camunda.zeebe.protocol.record.value.AuthorizationResourceType
-                        .PROCESS_DEFINITION,
-                    io.camunda.zeebe.protocol.record.value.PermissionType.CREATE,
+                    AuthorizationResourceType.PROCESS_DEFINITION,
+                    PermissionType.CREATE,
                     "<default>")
                 .addResourceId("test"));
 
