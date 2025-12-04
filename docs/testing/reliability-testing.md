@@ -177,6 +177,46 @@ As of today (16 Jun 2025), we have load tests running:
 * One rolling release test, which is always updated
   * Release-rolling
 
+##### Setup and integration
+
+The release load tests are created as part of the [release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn#L7-L18).
+
+There exists a separate process (called a sub-process) to set up the load test, called "Setup benchmark".
+
+![setup-benchmark](assets/setup_benchmark.png)
+
+The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-load-test.yml/dispatches`) to trigger the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml) on a specific git reference (_The reference can be a branch or tag name._).
+
+> [!Important]
+>
+> This event will only trigger a workflow run if the workflow file exists on the default branch.
+> https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch
+
+An example payload looks like this:
+
+```json
+{
+    "ref": workflow_ref_name,
+    "inputs": {
+      "name": benchmark_name,
+      "ref": zeebe_ref_name,
+      "cluster": "zeebe-cluster",
+      "stable-vms": stable_vms
+    }
+}
+```
+
+When we look at an example release process instance from the past, we can find the following example values:
+
+|      Variable       |  Example Value  |              Description               |
+|---------------------|-----------------|----------------------------------------|
+| `workflow_ref_name` | `8.7.17`        | The tag to trigger the workflow on     |
+| `zeebe_ref_name`    | `8.7.17`        | The tag to build the Docker image from |
+| `benchmark_name`    | `release-8-7-x` | The name of the load test              |
+| `stable_vms`        | `true`          | Whether to use stable VM types or not  |
+
+In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to update our existing load test.
+
 #### Weekly load tests
 
 In addition to our release tests, we ran weekly load tests in all variants based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
