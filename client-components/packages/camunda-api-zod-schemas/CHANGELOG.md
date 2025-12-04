@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.22
+
+### 🚀 Enhancements
+
+- support filtering BO items by operation type ([#42106](https://github.com/camunda/camunda/pull/42106))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.21
 
 ### 🚀 Enhancements
