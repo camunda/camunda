@@ -119,6 +119,7 @@ EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
+VOLUME ${CAMUNDA_HOME}/documents
 VOLUME /driver-lib
 
 # Switch to root to allow setting up our own user
@@ -130,6 +131,7 @@ RUN addgroup --gid 1001 camunda && \
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${CAMUNDA_HOME}/data && \
     mkdir ${CAMUNDA_HOME}/logs && \
+    mkdir ${CAMUNDA_HOME}/documents && \
     chown -R 1001:0 ${CAMUNDA_HOME} && \
     chmod -R 0775 ${CAMUNDA_HOME}
 
