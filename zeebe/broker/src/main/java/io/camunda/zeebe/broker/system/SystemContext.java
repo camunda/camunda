@@ -324,14 +324,14 @@ public final class SystemContext {
       errors.add(
           String.format(
               "experimental.engine.batchOperation.queryPageSize must be greater than 0, but was %s",
-              config.getChunkSize()));
+              config.getQueryPageSize()));
     }
 
     if (config.getQueryInClauseSize() <= 0) {
       errors.add(
           String.format(
               "experimental.engine.batchOperation.queryInClauseSize must be greater than 0, but was %s",
-              config.getChunkSize()));
+              config.getQueryInClauseSize()));
     }
 
     if (config.getQueryRetryMax() < 0) {
