@@ -20,7 +20,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class InMemoryDocumentStoreTest {
 
@@ -184,13 +188,12 @@ public class InMemoryDocumentStoreTest {
         .isInstanceOf(DocumentError.OperationNotSupported.class);
   }
 
-  @Test
-  public void shouldStoreContentType() {
+  @ParameterizedTest
+  @MethodSource("metadataSingleParamProvider")
+  public void shouldHandleMetadataParamsCorrectly(final DocumentMetadataModel metadata) {
     // given
     final InMemoryDocumentStore store = new InMemoryDocumentStore();
     final String id = "key";
-    final DocumentMetadataModel metadata =
-        new DocumentMetadataModel("application/json", null, null, null, null, null, null);
 
     // when
     final var request =
@@ -202,5 +205,25 @@ public class InMemoryDocumentStoreTest {
     assertThat(result).isInstanceOf(Either.Right.class);
     final var reference = ((Either.Right<DocumentError, DocumentReference>) result).value();
     assertThat(reference).isNotNull();
+    assertThat(reference.metadata()).isEqualTo(metadata);
+  }
+
+  public static Stream<Arguments> metadataSingleParamProvider() {
+    // Filename is always set here to prevent it from being overridden with the id in the store to
+    // simplify assertions
+    return Stream.of(
+        Arguments.of(
+            new DocumentMetadataModel("text/plain", "fileName", null, null, null, null, null)),
+        Arguments.of(new DocumentMetadataModel(null, "fileName", null, null, null, null, null)),
+        Arguments.of(
+            new DocumentMetadataModel(
+                null, "fileName", OffsetDateTime.now(), null, null, null, null)),
+        Arguments.of(new DocumentMetadataModel(null, "fileName", null, 1L, null, null, null)),
+        Arguments.of(
+            new DocumentMetadataModel(null, "fileName", null, null, "definitionId", null, null)),
+        Arguments.of(new DocumentMetadataModel(null, "fileName", null, null, null, 2L, null)),
+        Arguments.of(
+            new DocumentMetadataModel(
+                null, "fileName", null, null, null, null, Map.of("key", "value"))));
   }
 }
