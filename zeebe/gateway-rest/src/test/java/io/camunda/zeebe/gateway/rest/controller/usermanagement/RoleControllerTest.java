@@ -15,6 +15,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -925,6 +927,36 @@ public class RoleControllerTest extends RestControllerTest {
     final var groupId = "groupId";
 
     final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+    when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldAssignExternalGroupToRoleAndReturnNoContentWhenGroupClaimIsPresent() {
+    // given
+    final var roleId = "roleId";
+    // group id containing special characters to simulate external groups
+    final var groupId = "group Id";
+
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+
+    final var authenticationConfiguration = new AuthenticationConfiguration();
+    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    oidcConfiguration.setGroupsClaim("groups");
+    authenticationConfiguration.setOidc(oidcConfiguration);
+
+    when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
     when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
