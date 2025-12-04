@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -65,7 +66,7 @@ class BatchOperationResumeProcessorTest {
     when(batchOperation.isInitialized()).thenReturn(false);
 
     // when
-    processor.resumeBatchOperation(resumeKey, batchOperation, recordValue);
+    processor.resumeBatchOperation(resumeKey, batchOperation, recordValue, Map.of());
 
     // then
     verify(stateWriter)
@@ -91,7 +92,7 @@ class BatchOperationResumeProcessorTest {
     when(batchOperation.isInitialized()).thenReturn(true);
 
     // when
-    processor.resumeBatchOperation(resumeKey, batchOperation, recordValue);
+    processor.resumeBatchOperation(resumeKey, batchOperation, recordValue, Map.of());
 
     // then
     verify(stateWriter)
