@@ -25,7 +25,7 @@ public final class ConditionalSubscriptionDeletedApplier
   @Override
   public void applyState(final long key, final ConditionalSubscriptionRecord record) {
     // root level conditional start event
-    if (record.getScopeKey() == -1) {
+    if (record.getElementInstanceKey() < 0) {
       conditionalSubscriptionState.deleteStart(key, record);
       return;
     }

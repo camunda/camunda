@@ -25,7 +25,7 @@ public final class ConditionalSubscriptionCreatedApplier
   @Override
   public void applyState(final long key, final ConditionalSubscriptionRecord record) {
     // root level conditional start event
-    if (record.getScopeKey() == -1) {
+    if (record.getElementInstanceKey() < 0) {
       conditionalSubscriptionState.putStart(key, record);
       return;
     }

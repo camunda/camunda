@@ -51,7 +51,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
         new DbTenantAwareKey<>(tenantIdKey, subscriptionKey, DbTenantAwareKey.PlacementType.PREFIX);
     conditionalKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_CONDITIONAL_KEY,
+            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_SUBSCRIPTION_KEY,
             transactionContext,
             tenantAwareSubscriptionKey,
             conditionalSubscription);
