@@ -188,6 +188,21 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getFeatures()
         .setEnableMessageBodyOnExpired(processing.isEnableMessageBodyOnExpired());
+
+    populateFromEngine(override);
+  }
+
+  private void populateFromEngine(final BrokerBasedProperties override) {
+    populateFromDistribution(override);
+  }
+
+  private void populateFromDistribution(final BrokerBasedProperties override) {
+    final var distribution =
+        unifiedConfiguration.getCamunda().getProcessing().getEngine().getDistribution();
+
+    final var distributionCfg = override.getExperimental().getEngine().getDistribution();
+    distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
+    distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
   }
 
   private void populateFromFlowControl(final BrokerBasedProperties override) {
