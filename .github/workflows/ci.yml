@@ -630,6 +630,18 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
+      - name: Generate cache key with current hour
+        if: matrix.group == 'qa-update'
+        id: cache-key
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
+      - name: Cache Zeebe versions (hourly refresh)
+        if: matrix.group == 'qa-update'
+        uses: actions/cache@v4
+        with:
+          path: .cache/camunda
+          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
+          restore-keys: |
+            zeebe-versions-
       - name: Print metadata
         uses: ./.github/actions/print-metadata
         with:
@@ -674,6 +686,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
         env:
+          GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
         shell: bash
