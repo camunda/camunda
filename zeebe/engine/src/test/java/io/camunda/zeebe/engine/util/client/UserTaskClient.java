@@ -191,6 +191,12 @@ public final class UserTaskClient {
     return withoutAssignee().withAction(userTaskRecord.getActionOrDefault("unassign")).assign();
   }
 
+  public Record<UserTaskRecordValue> unassign(final String username) {
+    return withoutAssignee()
+        .withAction(userTaskRecord.getActionOrDefault("unassign"))
+        .assign(username);
+  }
+
   public Record<UserTaskRecordValue> assign() {
     final long userTaskKey = findUserTaskKey();
     final long position =
