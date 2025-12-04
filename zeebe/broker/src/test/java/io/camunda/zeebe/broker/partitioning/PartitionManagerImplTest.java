@@ -44,7 +44,7 @@ class PartitionManagerImplTest {
   }
 
   @Test
-  void shouldNotThrowIfMemoryAllocationBellowOrEqualHalfOfRam() {
+  void shouldNotThrowIfMemoryAllocationBelowOrEqualHalfOfRam() {
     // when
     brokerCfg.getCluster().setPartitionsCount(2);
     brokerCfg
@@ -74,7 +74,7 @@ class PartitionManagerImplTest {
       assertThatThrownBy(() -> PartitionManagerImpl.getSharedCache(brokerCfg))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Expected the allocated memory for RocksDB to be bellow or equal half of ram memory, but was 78.13 %");
+              "Expected the allocated memory for RocksDB to be below or equal half of ram memory, but was 78.13 %");
     }
   }
 
