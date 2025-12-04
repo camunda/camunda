@@ -27,13 +27,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +50,7 @@ public class Starter extends App {
   private final StarterCfg starterCfg;
   private Timer dataAvailabilityLatencyTimer;
   private Timer responseLatencyTimer;
+  private ConcurrentHashMap<Long, Long> piKeyToStartTime;
 
   Starter(final AppCfg config) {
     super(config);
@@ -75,6 +76,35 @@ public class Starter extends App {
         Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch, client);
+
+    piKeyToStartTime = new ConcurrentHashMap<>();
+    executorService.scheduleAtFixedRate(
+        () -> {
+          for (final Map.Entry<Long, Long> entry : piKeyToStartTime.entrySet()) {
+            final long processInstanceKey = entry.getKey();
+            client
+                .newProcessInstanceGetRequest(processInstanceKey)
+                .send()
+                .whenCompleteAsync(
+                    (resp, err) -> {
+                      if (err == null) {
+                        // remove from map once we were able to retrieve it
+                        piKeyToStartTime.remove(processInstanceKey);
+                        final long durationNanos = System.nanoTime() - entry.getValue();
+
+                        LOG.debug(
+                            "Process instance {} retrieved in {} ms",
+                            processInstanceKey,
+                            durationNanos / 1_000_000);
+
+                        dataAvailabilityLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                      }
+                    });
+          }
+        },
+        1000,
+        100,
+        TimeUnit.MILLISECONDS);
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -177,31 +207,8 @@ public class Starter extends App {
         .thenApply(
             (response) -> {
               final long processInstanceKey = response.getProcessInstanceKey();
-              checkForProcessInstanceExistence(client, startTime, processInstanceKey);
+              piKeyToStartTime.put(processInstanceKey, startTime);
               return response;
-            });
-  }
-
-  private void checkForProcessInstanceExistence(
-      final CamundaClient client, final long startTime, final long processInstanceKey) {
-    client
-        .newProcessInstanceGetRequest(processInstanceKey)
-        .send()
-        .whenCompleteAsync(
-            (resp, err) -> {
-              if (err != null) {
-                LOG.trace("Failed to get process instance {}", processInstanceKey, err);
-                LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
-                checkForProcessInstanceExistence(client, startTime, processInstanceKey);
-              } else {
-                final long durationNanos = System.nanoTime() - startTime;
-                LOG.debug(
-                    "Process instance {} retrieved in {} ms",
-                    processInstanceKey,
-                    durationNanos / 1_000_000);
-
-                dataAvailabilityLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
-              }
             });
   }
 
