@@ -1362,6 +1362,58 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldTerminateAllElementInstancesForGivenElementId() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .multiInstance()
+                .parallel()
+                .zeebeInputCollectionExpression("=for i in 1..5 return i")
+                .multiInstanceDone()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElements("A")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_TERMINATING)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .limit(12L))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsExactly(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
   public void shouldUseAncestorSelectionInsideMultiInstances() {
     // given
     ENGINE
@@ -1531,6 +1583,75 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldMoveInsideMultiInstanceAdHocSubprocess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "adhoc_subprocess",
+                    adHocSubProcess -> {
+                      adHocSubProcess
+                          .multiInstance()
+                          .zeebeInputCollectionExpression("activateElements")
+                          .zeebeInputElement("element");
+                      adHocSubProcess.zeebeActiveElementsCollectionExpression("[element]");
+                      adHocSubProcess.userTask("A");
+                      adHocSubProcess.userTask("B");
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("activateElements", List.of("A", "A")))
+            .create();
+
+    // Get all multi-instance ad-hoc subprocess instances
+    final var adhocInnerInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+    assertThat(adhocInnerInstanceKeys).hasSize(2);
+
+    // when moving A Tasks in ad-hoc instances to B
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementsWithSourceParent("A", "B")
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .limit(adhocInnerInstanceKeys.size()))
+        .describedAs("Expect A Tasks to be terminated")
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .containsExactlyElementsOf(adhocInnerInstanceKeys);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(adhocInnerInstanceKeys.size()))
+        .describedAs("Expect Task B to be activated in all ad-hoc subprocess instances")
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .containsExactlyElementsOf(adhocInnerInstanceKeys);
+  }
+
+  @Test
   public void shouldModifyNestedMultiInstanceAdHocSubprocess() {
     // given
     ENGINE
@@ -1597,9 +1718,9 @@ public class ModifyProcessInstanceTest {
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
-            .limit(2)
+            .limit(4)
             .toList();
-    assertThat(aTasks).hasSize(2);
+    assertThat(aTasks).hasSize(4);
 
     final var firstInnerAdhocInstance = innerAdhocInstances.getFirst();
 
@@ -1633,6 +1754,107 @@ public class ModifyProcessInstanceTest {
         .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
         .describedAs("Expect B Task to be in the same ad-hoc instance as the terminated A Task")
         .containsOnly(firstInnerAdhocInstance.getKey());
+  }
+
+  @Test
+  public void shouldMoveWithNestedMultiInstanceAdHocSubprocess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "outer_subprocess",
+                    outer ->
+                        outer
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("[1,2]")
+                                        .zeebeInputElement("outer_index")
+                                        .parallel())
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .adHocSubProcess(
+                                "inner_adhoc",
+                                adHocSubProcess -> {
+                                  adHocSubProcess
+                                      .multiInstance()
+                                      .zeebeInputCollectionExpression("inner_elements")
+                                      .zeebeInputElement("inner_element");
+                                  adHocSubProcess.zeebeActiveElementsCollectionExpression(
+                                      "[inner_element]");
+                                  adHocSubProcess.userTask("A");
+                                  adHocSubProcess.userTask("B");
+                                })
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("inner_elements", List.of("A", "A")))
+            .create();
+
+    // Wait for outer multi-instance subprocesses to be activated
+    final var outerSubprocesses =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("outer_subprocess")
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .limit(2)
+            .toList();
+    assertThat(outerSubprocesses).hasSize(2);
+
+    // Wait for inner ad-hoc subprocess bodies to be activated
+    final var innerAdhocInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(4)
+            .map(Record::getKey)
+            .toList();
+    assertThat(innerAdhocInstanceKeys).hasSize(4);
+
+    // Wait for A tasks to be activated
+    final var aTasks =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .limit(4)
+            .toList();
+    assertThat(aTasks).hasSize(4);
+
+    // when moving from A to B in the nested ad-hoc instances
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementsWithSourceParent("A", "B")
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .limit(innerAdhocInstanceKeys.size()))
+        .describedAs("Expect A Tasks to be terminated")
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .containsExactlyElementsOf(innerAdhocInstanceKeys);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(innerAdhocInstanceKeys.size()))
+        .describedAs("Expect Task B to be activated in all ad-hoc subprocess instances")
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .containsExactlyElementsOf(innerAdhocInstanceKeys);
   }
 
   @Test
@@ -1775,6 +1997,328 @@ public class ModifyProcessInstanceTest {
 
     // then
     verifyThatElementTreePathIsUpdated(elementBeforeModification);
+  }
+
+  @Test
+  public void shouldActivateElementMultipleTimes() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .activateElement("B")
+        .activateElement("B")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("A", "B")
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(4L))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldMoveAllElementsByIds() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .boundaryEvent(
+                    "signalEvent",
+                    b ->
+                        b.signal("foo")
+                            .cancelActivity(false)
+                            .userTask("B")
+                            .zeebeUserTask()
+                            .endEvent())
+                .moveToNode("A")
+                .userTask("C")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.signal().withSignalName("foo").broadcast();
+    ENGINE.signal().withSignalName("foo").broadcast();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("B", "C")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("A", "B", "C")
+                .limit(7L))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldMoveAllElementsByIdsToDifferentScope() {
+    // given
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-sub",
+                    sub ->
+                        sub.startEvent()
+                            .signal(m -> m.name("foo"))
+                            .interrupting(false)
+                            .userTask("A")
+                            .userTask("B")
+                            .endEvent())
+                .startEvent()
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.signal().withSignalName("foo").broadcast();
+    ENGINE.signal().withSignalName("foo").broadcast();
+
+    final List<Long> eventSubProcessKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+    assertThat(eventSubProcessKeys)
+        .describedAs("Expect that there are 2 active instances of the event sub process")
+        .hasSize(2);
+
+    final var ancestorScopeKey = eventSubProcessKeys.get(1);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("C", "B", ancestorScopeKey)
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("A", "B", "C")
+                .limit(5L))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldMoveAllMultiInstanceElementsByIds() {
+    // given a multi-instance user task
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .multiInstance(
+                    mi ->
+                        mi.parallel()
+                            .zeebeInputCollectionExpression("=for i in 1..5 return i")
+                            .multiInstanceDone())
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "B")
+        .modify();
+
+    // then only the multi-instance parent creates a new token at the target
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("A", "B")
+                .limit(13L))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldMoveAllMultiInstanceParentElementsByIds() {
+    // given a multi-instance with 5 elements
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .multiInstance(
+                    mi ->
+                        mi.parallel()
+                            .zeebeInputCollectionExpression("=for i in 1..5 return i")
+                            .multiInstanceDone())
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    // and activating it another time
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("A")
+        .modify();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "B")
+        .modify();
+
+    // then both multi-instance parents create a new token at the target
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementIdIn("A", "B")
+                .limit(26L))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   private void verifyThatRootElementIsActivated(

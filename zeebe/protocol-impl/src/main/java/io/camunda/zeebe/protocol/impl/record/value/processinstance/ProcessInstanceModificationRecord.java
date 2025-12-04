@@ -32,6 +32,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new StringValue("terminateInstructions");
   private static final StringValue ACTIVATE_INSTRUCTIONS_KEY =
       new StringValue("activateInstructions");
+  private static final StringValue MOVE_INSTRUCTIONS_KEY = new StringValue("moveInstructions");
   private static final StringValue ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY =
       new StringValue("activatedElementInstanceKeys");
   private final LongProperty processInstanceKeyProperty =
@@ -47,15 +48,18 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       activateInstructionsProperty =
           new ArrayProperty<>(
               ACTIVATE_INSTRUCTIONS_KEY, ProcessInstanceModificationActivateInstruction::new);
+  private final ArrayProperty<ProcessInstanceModificationMoveInstruction> moveInstructionsProperty =
+      new ArrayProperty<>(MOVE_INSTRUCTIONS_KEY, ProcessInstanceModificationMoveInstruction::new);
 
   private final ArrayProperty<LongValue> activatedElementInstanceKeys =
       new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
 
   public ProcessInstanceModificationRecord() {
-    super(4);
+    super(6);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
+        .declareProperty(moveInstructionsProperty)
         .declareProperty(activatedElementInstanceKeys)
         .declareProperty(tenantIdProp);
   }
@@ -100,6 +104,26 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
         .toList();
   }
 
+  /**
+   * This method is expensive because it copies each element before returning it. It is recommended
+   * to use {@link #hasMoveInstructions()} before calling this.
+   *
+   * <p>{@inheritDoc}
+   */
+  @Override
+  public List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions() {
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return moveInstructionsProperty.stream()
+        .map(
+            element -> {
+              final var elementCopy = new ProcessInstanceModificationMoveInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceModificationMoveInstructionValue) elementCopy;
+            })
+        .toList();
+  }
+
   @Override
   public Set<Long> getAncestorScopeKeys() {
     final Set<Long> activatedElementInstanceKeys =
@@ -126,6 +150,18 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   public ProcessInstanceModificationRecord addTerminateInstruction(
       final ProcessInstanceModificationTerminateInstructionValue terminateInstruction) {
     terminateInstructionsProperty.add().copy(terminateInstruction);
+    return this;
+  }
+
+  /** Returns true if this record has move instructions, otherwise false. */
+  @JsonIgnore
+  public boolean hasMoveInstructions() {
+    return !moveInstructionsProperty.isEmpty();
+  }
+
+  public ProcessInstanceModificationRecord addMoveInstruction(
+      final ProcessInstanceModificationMoveInstructionValue moveInstruction) {
+    moveInstructionsProperty.add().copy(moveInstruction);
     return this;
   }
 

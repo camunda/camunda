@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
@@ -417,6 +418,7 @@ public final class ProcessInstanceClient {
     private final long processInstanceKey;
     private final ProcessInstanceModificationRecord record;
     private final List<ProcessInstanceModificationActivateInstruction> activateInstructions;
+    private final List<ProcessInstanceModificationMoveInstruction> moveInstructions;
     private String[] authorizedTenants;
 
     public ProcessInstanceModificationClient(
@@ -428,6 +430,7 @@ public final class ProcessInstanceClient {
       this.authorizedTenants = authorizedTenants;
       record = new ProcessInstanceModificationRecord();
       activateInstructions = new ArrayList<>();
+      moveInstructions = new ArrayList<>();
     }
 
     private ProcessInstanceModificationClient(
@@ -435,12 +438,40 @@ public final class ProcessInstanceClient {
         final long processInstanceKey,
         final ProcessInstanceModificationRecord record,
         final List<ProcessInstanceModificationActivateInstruction> activateInstructions,
+        final List<ProcessInstanceModificationMoveInstruction> moveInstructions,
         final String[] authorizedTenants) {
       this.writer = writer;
       this.processInstanceKey = processInstanceKey;
       this.record = record;
       this.activateInstructions = activateInstructions;
+      this.moveInstructions = moveInstructions;
       this.authorizedTenants = authorizedTenants;
+    }
+
+    public MoveInstructionBuilder moveElements(
+        final String sourceElementId, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId));
+    }
+
+    public MoveInstructionBuilder moveElementsWithSourceParent(
+        final String sourceElementId, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId)
+              .setUseSourceParentKeyAsAncestorScope(true));
+    }
+
+    public MoveInstructionBuilder moveElements(
+        final String sourceElementId, final String targetElementId, final long ancestorElementKey) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId)
+              .setAncestorScopeKey(ancestorElementKey));
     }
 
     /**
@@ -474,6 +505,7 @@ public final class ProcessInstanceClient {
           processInstanceKey,
           record,
           activateInstructions,
+          moveInstructions,
           activateInstruction,
           authorizedTenants);
     }
@@ -483,6 +515,31 @@ public final class ProcessInstanceClient {
           new ProcessInstanceModificationTerminateInstruction()
               .setElementInstanceKey(elementInstanceKey));
       return this;
+    }
+
+    public ProcessInstanceModificationClient terminateElements(final String elementId) {
+      record.addTerminateInstruction(
+          new ProcessInstanceModificationTerminateInstruction().setElementId(elementId));
+      return this;
+    }
+
+    public ProcessInstanceModificationClient terminateElements(
+        final ProcessInstanceModificationTerminateInstruction terminateInstruction) {
+      record.addTerminateInstruction(terminateInstruction);
+      return this;
+    }
+
+    public MoveInstructionBuilder moveElements(
+        final ProcessInstanceModificationMoveInstruction moveInstruction) {
+      moveInstructions.add(moveInstruction);
+      return new MoveInstructionBuilder(
+          writer,
+          processInstanceKey,
+          record,
+          activateInstructions,
+          moveInstructions,
+          moveInstruction,
+          authorizedTenants);
     }
 
     public ProcessInstanceModificationClient forAuthorizedTenants(
@@ -499,6 +556,7 @@ public final class ProcessInstanceClient {
     public Record<ProcessInstanceModificationRecordValue> modify() {
       record.setProcessInstanceKey(processInstanceKey);
       activateInstructions.forEach(record::addActivateInstruction);
+      moveInstructions.forEach(record::addMoveInstruction);
 
       final var position =
           writer.writeCommand(
@@ -542,9 +600,16 @@ public final class ProcessInstanceClient {
           final long processInstanceKey,
           final ProcessInstanceModificationRecord record,
           final List<ProcessInstanceModificationActivateInstruction> activateInstructions,
+          final List<ProcessInstanceModificationMoveInstruction> moveInstructions,
           final ProcessInstanceModificationActivateInstruction activateInstruction,
           final String[] authorizedTenants) {
-        super(environmentRule, processInstanceKey, record, activateInstructions, authorizedTenants);
+        super(
+            environmentRule,
+            processInstanceKey,
+            record,
+            activateInstructions,
+            moveInstructions,
+            authorizedTenants);
         this.activateInstruction = activateInstruction;
       }
 
@@ -619,6 +684,103 @@ public final class ProcessInstanceClient {
                 .setElementId(variablesScopeId)
                 .setVariables(variables);
         activateInstruction.addVariableInstruction(variableInstruction);
+        return this;
+      }
+    }
+
+    public static class MoveInstructionBuilder extends ProcessInstanceModificationClient {
+
+      private final ProcessInstanceModificationMoveInstruction moveInstruction;
+
+      public MoveInstructionBuilder(
+          final CommandWriter environmentRule,
+          final long processInstanceKey,
+          final ProcessInstanceModificationRecord record,
+          final List<ProcessInstanceModificationActivateInstruction> activateInstructions,
+          final List<ProcessInstanceModificationMoveInstruction> moveInstructions,
+          final ProcessInstanceModificationMoveInstruction moveInstruction,
+          final String[] authorizedTenants) {
+        super(
+            environmentRule,
+            processInstanceKey,
+            record,
+            activateInstructions,
+            moveInstructions,
+            authorizedTenants);
+        this.moveInstruction = moveInstruction;
+      }
+
+      /**
+       * Add global variables to the move instruction
+       *
+       * @param variables the variables to set
+       * @return this client builder for chaining
+       */
+      public MoveInstructionBuilder withGlobalVariables(final String variables) {
+        return withGlobalVariables(MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add global variables to the move instruction
+       *
+       * @param variables the variables to set
+       * @return this client builder for chaining
+       */
+      public MoveInstructionBuilder withGlobalVariables(final Map<String, Object> variables) {
+        return withGlobalVariables(MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add global variables to the move instruction
+       *
+       * @param variables the variables to set
+       * @return this client builder for chaining
+       */
+      public MoveInstructionBuilder withGlobalVariables(final DirectBuffer variables) {
+        final var variableInstruction =
+            new ProcessInstanceModificationVariableInstruction().setVariables(variables);
+        moveInstruction.addVariableInstruction(variableInstruction);
+        return this;
+      }
+
+      /**
+       * Add variables to the move instruction
+       *
+       * @param variablesScopeId the element id to use as variable scope for the provided variables
+       * @param variables the variables to set locally
+       * @return this client builder for chaining
+       */
+      public MoveInstructionBuilder withVariables(
+          final String variablesScopeId, final String variables) {
+        return withVariables(variablesScopeId, MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add variables to the move instruction
+       *
+       * @param variablesScopeId the element id to use as variable scope for the provided variables
+       * @param variables the variables to set locally
+       * @return this client builder for chaining
+       */
+      public MoveInstructionBuilder withVariables(
+          final String variablesScopeId, final Map<String, Object> variables) {
+        return withVariables(variablesScopeId, MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add variables to the move instruction
+       *
+       * @param variablesScopeId the element id to use as variable scope for the provided variables
+       * @param variables the variables to set locally
+       * @return this client builder for chaining
+       */
+      public MoveInstructionBuilder withVariables(
+          final String variablesScopeId, final DirectBuffer variables) {
+        final var variableInstruction =
+            new ProcessInstanceModificationVariableInstruction()
+                .setElementId(variablesScopeId)
+                .setVariables(variables);
+        moveInstruction.addVariableInstruction(variableInstruction);
         return this;
       }
     }

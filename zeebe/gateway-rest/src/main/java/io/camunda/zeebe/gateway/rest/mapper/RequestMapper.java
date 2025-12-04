@@ -101,7 +101,6 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOpera
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
@@ -122,7 +121,6 @@ import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.UserRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
@@ -130,6 +128,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -388,8 +387,9 @@ public class RequestMapper {
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
       final AuthorizationRequest request, final Pattern idPattern) {
     return switch (request) {
-      case AuthorizationIdBasedRequest idReq -> toCreateAuthorizationRequest(idReq, idPattern);
-      case AuthorizationPropertyBasedRequest propReq ->
+      case final AuthorizationIdBasedRequest idReq ->
+          toCreateAuthorizationRequest(idReq, idPattern);
+      case final AuthorizationPropertyBasedRequest propReq ->
           toCreateAuthorizationRequest(propReq, idPattern);
       default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
     };
@@ -429,9 +429,9 @@ public class RequestMapper {
   public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
       final long authorizationKey, final AuthorizationRequest request, final Pattern idPattern) {
     return switch (request) {
-      case AuthorizationIdBasedRequest idReq ->
+      case final AuthorizationIdBasedRequest idReq ->
           toUpdateAuthorizationRequest(authorizationKey, idReq, idPattern);
-      case AuthorizationPropertyBasedRequest propReq ->
+      case final AuthorizationPropertyBasedRequest propReq ->
           toUpdateAuthorizationRequest(authorizationKey, propReq, idPattern);
       default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
     };
@@ -1172,19 +1172,18 @@ public class RequestMapper {
     return KeyUtil.keyToLong(ancestorElementInstanceKey);
   }
 
-  private static List<BatchOperationProcessInstanceModificationMoveInstruction>
+  private static List<ProcessInstanceModificationMoveInstruction>
       mapProcessInstanceModificationMoveInstruction(
-          final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions) {
+          final List<
+                  io.camunda.zeebe.gateway.protocol.rest
+                      .ProcessInstanceModificationMoveBatchOperationInstruction>
+              instructions) {
     return instructions.stream()
         .map(
-            instruction -> {
-              final var mappedInstruction =
-                  new BatchOperationProcessInstanceModificationMoveInstruction();
-              mappedInstruction
-                  .setSourceElementId(instruction.getSourceElementId())
-                  .setTargetElementId(instruction.getTargetElementId());
-              return mappedInstruction;
-            })
+            instruction ->
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId(instruction.getSourceElementId())
+                    .setTargetElementId(instruction.getTargetElementId()))
         .toList();
   }
 

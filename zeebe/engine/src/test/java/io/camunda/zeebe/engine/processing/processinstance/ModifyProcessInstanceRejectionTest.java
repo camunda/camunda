@@ -11,6 +11,8 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -1341,5 +1343,171 @@ public class ModifyProcessInstanceRejectionTest {
             "Expect activation with valid ancestor scope key in event subprocess is accepted")
         .hasRecordType(io.camunda.zeebe.protocol.record.RecordType.EVENT)
         .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+  }
+
+  @Test
+  public void shouldRejectTerminationWithElementIdAndInstanceKeyDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask()
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElements(
+                new ProcessInstanceModificationTerminateInstruction()
+                    .setElementId("A")
+                    .setElementInstanceKey(12345L))
+            .terminateElements(
+                new ProcessInstanceModificationTerminateInstruction()
+                    .setElementId("B")
+                    .setElementInstanceKey(67890L))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that termination is rejected when both element id and instance key are provided")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more terminate instructions "
+                    + "with both element instance key and element id, but only one of them is allowed: '(%s, %s)', '(%s, %s)'")
+                .formatted(PROCESS_ID, 12345L, "A", 67890L, "B"));
+  }
+
+  @Test
+  public void shouldRejectTerminationWithNoElementIdOrInstanceKeyDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask()
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElements(
+                new ProcessInstanceModificationTerminateInstruction()
+                    .setElementId("  ")
+                    .setElementInstanceKey(0L))
+            .terminateElements(new ProcessInstanceModificationTerminateInstruction())
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that termination is rejected when no element is provided")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more terminate instructions "
+                    + "with neither an element instance key nor element id: '(%s, %s)', '(%s, %s)'")
+                .formatted(PROCESS_ID, 0L, "  ", -1L, ""));
+  }
+
+  @Test
+  public void shouldRejectMoveWithNoElementIdOrInstanceKeyDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask()
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElements("  ", "  ")
+            .moveElements("", "")
+            .moveElements("A", "")
+            .moveElements("", "A")
+            .moveElements("A", " ")
+            .moveElements(" ", "A")
+            .moveElements(new ProcessInstanceModificationMoveInstruction())
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that move is rejected when no element is provided")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move "
+                    + "instructions with either or both the source or target element id missing: "
+                    + "'(%s, %s)', '(%s, %s)', '(%s, %s)', '(%s, %s)', '(%s, %s)', '(%s, %s)', "
+                    + "'(%s, %s)'")
+                .formatted(
+                    PROCESS_ID, "  ", "  ", "", "", "A", "", "", "A", "A", " ", " ", "A", "", ""));
+  }
+
+  @Test
+  public void shouldRejectMoveWithDuplicateSourceIdsDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElements("A", "B")
+            .moveElements("A", "foo")
+            .moveElements("B", "A")
+            .moveElements("B", "bar")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that move is rejected when no element is provided")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains multiple move instructions "
+                    + "with identical source element ids: '%s', '%s'")
+                .formatted(PROCESS_ID, "A", "B"));
   }
 }

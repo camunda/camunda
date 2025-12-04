@@ -71,9 +71,7 @@ public final class BatchOperationSetupProcessors {
                 brokerRequestAuthorizationConverter),
             BatchOperationType.MODIFY_PROCESS_INSTANCE,
             new ModifyProcessInstanceBatchOperationExecutor(
-                writers.command(),
-                processingState.getElementInstanceState(),
-                brokerRequestAuthorizationConverter),
+                writers.command(), brokerRequestAuthorizationConverter),
             BatchOperationType.DELETE_PROCESS_INSTANCE,
             new DeleteProcessInstanceBatchOperationExecutor(
                 writers.command(), brokerRequestAuthorizationConverter));

@@ -10,17 +10,16 @@ package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
-import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
 import java.util.List;
 
 public final class BatchOperationProcessInstanceModificationPlan extends ObjectValue
     implements BatchOperationProcessInstanceModificationPlanValue {
 
-  private final ArrayProperty<BatchOperationProcessInstanceModificationMoveInstruction>
-      moveInstructionsProperty =
-          new ArrayProperty<>(
-              "moveInstructions", BatchOperationProcessInstanceModificationMoveInstruction::new);
+  private final ArrayProperty<ProcessInstanceModificationMoveInstruction> moveInstructionsProperty =
+      new ArrayProperty<>("moveInstructions", ProcessInstanceModificationMoveInstruction::new);
 
   public BatchOperationProcessInstanceModificationPlan() {
     super(1);
@@ -39,7 +38,7 @@ public final class BatchOperationProcessInstanceModificationPlan extends ObjectV
         .map(
             element ->
                 (ProcessInstanceModificationMoveInstructionValue)
-                    new BatchOperationProcessInstanceModificationMoveInstruction().copy(element))
+                    new ProcessInstanceModificationMoveInstruction().copy(element))
         .toList();
   }
 
@@ -50,7 +49,7 @@ public final class BatchOperationProcessInstanceModificationPlan extends ObjectV
   }
 
   public BatchOperationProcessInstanceModificationPlan addMoveInstruction(
-      final BatchOperationProcessInstanceModificationMoveInstruction mappingInstruction) {
+      final ProcessInstanceModificationMoveInstruction mappingInstruction) {
     moveInstructionsProperty.add().copy(mappingInstruction);
     return this;
   }
@@ -59,10 +58,7 @@ public final class BatchOperationProcessInstanceModificationPlan extends ObjectV
       final BatchOperationProcessInstanceModificationPlanValue record) {
     record
         .getMoveInstructions()
-        .forEach(
-            inst ->
-                addMoveInstruction(
-                    (BatchOperationProcessInstanceModificationMoveInstruction) inst));
+        .forEach(inst -> addMoveInstruction((ProcessInstanceModificationMoveInstruction) inst));
     return this;
   }
 }
