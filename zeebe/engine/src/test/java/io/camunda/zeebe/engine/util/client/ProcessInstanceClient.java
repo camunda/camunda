@@ -456,6 +456,24 @@ public final class ProcessInstanceClient {
               .setTargetElementId(targetElementId));
     }
 
+    public MoveInstructionBuilder moveElementsWithSourceParent(
+        final String sourceElementId, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId)
+              .setUseSourceParentKeyAsAncestorScope(true));
+    }
+
+    public MoveInstructionBuilder moveElements(
+        final String sourceElementId, final String targetElementId, final long ancestorElementKey) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId)
+              .setAncestorScopeKey(ancestorElementKey));
+    }
+
     /**
      * Add an activate element instruction.
      *
