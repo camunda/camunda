@@ -19,6 +19,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.conditions.ArchConditions;
+import io.camunda.zeebe.engine.processing.clock.ClockProcessorHelper;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
@@ -108,6 +109,10 @@ public class AuthorizationArchTest {
                     "isAuthorized",
                     TypedRecord.class,
                     PermissionType.class))
+            // Or the processor should have delegated authorization to the ClockProcessorHelper
+            .or(
+                ArchConditions.callMethod(
+                    ClockProcessorHelper.class, "validateCommand", TypedRecord.class))
             .check(item, events);
       }
     };

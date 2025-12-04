@@ -28,7 +28,7 @@ import java.util.HashSet;
 import java.util.Optional;
 
 @ExcludeAuthorizationCheck
-public class ScaleUpProcessor implements DistributedTypedRecordProcessor<ScaleRecord> {
+public class ScaleScaleUpProcessor implements DistributedTypedRecordProcessor<ScaleRecord> {
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -36,7 +36,7 @@ public class ScaleUpProcessor implements DistributedTypedRecordProcessor<ScaleRe
   private final RoutingState routingState;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
-  public ScaleUpProcessor(
+  public ScaleScaleUpProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessingState processingState,
