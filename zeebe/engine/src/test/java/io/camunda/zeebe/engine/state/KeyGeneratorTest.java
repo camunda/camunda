@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatException;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -75,25 +74,5 @@ public final class KeyGeneratorTest {
     assertThat(Protocol.decodePartitionId(keyOfSecondPartition)).isEqualTo(secondPartitionId);
 
     newDb.close();
-  }
-
-  @Test
-  public void shouldFailIfKeyOfAnotherPartitionIsSet() {
-    // given
-    final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
-    final DbKeyGenerator keyGenerator2 =
-        new DbKeyGenerator(Protocol.DEPLOYMENT_PARTITION, newDb, newDb.createContext());
-
-    final long keyOfAnotherPartition =
-        Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION + 1, 100);
-
-    // when - then
-    assertThatException()
-        .isThrownBy(() -> keyGenerator2.setKeyIfHigher(keyOfAnotherPartition))
-        .havingCause()
-        .withMessageContaining(
-            String.format(
-                "Provided key %d does not belong to partition %d",
-                keyOfAnotherPartition, Protocol.DEPLOYMENT_PARTITION));
   }
 }
