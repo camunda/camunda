@@ -111,9 +111,7 @@ jobs:
       # Run integration tests in parallel
       - name: Backend - ${{ inputs.test-type }}
         run: |
-          ${{ inputs.command }} \
-          -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
-          -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+          ${{ inputs.command }}
 
       # Reports: publish test metrics results
       - name: Upload Test Report
