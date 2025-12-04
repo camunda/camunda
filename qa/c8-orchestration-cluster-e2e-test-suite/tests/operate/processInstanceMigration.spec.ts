@@ -300,8 +300,14 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 4,
       });
 
       await operateOperationPanelPage.expandOperationIdField();
@@ -338,8 +344,14 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 4,
       });
     });
 
@@ -506,8 +518,6 @@ test.describe.serial('Process Instance Migration', () => {
         timeout: 120000,
       });
 
-      // await operateProcessesPage.clickLatestOperationLink();
-
       migratedIds = getNewOperationIds(
         operateOperationPanelPage.beforeOperationOperationPanelEntries,
         operateOperationPanelPage.afterOperationOperationPanelEntries,
@@ -549,13 +559,21 @@ test.describe.serial('Process Instance Migration', () => {
 
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
-      await expect(page.getByText(/3 results/i)).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('3 results')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
     });
   });
 
   test('Migrated tasks', async ({
+    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
@@ -567,8 +585,14 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 4,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -599,6 +623,7 @@ test.describe.serial('Process Instance Migration', () => {
   });
 
   test('Migrated message events', async ({
+    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
@@ -610,8 +635,14 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 4,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -660,6 +691,7 @@ test.describe.serial('Process Instance Migration', () => {
   });
 
   test('Migrated gateways', async ({
+    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
@@ -671,8 +703,14 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 4,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -708,7 +746,15 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 4,
+      });
 
       await operateProcessesPage.clickProcessInstanceLink();
       await operateDiagramPage.resetDiagramZoomButton.click();
@@ -738,7 +784,16 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(page.getByText('results')).toBeVisible({timeout: 30000});
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('3 results')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
 
       await operateProcessesPage.clickProcessInstanceLink();
       await operateDiagramPage.resetDiagramZoomButton.click();
