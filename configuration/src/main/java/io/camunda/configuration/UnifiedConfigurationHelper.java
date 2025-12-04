@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -205,10 +206,23 @@ public class UnifiedConfigurationHelper {
 
     // Maintain property order
     for (final Set<String> legacyPropertySet : legacyProperties) {
-      legacyPropertySet.stream()
-          .filter(legacyConfigurationValues::containsKey)
-          .findFirst()
-          .ifPresent(f -> legacyValues.add(legacyConfigurationValues.get(f)));
+      final var setValues =
+          legacyPropertySet.stream()
+              .filter(legacyConfigurationValues::containsKey)
+              .map(legacyConfigurationValues::get)
+              .collect(Collectors.toSet());
+
+      // Check that each property set has a unique value
+      if (setValues.size() > 1) {
+        throw new UnifiedConfigurationException(
+            String.format(
+                "Ambiguous legacy configuration. Legacy properties: %s",
+                legacyConfigurationValues.entrySet().stream()
+                    .filter(e -> legacyPropertySet.contains(e.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
+      }
+
+      legacyValues.addAll(setValues);
     }
 
     if (legacyValues.isEmpty()) {
@@ -319,7 +333,7 @@ public class UnifiedConfigurationHelper {
     if (!legacyPresent) {
       // Legacy config: not present
       // New config...: not present
-      // We can retrun the new default value
+      // We can return the new default value
       return newValue;
     } else if (!newPresent) {
       // Legacy config: present
@@ -355,7 +369,7 @@ public class UnifiedConfigurationHelper {
     if (!legacyPresent) {
       // Legacy config: not present
       // New config...: not present
-      // We can retrun the new default value
+      // We can return the new default value
       return newValue;
     } else if (!newPresent) {
       // Legacy config: present
