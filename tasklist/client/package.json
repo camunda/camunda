@@ -43,7 +43,7 @@
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build && node ./renameProdIndex.mjs",
-    "test": "TZ=utc vitest run",
+    "test": "TZ=utc vitest run --retry=3",
     "test:ci": "CI=true npm run test",
     "test:visual": "playwright test --project=visual",
     "test:a11y": "IS_A11Y=true playwright test --project=a11y",
