@@ -108,7 +108,8 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record);
+    stateWriter.appendFollowUpEvent(
+        record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record, command);
 
@@ -125,7 +126,10 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     if (isEntityAssigned(record)) {
       stateWriter.appendFollowUpEvent(
-          command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue());
+          command.getKey(),
+          RoleIntent.ENTITY_REMOVED,
+          command.getValue(),
+          command.getAuthorizations());
     } else {
       final var errorMessage =
           ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());

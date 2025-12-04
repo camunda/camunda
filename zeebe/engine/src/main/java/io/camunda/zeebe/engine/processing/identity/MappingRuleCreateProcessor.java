@@ -113,7 +113,8 @@ public class MappingRuleCreateProcessor
     final long key = keyGenerator.nextKey();
     record.setMappingRuleKey(key);
 
-    stateWriter.appendFollowUpEvent(key, MappingRuleIntent.CREATED, record);
+    stateWriter.appendFollowUpEvent(
+        key, MappingRuleIntent.CREATED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(key, MappingRuleIntent.CREATED, record, command);
 
     commandDistributionBehavior
@@ -136,7 +137,10 @@ public class MappingRuleCreateProcessor
             },
             () ->
                 stateWriter.appendFollowUpEvent(
-                    command.getKey(), MappingRuleIntent.CREATED, record));
+                    command.getKey(),
+                    MappingRuleIntent.CREATED,
+                    record,
+                    command.getAuthorizations()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }

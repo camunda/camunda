@@ -89,7 +89,10 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getValue().getGroupKey(), GroupIntent.UPDATED, command.getValue());
+        command.getValue().getGroupKey(),
+        GroupIntent.UPDATED,
+        command.getValue(),
+        command.getAuthorizations());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -115,7 +118,10 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
             .setDescription(persistedGroup.getDescription());
 
     stateWriter.appendFollowUpEvent(
-        persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord);
+        persistedGroup.getGroupKey(),
+        GroupIntent.UPDATED,
+        updatedRecord,
+        command.getAuthorizations());
     responseWriter.writeEventOnCommand(
         persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord, command);
     commandDistributionBehavior.acknowledgeCommand(command);

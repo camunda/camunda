@@ -81,7 +81,8 @@ public class AuthorizationDeleteProcessor
               stateWriter.appendFollowUpEvent(
                   command.getValue().getAuthorizationKey(),
                   AuthorizationIntent.DELETED,
-                  command.getValue());
+                  command.getValue(),
+                  command.getAuthorizations());
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authorizationCheckBehavior.clearAuthorizationsCache();
@@ -102,7 +103,10 @@ public class AuthorizationDeleteProcessor
         .setAuthorizationKey(authorizationKey)
         .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
     stateWriter.appendFollowUpEvent(
-        authorizationKey, AuthorizationIntent.DELETED, command.getValue());
+        authorizationKey,
+        AuthorizationIntent.DELETED,
+        command.getValue(),
+        command.getAuthorizations());
     distributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())

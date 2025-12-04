@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -42,7 +41,6 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       "Expected to delete tenant with id '%s', but no tenant with this id exists.";
   private final TenantState tenantState;
   private final AuthorizationState authorizationState;
-  private final UserState userState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -60,7 +58,6 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
-    userState = state.getUserState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -98,10 +95,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     record.setName(persistedTenantRecord.get().getName());
     record.setTenantKey(tenantKey);
 
-    removeAssignedEntities(record);
-    deleteAuthorizations(record);
+    removeAssignedEntities(command);
+    deleteAuthorizations(command);
 
-    stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
+    stateWriter.appendFollowUpEvent(
+        tenantKey, TenantIntent.DELETED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
     sideEffectWriter.appendSideEffect(
         () -> {
@@ -119,10 +117,13 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .getTenantById(record.getTenantId())
         .ifPresentOrElse(
             tenant -> {
-              removeAssignedEntities(command.getValue());
-              deleteAuthorizations(command.getValue());
+              removeAssignedEntities(command);
+              deleteAuthorizations(command);
               stateWriter.appendFollowUpEvent(
-                  command.getKey(), TenantIntent.DELETED, command.getValue());
+                  command.getKey(),
+                  TenantIntent.DELETED,
+                  command.getValue(),
+                  command.getAuthorizations());
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authCheckBehavior.clearAuthorizationsCache();
@@ -158,7 +159,9 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .distribute(command);
   }
 
-  private void removeAssignedEntities(final TenantRecord record) {
+  private void removeAssignedEntities(final TypedRecord<TenantRecord> command) {
+    final var record = command.getValue();
+    final var authorizationClaims = command.getAuthorizations();
     final var tenant = tenantState.getTenantById(record.getTenantId()).orElseThrow();
     final var tenantId = tenant.getTenantId();
     final var tenantKey = tenant.getTenantKey();
@@ -172,11 +175,14 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
               new TenantRecord()
                   .setTenantId(tenantId)
                   .setEntityType(entityType)
-                  .setEntityId(entityId));
+                  .setEntityId(entityId),
+              authorizationClaims);
         });
   }
 
-  private void deleteAuthorizations(final TenantRecord record) {
+  private void deleteAuthorizations(final TypedRecord<TenantRecord> command) {
+    final var record = command.getValue();
+    final var authorizationClaims = command.getAuthorizations();
     final var tenantId = record.getTenantId();
     final var authorizationKeysForGroup =
         authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.TENANT, tenantId);
@@ -188,7 +194,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
                   .setAuthorizationKey(authorizationKey)
                   .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
-              authorizationKey, AuthorizationIntent.DELETED, authorization);
+              authorizationKey, AuthorizationIntent.DELETED, authorization, authorizationClaims);
         });
   }
 }

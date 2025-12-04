@@ -91,10 +91,11 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     final var roleKey = persistedRole.getRoleKey();
     record.setRoleKey(roleKey);
 
-    removeMembers(record);
-    deleteAuthorizations(record);
+    removeMembers(command);
+    deleteAuthorizations(command);
 
-    stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
+    stateWriter.appendFollowUpEvent(
+        roleKey, RoleIntent.DELETED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(roleKey, RoleIntent.DELETED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
@@ -111,10 +112,13 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
         .getRole(record.getRoleId())
         .ifPresentOrElse(
             role -> {
-              removeMembers(command.getValue());
-              deleteAuthorizations(command.getValue());
+              removeMembers(command);
+              deleteAuthorizations(command);
               stateWriter.appendFollowUpEvent(
-                  command.getKey(), RoleIntent.DELETED, command.getValue());
+                  command.getKey(),
+                  RoleIntent.DELETED,
+                  command.getValue(),
+                  command.getAuthorizations());
             },
             () -> {
               final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
@@ -124,7 +128,9 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void removeMembers(final RoleRecord record) {
+  private void removeMembers(final TypedRecord<RoleRecord> command) {
+    final var record = command.getValue();
+    final var authorizationClaims = command.getAuthorizations();
     final var roleId = record.getRoleId();
     membershipState.forEachMember(
         RelationType.ROLE,
@@ -133,11 +139,14 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
           stateWriter.appendFollowUpEvent(
               record.getRoleKey(),
               RoleIntent.ENTITY_REMOVED,
-              new RoleRecord().setRoleId(roleId).setEntityId(entityId).setEntityType(entityType));
+              new RoleRecord().setRoleId(roleId).setEntityId(entityId).setEntityType(entityType),
+              authorizationClaims);
         });
   }
 
-  private void deleteAuthorizations(final RoleRecord record) {
+  private void deleteAuthorizations(final TypedRecord<RoleRecord> command) {
+    final var record = command.getValue();
+    final var authorizationClaims = command.getAuthorizations();
     final var roleId = record.getRoleId();
     final var authorizationKeysForRole =
         authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.ROLE, roleId);
@@ -149,7 +158,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
                   .setAuthorizationKey(authorizationKey)
                   .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
-              authorizationKey, AuthorizationIntent.DELETED, authorization);
+              authorizationKey, AuthorizationIntent.DELETED, authorization, authorizationClaims);
         });
   }
 }

@@ -113,7 +113,8 @@ public class MappingRuleUpdateProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record);
+    stateWriter.appendFollowUpEvent(
+        record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record, command.getAuthorizations());
     responseWriter.writeEventOnCommand(
         record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record, command);
 
@@ -126,7 +127,10 @@ public class MappingRuleUpdateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<MappingRuleRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getKey(), MappingRuleIntent.UPDATED, command.getValue());
+        command.getKey(),
+        MappingRuleIntent.UPDATED,
+        command.getValue(),
+        command.getAuthorizations());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }

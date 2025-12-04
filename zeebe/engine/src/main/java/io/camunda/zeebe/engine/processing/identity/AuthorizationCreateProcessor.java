@@ -82,7 +82,10 @@ public class AuthorizationCreateProcessor
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(
-                  command.getKey(), AuthorizationIntent.CREATED, command.getValue());
+                  command.getKey(),
+                  AuthorizationIntent.CREATED,
+                  command.getValue(),
+                  command.getAuthorizations());
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authorizationCheckBehavior.clearAuthorizationsCache();
@@ -100,7 +103,8 @@ public class AuthorizationCreateProcessor
       final AuthorizationRecord authorizationRecord) {
     final long key = keyGenerator.nextKey();
     authorizationRecord.setAuthorizationKey(key);
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
+    stateWriter.appendFollowUpEvent(
+        key, AuthorizationIntent.CREATED, authorizationRecord, command.getAuthorizations());
     responseWriter.writeEventOnCommand(
         key, AuthorizationIntent.CREATED, authorizationRecord, command);
     distributionBehavior
