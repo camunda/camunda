@@ -9,10 +9,17 @@ package io.camunda.zeebe.gateway.mcp.tool.incident;
 
 import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
+import io.camunda.zeebe.gateway.protocol.rest.IncidentFilter;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.rest.controller.IncidentController;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -25,6 +32,24 @@ public class IncidentTools {
 
   public IncidentTools(final IncidentController incidentController) {
     this.incidentController = incidentController;
+  }
+
+  @McpTool(
+      description = "Search for incidents based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
+      annotations = @McpAnnotations(readOnlyHint = true))
+  public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+      @McpToolParam(required = false) final IncidentFilter filter,
+      @McpToolParam(description = "Sort criteria", required = false) @Valid
+          final List<@Valid IncidentSearchQuerySortRequest> sort,
+      @McpToolParam(description = "Pagination criteria", required = false)
+          final SearchQueryPageRequest page) {
+
+    final var query = new IncidentSearchQuery();
+    query.setFilter(filter);
+    query.setSort(sort);
+    query.setPage(page);
+
+    return incidentController.searchIncidents(query);
   }
 
   @McpTool(
