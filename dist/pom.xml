@@ -456,6 +456,15 @@
       <artifactId>netty-transport</artifactId>
     </dependency>
 
+<<<<<<< HEAD
+=======
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>debug-cli</artifactId>
+    </dependency>
+
+    <!-- /end -->
+>>>>>>> e7dc773e (build: include `cdbg` in app assembly)
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
@@ -636,6 +645,10 @@
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
+            <program>
+              <id>cdbg</id>
+              <mainClass>io.camunda.debug.cli.Main</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -689,8 +702,13 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
+<<<<<<< HEAD
             <dependency>io.camunda:camunda-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
+=======
+            <!-- Needed for the debug CLI tool -->
+            <dependency>io.camunda:debug-cli</dependency>
+>>>>>>> e7dc773e (build: include `cdbg` in app assembly)
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
