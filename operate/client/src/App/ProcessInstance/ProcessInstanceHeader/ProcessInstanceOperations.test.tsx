@@ -11,7 +11,7 @@ import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {createProcessInstance} from 'modules/testUtils';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
@@ -19,7 +19,6 @@ import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processI
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {Paths} from 'modules/Routes';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -30,15 +29,9 @@ vi.mock('modules/stores/notifications', () => ({
 const getWrapper = () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
-      <MemoryRouter
-        initialEntries={[
-          Paths.processInstance(mockProcessInstance.processInstanceKey),
-        ]}
-      >
+      <MemoryRouter>
         <QueryClientProvider client={getMockQueryClient()}>
-          <Routes>
-            <Route path={Paths.processInstance()} element={children} />
-          </Routes>
+          {children}
         </QueryClientProvider>
       </MemoryRouter>
     );
