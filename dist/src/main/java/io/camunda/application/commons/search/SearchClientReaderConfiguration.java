@@ -11,6 +11,8 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.reader.AuditLogDocumentReader;
+import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.BatchOperationDocumentReader;
@@ -90,6 +92,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -126,6 +129,14 @@ public class SearchClientReaderConfiguration {
       final DocumentBasedSearchClient searchClient, final IndexDescriptors descriptors) {
     final var transformers = ServiceTransformers.newInstance(descriptors);
     return new SearchClientBasedQueryExecutor(searchClient, transformers);
+  }
+
+  @Bean
+  public AuditLogReader auditLogReader(
+      final SearchClientBasedQueryExecutor searchClientBasedQueryExecutor,
+      final IndexDescriptors descriptors) {
+    return new AuditLogDocumentReader(
+        searchClientBasedQueryExecutor, descriptors.get(AuditLogTemplate.class));
   }
 
   @Bean

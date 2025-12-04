@@ -82,6 +82,16 @@ import java.util.Map;
 public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
+  public AuditLogEntity getAuditLog(final String id) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
   public AuthorizationEntity getAuthorization(final long key) {
     return null;
   }
@@ -321,16 +331,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
-    return SearchQueryResult.empty();
-  }
-
-  @Override
-  public AuditLogEntity getAuditLog(final String id) {
-    return null;
-  }
-
-  @Override
-  public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
     return SearchQueryResult.empty();
   }
 
