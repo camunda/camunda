@@ -12,7 +12,35 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import java.util.Optional;
 
 public interface GlobalListenersState {
+
+  /** Gets the current global listeners configuration. */
   Optional<GlobalListenerBatchRecord> getCurrentConfig();
 
-  Optional<GlobalListenerBatchRecord> getVersionedConfig(final long version);
+  /**
+   * Gets a stored copy of a global listeners configuration, possibly different from the current
+   * one, given a version key.
+   *
+   * @param versionKey the version key of the desired configuration
+   * @return the global listeners configuration for the given version key, or {@link
+   *     Optional#empty()} if not found
+   */
+  Optional<GlobalListenerBatchRecord> getVersionedConfig(final long versionKey);
+
+  /**
+   * Checks whether a global listeners configuration version is stored.
+   *
+   * @param versionKey the version key to check
+   * @return {@code true} if the configuration version is stored, {@code false} otherwise
+   */
+  boolean isConfigurationVersionStored(final long versionKey);
+
+  /**
+   * Checks whether a global listeners configuration version is pinned by any element. In
+   * particular, the configuration could be pinned by a user task in order to always reference the
+   * same list of global user task listeners.
+   *
+   * @param versionKey the version key to check
+   * @return {@code true} if the configuration version is pinned, {@code false} otherwise
+   */
+  boolean isConfigurationVersionPinned(final long versionKey);
 }
