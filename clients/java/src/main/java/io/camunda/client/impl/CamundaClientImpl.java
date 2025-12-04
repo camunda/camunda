@@ -107,6 +107,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
@@ -257,6 +258,7 @@ import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.client.impl.fetch.AuditLogGetRequestImpl;
 import io.camunda.client.impl.fetch.AuthorizationGetRequestImpl;
 import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetRequestImpl;
@@ -1486,6 +1488,11 @@ public final class CamundaClientImpl implements CamundaClient {
       final long elementInstanceKey) {
     return new IncidentsByElementInstanceSearchRequestImpl(
         httpClient, jsonMapper, elementInstanceKey);
+  }
+
+  @Override
+  public AuditLogGetRequest newAuditLogGetRequest(final String auditLogKey) {
+    return new AuditLogGetRequestImpl(httpClient, auditLogKey);
   }
 
   private JobClient newJobClient() {

@@ -96,6 +96,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
@@ -2967,4 +2968,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   IncidentsByElementInstanceSearchRequest newIncidentsByElementInstanceSearchRequest(
       long elementInstanceKey);
+
+  /**
+   * Request to get an audit log by audit log key.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newAuditLogGetRequest(auditLogKey)
+   *    .send();
+   * </pre>
+   *
+   * @param auditLogKey the key that identifies the corresponding audit log
+   * @return a builder for the audit log request
+   */
+  AuditLogGetRequest newAuditLogGetRequest(String auditLogKey);
 }
