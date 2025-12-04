@@ -222,8 +222,6 @@ public class ConditionalEvaluationProcessor
                   matches.add(new MatchedStartEvent(process, startEvent.getId()));
                 }
               } else {
-                // log and ignore evaluation failures
-                // conditional events are re-evaluated on variable changes
                 LOG.debug(
                     "Failed to evaluate condition on conditional start event '{}' in process '{}': {}",
                     BufferUtil.bufferAsString(startEvent.getId()),
