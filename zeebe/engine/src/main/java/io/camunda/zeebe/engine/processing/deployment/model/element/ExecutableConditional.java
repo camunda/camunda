@@ -14,8 +14,8 @@ public class ExecutableConditional extends AbstractFlowElement {
 
   private Expression conditionExpression;
   private String condition;
-  private List<String> variableNames;
-  private List<String> variableEvents;
+  private List<String> variableNames = List.of();
+  private List<String> variableEvents = List.of();
 
   public ExecutableConditional(final String id) {
     super(id);

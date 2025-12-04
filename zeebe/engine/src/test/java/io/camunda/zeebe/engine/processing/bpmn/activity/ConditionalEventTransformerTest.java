@@ -192,9 +192,9 @@ public class ConditionalEventTransformerTest {
     class VariableNamesTests {
       Stream<Arguments> variableNames() {
         return Stream.of(
-            Arguments.of(null, null),
-            Arguments.of("", null),
-            Arguments.of(" ", null),
+            Arguments.of(null, List.of()),
+            Arguments.of("", List.of()),
+            Arguments.of(" ", List.of()),
             Arguments.of("var1", List.of("var1")),
             Arguments.of("var1,var2", List.of("var1", "var2")),
             Arguments.of(" var1 , var2 ", List.of("var1", "var2")));
@@ -252,9 +252,9 @@ public class ConditionalEventTransformerTest {
     class VariableEventsTests {
       Stream<Arguments> variableEvents() {
         return Stream.of(
-            Arguments.of(null, null),
-            Arguments.of("", null),
-            Arguments.of(" ", null),
+            Arguments.of(null, List.of()),
+            Arguments.of("", List.of()),
+            Arguments.of(" ", List.of()),
             Arguments.of("create", List.of("create")),
             Arguments.of("update", List.of("update")),
             Arguments.of("create, update", List.of("create", "update")),

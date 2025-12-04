@@ -13,13 +13,17 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -48,19 +52,25 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class CatchEventBehavior {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CatchEventBehavior.class);
 
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final RoutingInfo routingInfo;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final TypedCommandWriter commandWriter;
 
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
   private final ProcessState processState;
   private final SignalSubscriptionState signalSubscriptionState;
+  private final ConditionalSubscriptionState conditionalSubscriptionState;
 
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
@@ -78,22 +88,23 @@ public final class CatchEventBehavior {
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final StateWriter stateWriter,
-      final SideEffectWriter sideEffectWriter,
+      final Writers writers,
       final DueDateTimerChecker timerChecker,
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.stateWriter = stateWriter;
-    this.sideEffectWriter = sideEffectWriter;
+    stateWriter = writers.state();
+    sideEffectWriter = writers.sideEffect();
+    commandWriter = writers.command();
     this.routingInfo = routingInfo;
 
     timerInstanceState = processingState.getTimerState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     processState = processingState.getProcessState();
     signalSubscriptionState = processingState.getSignalSubscriptionState();
+    conditionalSubscriptionState = processingState.getConditionalSubscriptionState();
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
@@ -466,6 +477,38 @@ public final class CatchEventBehavior {
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         subscriptionKey, ConditionalSubscriptionIntent.CREATED, conditionalSubscription);
+
+    // Evaluate the condition immediately after creating the subscription.
+    // If it evaluates to true, the conditional event is triggered right away.
+    tryEvaluateSubscription(conditional, subscriptionKey, conditionalSubscription);
+  }
+
+  private void tryEvaluateSubscription(
+      final ExecutableConditional conditional,
+      final long subscriptionKey,
+      final ConditionalSubscriptionRecord subscriptionRecord) {
+    final var scopeKey = subscriptionRecord.getScopeKey();
+    final String tenantId = subscriptionRecord.getTenantId();
+    final Expression conditionExpression = conditional.getConditionExpression();
+
+    final Either<Failure, Boolean> evaluation =
+        expressionProcessor.evaluateBooleanExpression(conditionExpression, scopeKey, tenantId);
+    if (evaluation.isRight()) {
+      if (Boolean.TRUE.equals(evaluation.get())) {
+        commandWriter.appendFollowUpCommand(
+            subscriptionKey, ConditionalSubscriptionIntent.TRIGGER, subscriptionRecord);
+      }
+    } else {
+      // log and ignore evaluation failures
+      // conditional events are re-evaluated on variable changes
+      LOG.debug(
+          "Failed to evaluate condition on conditional event subscription creation for "
+              + "catch event with id '{}' in element instance with key '{}' and scope key '{}': {}",
+          subscriptionRecord.getCatchEventId(),
+          subscriptionRecord.getElementInstanceKey(),
+          scopeKey,
+          evaluation.getLeft().getMessage());
+    }
   }
 
   public void unsubscribeFromSignalEventsBySubscriptionFilter(
