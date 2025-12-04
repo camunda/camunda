@@ -324,7 +324,7 @@ public class OpenSearchChecks {
         final String taskId = (String) objects[0];
         final String varName = (String) objects[1];
         try {
-          return openSearchHelper.checkVariableExists(taskId, varName);
+          return openSearchHelper.checkTaskVariableExists(taskId, varName);
         } catch (final NotFoundApiException ex) {
           return false;
         }
@@ -343,9 +343,13 @@ public class OpenSearchChecks {
 
       @Override
       public boolean test(final Object[] objects) {
-        final String[] varNames = (String[]) objects;
+        assertThat(objects).hasSize(2);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String[].class);
+        final String processInstanceId = (String) objects[0];
+        final String[] varNames = (String[]) objects[1];
         try {
-          return openSearchHelper.checkVariablesExist(varNames);
+          return openSearchHelper.checkVariablesExist(processInstanceId, varNames);
         } catch (final NotFoundApiException ex) {
           return false;
         }

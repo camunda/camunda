@@ -427,8 +427,8 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester variablesExist(final String[] varNames) {
-    databaseTestExtension.processAllRecordsAndWait(variablesExist, varNames);
+  public TasklistTester variablesExist(final String... varNames) {
+    databaseTestExtension.processAllRecordsAndWait(variablesExist, processInstanceId, varNames);
     return this;
   }
 
