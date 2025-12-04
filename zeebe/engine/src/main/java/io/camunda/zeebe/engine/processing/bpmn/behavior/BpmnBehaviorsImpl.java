@@ -109,7 +109,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     variableBehavior =
         new VariableBehavior(
-            processingState.getVariableState(), writers.state(), processingState.getKeyGenerator());
+            processingState.getVariableState(),
+            processingState.getElementInstanceState(),
+            writers.state(),
+            processingState.getKeyGenerator());
 
     catchEventBehavior =
         new CatchEventBehavior(

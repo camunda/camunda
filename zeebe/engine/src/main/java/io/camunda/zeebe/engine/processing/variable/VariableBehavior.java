@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.common.RootProcessInstanceKeyResolver;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
@@ -29,6 +31,7 @@ import org.agrona.DirectBuffer;
 public final class VariableBehavior {
 
   private final VariableState variableState;
+  private final ElementInstanceState elementInstanceState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
@@ -37,9 +40,11 @@ public final class VariableBehavior {
 
   public VariableBehavior(
       final VariableState variableState,
+      final ElementInstanceState elementInstanceState,
       final StateWriter stateWriter,
       final KeyGenerator keyGenerator) {
     this.variableState = variableState;
+    this.elementInstanceState = elementInstanceState;
     this.stateWriter = stateWriter;
     this.keyGenerator = keyGenerator;
   }
@@ -176,11 +181,16 @@ public final class VariableBehavior {
     long currentScope = scopeKey;
     long parentScope;
 
+    final long rootProcessInstanceKey =
+        RootProcessInstanceKeyResolver.fromProcessInstanceKey(
+            elementInstanceState, processInstanceKey);
+
     variableRecord
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
-        .setTenantId(tenantId);
+        .setTenantId(tenantId)
+        .setRootProcessInstanceKey(rootProcessInstanceKey);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 

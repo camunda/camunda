@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.common.RootProcessInstanceKeyResolver;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -130,11 +131,15 @@ public final class BpmnStateTransitionBehavior {
             transitionContext.getFlowScopeKey(),
             transitionContext.getRecordValue());
     // We only set the tree path properties on the ACTIVATING event
+    final var rootProcessInstanceKey =
+        RootProcessInstanceKeyResolver.fromElementInstancePath(
+            elementTreePath.elementInstancePath());
     transitionContext
         .getRecordValue()
         .setElementInstancePath(elementTreePath.elementInstancePath())
         .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
-        .setCallingElementPath(elementTreePath.callingElementPath());
+        .setCallingElementPath(elementTreePath.callingElementPath())
+        .setRootProcessInstanceKey(rootProcessInstanceKey);
 
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
