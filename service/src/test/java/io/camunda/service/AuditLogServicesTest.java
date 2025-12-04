@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,11 +17,13 @@ import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -85,9 +88,10 @@ class AuditLogServicesTest {
     MockitoAnnotations.openMocks(this);
 
     final SecurityContext securityContext = org.mockito.Mockito.mock(SecurityContext.class);
-    when(securityContextProvider.provideSecurityContext(authentication))
+    when(securityContextProvider.provideSecurityContext(
+            any(CamundaAuthentication.class), any(AuthorizationCondition.class)))
         .thenReturn(securityContext);
-    when(auditLogSearchClient.withSecurityContext(securityContext))
+    when(auditLogSearchClient.withSecurityContext(any(SecurityContext.class)))
         .thenReturn(auditLogSearchClient);
 
     auditLogServices =
@@ -106,6 +110,7 @@ class AuditLogServicesTest {
     final var searchResult = SearchQueryResult.of(AUDIT_LOG_ENTITY);
 
     when(auditLogSearchClient.searchAuditLogs(query)).thenReturn(searchResult);
+    when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
     final var result = auditLogServices.search(query);
@@ -139,14 +144,15 @@ class AuditLogServicesTest {
     when(auditLogSearchClient.searchAuditLogs(query))
         .thenThrow(
             new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_ALL_AUTHORIZATION));
+    when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
-    final ThrowingCallable executeGetByKey = () -> auditLogServices.search(query);
+    final ThrowingCallable executeSearch = () -> auditLogServices.search(query);
 
     // then
     final var exception =
         (ServiceException)
-            assertThatThrownBy(executeGetByKey).isInstanceOf(ServiceException.class).actual();
+            assertThatThrownBy(executeSearch).isInstanceOf(ServiceException.class).actual();
     assertThat(exception.getMessage())
         .isEqualTo("Unauthorized to perform operation 'READ' on resource 'AUDIT_LOG'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
