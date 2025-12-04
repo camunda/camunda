@@ -245,6 +245,11 @@ public class SwimMembershipProtocol
    * @return whether the state for the member was updated
    */
   private boolean updateState(final ImmutableMember member) {
+    try {
+      validateMember(member);
+    } catch (final IllegalArgumentException e) {
+      LOGGER.warn("Ignoring update from member {}", member, e);
+    }
     // If the member matches the local member, ignore the update.
     if (member.id().equals(localMember.id())) {
       return false;
@@ -504,7 +509,7 @@ public class SwimMembershipProtocol
     // provider.
     final List<SwimMember> probeMembers =
         discoveryService.getNodes().stream()
-            .map(node -> new SwimMember(MemberId.from(node.id().id()), 0, node.address()))
+            .map(node -> new SwimMember(MemberId.from(node.id().id()), nodeVersion, node.address()))
             .filter(member -> !members.containsKey(member.id()))
             .filter(member -> !member.id().equals(localMember.id()))
             .filter(member -> !member.address().equals(localMember.address()))
@@ -574,6 +579,9 @@ public class SwimMembershipProtocol
 
     PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
+
+    validateMember(remoteMember);
+    validateMember(localMember);
 
     // If the probe indicates a term greater than the local term, update the local term, increment
     // and respond.
@@ -692,6 +700,9 @@ public class SwimMembershipProtocol
    * @param member the member to probe
    */
   private CompletableFuture<Boolean> handleProbeRequest(final ImmutableMember member) {
+    if (member == null) {
+      return CompletableFuture.completedFuture(false);
+    }
     final CompletableFuture<Boolean> future = new CompletableFuture<>();
     swimScheduler.execute(
         () -> {
@@ -884,6 +895,26 @@ public class SwimMembershipProtocol
     probeFuture =
         swimScheduler.schedule(
             (Runnable) this::probe, config.getProbeInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void validateMember(final Member member) {
+    if (nodeVersion > 0) {
+      switch (member) {
+        case final SwimMember m -> {
+          if (m.nodeVersion <= 0L) {
+            throw new IllegalArgumentException(
+                "Expected positive version from member, but got " + m);
+          }
+        }
+        case final ImmutableMember m -> {
+          if (m.nodeVersion <= 0L) {
+            throw new IllegalArgumentException(
+                "Expected positive version from member, but got " + m);
+          }
+        }
+        default -> {}
+      }
+    }
   }
 
   /** Bootstrap member location provider type. */
