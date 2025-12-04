@@ -10,14 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -80,15 +73,15 @@ public class CommandRejectionExceptionTest {
   @Test
   public void forbiddenExceptionShouldBeACommandRejectionException() {
     // given
-    final io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
-            .ForbiddenException
+    final io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException
         forbiddenException =
             new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
                 .ForbiddenException(
                 new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
-                    .AuthorizationRequest(
+                        .AuthorizationRequest(
                         null,
-                        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION,
+                        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType
+                            .PROCESS_DEFINITION,
                         io.camunda.zeebe.protocol.record.value.PermissionType.CREATE,
                         "<default>")
                     .addResourceId("test"));
@@ -100,8 +93,8 @@ public class CommandRejectionExceptionTest {
   }
 
   /**
-   * This test validates that rejections work correctly for different RejectionTypes. While we
-   * can't test state rollback without a test processor, we can validate the exception properties.
+   * This test validates that rejections work correctly for different RejectionTypes. While we can't
+   * test state rollback without a test processor, we can validate the exception properties.
    */
   @Test
   public void shouldSupportAllRejectionTypes() {
@@ -161,9 +154,10 @@ public class CommandRejectionExceptionTest {
         new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
             .ForbiddenException(
             new io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior
-                .AuthorizationRequest(
+                    .AuthorizationRequest(
                     null,
-                    io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION,
+                    io.camunda.zeebe.protocol.record.value.AuthorizationResourceType
+                        .PROCESS_DEFINITION,
                     io.camunda.zeebe.protocol.record.value.PermissionType.CREATE,
                     "<default>")
                 .addResourceId("test"));

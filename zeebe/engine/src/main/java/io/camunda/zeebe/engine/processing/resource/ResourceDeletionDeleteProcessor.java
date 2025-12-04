@@ -140,9 +140,10 @@ public class ResourceDeletionDeleteProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ResourceDeletionRecord> command, final Throwable error) {
-    if (error instanceof final io.camunda.zeebe.engine.processing.streamprocessor
-            .CommandRejectionException
-        exception) {
+    if (error
+        instanceof
+        final io.camunda.zeebe.engine.processing.streamprocessor.CommandRejectionException
+            exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(
