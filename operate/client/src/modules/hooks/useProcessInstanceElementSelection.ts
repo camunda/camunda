@@ -61,14 +61,12 @@ const useProcessInstanceElementSelection = () => {
 
   // If only elementId is in URL, search for all instances
   const {data: searchResult, isFetching: isFetchingElementInstancesSearch} =
-    useElementInstancesSearch(
-      elementId ?? '',
-      processInstanceKey ?? '',
-      undefined,
-      {
-        enabled: !!elementId && !elementInstanceKey && !!processInstanceKey,
-      },
-    );
+    useElementInstancesSearch({
+      elementId: elementId ?? '',
+      processInstanceKey: processInstanceKey ?? '',
+      elementType: undefined,
+      enabled: !!elementId && !elementInstanceKey && !!processInstanceKey,
+    });
 
   const selectedElementInstance =
     elementInstanceByKey ??
