@@ -461,8 +461,8 @@ public final class SystemContext {
     configuredAuthorizations.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured entities: \n- %s"
-                  .formatted(String.join("\n- ", violations)));
+              "Cannot initialize configured entities: %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
   }
 

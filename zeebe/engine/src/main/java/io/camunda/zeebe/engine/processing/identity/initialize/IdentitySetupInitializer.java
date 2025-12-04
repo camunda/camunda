@@ -94,10 +94,13 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
         authorizationConfigurer.configureEntities(initialization.getAuthorizations());
 
+    configuredAuthorizations.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Found invalid authorizations. Aborting identity initialization! %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+        });
     configuredAuthorizations.ifRight(auths -> auths.forEach(setupRecord::addAuthorization));
-
-    // Checking for validation errors is done in CamundaSecurityConfiguration instead,
-    // where the application can be killed on error.
 
     initialization
         .getUsers()

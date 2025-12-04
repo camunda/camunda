@@ -24,25 +24,25 @@ import org.junit.jupiter.api.Test;
 
 class AuthorizationConfigurerTest {
 
-  public static final ConfiguredAuthorization INVALID_OWNER_TYPE =
+  private static final ConfiguredAuthorization INVALID_OWNER_TYPE =
       new ConfiguredAuthorization(
           null,
           "foo",
           AuthorizationResourceType.RESOURCE,
           WILDCARD_CHAR,
           Set.of(PermissionType.READ));
-  public static final ConfiguredAuthorization VALID_AUTH =
+  private static final ConfiguredAuthorization VALID_AUTH =
       new ConfiguredAuthorization(
           AuthorizationOwnerType.USER,
           "foo",
           AuthorizationResourceType.RESOURCE,
           WILDCARD_CHAR,
           Set.of(PermissionType.READ));
-  public static final AuthorizationValidator VALIDATOR =
+  private static final AuthorizationValidator VALIDATOR =
       new AuthorizationValidator(Pattern.compile(".*"));
 
   @Test
-  public void shouldReturnViolationOnValidationFailure() {
+  void shouldReturnViolationOnValidationFailure() {
     // when:
     final Either<List<String>, AuthorizationRecord> result =
         new AuthorizationConfigurer(VALIDATOR).configure(INVALID_OWNER_TYPE);
@@ -53,7 +53,7 @@ class AuthorizationConfigurerTest {
   }
 
   @Test
-  public void shouldSuccessfullyConfigure() {
+  void shouldSuccessfullyConfigure() {
     // when:
     final Either<List<String>, AuthorizationRecord> result =
         new AuthorizationConfigurer(VALIDATOR).configure(VALID_AUTH);
