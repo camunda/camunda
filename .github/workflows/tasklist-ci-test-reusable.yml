@@ -110,9 +110,7 @@ jobs:
             -Dcamunda.operate.${{ matrix.database }}.url=${{ matrix.url }} \
             -Dcamunda.tasklist.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
             -Dcamunda.tasklist.${{ matrix.database }}.url=${{ matrix.url }} \
-            -Dcamunda.operate.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
-            -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
-            -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+            -Dcamunda.operate.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
