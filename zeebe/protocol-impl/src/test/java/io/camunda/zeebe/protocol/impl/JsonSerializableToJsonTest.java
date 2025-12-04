@@ -4091,12 +4091,12 @@ final class JsonSerializableToJsonTest {
                         new GlobalListenerRecord()
                             .setType("global1")
                             .setEventTypes(List.of("creating", "assigning"))
-                            .setRetries("5"))
+                            .setRetries(5))
                     .addTaskListener(
                         new GlobalListenerRecord()
                             .setType("global2")
                             .setEventTypes(List.of("all"))
-                            .setRetries("3")
+                            .setRetries(3)
                             .setAfterNonGlobal(false)),
         """
       {
@@ -4104,13 +4104,13 @@ final class JsonSerializableToJsonTest {
         "taskListeners": [
           {
             "type": "global1",
-            "retries": "5",
+            "retries": 5,
             "eventTypes": ["creating", "assigning"],
             "afterNonGlobal": false
           },
           {
             "type": "global2",
-            "retries": "3",
+            "retries": 3,
             "eventTypes": ["all"],
             "afterNonGlobal": false
           }

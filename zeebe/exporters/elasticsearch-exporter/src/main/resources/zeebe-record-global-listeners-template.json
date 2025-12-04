@@ -30,7 +30,7 @@
                   "type": "keyword"
                 },
                 "retries": {
-                  "type": "text"
+                  "type": "integer"
                 },
                 "eventTypes": {
                   "type": "keyword"
