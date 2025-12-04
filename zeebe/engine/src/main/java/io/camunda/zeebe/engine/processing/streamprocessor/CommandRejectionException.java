@@ -18,9 +18,14 @@ import io.camunda.zeebe.protocol.record.RejectionType;
  * expected command rejections as all diagnostic information is contained in the rejection reason.
  * The cost of generating stack traces can be significant in high-rejection workloads.
  *
- * <p>This exception is caught by the stream processing state machine, which ensures that: - The
- * RocksDB transaction is rolled back - Buffered follow-up events are discarded - Side effects are
- * discarded - A rejection record is written to the log - A rejection response is sent to the client
+ * <p>This exception is caught by the stream processing state machine, which ensures that:
+ * <ul>
+ *   <li>The RocksDB transaction is rolled back</li>
+ *   <li>Buffered follow-up events are discarded</li>
+ *   <li>Side effects are discarded</li>
+ *   <li>A rejection record is written to the log</li>
+ *   <li>A rejection response is sent to the client</li>
+ * </ul>
  *
  * <h2>Usage Example:</h2>
  *
