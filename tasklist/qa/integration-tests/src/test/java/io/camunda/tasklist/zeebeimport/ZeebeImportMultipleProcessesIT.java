@@ -51,7 +51,7 @@ public class ZeebeImportMultipleProcessesIT extends TasklistZeebeIntegrationTest
     tester.deployProcess("two_processes.bpmn");
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(Duration.ofSeconds(10))
         .until(
             () ->
                 processStore

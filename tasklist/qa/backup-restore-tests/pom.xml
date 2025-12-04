@@ -74,8 +74,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -212,6 +212,7 @@
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
             <camunda.tasklist.database>${tasklistDatabase}</camunda.tasklist.database>
+            <camunda.data.secondary-storage.type>${tasklistDatabase}</camunda.data.secondary-storage.type>
           </systemPropertyVariables>
         </configuration>
       </plugin>

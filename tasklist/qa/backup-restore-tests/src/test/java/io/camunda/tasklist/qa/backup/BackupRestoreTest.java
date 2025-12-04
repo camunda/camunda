@@ -109,6 +109,7 @@ public class BackupRestoreTest {
         testContainerUtil
             .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
             .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+            .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
             // Unified Configuration: DB type + compatibility
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType)
             .withEnv("CAMUNDA_TASKLIST_DATABASE", dbType)
@@ -140,7 +141,7 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createElsSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(IMAGE_REPO, VERSION, testContext);
+    testContainerUtil.startStandaloneBroker(testContext);
     createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 
@@ -164,7 +165,7 @@ public class BackupRestoreTest {
     testContext.setOsClient(osClient);
     createOsSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(IMAGE_REPO, VERSION, testContext);
+    testContainerUtil.startStandaloneBroker(testContext);
     createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 

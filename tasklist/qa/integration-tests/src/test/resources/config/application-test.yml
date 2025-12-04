@@ -47,7 +47,7 @@ server.error.include-message: always
 management.health.defaults.enabled: false
 management.endpoint.health.probes.enabled: true
 management.endpoints.web.exposure.include: health,prometheus,loggers,usage-metrics,backups
-management.endpoint.health.group.readiness.include: readinessState,searchEngineCheck
+management.endpoint.health.group.readiness.include: readinessState
 ---
 spring.config.activate.on-profile: identity-auth, sso-auth
 camunda.webapps.login-delegated: true

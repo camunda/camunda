@@ -93,11 +93,6 @@
 
     <!-- TEST CONTAINERS -->
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-elasticsearch</artifactId>
       <scope>test</scope>
@@ -500,6 +495,26 @@
       <artifactId>configuration</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-qa-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -521,8 +536,6 @@
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
             <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
-            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
-            <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -536,8 +549,6 @@
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
             <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
-            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
-            <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -634,9 +645,10 @@
                   <environmentVariables>
                     <DATABASE>opensearch</DATABASE>
                   </environmentVariables>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>../../config</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>opensearch</argument>
@@ -655,9 +667,10 @@
                     <DATABASE>opensearch</DATABASE>
                   </environmentVariables>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>../../config</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>
@@ -701,9 +714,10 @@
                   <environmentVariables>
                     <DATABASE>elasticsearch</DATABASE>
                   </environmentVariables>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>../../config</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>elasticsearch</argument>
@@ -722,9 +736,10 @@
                     <DATABASE>elasticsearch</DATABASE>
                   </environmentVariables>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>../../config</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>
