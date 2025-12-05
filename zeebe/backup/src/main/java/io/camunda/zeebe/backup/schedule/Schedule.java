@@ -50,8 +50,11 @@ public sealed interface Schedule {
    * @throws IllegalArgumentException if the expression is invalid
    */
   static Schedule parseSchedule(final String expression) throws IllegalArgumentException {
+    if (expression == null) {
+      return none();
+    }
     if (expression.equalsIgnoreCase(NONE)) {
-      return new NoneSchedule();
+      return none();
     }
     if (expression.equalsIgnoreCase(AUTO)) {
       return new AutoSchedule();
@@ -72,6 +75,10 @@ public sealed interface Schedule {
                 + expression);
       }
     }
+  }
+
+  static Schedule none() {
+    return new NoneSchedule();
   }
 
   record CronSchedule(Cron cronExpr) implements Schedule {

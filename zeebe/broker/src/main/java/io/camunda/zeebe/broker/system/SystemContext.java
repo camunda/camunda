@@ -20,6 +20,7 @@ import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -58,6 +59,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -183,8 +185,6 @@ public final class SystemContext {
     }
 
     validateInitializationConfig();
-
-    validateBackupSchedulerConfig(brokerCfg.getData().getBackupSchedulerCfg());
   }
 
   private void validClusterConfigs(final ClusterCfg cluster) {
@@ -395,6 +395,8 @@ public final class SystemContext {
       throw new InvalidConfigurationException(
           "Failed configuring backup store %s".formatted(backup.getStore()), e);
     }
+
+    validateBackupSchedulerConfig(backup);
   }
 
   private void validateFixedPartitioningScheme(
@@ -593,15 +595,22 @@ public final class SystemContext {
     listeners.setUserTask(validListeners);
   }
 
-  private void validateBackupSchedulerConfig(final BackupSchedulerCfg backupSchedulerCfg) {
+  private void validateBackupSchedulerConfig(final BackupCfg backupSchedulerCfg) {
     if (!backupSchedulerCfg.isContinuous() || !backupSchedulerCfg.isRequired()) {
       return;
     }
 
     // will throw IllegalArgumentException if schedule is invalid
-    backupSchedulerCfg.getSchedule();
+    final var schedule = backupSchedulerCfg.getSchedule();
+    if (backupSchedulerCfg.isRequired() && schedule instanceof NoneSchedule) {
+      throw new IllegalArgumentException("Backup schedule is mandatory, none provided.");
+    }
     // will throw IllegalArgumentException if schedule is invalid
-    backupSchedulerCfg.getRetention().getCleanupSchedule();
+    Objects.requireNonNull(backupSchedulerCfg.getRetention().getCleanupSchedule());
+    final var retentionSchedule = backupSchedulerCfg.getRetention().getCleanupSchedule();
+    if (backupSchedulerCfg.isRequired() && retentionSchedule instanceof NoneSchedule) {
+      throw new IllegalArgumentException("Backup retention schedule is mandatory, none provided.");
+    }
   }
 
   public ActorScheduler getScheduler() {

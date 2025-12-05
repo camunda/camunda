@@ -78,13 +78,29 @@ public class BackupCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-    return switch (store) {
-      case NONE -> "BackupStoreCfg{" + "store=" + store + '}';
-      case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
-      case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + '}';
-      case AZURE -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
-      case FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
-    };
+    final StringBuilder sb = new StringBuilder("BackupStoreCfg{");
+    sb.append("store=").append(store);
+    switch (store) {
+      case S3 -> sb.append(", s3=").append(s3);
+      case GCS -> sb.append(", gcs=").append(gcs);
+      case AZURE -> sb.append(", azure=").append(azure);
+      case FILESYSTEM -> sb.append(", filesystem=").append(filesystem);
+      default -> {}
+    }
+    sb.append(", continuous=")
+        .append(continuous)
+        .append(", required=")
+        .append(required)
+        .append(", schedule=")
+        .append(schedule)
+        .append(", checkpointInterval=")
+        .append(checkpointInterval)
+        .append(", offset=")
+        .append(offset)
+        .append(", retention=")
+        .append(retention)
+        .append('}');
+    return sb.toString();
   }
 
   public boolean isContinuous() {

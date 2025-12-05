@@ -20,7 +20,7 @@ public class PrimaryStorageBackup implements Cloneable {
       Set.of("zeebe.broker.data.backup.store", "camunda.data.backup.store");
 
   private static final Set<String> LEGACY_CONTINUOUS_BACKUPS_PROPERTIES =
-      Set.of("zeebe.broker.experimental.continuous-backups");
+      Set.of("zeebe.broker.experimental.continuousBackups");
 
   /**
    * Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default
