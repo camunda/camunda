@@ -157,7 +157,7 @@ public class GlobalListenersStateTest {
 
   private GlobalListenerBatchRecord newGlobalListeners() {
     final GlobalListenerBatchRecord record =
-        new GlobalListenerBatchRecord().setListenersConfigKey(newKey());
+        new GlobalListenerBatchRecord().setGlobalListenerBatchKey(newKey());
     final int numberOfListeners = new Random().nextInt(2, 10);
     for (int i = 0; i < numberOfListeners; i++) {
       record.addTaskListener(
