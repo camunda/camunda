@@ -18,17 +18,17 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 @Profile("broker | gateway")
 @DependsOn("unifiedConfigurationHelper")
-public class BackupSchedulerPropertiesOverride {
+public class PrimaryStorageBackupPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
 
-  public BackupSchedulerPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
+  public PrimaryStorageBackupPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
   }
 
   @Bean
   @Primary
-  public BackupCfg backupSchedulerCfg() {
+  public BackupCfg backupCfg() {
     final BackupCfg backupCfg = new BackupCfg();
 
     final var backupConfig =

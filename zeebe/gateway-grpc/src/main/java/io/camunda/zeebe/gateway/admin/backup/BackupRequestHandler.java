@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -85,6 +86,15 @@ public final class BackupRequestHandler implements BackupApi {
                         }
                       });
             });
+  }
+
+  @Override
+  public CompletionStage<Long> takeOffsetBackup(final long backupOffset) {
+    var backupId = InstantSource.system().instant().toEpochMilli();
+    if (backupOffset > 0) {
+      backupId += backupOffset;
+    }
+    return takeBackup(backupId);
   }
 
   @Override

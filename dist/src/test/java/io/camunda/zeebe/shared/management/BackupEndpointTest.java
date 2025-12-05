@@ -10,9 +10,12 @@ package io.camunda.zeebe.shared.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,6 +30,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
+import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
@@ -173,11 +177,19 @@ final class BackupEndpointTest {
     void backupIdShouldBeCloseToNowWhenContinuousBackupsEnabled() throws InterruptedException {
 
       // given
-      final var api = mock(BackupApi.class);
+      final var requestHandler = mock(BackupRequestHandler.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(true);
-      final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(null)).when(api).takeBackup(anyLong());
+      final var endpoint = new BackupEndpoint(requestHandler, config);
+
+      doAnswer(
+              invocation -> {
+                final Long backupId = invocation.getArgument(0);
+                return CompletableFuture.completedFuture(backupId);
+              })
+          .when(requestHandler)
+          .takeBackup(anyLong());
+      when(requestHandler.takeOffsetBackup(anyLong())).thenCallRealMethod();
 
       // when
       final var now = Instant.now();
@@ -186,6 +198,7 @@ final class BackupEndpointTest {
       final WebEndpointResponse<?> secondBackup = endpoint.take();
 
       // then
+      verify(requestHandler, times(2)).takeOffsetBackup(0L);
       assertThat(firstBackup.getStatus()).isEqualTo(202);
       var msg = ((TakeBackupRuntimeResponse) firstBackup.getBody()).getMessage();
       final var backupId1 = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));
@@ -207,18 +220,27 @@ final class BackupEndpointTest {
 
       // given
       final long offset = 20251104131520L;
-      final var api = mock(BackupApi.class);
+      final var requestHandler = mock(BackupRequestHandler.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(true);
       when(config.getOffset()).thenReturn(offset);
-      final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(null)).when(api).takeBackup(anyLong());
+      final var endpoint = new BackupEndpoint(requestHandler, config);
+
+      when(requestHandler.takeOffsetBackup(anyLong())).thenCallRealMethod();
+      doAnswer(
+              invocation -> {
+                final Long backupId = invocation.getArgument(0);
+                return CompletableFuture.completedFuture(backupId);
+              })
+          .when(requestHandler)
+          .takeBackup(anyLong());
 
       // when
       final var now = Instant.now();
       final WebEndpointResponse<?> response = endpoint.take();
 
       // then
+      verify(requestHandler, times(1)).takeOffsetBackup(20251104131520L);
       assertThat(response.getStatus()).isEqualTo(202);
       final var msg = ((TakeBackupRuntimeResponse) response.getBody()).getMessage();
       final var backupId1 = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));

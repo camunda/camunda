@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
-import java.time.InstantSource;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.concurrent.CompletionException;
@@ -85,13 +84,9 @@ public final class BackupEndpoint {
     if (!backupCfg.isContinuous()) {
       return incorrectBackupIdErrorResponse();
     }
-    var backupId = InstantSource.system().instant().toEpochMilli();
-    if (backupCfg.getOffset() > 0) {
-      backupId += backupCfg.getOffset();
-    }
 
     try {
-      api.takeBackup(backupId).toCompletableFuture().join();
+      final var backupId = api.takeOffsetBackup(backupCfg.getOffset()).toCompletableFuture().join();
       return successfullyScheduledBackupResponse(backupId);
     } catch (final Exception e) {
       return mapErrorResponse(e);
