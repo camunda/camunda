@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.assertj.core.api.SoftAssertionsProvider.ThrowingRunnable;
 
@@ -51,6 +52,30 @@ public interface CamundaAssertAwaitBehavior {
           final T value = supplier.call();
           assertion.accept(value);
         });
+  }
+
+  /**
+   * Wait until the given assertion is satisfied and return the value of the supplier.
+   *
+   * @param supplier supplies the value
+   * @param assertion the assertion to be satisfied
+   * @param <T> the value type
+   * @return the value from the supplier
+   * @throws AssertionError if the assertion is not satisfied
+   */
+  default <T> T until(final Callable<T> supplier, final Consumer<T> assertion)
+      throws AssertionError {
+
+    final AtomicReference<T> result = new AtomicReference<>();
+
+    untilAsserted(
+        () -> {
+          final T value = supplier.call();
+          assertion.accept(value);
+          result.set(value);
+        });
+
+    return result.get();
   }
 
   /**
