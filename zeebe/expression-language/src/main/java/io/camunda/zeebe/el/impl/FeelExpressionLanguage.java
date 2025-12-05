@@ -113,7 +113,6 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   private Expression parseFeelExpression(final String expression) {
     final long startNanos = System.nanoTime();
-    boolean success = false;
     try {
       final Either<Failure, ParsedExpression> parseResult = feelEngine.parseExpression(expression);
       final long durationNanos = System.nanoTime() - startNanos;
@@ -123,7 +122,6 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
         metrics.recordParsingDurationFailure(durationNanos);
         return new InvalidExpression(expression, failure.message());
       } else {
-        success = true;
         metrics.recordParsingDurationSuccess(durationNanos);
         final var parsedExpression = parseResult.right().get();
         return new FeelExpression(parsedExpression);
