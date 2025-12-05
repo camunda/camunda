@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableResolverIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
@@ -84,6 +85,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableResolverRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
@@ -341,6 +343,10 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.CONDITIONAL_EVALUATION,
         new Mapping<>(ConditionalEvaluationRecordValue.class, ConditionalEvaluationIntent.class));
+    mapping.put(
+        ValueType.CLUSTER_VARIABLE_RESOLVER,
+        new Mapping<>(
+            ClusterVariableResolverRecordValue.class, ClusterVariableResolverIntent.class));
     return mapping;
   }
 

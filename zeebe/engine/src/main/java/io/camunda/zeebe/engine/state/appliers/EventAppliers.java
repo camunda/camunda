@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableResolverIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
@@ -154,6 +155,7 @@ public final class EventAppliers implements EventApplier {
     registerHistoryDeletionAppliers();
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
+    registerClusterVariableResolutionEventAppliers();
     return this;
   }
 
@@ -167,6 +169,10 @@ public final class EventAppliers implements EventApplier {
     register(
         ConditionalSubscriptionIntent.DELETED,
         new ConditionalSubscriptionDeletedApplier(state.getConditionalSubscriptionState()));
+  }
+
+  private void registerClusterVariableResolutionEventAppliers() {
+    register(ClusterVariableResolverIntent.RESOLVED, NOOP_EVENT_APPLIER);
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {

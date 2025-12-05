@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
@@ -21,9 +22,11 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProc
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
@@ -35,6 +38,10 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionProcessors;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
@@ -344,13 +351,48 @@ public final class EngineProcessors {
         batchOperationMetrics,
         brokerRequestAuthorizationConverter);
 
+    final var tenantClusterScope =
+        new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
+    final var globalClusterScope =
+        new GlobalScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
+    final var mergedClusterScope =
+        CombinedEvaluationContext.withContexts(tenantClusterScope, globalClusterScope);
+
+    final var namespacedTenantClusterScope =
+        NamespacedEvaluationContext.create().register("tenant", tenantClusterScope);
+    final var namespacedGlobalClusterScope =
+        NamespacedEvaluationContext.create().register("cluster", globalClusterScope);
+    final var namespacedMergedClusterScope =
+        NamespacedEvaluationContext.create().register("env", mergedClusterScope);
+
+    final var namespaceFullClusterContext =
+        NamespacedEvaluationContext.create()
+            .register(
+                "camunda",
+                NamespacedEvaluationContext.create()
+                    .register(
+                        "vars",
+                        CombinedEvaluationContext.withContexts(
+                            namespacedMergedClusterScope,
+                            namespacedTenantClusterScope,
+                            namespacedGlobalClusterScope)));
+
+    final var expressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock));
+    final var expressionProcessor =
+        new ExpressionProcessor(
+            expressionLanguage,
+            CombinedEvaluationContext.withContexts(namespaceFullClusterContext));
+
     ClusterVariableProcessors.addClusterVariableProcessors(
         keyGenerator,
         typedRecordProcessors,
         processingState.getClusterVariableState(),
         writers,
         commandDistributionBehavior,
-        authCheckBehavior);
+        authCheckBehavior,
+        expressionLanguage,
+        expressionProcessor);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
