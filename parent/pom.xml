@@ -2981,7 +2981,10 @@
                 <testForkNumber>$${surefire.forkNumber}</testForkNumber>
               </systemPropertyVariables>
               <properties>
-                <configurationParameters>${junitConfigurationParameters}</configurationParameters>
+                <configurationParameters>
+                  ${junitConfigurationParameters}
+                  junit.jupiter.execution.timeout.default=3m
+                </configurationParameters>
               </properties>
             </configuration>
           </plugin>
@@ -2998,7 +3001,10 @@
                 <testForkNumber>$${surefire.forkNumber}</testForkNumber>
               </systemPropertyVariables>
               <properties>
-                <configurationParameters>${junitConfigurationParameters}</configurationParameters>
+                <configurationParameters>
+                  ${junitConfigurationParameters}
+                  junit.jupiter.execution.timeout.default=3m
+                </configurationParameters>
               </properties>
             </configuration>
           </plugin>
