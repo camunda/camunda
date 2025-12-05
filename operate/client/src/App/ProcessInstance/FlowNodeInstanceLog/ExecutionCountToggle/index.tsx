@@ -26,10 +26,10 @@ const ExecutionCountToggle: React.FC = observer(() => {
 
   return (
     <Toggle
-      aria-label={`${isExecutionCountVisible ? 'Hide' : 'Show'} Execution Count`}
+      aria-label="Execution count"
       id="toggle-execution-count"
-      labelA="Show Execution Count"
-      labelB="Hide Execution Count"
+      labelA="Execution count"
+      labelB="Execution count"
       onClick={toggleExecutionCountVisibility}
       disabled={!isSuccess}
       size="sm"

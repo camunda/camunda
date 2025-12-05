@@ -27,16 +27,17 @@ const TimeStampPill: React.FC = observer(() => {
   const isDisabled = flowNodeInstanceStatus !== 'fetched' && !isSuccess;
   return (
     <Toggle
-      aria-label={`${isTimeStampVisible ? 'Hide' : 'Show'} End Date`}
+      aria-label="End date"
       id="toggle-end-date"
-      labelA="Show End Date"
-      labelB="Hide End Date"
+      labelA="End date"
+      labelB="End date"
       onClick={() => {
         toggleTimeStampVisibility();
         tracking.track({eventName: 'instance-history-end-time-toggled'});
       }}
       disabled={isDisabled}
       size="sm"
+      toggled={isTimeStampVisible}
     />
   );
 });

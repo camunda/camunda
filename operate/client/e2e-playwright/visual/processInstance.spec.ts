@@ -202,10 +202,10 @@ test.describe('process instance page', () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
-    await expect(processInstancePage.executionCountToggleOn).toBeEnabled();
-    await processInstancePage.executionCountToggleOn.click({force: true});
+    await expect(processInstancePage.executionCountToggle).toBeEnabled();
+    await processInstancePage.executionCountToggle.click({force: true});
 
-    await page.getByText(/show end date/i).click();
+    await processInstancePage.endDateToggle.click({force: true});
 
     await expect(page).toHaveScreenshot();
   });
@@ -233,9 +233,9 @@ test.describe('process instance page', () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
-    await processInstancePage.executionCountToggleOn.click({force: true});
+    await processInstancePage.executionCountToggle.click({force: true});
 
-    await page.getByText(/show end date/i).click();
+    await processInstancePage.endDateToggle.click({force: true});
 
     await expect(page).toHaveScreenshot();
   });

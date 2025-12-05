@@ -348,7 +348,7 @@ test.describe('Process Instance', () => {
       expect(await diagram.getExecutionCount(elementId)).toBeUndefined();
     }
 
-    await processInstancePage.executionCountToggleOn.click({force: true});
+    await processInstancePage.executionCountToggle.click({force: true});
 
     // Expect execution count badges to be visible
     expect(await diagram.getExecutionCount('StartEvent_1')).toBe('1');
@@ -358,7 +358,7 @@ test.describe('Process Instance', () => {
     expect(await diagram.getExecutionCount('EndEvent_2')).toBe('3');
     expect(await diagram.getExecutionCount('SubProcess')).toBe('3');
 
-    await processInstancePage.executionCountToggleOff.click({force: true});
+    await processInstancePage.executionCountToggle.click({force: true});
 
     // Expect execution count badges not to be visible
     for (const elementId of elementIds) {

@@ -30,24 +30,23 @@ describe('ExecutionCountToggle', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
   });
 
-  it('should render "Show" / "Hide" label', async () => {
+  it('should toggle visibility when clicked', async () => {
     const {user} = render(<ExecutionCountToggle />, {wrapper: Wrapper});
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Show Execution Count')).toBeEnabled();
+      expect(screen.getByLabelText('Execution count')).toBeEnabled();
     });
 
-    await user.click(screen.getByLabelText('Show Execution Count'));
+    const toggle = screen.getByLabelText('Execution count');
+    expect(toggle).not.toBeChecked();
 
-    expect(
-      await screen.findByLabelText('Hide Execution Count'),
-    ).toBeInTheDocument();
+    await user.click(toggle);
 
-    await user.click(screen.getByLabelText('Hide Execution Count'));
+    expect(toggle).toBeChecked();
 
-    expect(
-      await screen.findByLabelText('Show Execution Count'),
-    ).toBeInTheDocument();
+    await user.click(toggle);
+
+    expect(toggle).not.toBeChecked();
   });
 
   it('should be disabled if diagram is not loaded', async () => {

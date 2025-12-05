@@ -26,8 +26,8 @@ export class ProcessInstance {
   readonly variablesTableSpinner: Locator;
   readonly variableSpinner: Locator;
   readonly operationSpinner: Locator;
-  readonly executionCountToggleOn: Locator;
-  readonly executionCountToggleOff: Locator;
+  readonly executionCountToggle: Locator;
+  readonly endDateToggle: Locator;
   readonly listenersTabButton: Locator;
   readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
@@ -53,12 +53,9 @@ export class ProcessInstance {
     this.variablesTableSpinner = page.getByTestId('variables-spinner');
     this.variableSpinner = page.getByTestId('variable-operation-spinner');
     this.operationSpinner = page.getByTestId('operation-spinner');
-    this.executionCountToggleOn = this.instanceHistory.getByLabel(
-      /^show execution count$/i,
-    );
-    this.executionCountToggleOff = this.instanceHistory.getByLabel(
-      /^hide execution count$/i,
-    );
+    this.executionCountToggle =
+      this.instanceHistory.getByLabel(/^execution count$/i);
+    this.endDateToggle = this.instanceHistory.getByLabel(/^end date$/i);
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
     this.metadataModal = this.page.getByRole('dialog', {name: /metadata/i});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
