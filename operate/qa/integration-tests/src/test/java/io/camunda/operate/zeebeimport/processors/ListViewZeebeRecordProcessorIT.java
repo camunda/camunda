@@ -20,13 +20,11 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
-import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.io.IOException;
@@ -41,19 +39,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
-
-  private final int newVersion = 111;
+  private static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
   private final String newBpmnProcessId = "newBpmnProcessId";
-  private final long newProcessDefinitionKey = 111;
   private final String newProcessName = "New process name";
-  private final String errorMessage = "Error message";
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
   @Autowired private BeanFactory beanFactory;
   @MockBean private PartitionHolder partitionHolder;
   @MockBean private ProcessCache processCache;
-  @Autowired private ImportPositionHolder importPositionHolder;
-  @Autowired private OperateProperties operateProperties;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
@@ -83,7 +76,8 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
             b ->
                 b.withVersion(1)
                     .withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(definitionKey));
+                    .withProcessDefinitionKey(definitionKey)
+                    .withParentProcessInstanceKey(EMPTY_PARENT_PROCESS_INSTANCE_ID));
 
     importProcessInstanceZeebeRecord(zeebeRecord);
     final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(instanceKey);
@@ -91,6 +85,108 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     assertThat(actualPI.getProcessInstanceKey()).isEqualTo(instanceKey);
     assertThat(actualPI.getKey()).isEqualTo(pi.getKey());
     assertThat(actualPI.getProcessVersionTag()).isEqualTo(versionTag);
+  }
+
+  @Test
+  public void shouldNotClearVariableValueDuringMigration()
+      throws PersistenceException, IOException {
+    // having
+    final long processInstanceKey = 333L;
+    final VariableForListViewEntity variableEntity = createVariableForListView(processInstanceKey);
+
+    final String variableValue = "varValue";
+    variableEntity.setVarValue(variableValue);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        listViewTemplate.getFullQualifiedName(),
+        variableEntity.getId(),
+        variableEntity,
+        String.valueOf(processInstanceKey));
+
+    final Record<VariableRecordValue> zeebeRecord =
+        (Record)
+            ImmutableRecord.builder()
+                .withKey(variableEntity.getKey())
+                .withPosition(1L)
+                .withIntent(VariableIntent.MIGRATED)
+                .withValue(
+                    ImmutableVariableRecordValue.builder()
+                        .withBpmnProcessId("bpmnId")
+                        .withName(variableEntity.getVarName())
+                        .withProcessDefinitionKey(123L)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withScopeKey(processInstanceKey)
+                        .withValue(null) // migrated Zeebe variable records have a null value
+                        .build())
+                .build();
+
+    // when
+    importVariableZeebeRecord(zeebeRecord);
+
+    // then
+    // the variable value has not been set to null but is still the old value
+    final VariableForListViewEntity persistedVariable = variableById(variableEntity.getId());
+    // old values
+    assertThat(persistedVariable.getVarValue()).isEqualTo(variableValue);
+  }
+
+  @Test
+  public void shouldGenerateTreePathBasedOnParentProcessInListView()
+      throws PersistenceException, IOException {
+
+    final long parentProcessInstanceKey = 111L;
+    testSearchRepository.createOrUpdateDocument(
+        listViewTemplate.getFullQualifiedName(),
+        String.valueOf(parentProcessInstanceKey),
+        Map.of(
+            ListViewTemplate.KEY,
+            parentProcessInstanceKey,
+            ListViewTemplate.TREE_PATH,
+            "/parent/tree/path"));
+
+    final long parentElementInstanceKey = 222L;
+    testSearchRepository.createOrUpdateDocument(
+        listViewTemplate.getFullQualifiedName(),
+        String.valueOf(parentElementInstanceKey),
+        Map.of(
+            ListViewTemplate.ID,
+            parentElementInstanceKey,
+            ListViewTemplate.JOIN_RELATION,
+            Map.of(
+                "parent",
+                parentProcessInstanceKey,
+                "name",
+                ListViewTemplate.ACTIVITIES_JOIN_RELATION),
+            ListViewTemplate.ACTIVITY_ID,
+            "parentActivity"),
+        String.valueOf(parentProcessInstanceKey));
+
+    final String versionTag = "tag-v1";
+    final long instanceKey = 333L;
+    final long definitionKey = 123L;
+    when(processCache.getProcessNameOrDefaultValue(eq(definitionKey), anyString()))
+        .thenReturn(newProcessName);
+    when(processCache.getProcessVersionTag(eq(definitionKey))).thenReturn(versionTag);
+    final ProcessInstanceForListViewEntity pi =
+        createProcessInstance().setProcessInstanceKey(instanceKey);
+
+    final Record<ProcessInstanceRecordValue> zeebeRecord =
+        createZeebeRecordFromPi(
+            pi,
+            b -> b.withIntent(ELEMENT_COMPLETED),
+            b ->
+                b.withVersion(1)
+                    .withBpmnProcessId(newBpmnProcessId)
+                    .withProcessDefinitionKey(definitionKey)
+                    .withParentProcessInstanceKey(parentProcessInstanceKey)
+                    .withParentElementInstanceKey(parentElementInstanceKey));
+
+    importProcessInstanceZeebeRecord(zeebeRecord);
+    final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(instanceKey);
+
+    assertThat(actualPI.getProcessInstanceKey()).isEqualTo(instanceKey);
+    assertThat(actualPI.getKey()).isEqualTo(pi.getKey());
+    assertThat(actualPI.getTreePath())
+        .isEqualTo("/parent/tree/path/FN_parentActivity/FNI_222/PI_333");
   }
 
   @NotNull
