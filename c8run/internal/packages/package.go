@@ -131,11 +131,7 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 	return nil
 }
 
-<<<<<<< HEAD
-func createTarGzArchive(filesToArchive []string, outputPath string) error {
-=======
 func createTarGzArchive(filesToArchive []string, outputPath, sourceRoot, targetRoot string) error {
->>>>>>> 14355de7 (fix: wip, use versioning for archived dir)
 	outputArchive, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create empty archive file: %w\n%s", err, debug.Stack())
