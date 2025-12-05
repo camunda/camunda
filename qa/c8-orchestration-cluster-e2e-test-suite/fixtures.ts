@@ -14,10 +14,15 @@ import {TaskPanelPage} from '@pages/TaskPanelPage';
 import {TaskListLoginPage} from '@pages/TaskListLoginPage';
 import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
+import {OperateProcessMigrationModePage} from '@pages/OperateProcessMigrationModePage';
+import {OperateFiltersPanelPage} from '@pages/OperateFiltersPanelPage';
+import {OperateDiagramPage} from '@pages/OperateDiagramPage';
+import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
 import {PublicFormsPage} from '@pages/PublicFormsPage';
+import {LoginPage} from '@pages/LoginPage';
 import {sleep} from 'utils/sleep';
 
 type PlaywrightFixtures = {
@@ -29,10 +34,15 @@ type PlaywrightFixtures = {
   taskPanelPage: TaskPanelPage;
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
+  operateProcessMigrationModePage: OperateProcessMigrationModePage;
+  operateFiltersPanelPage: OperateFiltersPanelPage;
+  operateDiagramPage: OperateDiagramPage;
+  operateOperationPanelPage: OperateOperationPanelPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
   publicFormsPage: PublicFormsPage;
+  loginPage: LoginPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -66,6 +76,18 @@ const test = base.extend<PlaywrightFixtures>({
   operateProcessInstancePage: async ({page}, use) => {
     await use(new OperateProcessInstancePage(page));
   },
+  operateProcessMigrationModePage: async ({page}, use) => {
+    await use(new OperateProcessMigrationModePage(page));
+  },
+  operateFiltersPanelPage: async ({page}, use) => {
+    await use(new OperateFiltersPanelPage(page));
+  },
+  operateDiagramPage: async ({page}, use) => {
+    await use(new OperateDiagramPage(page));
+  },
+  operateOperationPanelPage: async ({page}, use) => {
+    await use(new OperateOperationPanelPage(page));
+  },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
   },
@@ -92,6 +114,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   publicFormsPage: async ({page}, use) => {
     await use(new PublicFormsPage(page));
+  },
+  loginPage: async ({page}, use) => {
+    await use(new LoginPage(page));
   },
 });
 
