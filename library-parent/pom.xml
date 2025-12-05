@@ -31,6 +31,8 @@
     <!-- The Spring Framework version is also explicitly managed here to be compatible
     with Spring Boot 4.0. -->
     <version.spring>7.0.1</version.spring>
+    <!-- JUnit 6.0.1 is required for Spring Boot 4.0 compatibility -->
+    <version.junit>6.0.1</version.junit>
   </properties>
 
 </project>
