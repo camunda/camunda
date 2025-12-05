@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.noop.NoopCounter;
 import io.micrometer.core.instrument.noop.NoopTimer;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -59,12 +58,16 @@ public class ExpressionLanguageMetrics {
     }
   }
 
-  /** @return the timer for measuring parsing duration */
+  /**
+   * @return the timer for measuring parsing duration
+   */
   public Timer getParsingDurationTimer() {
     return parsingDurationTimer;
   }
 
-  /** @return the timer for measuring evaluation duration */
+  /**
+   * @return the timer for measuring evaluation duration
+   */
   public Timer getEvaluationDurationTimer() {
     return evaluationDurationTimer;
   }
@@ -84,7 +87,9 @@ public class ExpressionLanguageMetrics {
     return TimeUnit.NANOSECONDS.toMillis(durationNanos) >= slowEvaluationThresholdMs;
   }
 
-  /** @return the slow evaluation threshold in milliseconds */
+  /**
+   * @return the slow evaluation threshold in milliseconds
+   */
   public long getSlowEvaluationThresholdMs() {
     return slowEvaluationThresholdMs;
   }

@@ -52,10 +52,13 @@ public class ExpressionLanguageMetricsTest {
     // when - parse a static value (no '=' prefix)
     expressionLanguage.parseExpression("static_value");
 
-    // then - parsing timer should not be recorded for static expressions
+    // then - parsing timer should exist but have count 0 for static expressions
     final var timer =
         meterRegistry.find(ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName());
-    assertThat(timer.timer()).isNull();
+    // Timer is registered when metrics class is created, but no recording happens for static values
+    if (timer.timer() != null) {
+      assertThat(timer.timer().count()).isZero();
+    }
   }
 
   @Test
@@ -94,16 +97,24 @@ public class ExpressionLanguageMetricsTest {
 
   @Test
   void shouldNotRecordEvaluationDurationForStaticExpression() {
+    // Create a fresh meter registry for this test
+    final var freshRegistry = new SimpleMeterRegistry();
+    final var freshExpressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage(
+            new TestFeelEngineClock(), freshRegistry);
+
     // given
-    final var expression = expressionLanguage.parseExpression("static_value");
+    final var expression = freshExpressionLanguage.parseExpression("static_value");
 
     // when
-    expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+    freshExpressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
 
-    // then - evaluation timer should not be recorded for static expressions
+    // then - evaluation timer should have count 0 for static expressions
     final var timer =
-        meterRegistry.find(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName());
-    assertThat(timer.timer()).isNull();
+        freshRegistry
+            .get(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName())
+            .timer();
+    assertThat(timer.count()).isZero();
   }
 
   @Test
@@ -160,16 +171,25 @@ public class ExpressionLanguageMetricsTest {
 
   @Test
   void shouldRecordEvaluationForFailedExpression() {
+    // Create a fresh meter registry for this test
+    final var freshRegistry = new SimpleMeterRegistry();
+    final var freshExpressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage(
+            new TestFeelEngineClock(), freshRegistry);
+
     // given - an expression that fails to parse
-    final var expression = expressionLanguage.parseExpression("=x ?! 5");
+    final var expression = freshExpressionLanguage.parseExpression("=x ?! 5");
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+    final var result = freshExpressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
 
     // then - evaluation should be attempted but not recorded since expression is invalid
     assertThat(result.isFailure()).isTrue();
     final var timer =
-        meterRegistry.find(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName());
-    assertThat(timer.timer()).isNull();
+        freshRegistry
+            .get(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName())
+            .timer();
+    // Timer exists but has count 0 because invalid expressions don't trigger evaluation
+    assertThat(timer.count()).isZero();
   }
 }
