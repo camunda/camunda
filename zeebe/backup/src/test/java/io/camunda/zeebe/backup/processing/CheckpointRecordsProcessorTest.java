@@ -73,13 +73,16 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private ZeebeDb zeebedb;
+  private LRUCache lruCache;
+  private WriteBufferManager writeBufferManager;
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
       new AtomicInteger(3); // Default partition count for tests
 
   @BeforeEach
   void setup() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -88,7 +91,7 @@ final class CheckpointRecordsProcessorTest {
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
                 lruCache,
-                new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+                writeBufferManager,
                 defaultPartitionCount)
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
@@ -120,6 +123,8 @@ final class CheckpointRecordsProcessorTest {
   @AfterEach
   void after() throws Exception {
     zeebedb.close();
+    writeBufferManager.close();
+    lruCache.close();
   }
 
   @Test

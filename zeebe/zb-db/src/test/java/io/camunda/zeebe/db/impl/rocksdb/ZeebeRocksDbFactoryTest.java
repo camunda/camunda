@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Stream;
 import org.assertj.core.api.ThrowingConsumer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,6 +48,19 @@ final class ZeebeRocksDbFactoryTest {
 
   static {
     RocksDB.loadLibrary();
+  }
+
+  private LRUCache lruCache;
+  private WriteBufferManager writeBufferManager;
+
+  @AfterEach
+  void tearDown() {
+    if (writeBufferManager != null) {
+      writeBufferManager.close();
+    }
+    if (lruCache != null) {
+      lruCache.close();
+    }
   }
 
   @Test
@@ -92,8 +106,9 @@ final class ZeebeRocksDbFactoryTest {
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
@@ -101,7 +116,7 @@ final class ZeebeRocksDbFactoryTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+            writeBufferManager,
             defaultPartitionCount);
 
     // when
@@ -181,8 +196,9 @@ final class ZeebeRocksDbFactoryTest {
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
@@ -190,7 +206,7 @@ final class ZeebeRocksDbFactoryTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+            writeBufferManager,
             defaultPartitionCount);
 
     // expect
