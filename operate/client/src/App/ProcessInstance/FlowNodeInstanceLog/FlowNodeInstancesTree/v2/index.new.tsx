@@ -34,6 +34,7 @@ import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {VirtualBar} from './VirtualBar';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
+import {tracking} from 'modules/tracking';
 
 const TREE_NODE_HEIGHT = 32;
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
@@ -115,7 +116,8 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       ...rest
     }) => {
       const rowRef = useRef<HTMLDivElement>(null);
-      const {latestMigrationDate} = useElementInstanceHistoryTree();
+      const {latestMigrationDate, businessObjects} =
+        useElementInstanceHistoryTree();
       const isRoot = elementType === 'PROCESS';
       const {processInstance} = useElementInstanceHistoryTree();
 
@@ -134,6 +136,20 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
           return;
         }
 
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
+          );
+          return;
+        }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
         selectFlowNode(rootNode, {
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
@@ -209,6 +225,20 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
       });
 
       const handleSelect = () => {
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
+          );
+          return;
+        }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
         selectFlowNode(rootNode, {
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
@@ -331,6 +361,20 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         );
 
       const handleSelect = async () => {
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
+          );
+          return;
+        }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
         selectFlowNode(rootNode, {
           flowNodeId: elementId,
           flowNodeInstanceId: scopeKey,
@@ -473,6 +517,21 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
           });
           return;
         }
+
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
+          );
+          return;
+        }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
 
         if (elementType !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
           selectFlowNode(rootNode, {
@@ -649,11 +708,14 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
       );
     }
 
+    const isMultiInstanceBody = elementInstance.type === 'MULTI_INSTANCE_BODY';
     const nodeProps = {
       ...rest,
       scopeKey: elementInstance.elementInstanceKey,
       elementId: elementInstance.elementId,
-      elementName: elementInstance.elementName ?? elementInstance.elementId,
+      elementName: `${elementInstance.elementName ?? elementInstance.elementId}${
+        isMultiInstanceBody ? ' (Multi Instance)' : ''
+      }`,
       elementType: elementInstance.type,
       elementInstanceState: elementInstance.state,
       hasIncident: elementInstance.hasIncident,
