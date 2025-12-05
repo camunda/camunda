@@ -46,7 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
-
+  private static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
   private final String newBpmnProcessId = "newBpmnProcessId";
   private final String newProcessName = "New process name";
   @Autowired private ListViewTemplate listViewTemplate;
@@ -83,7 +83,8 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
             b ->
                 b.withVersion(1)
                     .withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(definitionKey));
+                    .withProcessDefinitionKey(definitionKey)
+                    .withParentProcessInstanceKey(EMPTY_PARENT_PROCESS_INSTANCE_ID));
 
     importProcessInstanceZeebeRecord(zeebeRecord);
     final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(instanceKey);
@@ -133,6 +134,66 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     final VariableForListViewEntity persistedVariable = variableById(variableEntity.getId());
     // old values
     assertThat(persistedVariable.getVarValue()).isEqualTo(variableValue);
+  }
+
+  @Test
+  public void shouldGenerateTreePathBasedOnParentProcessInListView()
+      throws PersistenceException, IOException {
+
+    final long parentProcessInstanceKey = 111L;
+    testSearchRepository.createOrUpdateDocument(
+        listViewTemplate.getFullQualifiedName(),
+        String.valueOf(parentProcessInstanceKey),
+        Map.of(
+            ListViewTemplate.KEY,
+            parentProcessInstanceKey,
+            ListViewTemplate.TREE_PATH,
+            "/parent/tree/path"));
+
+    final long parentElementInstanceKey = 222L;
+    testSearchRepository.createOrUpdateDocument(
+        listViewTemplate.getFullQualifiedName(),
+        String.valueOf(parentElementInstanceKey),
+        Map.of(
+            ListViewTemplate.ID,
+            parentElementInstanceKey,
+            ListViewTemplate.JOIN_RELATION,
+            Map.of(
+                "parent",
+                parentProcessInstanceKey,
+                "name",
+                ListViewTemplate.ACTIVITIES_JOIN_RELATION),
+            ListViewTemplate.ACTIVITY_ID,
+            "parentActivity"),
+        String.valueOf(parentProcessInstanceKey));
+
+    final String versionTag = "tag-v1";
+    final long instanceKey = 333L;
+    final long definitionKey = 123L;
+    when(processCache.getProcessNameOrDefaultValue(eq(definitionKey), anyString()))
+        .thenReturn(newProcessName);
+    when(processCache.getProcessVersionTag(eq(definitionKey))).thenReturn(versionTag);
+    final ProcessInstanceForListViewEntity pi =
+        createProcessInstance().setProcessInstanceKey(instanceKey);
+
+    final Record<ProcessInstanceRecordValue> zeebeRecord =
+        createZeebeRecordFromPi(
+            pi,
+            b -> b.withIntent(ELEMENT_COMPLETED),
+            b ->
+                b.withVersion(1)
+                    .withBpmnProcessId(newBpmnProcessId)
+                    .withProcessDefinitionKey(definitionKey)
+                    .withParentProcessInstanceKey(parentProcessInstanceKey)
+                    .withParentElementInstanceKey(parentElementInstanceKey));
+
+    importProcessInstanceZeebeRecord(zeebeRecord);
+    final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(instanceKey);
+
+    assertThat(actualPI.getProcessInstanceKey()).isEqualTo(instanceKey);
+    assertThat(actualPI.getKey()).isEqualTo(pi.getKey());
+    assertThat(actualPI.getTreePath())
+        .isEqualTo("/parent/tree/path/FN_parentActivity/FNI_222/PI_333");
   }
 
   @NotNull
