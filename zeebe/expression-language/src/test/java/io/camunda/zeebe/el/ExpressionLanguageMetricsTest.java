@@ -14,7 +14,9 @@ import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsDoc;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,17 +36,35 @@ public class ExpressionLanguageMetricsTest {
   }
 
   @Test
-  void shouldRecordParsingDuration() {
+  void shouldRecordParsingDurationWithSuccessOutcome() {
     // when
     expressionLanguage.parseExpression("=x + 1");
 
     // then
-    final var timer =
-        meterRegistry
-            .get(ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName())
-            .timer();
-    assertThat(timer.count()).isEqualTo(1);
-    assertThat(timer.totalTime(java.util.concurrent.TimeUnit.NANOSECONDS)).isGreaterThan(0);
+    final var successTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(), "success");
+    final var failureTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(), "failure");
+    
+    assertThat(successTimer.count()).isEqualTo(1);
+    assertThat(successTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
+    assertThat(failureTimer.count()).isZero();
+  }
+
+  @Test
+  void shouldRecordParsingDurationWithFailureOutcome() {
+    // when - parse an invalid expression
+    expressionLanguage.parseExpression("=x ?! 5");
+
+    // then
+    final var successTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(), "success");
+    final var failureTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(), "failure");
+    
+    assertThat(failureTimer.count()).isEqualTo(1);
+    assertThat(failureTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
+    assertThat(successTimer.count()).isZero();
   }
 
   @Test
@@ -58,16 +78,18 @@ public class ExpressionLanguageMetricsTest {
     // when - parse a static value (no '=' prefix)
     freshExpressionLanguage.parseExpression("static_value");
 
-    // then - parsing timer should have count 0 for static expressions
-    final var timer =
-        freshRegistry
-            .get(ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName())
-            .timer();
-    assertThat(timer.count()).isZero();
+    // then - parsing timers should have count 0 for static expressions
+    final var successTimer = getTimerWithOutcome(freshRegistry,
+        ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(), "success");
+    final var failureTimer = getTimerWithOutcome(freshRegistry,
+        ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(), "failure");
+    
+    assertThat(successTimer.count()).isZero();
+    assertThat(failureTimer.count()).isZero();
   }
 
   @Test
-  void shouldRecordEvaluationDuration() {
+  void shouldRecordEvaluationDurationWithSuccessOutcome() {
     // given
     final var expression = expressionLanguage.parseExpression("=1 + 2");
 
@@ -75,12 +97,34 @@ public class ExpressionLanguageMetricsTest {
     expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
 
     // then
-    final var timer =
-        meterRegistry
-            .get(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName())
-            .timer();
-    assertThat(timer.count()).isEqualTo(1);
-    assertThat(timer.totalTime(java.util.concurrent.TimeUnit.NANOSECONDS)).isGreaterThan(0);
+    final var successTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "success");
+    final var failureTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "failure");
+    
+    assertThat(successTimer.count()).isEqualTo(1);
+    assertThat(successTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
+    assertThat(failureTimer.count()).isZero();
+  }
+
+  @Test
+  void shouldRecordEvaluationDurationWithFailureOutcome() {
+    // given - an expression that causes an evaluation failure using assert
+    final var expression = expressionLanguage.parseExpression("=assert(null, false)");
+
+    // when - evaluate the assertion that will fail
+    final var result = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    // then - evaluation should fail and be recorded as failure
+    assertThat(result.isFailure()).isTrue();
+    final var successTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "success");
+    final var failureTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "failure");
+    
+    assertThat(failureTimer.count()).isEqualTo(1);
+    assertThat(failureTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
+    assertThat(successTimer.count()).isZero();
   }
 
   @Test
@@ -97,12 +141,14 @@ public class ExpressionLanguageMetricsTest {
     // when
     freshExpressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
 
-    // then - evaluation timer should have count 0 for static expressions
-    final var timer =
-        freshRegistry
-            .get(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName())
-            .timer();
-    assertThat(timer.count()).isZero();
+    // then - evaluation timers should have count 0 for static expressions
+    final var successTimer = getTimerWithOutcome(freshRegistry,
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "success");
+    final var failureTimer = getTimerWithOutcome(freshRegistry,
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "failure");
+    
+    assertThat(successTimer.count()).isZero();
+    assertThat(failureTimer.count()).isZero();
   }
 
   @Test
@@ -150,11 +196,9 @@ public class ExpressionLanguageMetricsTest {
     expressionLanguage.parseExpression("=z - 3");
 
     // then
-    final var timer =
-        meterRegistry
-            .get(ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName())
-            .timer();
-    assertThat(timer.count()).isEqualTo(3);
+    final var successTimer = getTimerWithOutcome(
+        ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(), "success");
+    assertThat(successTimer.count()).isEqualTo(3);
   }
 
   @Test
@@ -173,11 +217,22 @@ public class ExpressionLanguageMetricsTest {
 
     // then - evaluation should be attempted but not recorded since expression is invalid
     assertThat(result.isFailure()).isTrue();
-    final var timer =
-        freshRegistry
-            .get(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName())
-            .timer();
+    final var successTimer = getTimerWithOutcome(freshRegistry,
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "success");
+    final var failureTimer = getTimerWithOutcome(freshRegistry,
+        ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION.getName(), "failure");
+    
     // Timer exists but has count 0 because invalid expressions don't trigger evaluation
-    assertThat(timer.count()).isZero();
+    assertThat(successTimer.count()).isZero();
+    assertThat(failureTimer.count()).isZero();
+  }
+
+  private Timer getTimerWithOutcome(final String name, final String outcome) {
+    return getTimerWithOutcome(meterRegistry, name, outcome);
+  }
+
+  private Timer getTimerWithOutcome(
+      final MeterRegistry registry, final String name, final String outcome) {
+    return registry.get(name).tag("outcome", outcome).timer();
   }
 }

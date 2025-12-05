@@ -113,18 +113,25 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   private Expression parseFeelExpression(final String expression) {
     final long startNanos = System.nanoTime();
-    final Either<Failure, ParsedExpression> parseResult = feelEngine.parseExpression(expression);
-    final long durationNanos = System.nanoTime() - startNanos;
+    boolean success = false;
+    try {
+      final Either<Failure, ParsedExpression> parseResult = feelEngine.parseExpression(expression);
+      final long durationNanos = System.nanoTime() - startNanos;
 
-    metrics.getParsingDurationTimer().record(durationNanos, TimeUnit.NANOSECONDS);
-
-    if (parseResult.isLeft()) {
-      final var failure = parseResult.left().get();
-      return new InvalidExpression(expression, failure.message());
-
-    } else {
-      final var parsedExpression = parseResult.right().get();
-      return new FeelExpression(parsedExpression);
+      if (parseResult.isLeft()) {
+        final var failure = parseResult.left().get();
+        metrics.recordParsingDurationFailure(durationNanos);
+        return new InvalidExpression(expression, failure.message());
+      } else {
+        success = true;
+        metrics.recordParsingDurationSuccess(durationNanos);
+        final var parsedExpression = parseResult.right().get();
+        return new FeelExpression(parsedExpression);
+      }
+    } catch (final Exception e) {
+      final long durationNanos = System.nanoTime() - startNanos;
+      metrics.recordParsingDurationFailure(durationNanos);
+      throw e;
     }
   }
 
@@ -137,35 +144,40 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
     final var feelContext = new FeelVariableContext(context);
 
     final long startNanos = System.nanoTime();
-    final var evaluationResult = feelEngine.evaluate(parsedExpression, feelContext);
-    final long durationNanos = System.nanoTime() - startNanos;
+    try {
+      final var evaluationResult = feelEngine.evaluate(parsedExpression, feelContext);
+      final long durationNanos = System.nanoTime() - startNanos;
 
-    metrics.getEvaluationDurationTimer().record(durationNanos, TimeUnit.NANOSECONDS);
+      if (metrics.isSlowEvaluation(durationNanos)) {
+        Loggers.LOGGER.warn(
+            "Slow FEEL expression evaluation detected: expression '{}' took {} ms (threshold: {} ms)",
+            expression.getExpression(),
+            TimeUnit.NANOSECONDS.toMillis(durationNanos),
+            metrics.getSlowEvaluationThresholdMs());
+      }
 
-    if (metrics.isSlowEvaluation(durationNanos)) {
-      Loggers.LOGGER.warn(
-          "Slow FEEL expression evaluation detected: expression '{}' took {} ms (threshold: {} ms)",
-          expression.getExpression(),
-          TimeUnit.NANOSECONDS.toMillis(durationNanos),
-          metrics.getSlowEvaluationThresholdMs());
-    }
+      final var evaluationWarnings = extractEvaluationWarning(evaluationResult);
+      if (evaluationResult.isFailure()) {
+        metrics.recordEvaluationDurationFailure(durationNanos);
+        final var failureMessage = evaluationResult.failure().message();
+        return new EvaluationFailure(expression, failureMessage, evaluationWarnings);
+      }
 
-    final var evaluationWarnings = extractEvaluationWarning(evaluationResult);
-    if (evaluationResult.isFailure()) {
-      final var failureMessage = evaluationResult.failure().message();
-      return new EvaluationFailure(expression, failureMessage, evaluationWarnings);
-    }
-
-    final var result = evaluationResult.result();
-    if (result instanceof Val) {
-      return new FeelEvaluationResult(
-          expression, (Val) result, evaluationWarnings, messagePackTransformer::toMessagePack);
-
-    } else {
-      throw new IllegalStateException(
-          String.format(
-              "Expected FEEL evaluation result to be of type '%s' but was '%s'",
-              Val.class, result.getClass()));
+      metrics.recordEvaluationDurationSuccess(durationNanos);
+      final var result = evaluationResult.result();
+      if (result instanceof Val) {
+        return new FeelEvaluationResult(
+            expression, (Val) result, evaluationWarnings, messagePackTransformer::toMessagePack);
+      } else {
+        throw new IllegalStateException(
+            String.format(
+                "Expected FEEL evaluation result to be of type '%s' but was '%s'",
+                Val.class, result.getClass()));
+      }
+    } catch (final Exception e) {
+      final long durationNanos = System.nanoTime() - startNanos;
+      metrics.recordEvaluationDurationFailure(durationNanos);
+      throw e;
     }
   }
 

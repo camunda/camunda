@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.el.impl;
 
+import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsDoc.Outcome;
+import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsDoc.OutcomeKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.noop.NoopTimer;
@@ -21,8 +23,10 @@ public class ExpressionLanguageMetrics {
   /** Default threshold for logging slow evaluations (in milliseconds) */
   private static final long SLOW_EVALUATION_THRESHOLD_MS = 200;
 
-  private final Timer parsingDurationTimer;
-  private final Timer evaluationDurationTimer;
+  private final Timer parsingDurationSuccessTimer;
+  private final Timer parsingDurationFailureTimer;
+  private final Timer evaluationDurationSuccessTimer;
+  private final Timer evaluationDurationFailureTimer;
   private final long slowEvaluationThresholdMs;
 
   /**
@@ -45,26 +49,80 @@ public class ExpressionLanguageMetrics {
       final MeterRegistry registry, final long slowEvaluationThresholdMs) {
     this.slowEvaluationThresholdMs = slowEvaluationThresholdMs;
     if (registry != null) {
-      parsingDurationTimer = registerParsingDurationTimer(registry);
-      evaluationDurationTimer = registerEvaluationDurationTimer(registry);
+      parsingDurationSuccessTimer = registerParsingDurationTimer(registry, Outcome.SUCCESS);
+      parsingDurationFailureTimer = registerParsingDurationTimer(registry, Outcome.FAILURE);
+      evaluationDurationSuccessTimer = registerEvaluationDurationTimer(registry, Outcome.SUCCESS);
+      evaluationDurationFailureTimer = registerEvaluationDurationTimer(registry, Outcome.FAILURE);
     } else {
-      parsingDurationTimer = new NoopTimer(null);
-      evaluationDurationTimer = new NoopTimer(null);
+      parsingDurationSuccessTimer = new NoopTimer(null);
+      parsingDurationFailureTimer = new NoopTimer(null);
+      evaluationDurationSuccessTimer = new NoopTimer(null);
+      evaluationDurationFailureTimer = new NoopTimer(null);
     }
   }
 
   /**
-   * @return the timer for measuring parsing duration
+   * Records the parsing duration for a successful parse operation.
+   *
+   * @param durationNanos the duration in nanoseconds
    */
-  public Timer getParsingDurationTimer() {
-    return parsingDurationTimer;
+  public void recordParsingDurationSuccess(final long durationNanos) {
+    parsingDurationSuccessTimer.record(durationNanos, TimeUnit.NANOSECONDS);
   }
 
   /**
-   * @return the timer for measuring evaluation duration
+   * Records the parsing duration for a failed parse operation.
+   *
+   * @param durationNanos the duration in nanoseconds
    */
-  public Timer getEvaluationDurationTimer() {
-    return evaluationDurationTimer;
+  public void recordParsingDurationFailure(final long durationNanos) {
+    parsingDurationFailureTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * Records the evaluation duration for a successful evaluation operation.
+   *
+   * @param durationNanos the duration in nanoseconds
+   */
+  public void recordEvaluationDurationSuccess(final long durationNanos) {
+    evaluationDurationSuccessTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * Records the evaluation duration for a failed evaluation operation.
+   *
+   * @param durationNanos the duration in nanoseconds
+   */
+  public void recordEvaluationDurationFailure(final long durationNanos) {
+    evaluationDurationFailureTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * @return the timer for measuring successful parsing duration
+   */
+  public Timer getParsingDurationSuccessTimer() {
+    return parsingDurationSuccessTimer;
+  }
+
+  /**
+   * @return the timer for measuring failed parsing duration
+   */
+  public Timer getParsingDurationFailureTimer() {
+    return parsingDurationFailureTimer;
+  }
+
+  /**
+   * @return the timer for measuring successful evaluation duration
+   */
+  public Timer getEvaluationDurationSuccessTimer() {
+    return evaluationDurationSuccessTimer;
+  }
+
+  /**
+   * @return the timer for measuring failed evaluation duration
+   */
+  public Timer getEvaluationDurationFailureTimer() {
+    return evaluationDurationFailureTimer;
   }
 
   /**
@@ -84,19 +142,23 @@ public class ExpressionLanguageMetrics {
     return slowEvaluationThresholdMs;
   }
 
-  private Timer registerParsingDurationTimer(final MeterRegistry registry) {
+  private Timer registerParsingDurationTimer(
+      final MeterRegistry registry, final Outcome outcome) {
     final var meterDoc = ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION;
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
         .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .tag(OutcomeKeyNames.OUTCOME.asString(), outcome.name().toLowerCase())
         .register(registry);
   }
 
-  private Timer registerEvaluationDurationTimer(final MeterRegistry registry) {
+  private Timer registerEvaluationDurationTimer(
+      final MeterRegistry registry, final Outcome outcome) {
     final var meterDoc = ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATION_DURATION;
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
         .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .tag(OutcomeKeyNames.OUTCOME.asString(), outcome.name().toLowerCase())
         .register(registry);
   }
 

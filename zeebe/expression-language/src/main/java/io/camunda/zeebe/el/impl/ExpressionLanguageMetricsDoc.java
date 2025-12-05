@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.el.impl;
 
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.docs.MeterDocumentation;
 import java.time.Duration;
@@ -46,6 +47,11 @@ public enum ExpressionLanguageMetricsDoc implements MeterDocumentation {
     public Duration[] getTimerSLOs() {
       return BUCKETS;
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return OutcomeKeyNames.values();
+    }
   },
 
   /** Time spent evaluating a FEEL expression (in seconds) */
@@ -79,11 +85,33 @@ public enum ExpressionLanguageMetricsDoc implements MeterDocumentation {
     public Duration[] getTimerSLOs() {
       return BUCKETS;
     }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return OutcomeKeyNames.values();
+    }
   };
 
   public abstract String getDescription();
 
   public Duration[] getTimerSLOs() {
     return new Duration[0];
+  }
+
+  /** Outcome values for expression parsing and evaluation */
+  public enum Outcome {
+    SUCCESS,
+    FAILURE
+  }
+
+  /** Key names for expression metrics */
+  public enum OutcomeKeyNames implements KeyName {
+    /** The outcome of the operation (success or failure) */
+    OUTCOME {
+      @Override
+      public String asString() {
+        return "outcome";
+      }
+    }
   }
 }
