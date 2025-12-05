@@ -49,7 +49,8 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
-            InstantSource.system());
+            InstantSource.system(),
+            null);
 
     final var dbMigrator =
         new DbMigratorImpl(

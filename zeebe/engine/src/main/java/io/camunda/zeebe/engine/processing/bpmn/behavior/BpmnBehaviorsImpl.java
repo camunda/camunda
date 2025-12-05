@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
@@ -70,7 +71,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobStreamer jobStreamer,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final MeterRegistry meterRegistry) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -103,7 +105,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     expressionBehavior =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
+            ExpressionLanguageFactory.createExpressionLanguage(
+                new ZeebeFeelEngineClock(clock), meterRegistry),
             CombinedEvaluationContext.withContexts(
                 processVariableContext, namespaceFullClusterContext));
 

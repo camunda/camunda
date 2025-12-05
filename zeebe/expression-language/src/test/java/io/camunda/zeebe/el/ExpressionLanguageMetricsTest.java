@@ -49,16 +49,21 @@ public class ExpressionLanguageMetricsTest {
 
   @Test
   void shouldNotRecordParsingDurationForStaticExpression() {
-    // when - parse a static value (no '=' prefix)
-    expressionLanguage.parseExpression("static_value");
+    // given - fresh registry to ensure no prior recordings
+    final var freshRegistry = new SimpleMeterRegistry();
+    final var freshExpressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage(
+            new TestFeelEngineClock(), freshRegistry);
 
-    // then - parsing timer should exist but have count 0 for static expressions
+    // when - parse a static value (no '=' prefix)
+    freshExpressionLanguage.parseExpression("static_value");
+
+    // then - parsing timer should have count 0 for static expressions
     final var timer =
-        meterRegistry.find(ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName());
-    // Timer is registered when metrics class is created, but no recording happens for static values
-    if (timer.timer() != null) {
-      assertThat(timer.timer().count()).isZero();
-    }
+        freshRegistry
+            .get(ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName())
+            .timer();
+    assertThat(timer.count()).isZero();
   }
 
   @Test
@@ -76,23 +81,6 @@ public class ExpressionLanguageMetricsTest {
             .timer();
     assertThat(timer.count()).isEqualTo(1);
     assertThat(timer.totalTime(java.util.concurrent.TimeUnit.NANOSECONDS)).isGreaterThan(0);
-  }
-
-  @Test
-  void shouldIncrementEvaluationCounter() {
-    // given
-    final var expression = expressionLanguage.parseExpression("=1 + 2");
-
-    // when
-    expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
-    expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
-
-    // then
-    final var counter =
-        meterRegistry
-            .get(ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATIONS_TOTAL.getName())
-            .counter();
-    assertThat(counter.count()).isEqualTo(2);
   }
 
   @Test
@@ -170,7 +158,7 @@ public class ExpressionLanguageMetricsTest {
   }
 
   @Test
-  void shouldRecordEvaluationForFailedExpression() {
+  void shouldNotRecordEvaluationForInvalidExpression() {
     // Create a fresh meter registry for this test
     final var freshRegistry = new SimpleMeterRegistry();
     final var freshExpressionLanguage =

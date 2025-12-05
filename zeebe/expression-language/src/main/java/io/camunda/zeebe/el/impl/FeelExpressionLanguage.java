@@ -141,7 +141,6 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
     final long durationNanos = System.nanoTime() - startNanos;
 
     metrics.getEvaluationDurationTimer().record(durationNanos, TimeUnit.NANOSECONDS);
-    metrics.incrementEvaluations();
 
     if (metrics.isSlowEvaluation(durationNanos)) {
       Loggers.LOGGER.warn(

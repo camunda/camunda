@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.el.impl;
 
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.noop.NoopCounter;
 import io.micrometer.core.instrument.noop.NoopTimer;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +23,6 @@ public class ExpressionLanguageMetrics {
 
   private final Timer parsingDurationTimer;
   private final Timer evaluationDurationTimer;
-  private final Counter evaluationsCounter;
   private final long slowEvaluationThresholdMs;
 
   /**
@@ -50,11 +47,9 @@ public class ExpressionLanguageMetrics {
     if (registry != null) {
       parsingDurationTimer = registerParsingDurationTimer(registry);
       evaluationDurationTimer = registerEvaluationDurationTimer(registry);
-      evaluationsCounter = registerEvaluationsCounter(registry);
     } else {
       parsingDurationTimer = new NoopTimer(null);
       evaluationDurationTimer = new NoopTimer(null);
-      evaluationsCounter = new NoopCounter(null);
     }
   }
 
@@ -70,11 +65,6 @@ public class ExpressionLanguageMetrics {
    */
   public Timer getEvaluationDurationTimer() {
     return evaluationDurationTimer;
-  }
-
-  /** Increments the evaluation counter */
-  public void incrementEvaluations() {
-    evaluationsCounter.increment();
   }
 
   /**
@@ -107,13 +97,6 @@ public class ExpressionLanguageMetrics {
     return Timer.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
         .serviceLevelObjectives(meterDoc.getTimerSLOs())
-        .register(registry);
-  }
-
-  private Counter registerEvaluationsCounter(final MeterRegistry registry) {
-    final var meterDoc = ExpressionLanguageMetricsDoc.EXPRESSION_EVALUATIONS_TOTAL;
-    return Counter.builder(meterDoc.getName())
-        .description(meterDoc.getDescription())
         .register(registry);
   }
 

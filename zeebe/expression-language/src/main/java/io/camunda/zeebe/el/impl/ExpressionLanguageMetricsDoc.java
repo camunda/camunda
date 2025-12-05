@@ -18,16 +18,15 @@ public enum ExpressionLanguageMetricsDoc implements MeterDocumentation {
   /** Time spent parsing a FEEL expression (in seconds) */
   EXPRESSION_PARSING_DURATION {
     private static final Duration[] BUCKETS = {
-      Duration.ofNanos(100_000), // 100 micros
-      Duration.ofMillis(1),
-      Duration.ofMillis(5),
       Duration.ofMillis(10),
       Duration.ofMillis(25),
       Duration.ofMillis(50),
       Duration.ofMillis(100),
       Duration.ofMillis(250),
       Duration.ofMillis(500),
-      Duration.ofSeconds(1)
+      Duration.ofSeconds(1),
+      Duration.ofSeconds(2),
+      Duration.ofSeconds(4)
     };
 
     @Override
@@ -52,16 +51,15 @@ public enum ExpressionLanguageMetricsDoc implements MeterDocumentation {
   /** Time spent evaluating a FEEL expression (in seconds) */
   EXPRESSION_EVALUATION_DURATION {
     private static final Duration[] BUCKETS = {
-      Duration.ofNanos(100_000), // 100 micros
-      Duration.ofMillis(1),
-      Duration.ofMillis(5),
       Duration.ofMillis(10),
       Duration.ofMillis(25),
       Duration.ofMillis(50),
       Duration.ofMillis(100),
       Duration.ofMillis(250),
       Duration.ofMillis(500),
-      Duration.ofSeconds(1)
+      Duration.ofSeconds(1),
+      Duration.ofSeconds(2),
+      Duration.ofSeconds(4)
     };
 
     @Override
@@ -80,23 +78,6 @@ public enum ExpressionLanguageMetricsDoc implements MeterDocumentation {
 
     public Duration[] getTimerSLOs() {
       return BUCKETS;
-    }
-  },
-
-  /** Total number of FEEL expression evaluations */
-  EXPRESSION_EVALUATIONS_TOTAL {
-    @Override
-    public String getName() {
-      return "zeebe.feel.expression.evaluations.total";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.COUNTER;
-    }
-
-    public String getDescription() {
-      return "Total number of FEEL expression evaluations";
     }
   };
 

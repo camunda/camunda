@@ -51,7 +51,8 @@ public final class ProcessingStateRule extends ExternalResource {
             new TransientPendingSubscriptionState(),
             new TransientPendingSubscriptionState(),
             new EngineConfiguration(),
-            InstantSource.system());
+            InstantSource.system(),
+            null);
   }
 
   @Override

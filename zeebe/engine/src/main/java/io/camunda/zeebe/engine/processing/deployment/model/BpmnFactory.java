@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidator;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Objects;
 
@@ -25,7 +26,9 @@ public final class BpmnFactory {
   }
 
   public static BpmnTransformer createTransformer(
-      final InstantSource clock, final EngineConfiguration configuration) {
+      final InstantSource clock,
+      final EngineConfiguration configuration,
+      final MeterRegistry meterRegistry) {
     final GlobalListenersConfiguration listenerConfig;
     if (configuration != null) {
       listenerConfig =
@@ -35,21 +38,22 @@ public final class BpmnFactory {
       listenerConfig = GlobalListenersConfiguration.empty();
     }
     return new BpmnTransformer(
-        createExpressionLanguage(new ZeebeFeelEngineClock(clock)), listenerConfig);
+        createExpressionLanguage(new ZeebeFeelEngineClock(clock), meterRegistry), listenerConfig);
   }
 
   public static BpmnValidator createValidator(
       final InstantSource clock,
       final ExpressionProcessor expressionProcessor,
-      final int validatorResultsOutputMaxSize) {
+      final int validatorResultsOutputMaxSize,
+      final MeterRegistry meterRegistry) {
     return new BpmnValidator(
-        createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
+        createExpressionLanguage(new ZeebeFeelEngineClock(clock), meterRegistry),
         expressionProcessor,
         validatorResultsOutputMaxSize);
   }
 
   private static ExpressionLanguage createExpressionLanguage(
-      final ZeebeFeelEngineClock zeebeFeelEngineClock) {
-    return ExpressionLanguageFactory.createExpressionLanguage(zeebeFeelEngineClock);
+      final ZeebeFeelEngineClock zeebeFeelEngineClock, final MeterRegistry meterRegistry) {
+    return ExpressionLanguageFactory.createExpressionLanguage(zeebeFeelEngineClock, meterRegistry);
   }
 }

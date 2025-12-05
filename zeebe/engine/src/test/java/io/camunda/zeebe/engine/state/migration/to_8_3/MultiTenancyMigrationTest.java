@@ -93,7 +93,7 @@ public class MultiTenancyMigrationTest {
       legacyState = new LegacyProcessState(zeebeDb, transactionContext, InstantSource.system());
       processState =
           new DbProcessState(
-              zeebeDb, transactionContext, new EngineConfiguration(), InstantSource.system());
+              zeebeDb, transactionContext, new EngineConfiguration(), InstantSource.system(), null);
     }
 
     @Test
