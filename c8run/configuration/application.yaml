@@ -26,6 +26,7 @@ camunda:
           users:
             - demo
             - test
+
     # By default authorization and api protection is disabled
     authentication:
       method: BASIC
