@@ -196,6 +196,12 @@ public class ProcessInstanceRequestValidator {
         (instruction) -> instruction.getElementId() != null,
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
+    instructions.forEach(
+        instruction ->
+            validateKeyFormat(
+                instruction.getAncestorElementInstanceKey(),
+                "ancestorElementInstanceKey",
+                violations));
     final var variableInstructions =
         instructions.stream()
             .flatMap(instruction -> instruction.getVariableInstructions().stream())

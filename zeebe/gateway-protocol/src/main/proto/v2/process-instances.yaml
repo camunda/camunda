@@ -1436,12 +1436,14 @@ components:
           items:
             $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
       required:
-        - ancestorScopeInstruction
         - sourceElementId
         - targetElementId
 
     AncestorScopeInstruction:
       x-polymorphic-schema: true
+      description: |
+        Defines the ancestor scope for the created element instances. The default behavior resembles
+        a "direct" scope instruction with an `ancestorElementInstanceKey` of `"-1"`.
       discriminator:
         propertyName: ancestorScopeType
         mapping:

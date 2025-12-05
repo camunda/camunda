@@ -105,6 +105,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOpera
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -1252,9 +1253,10 @@ public class RequestMapper {
                       .setSourceElementId(instruction.getSourceElementId())
                       .setTargetElementId(instruction.getTargetElementId());
               switch (instruction.getAncestorScopeInstruction()) {
+                case null -> mappedInstruction.setAncestorScopeKey(-1);
                 case final DirectAncestorKeyInstruction direct ->
                     mappedInstruction.setAncestorScopeKey(
-                        KeyUtil.keyToLong(direct.getAncestorElementInstanceKey()));
+                        getAncestorKey(direct.getAncestorElementInstanceKey()));
                 default -> mappedInstruction.setUseSourceParentKeyAsAncestorScope(true);
               }
               instruction.getVariableInstructions().stream()
@@ -1267,10 +1269,7 @@ public class RequestMapper {
 
   private static List<ProcessInstanceModificationMoveInstruction>
       mapProcessInstanceModificationMoveBatchInstruction(
-          final List<
-                  io.camunda.zeebe.gateway.protocol.rest
-                      .ProcessInstanceModificationMoveBatchOperationInstruction>
-              instructions) {
+          final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions) {
     return instructions.stream()
         .map(
             instruction ->
