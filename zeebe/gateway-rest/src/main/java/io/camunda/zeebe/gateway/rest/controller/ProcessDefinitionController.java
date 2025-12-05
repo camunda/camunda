@@ -19,10 +19,10 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatistics
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -57,6 +57,7 @@ public class ProcessDefinitionController {
     this.authenticationProvider = authenticationProvider;
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ProcessDefinitionSearchQueryResult> searchProcessDefinitions(
       @RequestBody(required = false) final ProcessDefinitionSearchQuery query) {
@@ -78,6 +79,7 @@ public class ProcessDefinitionController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processDefinitionKey}")
   public ResponseEntity<Object> getByKey(
       @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
@@ -95,6 +97,7 @@ public class ProcessDefinitionController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(
       path = "/{processDefinitionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
@@ -115,6 +118,7 @@ public class ProcessDefinitionController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processDefinitionKey}/form")
   public ResponseEntity<FormResult> getStartProcessForm(
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
@@ -130,6 +134,7 @@ public class ProcessDefinitionController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processDefinitionKey}/statistics/element-instances")
   public ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       @PathVariable("processDefinitionKey") final long processDefinitionKey,
@@ -149,6 +154,7 @@ public class ProcessDefinitionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getMessageSubscriptionStatistics);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/process-instances")
   public ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult> processInstanceStatistics(
       @RequestBody(required = false) final ProcessDefinitionInstanceStatisticsQuery query) {
@@ -156,6 +162,7 @@ public class ProcessDefinitionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getProcessDefinitionInstanceStatistics);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processDefinitionId}/statistics/process-instances")
   public ResponseEntity<ProcessDefinitionInstanceVersionStatisticsQueryResult>
       processInstanceVersionStatistics(
