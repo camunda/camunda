@@ -328,7 +328,8 @@ public class RoleController {
             roleId,
             groupId,
             EntityType.GROUP,
-            securityConfiguration.getCompiledIdValidationPattern())
+            securityConfiguration.getCompiledIdValidationPattern(),
+            securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
