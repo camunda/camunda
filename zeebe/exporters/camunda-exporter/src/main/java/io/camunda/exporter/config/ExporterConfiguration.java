@@ -520,6 +520,13 @@ public class ExporterConfiguration {
       return "AuditLogConfiguration{" + "user=" + user + ", client=" + client + '}';
     }
 
+    public boolean isEnabled() {
+      return true;
+    }
+
+    public <R extends RecordValue> boolean isEnabled(final Record<R> record) {
+      return true;
+    }
 
     public static final class EntityAuditLogConfiguration {
       private Set<AuditLogCategory> categories =

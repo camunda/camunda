@@ -76,14 +76,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
   @Override
   public boolean handlesRecord(final Record<R> record) {
-    final var recordIntent = record.getIntent();
-    return hasActorData(record)
-        && (operationTransformer.getSupportedIntents().contains(recordIntent)
-            || (operationTransformer.getSupportedCommandRejections().contains(recordIntent)
-                && RecordType.COMMAND_REJECTION.equals(record.getRecordType())
-                && operationTransformer
-                    .getSupportedRejectionTypes()
-                    .contains(record.getRejectionType())));
+    return hasActorData(record) && configuration.isEnabled(record) && transformer.supports(record);
   }
 
   @Override
