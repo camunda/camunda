@@ -296,7 +296,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
 
@@ -334,7 +334,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
     });
@@ -531,7 +531,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
 
@@ -574,7 +574,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toBeVisible({
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
         timeout: 30000,
       });
 
