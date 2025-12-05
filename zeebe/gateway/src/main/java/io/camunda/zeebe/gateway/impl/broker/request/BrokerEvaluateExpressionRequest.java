@@ -15,8 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.value.ExpressionScopeType;
 import org.agrona.DirectBuffer;
 
-public final class BrokerEvaluateExpressionRequest
-    extends BrokerExecuteCommand<ExpressionRecord> {
+public final class BrokerEvaluateExpressionRequest extends BrokerExecuteCommand<ExpressionRecord> {
 
   private final ExpressionRecord requestDto = new ExpressionRecord();
 

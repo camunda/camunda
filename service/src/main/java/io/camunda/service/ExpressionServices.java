@@ -51,10 +51,11 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
       final Map<String, Object> context,
       final String tenantId) {
 
-    final var request = new BrokerEvaluateExpressionRequest(expression)
-        .setScopeType(scopeType)
-        .setContext(getDocumentOrEmpty(context))
-        .setTenantId(tenantId);
+    final var request =
+        new BrokerEvaluateExpressionRequest(expression)
+            .setScopeType(scopeType)
+            .setContext(getDocumentOrEmpty(context))
+            .setTenantId(tenantId);
 
     // Set process instance key if provided
     if (processInstanceKey != null && processInstanceKey > 0) {

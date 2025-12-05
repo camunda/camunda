@@ -27,8 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public final class ExpressionRecord extends UnifiedRecordValue
-    implements ExpressionRecordValue {
+public final class ExpressionRecord extends UnifiedRecordValue implements ExpressionRecordValue {
 
   // Static StringValue keys for property names
   private static final StringValue EXPRESSION_KEY = new StringValue("expression");

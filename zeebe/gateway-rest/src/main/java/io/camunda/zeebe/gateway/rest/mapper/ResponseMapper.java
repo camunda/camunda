@@ -776,10 +776,10 @@ public final class ResponseMapper {
     final var expressionResult = new ExpressionResult();
 
     final var response = new io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationResult();
-        response
-            .getResult()
-            .type(mapResultType(expressionRecord.getResultType()))
-            .value(expressionRecord.getResult());
+    response
+        .getResult()
+        .type(mapResultType(expressionRecord.getResultType()))
+        .value(expressionRecord.getResult());
 
     // Add warnings if any
     if (expressionRecord.warnings() != null && !expressionRecord.warnings().isEmpty()) {

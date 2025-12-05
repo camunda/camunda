@@ -70,6 +70,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
@@ -457,6 +458,10 @@ public final class RecordingExporter implements Exporter {
 
   public static SignalRecordStream signalRecords() {
     return new SignalRecordStream(records(ValueType.SIGNAL, SignalRecordValue.class));
+  }
+
+  public static EvaluateExpressionRecordStream expressionRecords() {
+    return new EvaluateExpressionRecordStream(records(ValueType.EXPRESSION, ExpressionRecordValue.class));
   }
 
   public static SignalRecordStream signalRecords(final SignalIntent intent) {
