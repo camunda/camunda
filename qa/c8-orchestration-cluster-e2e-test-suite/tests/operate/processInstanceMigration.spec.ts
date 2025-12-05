@@ -8,7 +8,7 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from 'utils/zeebeClient';
+import {deploy, createInstances, publishMessage} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -50,6 +50,14 @@ test.beforeAll(async () => {
       }),
     ),
   );
+
+  await Promise.all(
+    [...new Array(PROCESS_INSTANCE_COUNT)].map((_, index) =>
+      publishMessage('Message_4', `myCorrelationKey${index}`),
+    ),
+  );
+
+  await sleep(2000);
 
   await deploy(['./resources/orderProcessMigration_v_2.bpmn']);
   const processV2: ProcessDeployment = {
