@@ -300,6 +300,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
+<<<<<<< HEAD
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessesPage.resultsText).toBeVisible();
@@ -308,6 +309,10 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
         },
         maxRetries: 4,
+=======
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+>>>>>>> be528a22 (test: migrate processInstanceListeners.spec to OC)
       });
 
       await operateOperationPanelPage.expandOperationIdField();
@@ -344,6 +349,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
+<<<<<<< HEAD
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessesPage.resultsText).toBeVisible();
@@ -352,6 +358,10 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
         },
         maxRetries: 4,
+=======
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+>>>>>>> be528a22 (test: migrate processInstanceListeners.spec to OC)
       });
     });
 
@@ -585,6 +595,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
+<<<<<<< HEAD
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessesPage.resultsText).toBeVisible();
@@ -593,6 +604,10 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
         },
         maxRetries: 4,
+=======
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+>>>>>>> be528a22 (test: migrate processInstanceListeners.spec to OC)
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -635,6 +650,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
+<<<<<<< HEAD
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessesPage.resultsText).toBeVisible();
@@ -643,6 +659,10 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
         },
         maxRetries: 4,
+=======
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+>>>>>>> be528a22 (test: migrate processInstanceListeners.spec to OC)
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
