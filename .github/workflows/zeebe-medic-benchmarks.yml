@@ -53,7 +53,9 @@ jobs:
     with:
       name: ${{ needs.test-data.outputs.test }}
       ttl: 28
-      load-test-load: "--set starter.rate=50 --set starter.bpmnXmlPath=\"bpmn/typical_process.bpmn\""
+      load-test-load: >
+        --set starter.rate=50
+        --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
