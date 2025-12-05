@@ -106,14 +106,16 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   public AtomixCluster(
       final ClusterConfig config,
+      final long nodeVersion,
       final Version version,
       final String actorSchedulerName,
       final MeterRegistry registry) {
-    this(config, version, null, null, actorSchedulerName, registry);
+    this(config, nodeVersion, version, null, null, actorSchedulerName, registry);
   }
 
   protected AtomixCluster(
       final ClusterConfig config,
+      final long nodeVersion,
       final Version version,
       final ManagedMessagingService messagingService,
       final ManagedUnicastService unicastService,
@@ -129,7 +131,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
             : buildUnicastService(config, actorSchedulerName, registry);
 
     discoveryProvider = buildLocationProvider(config);
-    membershipProtocol = buildMembershipProtocol(config, actorSchedulerName, registry);
+    membershipProtocol = buildMembershipProtocol(config, nodeVersion, actorSchedulerName, registry);
     membershipService =
         buildClusterMembershipService(config, this, discoveryProvider, membershipProtocol, version);
     communicationService =
@@ -335,11 +337,14 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   /** Builds the group membership protocol. */
   @SuppressWarnings("unchecked")
   protected static GroupMembershipProtocol buildMembershipProtocol(
-      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
+      final ClusterConfig config,
+      final long nodeVersion,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
     return config
         .getProtocolConfig()
         .getType()
-        .newProtocol(config.getProtocolConfig(), actorSchedulerName, registry);
+        .newProtocol(config.getProtocolConfig(), nodeVersion, actorSchedulerName, registry);
   }
 
   /** Builds a cluster service. */

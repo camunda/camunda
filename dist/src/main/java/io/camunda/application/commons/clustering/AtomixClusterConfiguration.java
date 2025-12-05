@@ -11,8 +11,10 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.utils.Version;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public final class AtomixClusterConfiguration {
 
+  private final NodeIdProvider nodeIdProvider;
   private final ClusterConfig config;
   private final String actorSchedulerName;
   private final MeterRegistry meterRegistry;
@@ -27,9 +30,11 @@ public final class AtomixClusterConfiguration {
   @Autowired
   public AtomixClusterConfiguration(
       final ClusterConfig config,
+      final Optional<NodeIdProvider> nodeIdProvider,
       final SchedulerConfiguration schedulerConfiguration,
       final MeterRegistry meterRegistry) {
 
+    this.nodeIdProvider = nodeIdProvider.orElse(NodeIdProvider.staticProvider(0));
     this.config = config;
     actorSchedulerName =
         schedulerConfiguration != null
@@ -45,7 +50,11 @@ public final class AtomixClusterConfiguration {
   public AtomixCluster atomixCluster() {
     final var atomixCluster =
         new AtomixCluster(
-            config, Version.from(VersionUtil.getVersion()), actorSchedulerName, meterRegistry);
+            config,
+            nodeIdProvider.currentNodeInstance().version().version(),
+            Version.from(VersionUtil.getVersion()),
+            actorSchedulerName,
+            meterRegistry);
     atomixCluster.start();
     return atomixCluster;
   }
