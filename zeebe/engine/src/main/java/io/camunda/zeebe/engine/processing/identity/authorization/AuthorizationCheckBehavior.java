@@ -16,15 +16,13 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.resolver.AuthorizationScopeResolver;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.TenantResolver;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationResult;
-import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
-import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
-import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -36,9 +34,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -56,11 +52,10 @@ public final class AuthorizationCheckBehavior {
       "Expected to %s with key '%s', but no %s was found";
   public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
-  private final AuthorizationState authorizationState;
   private final MappingRuleState mappingRuleState;
-  private final MembershipState membershipState;
   private final ClaimsExtractor claimsExtractor;
   private final TenantResolver tenantResolver;
+  private final AuthorizationScopeResolver scopeResolver;
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
@@ -71,14 +66,22 @@ public final class AuthorizationCheckBehavior {
       final ProcessingState processingState,
       final SecurityConfiguration securityConfig,
       final EngineConfiguration config) {
-    authorizationState = processingState.getAuthorizationState();
+    final var authorizationState = processingState.getAuthorizationState();
+    final var membershipState = processingState.getMembershipState();
+
     mappingRuleState = processingState.getMappingRuleState();
-    membershipState = processingState.getMembershipState();
-    claimsExtractor = new ClaimsExtractor(membershipState);
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
+    claimsExtractor = new ClaimsExtractor(membershipState);
     tenantResolver =
         new TenantResolver(membershipState, mappingRuleState, claimsExtractor, multiTenancyEnabled);
+    scopeResolver =
+        new AuthorizationScopeResolver(
+            authorizationState,
+            membershipState,
+            mappingRuleState,
+            claimsExtractor,
+            authorizationsEnabled);
 
     authorizationsCache =
         CacheBuilder.newBuilder()
@@ -259,7 +262,7 @@ public final class AuthorizationCheckBehavior {
         entityIds.stream()
             .flatMap(
                 entityId ->
-                    getAuthorizedScopes(
+                    scopeResolver.getScopesForEntity(
                         request.claims(),
                         entityType,
                         entityId,
@@ -350,51 +353,17 @@ public final class AuthorizationCheckBehavior {
         new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
   }
 
+  /**
+   * Get all authorized authorization scopes for a given authorization request.
+   *
+   * <p>This method aggregates scopes from the authenticated user/client and any matching mapping
+   * rules. If authorizations are disabled or the user is anonymous, returns wildcard scope.
+   *
+   * @param request the authorization request containing claims, resource type, and permission type
+   * @return a set of authorized scopes for the request
+   */
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
-    if (!authorizationsEnabled || claimsExtractor.isAuthorizedAnonymousUser(request.claims())) {
-      return Set.of(AuthorizationScope.WILDCARD);
-    }
-
-    final var authorizedScopes = new HashSet<AuthorizationScope>();
-
-    final var optionalClientId = claimsExtractor.getClientId(request);
-    if (optionalClientId.isPresent()) {
-      getAuthorizedScopes(
-              request.claims(),
-              EntityType.CLIENT,
-              optionalClientId.get(),
-              request.resourceType(),
-              request.permissionType())
-          .forEach(authorizedScopes::add);
-    }
-    // If a clientId was present, don't use the username
-    else {
-      claimsExtractor
-          .getUsername(request)
-          .map(
-              username ->
-                  getAuthorizedScopes(
-                      request.claims(),
-                      EntityType.USER,
-                      username,
-                      request.resourceType(),
-                      request.permissionType()))
-          .ifPresent(idsForUsername -> idsForUsername.forEach(authorizedScopes::add));
-    }
-
-    // mapping rules can layer on top of username/client id
-    getPersistedMappingRules(request)
-        .flatMap(
-            mappingRule ->
-                getAuthorizedScopes(
-                    request.claims(),
-                    EntityType.MAPPING_RULE,
-                    mappingRule.getMappingRuleId(),
-                    request.resourceType(),
-                    request.permissionType()))
-        .forEach(authorizedScopes::add);
-
-    return authorizedScopes;
+    return scopeResolver.getAllAuthorizedScopes(request);
   }
 
   /**
@@ -407,55 +376,7 @@ public final class AuthorizationCheckBehavior {
       final String ownerId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return authorizationState.getAuthorizationScopes(
-        ownerType, ownerId, resourceType, permissionType);
-  }
-
-  private Stream<AuthorizationScope> getAuthorizedScopes(
-      final Map<String, Object> authorizationClaims,
-      final EntityType ownerType,
-      final String ownerId,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    final var authorizationOwnerType =
-        switch (ownerType) {
-          case GROUP -> AuthorizationOwnerType.GROUP;
-          case ROLE -> AuthorizationOwnerType.ROLE;
-          case USER -> AuthorizationOwnerType.USER;
-          case MAPPING_RULE -> AuthorizationOwnerType.MAPPING_RULE;
-          case CLIENT -> AuthorizationOwnerType.CLIENT;
-          case UNSPECIFIED -> AuthorizationOwnerType.UNSPECIFIED;
-        };
-
-    final var direct =
-        getDirectAuthorizedAuthorizationScopes(
-            authorizationOwnerType, ownerId, resourceType, permissionType)
-            .stream();
-    final var viaRole =
-        membershipState.getMemberships(ownerType, ownerId, RelationType.ROLE).stream()
-            .flatMap(
-                roleId ->
-                    getDirectAuthorizedAuthorizationScopes(
-                        AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
-                        .stream());
-    final var viaGroups =
-        claimsExtractor.getGroups(authorizationClaims, ownerType, ownerId).stream()
-            .<AuthorizationScope>mapMulti(
-                (groupId, stream) -> {
-                  getDirectAuthorizedAuthorizationScopes(
-                          AuthorizationOwnerType.GROUP, groupId, resourceType, permissionType)
-                      .forEach(stream);
-                  membershipState
-                      .getMemberships(EntityType.GROUP, groupId, RelationType.ROLE)
-                      .stream()
-                      .flatMap(
-                          roleId ->
-                              getDirectAuthorizedAuthorizationScopes(
-                                  AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
-                                  .stream())
-                      .forEach(stream);
-                });
-    return Stream.concat(direct, Stream.concat(viaRole, viaGroups));
+    return scopeResolver.getDirectScopes(ownerType, ownerId, resourceType, permissionType);
   }
 
   /**
