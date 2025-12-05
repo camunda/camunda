@@ -54,6 +54,7 @@ import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -170,11 +171,14 @@ public class TenantController {
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
+    final boolean areGroupsManagedExternally = areGroupsManagedExternally();
     return RequestMapper.toTenantMemberRequest(
             tenantId,
             groupId,
             EntityType.GROUP,
-            securityConfiguration.getCompiledIdValidationPattern())
+            areGroupsManagedExternally
+                ? Pattern.compile(".*", Pattern.DOTALL)
+                : securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -473,5 +477,18 @@ public class TenantController {
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateTenant(tenantRequest),
         ResponseMapper::toTenantUpdateResponse);
+  }
+
+  private boolean areGroupsManagedExternally() {
+    final var authentication = securityConfiguration.getAuthentication();
+    if (authentication == null) {
+      return false;
+    }
+    final var oidcConfiguration = authentication.getOidc();
+    if (oidcConfiguration == null) {
+      return false;
+    }
+    final var groupsClaim = oidcConfiguration.getGroupsClaim();
+    return groupsClaim != null && !groupsClaim.isEmpty();
   }
 }
