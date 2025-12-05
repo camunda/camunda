@@ -25,9 +25,15 @@ type Props = {
   tabs: TabType[];
   eventName?: 'variables-panel-used';
   dataTestId?: string;
+  onTabChange?: (id: string) => void;
 };
 
-const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
+const TabView: React.FC<Props> = ({
+  tabs = [],
+  eventName,
+  dataTestId,
+  onTabChange,
+}) => {
   return (
     <Container data-testid={dataTestId}>
       {tabs.length === 1 && tabs[0] !== undefined ? (
@@ -44,6 +50,7 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
                 data-testid={testId}
                 onClick={() => {
                   onClick?.();
+                  onTabChange?.(id);
                   if (eventName !== undefined) {
                     tracking.track({
                       eventName,
