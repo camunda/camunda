@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -35,6 +36,7 @@ public class PlatformDefaultEntities {
   public static void setupDefaultRoles(final IdentitySetupRecord setupRecord) {
     setupReadOnlyAdminRole(setupRecord);
     setupAdminRole(setupRecord);
+    setupAllTenantsAdminRole(setupRecord);
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
     setupAppIntegrationsRole(setupRecord);
@@ -89,6 +91,50 @@ public class PlatformDefaultEntities {
             .setTenantId(DEFAULT_TENANT_ID)
             .setEntityType(EntityType.ROLE)
             .setEntityId(adminRoleId));
+  }
+
+  /** This is a special role that gives access to all tenants, both existing and future ones. */
+  private static void setupAllTenantsAdminRole(final IdentitySetupRecord setupRecord) {
+    final var allTenantsAdminRoleId = DefaultRole.ALL_TENANTS.getId();
+    // Question: does this code run just on the first start-up of the platform? Or on every start
+    // up?
+    // Because if customer has already run camunda and added tenants, then this approach should
+    // add all existing tenants to this role.
+
+    // We should check if the role exists already and load all existing tenants, then assign them to
+    // this role
+    // Currently, we don't have a read-only role (meaning the one that customer can't modify.
+    // At least it looks so. We might want to exclude it from UI and/or API. As a solution we can
+    // introduce a flag to indicate that this role is read-only, and then update UI to not allow
+    // edits.
+    setupRecord
+        .addRole(new RoleRecord().setRoleId(allTenantsAdminRoleId).setName("All Tenants"))
+        .addTenantMember(
+            new TenantRecord()
+                .setTenantId(DEFAULT_TENANT_ID)
+                .setEntityType(EntityType.ROLE)
+                .setEntityId(allTenantsAdminRoleId));
+  }
+
+  /**
+   * This group give admin authorizations for all tenants, because it has both admin role and
+   * all-tenants role
+   */
+  public static void setupDefaultGroups(final IdentitySetupRecord setupRecord) {
+    final var allTenantsAdminGroupId = "alltenantsadmin";
+    setupRecord
+        .addGroup(
+            new GroupRecord().setGroupId(allTenantsAdminGroupId).setName("All Tenants Admin Group"))
+        .addRoleMember(
+            new RoleRecord()
+                .setRoleId(DefaultRole.ADMIN.getId())
+                .setEntityType(EntityType.GROUP)
+                .setEntityId(allTenantsAdminGroupId))
+        .addRoleMember(
+            new RoleRecord()
+                .setRoleId(DefaultRole.ALL_TENANTS.getId())
+                .setEntityType(EntityType.GROUP)
+                .setEntityId(allTenantsAdminGroupId));
   }
 
   private static void setupConnectorsRole(final IdentitySetupRecord setupRecord) {

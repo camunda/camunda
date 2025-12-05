@@ -23,6 +23,7 @@ public class InitializationConfiguration {
   private List<ConfiguredUser> users = new ArrayList<>();
   private List<ConfiguredMappingRule> mappingRules = new ArrayList<>();
   private Map<String, Map<String, Collection<String>>> defaultRoles = new HashMap<>();
+  private Map<String, Map<String, Collection<String>>> defaultGroups = new HashMap<>();
   private List<ConfiguredAuthorization> authorizations = new ArrayList<>();
 
   public List<ConfiguredUser> getUsers() {
@@ -47,6 +48,14 @@ public class InitializationConfiguration {
 
   public void setDefaultRoles(final Map<String, Map<String, Collection<String>>> defaultRoles) {
     this.defaultRoles = defaultRoles;
+  }
+
+  public Map<String, Map<String, Collection<String>>> getDefaultGroups() {
+    return defaultGroups;
+  }
+
+  public void setDefaultGroups(final Map<String, Map<String, Collection<String>>> defaultGroups) {
+    this.defaultGroups = defaultGroups;
   }
 
   public List<ConfiguredAuthorization> getAuthorizations() {
