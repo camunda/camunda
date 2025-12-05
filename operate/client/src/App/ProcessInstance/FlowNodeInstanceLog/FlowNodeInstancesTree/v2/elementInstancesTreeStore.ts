@@ -365,10 +365,6 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
   };
 
   setNodeData = (scopeKey: string, newNodeData: NodeData) => {
-    if (!newNodeData) {
-      return;
-    }
-
     this.state.nodes.set(scopeKey, newNodeData);
   };
 
