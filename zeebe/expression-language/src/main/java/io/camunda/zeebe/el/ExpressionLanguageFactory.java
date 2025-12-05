@@ -8,15 +8,26 @@
 package io.camunda.zeebe.el;
 
 import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.camunda.feel.FeelEngineClock;
 
 /** The entry point to create the default {@link ExpressionLanguage}. */
 public class ExpressionLanguageFactory {
 
   /**
-   * @return a new instance of the {@link ExpressionLanguage}
+   * @return a new instance of the {@link ExpressionLanguage} without metrics
    */
   public static ExpressionLanguage createExpressionLanguage(final FeelEngineClock feelEngineClock) {
     return new FeelExpressionLanguage(feelEngineClock);
+  }
+
+  /**
+   * @param feelEngineClock the clock to use for FEEL expressions
+   * @param meterRegistry the meter registry to use for metrics, or null for no metrics
+   * @return a new instance of the {@link ExpressionLanguage} with metrics
+   */
+  public static ExpressionLanguage createExpressionLanguage(
+      final FeelEngineClock feelEngineClock, final MeterRegistry meterRegistry) {
+    return new FeelExpressionLanguage(feelEngineClock, meterRegistry);
   }
 }

@@ -17,8 +17,11 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.feel.impl.FeelFunctionProvider;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.feel.impl.MessagePackValueMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
@@ -42,14 +45,34 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
       new FeelToMessagePackTransformer();
 
   private final FeelEngine feelEngine;
+  private final ExpressionLanguageMetrics metrics;
 
   public FeelExpressionLanguage(final FeelEngineClock clock) {
+    this(clock, (MeterRegistry) null);
+  }
+
+  public FeelExpressionLanguage(final FeelEngineClock clock, final MeterRegistry meterRegistry) {
     feelEngine =
         new FeelEngine.Builder()
             .customValueMapper(new MessagePackValueMapper())
             .functionProvider(new FeelFunctionProvider())
             .clock(clock)
             .build();
+    metrics =
+        meterRegistry != null
+            ? new ExpressionLanguageMetrics(meterRegistry)
+            : ExpressionLanguageMetrics.noop();
+  }
+
+  public FeelExpressionLanguage(
+      final FeelEngineClock clock, final ExpressionLanguageMetrics metrics) {
+    feelEngine =
+        new FeelEngine.Builder()
+            .customValueMapper(new MessagePackValueMapper())
+            .functionProvider(new FeelFunctionProvider())
+            .clock(clock)
+            .build();
+    this.metrics = metrics != null ? metrics : ExpressionLanguageMetrics.noop();
   }
 
   @Override
@@ -90,7 +113,11 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
   }
 
   private Expression parseFeelExpression(final String expression) {
+    final long startNanos = System.nanoTime();
     final Either<Failure, ParsedExpression> parseResult = feelEngine.parseExpression(expression);
+    final long durationNanos = System.nanoTime() - startNanos;
+
+    metrics.getParsingDurationTimer().record(durationNanos, TimeUnit.NANOSECONDS);
 
     if (parseResult.isLeft()) {
       final var failure = parseResult.left().get();
@@ -110,7 +137,20 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
     final var parsedExpression = feelExpression.getParsedExpression();
     final var feelContext = new FeelVariableContext(context);
 
+    final long startNanos = System.nanoTime();
     final var evaluationResult = feelEngine.evaluate(parsedExpression, feelContext);
+    final long durationNanos = System.nanoTime() - startNanos;
+
+    metrics.getEvaluationDurationTimer().record(durationNanos, TimeUnit.NANOSECONDS);
+    metrics.incrementEvaluations();
+
+    if (metrics.isSlowEvaluation(durationNanos)) {
+      Loggers.LOGGER.warn(
+          "Slow FEEL expression evaluation detected: expression '{}' took {} ms (threshold: {} ms)",
+          expression.getExpression(),
+          TimeUnit.NANOSECONDS.toMillis(durationNanos),
+          metrics.getSlowEvaluationThresholdMs());
+    }
 
     final var evaluationWarnings = extractEvaluationWarning(evaluationResult);
     if (evaluationResult.isFailure()) {
