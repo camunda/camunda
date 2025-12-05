@@ -12,6 +12,7 @@ export class OperateDiagramPage {
   private page: Page;
   readonly diagram: Locator;
   readonly popover: Locator;
+  readonly popoverIncidentHeading: Locator;
   readonly resetDiagramZoomButton: Locator;
   readonly diagramSpinner: Locator;
   readonly monacoAriaContainer: Locator;
@@ -23,6 +24,9 @@ export class OperateDiagramPage {
     this.page = page;
     this.diagram = this.page.getByTestId('diagram');
     this.popover = this.page.getByTestId('popover');
+    this.popoverIncidentHeading = this.popover.getByRole('heading', {
+      name: 'Incident',
+    });
     this.resetDiagramZoomButton = this.page.getByRole('button', {
       name: 'Reset diagram zoom',
     });

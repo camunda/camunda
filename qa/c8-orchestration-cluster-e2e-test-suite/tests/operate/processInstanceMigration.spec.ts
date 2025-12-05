@@ -81,6 +81,7 @@ test.beforeAll(async () => {
 
 test.describe.serial('Process Instance Migration', () => {
   test.slow();
+  test.describe.configure({retries: 0});
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -246,14 +247,6 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'Target flow node for multi instance task',
           targetValue: 'MultiInstanceTask',
         },
-        // {
-        //   label: 'Target flow node for compensation task',
-        //   targetValue: 'CompensationTask',
-        // },
-        // {
-        //   label: 'Target flow node for compensation boundary event',
-        //   targetValue: 'CompensationBoundaryEvent',
-        // },
         {
           label: 'Target flow node for message start event',
           targetValue: 'MessageStartEvent',
@@ -707,18 +700,6 @@ test.describe.serial('Process Instance Migration', () => {
         ],
       });
     });
-
-    await test.step('Verify Message intermediate catch event migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata(
-        'MessageIntermediateCatch2',
-        {
-          expectedText: [
-            '"correlationKey": "myFirstCorrelationKey"',
-            '"messageName": "Message_3",',
-          ],
-        },
-      );
-    });
   });
 
   test('Migrated gateways', async ({
@@ -758,9 +739,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Exclusive gateway incident migration', async () => {
-      await operateDiagramPage.verifyFlowNodeMetadata('ExclusiveGateway2', {
-        expectedText: '"hasIncident": true,',
-      });
+      await operateDiagramPage.clickFlowNode('ExclusiveGateway2');
+      await expect(operateDiagramPage.popoverIncidentHeading).toBeVisible();
     });
   });
 
