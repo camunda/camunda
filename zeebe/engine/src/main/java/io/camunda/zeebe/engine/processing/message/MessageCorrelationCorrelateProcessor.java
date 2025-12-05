@@ -12,8 +12,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -90,10 +90,7 @@ public final class MessageCorrelationCorrelateProcessor
     final var messageCorrelationRecord = command.getValue();
 
     // Check tenant authorization if not an internal command
-    final var isInternal =
-        authCheckBehavior.isInternalCommand(
-            command.hasRequestMetadata(), command.getBatchOperationReference());
-    if (!isInternal) {
+    if (!command.isInternalCommand()) {
       if (!authCheckBehavior.isAssignedToTenant(command, messageCorrelationRecord.getTenantId())) {
         final var message =
             "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
@@ -204,14 +201,14 @@ public final class MessageCorrelationCorrelateProcessor
                       : PermissionType.UPDATE_PROCESS_INSTANCE;
 
               request.set(
-                  new AuthorizationRequest(
-                      command,
-                      AuthorizationResourceType.PROCESS_DEFINITION,
-                      permissionType,
-                      tenantId));
+                  AuthorizationRequest.builder()
+                      .command(command)
+                      .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                      .permissionType(permissionType)
+                      .tenantId(tenantId)
+                      .addResourceId(bufferAsString(subscription.getBpmnProcessId()))
+                      .build());
 
-              final var processIdString = bufferAsString(subscription.getBpmnProcessId());
-              request.get().addResourceId(processIdString);
               final var rejectionOrAuthorized =
                   authCheckBehavior.isAuthorizedOrInternalCommand(request.get());
               rejectionOrAuthorized.ifLeft(rejection::set);

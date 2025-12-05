@@ -11,8 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -67,12 +67,13 @@ public class DecisionEvaluationEvaluteProcessor
       final var decision = decisionOrFailure.get();
       final var decisionId = bufferAsString(decision.getDecisionId());
       final var authRequest =
-          new AuthorizationRequest(
-                  command,
-                  AuthorizationResourceType.DECISION_DEFINITION,
-                  PermissionType.CREATE_DECISION_INSTANCE,
-                  record.getTenantId())
-              .addResourceId(decisionId);
+          AuthorizationRequest.builder()
+              .command(command)
+              .resourceType(AuthorizationResourceType.DECISION_DEFINITION)
+              .permissionType(PermissionType.CREATE_DECISION_INSTANCE)
+              .tenantId(record.getTenantId())
+              .addResourceId(decisionId)
+              .build();
 
       final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
       if (isAuthorized.isLeft()) {
