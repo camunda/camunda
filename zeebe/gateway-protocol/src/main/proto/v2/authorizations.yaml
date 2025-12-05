@@ -384,6 +384,7 @@ components:
         - READ_PROCESS_INSTANCE
         - READ_USAGE_METRIC
         - READ_USER_TASK
+        - READ_OPERATOR_AUDIT_LOG
         - UPDATE
         - UPDATE_PROCESS_INSTANCE
         - UPDATE_USER_TASK
@@ -408,6 +409,7 @@ components:
         - TENANT
         - USER
         - USER_TASK
+        - AUDIT_LOG
 
     OwnerTypeEnum:
       type: string
