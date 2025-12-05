@@ -14,7 +14,6 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
-  assertStatusCode,
 } from '../../../../utils/http';
 import {
   CREATE_CLUSTER_VARIABLE,
@@ -54,7 +53,7 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
         data: variable,
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variable.name);
@@ -70,7 +69,7 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
     });
     await assertUnauthorizedRequest(res);
   });
-  // skipped due to bug https://github.com/camunda/camunda/issues/42045
+  // // Skipped due to bug 42045: https://github.com/camunda/camunda/issues/42045
   test.skip('Create Global Cluster Variable Missing Name Invalid Body 400', async ({
     request,
   }) => {
@@ -81,7 +80,7 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
     });
     await assertBadRequest(res, /name/i, 'INVALID_ARGUMENT');
   });
-  // skipped due to bug https://github.com/camunda/camunda/issues/42047
+  // // Skipped due to bug 42047: https://github.com/camunda/camunda/issues/42047
   test.skip('Create Global Cluster Variable Missing Value Invalid Body 400', async ({
     request,
   }) => {
@@ -105,7 +104,7 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
           headers: jsonHeaders(),
         },
       );
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variableName);

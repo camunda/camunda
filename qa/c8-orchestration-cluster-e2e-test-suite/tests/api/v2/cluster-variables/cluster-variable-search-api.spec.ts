@@ -12,7 +12,6 @@ import {
   buildUrl,
   assertUnauthorizedRequest,
   assertBadRequest,
-  assertStatusCode,
   assertPaginatedRequest,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -82,7 +81,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         data: {},
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200); ;
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(Array.isArray(body.items)).toBe(true);
@@ -103,7 +102,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200); 
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(body.items.length).toBeGreaterThan(0);
@@ -126,7 +125,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200); 
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
@@ -148,7 +147,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
@@ -171,7 +170,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
@@ -194,7 +193,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
@@ -215,7 +214,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(body.items.length).toBe(1);
@@ -236,7 +235,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const body = await res.json();
       const names = body.items.map(
         (item: Record<string, unknown>) => item.name as string,
@@ -260,7 +259,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const body = await res.json();
       const names = body.items.map(
         (item: Record<string, unknown>) => item.name as string,
@@ -284,7 +283,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200);
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(Array.isArray(body.items)).toBe(true);

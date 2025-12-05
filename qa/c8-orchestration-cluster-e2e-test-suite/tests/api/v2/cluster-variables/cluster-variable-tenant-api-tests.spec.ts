@@ -14,7 +14,6 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
-  assertStatusCode,
 } from '../../../../utils/http';
 import {
   CREATE_CLUSTER_VARIABLE,
@@ -68,7 +67,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200); 
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variable.name);
@@ -106,7 +105,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
     await assertBadRequest(res, /name/i, 'INVALID_ARGUMENT');
   });
 
-  // skipped due to bug https://github.com/camunda/camunda/issues/42048
+  // skipped due to bug 42048: https://github.com/camunda/camunda/issues/42048
   test.skip('Create Tenant Cluster Variable Missing Value Invalid Body 400', async ({
     request,
   }) => {
@@ -122,7 +121,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
     await assertBadRequest(res, /value/i, 'INVALID_ARGUMENT');
   });
 
-  // skipped due to bug https://github.com/camunda/camunda/issues/42049
+  // skipped due to bug 42049: https://github.com/camunda/camunda/issues/42049
   test.skip('Create Tenant Cluster Variable Invalid Tenant Not Found', async ({
     request,
   }) => {
@@ -154,7 +153,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
           headers: jsonHeaders(),
         },
       );
-      await assertStatusCode(res, 200);
+      expect(res.status()).toBe(200); 
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variableName);
