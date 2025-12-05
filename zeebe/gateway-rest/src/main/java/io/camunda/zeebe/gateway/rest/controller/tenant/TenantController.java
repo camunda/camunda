@@ -249,7 +249,7 @@ public class TenantController {
             tenantId,
             groupId,
             EntityType.GROUP,
-            securityConfiguration.getCompiledIdValidationPattern())
+            securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
