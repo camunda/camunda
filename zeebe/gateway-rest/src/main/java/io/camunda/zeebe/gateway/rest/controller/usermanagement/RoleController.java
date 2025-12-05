@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.security.configuration.AuthenticationConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.MappingRuleQuery;
@@ -260,15 +259,12 @@ public class RoleController {
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
-    final boolean areGroupsManagedExternally =
-        securityConfiguration.getAuthentication().areGroupsManagedExternally();
     return RequestMapper.toRoleMemberRequest(
             roleId,
             groupId,
             EntityType.GROUP,
-            areGroupsManagedExternally
-                ? DEFAULT_EXTERNAL_ID_REGEX
-                : securityConfiguration.getCompiledIdValidationPattern())
+            securityConfiguration.getCompiledIdValidationPattern(),
+            securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
