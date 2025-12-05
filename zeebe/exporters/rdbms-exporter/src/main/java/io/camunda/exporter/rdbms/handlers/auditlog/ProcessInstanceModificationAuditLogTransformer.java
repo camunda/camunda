@@ -5,24 +5,25 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers.auditlog;
+package io.camunda.exporter.rdbms.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.handlers.auditlog.AbstractProcessInstanceModificationAuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
 public class ProcessInstanceModificationAuditLogTransformer
-    extends AbstractProcessInstanceModificationAuditLogTransformer<AuditLogEntity> {
+    extends AbstractProcessInstanceModificationAuditLogTransformer<AuditLogDbModel.Builder> {
 
   @Override
   public void transform(
-      final AuditLogEntity entity, final Record<ProcessInstanceModificationRecordValue> record) {
+      final AuditLogDbModel.Builder entity,
+      final Record<ProcessInstanceModificationRecordValue> record) {
     final var value = record.getValue();
     entity
-        .setProcessInstanceKey(value.getProcessInstanceKey())
-        .setTenantId(value.getTenantId())
-        .setTenantScope(AuditLogTenantScope.TENANT);
+        .processInstanceKey(value.getProcessInstanceKey())
+        .tenantId(value.getTenantId())
+        .tenantScope(AuditLogTenantScope.TENANT);
   }
 }

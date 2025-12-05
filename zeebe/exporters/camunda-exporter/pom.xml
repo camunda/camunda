@@ -42,11 +42,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-auth</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
 
@@ -208,6 +203,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-auth</artifactId>
       <scope>test</scope>
     </dependency>
 

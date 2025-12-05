@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers.auditlog;
+package io.camunda.zeebe.exporter.common.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -24,7 +23,7 @@ import java.util.Set;
  * @param <T> the intent type for this transformer
  * @param <R> the record value type for this transformer
  */
-public interface AuditLogOperationTransformer<T extends Intent, R extends RecordValue> {
+public interface AuditLogOperationTransformer<T extends Intent, R extends RecordValue, E> {
 
   ValueType getValueType();
 
@@ -34,5 +33,5 @@ public interface AuditLogOperationTransformer<T extends Intent, R extends Record
 
   Set<RejectionType> getSupportedRejectionTypes();
 
-  void transform(final AuditLogEntity entity, Record<R> record);
+  void transform(final E entity, Record<R> record);
 }
