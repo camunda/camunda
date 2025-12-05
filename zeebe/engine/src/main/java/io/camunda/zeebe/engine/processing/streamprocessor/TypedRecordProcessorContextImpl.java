@@ -50,6 +50,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
     clock = Objects.requireNonNull(context.getClock());
+    meterRegistry = context.getMeterRegistry();
     processingState =
         new ProcessingDbState(
             partitionId,
@@ -59,12 +60,12 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             config,
-            clock);
+            clock,
+            meterRegistry);
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
     this.securityConfig = securityConfig;
-    meterRegistry = context.getMeterRegistry();
   }
 
   @Override

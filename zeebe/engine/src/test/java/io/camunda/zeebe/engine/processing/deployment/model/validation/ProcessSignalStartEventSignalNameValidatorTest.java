@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,8 @@ public class ProcessSignalStartEventSignalNameValidatorTest {
 
     final var sutValidator =
         new ProcessSignalStartEventSignalNameValidator(
-            new FeelExpressionLanguage(new ZeebeFeelEngineClock(InstantSource.system())));
+            new FeelExpressionLanguage(
+                new ZeebeFeelEngineClock(InstantSource.system()), new SimpleMeterRegistry()));
 
     // when
     assertThatNoException()

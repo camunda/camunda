@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -29,7 +31,7 @@ public class FeelFromAiFunctionTest {
       Map.of("toolCall", asMsgPack(Map.of("a", 10, "b", "twenty")));
 
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
+      new FeelExpressionLanguage(new TestFeelEngineClock(), new SimpleMeterRegistry());
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("valueTestCases")

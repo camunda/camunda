@@ -10,10 +10,11 @@ package io.camunda.zeebe.engine.processing.common;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.stream.Stream;
@@ -28,8 +29,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ExpressionProcessorTest {
 
   private static final ExpressionLanguage EXPRESSION_LANGUAGE =
-      ExpressionLanguageFactory.createExpressionLanguage(
-          new ZeebeFeelEngineClock(InstantSource.system()));
+      new FeelExpressionLanguage(
+          new ZeebeFeelEngineClock(InstantSource.system()), new SimpleMeterRegistry());
   private static final ScopedEvaluationContext DEFAULT_CONTEXT_LOOKUP =
       variableName -> Either.left(null);
 

@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.util.ReflectUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -168,7 +169,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
                 new EngineConfiguration(),
-                InstantSource.system());
+                InstantSource.system(),
+                new SimpleMeterRegistry());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }

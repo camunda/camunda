@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -50,7 +51,8 @@ public final class DeploymentTransformer {
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
       final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final MeterRegistry meterRegistry) {
 
     final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
@@ -61,7 +63,8 @@ public final class DeploymentTransformer {
             expressionProcessor,
             featureFlags.enableStraightThroughProcessingLoopDetector(),
             config,
-            clock);
+            clock,
+            meterRegistry);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getDecisionState());

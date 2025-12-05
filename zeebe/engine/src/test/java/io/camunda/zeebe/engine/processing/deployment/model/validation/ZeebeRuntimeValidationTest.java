@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import static io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult.expect;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
@@ -32,6 +32,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.protocol.Protocol;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.InputStream;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -506,8 +507,8 @@ public final class ZeebeRuntimeValidationTest {
   private static ValidationResults validate(final BpmnModelInstance model) {
     final ModelWalker walker = new ModelWalker(model);
     final ExpressionLanguage expressionLanguage =
-        ExpressionLanguageFactory.createExpressionLanguage(
-            new ZeebeFeelEngineClock(InstantSource.system()));
+        new FeelExpressionLanguage(
+            new ZeebeFeelEngineClock(InstantSource.system()), new SimpleMeterRegistry());
     final ScopedEvaluationContext emptyLookup = ScopedEvaluationContext.NONE_INSTANCE;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -87,7 +88,8 @@ public final class StateQueryService implements QueryService {
               new TransientPendingSubscriptionState(),
               new TransientPendingSubscriptionState(),
               new EngineConfiguration(),
-              clock);
+              clock,
+              new SimpleMeterRegistry());
     }
   }
 }
