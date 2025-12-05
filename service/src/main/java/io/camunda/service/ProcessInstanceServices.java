@@ -335,6 +335,7 @@ public final class ProcessInstanceServices
         new BrokerModifyProcessInstanceRequest()
             .setProcessInstanceKey(request.processInstanceKey())
             .addActivationInstructions(request.activateInstructions())
+            .addMovingInstructions(request.moveInstructions())
             .addTerminationInstructions(request.terminateInstructions());
 
     if (request.operationReference() != null) {
@@ -416,6 +417,7 @@ public final class ProcessInstanceServices
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
+      List<ProcessInstanceModificationMoveInstruction> moveInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
       Long operationReference) {}
 
