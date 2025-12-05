@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -21,16 +22,19 @@ public class UserTaskCreatingV3Applier
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableUserTaskState userTaskState;
+  private final MutableGlobalListenersState globalListenersState;
 
   public UserTaskCreatingV3Applier(final MutableProcessingState processingState) {
     elementInstanceState = processingState.getElementInstanceState();
     userTaskState = processingState.getUserTaskState();
+    globalListenersState = processingState.getGlobalListenersState();
   }
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     final var valueWithoutAssignee = value.copy().unsetAssignee();
     userTaskState.create(valueWithoutAssignee);
+    pinGlobalListenersConfig(value);
     userTaskState.storeIntermediateState(value, LifecycleState.CREATING);
     userTaskState.storeInitialAssignee(key, value.getAssignee());
 
@@ -43,5 +47,27 @@ public class UserTaskCreatingV3Applier
         elementInstanceState.updateInstance(elementInstance);
       }
     }
+  }
+
+  public void pinGlobalListenersConfig(final UserTaskRecord userTaskRecord) {
+    // Only pin the configuration if it exists
+    globalListenersState
+        .getCurrentConfig()
+        .ifPresent(
+            currentConfig -> {
+              final long currentConfigKey = currentConfig.getGlobalListenerBatchKey();
+
+              // Create versioned config if it does not exist
+              if (!globalListenersState.isConfigurationVersionStored(currentConfigKey)) {
+                globalListenersState.storeConfigurationVersion(currentConfig);
+              }
+
+              // Create pinned entry
+              globalListenersState.pinConfiguration(
+                  currentConfigKey, userTaskRecord.getUserTaskKey());
+
+              // Update user task record to reference the pinned config
+              userTaskRecord.setListenersConfigKey(currentConfigKey);
+            });
   }
 }

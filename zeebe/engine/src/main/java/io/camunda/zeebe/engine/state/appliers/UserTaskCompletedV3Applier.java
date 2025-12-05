@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -21,14 +22,18 @@ public final class UserTaskCompletedV3Applier
   private final MutableUserTaskState userTaskState;
 
   private final MutableElementInstanceState elementInstanceState;
+  private final MutableGlobalListenersState globalListenersState;
 
   public UserTaskCompletedV3Applier(final MutableProcessingState processingState) {
     userTaskState = processingState.getUserTaskState();
     elementInstanceState = processingState.getElementInstanceState();
+    globalListenersState = processingState.getGlobalListenersState();
   }
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
+    unpinGlobalListenersConfig(key);
+
     userTaskState.delete(key);
     userTaskState.deleteIntermediateState(key);
 
@@ -45,6 +50,24 @@ public final class UserTaskCompletedV3Applier
         elementInstance.resetTaskListenerIndices();
         elementInstanceState.updateInstance(elementInstance);
       }
+    }
+  }
+
+  public void unpinGlobalListenersConfig(final long key) {
+    final UserTaskRecord userTaskRecord = userTaskState.getIntermediateState(key).getRecord();
+    final long pinnedConfigKey = userTaskRecord.getListenersConfigKey();
+    // Only unpin if there is a pinned config
+    if (pinnedConfigKey != -1L) {
+      // Remove pinned entry
+      globalListenersState.unpinConfiguration(pinnedConfigKey, userTaskRecord.getUserTaskKey());
+
+      // If no other user task references this config, remove the versioned config
+      if (!globalListenersState.isConfigurationVersionPinned(pinnedConfigKey)) {
+        globalListenersState.deleteConfigurationVersion(pinnedConfigKey);
+      }
+
+      // Update user task record to no longer reference a pinned config
+      userTaskRecord.setListenersConfigKey(-1L);
     }
   }
 }
