@@ -163,21 +163,21 @@ public final class BatchOperationCreateProcessor
           MsgPackConverter.convertToObject(
               command.getValue().getAuthorizationCheckBuffer(), Authorization.class);
       final AuthorizationRequest authorizationRequest =
-          AuthorizationRequest.of(
-              r ->
-                  r.command(command)
-                      .resourceType(authorization.resourceType())
-                      .permissionType(authorization.permissionType())
-                      .addAllResourceIds(authorization.resourceIds()));
+          AuthorizationRequest.builder()
+              .command(command)
+              .resourceType(authorization.resourceType())
+              .permissionType(authorization.permissionType())
+              .addAllResourceIds(authorization.resourceIds())
+              .build();
       return authCheckBehavior.isAuthorized(authorizationRequest);
     }
     // first check for general CREATE_BATCH_OPERATION permission
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.BATCH)
-                    .permissionType(PermissionType.CREATE));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.BATCH)
+            .permissionType(PermissionType.CREATE)
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
@@ -194,11 +194,11 @@ public final class BatchOperationCreateProcessor
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE;
           };
       return authCheckBehavior.isAuthorized(
-          AuthorizationRequest.of(
-              r ->
-                  r.command(command)
-                      .resourceType(AuthorizationResourceType.BATCH)
-                      .permissionType(permission)));
+          AuthorizationRequest.builder()
+              .command(command)
+              .resourceType(AuthorizationResourceType.BATCH)
+              .permissionType(permission)
+              .build());
     }
 
     return isAuthorized;

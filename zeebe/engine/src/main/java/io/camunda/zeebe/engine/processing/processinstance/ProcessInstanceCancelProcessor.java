@@ -106,13 +106,13 @@ public final class ProcessInstanceCancelProcessor
     }
 
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                    .permissionType(PermissionType.CANCEL_PROCESS_INSTANCE)
-                    .tenantId(elementInstance.getValue().getTenantId())
-                    .addResourceId(elementInstance.getValue().getBpmnProcessId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.CANCEL_PROCESS_INSTANCE)
+            .tenantId(elementInstance.getValue().getTenantId())
+            .addResourceId(elementInstance.getValue().getBpmnProcessId())
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

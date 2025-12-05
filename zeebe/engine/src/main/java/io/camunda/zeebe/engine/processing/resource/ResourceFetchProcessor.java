@@ -137,13 +137,13 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   private void checkAuthorization(
       final TypedRecord<ResourceRecord> command, final PersistedResource resource) {
     final var authRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.RESOURCE)
-                    .permissionType(PermissionType.READ)
-                    .tenantId(resource.getTenantId())
-                    .addResourceId(BufferUtil.bufferAsString(resource.getResourceId())));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(PermissionType.READ)
+            .tenantId(resource.getTenantId())
+            .addResourceId(BufferUtil.bufferAsString(resource.getResourceId()))
+            .build();
     if (authorizationCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);
     }

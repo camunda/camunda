@@ -389,7 +389,7 @@ public final class AuthorizationCheckBehavior {
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
     return tenantResolver.isAssignedToTenant(
-        AuthorizationRequest.of(r -> r.command(command).tenantId(tenantId)));
+        AuthorizationRequest.builder().command(command).tenantId(tenantId).build());
   }
 
   /**

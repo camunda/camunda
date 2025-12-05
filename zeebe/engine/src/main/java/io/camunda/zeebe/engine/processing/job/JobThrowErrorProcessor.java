@@ -236,13 +236,13 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                    .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                    .tenantId(job.getTenantId())
-                    .addResourceId(job.getBpmnProcessId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+            .tenantId(job.getTenantId())
+            .addResourceId(job.getBpmnProcessId())
+            .build();
     return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(unused -> job);
   }
 }

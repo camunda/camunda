@@ -116,23 +116,27 @@ public class ClusterVariableCreateProcessor
   private Either<Rejection, Void> checkAuthorizationForTenantScope(
       final TypedRecord<ClusterVariableRecord> command) {
     final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.CLUSTER_VARIABLE,
-                PermissionType.CREATE,
-                command.getValue().getTenantId())
-            .isNewResource(true)
-            .addResourceId(command.getValue().getName());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
+            .permissionType(PermissionType.CREATE)
+            .tenantId(command.getValue().getTenantId())
+            .newResource()
+            .addResourceId(command.getValue().getName())
+            .build();
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 
   private Either<Rejection, Void> checkAuthorizationForGlobalScope(
       final TypedRecord<ClusterVariableRecord> command) {
     final var authRequest =
-        new AuthorizationRequest(
-                command, AuthorizationResourceType.CLUSTER_VARIABLE, PermissionType.CREATE)
-            .isNewResource(true)
-            .addResourceId(command.getValue().getName());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
+            .permissionType(PermissionType.CREATE)
+            .newResource()
+            .addResourceId(command.getValue().getName())
+            .build();
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

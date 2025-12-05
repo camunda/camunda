@@ -64,13 +64,13 @@ public class JobUpdateBehaviour {
   public Either<Rejection, JobRecord> isAuthorized(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var authRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                    .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                    .tenantId(job.getTenantId())
-                    .addResourceId(job.getBpmnProcessId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+            .tenantId(job.getTenantId())
+            .addResourceId(job.getBpmnProcessId())
+            .build();
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> job);
   }
 

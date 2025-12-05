@@ -115,21 +115,25 @@ public class ClusterVariableDeleteProcessor
   private Either<Rejection, Void> checkAuthorizationForTenantScope(
       final TypedRecord<ClusterVariableRecord> command) {
     final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.CLUSTER_VARIABLE,
-                PermissionType.DELETE,
-                command.getValue().getTenantId())
-            .addResourceId(command.getValue().getName());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
+            .permissionType(PermissionType.DELETE)
+            .tenantId(command.getValue().getTenantId())
+            .addResourceId(command.getValue().getName())
+            .build();
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 
   private Either<Rejection, Void> checkAuthorizationForGlobalScope(
       final TypedRecord<ClusterVariableRecord> command) {
     final var authRequest =
-        new AuthorizationRequest(
-                command, AuthorizationResourceType.CLUSTER_VARIABLE, PermissionType.DELETE)
-            .addResourceId(command.getValue().getName());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
+            .permissionType(PermissionType.DELETE)
+            .addResourceId(command.getValue().getName())
+            .build();
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

@@ -73,13 +73,13 @@ public class UserTaskCommandPreconditionChecker {
     }
 
     final var authRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                    .permissionType(PermissionType.UPDATE_USER_TASK)
-                    .tenantId(persistedRecord.getTenantId())
-                    .addResourceId(persistedRecord.getBpmnProcessId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_USER_TASK)
+            .tenantId(persistedRecord.getTenantId())
+            .addResourceId(persistedRecord.getBpmnProcessId())
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       return Either.left(isAuthorized.getLeft());
