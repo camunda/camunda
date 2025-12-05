@@ -23,7 +23,7 @@ import io.camunda.management.backups.Error;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
@@ -91,7 +91,7 @@ final class BackupEndpointTest {
     void shouldReturnErrorOnException() {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
@@ -111,7 +111,7 @@ final class BackupEndpointTest {
 
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new BackupAlreadyExistException(2, 1);
@@ -130,7 +130,7 @@ final class BackupEndpointTest {
     void shouldReturnCorrectErrorCode(final Throwable error, final int expectedCode) {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).takeBackup(anyLong());
@@ -152,7 +152,7 @@ final class BackupEndpointTest {
 
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(true);
       final var endpoint = new BackupEndpoint(api, config);
 
@@ -174,7 +174,7 @@ final class BackupEndpointTest {
 
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(true);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.completedFuture(null)).when(api).takeBackup(anyLong());
@@ -208,7 +208,7 @@ final class BackupEndpointTest {
       // given
       final long offset = 20251104131520L;
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(true);
       when(config.getOffset()).thenReturn(offset);
       final var endpoint = new BackupEndpoint(api, config);
@@ -236,7 +236,7 @@ final class BackupEndpointTest {
     void shouldReturnErrorOnException() {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
@@ -255,7 +255,7 @@ final class BackupEndpointTest {
     void shouldReturn404WhenBackupDoesNotExist() {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var backupStatus =
@@ -277,7 +277,7 @@ final class BackupEndpointTest {
     void shouldReturnCorrectErrorCode(final Throwable error, final int expectedCode) {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
@@ -298,7 +298,7 @@ final class BackupEndpointTest {
     void shouldReturnCompletedBackupStatus() throws JsonProcessingException {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createPartitionBackupStatus();
@@ -350,7 +350,7 @@ final class BackupEndpointTest {
     void shouldReturnFailedBackupStatus() throws JsonProcessingException {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createFailedBackupStatus();
@@ -444,7 +444,7 @@ final class BackupEndpointTest {
     void shouldReturnErrorOnException() {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
@@ -464,7 +464,7 @@ final class BackupEndpointTest {
     void shouldReturnCorrectErrorCode(final Throwable error, final int expectedCode) {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).listBackups("*");
@@ -485,7 +485,7 @@ final class BackupEndpointTest {
     void shouldReturnListOfBackups() throws JsonProcessingException {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var backup1 =
@@ -553,7 +553,7 @@ final class BackupEndpointTest {
     void shouldReturnEmptyList() {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.completedFuture(List.of())).when(api).listBackups("*");
@@ -588,7 +588,7 @@ final class BackupEndpointTest {
     void shouldReturnErrorOnException() {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
@@ -608,7 +608,7 @@ final class BackupEndpointTest {
     void shouldReturnCorrectErrorCode(final Throwable error, final int expectedCode) {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).deleteBackup(anyLong());
@@ -629,7 +629,7 @@ final class BackupEndpointTest {
     void shouldDeleteBackup() {
       // given
       final var api = mock(BackupApi.class);
-      final var config = mock(BackupSchedulerCfg.class);
+      final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.completedFuture(null)).when(api).deleteBackup(1);
