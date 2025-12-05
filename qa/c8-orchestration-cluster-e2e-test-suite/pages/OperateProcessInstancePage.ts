@@ -40,6 +40,15 @@ class OperateProcessInstancePage {
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
   readonly migratedTag: Locator;
+  readonly continueButton: Locator;
+  readonly applyModificationsButton: Locator;
+  readonly applyButton: Locator;
+  readonly addSingleFlowNodeInstanceButton: Locator;
+  readonly moveSelectedInstanceButton: Locator;
+  readonly executionListenerText: Locator;
+  readonly taskListenerText: Locator;
+  readonly stateOverlayActive: Locator;
+  readonly stateOverlayCompletedEndEvents: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -84,6 +93,23 @@ class OperateProcessInstancePage {
     this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
       hasText: /^Migrated/,
     });
+    this.continueButton = page.getByRole('button', {name: 'Continue'});
+    this.applyModificationsButton = page.getByRole('button', {
+      name: 'Apply Modifications',
+    });
+    this.applyButton = page.getByRole('button', {name: 'Apply', exact: true});
+    this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
+      name: 'Add single flow node instance',
+    });
+    this.moveSelectedInstanceButton = page.getByRole('button', {
+      name: 'Move selected instance in this flow node to another target',
+    });
+    this.executionListenerText = page.getByText('Execution listener');
+    this.taskListenerText = page.getByText('Task listener');
+    this.stateOverlayActive = page.getByTestId('state-overlay-active');
+    this.stateOverlayCompletedEndEvents = page.getByTestId(
+      'state-overlay-completedEndEvents',
+    );
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -210,6 +236,93 @@ class OperateProcessInstancePage {
   async getProcessInstanceKey(): Promise<string> {
     const processInstanceKey = this.page.locator('table tbody tr td').nth(1);
     return (await processInstanceKey.textContent()) ?? '';
+  }
+
+  async gotoProcessInstancePage({id}: {id: string}): Promise<void> {
+    await this.page.goto(`/operate/processes/${id}`);
+  }
+
+  get diagramHelper() {
+    return {
+      clickFlowNode: (flowNodeName: string) => {
+        return this.diagram
+          .getByText(flowNodeName)
+          .first()
+          .click({timeout: 20000});
+      },
+      getFlowNode: (flowNodeName: string) => {
+        return this.diagram.getByText(flowNodeName);
+      },
+      clickEvent: async (eventName: string) => {
+        await this.diagram
+          .locator(`[data-element-id="${eventName}"]`)
+          .click({timeout: 20000});
+      },
+      moveCanvasHorizontally: async (dx: number) => {
+        const boundingBox = await this.diagram.boundingBox();
+        if (!boundingBox) {
+          throw new Error('Diagram not found');
+        }
+
+        const startX = boundingBox.x + boundingBox.width / 2;
+        const startY = boundingBox.y + 50;
+
+        await this.page.mouse.move(startX, startY);
+        await this.page.mouse.down();
+        await this.page.mouse.move(startX + dx, startY);
+        await this.page.mouse.up();
+      },
+    };
+  }
+
+  getListenerRows(listenerType?: 'execution' | 'task'): Locator {
+    if (listenerType === 'execution') {
+      return this.page
+        .getByRole('row')
+        .filter({hasText: /execution listener/i});
+    }
+    if (listenerType === 'task') {
+      return this.page.getByRole('row').filter({hasText: /task listener/i});
+    }
+    return this.page.getByRole('row').filter({hasText: /listener/i});
+  }
+
+  getExecutionListenerText(exact = false): Locator {
+    return this.page.getByText('Execution listener', {exact});
+  }
+
+  getTaskListenerText(exact = false): Locator {
+    return this.page.getByText('Task listener', {exact});
+  }
+
+  getInstanceHistoryElement(elementText: string | RegExp): Locator {
+    return this.instanceHistory.getByText(elementText);
+  }
+
+  async clickInstanceHistoryElement(
+    elementText: string | RegExp,
+  ): Promise<void> {
+    await this.getInstanceHistoryElement(elementText).click();
+  }
+
+  async openListenersTab(): Promise<void> {
+    await this.listenersTabButton.click();
+  }
+
+  async verifyListenersTabVisible(): Promise<void> {
+    await expect(this.listenersTabButton).toBeVisible();
+  }
+
+  async startModificationFlow(): Promise<void> {
+    await this.modifyInstanceButton.click();
+    await this.continueButton.click();
+  }
+
+  async applyModifications(): Promise<void> {
+    await expect(this.applyModificationsButton).toBeEnabled({timeout: 10000});
+
+    await this.applyModificationsButton.click();
+    await this.applyButton.click();
   }
 }
 
