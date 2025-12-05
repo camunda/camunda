@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.evaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -125,16 +125,21 @@ public class ConditionalEvaluationProcessor
     }
 
     final long eventKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(eventKey, ConditionalEvaluationIntent.EVALUATED, record);
 
     for (final var match : matchedStartEvents) {
+      final long processInstanceKey = keyGenerator.nextKey();
+
       eventHandle.activateProcessInstanceForStartEvent(
           match.process().getKey(),
-          keyGenerator.nextKey(),
+          processInstanceKey,
           match.startEventId(),
           record.getVariablesBuffer(),
           record.getTenantId());
+
+      record.addStartedProcessInstance(match.process().getKey(), processInstanceKey);
     }
+
+    stateWriter.appendFollowUpEvent(eventKey, ConditionalEvaluationIntent.EVALUATED, record);
 
     if (command.hasRequestMetadata()) {
       responseWriter.writeEventOnCommand(
