@@ -37,7 +37,7 @@ const setSelectionSearchParams = (
     params.set(ELEMENT_ID, newParams[ELEMENT_ID]);
   }
   if (newParams[ELEMENT_INSTANCE_KEY]) {
-    params.set(ELEMENT_INSTANCE_KEY, newParams[ELEMENT_INSTANCE_KEY]!);
+    params.set(ELEMENT_INSTANCE_KEY, newParams[ELEMENT_INSTANCE_KEY]);
   }
   if (newParams[IS_MULTI_INSTANCE_BODY] === true) {
     params.set(IS_MULTI_INSTANCE_BODY, 'true');
