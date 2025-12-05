@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
 import static io.camunda.it.util.TestHelper.getScopedVariables;
 import static io.camunda.it.util.TestHelper.waitForActiveScopedUserTasks;
+import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
@@ -21,12 +22,14 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.statistics.response.ProcessElementStatisticsImpl;
 import io.camunda.it.util.TestHelper;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -36,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -49,11 +53,66 @@ public class ProcessDefinitionStatisticsIT {
   public static final int INCIDENT_ERROR_HASH_CODE_V2 = 17551445;
   private static CamundaClient camundaClient;
   private static String testScopeId;
+  private static final String PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1 =
+      "process_with_subscriptions_1";
+  private static final String PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2 =
+      "process_with_subscriptions_2";
+  private static long PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1;
+  private static long PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2;
+  private static long PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1;
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {
     testScopeId =
         testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+  }
+
+  @BeforeAll
+  public static void beforeAll() {
+    final var processModel1V1 =
+        createBpmnModelVersion("v1", PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
+    final var processModel1V2 =
+        createBpmnModelVersion("v2", PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
+    final var processModel2 = createBpmnModelVersion("v1", PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2);
+
+    PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1 =
+        deployResource(processModel1V1, "multi-sub-process.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2 =
+        deployResource(processModel1V2, "multi-sub-process.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1 =
+        deployResource(processModel2, "multi-sub-process-v2.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    // 2 instances for process 1 version 1 = 4 subscriptions
+    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1, Map.of("key1", "A", "key2", "B"));
+    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1, Map.of("key1", "A", "key2", "B"));
+    // 1 instance for process 1 version 2 = 2 subscriptions
+    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2, Map.of("key1", "A", "key2", "B"));
+    // 1 instance for process 2 version 1 = 2 subscriptions
+    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1, Map.of("key1", "A", "key2", "B"));
+
+    waitForProcessInstances(
+        camundaClient,
+        f ->
+            f.processDefinitionKey(
+                    p ->
+                        p.in(
+                            PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1,
+                            PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2,
+                            PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1))
+                .state(ProcessInstanceState.ACTIVE),
+        4);
+
+    waitForMessageSubscriptions(
+        camundaClient, f -> f.messageSubscriptionState(MessageSubscriptionState.CREATED), 8);
   }
 
   @Test
@@ -882,6 +941,89 @@ public class ProcessDefinitionStatisticsIT {
     assertThat(result).isEmpty();
   }
 
+  @Test
+  void shouldCountMultipleSubscriptionsInSameProcessInstance() {
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionMessageSubscriptionStatisticsRequest()
+            .filter(f -> f.processDefinitionId(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual.items()).hasSize(1);
+    final var stats = actual.items().getFirst();
+    assertThat(stats.getActiveSubscriptions()).isEqualTo(2L);
+    // But only 1 process instance has subscriptions
+    assertThat(stats.getProcessInstancesWithActiveSubscriptions()).isEqualTo(1L);
+    assertThat(stats.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1));
+    assertThat(stats.getProcessDefinitionId()).isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2);
+  }
+
+  @Test
+  void shouldCountMultipleSubscriptionsInMultipleProcessInstance() {
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionMessageSubscriptionStatisticsRequest()
+            .filter(f -> f.processDefinitionKey(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual.items()).hasSize(1);
+    final var stats = actual.items().getFirst();
+    assertThat(stats.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1));
+    assertThat(stats.getProcessDefinitionId()).isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
+    assertThat(stats.getActiveSubscriptions()).isEqualTo(4L);
+    // But only 2 process instances have subscriptions
+    assertThat(stats.getProcessInstancesWithActiveSubscriptions()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldCountMultipleSubscriptionsInMultipleProcessInstancePaginated() {
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionMessageSubscriptionStatisticsRequest()
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual.items()).hasSize(1);
+    final var endCursor = actual.getEndCursor();
+    assertThat(endCursor).isNotBlank();
+    final var stats = actual.items().getFirst();
+    assertThat(stats.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1));
+    assertThat(stats.getProcessDefinitionId()).isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
+    assertThat(stats.getActiveSubscriptions()).isEqualTo(4L);
+    // But only 2 process instances have subscriptions
+    assertThat(stats.getProcessInstancesWithActiveSubscriptions()).isEqualTo(2L);
+
+    // when - fetch next page
+    final var actualPage2 =
+        camundaClient
+            .newProcessDefinitionMessageSubscriptionStatisticsRequest()
+            .page(p -> p.limit(1).after(endCursor))
+            .send()
+            .join();
+    // then
+    assertThat(actualPage2.items()).hasSize(1);
+    final var statsPage2 = actualPage2.items().getFirst();
+    assertThat(statsPage2.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2));
+    assertThat(statsPage2.getProcessDefinitionId())
+        .isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
+    assertThat(statsPage2.getActiveSubscriptions()).isEqualTo(2L);
+    // But only 2 process instances have subscriptions
+    assertThat(statsPage2.getProcessInstancesWithActiveSubscriptions()).isEqualTo(1L);
+  }
+
   private static void waitForIncidents(final long processDefinitionKey) {
     Awaitility.await("should receive data from ES")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -983,61 +1125,20 @@ public class ProcessDefinitionStatisticsIT {
         .getFirst();
   }
 
-  @Test
-  void shouldCountMultipleSubscriptionsInSameProcessInstance() {
-    // given
-    final var processModel =
-        Bpmn.createExecutableProcess("multiSubProcess")
-            .startEvent()
-            .parallelGateway("fork")
-            .intermediateCatchEvent(
-                "catch1", e -> e.message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1")))
-            .endEvent("end1")
-            .moveToNode("fork")
-            .intermediateCatchEvent(
-                "catch2", e -> e.message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key2")))
-            .endEvent("end2")
-            .done();
-    final var processDefinitionKey =
-        deployResource(processModel, "multi-sub-process.bpmn")
-            .getProcesses()
-            .getFirst()
-            .getProcessDefinitionKey();
-
-    // Create one instance that will have 2 active subscriptions
-    createInstance(processDefinitionKey, Map.of("key1", "A", "key2", "B"));
-
-    waitForProcessInstances(
-        camundaClient,
-        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.ACTIVE),
-        1);
-
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              final var subscriptions =
-                  camundaClient.newMessageSubscriptionSearchRequest().send().join();
-              assertThat(subscriptions.items()).hasSize(2);
-            });
-
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              final var subscriptions =
-                  camundaClient.newMessageSubscriptionSearchRequest().send().join();
-              assertThat(subscriptions.items()).hasSize(2);
-            });
-
-    // when
-    final var subs = camundaClient.newMessageSubscriptionSearchRequest().send().join();
-    final var actual =
-        camundaClient.newProcessDefinitionMessageSubscriptionStatisticsRequest().send().join();
-
-    // then
-    assertThat(actual.items()).hasSize(1);
-    final var stats = actual.items().getFirst();
-    assertThat(stats.getActiveSubscriptions()).isEqualTo(2L);
-    // But only 1 process instance has subscriptions
-    assertThat(stats.getProcessInstancesWithActiveSubscriptions()).isEqualTo(1L);
+  private static BpmnModelInstance createBpmnModelVersion(
+      final String version, final String processId) {
+    // Allows creating different versions of the same process
+    final var versionedId = "versionedId" + version;
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .parallelGateway(versionedId)
+        .intermediateCatchEvent(
+            "catch1", e -> e.message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1")))
+        .endEvent("end1")
+        .moveToNode(versionedId)
+        .intermediateCatchEvent(
+            "catch2", e -> e.message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key2")))
+        .endEvent("end2")
+        .done();
   }
 }

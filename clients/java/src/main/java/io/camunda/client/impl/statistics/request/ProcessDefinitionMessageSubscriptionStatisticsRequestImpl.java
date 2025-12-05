@@ -15,11 +15,13 @@
  */
 package io.camunda.client.impl.statistics.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.messageSubscriptionFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -70,6 +72,19 @@ public class ProcessDefinitionMessageSubscriptionStatisticsRequestImpl
         StatisticsResponseMapper::toProcessDefinitionMessageSubscriptionStatisticsResponse,
         result);
     return result;
+  }
+
+  @Override
+  public ProcessDefinitionMessageSubscriptionStatisticsRequest filter(
+      final MessageSubscriptionFilter value) {
+    request.setFilter(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionMessageSubscriptionStatisticsRequest filter(
+      final Consumer<MessageSubscriptionFilter> fn) {
+    return filter(messageSubscriptionFilter(fn));
   }
 
   @Override

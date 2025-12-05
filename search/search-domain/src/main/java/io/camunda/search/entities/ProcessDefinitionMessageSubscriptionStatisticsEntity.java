@@ -13,7 +13,8 @@ import io.camunda.util.ObjectBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
     String processDefinitionId,
-    String processDefinitionKey,
+    String tenantId,
+    Long processDefinitionKey,
     Long processInstancesWithActiveSubscriptions,
     Long activeSubscriptions) {
 
@@ -21,7 +22,8 @@ public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
       implements ObjectBuilder<ProcessDefinitionMessageSubscriptionStatisticsEntity> {
 
     private String processDefinitionId;
-    private String processDefinitionKey;
+    private String tenantId;
+    private Long processDefinitionKey;
     private Long processInstancesWithActiveSubscriptions;
     private Long activeSubscriptions;
 
@@ -30,7 +32,12 @@ public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
       return this;
     }
 
-    public Builder processDefinitionKey(final String processDefinitionKey) {
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
@@ -50,6 +57,7 @@ public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
     public ProcessDefinitionMessageSubscriptionStatisticsEntity build() {
       return new ProcessDefinitionMessageSubscriptionStatisticsEntity(
           processDefinitionId,
+          tenantId,
           processDefinitionKey,
           processInstancesWithActiveSubscriptions,
           activeSubscriptions);

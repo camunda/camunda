@@ -718,16 +718,6 @@ public final class SearchQueryRequestMapper {
         SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom())));
   }
 
-  private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
-      final ProcessDefinitionMessageSubscriptionStatisticsPageRequest requestedPage) {
-    if (requestedPage == null) {
-      return Either.right(null);
-    }
-
-    return Either.right(
-        SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom())));
-  }
-
   private static <
           T,
           B extends TypedSearchQueryBuilder<T, B, F, S>,

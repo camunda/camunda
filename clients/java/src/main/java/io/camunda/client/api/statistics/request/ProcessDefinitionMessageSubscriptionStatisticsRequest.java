@@ -16,9 +16,13 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
+import io.camunda.client.api.search.request.TypedFilterableRequest;
 import io.camunda.client.api.search.request.TypedPageableRequest;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
 
 public interface ProcessDefinitionMessageSubscriptionStatisticsRequest
     extends FinalCommandStep<ProcessDefinitionMessageSubscriptionStatistics>,
-        TypedPageableRequest<ProcessDefinitionMessageSubscriptionStatisticsRequest> {}
+        TypedPageableRequest<ProcessDefinitionMessageSubscriptionStatisticsRequest>,
+        TypedFilterableRequest<
+            MessageSubscriptionFilter, ProcessDefinitionMessageSubscriptionStatisticsRequest> {}

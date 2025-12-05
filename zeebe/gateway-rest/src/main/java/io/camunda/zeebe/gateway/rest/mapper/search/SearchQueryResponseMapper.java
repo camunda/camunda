@@ -37,8 +37,8 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
-import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -1406,7 +1406,8 @@ public final class SearchQueryResponseMapper {
             e ->
                 new ProcessDefinitionMessageSubscriptionStatisticsResult()
                     .processDefinitionId(e.processDefinitionId())
-                    .processDefinitionKey(e.processDefinitionKey())
+                    .tenantId(e.tenantId())
+                    .processDefinitionKey(String.valueOf(e.processDefinitionKey()))
                     .activeSubscriptions(e.activeSubscriptions())
                     .processInstancesWithActiveSubscriptions(
                         e.processInstancesWithActiveSubscriptions()))
