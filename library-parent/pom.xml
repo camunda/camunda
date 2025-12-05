@@ -33,14 +33,4 @@
     <version.spring>7.0.1</version.spring>
   </properties>
 
-  <profiles>
-    <profile>
-      <id>spring-boot-3.5</id>
-      <properties>
-        <!-- For testing Spring Boot 3.5 compatibility -->
-        <version.spring-boot>3.5.8</version.spring-boot>
-        <version.spring>6.2.11</version.spring>
-      </properties>
-    </profile>
-  </profiles>
 </project>
