@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
-import static io.camunda.security.configuration.AuthenticationConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.GroupQuery;
@@ -170,15 +169,11 @@ public class TenantController {
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
-    final boolean areGroupsManagedExternally =
-        securityConfiguration.getAuthentication().areGroupsManagedExternally();
     return RequestMapper.toTenantMemberRequest(
             tenantId,
             groupId,
             EntityType.GROUP,
-            areGroupsManagedExternally
-                ? DEFAULT_EXTERNAL_ID_REGEX
-                : securityConfiguration.getCompiledIdValidationPattern())
+            securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
