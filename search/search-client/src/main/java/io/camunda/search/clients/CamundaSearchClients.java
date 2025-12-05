@@ -178,12 +178,13 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public AuditLogEntity getAuditLog(final String id) {
-    throw new RuntimeException("Not implemented yet");
+    return doGetWithReader(readers.auditLogReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Audit log", id));
   }
 
   @Override
   public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
-    throw new RuntimeException("Not implemented yet");
+    return doSearchWithReader(readers.auditLogReader(), query);
   }
 
   @Override
