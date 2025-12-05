@@ -284,6 +284,7 @@ public final class SearchQueryResponseMapper {
       final ProcessDefinitionInstanceStatisticsEntity result) {
     return new ProcessDefinitionInstanceStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
+        .tenantId(result.tenantId())
         .latestProcessDefinitionName(result.latestProcessDefinitionName())
         .hasMultipleVersions(result.hasMultipleVersions())
         .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
@@ -297,6 +298,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(result.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionName(result.processDefinitionName())
+        .tenantId(result.tenantId())
         .processDefinitionVersion(result.processDefinitionVersion())
         .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
         .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());

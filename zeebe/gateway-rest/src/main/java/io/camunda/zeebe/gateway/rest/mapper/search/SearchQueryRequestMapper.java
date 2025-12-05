@@ -9,11 +9,13 @@ package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toIncidentFilter;
+import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessDefinitionInstanceVersionStatisticsFilter;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessInstanceFilter;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
@@ -627,7 +629,8 @@ public final class SearchQueryRequestMapper {
                 request.getSort()),
             SortOptionBuilders::processDefinitionInstanceStatistics,
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceStatisticsSortField);
-    final var filter = toProcessInstanceFilter(request.getFilter());
+    final var filter =
+        FilterBuilders.processInstance().states(ProcessInstanceState.ACTIVE.name()).build();
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceStatisticsQuery);
   }
@@ -648,7 +651,7 @@ public final class SearchQueryRequestMapper {
                 .fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(request.getSort()),
             SortOptionBuilders::processDefinitionInstanceVersionStatistics,
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceVersionStatisticsSortField);
-    final var filter = FilterBuilders.processInstance().build();
+    final var filter = toProcessDefinitionInstanceVersionStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceVersionStatisticsQuery);
   }
