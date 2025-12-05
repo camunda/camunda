@@ -13,6 +13,7 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
+import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
@@ -131,7 +132,8 @@ public class SearchClientConfiguration {
       final UserReader userReader,
       final UserTaskReader userTaskReader,
       final VariableReader variableReader,
-      final ClusterVariableReader clusterVariableReader) {
+      final ClusterVariableReader clusterVariableReader,
+      final AuditLogReader auditLogReader) {
     return new SearchClientReaders(
         authorizationReader,
         batchOperationReader,
@@ -164,6 +166,7 @@ public class SearchClientConfiguration {
         userReader,
         userTaskReader,
         variableReader,
-        clusterVariableReader);
+        clusterVariableReader,
+        auditLogReader);
   }
 }
