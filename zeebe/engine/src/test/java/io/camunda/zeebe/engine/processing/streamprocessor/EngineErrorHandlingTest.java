@@ -93,7 +93,18 @@ public final class EngineErrorHandlingTest {
     streams.createLogStream(STREAM_NAME);
 
     final AtomicLong key = new AtomicLong();
-    keyGenerator = () -> key.getAndIncrement();
+    keyGenerator =
+        new KeyGenerator() {
+          @Override
+          public long nextKey() {
+            return key.getAndIncrement();
+          }
+
+          @Override
+          public void overwriteNextKey(final long nextKey) {
+            throw new UnsupportedOperationException();
+          }
+        };
   }
 
   @Test

@@ -1,0 +1,51 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.impl.record.value.keygenerator;
+
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.KeyGeneratorResetRecordValue;
+
+public final class KeyGeneratorResetRecord extends UnifiedRecordValue
+    implements KeyGeneratorResetRecordValue {
+
+  private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId", 0);
+  private final LongProperty newKeyValueProperty = new LongProperty("newKeyValue", 0L);
+
+  public KeyGeneratorResetRecord() {
+    super(2);
+    declareProperty(partitionIdProperty).declareProperty(newKeyValueProperty);
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionIdProperty.getValue();
+  }
+
+  public KeyGeneratorResetRecord setPartitionId(final int partitionId) {
+    partitionIdProperty.setValue(partitionId);
+    return this;
+  }
+
+  @Override
+  public long getNewKeyValue() {
+    return newKeyValueProperty.getValue();
+  }
+
+  public KeyGeneratorResetRecord setNewKeyValue(final long newKeyValue) {
+    newKeyValueProperty.setValue(newKeyValue);
+    return this;
+  }
+
+  public KeyGeneratorResetRecord copy() {
+    final KeyGeneratorResetRecord copy = new KeyGeneratorResetRecord();
+    copy.copyFrom(this);
+    return copy;
+  }
+}

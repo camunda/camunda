@@ -62,6 +62,18 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
     return nextKey;
   }
 
+  @Override
+  public void overwriteNextKey(final long nextKey) {
+    if (Protocol.decodePartitionId(nextKey) != partitionId) {
+      throw new UnrecoverableException(
+          new IllegalArgumentException(
+              String.format(
+                  "Provided key %d does not belong to partition %d, it belongs to %d",
+                  nextKey, partitionId, Protocol.decodePartitionId(nextKey))));
+    }
+    nextValueManager.setValue(LATEST_KEY, nextKey - 1);
+  }
+
   /**
    * Retrieve the current key from the state, since it is only used in tests it is not part of the
    * interface.

@@ -78,6 +78,7 @@ final class TestSupport {
       case CLUSTER_VARIABLE -> config.clusterVariable = value;
       case CONDITIONAL_SUBSCRIPTION -> config.conditionalSubscription = value;
       case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
+      case KEY_GENERATOR_RESET -> config.keyGeneratorReset = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);

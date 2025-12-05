@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.KeyGeneratorResetIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -99,6 +100,7 @@ import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.KeyGeneratorResetRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
@@ -341,6 +343,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.CONDITIONAL_EVALUATION,
         new Mapping<>(ConditionalEvaluationRecordValue.class, ConditionalEvaluationIntent.class));
+    mapping.put(
+        ValueType.KEY_GENERATOR_RESET,
+        new Mapping<>(KeyGeneratorResetRecordValue.class, KeyGeneratorResetIntent.class));
     return mapping;
   }
 
