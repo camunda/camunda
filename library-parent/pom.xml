@@ -27,7 +27,10 @@
     <!-- The Spring Boot version is managed explicitly here to avoid inheriting
     Spring Boot version from the parent pom.xml, which is the reference for internal modules.
     This allows decoupled control of the Spring Boot version for this user facing artifact. -->
-    <version.spring-boot>3.5.8</version.spring-boot>
+    <version.spring-boot>4.0.0</version.spring-boot>
+    <!-- The Spring Framework version is also explicitly managed here to be compatible
+    with Spring Boot 4.0. -->
+    <version.spring>7.0.1</version.spring>
   </properties>
 
   <profiles>
@@ -36,6 +39,7 @@
       <properties>
         <!-- For testing Spring Boot 3.5 compatibility -->
         <version.spring-boot>3.5.8</version.spring-boot>
+        <version.spring>6.2.11</version.spring>
       </properties>
     </profile>
   </profiles>
