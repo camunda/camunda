@@ -69,6 +69,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
     return bpmnProcessId;
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return -1L;
+  }
+
   public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
