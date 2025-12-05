@@ -8,10 +8,13 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.entity.AuthenticationMethod;
+import java.util.regex.Pattern;
 
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;
   public static final boolean DEFAULT_UNPROTECTED_API = false;
+
+  public static final Pattern DEFAULT_EXTERNAL_ID_REGEX = Pattern.compile(".*", Pattern.DOTALL);
 
   private AuthenticationMethod method = DEFAULT_METHOD;
   private String authenticationRefreshInterval = "PT30S";

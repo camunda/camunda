@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
+import static io.camunda.security.configuration.AuthenticationConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.GroupQuery;
@@ -53,7 +54,6 @@ import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -177,7 +177,7 @@ public class TenantController {
             groupId,
             EntityType.GROUP,
             areGroupsManagedExternally
-                ? Pattern.compile(".*", Pattern.DOTALL)
+                ? DEFAULT_EXTERNAL_ID_REGEX
                 : securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
