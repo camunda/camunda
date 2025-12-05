@@ -14,8 +14,10 @@ const c8 = new Camunda8({
   CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
+  ZEEBE_GRPC_ADDRESS: process.env.ZEEBE_GRPC_ADDRESS,
 });
 const zeebe = c8.getCamundaRestClient();
+const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
     const results = await zeebe.deployResourcesFromFiles(processFilePaths);
@@ -41,4 +43,70 @@ const createInstances = async (
   }
 };
 
+<<<<<<< HEAD
 export {deploy, createInstances};
+=======
+const createSingleInstance = async (
+  processDefinitionId: string,
+  processDefinitionVersion: number,
+  variables?: JSONDoc,
+) => {
+  return zeebe.createProcessInstance({
+    processDefinitionId,
+    processDefinitionVersion,
+    variables: {...(variables ?? {})},
+  });
+};
+
+const cancelProcessInstance = async (processInstanceKey: string) => {
+  return zeebe.cancelProcessInstance({processInstanceKey});
+};
+
+const createWorker = (
+  taskType: string,
+  shouldFail: boolean = false,
+  variables: JSONDoc = {},
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler?: (job: any) => any,
+  timeout?: number,
+) => {
+  return zeebeGrpc.createWorker({
+    taskType,
+    taskHandler:
+      handler ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((job: any) => {
+        if (shouldFail) {
+          return job.fail('Task failed for testing purposes');
+        }
+        return job.complete(variables);
+      }),
+    ...(timeout ? {timeout} : {}),
+  });
+};
+
+async function checkUpdateOnVersion(
+  targetVersion: string,
+  processInstanceKey: string,
+) {
+  const res = await zeebe.searchProcessInstances({
+    filter: {processInstanceKey},
+  });
+  const item = res?.items?.[0];
+  console.log(
+    `Target Version ${targetVersion}, Current Version ${item?.processDefinitionVersion}`,
+  );
+  console.log(!!item, item?.processDefinitionVersion == targetVersion);
+  return !!item && item.processDefinitionVersion == targetVersion;
+}
+
+export {
+  deploy,
+  createInstances,
+  generateManyVariables,
+  checkUpdateOnVersion,
+  createSingleInstance,
+  cancelProcessInstance,
+  createWorker,
+};
+>>>>>>> be528a22 (test: migrate processInstanceListeners.spec to OC)
