@@ -55,8 +55,7 @@ test.describe.serial('users CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug #40284: https://github.com/camunda/camunda/issues/40284
-  test.skip('tries to create a mapping rule with invalid id', async ({
+  test('tries to create a mapping rule with invalid id', async ({
     identityUsersPage,
   }) => {
     await identityUsersPage.createUserButton.click();
