@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.evaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;

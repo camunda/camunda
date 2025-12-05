@@ -78,20 +78,36 @@ public class ConditionalEvaluationAuthorizationTest {
 
   @Test
   public void shouldBeAuthorizedToEvaluateConditionalWithDefaultUser() {
+    // given
+    final var processDefinitionKey =
+        RecordingExporter.processRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .getFirst()
+            .getValue()
+            .getProcessDefinitionKey();
+
     // when
-    engine
-        .conditionalEvaluation()
-        .withVariables(Map.of("x", 100, "y", 1))
-        .evaluate(DEFAULT_USER.getUsername());
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("x", 100, "y", 1))
+            .evaluate(DEFAULT_USER.getUsername());
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .limit(1))
-        .hasSize(1);
+    assertThat(evaluatedRecord.getValue().getStartedProcessInstances())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instance -> {
+              assertThat(instance.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+              assertThat(instance.getProcessInstanceKey()).isGreaterThan(0);
+            });
 
+    final var processInstanceKey =
+        evaluatedRecord.getValue().getStartedProcessInstances().getFirst().getProcessInstanceKey();
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withProcessInstanceKey(processInstanceKey)
                 .withBpmnProcessId(PROCESS_ID)
                 .limit(1))
         .hasSize(1);

@@ -16,28 +16,19 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
-import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
-import java.util.List;
 import org.immutables.value.Value;
 
-/**
- * Represents a record value for a conditional evaluation.
- *
- * <p>See {@link ConditionalEvaluationIntent} for intents.
- */
+/** Represents a process instance that was started during conditional evaluation. */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableConditionalEvaluationRecordValue.Builder.class)
-public interface ConditionalEvaluationRecordValue
-    extends RecordValue, RecordValueWithVariables, TenantOwned {
+@ImmutableProtocol(builder = ImmutableStartedProcessInstanceRecordValue.Builder.class)
+public interface StartedProcessInstanceRecordValue {
   /**
-   * @return the process definition key to filter evaluations (optional, -1 if not specified)
+   * @return the process definition key of the started instance
    */
   long getProcessDefinitionKey();
 
   /**
-   * @return the list of process instances that were started as a result of the evaluation
+   * @return the process instance key of the started instance
    */
-  List<StartedProcessInstanceRecordValue> getStartedProcessInstances();
+  long getProcessInstanceKey();
 }

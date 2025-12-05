@@ -33,7 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.evaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -4052,11 +4052,12 @@ final class JsonSerializableToJsonTest {
                     .setVariables(VARIABLES_MSGPACK),
         """
                 {
+                  "processDefinitionKey":456,
+                  "startedProcessInstances":[],
+                  "tenantId":"tenant-1",
                   "variables": {
                     "foo": "bar"
-                  },
-                  "tenantId":"tenant-1",
-                  "processDefinitionKey":456
+                  }
                 }
                 """
       },
@@ -4072,8 +4073,9 @@ final class JsonSerializableToJsonTest {
         """
                 {
                 "processDefinitionKey":-1,
-                "variables":{},
-                "tenantId":"<default>"
+                "startedProcessInstances":[],
+                "tenantId":"<default>",
+                "variables":{}
                 }
                 """
       },
