@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,10 +49,10 @@ public class Starter extends App {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final StarterCfg starterCfg;
-  private Timer dataAvailabilityLatencyTimer;
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
   private ScheduledExecutorService piCheckExecutorService;
+  private ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
 
   Starter(final AppCfg config) {
     super(config);
@@ -59,11 +61,22 @@ public class Starter extends App {
 
   @Override
   public void run() {
-    dataAvailabilityLatencyTimer =
+    partitionToTimerMap = new ConcurrentHashMap<>();
+    partitionToTimerMap.put(
+        1,
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
-            .register(registry);
-    responseLatencyTimer =
-        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
+            .tag("partition", "1")
+            .register(registry));
+    partitionToTimerMap.put(
+        2,
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
+            .tag("partition", "2")
+            .register(registry));
+    partitionToTimerMap.put(
+        3,
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
+            .tag("partition", "3")
+            .register(registry));
     final CamundaClient client = createCamundaClient();
 
     // init - check for topology and deploy process
@@ -206,7 +219,8 @@ public class Starter extends App {
                     processInstanceKey,
                     durationNanos / 1_000_000);
 
-                dataAvailabilityLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                final int partitionId = Protocol.decodePartitionId(processInstanceKey);
+                partitionToTimerMap.get(partitionId).record(durationNanos, TimeUnit.NANOSECONDS);
               }
             });
   }
