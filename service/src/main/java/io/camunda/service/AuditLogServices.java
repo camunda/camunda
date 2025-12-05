@@ -12,7 +12,6 @@ import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_OPE
 
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
-import io.camunda.search.entities.AuditLogOperationCategory;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.AuditLogQuery;
@@ -23,6 +22,7 @@ import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 
