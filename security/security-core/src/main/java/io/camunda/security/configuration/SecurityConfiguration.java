@@ -16,6 +16,8 @@ public class SecurityConfiguration {
   /** 1 or more alphanumeric characters, '_', '@', '.', '+', '-' or '~'. */
   public static final String DEFAULT_ID_REGEX = "^[a-zA-Z0-9_~@.+-]+$";
 
+  public static final Pattern DEFAULT_EXTERNAL_ID_REGEX = Pattern.compile(".*", Pattern.DOTALL);
+
   private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
@@ -109,5 +111,13 @@ public class SecurityConfiguration {
       compiledIdValidationPattern = Pattern.compile(idValidationPattern);
     }
     return compiledIdValidationPattern;
+  }
+
+  public Pattern getCompiledGroupIdValidationPattern() {
+    final var groupsClaim = getAuthentication().getOidc().getGroupsClaim();
+    if (groupsClaim != null && !groupsClaim.isEmpty()) {
+      return DEFAULT_EXTERNAL_ID_REGEX;
+    }
+    return getCompiledIdValidationPattern();
   }
 }
