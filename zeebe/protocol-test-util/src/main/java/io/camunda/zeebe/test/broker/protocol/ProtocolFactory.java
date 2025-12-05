@@ -11,6 +11,7 @@ import io.camunda.zeebe.msgpack.value.BooleanValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
@@ -324,8 +325,17 @@ public final class ProtocolFactory {
    * @throws NullPointerException if {@code valueType} is null
    */
   public RecordValue generateImplRecordValue(final ValueType valueType) {
-    final var implClass = ValueTypeImplMapping.getImplClass(valueType);
+    final var implClass = getRecordValueImplClass(valueType);
     return random.nextObject(implClass);
+  }
+
+  private Class<? extends RecordValue> getRecordValueImplClass(final ValueType valueType) {
+    final var newInstance = UnifiedRecordValue.fromValueType(valueType);
+    if (newInstance == null) {
+      throw new IllegalArgumentException(
+          "No implementation class found for value type: " + valueType);
+    }
+    return newInstance.getClass();
   }
 
   /**
