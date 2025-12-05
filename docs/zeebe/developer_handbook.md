@@ -47,6 +47,9 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 4. Build the protocol: `mvn clean install -pl :zeebe-protocol` to generate the Immutable classes and to generate the new `ValueType` enum value.
 5. Add a mapping to [`ValueTypeMapping`](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypeMapping.java) connecting the `ValueType`, `RecordValue` and `Intent` together.
+6. Add a mapping to [`UnifiedRecordValue`](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/UnifiedRecordValue.java) making sure that the new `ValueType` is included in the method `fromValueType` and in the map in class `ClassToValueType`
+7. If the valueType can represent a user command that is received by [`CommandApiRequestHandler`](zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestHandler.java):
+   - Include the valueType in [`ValueTypes.USER_COMMANDS](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypes.java).
 
 ### Implement a new RecordValue in protocol-impl
 
