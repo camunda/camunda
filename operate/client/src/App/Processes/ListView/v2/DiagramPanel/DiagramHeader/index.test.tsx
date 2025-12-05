@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
@@ -61,7 +61,7 @@ describe('DiagramHeader', () => {
     expect(screen.getByText(/^MyVersionTag$/i)).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /delete process definition/i}),
+      await screen.findByRole('button', {name: /delete process definition/i}),
     ).toBeInTheDocument();
   });
 
@@ -87,7 +87,7 @@ describe('DiagramHeader', () => {
     expect(screen.queryByText(/^version tag$/i)).not.toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /delete process definition/i}),
+      await screen.findByRole('button', {name: /delete process definition/i}),
     ).toBeInTheDocument();
   });
 
@@ -128,18 +128,15 @@ describe('DiagramHeader', () => {
       {wrapper: getWrapper()},
     );
 
-    const deleteButton = screen.getByRole('button', {
-      name: /delete process definition/i,
+    const deleteButton = await screen.findByRole('button', {
+      name: /only process definitions without running instances can be deleted/i,
     });
     expect(deleteButton).toBeInTheDocument();
     expect(deleteButton).toBeDisabled();
-
-    await waitFor(() => {
-      expect(deleteButton).toHaveAttribute(
-        'title',
-        'Only process definitions without running instances can be deleted.',
-      );
-    });
+    expect(deleteButton).toHaveAttribute(
+      'title',
+      'Only process definitions without running instances can be deleted.',
+    );
   });
 
   it('should enable delete button when running instances count is 0', async () => {
@@ -155,15 +152,11 @@ describe('DiagramHeader', () => {
       {wrapper: getWrapper()},
     );
 
-    const deleteButton = screen.getByRole('button', {
+    const deleteButton = await screen.findByRole('button', {
       name: /delete process definition/i,
     });
     expect(deleteButton).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(deleteButton).not.toBeDisabled();
-    });
-
+    expect(deleteButton).not.toBeDisabled();
     expect(deleteButton).toHaveAttribute(
       'title',
       'Delete Process Definition "My Process - Version 1"',
