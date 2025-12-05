@@ -7,18 +7,25 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
+import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs.PROCESS_INSTANCE_MODIFICATION_CONFIG;
+
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
-import io.camunda.zeebe.exporter.common.handlers.auditlog.AbstractProcessInstanceModificationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
 public class ProcessInstanceModificationAuditLogTransformer
-    extends AbstractProcessInstanceModificationAuditLogTransformer<AuditLogEntity> {
+    implements AuditLogTransformer<ProcessInstanceModificationRecordValue, AuditLogEntity> {
+
+  @Override
+  public TransformerConfig config() {
+    return PROCESS_INSTANCE_MODIFICATION_CONFIG;
+  }
 
   @Override
   public void transform(
-      final AuditLogEntity entity, final Record<ProcessInstanceModificationRecordValue> record) {
+      final Record<ProcessInstanceModificationRecordValue> record, final AuditLogEntity entity) {
     final var value = record.getValue();
     entity
         .setProcessInstanceKey(value.getProcessInstanceKey())

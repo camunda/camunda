@@ -117,6 +117,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
@@ -345,7 +346,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
-    addAuditLogHandlers(exportHandlers);
+    addAuditLogHandlers(new AuditLogConfiguration());
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
@@ -440,9 +441,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     return formCache;
   }
 
-  private void addAuditLogHandlers(final Set<ExportHandler<?, ?>> exportHandlers) {
-    final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
-    exportHandlers.add(
-        new AuditLogHandler(indexName, new ProcessInstanceModificationAuditLogTransformer()));
+  private void addAuditLogHandlers(final AuditLogConfiguration auditLog) {
+    if (auditLog.isEnabled()) {
+      final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
+
+      AuditLogHandler.builder(indexName, auditLog)
+          .addHandler(new ProcessInstanceModificationAuditLogTransformer())
+          .build()
+          .forEach(exportHandlers::add);
+    }
   }
 }

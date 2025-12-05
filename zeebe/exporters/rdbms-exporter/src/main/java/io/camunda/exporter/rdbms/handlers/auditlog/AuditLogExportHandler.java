@@ -9,45 +9,56 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogCommonHandler;
-import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogOperationTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.BatchOperation;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.DateUtil;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
+  public static final Logger LOG = LoggerFactory.getLogger(AuditLogExportHandler.class);
 
   private final AuditLogWriter auditLogWriter;
   private final VendorDatabaseProperties vendorDatabaseProperties;
-  private final AuditLogOperationTransformer<? extends Intent, R, AuditLogDbModel.Builder>
-      operationTransformer;
+  private final AuditLogTransformer<R, Builder> transformer;
+  private final AuditLogConfiguration configuration;
 
   public AuditLogExportHandler(
       final AuditLogWriter auditLogWriter,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final AuditLogOperationTransformer<? extends Intent, R, AuditLogDbModel.Builder>
-          operationTransformer) {
+      final AuditLogTransformer<R, AuditLogDbModel.Builder> transformer,
+      final AuditLogConfiguration configuration) {
     this.auditLogWriter = auditLogWriter;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
-    this.operationTransformer = operationTransformer;
+    this.transformer = transformer;
+    this.configuration = configuration;
   }
 
   @Override
   public boolean canExport(final Record<R> record) {
-    final var recordIntent = record.getIntent();
-    return AuditLogCommonHandler.hasActorData(record)
-        && (operationTransformer.getSupportedIntents().contains(recordIntent)
-            || (operationTransformer.getSupportedCommandRejections().contains(recordIntent)
-                && RecordType.COMMAND_REJECTION.equals(record.getRecordType())
-                && operationTransformer
-                    .getSupportedRejectionTypes()
-                    .contains(record.getRejectionType())));
+    final var info = AuditLogInfo.of(record);
+
+    if (info.actor() == null) {
+      LOG.warn(
+          "Record {}/{} at position {} cannot be audited because actor information is missing.",
+          record.getValueType(),
+          record.getIntent(),
+          record.getPosition());
+
+      return false;
+    }
+
+    return transformer.supports(record) && configuration.isEnabled(info);
   }
 
   @Override
@@ -56,44 +67,33 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   }
 
   private AuditLogDbModel map(final Record<R> record) {
+    final var info = AuditLogInfo.of(record);
+    final var key =
+        RandomStringUtils.insecure()
+            .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
+
     final var auditLog =
         new AuditLogDbModel.Builder()
-            .auditLogKey(
-                RandomStringUtils.insecure()
-                    .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize()))
+            .auditLogKey(key)
             .entityKey(String.valueOf(record.getKey()))
-            .entityType(AuditLogCommonHandler.getEntityType(record.getValueType()))
-            .operationType(AuditLogCommonHandler.getOperationType(record.getIntent()))
+            .entityType(info.entityType())
+            .category(info.category())
+            .operationType(info.operationType())
+            .actorId(info.actor().actorId())
+            .actorType(info.actor().actorType())
+            .batchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
             .entityVersion(record.getRecordVersion())
             .entityValueType(record.getValueType().value())
             .entityOperationIntent(record.getIntent().value())
-            .timestamp(DateUtil.toOffsetDateTime(record.getTimestamp()))
-            .category(AuditLogCommonHandler.getOperationCategory(record.getValueType()));
-    setActorData(auditLog, record);
-    setBatchOperationData(auditLog, record);
+            .timestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
     if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
-      setRejectionData(auditLog, record);
+      auditLog.result(AuditLogOperationResult.FAIL);
+      // TODO: set rejection type and reason to AuditLogEntity#details
     } else {
       auditLog.result(AuditLogOperationResult.SUCCESS);
-      operationTransformer.transform(auditLog, record);
+      transformer.transform(record, auditLog);
     }
     return auditLog.build();
-  }
-
-  private void setBatchOperationData(
-      final AuditLogDbModel.Builder builder, final Record<R> record) {
-    final var batchOperationKey = AuditLogCommonHandler.extractBatchOperationKey(record);
-    batchOperationKey.ifPresent(builder::batchOperationKey);
-  }
-
-  private void setRejectionData(final AuditLogDbModel.Builder builder, final Record<R> record) {
-    builder.result(AuditLogOperationResult.FAIL);
-    // TODO: set rejection type and reason to AuditLogEntity#details
-  }
-
-  private void setActorData(final AuditLogDbModel.Builder builder, final Record<R> record) {
-    final var actorData = AuditLogCommonHandler.extractActorData(record);
-    builder.actorId(actorData.actorId()).actorType(actorData.actorType());
   }
 }

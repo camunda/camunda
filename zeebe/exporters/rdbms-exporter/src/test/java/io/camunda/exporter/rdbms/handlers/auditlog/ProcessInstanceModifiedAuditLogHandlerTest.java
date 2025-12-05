@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers.auditlog;
+package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -41,12 +41,13 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
             r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED).withValue(recordValue));
 
     // when
-    final AuditLogEntity entity = new AuditLogEntity();
-    transformer.transform(record, entity);
+    final AuditLogDbModel.Builder builder = new AuditLogDbModel.Builder();
+    transformer.transform(record, builder);
+    final var entity = builder.build();
 
     // then
-    assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
-    assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+    assertThat(entity.processInstanceKey()).isEqualTo(123L);
+    assertThat(entity.tenantId()).isEqualTo("tenant-1");
+    assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
   }
 }

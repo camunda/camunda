@@ -12,20 +12,25 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogCommonHandler;
-import io.camunda.zeebe.exporter.common.handlers.auditlog.AuditLogOperationTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.BatchOperation;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.DateUtil;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A generic handler for audit log records that delegates record-type-specific transformation to an
- * {@link AuditLogOperationTransformer}.
+ * {@link AuditLogTransformer}.
  *
  * <p>This handler provides common audit log functionality such as setting actor data, batch
  * operation information, and handling both successful operations and rejections.
@@ -33,7 +38,7 @@ import org.apache.commons.lang3.RandomStringUtils;
  * <p>To add audit logging for a new record type:
  *
  * <ol>
- *   <li>Create a transformer implementing {@link AuditLogOperationTransformer}
+ *   <li>Create a transformer implementing {@link AuditLogTransformer}
  *   <li>Instantiate an {@link AuditLogHandler} with the transformer
  *   <li>Register the handler in the exporter resource provider
  * </ol>
@@ -42,23 +47,25 @@ import org.apache.commons.lang3.RandomStringUtils;
  */
 public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogEntity, R> {
 
+  public static final Logger LOG = LoggerFactory.getLogger(AuditLogHandler.class);
   protected static final int ID_LENGTH = 32;
 
   private final String indexName;
-  private final AuditLogOperationTransformer<? extends Intent, R, AuditLogEntity>
-      operationTransformer;
+  private final AuditLogTransformer<R, AuditLogEntity> transformer;
+  private final AuditLogConfiguration configuration;
 
   public AuditLogHandler(
       final String indexName,
-      final AuditLogOperationTransformer<? extends Intent, R, AuditLogEntity>
-          operationTransformer) {
+      final AuditLogTransformer<R, AuditLogEntity> transformer,
+      final AuditLogConfiguration configuration) {
     this.indexName = indexName;
-    this.operationTransformer = operationTransformer;
+    this.transformer = transformer;
+    this.configuration = configuration;
   }
 
   @Override
   public ValueType getHandledValueType() {
-    return operationTransformer.getValueType();
+    return transformer.config().valueType();
   }
 
   @Override
@@ -68,14 +75,19 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
   @Override
   public boolean handlesRecord(final Record<R> record) {
-    final var recordIntent = record.getIntent();
-    return AuditLogCommonHandler.hasActorData(record)
-        && (operationTransformer.getSupportedIntents().contains(recordIntent)
-            || (operationTransformer.getSupportedCommandRejections().contains(recordIntent)
-                && RecordType.COMMAND_REJECTION.equals(record.getRecordType())
-                && operationTransformer
-                    .getSupportedRejectionTypes()
-                    .contains(record.getRejectionType())));
+    final var info = AuditLogInfo.of(record);
+
+    if (info.actor() == null) {
+      LOG.warn(
+          "Record {}/{} at position {} cannot be audited because actor information is missing.",
+          record.getValueType(),
+          record.getIntent(),
+          record.getPosition());
+
+      return false;
+    }
+
+    return transformer.supports(record) && configuration.isEnabled(info);
   }
 
   @Override
@@ -90,27 +102,27 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
   @Override
   public void updateEntity(final Record<R> record, final AuditLogEntity entity) {
-
-    final var recordValueType = record.getValueType();
-    final var recordIntent = record.getIntent();
+    final AuditLogInfo info = AuditLogInfo.of(record);
 
     entity
         .setEntityKey(String.valueOf(record.getKey()))
-        .setEntityType(AuditLogCommonHandler.getEntityType(recordValueType))
-        .setOperationType(AuditLogCommonHandler.getOperationType(record.getIntent()))
+        .setEntityType(info.entityType())
+        .setCategory(info.category())
+        .setOperationType(info.operationType())
+        .setActorType(info.actor().actorType())
+        .setActorId(info.actor().actorId())
+        .setBatchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
         .setEntityVersion(record.getRecordVersion())
-        .setEntityValueType(recordValueType.value())
-        .setEntityOperationIntent(recordIntent.value())
-        .setTimestamp(DateUtil.toOffsetDateTime(record.getTimestamp()))
-        .setCategory(AuditLogCommonHandler.getOperationCategory(recordValueType));
-    setActorData(entity, record);
-    setBatchOperationData(entity, record);
+        .setEntityValueType(record.getValueType().value())
+        .setEntityOperationIntent(record.getIntent().value())
+        .setTimestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
     if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
-      setRejectionData(entity, record);
+      entity.setResult(AuditLogOperationResult.FAIL);
+      // TODO: set rejection type and reason to AuditLogEntity#details
     } else {
       entity.setResult(AuditLogOperationResult.SUCCESS);
-      operationTransformer.transform(entity, record);
+      transformer.transform(record, entity);
     }
   }
 
@@ -125,18 +137,28 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     return indexName;
   }
 
-  private void setBatchOperationData(final AuditLogEntity entity, final Record<R> record) {
-    final var batchOperationKey = AuditLogCommonHandler.extractBatchOperationKey(record);
-    batchOperationKey.ifPresent(entity::setBatchOperationKey);
+  public static AuditLogHandlerBuilder builder(
+      final String indexName, final AuditLogConfiguration auditLog) {
+    return new AuditLogHandlerBuilder(indexName, auditLog);
   }
 
-  private void setRejectionData(final AuditLogEntity entity, final Record<R> record) {
-    entity.setResult(AuditLogOperationResult.FAIL);
-    // TODO: set rejection type and reason to AuditLogEntity#details
-  }
+  public static class AuditLogHandlerBuilder {
+    final Set<AuditLogHandler> handlers = new HashSet<>();
+    private final String indexName;
+    private final AuditLogConfiguration auditLog;
 
-  private void setActorData(final AuditLogEntity entity, final Record<R> record) {
-    final var actorData = AuditLogCommonHandler.extractActorData(record);
-    entity.setActorId(actorData.actorId()).setActorType(actorData.actorType());
+    public AuditLogHandlerBuilder(final String indexName, final AuditLogConfiguration auditLog) {
+      this.indexName = indexName;
+      this.auditLog = auditLog;
+    }
+
+    public AuditLogHandlerBuilder addHandler(final AuditLogTransformer transformer) {
+      handlers.add(new AuditLogHandler<>(indexName, transformer, auditLog));
+      return this;
+    }
+
+    public Set<AuditLogHandler> build() {
+      return new HashSet<>(handlers);
+    }
   }
 }
