@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface GlobalListenersState {
 
   /** Gets the current global listeners configuration. */
-  Optional<GlobalListenerBatchRecord> getCurrentConfig();
+  GlobalListenerBatchRecord getCurrentConfig();
 
   /**
    * Gets a stored copy of a global listeners configuration, possibly different from the current
@@ -24,7 +24,7 @@ public interface GlobalListenersState {
    * @return the global listeners configuration for the given version key, or {@link
    *     Optional#empty()} if not found
    */
-  Optional<GlobalListenerBatchRecord> getVersionedConfig(final long versionKey);
+  GlobalListenerBatchRecord getVersionedConfig(final long versionKey);
 
   /**
    * Checks whether a global listeners configuration version is stored.

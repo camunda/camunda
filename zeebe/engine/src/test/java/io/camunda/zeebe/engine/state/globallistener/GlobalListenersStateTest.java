@@ -43,7 +43,7 @@ public class GlobalListenersStateTest {
     globalListenersState.updateCurrentConfiguration(expectedConfig);
 
     // then the configuration can be retrieved from state
-    final var storedConfig = globalListenersState.getCurrentConfig().orElse(null);
+    final var storedConfig = globalListenersState.getCurrentConfig();
     assertThat(storedConfig).isNotNull().isEqualTo(expectedConfig);
   }
 
@@ -58,7 +58,7 @@ public class GlobalListenersStateTest {
     globalListenersState.updateCurrentConfiguration(newConfig);
 
     // then the new configuration can be retrieved from state
-    final var storedConfig = globalListenersState.getCurrentConfig().orElse(null);
+    final var storedConfig = globalListenersState.getCurrentConfig();
     assertThat(storedConfig).isNotNull().isEqualTo(newConfig);
   }
 
@@ -70,7 +70,7 @@ public class GlobalListenersStateTest {
 
     // then the versioned configuration can be retrieved from state
     Assertions.assertThat(globalListenersState.isConfigurationVersionStored(versionKey)).isTrue();
-    final var versioned = globalListenersState.getVersionedConfig(versionKey).orElseThrow();
+    final var versioned = globalListenersState.getVersionedConfig(versionKey);
     assertThat(versioned).isNotNull().isEqualTo(expectedConfig);
   }
 
@@ -86,7 +86,7 @@ public class GlobalListenersStateTest {
 
     // then the versioned configuration can still be retrieved from state
     Assertions.assertThat(globalListenersState.isConfigurationVersionStored(versionKey)).isTrue();
-    final var versioned = globalListenersState.getVersionedConfig(versionKey).orElseThrow();
+    final var versioned = globalListenersState.getVersionedConfig(versionKey);
     assertThat(versioned).isNotNull().isEqualTo(expectedConfig);
   }
 
@@ -102,7 +102,7 @@ public class GlobalListenersStateTest {
     // then the versioned configuration is no longer available
     Assertions.assertThat(globalListenersState.isConfigurationVersionStored(versionKey)).isFalse();
     final var versioned = globalListenersState.getVersionedConfig(versionKey);
-    Assertions.assertThat(versioned).isEmpty();
+    Assertions.assertThat(versioned).isNull();
   }
 
   @Test
