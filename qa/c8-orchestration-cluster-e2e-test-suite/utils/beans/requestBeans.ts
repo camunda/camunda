@@ -589,3 +589,24 @@ export function DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(
     tenantId: decision.tenantId,
   };
 }
+
+// Cluster Variable beans
+export const clusterVariableRequiredFields: string[] = [
+  'name',
+  'value',
+  'scope',
+];
+export const clusterVariableSearchItemRequiredFields: string[] = [
+  'name',
+  'value',
+  'scope',
+  'isTruncated',
+];
+
+export function CREATE_CLUSTER_VARIABLE() {
+  const uid = generateUniqueId();
+  return {
+    name: `cluster-var-${uid}`,
+    value: {testKey: `testValue-${uid}`},
+  };
+}
