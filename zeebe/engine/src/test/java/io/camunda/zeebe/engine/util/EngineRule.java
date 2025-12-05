@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
+import io.camunda.zeebe.engine.util.client.ExpressionClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
 import io.camunda.zeebe.engine.util.client.HistoryDeletionClient;
 import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
@@ -503,6 +504,10 @@ public final class EngineRule extends ExternalResource {
 
   public IncidentClient incident() {
     return new IncidentClient(environmentRule);
+  }
+
+  public ExpressionClient expression() {
+    return new ExpressionClient(environmentRule);
   }
 
   public ResourceDeletionClient resourceDeletion() {
