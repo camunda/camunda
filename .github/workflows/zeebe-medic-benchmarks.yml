@@ -44,8 +44,8 @@ jobs:
           fi
           echo "full-ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  setup-normal-benchmark:
-    name: Normal Benchmark
+  setup-typical-load-test:
+    name: Typical load test
     needs:
       - benchmark-data
     uses: ./.github/workflows/camunda-load-test.yml
@@ -53,9 +53,7 @@ jobs:
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
       ttl: 28
-      cluster: zeebe-cluster
-      cluster-region: europe-west1-b
-      publish: "slack"
+      load-test-load: "--set starter.rate=50 --set starter.bpmnXmlPath=\"bpmn/typical_process.bpmn\""
   setup-mixed-benchmark:
     name: Mixed Benchmark
     uses: ./.github/workflows/camunda-load-test.yml
