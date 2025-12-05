@@ -17,10 +17,15 @@ camunda:
           password: demo
           name: Demo
           email: demo@example.com
+        - username: test
+          password: test
+          name: Test
+          email: test@example.com
       defaultRoles:
         admin:
           users:
             - demo
+            - test
     # By default authorization and api protection is disabled
     authentication:
       method: BASIC
