@@ -12,15 +12,18 @@ import static io.camunda.exporter.utils.ExporterUtil.map;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.entities.operation.BatchOperationActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.util.SemanticVersion;
 import java.util.List;
 
 /**
@@ -34,6 +37,7 @@ public class BatchOperationCreatedHandler
 
   private final String indexName;
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
+  private final ActorInfoExtractor actorInfoExtractor = new ActorInfoExtractor();
 
   public BatchOperationCreatedHandler(
       final String indexName,
@@ -70,11 +74,14 @@ public class BatchOperationCreatedHandler
   @Override
   public void updateEntity(
       final Record<BatchOperationCreationRecordValue> record, final BatchOperationEntity entity) {
+    final var actorInfo = actorInfoExtractor.extract(record);
     final BatchOperationCreationRecordValue value = record.getValue();
     entity
         .setId(String.valueOf(value.getBatchOperationKey()))
         .setType(OperationType.valueOf(value.getBatchOperationType().name()))
-        .setState(BatchOperationState.CREATED);
+        .setState(BatchOperationState.CREATED)
+        .setActorType(actorInfo.type())
+        .setActorId(actorInfo.id());
 
     // update local cache so that the batch operation info is available immediately to operation
     // status handlers
@@ -91,5 +98,41 @@ public class BatchOperationCreatedHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private record ActorInfo(BatchOperationActorType type, String id) {
+    static final ActorInfo NULL_VALUES = new ActorInfo(null, null);
+  }
+
+  private static final class ActorInfoExtractor {
+
+    private static final SemanticVersion VERSION_8_9_0 = new SemanticVersion(8, 9, 0, null, null);
+
+    /**
+     * Extracts the actor information from the record's authorizations based on the broker version.
+     * Actor info is only provided for broker versions 8.9.0 and above. If the actor info is not
+     * available, null values are provided.
+     */
+    private ActorInfo extract(final Record<BatchOperationCreationRecordValue> record) {
+      final var semanticVersion = SemanticVersion.parse(record.getBrokerVersion()).orElse(null);
+      if (semanticVersion == null || semanticVersion.compareTo(VERSION_8_9_0) < 0) {
+        // actor info should only be set for versions 8.9.0 and above
+        return ActorInfo.NULL_VALUES;
+      }
+
+      final var clientId =
+          (String) record.getAuthorizations().get(Authorization.AUTHORIZED_CLIENT_ID);
+      if (clientId != null) {
+        return new ActorInfo(BatchOperationActorType.CLIENT, clientId);
+      }
+
+      final var username =
+          (String) record.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME);
+      if (username != null) {
+        return new ActorInfo(BatchOperationActorType.USER, username);
+      }
+
+      return ActorInfo.NULL_VALUES;
+    }
   }
 }
