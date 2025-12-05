@@ -15,6 +15,7 @@ import {useEffect} from 'react';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {Modal} from '@carbon/react';
 import {IS_PROCESSES_PAGE_V2} from 'modules/feature-flags';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const Processes: React.FC = observer(() => {
   useEffect(() => {
@@ -30,7 +31,8 @@ const Processes: React.FC = observer(() => {
     <>
       {processInstanceMigrationStore.isEnabled ? (
         <MigrationView />
-      ) : IS_PROCESSES_PAGE_V2 ? (
+      ) : IS_PROCESSES_PAGE_V2 &&
+        getClientConfig()?.databaseType === 'rdbms' ? (
         <ListViewV2 />
       ) : (
         <ListView />

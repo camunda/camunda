@@ -6,18 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
-import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
+import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
-import {resolveProcessInstancesIncidentsBatchOperation} from 'modules/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
 import {applyOperation as applyOperationV1} from 'modules/api/processInstances/operations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
-import {useBatchOperation} from 'modules/queries/batch-operations/useBatchOperation';
 
 type Props = {
   processInstanceKey: string;
@@ -31,13 +29,6 @@ const InstanceOperations: React.FC<Props> = ({
   isInstanceActive,
 }) => {
   const queryClient = useQueryClient();
-  const [batchOperationKey, setBatchOperationKey] = useState<
-    string | undefined
-  >();
-
-  const handleOperationError = (statusCode?: number) => {
-    handleOperationErrorUtil(statusCode);
-  };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {
     tracking.track({
@@ -46,48 +37,24 @@ const InstanceOperations: React.FC<Props> = ({
       source: 'instances-list',
     });
     queryClient.invalidateQueries({
+      queryKey: ['processInstances'],
+    });
+    queryClient.invalidateQueries({
       queryKey: ['processInstancesStatistics'],
     });
   };
 
-  useBatchOperation({
-    batchOperationKey,
+  const {
+    mutate: resolveProcessInstanceIncidents,
+    isPending: isResolveIncidentsPending,
+  } = useResolveProcessInstanceIncidents(processInstanceKey, {
+    onError: (error) => {
+      handleOperationError(error.status);
+    },
     onSuccess: () => {
-      setBatchOperationKey(undefined);
       handleOperationSuccess('RESOLVE_INCIDENT');
     },
-    onError: () => {
-      setBatchOperationKey(undefined);
-      handleOperationError();
-    },
   });
-
-  const {mutate: resolveIncident, isPending: isResolveIncidentPending} =
-    useMutation({
-      mutationFn: async () => {
-        const {response, error} =
-          await resolveProcessInstancesIncidentsBatchOperation({
-            filter: {
-              processInstanceKey: {$eq: processInstanceKey},
-            },
-          });
-
-        if (response !== null) {
-          return response;
-        }
-        throw error;
-      },
-      onSuccess: (data) => {
-        setBatchOperationKey(data.batchOperationKey);
-      },
-      onError: (error) => {
-        const statusCode =
-          error instanceof Error && error.message
-            ? parseInt(error.message, 10)
-            : undefined;
-        handleOperationError(statusCode);
-      },
-    });
 
   //TODO update with v2 usage in the scope of #33063
   const {mutate: deleteProcessInstance, isPending: isDeletePending} =
@@ -119,6 +86,9 @@ const InstanceOperations: React.FC<Props> = ({
     isPending: isCancelProcessInstancePending,
   } = useCancelProcessInstance(processInstanceKey, {
     shouldSkipResultCheck: true,
+    onSuccess: () => {
+      handleOperationSuccess('CANCEL_PROCESS_INSTANCE');
+    },
     onError: (error) => {
       notificationsStore.displayNotification({
         kind: 'error',
@@ -131,8 +101,7 @@ const InstanceOperations: React.FC<Props> = ({
 
   const isLoading =
     isCancelProcessInstancePending ||
-    isResolveIncidentPending ||
-    !!batchOperationKey ||
+    isResolveIncidentsPending ||
     isDeletePending;
 
   const operations: OperationConfig[] = [];
@@ -140,7 +109,7 @@ const InstanceOperations: React.FC<Props> = ({
   if (isInstanceActive && hasIncident) {
     operations.push({
       type: 'RESOLVE_INCIDENT',
-      onExecute: () => resolveIncident(),
+      onExecute: () => resolveProcessInstanceIncidents(),
       disabled: isLoading,
     });
   }
