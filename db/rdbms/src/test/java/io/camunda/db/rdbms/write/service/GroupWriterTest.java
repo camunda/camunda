@@ -106,7 +106,7 @@ class GroupWriterTest {
   @Test
   void shouldDeleteGroup() {
     final String groupId = "group1";
-    
+
     writer.delete(groupId);
 
     verify(executionQueue)

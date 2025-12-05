@@ -105,7 +105,7 @@ class RoleWriterTest {
   @Test
   void shouldDeleteRole() {
     final String roleId = "role1";
-    
+
     writer.delete(roleId);
 
     verify(executionQueue)

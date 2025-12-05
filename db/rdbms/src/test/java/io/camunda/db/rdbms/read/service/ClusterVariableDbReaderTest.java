@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +43,6 @@ class ClusterVariableDbReaderTest {
   @Test
   void shouldReturnEmptyPageWhenPageSizeIsZero() {
     when(clusterVariableMapper.count(any())).thenReturn(21L);
-    when(clusterVariableMapper.search(any())).thenReturn(List.of());
 
     final ClusterVariableQuery query = ClusterVariableQuery.of(b -> b.page(p -> p.size(0)));
     final ResourceAccessChecks resourceAccessChecks =
@@ -52,5 +52,6 @@ class ClusterVariableDbReaderTest {
 
     assertThat(result.total()).isEqualTo(21L);
     assertThat(result.items()).isEmpty();
+    verify(clusterVariableMapper, times(0)).search(any());
   }
 }

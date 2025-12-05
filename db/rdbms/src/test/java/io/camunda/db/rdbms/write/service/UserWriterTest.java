@@ -78,7 +78,7 @@ class UserWriterTest {
   @Test
   void shouldDeleteUser() {
     final String username = "testuser";
-    
+
     writer.delete(username);
 
     verify(executionQueue)

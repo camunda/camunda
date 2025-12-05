@@ -62,7 +62,7 @@ class MappingRuleWriterTest {
   @Test
   void shouldDeleteMappingRule() {
     final String ruleId = "rule1";
-    
+
     writer.delete(ruleId);
 
     verify(executionQueue)
