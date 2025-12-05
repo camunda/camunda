@@ -41,6 +41,18 @@ const createInstances = async (
   }
 };
 
+const publishMessage = async (messageName: string, correlationKey: string) => {
+  try {
+    await zeebe.publishMessage({
+      name: messageName,
+      correlationKey,
+    });
+  } catch (error) {
+    console.error('Message publishing failed:', error);
+    throw error;
+  }
+};
+
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -56,4 +68,4 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
-export {deploy, createInstances, checkUpdateOnVersion};
+export {deploy, createInstances, publishMessage, checkUpdateOnVersion};
