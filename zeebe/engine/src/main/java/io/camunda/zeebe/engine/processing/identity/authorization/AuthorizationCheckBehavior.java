@@ -14,10 +14,10 @@ import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
+import io.camunda.zeebe.engine.processing.identity.authorization.resolver.TenantResolver;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationResult;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
@@ -60,6 +60,7 @@ public final class AuthorizationCheckBehavior {
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
   private final ClaimsExtractor claimsExtractor;
+  private final TenantResolver tenantResolver;
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
@@ -76,6 +77,8 @@ public final class AuthorizationCheckBehavior {
     claimsExtractor = new ClaimsExtractor(membershipState);
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
+    tenantResolver =
+        new TenantResolver(membershipState, mappingRuleState, claimsExtractor, multiTenancyEnabled);
 
     authorizationsCache =
         CacheBuilder.newBuilder()
@@ -220,7 +223,8 @@ public final class AuthorizationCheckBehavior {
           owners.stream()
               .noneMatch(
                   entity ->
-                      getAuthorizedTenantIds(request.claims(), entityType, entity)
+                      tenantResolver
+                          .getTenantIdsForEntity(request.claims(), entityType, entity)
                           .anyMatch(request.tenantId()::equals));
       if (notAssignedToTenant) {
         final var rejectionType =
@@ -346,37 +350,6 @@ public final class AuthorizationCheckBehavior {
         new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
   }
 
-  private Stream<String> getAuthorizedTenantIds(
-      final Map<String, Object> authorizations,
-      final EntityType entityType,
-      final String entityId) {
-    return Stream.concat(
-        membershipState.getMemberships(entityType, entityId, RelationType.TENANT).stream(),
-        Stream.concat(
-            claimsExtractor.getGroups(authorizations, entityType, entityId).stream()
-                .flatMap(
-                    groupId ->
-                        Stream.concat(
-                            membershipState
-                                .getMemberships(EntityType.GROUP, groupId, RelationType.TENANT)
-                                .stream(),
-                            membershipState
-                                .getMemberships(EntityType.GROUP, groupId, RelationType.ROLE)
-                                .stream()
-                                .flatMap(
-                                    roleId ->
-                                        membershipState
-                                            .getMemberships(
-                                                EntityType.ROLE, roleId, RelationType.TENANT)
-                                            .stream()))),
-            membershipState.getMemberships(entityType, entityId, RelationType.ROLE).stream()
-                .flatMap(
-                    roleId ->
-                        membershipState
-                            .getMemberships(EntityType.ROLE, roleId, RelationType.TENANT)
-                            .stream())));
-  }
-
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
     if (!authorizationsEnabled || claimsExtractor.isAuthorizedAnonymousUser(request.claims())) {
       return Set.of(AuthorizationScope.WILDCARD);
@@ -487,74 +460,32 @@ public final class AuthorizationCheckBehavior {
 
   /**
    * Checks if a user is assigned to a specific tenant. If multi-tenancy is disabled, this method
-   * will always return true. If a command is written by Zeebe internally, it will also always
-   * return true.
+   * will always return true.
    *
    * @param command The command send by the user
    * @param tenantId The tenant we want to check assignment for
-   * @return true if assigned, false otherwise
+   * @return true if assigned or multi-tenancy is disabled, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
-    return isAssignedToTenant(AuthorizationRequest.of(r -> r.command(command).tenantId(tenantId)));
+    return tenantResolver.isAssignedToTenant(
+        AuthorizationRequest.of(r -> r.command(command).tenantId(tenantId)));
   }
 
-  public boolean isAssignedToTenant(final AuthorizationRequest request) {
-    if (!multiTenancyEnabled) {
-      return true;
-    }
-    return getAuthorizedTenantIds(request.claims()).isAuthorizedForTenantId(request.tenantId());
-  }
-
+  /**
+   * Retrieves all authorized tenants for the given command. Includes tenants from user/client,
+   * groups, roles, and mapping rules.
+   *
+   * @param command the command containing authorization claims
+   * @return an {@link AuthorizedTenants} object containing all tenant IDs the principal is
+   *     authorized to access
+   */
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
-    return getAuthorizedTenantIds(command.getAuthorizations());
-  }
-
-  private AuthorizedTenants getAuthorizedTenantIds(final Map<String, Object> authorizations) {
-    if (claimsExtractor.isAuthorizedAnonymousUser(authorizations)) {
-      return AuthorizedTenants.ANONYMOUS;
-    }
-
-    if (!multiTenancyEnabled) {
-      return AuthorizedTenants.DEFAULT_TENANTS;
-    }
-
-    final var authorizedTenants = new HashSet<String>();
-    claimsExtractor
-        .getUsername(authorizations)
-        .ifPresent(
-            username ->
-                authorizedTenants.addAll(
-                    getAuthorizedTenantIds(authorizations, EntityType.USER, username)
-                        .collect(Collectors.toSet())));
-
-    claimsExtractor
-        .getClientId(authorizations)
-        .ifPresent(
-            clientId ->
-                authorizedTenants.addAll(
-                    getAuthorizedTenantIds(authorizations, EntityType.CLIENT, clientId)
-                        .collect(Collectors.toSet())));
-
-    final var tenantsOfMappingRule =
-        getPersistedMappingRules(authorizations)
-            .flatMap(
-                mappingRule ->
-                    getAuthorizedTenantIds(
-                        authorizations, EntityType.MAPPING_RULE, mappingRule.getMappingRuleId()))
-            .collect(Collectors.toSet());
-    authorizedTenants.addAll(tenantsOfMappingRule);
-
-    return new AuthenticatedAuthorizedTenants(authorizedTenants);
+    return tenantResolver.getAuthorizedTenants(command.getAuthorizations());
   }
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(
       final AuthorizationRequest request) {
-    return getPersistedMappingRules(request.claims());
-  }
-
-  private Stream<PersistedMappingRule> getPersistedMappingRules(
-      final Map<String, Object> authorizations) {
-    final var claims = claimsExtractor.getTokenClaims(authorizations);
+    final var claims = claimsExtractor.getTokenClaims(request.claims());
     return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), claims);
   }
 
