@@ -15,7 +15,7 @@ import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
@@ -46,23 +46,23 @@ import org.springframework.stereotype.Component;
 @WebEndpoint(id = "backupRuntime")
 public final class BackupEndpoint {
   private final BackupApi api;
-  private final BackupSchedulerCfg backupSchedulerCfg;
+  private final BackupCfg backupCfg;
 
   @SuppressWarnings("unused") // used by Spring
   @Autowired
-  public BackupEndpoint(final BrokerClient client, final BackupSchedulerCfg backupSchedulerCfg) {
-    this(new BackupRequestHandler(client), backupSchedulerCfg);
+  public BackupEndpoint(final BrokerClient client, final BackupCfg backupCfg) {
+    this(new BackupRequestHandler(client), backupCfg);
   }
 
-  BackupEndpoint(final BackupApi api, final BackupSchedulerCfg backupSchedulerCfg) {
+  BackupEndpoint(final BackupApi api, final BackupCfg backupCfg) {
     this.api = api;
-    this.backupSchedulerCfg = backupSchedulerCfg;
+    this.backupCfg = backupCfg;
   }
 
   @WriteOperation
   public WebEndpointResponse<?> take(final long backupId) {
     try {
-      if (backupSchedulerCfg.isContinuous()) {
+      if (backupCfg.isContinuous()) {
         return new WebEndpointResponse<>(
             new Error()
                 .message(
@@ -82,12 +82,12 @@ public final class BackupEndpoint {
 
   @WriteOperation
   public WebEndpointResponse<?> take() {
-    if (!backupSchedulerCfg.isContinuous()) {
+    if (!backupCfg.isContinuous()) {
       return incorrectBackupIdErrorResponse();
     }
     var backupId = InstantSource.system().instant().toEpochMilli();
-    if (backupSchedulerCfg.getOffset() > 0) {
-      backupId += backupSchedulerCfg.getOffset();
+    if (backupCfg.getOffset() > 0) {
+      backupId += backupCfg.getOffset();
     }
 
     try {

@@ -8,8 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerRetentionCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -29,36 +28,19 @@ public class BackupSchedulerPropertiesOverride {
 
   @Bean
   @Primary
-  public BackupSchedulerCfg backupSchedulerCfg() {
-    final BackupSchedulerCfg backupSchedulerCfg = new BackupSchedulerCfg();
+  public BackupCfg backupSchedulerCfg() {
+    final BackupCfg backupCfg = new BackupCfg();
 
-    populateFromBackup(unifiedConfiguration, backupSchedulerCfg);
-    populateFromRetention(unifiedConfiguration, backupSchedulerCfg.getRetention());
-
-    return backupSchedulerCfg;
-  }
-
-  private void populateFromBackup(
-      final UnifiedConfiguration unifiedConfiguration,
-      final BackupSchedulerCfg backupSchedulerCfg) {
     final var backupConfig =
         unifiedConfiguration.getCamunda().getData().getPrimaryStorage().getBackup();
 
-    backupSchedulerCfg.setContinuous(backupConfig.isContinuous());
-    backupSchedulerCfg.setRequired(backupConfig.isRequired());
-    backupSchedulerCfg.setSchedule(backupConfig.getSchedule());
-    backupSchedulerCfg.setOffset(backupConfig.getOffset());
-    backupSchedulerCfg.setCheckpointInterval(backupConfig.getCheckpointInterval());
-  }
+    backupCfg.setContinuous(backupConfig.isContinuous());
+    backupCfg.setRequired(backupConfig.isRequired());
+    backupCfg.setSchedule(backupConfig.getSchedule());
+    backupCfg.setOffset(backupConfig.getOffset());
+    backupCfg.setCheckpointInterval(backupConfig.getCheckpointInterval());
+    backupCfg.setRetention(backupConfig.getRetention());
 
-  private void populateFromRetention(
-      final UnifiedConfiguration unifiedConfiguration,
-      final BackupSchedulerRetentionCfg retentionCfg) {
-
-    final var retentionConfig =
-        unifiedConfiguration.getCamunda().getData().getPrimaryStorage().getBackup().getRetention();
-
-    retentionCfg.setWindow(retentionConfig.getWindow());
-    retentionCfg.setCleanupSchedule(retentionConfig.getCleanupSchedule());
+    return backupCfg;
   }
 }
