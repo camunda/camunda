@@ -244,6 +244,20 @@ public final class SortOptionBuilders {
     return fn.apply(messageSubscription()).build();
   }
 
+  public static ProcessDefinitionMessageSubscriptionStatisticsSort.Builder
+      processDefinitionMessageSubscriptionStatistics() {
+    return new ProcessDefinitionMessageSubscriptionStatisticsSort.Builder();
+  }
+
+  public static ProcessDefinitionMessageSubscriptionStatisticsSort
+      processDefinitionMessageSubscriptionStatistics(
+          final Function<
+                  ProcessDefinitionMessageSubscriptionStatisticsSort.Builder,
+                  ObjectBuilder<ProcessDefinitionMessageSubscriptionStatisticsSort>>
+              fn) {
+    return fn.apply(processDefinitionMessageSubscriptionStatistics()).build();
+  }
+
   public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
     return new CorrelatedMessageSubscriptionSort.Builder();
   }

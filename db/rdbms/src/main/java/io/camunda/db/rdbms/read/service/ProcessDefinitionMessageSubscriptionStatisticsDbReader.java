@@ -9,18 +9,18 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionMessageSubscriptionStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
-import io.camunda.db.rdbms.sql.columns.MessageSubscriptionColumn;
+import io.camunda.db.rdbms.sql.columns.ProcessDefinitionMessageSubscriptionStatisticsColumn;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
-import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.sort.ProcessDefinitionMessageSubscriptionStatisticsSort;
 import io.camunda.security.reader.ResourceAccessChecks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
-    extends AbstractEntityReader<MessageSubscriptionEntity>
+    extends AbstractEntityReader<ProcessDefinitionMessageSubscriptionStatisticsEntity>
     implements ProcessDefinitionMessageSubscriptionStatisticsReader {
 
   private static final Logger LOG =
@@ -30,7 +30,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
 
   public ProcessDefinitionMessageSubscriptionStatisticsDbReader(
       final MessageSubscriptionMapper mapper) {
-    super(MessageSubscriptionColumn.values());
+    super(ProcessDefinitionMessageSubscriptionStatisticsColumn.values());
     this.mapper = mapper;
   }
 
@@ -38,10 +38,16 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
   public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> aggregate(
       final ProcessDefinitionMessageSubscriptionStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
+    final var dbSort =
+        convertSort(
+            ProcessDefinitionMessageSubscriptionStatisticsSort.of(
+                b -> b.processDefinitionKey().asc().tenantId().asc()));
 
     if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return SearchQueryResult.empty();
     }
+
+    final var dbPage = convertPaging(dbSort, query.page());
 
     final var dbQuery =
         ProcessDefinitionMessageSubscriptionStatisticsDbQuery.of(
@@ -49,7 +55,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
                 b.filter(query.filter())
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
-                    .page(query.page()));
+                    .page(dbPage));
 
     LOG.trace(
         "[RDBMS DB] Aggregating message subscription process definition statistics with query {}",
@@ -57,18 +63,11 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
 
     final var results = mapper.getProcessDefinitionStatistics(dbQuery);
 
-    // Calculate the endCursor for pagination
-    // The cursor represents the offset for the next page
-    String endCursor = null;
-    if (query.page() != null && query.page().size() != null && !results.isEmpty()) {
-      final int currentOffset =
-          query.page().after() != null ? Integer.parseInt(query.page().after()) : 0;
-      final int nextOffset = currentOffset + results.size();
-      // Only set endCursor if we got a full page (indicating there might be more results)
-      if (results.size() >= query.page().size()) {
-        endCursor = String.valueOf(nextOffset);
-      }
-    }
-    return new SearchQueryResult<>(results.size(), !results.isEmpty(), results, null, endCursor);
+    return buildSearchQueryResult(
+        results.size(),
+        results,
+        convertSort(
+            ProcessDefinitionMessageSubscriptionStatisticsSort.of(
+                b -> b.processDefinitionKey().asc().tenantId().asc())));
   }
 }

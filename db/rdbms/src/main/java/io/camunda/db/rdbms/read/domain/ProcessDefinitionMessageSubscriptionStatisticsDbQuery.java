@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.read.domain;
 
 import io.camunda.search.filter.MessageSubscriptionFilter;
-import io.camunda.search.page.SearchQueryPage;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
@@ -16,7 +15,7 @@ import java.util.function.Function;
 
 public record ProcessDefinitionMessageSubscriptionStatisticsDbQuery(
     MessageSubscriptionFilter filter,
-    SearchQueryPage page,
+    DbQueryPage page,
     List<String> authorizedResourceIds,
     List<String> authorizedTenantIds) {
 
@@ -30,7 +29,7 @@ public record ProcessDefinitionMessageSubscriptionStatisticsDbQuery(
       implements ObjectBuilder<ProcessDefinitionMessageSubscriptionStatisticsDbQuery> {
 
     private MessageSubscriptionFilter filter;
-    private SearchQueryPage page;
+    private DbQueryPage page;
     private List<String> authorizedResourceIds;
     private List<String> authorizedTenantIds;
 
@@ -39,7 +38,7 @@ public record ProcessDefinitionMessageSubscriptionStatisticsDbQuery(
       return this;
     }
 
-    public Builder page(final SearchQueryPage value) {
+    public Builder page(final DbQueryPage value) {
       page = value;
       return this;
     }

@@ -29,8 +29,8 @@ import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
@@ -52,7 +52,9 @@ public class ProcessDefinitionMessageSubscriptionStatisticsAggregationTransforme
             .name(AGGREGATION_NAME_TOP_HIT)
             .fields(
                 List.of(
-                    AGGREGATION_FIELD_BPMN_PROCESS_ID, AGGREGATION_FIELD_PROCESS_DEFINITION_KEY))
+                    AGGREGATION_FIELD_BPMN_PROCESS_ID,
+                    AGGREGATION_FIELD_PROCESS_DEFINITION_KEY,
+                    AGGREGATION_FIELD_TENANT_ID))
             .documentClass(MessageSubscriptionEntity.class)
             .size(1)
             .build();
