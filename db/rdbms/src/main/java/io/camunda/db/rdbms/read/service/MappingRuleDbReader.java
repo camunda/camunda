@@ -95,7 +95,6 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
   private boolean shouldReturnEmptyResult(
       final MappingRuleFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.mappingRuleIds() != null && filter.mappingRuleIds().isEmpty())
-        || (resourceAccessChecks.authorizationCheck().enabled()
-            && !resourceAccessChecks.hasAnyResourceId());
+        || shouldReturnEmptyResult(resourceAccessChecks);
   }
 }

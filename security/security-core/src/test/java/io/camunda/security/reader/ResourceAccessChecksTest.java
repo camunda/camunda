@@ -183,12 +183,12 @@ class ResourceAccessChecksTest {
   class HasAnyResourceId {
 
     @Test
-    void shouldReturnFalseWhenAuthorizationDisabled() {
-      // given
+    void shouldReturnTrueWhenAuthorizationDisabled() {
+      // given - authorization check disabled
       final var checks = ResourceAccessChecks.disabled();
 
-      // when - then
-      assertThat(checks.hasAnyResourceId()).isFalse();
+      // when - then - since disabled, they have access to any resource
+      assertThat(checks.authorizationCheck().hasAnyResourceAccess()).isTrue();
     }
 
     @Test
@@ -199,7 +199,7 @@ class ResourceAccessChecksTest {
               AuthorizationCheck.enabled((AuthorizationCondition) null), TenantCheck.disabled());
 
       // when - then
-      assertThat(checks.hasAnyResourceId()).isFalse();
+      assertThat(checks.authorizationCheck().hasAnyResourceAccess()).isFalse();
     }
 
     @Test
@@ -211,7 +211,7 @@ class ResourceAccessChecksTest {
               AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
 
       // when - then
-      assertThat(checks.hasAnyResourceId()).isFalse();
+      assertThat(checks.authorizationCheck().hasAnyResourceAccess()).isFalse();
     }
 
     @Test
@@ -225,7 +225,7 @@ class ResourceAccessChecksTest {
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
 
       // when - then
-      assertThat(checks.hasAnyResourceId()).isTrue();
+      assertThat(checks.authorizationCheck().hasAnyResourceAccess()).isTrue();
     }
   }
 }

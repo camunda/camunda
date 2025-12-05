@@ -83,10 +83,4 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
     return search(query, ResourceAccessChecks.disabled());
   }
-
-  @Override
-  protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return (resourceAccessChecks.authorizationCheck().enabled()
-        && !resourceAccessChecks.hasAnyResourceId());
-  }
 }

@@ -49,12 +49,12 @@ public final class ClusterVariableFilterTransformer
 
   @Override
   protected SearchQuery toTenantCheckSearchQuery(
-      final TenantCheck tenantCheck, final Optional<String> field) {
+      final TenantCheck tenantCheck, final String field) {
     final var tenantCheckQuery =
         Optional.of(tenantCheck)
             .map(TenantCheck::tenantIds)
             .filter(t -> !t.isEmpty())
-            .map(t -> stringTerms(field.get(), t))
+            .map(t -> stringTerms(field, t))
             .orElse(null);
 
     final var matchGlobalQuery =

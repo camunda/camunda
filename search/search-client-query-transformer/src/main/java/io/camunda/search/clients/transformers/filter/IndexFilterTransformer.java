@@ -88,8 +88,9 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
 
     final var condition = authorizationCheck.authorizationCondition();
     return switch (condition) {
-      case SingleAuthorizationCondition single -> applyAuthorizationCheck(single.authorization());
-      case AnyOfAuthorizationCondition anyOf -> applyAnyOfAuthorizationCheck(anyOf);
+      case final SingleAuthorizationCondition single ->
+          applyAuthorizationCheck(single.authorization());
+      case final AnyOfAuthorizationCondition anyOf -> applyAnyOfAuthorizationCheck(anyOf);
       default ->
           throw new IllegalStateException(
               "Unsupported AuthorizationCondition type: " + condition.getClass().getSimpleName());
@@ -97,10 +98,10 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   }
 
   private SearchQuery applyAuthorizationCheck(final Authorization<?> authorization) {
-    final var resourceIds = authorization.resourceIds();
-    if (resourceIds == null || resourceIds.isEmpty()) {
+    if (!authorization.hasAnyResourceIds()) {
       return matchNone();
     }
+
     return toAuthorizationCheckSearchQuery(authorization);
   }
 
@@ -126,15 +127,15 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
       return matchAll();
     }
 
-    return toTenantCheckSearchQuery(tenantCheck, field);
+    return toTenantCheckSearchQuery(tenantCheck, field.get());
   }
 
   protected SearchQuery toTenantCheckSearchQuery(
-      final TenantCheck tenantCheck, final Optional<String> field) {
+      final TenantCheck tenantCheck, final String field) {
     return Optional.of(tenantCheck)
+        .filter(TenantCheck::hasAnyTenantAccess)
         .map(TenantCheck::tenantIds)
-        .filter(t -> !t.isEmpty())
-        .map(t -> stringTerms(field.get(), t))
+        .map(t -> stringTerms(field, t))
         .orElse(matchNone());
   }
 

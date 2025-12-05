@@ -85,8 +85,9 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   }
 
   @Override
-  protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.authorizationCheck().enabled()
-        && !resourceAccessChecks.hasAnyResourceId();
+  protected boolean noTenantAccess(final ResourceAccessChecks resourceAccessChecks) {
+    // return always false => even when the principal has not any tenant assigned
+    // they still may have access to globally scoped cluster variables
+    return false;
   }
 }

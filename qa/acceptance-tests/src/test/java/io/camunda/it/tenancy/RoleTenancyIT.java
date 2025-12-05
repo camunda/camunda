@@ -10,8 +10,8 @@ package io.camunda.it.tenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.Group;
-import io.camunda.client.api.search.response.GroupUser;
+import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class GroupTenancyIT {
+public class RoleTenancyIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -40,8 +40,8 @@ public class GroupTenancyIT {
   private static final String USER1 = "user1";
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
-  private static final String GROUP_A = "groupA";
-  private static final String GROUP_B = "groupB";
+  private static final String ROLE_A = "roleA";
+  private static final String ROLE_B = "roleB";
 
   @UserDefinition
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, "password", List.of());
@@ -55,59 +55,61 @@ public class GroupTenancyIT {
     createTenant(adminClient, TENANT_B);
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    createGroup(adminClient, GROUP_A);
-    createGroup(adminClient, GROUP_B);
-    assignUserToGroup(adminClient, ADMIN, GROUP_A);
-    waitForGroupsBeingExported(adminClient);
-    waitForGroupMembershipsBeingExported(adminClient);
+    createRole(adminClient, ROLE_A);
+    createRole(adminClient, ROLE_B);
+    assignUserToRole(adminClient, ADMIN, ROLE_A);
+    waitForRolesBeingExported(adminClient);
+    waitForRoleMembershipBeingExported(adminClient);
   }
 
   @Test
-  public void shouldReturnAllGroupsWithTenantAccess(
+  public void shouldReturnAllRolesWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newGroupsSearchRequest().send().join();
-    // then
-    assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(Group::getGroupId).toList())
-        .containsExactlyInAnyOrder(GROUP_A, GROUP_B);
-  }
-
-  @Test
-  public void shouldReturnGroupMembershipsWithTenantAccess(
-      @Authenticated(ADMIN) final CamundaClient camundaClient) {
-    // when
-    final var result = camundaClient.newUsersByGroupSearchRequest(GROUP_A).send().join();
+    final var result =
+        camundaClient.newRolesSearchRequest().filter(f -> f.roleId(ROLE_A)).send().join();
     // then
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().stream().map(GroupUser::getUsername).toList())
+    assertThat(result.items().stream().map(Role::getRoleId).toList())
+        .containsExactlyInAnyOrder(ROLE_A);
+  }
+
+  @Test
+  public void shouldReturnRoleMembershipsWithTenantAccess(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUsersByRoleSearchRequest(ROLE_A).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().stream().map(RoleUser::getUsername).toList())
         .containsExactlyInAnyOrder(ADMIN);
   }
 
   @Test
-  public void shouldReturnAllGroupsWithNoTenantAccess(
+  public void shouldReturnAllRolesWithNoTenantAccess(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newGroupsSearchRequest().send().join();
+    final var result =
+        camundaClient.newRolesSearchRequest().filter(f -> f.roleId(ROLE_B)).send().join();
     // then
-    assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(Group::getGroupId).toList())
-        .containsExactlyInAnyOrder(GROUP_A, GROUP_B);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().stream().map(Role::getRoleId).toList())
+        .containsExactlyInAnyOrder(ROLE_B);
   }
 
   @Test
-  public void shouldReturnGroupMembershipsWithNoTenantAccess(
+  public void shouldReturnRoleMembershipsWithNoTenantAccess(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newUsersByGroupSearchRequest(GROUP_A).send().join();
+    final var result = camundaClient.newUsersByRoleSearchRequest(ROLE_A).send().join();
     // then
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().stream().map(GroupUser::getUsername).toList())
+    assertThat(result.items().stream().map(RoleUser::getUsername).toList())
         .containsExactlyInAnyOrder(ADMIN);
   }
 
-  private static void createGroup(final CamundaClient camundaClient, final String group) {
-    camundaClient.newCreateGroupCommand().groupId(group).name(group).send().join();
+  private static void createRole(final CamundaClient camundaClient, final String role) {
+    camundaClient.newCreateRoleCommand().roleId(role).name(role).send().join();
   }
 
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
@@ -119,28 +121,35 @@ public class GroupTenancyIT {
     camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
-  private static void assignUserToGroup(
-      final CamundaClient camundaClient, final String username, final String group) {
-    camundaClient.newAssignUserToGroupCommand().username(username).groupId(group).send().join();
+  private static void assignUserToRole(
+      final CamundaClient camundaClient, final String username, final String role) {
+    camundaClient.newAssignRoleToUserCommand().roleId(role).username(username).send().join();
   }
 
-  private static void waitForGroupsBeingExported(final CamundaClient camundaClient) {
+  private static void waitForRolesBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              assertThat(camundaClient.newGroupsSearchRequest().send().join().items()).hasSize(2);
+              assertThat(
+                      camundaClient
+                          .newRolesSearchRequest()
+                          .filter(f -> f.roleId(ROLE_B))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(1);
             });
   }
 
-  private static void waitForGroupMembershipsBeingExported(final CamundaClient camundaClient) {
+  private static void waitForRoleMembershipBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              assertThat(camundaClient.newUsersByGroupSearchRequest(GROUP_A).send().join().items())
+              assertThat(camundaClient.newUsersByRoleSearchRequest(ROLE_A).send().join().items())
                   .hasSize(1);
             });
   }

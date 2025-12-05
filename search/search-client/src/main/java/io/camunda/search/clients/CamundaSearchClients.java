@@ -91,6 +91,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.reader.TenantCheck;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -124,7 +125,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery query) {
-    return doSearchWithReader(readers.authorizationReader(), query);
+    return doSearchWithReader(readers.authorizationReader(), query, this::disableTenantCheck);
   }
 
   @Override
@@ -201,7 +202,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<MappingRuleEntity> searchMappingRules(
       final MappingRuleQuery mappingRuleQuery) {
-    return doSearchWithReader(readers.mappingRuleReader(), mappingRuleQuery);
+    return doSearchWithReader(
+        readers.mappingRuleReader(), mappingRuleQuery, this::disableTenantCheck);
   }
 
   @Override
@@ -348,12 +350,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
-    return doSearchWithReader(readers.roleReader(), query);
+    return doSearchWithReader(readers.roleReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleMemberQuery query) {
-    return doSearchWithReader(readers.roleMemberReader(), query);
+    return doSearchWithReader(readers.roleMemberReader(), query, this::disableTenantCheck);
   }
 
   @Override
@@ -364,12 +366,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
-    return doSearchWithReader(readers.tenantReader(), query);
+    return doSearchWithReader(readers.tenantReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantMemberQuery query) {
-    return doSearchWithReader(readers.tenantMemberReader(), query);
+    return doSearchWithReader(readers.tenantMemberReader(), query, this::disableTenantCheck);
   }
 
   @Override
@@ -380,12 +382,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
-    return doSearchWithReader(readers.groupReader(), query);
+    return doSearchWithReader(readers.groupReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupMemberQuery query) {
-    return doSearchWithReader(readers.groupMemberReader(), query);
+    return doSearchWithReader(readers.groupMemberReader(), query, this::disableTenantCheck);
   }
 
   @Override
@@ -396,7 +398,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
-    return doSearchWithReader(readers.userReader(), query);
+    return doSearchWithReader(readers.userReader(), query, this::disableTenantCheck);
   }
 
   @Override
@@ -463,7 +465,14 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearchWithReader(
       final SearchEntityReader<T, Q> reader, final Q query) {
-    return withResultTypeCheck(reader, query);
+    return doSearchWithReader(reader, query, Function.identity());
+  }
+
+  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearchWithReader(
+      final SearchEntityReader<T, Q> reader,
+      final Q query,
+      final Function<ResourceAccessChecks, ResourceAccessChecks> overwriteResourceAccessChecks) {
+    return withResultTypeCheck(reader, query, overwriteResourceAccessChecks);
   }
 
   protected <T, A extends TypedSearchAggregationQuery<?, ?, ?>>
@@ -480,9 +489,23 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> withResultTypeCheck(
-      final SearchEntityReader<T, Q> reader, final Q query) {
+      final SearchEntityReader<T, Q> reader,
+      final Q query,
+      final Function<ResourceAccessChecks, ResourceAccessChecks> overwriteAccessChecks) {
     return ensureSingeResultIfNecessary(
-        () -> doReadWithResourceAccessController(a -> reader.search(query, a)), query);
+        () ->
+            doReadWithResourceAccessController(
+                a -> {
+                  final var finalResourceAccessChecks = overwriteAccessChecks.apply(a);
+                  return reader.search(query, finalResourceAccessChecks);
+                }),
+        query);
+  }
+
+  protected ResourceAccessChecks disableTenantCheck(
+      final ResourceAccessChecks resourceAccessChecks) {
+    return ResourceAccessChecks.of(
+        resourceAccessChecks.authorizationCheck(), TenantCheck.disabled());
   }
 
   protected <T> SearchQueryResult<T> ensureSingeResultIfNecessary(
@@ -502,8 +525,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
     return result;
   }
 
-  protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGet(
-      final Function<ResourceAccessChecks, T> applier) {
+  protected <T> Optional<T> doGet(final Function<ResourceAccessChecks, T> applier) {
     try {
       return Optional.ofNullable(doGetWithResourceAccessController(applier));
     } catch (final TenantAccessDeniedException e) {
