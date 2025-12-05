@@ -133,9 +133,14 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
   @Override
   public void configureStandaloneBackupManager(final TestStandaloneBackupManager backupManager) {
     backupManager
-        .withProperty("camunda.data.secondary-storage.elasticsearch.url", url)
-        .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
-        .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD);
+        .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
+        .withUnifiedConfig(
+            cfg -> {
+              final var elasticsearch = cfg.getData().getSecondaryStorage().getElasticsearch();
+              elasticsearch.setUrl(url);
+              elasticsearch.setUsername(ADMIN_USER);
+              elasticsearch.setPassword(ADMIN_PASSWORD);
+            });
   }
 
   @Override
