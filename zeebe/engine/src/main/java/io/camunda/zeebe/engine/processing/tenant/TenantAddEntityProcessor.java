@@ -85,12 +85,12 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     final var record = command.getValue();
     final var tenantId = record.getTenantId();
     final var authorizationRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.TENANT)
-                    .permissionType(PermissionType.UPDATE)
-                    .addResourceId(tenantId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.TENANT)
+            .permissionType(PermissionType.UPDATE)
+            .addResourceId(tenantId)
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import io.camunda.security.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -154,11 +153,11 @@ public final class BatchOperationCreateProcessor
 
     // first check for general CREATE_BATCH_OPERATION permission
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.BATCH)
-                    .permissionType(PermissionType.CREATE));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.BATCH)
+            .permissionType(PermissionType.CREATE)
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
@@ -173,11 +172,11 @@ public final class BatchOperationCreateProcessor
             case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
           };
       return authCheckBehavior.isAuthorized(
-          AuthorizationRequest.of(
-              r ->
-                  r.command(command)
-                      .resourceType(AuthorizationResourceType.BATCH)
-                      .permissionType(permission)));
+          AuthorizationRequest.builder()
+              .command(command)
+              .resourceType(AuthorizationResourceType.BATCH)
+              .permissionType(permission)
+              .build());
     }
 
     return isAuthorized;

@@ -116,13 +116,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -144,13 +144,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -177,13 +177,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -212,13 +212,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -366,12 +366,12 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -398,13 +398,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId("anotherTenantId")
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId("anotherTenantId")
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -432,13 +432,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(anotherTenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(anotherTenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -460,13 +460,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(anotherTenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(anotherTenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -537,13 +537,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -565,13 +565,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -594,13 +594,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -629,13 +629,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -665,13 +665,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -706,13 +706,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then

@@ -70,12 +70,12 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     final var persistedUser = persistedUserOptional.get();
 
     final var authRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.USER)
-                    .permissionType(PermissionType.UPDATE)
-                    .addResourceId(persistedUser.getUsername()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.USER)
+            .permissionType(PermissionType.UPDATE)
+            .addResourceId(persistedUser.getUsername())
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

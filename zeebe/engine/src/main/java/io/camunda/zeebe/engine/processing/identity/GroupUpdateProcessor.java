@@ -57,12 +57,12 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
     final var groupId = record.getGroupId();
 
     final var authorizationRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.GROUP)
-                    .permissionType(PermissionType.UPDATE)
-                    .addResourceId(groupId));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.GROUP)
+            .permissionType(PermissionType.UPDATE)
+            .addResourceId(groupId)
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
