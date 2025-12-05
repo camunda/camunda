@@ -7,7 +7,6 @@
  */
 
 import {buildMutationRequestBody} from './buildMutationRequestBody';
-import type {RequestFilters} from 'modules/utils/filter';
 import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
@@ -18,14 +17,18 @@ type Body =
   | CreateCancellationBatchOperationRequestBody;
 
 describe('buildMutationRequestBody', () => {
-  const baseFilter: RequestFilters = {
-    activityId: 'taskA',
-    incidents: true,
+  const createSearchParams = (params: Record<string, string>) => {
+    return new URLSearchParams(params);
   };
 
   it('adds processInstanceKey.$in when includeIds present', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      incidents: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter,
+      searchParams,
       includeIds: ['1', '2'],
       excludeIds: [],
     });
@@ -40,8 +43,13 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('adds processInstanceKey.$notIn when excludeIds present', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      incidents: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter,
+      searchParams,
       includeIds: [],
       excludeIds: ['3', '4'],
     });
@@ -56,8 +64,13 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('combines includeIds and excludeIds into processInstanceKey', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      incidents: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter,
+      searchParams,
       includeIds: ['1', '2'],
       excludeIds: ['3'],
     });
@@ -72,8 +85,13 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('handles single-element arrays', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      incidents: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter,
+      searchParams,
       includeIds: ['only'],
       excludeIds: ['x'],
     });
@@ -88,8 +106,13 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('omits processInstanceKey when both include/exclude lists are empty', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      incidents: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter,
+      searchParams,
       includeIds: [],
       excludeIds: [],
     });
@@ -103,12 +126,14 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('uses OR combination when both incidents and active are selected', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      incidents: 'true',
+      active: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        activityId: 'taskA',
-        incidents: true,
-        active: true,
-      },
+      searchParams,
       includeIds: [],
       excludeIds: [],
     });
@@ -122,12 +147,13 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('uses hasIncident filter when only incidents checkbox is selected', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      incidents: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        activityId: 'taskA',
-        incidents: true,
-        active: false,
-      },
+      searchParams,
       includeIds: [],
       excludeIds: [],
     });
@@ -141,12 +167,13 @@ describe('buildMutationRequestBody', () => {
   });
 
   it('uses state filter when only active checkbox is selected', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      active: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        activityId: 'taskA',
-        incidents: false,
-        active: true,
-      },
+      searchParams,
       includeIds: [],
       excludeIds: [],
     });
@@ -159,17 +186,20 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('maps additional baseFilter fields to request body', () => {
+  it('maps additional filter fields to request body', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      errorMessage: 'some error',
+      tenant: 'tenant-xyz',
+      operationId: 'batch-123',
+      parentProcessInstanceId: 'parent-456',
+      retriesLeft: 'true',
+      incidentErrorHashCode: '37136123613781',
+      active: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        activityId: 'taskA',
-        errorMessage: 'some error',
-        tenantId: 'tenant-xyz',
-        batchOperationId: 'batch-123',
-        parentInstanceId: 'parent-456',
-        retriesLeft: true,
-        incidentErrorHashCode: 37136123613781,
-      },
+      searchParams,
       includeIds: [],
       excludeIds: [],
     });
@@ -183,17 +213,20 @@ describe('buildMutationRequestBody', () => {
         parentProcessInstanceKey: {$eq: 'parent-456'},
         hasRetriesLeft: true,
         incidentErrorHashCode: 37136123613781,
+        state: {$eq: 'ACTIVE'},
       },
     });
   });
 
-  it('maps processIds to processDefinitionKey $in', () => {
+  it('maps process to processDefinitionId', () => {
+    const searchParams = createSearchParams({
+      flowNodeId: 'taskA',
+      process: 'orderProcess',
+      active: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        activityId: 'taskA',
-        incidents: false,
-        processIds: ['p1', 'p2'],
-      },
+      searchParams,
       includeIds: [],
       excludeIds: [],
     });
@@ -201,7 +234,8 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: {$eq: 'taskA'},
-        processDefinitionKey: {$in: ['p1', 'p2']},
+        processDefinitionId: {$eq: 'orderProcess'},
+        state: {$eq: 'ACTIVE'},
       },
     });
   });
@@ -212,10 +246,11 @@ describe('buildMutationRequestBody', () => {
 
     expect(
       buildMutationRequestBody({
-        baseFilter: {
+        searchParams: createSearchParams({
           startDateAfter: after,
           startDateBefore: before,
-        },
+          active: 'true',
+        }),
         includeIds: [],
         excludeIds: [],
       }),
@@ -225,14 +260,16 @@ describe('buildMutationRequestBody', () => {
           $gt: '2020-01-01T00:00:00.000Z',
           $lt: '2020-01-02T00:00:00.000Z',
         },
+        state: {$eq: 'ACTIVE'},
       },
     });
 
     expect(
       buildMutationRequestBody({
-        baseFilter: {
+        searchParams: createSearchParams({
           startDateAfter: after,
-        },
+          active: 'true',
+        }),
         includeIds: [],
         excludeIds: [],
       }),
@@ -241,14 +278,16 @@ describe('buildMutationRequestBody', () => {
         startDate: {
           $gt: '2020-01-01T00:00:00.000Z',
         },
+        state: {$eq: 'ACTIVE'},
       },
     });
 
     expect(
       buildMutationRequestBody({
-        baseFilter: {
+        searchParams: createSearchParams({
           startDateBefore: before,
-        },
+          active: 'true',
+        }),
         includeIds: [],
         excludeIds: [],
       }),
@@ -257,6 +296,7 @@ describe('buildMutationRequestBody', () => {
         startDate: {
           $lt: '2020-01-02T00:00:00.000Z',
         },
+        state: {$eq: 'ACTIVE'},
       },
     });
   });
@@ -267,10 +307,11 @@ describe('buildMutationRequestBody', () => {
 
     expect(
       buildMutationRequestBody({
-        baseFilter: {
+        searchParams: createSearchParams({
           endDateAfter: after,
           endDateBefore: before,
-        },
+          active: 'true',
+        }),
         includeIds: [],
         excludeIds: [],
       }),
@@ -280,14 +321,16 @@ describe('buildMutationRequestBody', () => {
           $gt: '2020-01-01T00:00:00.000Z',
           $lt: '2020-01-02T00:00:00.000Z',
         },
+        state: {$eq: 'ACTIVE'},
       },
     });
 
     expect(
       buildMutationRequestBody({
-        baseFilter: {
+        searchParams: createSearchParams({
           endDateAfter: after,
-        },
+          active: 'true',
+        }),
         includeIds: [],
         excludeIds: [],
       }),
@@ -296,14 +339,16 @@ describe('buildMutationRequestBody', () => {
         endDate: {
           $gt: '2020-01-01T00:00:00.000Z',
         },
+        state: {$eq: 'ACTIVE'},
       },
     });
 
     expect(
       buildMutationRequestBody({
-        baseFilter: {
+        searchParams: createSearchParams({
           endDateBefore: before,
-        },
+          active: 'true',
+        }),
         includeIds: [],
         excludeIds: [],
       }),
@@ -312,16 +357,20 @@ describe('buildMutationRequestBody', () => {
         endDate: {
           $lt: '2020-01-02T00:00:00.000Z',
         },
+        state: {$eq: 'ACTIVE'},
       },
     });
   });
 
   it('maps variable name and values to variables array', () => {
+    const searchParams = createSearchParams({
+      variableName: 'foo',
+      variableValues: '"a","b"',
+      active: 'true',
+    });
+
     const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        incidents: false,
-        variable: {name: 'foo', values: ['a', 'b']},
-      },
+      searchParams,
       includeIds: [],
       excludeIds: [],
     });
@@ -329,19 +378,20 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         variables: [
-          {name: 'foo', value: 'a'},
-          {name: 'foo', value: 'b'},
+          {name: 'foo', value: '"a"'},
+          {name: 'foo', value: '"b"'},
         ],
+        state: {$eq: 'ACTIVE'},
       },
     });
   });
 
   it('maps completed and canceled flags to state correctly', () => {
     const both: Body = buildMutationRequestBody({
-      baseFilter: {
-        completed: true,
-        canceled: true,
-      },
+      searchParams: createSearchParams({
+        completed: 'true',
+        canceled: 'true',
+      }),
       includeIds: [],
       excludeIds: [],
     });
@@ -353,9 +403,9 @@ describe('buildMutationRequestBody', () => {
     });
 
     const onlyCompleted: Body = buildMutationRequestBody({
-      baseFilter: {
-        completed: true,
-      },
+      searchParams: createSearchParams({
+        completed: 'true',
+      }),
       includeIds: [],
       excludeIds: [],
     });
@@ -367,9 +417,9 @@ describe('buildMutationRequestBody', () => {
     });
 
     const onlyCanceled: Body = buildMutationRequestBody({
-      baseFilter: {
-        canceled: true,
-      },
+      searchParams: createSearchParams({
+        canceled: 'true',
+      }),
       includeIds: [],
       excludeIds: [],
     });
@@ -378,6 +428,20 @@ describe('buildMutationRequestBody', () => {
       filter: {
         state: {$eq: 'TERMINATED'},
       },
+    });
+  });
+
+  it('returns empty filter when no search params provided', () => {
+    const searchParams = createSearchParams({});
+
+    const body: Body = buildMutationRequestBody({
+      searchParams,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {},
     });
   });
 });

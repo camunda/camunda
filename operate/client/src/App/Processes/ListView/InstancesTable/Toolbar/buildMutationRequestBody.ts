@@ -10,29 +10,29 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import type {RequestFilters} from 'modules/utils/filter';
-import {
-  buildProcessInstanceFilter,
-  type BuildProcessInstanceFilterOptions,
-} from 'modules/utils/filter/v2/processInstanceFilterBuilder';
+import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
+import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
 type BuildMutationRequestBodyParams = {
-  baseFilter: RequestFilters;
-  includeIds: string[];
-  excludeIds: string[];
+  searchParams: URLSearchParams;
+  includeIds?: string[];
+  excludeIds?: string[];
 };
 
 const buildMutationRequestBody = ({
-  baseFilter,
+  searchParams,
   includeIds = [],
   excludeIds = [],
 }: BuildMutationRequestBodyParams) => {
-  const builderOptions: BuildProcessInstanceFilterOptions = {
-    includeIds,
-    excludeIds,
-  };
+  const baseFilter = parseProcessInstancesSearchFilter(searchParams);
 
-  const filter = buildProcessInstanceFilter(baseFilter, builderOptions);
+  const keyCriterion = buildProcessInstanceKeyCriterion(includeIds, excludeIds);
+
+  let filter = baseFilter ?? {};
+
+  if (keyCriterion) {
+    filter = {...filter, processInstanceKey: keyCriterion};
+  }
 
   const requestBody:
     | CreateIncidentResolutionBatchOperationRequestBody

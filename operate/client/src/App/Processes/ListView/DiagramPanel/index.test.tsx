@@ -23,6 +23,7 @@ import {DiagramPanel} from './index';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
@@ -32,7 +33,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/bpmn-js/utils/isProcessEndEvent', () => ({
@@ -80,6 +81,10 @@ describe('DiagramPanel', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     processesStore.fetchProcesses();
   });

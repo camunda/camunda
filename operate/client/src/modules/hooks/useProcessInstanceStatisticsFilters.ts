@@ -6,30 +6,47 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useFilters} from 'modules/hooks/useFilters';
-import {type GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useSearchParams} from 'react-router-dom';
 import {
-  buildProcessInstanceFilter,
-  type BuildProcessInstanceFilterOptions,
-} from 'modules/utils/filter/v2/processInstanceFilterBuilder';
+  type GetProcessDefinitionStatisticsRequestBody,
+  type QueryProcessInstancesRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
+import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
 
-function useProcessInstanceStatisticsFilters(
-  options: Omit<
-    BuildProcessInstanceFilterOptions,
-    'includeIds' | 'excludeIds'
-  > = {},
-): GetProcessDefinitionStatisticsRequestBody {
-  const {getFilters} = useFilters();
-  const filters = getFilters();
+type ProcessInstancesSearchFilter = NonNullable<
+  QueryProcessInstancesRequestBody['filter']
+>;
+type StatisticsFilter = NonNullable<
+  GetProcessDefinitionStatisticsRequestBody['filter']
+>;
 
-  const fullFilter = buildProcessInstanceFilter(filters, options);
+const getValidStatisticsFilters = (
+  fullFilter: ProcessInstancesSearchFilter,
+): StatisticsFilter => {
+  const {
+    processDefinitionId,
+    processDefinitionName,
+    processDefinitionKey,
+    processDefinitionVersion,
+    processDefinitionVersionTag,
+    ...statisticsFilter
+  } = fullFilter;
 
-  // Exclude processDefinitionVersionTag - not supported by statistics endpoint
-  const {processDefinitionVersionTag: _, ...statisticsFilter} = fullFilter;
+  return statisticsFilter;
+};
 
-  return {
-    filter: statisticsFilter,
+const useProcessInstanceStatisticsFilters =
+  (): GetProcessDefinitionStatisticsRequestBody => {
+    const [searchParams] = useSearchParams();
+    const fullFilter = parseProcessInstancesSearchFilter(searchParams);
+
+    if (!fullFilter) {
+      return {filter: undefined};
+    }
+
+    return {
+      filter: getValidStatisticsFilters(fullFilter),
+    };
   };
-}
 
-export {useProcessInstanceStatisticsFilters};
+export {useProcessInstanceStatisticsFilters, getValidStatisticsFilters};

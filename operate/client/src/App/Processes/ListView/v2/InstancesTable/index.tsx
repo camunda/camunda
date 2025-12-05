@@ -24,9 +24,8 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from '../../InstancesTable/Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useSearchParams} from 'react-router-dom';
 import {BatchModificationFooter} from '../../InstancesTable/BatchModificationFooter';
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import type {InstanceEntityState} from 'modules/types/operate';
 
 type InstancesTableProps = {
@@ -51,6 +50,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
 
     const filters = useFilters();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
 
     const {canceled, completed, tenant} = getProcessInstanceFilters(
       location.search,
@@ -61,7 +61,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       window.clientConfig?.multiTenancyEnabled &&
       (tenant === undefined || tenant === 'all');
 
-    const {batchOperationId} = getProcessInstancesRequestFilters();
+    const batchOperationId = searchParams.get('operationId') ?? undefined;
 
     const getEmptyListMessage = () => {
       return {
