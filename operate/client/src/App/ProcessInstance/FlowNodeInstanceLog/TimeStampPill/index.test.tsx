@@ -41,16 +41,19 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 };
 
 describe('TimeStampPill', () => {
-  it('should render "Show" / "Hide" label', async () => {
+  it('should toggle visibility when clicked', async () => {
     const {user} = render(<TimeStampPill />, {wrapper: Wrapper});
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Show End Date')).toBeEnabled();
+      expect(screen.getByLabelText('End date')).toBeEnabled();
     });
 
-    await user.click(screen.getByLabelText('Show End Date'));
+    const toggle = screen.getByLabelText('End date');
+    expect(toggle).not.toBeChecked();
 
-    expect(await screen.findByLabelText('Hide End Date')).toBeInTheDocument();
+    await user.click(toggle);
+
+    expect(toggle).toBeChecked();
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {
