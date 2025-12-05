@@ -188,6 +188,14 @@ const TopPanel: React.FC = observer(() => {
       ? allFlowNodeStateOverlays
       : notCompletedFlowNodeStateOverlays;
   }, [statistics, businessObjects]);
+
+  const selectedFlowNode = useMemo(() => {
+    return flowNodeSelection?.anchorFlowNodeId
+      ? [flowNodeSelection.anchorFlowNodeId]
+      : flowNodeSelection?.flowNodeId
+        ? [flowNodeSelection.flowNodeId]
+        : undefined;
+  }, [flowNodeSelection?.anchorFlowNodeId, flowNodeSelection?.flowNodeId]);
   const compensationAssociationIds = Object.values(
     processDefinitionData?.diagramModel.elementsById ?? {},
   )
@@ -341,13 +349,7 @@ const TopPanel: React.FC = observer(() => {
                     ? modifiableFlowNodes
                     : selectableFlowNodes
                 }
-                selectedFlowNodeIds={
-                  flowNodeSelection?.anchorFlowNodeId
-                    ? [flowNodeSelection.anchorFlowNodeId]
-                    : flowNodeSelection?.flowNodeId
-                      ? [flowNodeSelection.flowNodeId]
-                      : undefined
-                }
+                selectedFlowNodeIds={selectedFlowNode}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
                     clearSelectionV1(rootNode);
