@@ -221,13 +221,13 @@ public final class ProcessInstanceModificationModifyProcessor
     }
 
     final var authRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                    .permissionType(PermissionType.MODIFY_PROCESS_INSTANCE)
-                    .tenantId(processInstance.getValue().getTenantId())
-                    .addResourceId(processInstance.getValue().getBpmnProcessId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.MODIFY_PROCESS_INSTANCE)
+            .tenantId(processInstance.getValue().getTenantId())
+            .addResourceId(processInstance.getValue().getBpmnProcessId())
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

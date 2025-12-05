@@ -96,11 +96,11 @@ final class JobBatchCollector {
     // here and only check if the requester has the correct permissions to access the jobs
     final var authorizedProcessIds =
         authCheckBehavior.getAllAuthorizedScopes(
-            AuthorizationRequest.of(
-                r ->
-                    r.command(record)
-                        .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                        .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)));
+            AuthorizationRequest.builder()
+                .command(record)
+                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                .build());
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),

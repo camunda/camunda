@@ -48,11 +48,11 @@ public class PermissionsBehavior {
   public Either<Rejection, AuthorizationRecord> isAuthorized(
       final TypedRecord<AuthorizationRecord> command, final PermissionType permissionType) {
     final var authorizationRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.AUTHORIZATION)
-                    .permissionType(permissionType));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.AUTHORIZATION)
+            .permissionType(permissionType)
+            .build();
     return authCheckBehavior
         .isAuthorizedOrInternalCommand(authorizationRequest)
         .map(unused -> command.getValue());

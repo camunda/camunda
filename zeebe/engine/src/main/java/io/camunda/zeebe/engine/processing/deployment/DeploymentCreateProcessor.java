@@ -130,13 +130,13 @@ public final class DeploymentCreateProcessor
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
     final var authorizationRequest =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(AuthorizationResourceType.RESOURCE)
-                    .permissionType(PermissionType.CREATE)
-                    .tenantId(command.getValue().getTenantId())
-                    .newResource());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(PermissionType.CREATE)
+            .tenantId(command.getValue().getTenantId())
+            .newResource()
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

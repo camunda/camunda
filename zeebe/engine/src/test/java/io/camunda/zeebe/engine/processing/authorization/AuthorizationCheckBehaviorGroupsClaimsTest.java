@@ -106,12 +106,12 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .addResourceId(resourceIdScope.getResourceId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -138,8 +138,11 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r -> r.command(command).resourceType(resourceType).permissionType(permissionType));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
     final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
@@ -166,12 +169,12 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .addResourceId(resourceIdScope.getResourceId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
@@ -198,12 +201,12 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .addResourceId(resourceIdScope.getResourceId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -229,13 +232,13 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
     // when
     final var request =
-        AuthorizationRequest.of(
-            r ->
-                r.command(command)
-                    .resourceType(resourceType)
-                    .permissionType(permissionType)
-                    .tenantId(tenantId)
-                    .addResourceId(resourceIdScope.getResourceId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
