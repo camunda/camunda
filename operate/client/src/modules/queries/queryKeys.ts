@@ -9,6 +9,8 @@
 import type {
   ElementInstance,
   ProcessInstance,
+  QueryBatchOperationItemsRequestBody,
+  QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstancesRequestBody,
@@ -141,12 +143,20 @@ const queryKeys = {
     ],
   },
   batchOperations: {
+    query: (payload?: QueryBatchOperationsRequestBody) =>
+      payload !== undefined
+        ? ['batchOperations', payload]
+        : ['batchOperations'],
     get: (batchOperationKey: string) => ['batchOperation', batchOperationKey],
   },
   batchOperationItems: {
     searchByProcessInstanceKey: (processInstanceKey?: string) => [
       'batchOperationItemsSearchByProcessInstanceKey',
       processInstanceKey,
+    ],
+    query: (payload: QueryBatchOperationItemsRequestBody) => [
+      'batchOperationItems',
+      payload,
     ],
   },
 };

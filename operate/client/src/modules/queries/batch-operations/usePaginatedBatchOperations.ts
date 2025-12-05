@@ -9,13 +9,15 @@
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
 import type {QueryBatchOperationsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {queryKeys} from '../queryKeys';
 
-const BATCH_OPERATIONS_QUERY_KEY = 'batchOperations';
 const MAX_OPERATIONS_PER_REQUEST = 50;
 
-const useBatchOperations = (payload: QueryBatchOperationsRequestBody) => {
+const usePaginatedBatchOperations = (
+  payload: QueryBatchOperationsRequestBody,
+) => {
   return useInfiniteQuery({
-    queryKey: [BATCH_OPERATIONS_QUERY_KEY, payload],
+    queryKey: queryKeys.batchOperations.query(payload),
     queryFn: async ({pageParam}) => {
       const requestPayload = {
         ...payload,
@@ -59,4 +61,4 @@ const useBatchOperations = (payload: QueryBatchOperationsRequestBody) => {
   });
 };
 
-export {useBatchOperations, BATCH_OPERATIONS_QUERY_KEY};
+export {usePaginatedBatchOperations};
