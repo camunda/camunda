@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
@@ -471,6 +473,16 @@ public final class RecordingExporter implements Exporter {
   public static ConditionalSubscriptionRecordStream conditionalSubscriptionRecords(
       final ConditionalSubscriptionIntent intent) {
     return conditionalSubscriptionRecords().withIntent(intent);
+  }
+
+  public static ConditionalEvaluationRecordStream conditionalEvaluationRecords() {
+    return new ConditionalEvaluationRecordStream(
+        records(ValueType.CONDITIONAL_EVALUATION, ConditionalEvaluationRecordValue.class));
+  }
+
+  public static ConditionalEvaluationRecordStream conditionalEvaluationRecords(
+      final ConditionalEvaluationIntent intent) {
+    return conditionalEvaluationRecords().withIntent(intent);
   }
 
   public static ResourceDeletionRecordStream resourceDeletionRecords() {

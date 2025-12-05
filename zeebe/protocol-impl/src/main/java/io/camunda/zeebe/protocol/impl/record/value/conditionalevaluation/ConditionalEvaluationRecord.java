@@ -43,6 +43,12 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp);
   }
 
+  public void wrap(final ConditionalEvaluationRecord other) {
+    processDefinitionKeyProp.setValue(other.getProcessDefinitionKey());
+    variablesProp.setValue(other.getVariablesBuffer());
+    tenantIdProp.setValue(other.getTenantId());
+  }
+
   @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
