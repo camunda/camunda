@@ -47,9 +47,6 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 4. Build the protocol: `mvn clean install -pl :zeebe-protocol` to generate the Immutable classes and to generate the new `ValueType` enum value.
 5. Add a mapping to [`ValueTypeMapping`](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypeMapping.java) connecting the `ValueType`, `RecordValue` and `Intent` together.
-6. Add a mapping to [`UnifiedRecordValue`](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/UnifiedRecordValue.java) making sure that the new `ValueType` is included in the method `fromValueType` and in the map in class `ClassToValueType`
-7. If the valueType can represent a user command that is received by [`CommandApiRequestHandler`](zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestHandler.java):
-   - Include the valueType in [`ValueTypes.USER_COMMANDS](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypes.java).
 
 ### Implement a new RecordValue in protocol-impl
 
@@ -61,8 +58,9 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 2. Add new cases to [JsonSerializableToJsonTest](/zeebe/protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java):
    - one case that provides a value for each property (as far nested as possible)
    - one case that has as few properties as possible (i.e. an empty record)
-3. Add the new `Record` to the broker's [CommandApiRequestReader](/zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestReader.java)'s `RECORDS_BY_TYPE` mapping.
-4. Add the new `Record` to the [`TypedEventRegistry`](/zeebe/stream-platform/src/main/java/io/camunda/zeebe/stream/impl/TypedEventRegistry.java).
+3. Add a mapping to [`UnifiedRecordValue`](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/UnifiedRecordValue.java) making sure that the new `ValueType` is included in the method `fromValueType` and in the map in class `ClassToValueType`
+4. If the valueType can represent a user command that is received by [`CommandApiRequestHandler`](zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestHandler.java):
+   - Include the valueType in [`ValueTypes.USER_COMMANDS](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypes.java).
 5. (only if command distribution is needed) Add the new `Record` to the [`CommandDistributionRecord`](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/value/distribution/CommandDistributionRecord.java)'s `RECORDS_BY_TYPE` mapping.
 
 ### Support a RecordValue in Exporters and test setups
