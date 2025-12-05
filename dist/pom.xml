@@ -653,8 +653,13 @@
     </dependency>
 
     <dependency>
+<<<<<<< HEAD
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
+=======
+      <groupId>io.camunda</groupId>
+      <artifactId>debug-cli</artifactId>
+>>>>>>> e7dc773e (build: include `cdbg` in app assembly)
     </dependency>
 
     <!-- /end -->
@@ -853,6 +858,7 @@
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
             <program>
+<<<<<<< HEAD
               <id>prefix-migration</id>
               <mainClass>io.camunda.application.StandalonePrefixMigration</mainClass>
             </program>
@@ -875,6 +881,10 @@
             <program>
               <id>data-migration</id>
               <mainClass>io.camunda.application.StandaloneDataMigration</mainClass>
+=======
+              <id>cdbg</id>
+              <mainClass>io.camunda.debug.cli.Main</mainClass>
+>>>>>>> e7dc773e (build: include `cdbg` in app assembly)
             </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
@@ -929,7 +939,12 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
+<<<<<<< HEAD
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
+=======
+            <!-- Needed for the debug CLI tool -->
+            <dependency>io.camunda:debug-cli</dependency>
+>>>>>>> e7dc773e (build: include `cdbg` in app assembly)
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
