@@ -110,7 +110,7 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
 
   @Override
   public long storeConfigurationVersion(final GlobalListenerBatchRecord record) {
-    final long configKey = record.getListenersConfigKey();
+    final long configKey = record.getGlobalListenerBatchKey();
     versionKey.wrapLong(configKey);
     versionedConfig.setGlobalListeners(record);
     versionedConfigColumnFamily.insert(versionKey, versionedConfig);
