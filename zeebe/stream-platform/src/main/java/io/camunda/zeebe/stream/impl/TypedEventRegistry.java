@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -149,6 +150,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.HISTORY_DELETION, HistoryDeletionRecord.class);
     registry.put(ValueType.CONDITIONAL_SUBSCRIPTION, ConditionalSubscriptionRecord.class);
     registry.put(ValueType.CONDITIONAL_EVALUATION, ConditionalEvaluationRecord.class);
+    registry.put(ValueType.EXPRESSION, ExpressionRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

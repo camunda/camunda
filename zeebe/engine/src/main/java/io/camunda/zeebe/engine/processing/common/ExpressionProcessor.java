@@ -73,6 +73,10 @@ public final class ExpressionProcessor {
             scopedEvaluationContext, this.scopedEvaluationContext));
   }
 
+  public Expression parseExpression(final String expression) {
+    return expressionLanguage.parseExpression(expression);
+  }
+
   /**
    * Evaluates the given expression and attempts to return the result as a {@link String}.
    *

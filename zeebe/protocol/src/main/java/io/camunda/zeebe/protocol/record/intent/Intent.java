@@ -80,7 +80,8 @@ public interface Intent {
           ClusterVariableIntent.class,
           HistoryDeletionIntent.class,
           ConditionalSubscriptionIntent.class,
-          ConditionalEvaluationIntent.class);
+          ConditionalEvaluationIntent.class,
+          ExpressionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -216,6 +217,8 @@ public interface Intent {
         return ConditionalSubscriptionIntent.from(intent);
       case CONDITIONAL_EVALUATION:
         return ConditionalEvaluationIntent.from(intent);
+      case EXPRESSION:
+        return ExpressionIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
