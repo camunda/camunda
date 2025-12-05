@@ -58,13 +58,18 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'api-tests',
+      testMatch: ['tests/api/*.spec.ts'],
+      use: devices['Desktop Chrome'],
+    },
+    {
       name: 'chromium',
       use: devices['Desktop Chrome'],
       // Specify only tests in the changed folders for the 'chromium' project
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
         : undefined,
-      testIgnore: 'task-panel.spec.ts',
+      testIgnore: ['task-panel.spec.ts', 'tests/api/*.spec.ts'],
       teardown: 'chromium-subset',
     },
     {
@@ -75,7 +80,7 @@ export default defineConfig({
     {
       name: 'firefox',
       use: devices['Desktop Firefox'],
-      testIgnore: 'task-panel.spec.ts',
+      testIgnore: ['task-panel.spec.ts', 'tests/api/*.spec.ts'],
       teardown: 'firefox-subset',
     },
     {
@@ -86,7 +91,7 @@ export default defineConfig({
     {
       name: 'msedge',
       use: devices['Desktop Edge'],
-      testIgnore: 'task-panel.spec.ts',
+      testIgnore: ['task-panel.spec.ts', 'tests/api/*.spec.ts'],
       teardown: 'msedge-subset',
     },
     {
@@ -98,7 +103,7 @@ export default defineConfig({
       name: 'tasklist-e2e',
       testMatch: ['tests/tasklist/*.spec.ts'],
       use: devices['Desktop Edge'],
-      testIgnore: 'task-panel.spec.ts',
+      testIgnore: ['task-panel.spec.ts', 'tests/api/*.spec.ts'],
       teardown: 'chromium-subset',
     },
   ],
