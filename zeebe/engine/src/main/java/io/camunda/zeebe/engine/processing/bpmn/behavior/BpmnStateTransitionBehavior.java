@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.common.RootProcessInstanceKeyResolver;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -132,8 +131,7 @@ public final class BpmnStateTransitionBehavior {
             transitionContext.getRecordValue());
     // We only set the tree path properties on the ACTIVATING event
     final var rootProcessInstanceKey =
-        RootProcessInstanceKeyResolver.fromElementInstancePath(
-            elementTreePath.elementInstancePath());
+        getRootProcessInstanceKeyFromContext(transitionContext);
     transitionContext
         .getRecordValue()
         .setElementInstancePath(elementTreePath.elementInstancePath())
@@ -142,6 +140,77 @@ public final class BpmnStateTransitionBehavior {
         .setRootProcessInstanceKey(rootProcessInstanceKey);
 
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+  }
+
+  /**
+   * Derives the root process instance key from the context.
+   *
+   * <p>For process instance elements, if the element is a root process instance (no parent), the
+   * root key is the process instance key itself. Otherwise, it's inherited from the flow scope
+   * element.
+   *
+   * @param context the element context
+   * @return the key of the root process instance, or -1 if it cannot be determined
+   */
+  private long getRootProcessInstanceKeyFromContext(final BpmnElementContext context) {
+    final var recordValue = context.getRecordValue();
+    final var bpmnElementType = context.getBpmnElementType();
+
+    // For process instance elements (PROCESS, EVENT_SUB_PROCESS, etc.)
+    if (bpmnElementType == BpmnElementType.PROCESS
+        || bpmnElementType == BpmnElementType.SUB_PROCESS) {
+      final var parentProcessInstanceKey = recordValue.getParentProcessInstanceKey();
+      if (parentProcessInstanceKey == -1) {
+        // This is a root process instance
+        return context.getProcessInstanceKey();
+      } else {
+        // This is a child process, get root from the parent
+        return getRootProcessInstanceKeyFromParent(context);
+      }
+    }
+
+    // For non-process-instance elements, get root from the flow scope
+    return getRootProcessInstanceKeyFromFlowScope(context);
+  }
+
+  /**
+   * Gets the root process instance key from the parent process instance.
+   *
+   * @param context the element context
+   * @return the root process instance key, or -1 if it cannot be determined
+   */
+  private long getRootProcessInstanceKeyFromParent(final BpmnElementContext context) {
+    final var parentElementInstanceKey = context.getRecordValue().getParentElementInstanceKey();
+    if (parentElementInstanceKey == -1) {
+      return -1L;
+    }
+
+    final var parentElementInstance = stateBehavior.getElementInstance(parentElementInstanceKey);
+    if (parentElementInstance == null) {
+      return -1L;
+    }
+
+    return parentElementInstance.getValue().getRootProcessInstanceKey();
+  }
+
+  /**
+   * Gets the root process instance key from the flow scope element.
+   *
+   * @param context the element context
+   * @return the root process instance key, or -1 if it cannot be determined
+   */
+  private long getRootProcessInstanceKeyFromFlowScope(final BpmnElementContext context) {
+    final var flowScopeKey = context.getFlowScopeKey();
+    if (flowScopeKey == -1) {
+      return -1L;
+    }
+
+    final var flowScopeInstance = stateBehavior.getElementInstance(flowScopeKey);
+    if (flowScopeInstance == null) {
+      return -1L;
+    }
+
+    return flowScopeInstance.getValue().getRootProcessInstanceKey();
   }
 
   /**
