@@ -50,9 +50,9 @@ jobs:
         run: |
           # Resolve c8run version
           if [[ "${INPUT_C8RUN_VERSION}" == "latest" ]]; then
-            # Get latest release that has c8run artifacts (contains camunda8-run in asset names)
+            # Get latest stable release (exclude pre-releases) that has c8run artifacts
             c8run_version=$(gh api repos/camunda/camunda/releases --jq '
-              [.[] | select(.assets[].name | test("camunda8-run-"))] | first | .tag_name
+              [.[] | select(.prerelease == false) | select(.assets[].name | test("camunda8-run-"))] | first | .tag_name
             ')
             echo "Resolved c8run version: ${c8run_version}"
           else
@@ -62,7 +62,7 @@ jobs:
 
           # Resolve modeler version
           if [[ "${INPUT_MODELER_VERSION}" == "latest" ]]; then
-            # Get latest modeler version from GitHub API
+            # Get latest stable modeler version (releases/latest excludes pre-releases by default)
             modeler_version=$(gh api repos/camunda/camunda-modeler/releases/latest --jq '.tag_name' | sed 's/^v//')
             echo "Resolved modeler version: ${modeler_version}"
           else
