@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.config.ExporterConfiguration.AuditLogConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
@@ -39,7 +40,10 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
   private static final String INDEX_NAME = "test-pi-modified-audit-log";
   private final ProtocolFactory factory = new ProtocolFactory();
   private final AuditLogHandler<ProcessInstanceModificationRecordValue> underTest =
-      new AuditLogHandler<>(INDEX_NAME, new ProcessInstanceModificationAuditLogTransformer());
+      new AuditLogHandler<>(
+          INDEX_NAME,
+          new ProcessInstanceModificationAuditLogTransformer(),
+          new AuditLogConfiguration());
 
   @Test
   void shouldGetHandledValueType() {

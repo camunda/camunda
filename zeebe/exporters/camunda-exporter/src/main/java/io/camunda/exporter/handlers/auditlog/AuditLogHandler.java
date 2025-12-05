@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
+import io.camunda.exporter.config.ExporterConfiguration.AuditLogConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
@@ -25,9 +26,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.util.DateUtil;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A generic handler for audit log records that delegates record-type-specific transformation to an
@@ -49,18 +52,21 @@ import java.util.Optional;
 public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogEntity, R> {
 
   private final String indexName;
-  private final AuditLogOperationTransformer<? extends Intent, R> operationTransformer;
+  private final AuditLogOperationTransformer<? extends Intent, R> transformer;
+  private final AuditLogConfiguration configuration;
 
   public AuditLogHandler(
       final String indexName,
-      final AuditLogOperationTransformer<? extends Intent, R> operationTransformer) {
+      final AuditLogOperationTransformer<? extends Intent, R> operationTransformer,
+      final AuditLogConfiguration configuration) {
     this.indexName = indexName;
-    this.operationTransformer = operationTransformer;
+    transformer = operationTransformer;
+    this.configuration = configuration;
   }
 
   @Override
   public ValueType getHandledValueType() {
-    return operationTransformer.getValueType();
+    return transformer.getValueType();
   }
 
   @Override
@@ -112,7 +118,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
       setRejectionData(entity, record);
     } else {
       entity.setResult(AuditLogOperationResult.SUCCESS);
-      operationTransformer.transform(entity, record);
+      transformer.transform(entity, record);
     }
   }
 
@@ -240,5 +246,30 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   private Optional<String> getClientId(final Map<String, Object> authorizationClaims) {
     return Optional.ofNullable(
         (String) authorizationClaims.get(Authorization.AUTHORIZED_CLIENT_ID));
+  }
+
+  public static AuditLogHandlerBuilder builder(
+      final String indexName, final AuditLogConfiguration auditLog) {
+    return new AuditLogHandlerBuilder(indexName, auditLog);
+  }
+
+  public static class AuditLogHandlerBuilder {
+    Set<AuditLogHandler> handlers = new java.util.HashSet<>();
+    private final String indexName;
+    private final AuditLogConfiguration auditLog;
+
+    public AuditLogHandlerBuilder(final String indexName, final AuditLogConfiguration auditLog) {
+      this.indexName = indexName;
+      this.auditLog = auditLog;
+    }
+
+    public AuditLogHandlerBuilder addHandler(final AuditLogOperationTransformer transformer) {
+      handlers.add(new AuditLogHandler<>(indexName, transformer, auditLog));
+      return this;
+    }
+
+    public Set<AuditLogHandler> build() {
+      return new HashSet<>(handlers);
+    }
   }
 }
