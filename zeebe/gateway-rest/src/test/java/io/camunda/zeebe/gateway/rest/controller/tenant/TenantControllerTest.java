@@ -16,6 +16,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -624,6 +626,34 @@ public class TenantControllerTest {
 
       // then
       verifyNoInteractions(tenantServices);
+    }
+
+    @Test
+    void shouldAssignExternalGroupToTenantAndReturnNoContentWhenGroupClaimIsPresent() {
+      // given
+      final var tenantId = "some-tenant-id";
+      final var groupId = "group id";
+      final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
+
+      final var authenticationConfiguration = new AuthenticationConfiguration();
+      final var oidcConfiguration = new OidcAuthenticationConfiguration();
+      oidcConfiguration.setGroupsClaim("groups");
+      authenticationConfiguration.setOidc(oidcConfiguration);
+
+      when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
+      when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s/groups/%s".formatted(TENANT_BASE_URL, tenantId, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then
+      verify(tenantServices, times(1)).addMember(request);
     }
 
     private static Stream<Arguments> provideAddMemberByIdTestCases() {
