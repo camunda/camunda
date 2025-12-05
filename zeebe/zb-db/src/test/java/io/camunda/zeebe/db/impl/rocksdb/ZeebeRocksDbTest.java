@@ -24,15 +24,31 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.assertj.core.api.PathAssert;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class ZeebeRocksDbTest {
 
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+
+  @BeforeEach
+  void setUp() {
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (dbFactoryResources != null) {
+      dbFactoryResources.close();
+    }
+  }
+
   @Test
   void shouldCreateSnapshot(final @TempDir Path tempDir) throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final ZeebeDb<DefaultColumnFamily> db =
         dbFactory.createDb(Files.createDirectory(tempDir.resolve("db")).toFile());
 
@@ -56,7 +72,7 @@ final class ZeebeRocksDbTest {
   @Test
   void shouldReopenDb(final @TempDir File pathName) throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName, false);
 
     final DbString key = new DbString();
@@ -82,7 +98,7 @@ final class ZeebeRocksDbTest {
   @Test
   void shouldRecoverFromSnapshot(final @TempDir Path tempDir) throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     ZeebeDb<DefaultColumnFamily> db =
         dbFactory.createDb(Files.createDirectory(tempDir.resolve("db")).toFile());
 
@@ -115,8 +131,8 @@ final class ZeebeRocksDbTest {
   void shouldRemoveMetricsOnClose(final @TempDir Path tempDir) throws Exception {
     // given
     final var meterRegistry = new SimpleMeterRegistry();
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        DefaultZeebeDbFactory.getDefaultFactory(() -> meterRegistry);
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources(() -> meterRegistry);
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final Counter counter;
 
     // when
@@ -136,8 +152,8 @@ final class ZeebeRocksDbTest {
   void shouldCloseRegistryOnClose(final @TempDir Path tempDir) throws Exception {
     // given
     final var meterRegistry = new SimpleMeterRegistry();
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        DefaultZeebeDbFactory.getDefaultFactory(() -> meterRegistry);
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources(() -> meterRegistry);
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final MeterRegistry dbRegistry;
 
     // when

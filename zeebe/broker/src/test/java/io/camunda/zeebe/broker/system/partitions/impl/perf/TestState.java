@@ -41,6 +41,8 @@ import org.rocksdb.WriteBufferManager;
 final class TestState {
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;
+  private static LRUCache lruCache;
+  private static WriteBufferManager writeBufferManager;
 
   static {
     RocksDB.loadLibrary();
@@ -91,15 +93,16 @@ final class TestState {
   }
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
         SimpleMeterRegistry::new,
         lruCache,
-        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+        writeBufferManager,
         defaultPartitionCount);
   }
 
@@ -146,7 +149,7 @@ final class TestState {
 
     @Override
     public void close() throws Exception {
-      CloseHelper.quietCloseAll(snapshotStore, actorScheduler);
+      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, lruCache, writeBufferManager);
       FileUtil.deleteFolder(temporaryFolder);
     }
 

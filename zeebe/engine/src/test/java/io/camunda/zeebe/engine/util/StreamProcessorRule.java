@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
@@ -71,6 +72,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   private ListLogStorage sharedStorage = null;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private final ZeebeDbFactoryResources dbFactoryResources;
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -81,27 +83,22 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   public StreamProcessorRule(final int partitionId) {
-    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), new TemporaryFolder());
+    this(partitionId, 1, new TemporaryFolder());
   }
 
   public StreamProcessorRule(final int partitionId, final TemporaryFolder temporaryFolder) {
-    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), temporaryFolder);
+    this(partitionId, 1, temporaryFolder);
   }
 
   public StreamProcessorRule(
-      final int startPartitionId,
-      final int partitionCount,
-      final ZeebeDbFactory dbFactory,
-      final ListLogStorage sharedStorage) {
-    this(startPartitionId, partitionCount, dbFactory, new TemporaryFolder());
+      final int startPartitionId, final int partitionCount, final ListLogStorage sharedStorage) {
+    this(startPartitionId, partitionCount, new TemporaryFolder());
     this.sharedStorage = sharedStorage;
   }
 
   public StreamProcessorRule(
-      final int startPartitionId,
-      final int partitionCount,
-      final ZeebeDbFactory dbFactory,
-      final TemporaryFolder temporaryFolder) {
+      final int startPartitionId, final int partitionCount, final TemporaryFolder temporaryFolder) {
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     this.startPartitionId = startPartitionId;
     this.partitionCount = partitionCount;
     actorSchedulerRule = new ActorSchedulerRule(partitionCount, clock);
@@ -109,7 +106,8 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     final SetupRule rule = new SetupRule(startPartitionId, partitionCount);
 
     tempFolder = temporaryFolder;
-    zeebeDbFactory = dbFactory;
+    zeebeDbFactory = dbFactoryResources.factory;
+    closeables.manage(dbFactoryResources);
     chain =
         RuleChain.outerRule(tempFolder)
             .around(actorSchedulerRule)

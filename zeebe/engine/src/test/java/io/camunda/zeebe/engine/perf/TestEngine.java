@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.engine.util.ProcessingExporterTransistor;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender;
@@ -38,6 +39,7 @@ public final class TestEngine {
   private final StreamProcessingComposite streamProcessingComposite;
   private final TestStreams testStreams;
   private final int partitionCount;
+  private final ZeebeDbFactoryResources zeebeDbFactoryResources;
 
   private TestEngine(
       final int partitionId,
@@ -45,7 +47,7 @@ public final class TestEngine {
       final TestContext testContext,
       final Consumer<StreamProcessorBuilder> processorConfiguration) {
     this.partitionCount = partitionCount;
-
+    zeebeDbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     testStreams =
         new TestStreams(
             testContext.temporaryFolder(),
@@ -66,9 +68,8 @@ public final class TestEngine {
         new StreamProcessingComposite(
             testStreams,
             partitionId,
-            DefaultZeebeDbFactory.defaultFactory(),
+            zeebeDbFactoryResources.factory,
             testContext.actorScheduler());
-
     final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
     final var featureFlags = FeatureFlags.createDefaultForTests();
 
@@ -97,6 +98,7 @@ public final class TestEngine {
                 Optional.empty(),
                 processorConfiguration,
                 true));
+    testContext.autoCloseableRule.manage(zeebeDbFactoryResources);
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 

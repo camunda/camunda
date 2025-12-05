@@ -35,17 +35,15 @@ final class DbCheckpointStateTest {
   }
 
   @TempDir Path database;
-  private DbCheckpointState state;
   private ZeebeDb zeebedb;
-
-  @AfterEach
-  void closeDb() throws Exception {
-    zeebedb.close();
-  }
+  private DbCheckpointState state;
+  private LRUCache lruCache;
+  private WriteBufferManager writeBufferManager;
 
   @BeforeEach
-  void before() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+  void setup() {
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -54,10 +52,17 @@ final class DbCheckpointStateTest {
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
                 lruCache,
-                new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+                writeBufferManager,
                 defaultPartitionCount)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
+  }
+
+  @AfterEach
+  void tearDown() throws Exception {
+    zeebedb.close();
+    writeBufferManager.close();
+    lruCache.close();
   }
 
   @Test

@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
@@ -143,9 +142,7 @@ public final class EngineRule extends ExternalResource {
 
   private EngineRule(final int partitionCount, final ListLogStorage sharedStorage) {
     this.partitionCount = partitionCount;
-    environmentRule =
-        new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
+    environmentRule = new StreamProcessorRule(PARTITION_ID, partitionCount, sharedStorage);
   }
 
   public static EngineRule singlePartition() {

@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -53,7 +54,7 @@ public final class ExporterRule implements TestRule {
   private final ControlledActorClock clock = new ControlledActorClock();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
   private final RuleChain chain;
-
+  private final ZeebeDbFactoryResources zeebeDbFactoryResources;
   private final ZeebeDbFactory zeebeDbFactory;
   private final ExporterMode exporterMode;
   private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
@@ -68,7 +69,9 @@ public final class ExporterRule implements TestRule {
     this.exporterMode = exporterMode;
     final SetupRule rule = new SetupRule(PARTITION_ID);
 
-    zeebeDbFactory = DefaultZeebeDbFactory.defaultFactory();
+    zeebeDbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+    zeebeDbFactory = zeebeDbFactoryResources.factory;
+    closeables.manage(zeebeDbFactoryResources);
     chain =
         RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables).around(rule);
   }

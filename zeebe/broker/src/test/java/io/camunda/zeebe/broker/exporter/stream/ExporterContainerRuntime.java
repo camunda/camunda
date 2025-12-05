@@ -39,12 +39,14 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   private final ExportersState state;
   private final ExporterMetrics metrics;
   private final MeterRegistry meterRegistry;
+  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources zeebeDbFactoryResources;
 
   public ExporterContainerRuntime(final Path storagePath) {
     scheduler = ActorScheduler.newActorScheduler().build();
     scheduler.start();
 
     repository = new ExporterRepository();
+    zeebeDbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     zeebeDb = createZeebeDb(storagePath.resolve("db"));
 
     actor = new RuntimeActor();
@@ -58,7 +60,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
 
   @Override
   public void close() {
-    CloseHelper.quietCloseAll(actor, scheduler, zeebeDb);
+    CloseHelper.quietCloseAll(actor, scheduler, zeebeDb, zeebeDbFactoryResources);
   }
 
   public ExporterDescriptor loadExternalExporter(final File jarFile, final String className)
@@ -113,7 +115,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   }
 
   private ZeebeDb<ZbColumnFamilies> createZeebeDb(final Path path) {
-    return DefaultZeebeDbFactory.defaultFactory().createDb(path.toFile());
+    return zeebeDbFactoryResources.factory.createDb(path.toFile());
   }
 
   static final class RuntimeActor extends Actor {

@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.util.DefaultZeebeDbFactory;
+import io.camunda.zeebe.stream.util.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -28,15 +29,18 @@ import java.io.File;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 final class StreamProcessorTransactionErrorTest {
 
+  private final ErrorProneDbFactory errorProneDbFactory =
+      new ErrorProneDbFactory(new RuntimeException("Unexpected exception"));
+
   @RegisterExtension
   private final StreamPlatformExtension streamPlatformExtension =
-      new StreamPlatformExtension(
-          new ErrorProneDbFactory(new RuntimeException("Unexpected exception")));
+      new StreamPlatformExtension(new ZeebeDbFactoryResources(errorProneDbFactory, null, null));
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
@@ -57,6 +61,11 @@ final class StreamProcessorTransactionErrorTest {
         .until(() -> streamProcessor.getHealthReport().isUnhealthy());
 
     Assertions.assertThat(streamProcessor.isFailed()).isTrue();
+  }
+
+  @After
+  public void tearDown() {
+    errorProneDbFactory.close();
   }
 
   private static final class ErrorProneTransactionConext implements TransactionContext {
@@ -88,10 +97,12 @@ final class StreamProcessorTransactionErrorTest {
     }
   }
 
-  private static final class ErrorProneDbFactory implements ZeebeDbFactory<ZbColumnFamilies> {
+  private static final class ErrorProneDbFactory
+      implements ZeebeDbFactory<ZbColumnFamilies>, AutoCloseable {
 
-    final ZeebeDbFactory<ZbColumnFamilies> delegate = DefaultZeebeDbFactory.defaultFactory();
-
+    final ZeebeDbFactoryResources dbFactoryResources =
+        DefaultZeebeDbFactory.getDefaultFactoryResources();
+    final ZeebeDbFactory<ZbColumnFamilies> delegate = dbFactoryResources.factory;
     final Exception commitException;
 
     private ErrorProneDbFactory(final Exception commitException) {
@@ -111,6 +122,11 @@ final class StreamProcessorTransactionErrorTest {
     @Override
     public ZeebeDb<ZbColumnFamilies> openSnapshotOnlyDb(final File path) {
       return delegate.openSnapshotOnlyDb(path);
+    }
+
+    @Override
+    public void close() {
+      dbFactoryResources.close();
     }
   }
 
