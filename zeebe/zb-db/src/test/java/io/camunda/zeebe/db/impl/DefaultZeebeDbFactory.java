@@ -54,4 +54,46 @@ public final class DefaultZeebeDbFactory {
         new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
         defaultPartitionCount);
   }
+
+  public static <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactoryResources<T> getDefaultFactoryResources() {
+    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    final WriteBufferManager writeBufferManager =
+        new WriteBufferManager(ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final int defaultPartitionCount = 3;
+    final ZeebeDbFactory<T> factory =
+        new ZeebeRocksDbFactory<>(
+            new RocksDbConfiguration(),
+            consistencyChecks,
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            SimpleMeterRegistry::new,
+            lruCache,
+            writeBufferManager,
+            defaultPartitionCount);
+    return new ZeebeDbFactoryResources<>(factory, lruCache, writeBufferManager);
+  }
+
+  public static class ZeebeDbFactoryResources<
+          ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      implements AutoCloseable {
+    public final ZeebeDbFactory<ColumnFamilyType> factory;
+    private final LRUCache lruCache;
+    private final WriteBufferManager writeBufferManager;
+
+    public ZeebeDbFactoryResources(
+        final ZeebeDbFactory<ColumnFamilyType> factory,
+        final LRUCache lruCache,
+        final WriteBufferManager writeBufferManager) {
+      this.factory = factory;
+      this.lruCache = lruCache;
+      this.writeBufferManager = writeBufferManager;
+    }
+
+    @Override
+    public void close() {
+      writeBufferManager.close();
+      lruCache.close();
+    }
+  }
 }

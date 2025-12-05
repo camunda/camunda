@@ -42,4 +42,43 @@ public final class DefaultZeebeDbFactory {
         new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
         defaultPartitionCount);
   }
+
+  public static ZeebeDbFactoryResources getDefaultFactoryResources() {
+    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    final WriteBufferManager writeBufferManager =
+        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final int defaultPartitionCount = 3;
+    final ZeebeDbFactory<ZbColumnFamilies> factory =
+        new ZeebeRocksDbFactory<>(
+            new RocksDbConfiguration(),
+            consistencyChecks,
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            SimpleMeterRegistry::new,
+            lruCache,
+            writeBufferManager,
+            defaultPartitionCount);
+    return new ZeebeDbFactoryResources(factory, lruCache, writeBufferManager);
+  }
+
+  public static class ZeebeDbFactoryResources implements AutoCloseable {
+    public final ZeebeDbFactory<ZbColumnFamilies> factory;
+    private final LRUCache lruCache;
+    private final WriteBufferManager writeBufferManager;
+
+    public ZeebeDbFactoryResources(
+        final ZeebeDbFactory<ZbColumnFamilies> factory,
+        final LRUCache lruCache,
+        final WriteBufferManager writeBufferManager) {
+      this.factory = factory;
+      this.lruCache = lruCache;
+      this.writeBufferManager = writeBufferManager;
+    }
+
+    @Override
+    public void close() {
+      writeBufferManager.close();
+      lruCache.close();
+    }
+  }
 }
