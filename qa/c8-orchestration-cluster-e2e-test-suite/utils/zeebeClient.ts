@@ -20,6 +20,7 @@ const c8 = new Camunda8({
   CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
+  ZEEBE_GRPC_ADDRESS: process.env.ZEEBE_GRPC_ADDRESS,
 });
 
 function generateManyVariables(): Record<string, string> {
@@ -34,6 +35,7 @@ function generateManyVariables(): Record<string, string> {
 }
 
 const zeebe = c8.getCamundaRestClient();
+const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
     const results = await zeebe.deployResourcesFromFiles(processFilePaths);
@@ -81,6 +83,29 @@ const cancelProcessInstance = async (processInstanceKey: string) => {
 async function searchByProcessInstanceKey(processInstanceKey: string) {
   return zeebe.searchProcessInstances({filter: {processInstanceKey}});
 }
+const createWorker = (
+  taskType: string,
+  shouldFail: boolean = false,
+  variables: JSONDoc = {},
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler?: (job: any) => any,
+  timeout?: number,
+) => {
+  return zeebeGrpc.createWorker({
+    taskType,
+    taskHandler:
+      handler ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((job: any) => {
+        if (shouldFail) {
+          return job.fail('Task failed for testing purposes');
+        }
+        return job.complete(variables);
+      }),
+    ...(timeout ? {timeout} : {}),
+  });
+};
+
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -100,4 +125,5 @@ export {
   cancelProcessInstance,
   searchByProcessInstanceKey,
   checkUpdateOnVersion,
+  createWorker,
 };

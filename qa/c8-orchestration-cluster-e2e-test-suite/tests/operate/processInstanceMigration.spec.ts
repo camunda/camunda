@@ -300,14 +300,8 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 4,
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
       });
 
       await operateOperationPanelPage.expandOperationIdField();
@@ -344,14 +338,8 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 4,
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
       });
     });
 
@@ -585,14 +573,8 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 4,
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -635,14 +617,8 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 4,
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
