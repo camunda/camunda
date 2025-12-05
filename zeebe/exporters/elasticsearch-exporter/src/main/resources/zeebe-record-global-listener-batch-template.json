@@ -19,7 +19,7 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "listenersConfigKey": {
+            "globalListenerBatchKey": {
               "type": "long"
             },
             "taskListeners": {

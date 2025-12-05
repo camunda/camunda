@@ -23,7 +23,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableGlobalListenerBatchRecordValue.Builder.class)
 public interface GlobalListenerBatchRecordValue extends RecordValue {
-  long getListenersConfigKey();
+  long getGlobalListenerBatchKey();
 
   List<GlobalListenerRecordValue> getTaskListeners();
 }
