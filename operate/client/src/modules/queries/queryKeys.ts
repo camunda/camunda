@@ -18,6 +18,7 @@ import type {
   QueryProcessInstancesRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
+import type {QueryAuditLogsRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const queryKeys = {
   variables: {
@@ -156,6 +157,12 @@ const queryKeys = {
     ],
     query: (payload: QueryBatchOperationItemsRequestBody) => [
       'batchOperationItems',
+      payload,
+    ],
+  },
+  auditLogs: {
+    search: (payload?: QueryAuditLogsRequestBody) => [
+      'auditLogsSearch',
       payload,
     ],
   },
