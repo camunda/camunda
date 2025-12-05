@@ -284,9 +284,10 @@ jobs:
           @echo off
 
           cd c8run
-          .\c8run.exe start -startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
+          .\c8run.exe start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
+          cd ..
           "@
-          Set-Content -Path "bundle/1-camunda-starter.bat" -Value $scriptContent -NoNewline
+          Set-Content -Path "bundle/1-camunda-starter.bat" -Value $scriptContent
 
       - name: List bundle contents
         run: |
