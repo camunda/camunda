@@ -347,7 +347,20 @@ public class RequestMapper {
       final EntityType entityType,
       final Pattern identifierPattern) {
     return getResult(
-        RoleRequestValidator.validateMemberRequest(roleId, memberId, entityType, identifierPattern),
+        RoleRequestValidator.validateMemberRequest(
+            roleId, memberId, entityType, identifierPattern, identifierPattern),
+        () -> new RoleMemberRequest(roleId, memberId, entityType));
+  }
+
+  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
+      final String roleId,
+      final String memberId,
+      final EntityType entityType,
+      final Pattern roleIdentifierPattern,
+      final Pattern memberIdentifierPattern) {
+    return getResult(
+        RoleRequestValidator.validateMemberRequest(
+            roleId, memberId, entityType, roleIdentifierPattern, memberIdentifierPattern),
         () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
