@@ -942,11 +942,14 @@ public class RoleControllerTest extends RestControllerTest {
     verify(roleServices, times(1)).addMember(request);
   }
 
+  /**
+   * Test for the group ID that contains special characters to simulate external groups that does
+   * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+   */
   @Test
-  void shouldAssignExternalGroupToRoleAndReturnNoContentWhenGroupClaimIsPresent() {
+  void shouldAssignExternalGroupToRoleAndReturnNoContentWhenGroupsAreExternallyManaged() {
     // given
     final var roleId = "roleId";
-    // group id containing special characters to simulate external groups
     final var groupId = "group Id";
     final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
 
@@ -965,6 +968,34 @@ public class RoleControllerTest extends RestControllerTest {
 
     // then
     verify(roleServices, times(1)).addMember(request);
+  }
+
+  /**
+   * Test for the group ID that contains special characters to simulate external groups that does
+   * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+   */
+  @Test
+  void shouldUnassignExternalGroupFromRoleAndReturnNoContentWhenGroupsAreExternallyManaged() {
+    // given
+    final var roleId = "roleId";
+    final var groupId = "group Id";
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+
+    when(securityConfiguration.getCompiledGroupIdValidationPattern())
+        .thenReturn(DEFAULT_EXTERNAL_ID_REGEX);
+    when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
   }
 
   @Test
