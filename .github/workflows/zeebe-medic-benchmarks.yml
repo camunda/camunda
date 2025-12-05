@@ -65,8 +65,6 @@ jobs:
     with:
       name: ${{ needs.test-data.outputs.test }}-mixed
       ttl: 28
-      cluster: zeebe-cluster
-      cluster-region: europe-west1-b
       realistic: true
   setup-latency-test:
     name: Latency test
@@ -77,8 +75,6 @@ jobs:
     with:
       name: ${{ needs.test-data.outputs.test }}-latency
       ttl: 28
-      cluster: zeebe-cluster
-      cluster-region: europe-west1-b
       load-test-load: >
         --set starter.rate=1
         --set workers.worker.replicas=1
