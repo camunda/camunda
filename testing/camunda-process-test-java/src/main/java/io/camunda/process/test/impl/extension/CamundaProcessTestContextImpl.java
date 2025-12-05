@@ -21,6 +21,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
@@ -41,8 +43,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -56,6 +56,10 @@ import org.slf4j.LoggerFactory;
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaProcessTestContextImpl.class);
+
+  // We can complete only created user tasks. Ignore other states.
+  private static final Consumer<UserTaskFilter> DEFAULT_USER_TASK_COMPLETION_FILTER =
+      filter -> filter.state(UserTaskState.CREATED);
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -209,7 +213,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void completeJob(final String jobType, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType);
+    final ActivatedJob job = getActivatedJob(jobType, client);
 
     LOGGER.debug(
         "Complete job with variables {} [job-type: '{}', job-key: '{}']",
@@ -228,7 +232,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void throwBpmnErrorFromJob(
       final String jobType, final String errorCode, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType);
+    final ActivatedJob job = getActivatedJob(jobType, client);
 
     LOGGER.debug(
         "Throw BPMN error with error code {} and variables {} [job-type: '{}', job-key: '{}']",
@@ -258,33 +262,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final AtomicReference<Long> userTaskKey = new AtomicReference<>();
-
-    awaitBehavior.untilAsserted(
-        () -> {
-          final Optional<UserTask> userTask =
-              client
-                  .newUserTaskSearchRequest()
-                  .filter(userTaskSelector::applyFilter)
-                  .send()
-                  .join()
-                  .items()
-                  .stream()
-                  .filter(userTaskSelector::test)
-                  .findFirst();
-
-          userTask.map(UserTask::getUserTaskKey).ifPresent(userTaskKey::set);
-
-          assertThat(userTask)
-              .withFailMessage(
-                  "Expected to complete user task [%s] but no user task is available.",
-                  userTaskSelector.describe())
-              .isPresent();
-        });
+    final UserTask userTask = awaitUserTask(userTaskSelector, client);
 
     LOGGER.debug(
-        "Complete user task with variables {} [user-task-key: '{}']", variables, userTaskKey.get());
-    client.newCompleteUserTaskCommand(userTaskKey.get()).variables(variables).send().join();
+        "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
+        userTaskSelector.describe(),
+        userTask.getUserTaskKey(),
+        variables);
+
+    client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).variables(variables).send().join();
   }
 
   @Override
@@ -324,32 +310,51 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .join();
   }
 
-  private ActivatedJob getActivatedJob(final String jobType) {
-    final CamundaClient client = createClient();
-    final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
+  private UserTask awaitUserTask(
+      final UserTaskSelector userTaskSelector, final CamundaClient client) {
+    return awaitBehavior.until(
+        () ->
+            client
+                .newUserTaskSearchRequest()
+                .filter(
+                    filter ->
+                        DEFAULT_USER_TASK_COMPLETION_FILTER
+                            .andThen(userTaskSelector::applyFilter)
+                            .accept(filter))
+                .send()
+                .join()
+                .items()
+                .stream()
+                .filter(userTaskSelector::test)
+                .findFirst()
+                .orElse(null),
+        userTask ->
+            assertThat(userTask)
+                .withFailMessage(
+                    "Expected to complete user task [%s] but no user task is available.",
+                    userTaskSelector.describe())
+                .isNotNull());
+  }
 
-    awaitBehavior.untilAsserted(
-        () -> {
-          final Optional<ActivatedJob> firstActivatedJob =
-              client
-                  .newActivateJobsCommand()
-                  .jobType(jobType)
-                  .maxJobsToActivate(1)
-                  .requestTimeout(Duration.ofSeconds(1)) // avoid long blocking call
-                  .send()
-                  .join()
-                  .getJobs()
-                  .stream()
-                  .findFirst();
-
-          firstActivatedJob.ifPresent(activatedJob::set);
-
-          assertThat(firstActivatedJob)
-              .withFailMessage(
-                  "Expected to complete a job with the type '%s' but no job is available.", jobType)
-              .isPresent();
-        });
-
-    return activatedJob.get();
+  private ActivatedJob getActivatedJob(final String jobType, final CamundaClient client) {
+    return awaitBehavior.until(
+        () ->
+            client
+                .newActivateJobsCommand()
+                .jobType(jobType)
+                .maxJobsToActivate(1)
+                .requestTimeout(Duration.ofSeconds(1)) // avoid long blocking call
+                .send()
+                .join()
+                .getJobs()
+                .stream()
+                .findFirst()
+                .orElse(null),
+        job ->
+            assertThat(job)
+                .withFailMessage(
+                    "Expected to complete a job with the type '%s' but no job is available.",
+                    jobType)
+                .isNotNull());
   }
 }
