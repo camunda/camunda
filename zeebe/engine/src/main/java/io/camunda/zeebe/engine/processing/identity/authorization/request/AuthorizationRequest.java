@@ -19,15 +19,68 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record AuthorizationRequest(
-    Map<String, Object> claims,
-    AuthorizationResourceType resourceType,
-    PermissionType permissionType,
-    String tenantId,
-    Set<String> resourceIds,
-    boolean isNewResource,
-    boolean isTenantOwnedResource,
-    boolean isTriggeredByInternalCommand) {
+public final class AuthorizationRequest {
+
+  private final Map<String, Object> claims;
+  private final AuthorizationResourceType resourceType;
+  private final PermissionType permissionType;
+  private final String tenantId;
+  private final Set<String> resourceIds;
+  private final boolean isNewResource;
+  private final boolean isTenantOwnedResource;
+  private final boolean isTriggeredByInternalCommand;
+
+  // private constructor to enforce the use of the builder
+  private AuthorizationRequest(
+      final Map<String, Object> claims,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final String tenantId,
+      final Set<String> resourceIds,
+      final boolean isNewResource,
+      final boolean isTenantOwnedResource,
+      final boolean isTriggeredByInternalCommand) {
+    this.claims = claims;
+    this.resourceType = resourceType;
+    this.permissionType = permissionType;
+    this.tenantId = tenantId;
+    this.resourceIds = resourceIds;
+    this.isNewResource = isNewResource;
+    this.isTenantOwnedResource = isTenantOwnedResource;
+    this.isTriggeredByInternalCommand = isTriggeredByInternalCommand;
+  }
+
+  public Map<String, Object> claims() {
+    return claims;
+  }
+
+  public AuthorizationResourceType resourceType() {
+    return resourceType;
+  }
+
+  public PermissionType permissionType() {
+    return permissionType;
+  }
+
+  public String tenantId() {
+    return tenantId;
+  }
+
+  public Set<String> resourceIds() {
+    return resourceIds;
+  }
+
+  public boolean isNewResource() {
+    return isNewResource;
+  }
+
+  public boolean isTenantOwnedResource() {
+    return isTenantOwnedResource;
+  }
+
+  public boolean isTriggeredByInternalCommand() {
+    return isTriggeredByInternalCommand;
+  }
 
   public String getForbiddenErrorMessage() {
     if (resourceIds.isEmpty()) {
