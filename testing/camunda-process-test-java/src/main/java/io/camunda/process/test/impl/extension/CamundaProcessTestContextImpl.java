@@ -43,8 +43,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -215,7 +213,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void completeJob(final String jobType, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType);
+    final ActivatedJob job = getActivatedJob(jobType, client);
 
     LOGGER.debug(
         "Complete job with variables {} [job-type: '{}', job-key: '{}']",
@@ -234,7 +232,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void throwBpmnErrorFromJob(
       final String jobType, final String errorCode, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType);
+    final ActivatedJob job = getActivatedJob(jobType, client);
 
     LOGGER.debug(
         "Throw BPMN error with error code {} and variables {} [job-type: '{}', job-key: '{}']",
