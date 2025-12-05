@@ -12,29 +12,32 @@ import io.camunda.zeebe.engine.processing.Rejection;
 /**
  * Represents a typed authorization failure which occurred while evaluating an authorization check.
  */
-public record AuthorizationRejection(
-    Rejection rejection, AuthorizationRejectionType authorizationRejectionType) {
+public sealed interface AuthorizationRejection
+    permits AuthorizationRejection.Tenant, AuthorizationRejection.Permission {
 
-  public static AuthorizationRejection ofPermission(final Rejection rejection) {
-    return new AuthorizationRejection(rejection, AuthorizationRejectionType.PERMISSION);
+  default boolean isTenant() {
+    return false;
   }
 
-  public static AuthorizationRejection ofTenant(final Rejection rejection) {
-    return new AuthorizationRejection(rejection, AuthorizationRejectionType.TENANT);
+  default boolean isPermission() {
+    return false;
   }
 
-  public boolean isPermission() {
-    return AuthorizationRejectionType.PERMISSION == authorizationRejectionType;
+  Rejection rejection();
+
+  record Tenant(Rejection rejection) implements AuthorizationRejection {
+
+    @Override
+    public boolean isTenant() {
+      return true;
+    }
   }
 
-  public boolean isTenant() {
-    return AuthorizationRejectionType.TENANT == authorizationRejectionType;
-  }
+  record Permission(Rejection rejection) implements AuthorizationRejection {
 
-  public enum AuthorizationRejectionType {
-    /** The authenticated principal lacks the required permission on the requested resource. */
-    PERMISSION,
-    /** The authenticated principal is not assigned to the requested tenant. */
-    TENANT
+    @Override
+    public boolean isPermission() {
+      return true;
+    }
   }
 }
