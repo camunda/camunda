@@ -76,6 +76,7 @@ const ProcessInstance: React.FC = observer(() => {
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
       shouldInterrupt: modificationsStore.isModificationModeEnabled,
+      ignoreSearchParams: true,
     });
 
   useEffect(() => {
