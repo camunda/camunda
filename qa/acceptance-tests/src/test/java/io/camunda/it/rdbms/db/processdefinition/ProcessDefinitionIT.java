@@ -15,6 +15,7 @@ import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAn
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -26,6 +27,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,6 +93,38 @@ public class ProcessDefinitionIT {
     assertThat(instance.version()).isEqualTo(processDefinition.version());
     assertThat(instance.name()).isEqualTo(processDefinition.name());
     assertThat(instance.resourceName()).isEqualTo(processDefinition.resourceName());
+  }
+
+  @TestTemplate
+  public void shouldStoreLongProcessDefinitionId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var vendorDatabaseProperties = testApplication.bean(VendorDatabaseProperties.class);
+    final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+
+    final var processDefinitionId =
+        RandomStringUtils.insecure()
+            .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
+
+    final var processDefinition =
+        ProcessDefinitionFixtures.createRandomized(b -> b.processDefinitionId(processDefinitionId));
+    createAndSaveProcessDefinition(rdbmsWriter, processDefinition);
+
+    final var searchResult =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder()
+                    .processDefinitionIds(processDefinitionId)
+                    .build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().processDefinitionKey())
+        .isEqualTo(processDefinition.processDefinitionKey());
   }
 
   @TestTemplate
