@@ -53,6 +53,7 @@ jobs:
     with:
       name: ${{ needs.test-data.outputs.test }}-typical
       ttl: 28
+      reuse-tag: ${{ inputs.reuse-tag || '' }}
       load-test-load: >
         --set starter.rate=50
         --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
@@ -65,6 +66,7 @@ jobs:
     with:
       name: ${{ needs.test-data.outputs.test }}-mixed
       ttl: 28
+      reuse-tag: ${{ inputs.reuse-tag || '' }}
       realistic: true
   setup-latency-test:
     name: Latency test
@@ -75,6 +77,7 @@ jobs:
     with:
       name: ${{ needs.test-data.outputs.test }}-latency
       ttl: 28
+      reuse-tag: ${{ inputs.reuse-tag || '' }}
       load-test-load: >
         --set starter.rate=1
         --set workers.worker.replicas=1
