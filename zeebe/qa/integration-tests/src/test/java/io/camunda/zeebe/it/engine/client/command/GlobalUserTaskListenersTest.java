@@ -244,8 +244,8 @@ public class GlobalUserTaskListenersTest {
     // when: configuration is changed and broker restarted
     configureGlobalListeners(
         List.of(
-            createListenerConfig("newCreating", List.of("Creating"), false),
-            createListenerConfig("oldCreating", List.of("Creating"), false)));
+            createListenerConfig("newCreating", List.of("creating"), false),
+            createListenerConfig("oldCreating", List.of("creating"), false)));
     restartBroker();
 
     // then: new configuration is applied for new processes
@@ -285,7 +285,7 @@ public class GlobalUserTaskListenersTest {
   private void configureGlobalListeners(final List<GlobalListenerCfg> listenerCfgs) {
     final GlobalListenersCfg globalListenersCfg = new GlobalListenersCfg();
     globalListenersCfg.setUserTask(listenerCfgs);
-    ZEEBE.brokerConfig().getExperimental().getEngine().setGlobalListeners(globalListenersCfg);
+    ZEEBE.unifiedConfig().getCluster().setGlobalListeners(globalListenersCfg);
   }
 
   private void restartBroker() {
