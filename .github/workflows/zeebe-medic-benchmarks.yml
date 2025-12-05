@@ -51,7 +51,7 @@ jobs:
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.test-data.outputs.test }}
+      name: ${{ needs.test-data.outputs.test }}-typical
       ttl: 28
       load-test-load: >
         --set starter.rate=50
