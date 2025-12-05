@@ -31,13 +31,11 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   private final PersistedGlobalListenersConfig versionedConfig =
       new PersistedGlobalListenersConfig();
   private final ColumnFamily<DbLong, PersistedGlobalListenersConfig> versionedConfigColumnFamily;
-
   // The pinningElementKey could be either a user task key (when pinning user task listeners)
   // or an element instance key (when pinning execution listeners)
   private final DbLong pinningElementKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> pinnedConfigKey;
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, DbNil>
-      pinnedConfigColumnFamily;
+  private final ConfigKeyAndElementKey pinnedConfigKey;
+  private final ColumnFamily<ConfigKeyAndElementKey, DbNil> pinnedConfigColumnFamily;
 
   public DbGlobalListenersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -57,9 +55,7 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
             versionedConfig);
 
     pinningElementKey = new DbLong();
-    final var fkVersionedConfig =
-        new DbForeignKey<>(versionKey, ZbColumnFamilies.GLOBAL_LISTENER_VERSIONED_CONFIG);
-    pinnedConfigKey = new DbCompositeKey<>(fkVersionedConfig, pinningElementKey);
+    pinnedConfigKey = new ConfigKeyAndElementKey(versionKey, pinningElementKey);
     pinnedConfigColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.GLOBAL_LISTENER_PINNED_CONFIG,
@@ -135,5 +131,13 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
     versionKey.wrapLong(listenersConfigKey);
     this.pinningElementKey.wrapLong(pinningElementKey);
     pinnedConfigColumnFamily.deleteIfExists(pinnedConfigKey);
+  }
+
+  private static class ConfigKeyAndElementKey extends DbCompositeKey<DbForeignKey<DbLong>, DbLong> {
+    public ConfigKeyAndElementKey(final DbLong configKey, final DbLong elementKey) {
+      super(
+          new DbForeignKey<>(configKey, ZbColumnFamilies.GLOBAL_LISTENER_VERSIONED_CONFIG),
+          elementKey);
+    }
   }
 }
