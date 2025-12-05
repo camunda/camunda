@@ -599,7 +599,7 @@ public class BrokerBasedPropertiesOverride {
     // Migrate RocksDB configuration from new unified config to old broker config structure
     populateFromRocksDb(override, primaryStorage);
 
-    populateFromBackupScheduler(override, primaryStorage.getBackup());
+    populateBackupScheduler(override, primaryStorage.getBackup());
   }
 
   private void populateFromRocksDb(
@@ -689,18 +689,15 @@ public class BrokerBasedPropertiesOverride {
     override.getData().getBackup().setFilesystem(filesystemBackupStoreConfig);
   }
 
-  private void populateFromBackupScheduler(
+  private void populateBackupScheduler(
       final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
-    final BackupSchedulerCfg backupSchedulerCfg = override.getData().getBackupScheduler();
-    backupSchedulerCfg.setRequired(primaryStorageBackup.isRequired());
-    backupSchedulerCfg.setContinuous(primaryStorageBackup.isContinuous());
-    backupSchedulerCfg.setSchedule(primaryStorageBackup.getSchedule());
-    backupSchedulerCfg.setCheckpointInterval(primaryStorageBackup.getCheckpointInterval());
-    backupSchedulerCfg.setOffset(primaryStorageBackup.getOffset());
-
-    final BackupSchedulerRetentionCfg retentionCfg = backupSchedulerCfg.getRetention();
-    retentionCfg.setWindow(primaryStorageBackup.getRetention().getWindow());
-    retentionCfg.setCleanupSchedule(primaryStorageBackup.getRetention().getCleanupSchedule());
+    final BackupCfg backupCfg = override.getData().getBackup();
+    backupCfg.setRequired(primaryStorageBackup.isRequired());
+    backupCfg.setContinuous(primaryStorageBackup.isContinuous());
+    backupCfg.setSchedule(primaryStorageBackup.getSchedule());
+    backupCfg.setCheckpointInterval(primaryStorageBackup.getCheckpointInterval());
+    backupCfg.setOffset(primaryStorageBackup.getOffset());
+    backupCfg.setRetention(primaryStorageBackup.getRetention());
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {

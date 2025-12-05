@@ -140,6 +140,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-exporter</artifactId>
     </dependency>
 
@@ -157,6 +163,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-schema-manager</artifactId>
     </dependency>
+
   </dependencies>
 
   <build>

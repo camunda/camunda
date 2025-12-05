@@ -16,7 +16,7 @@ import io.camunda.zeebe.backup.schedule.Schedule.AutoSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.CronSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,11 +40,11 @@ public class PrimaryStorageBackupPropertiesTest {
         "camunda.data.primary-storage.backup.retention.clean-up-schedule=0 30 * * * ?",
       })
   class CronExpressionScheduleConfiguration {
-    final BackupSchedulerCfg backupSchedulerCfg;
+    final BackupCfg backupSchedulerCfg;
 
     CronExpressionScheduleConfiguration(
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
-      backupSchedulerCfg = brokerBasedProperties.getData().getBackupSchedulerCfg();
+      backupSchedulerCfg = brokerBasedProperties.getData().getBackup();
     }
 
     @Test
@@ -65,10 +65,10 @@ public class PrimaryStorageBackupPropertiesTest {
         "camunda.data.primary-storage.backup.retention.window=P7D"
       })
   class ISO8601ScheduleConfiguration {
-    final BackupSchedulerCfg backupSchedulerCfg;
+    final BackupCfg backupSchedulerCfg;
 
     ISO8601ScheduleConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
-      backupSchedulerCfg = brokerCfg.getData().getBackupSchedulerCfg();
+      backupSchedulerCfg = brokerCfg.getData().getBackup();
     }
 
     @Test
@@ -93,10 +93,10 @@ public class PrimaryStorageBackupPropertiesTest {
         "camunda.data.primary-storage.backup.offset=100"
       })
   class CompleteSchedulerConfiguration {
-    final BackupSchedulerCfg backupSchedulerCfg;
+    final BackupCfg backupSchedulerCfg;
 
     CompleteSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
-      backupSchedulerCfg = brokerCfg.getData().getBackupSchedulerCfg();
+      backupSchedulerCfg = brokerCfg.getData().getBackup();
     }
 
     @Test
@@ -119,10 +119,10 @@ public class PrimaryStorageBackupPropertiesTest {
         "camunda.data.primary-storage.backup.retention.cleanup-schedule=* * * t *",
       })
   class InvalidSchedulerConfiguration {
-    final BackupSchedulerCfg backupSchedulerCfg;
+    final BackupCfg backupSchedulerCfg;
 
     InvalidSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
-      backupSchedulerCfg = brokerCfg.getData().getBackupSchedulerCfg();
+      backupSchedulerCfg = brokerCfg.getData().getBackup();
     }
 
     @Test
@@ -140,10 +140,10 @@ public class PrimaryStorageBackupPropertiesTest {
         "camunda.data.primary-storage.backup.retention.clean-up-schedule=none",
       })
   class NoneRetentionSchedulerConfiguration {
-    final BackupSchedulerCfg backupSchedulerCfg;
+    final BackupCfg backupSchedulerCfg;
 
     NoneRetentionSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
-      backupSchedulerCfg = brokerCfg.getData().getBackupSchedulerCfg();
+      backupSchedulerCfg = brokerCfg.getData().getBackup();
     }
 
     @Test
@@ -159,16 +159,35 @@ public class PrimaryStorageBackupPropertiesTest {
         "camunda.data.primary-storage.backup.retention.clean-up-schedule=auto",
       })
   class AutoRetentionSchedulerConfiguration {
-    final BackupSchedulerCfg backupSchedulerCfg;
+    final BackupCfg backupSchedulerCfg;
 
     AutoRetentionSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
-      backupSchedulerCfg = brokerCfg.getData().getBackupSchedulerCfg();
+      backupSchedulerCfg = brokerCfg.getData().getBackup();
     }
 
     @Test
     void shouldParseConfig() {
       assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(AutoSchedule.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.continuous=true",
+        "zeebe.broker.experimental.continuous-backups=true"
+      })
+  class ContinuousPropertyCompatibility {
+    final BackupCfg backupSchedulerCfg;
+
+    ContinuousPropertyCompatibility(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupSchedulerCfg = brokerCfg.getData().getBackup();
+    }
+
+    @Test
+    void shouldParseConfig() {
+      assertThat(backupSchedulerCfg.isContinuous()).isTrue();
     }
   }
 }
