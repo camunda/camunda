@@ -6,25 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {formatDate} from 'modules/utils/date';
-import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs.ts';
+import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs';
 import {
   type AuditLog,
   type QueryAuditLogsRequestBody,
   auditLogSortFieldEnum,
 } from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {Container, OperationLogName} from './styled.ts';
+import {Container, OperationLogName} from './styled';
 import {SortableTable} from '../../../../../modules/components/SortableTable';
 import {getSortParams} from '../../../../../modules/utils/filter';
 import {useLocation} from 'react-router-dom';
 import {StateIcon} from '../../../../../modules/components/StateIcon';
 import {Information} from '@carbon/react/icons';
 import {Button} from '@carbon/react';
-import {notificationsStore} from '../../../../../modules/stores/notifications.tsx';
-import {logger} from '../../../../../modules/logger.ts';
+import {notificationsStore} from '../../../../../modules/stores/notifications';
+import {logger} from '../../../../../modules/logger';
 import {tracking} from '../../../../../modules/tracking';
+import {spaceAndCapitalize} from '../../../../../modules/utils/spaceAndCapitalize';
 
 type Props = {
   flowNodeInstanceId?: string | undefined;
@@ -78,20 +79,12 @@ const OperationsLog: React.FC<Props> = observer(
       }
     }, [error]);
 
-    const capitalize = (str: string) => {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    };
-
     const rows = useMemo(
       () =>
         data?.items.map((item: AuditLog) => ({
           id: item.auditLogKey,
-          operationType: `${capitalize(item.operationType.toString())} ${capitalize(
-            item.entityType
-              .toString()
-              .split('_')
-              .map((s) => capitalize(s))
-              .join(' '),
+          operationType: `${spaceAndCapitalize(item.operationType.toString())} ${spaceAndCapitalize(
+            item.entityType.toString(),
           )}`,
           result: (
             <OperationLogName>
@@ -100,7 +93,7 @@ const OperationsLog: React.FC<Props> = observer(
                 data-testid={`${item.auditLogKey}-icon`}
                 size={20}
               />
-              {capitalize(item.result.toString())}
+              {spaceAndCapitalize(item.result.toString())}
             </OperationLogName>
           ),
           user: item.actorId,
