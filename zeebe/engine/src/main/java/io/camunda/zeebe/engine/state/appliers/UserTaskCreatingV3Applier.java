@@ -51,23 +51,22 @@ public class UserTaskCreatingV3Applier
 
   public void pinGlobalListenersConfig(final UserTaskRecord userTaskRecord) {
     // Only pin the configuration if it exists
-    globalListenersState
-        .getCurrentConfig()
-        .ifPresent(
-            currentConfig -> {
-              final long currentConfigKey = currentConfig.getGlobalListenerBatchKey();
+    final var currentConfig = globalListenersState.getCurrentConfig();
+    if (currentConfig == null) {
+      return;
+    }
 
-              // Create versioned config if it does not exist
-              if (!globalListenersState.isConfigurationVersionStored(currentConfigKey)) {
-                globalListenersState.storeConfigurationVersion(currentConfig);
-              }
+    final long currentConfigKey = currentConfig.getGlobalListenerBatchKey();
 
-              // Create pinned entry
-              globalListenersState.pinConfiguration(
-                  currentConfigKey, userTaskRecord.getUserTaskKey());
+    // Create versioned config if it does not exist
+    if (!globalListenersState.isConfigurationVersionStored(currentConfigKey)) {
+      globalListenersState.storeConfigurationVersion(currentConfig);
+    }
 
-              // Update user task record to reference the pinned config
-              userTaskRecord.setListenersConfigKey(currentConfigKey);
-            });
+    // Create pinned entry
+    globalListenersState.pinConfiguration(currentConfigKey, userTaskRecord.getUserTaskKey());
+
+    // Update user task record to reference the pinned config
+    userTaskRecord.setListenersConfigKey(currentConfigKey);
   }
 }

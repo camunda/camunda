@@ -32,7 +32,14 @@ public final class UserTaskCompletedV3Applier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    unpinGlobalListenersConfig(key);
+    // Unpin global listeners configuration from the user task
+    // Note that the pinning information is stored in the intermediate
+    // state, which needs to be accessed before it is deleted
+    final UserTaskRecord intermediateStateRecord =
+        userTaskState.getIntermediateState(key).getRecord();
+    if (intermediateStateRecord != null) {
+      unpinGlobalListenersConfig(intermediateStateRecord);
+    }
 
     userTaskState.delete(key);
     userTaskState.deleteIntermediateState(key);
@@ -53,21 +60,22 @@ public final class UserTaskCompletedV3Applier
     }
   }
 
-  public void unpinGlobalListenersConfig(final long key) {
-    final UserTaskRecord userTaskRecord = userTaskState.getIntermediateState(key).getRecord();
+  public void unpinGlobalListenersConfig(final UserTaskRecord userTaskRecord) {
     final long pinnedConfigKey = userTaskRecord.getListenersConfigKey();
     // Only unpin if there is a pinned config
-    if (pinnedConfigKey != -1L) {
-      // Remove pinned entry
-      globalListenersState.unpinConfiguration(pinnedConfigKey, userTaskRecord.getUserTaskKey());
-
-      // If no other user task references this config, remove the versioned config
-      if (!globalListenersState.isConfigurationVersionPinned(pinnedConfigKey)) {
-        globalListenersState.deleteConfigurationVersion(pinnedConfigKey);
-      }
-
-      // Update user task record to no longer reference a pinned config
-      userTaskRecord.setListenersConfigKey(-1L);
+    if (pinnedConfigKey < 0) {
+      return;
     }
+
+    // Remove pinned entry
+    globalListenersState.unpinConfiguration(pinnedConfigKey, userTaskRecord.getUserTaskKey());
+
+    // If no other user task references this config, remove the versioned config
+    if (!globalListenersState.isConfigurationVersionPinned(pinnedConfigKey)) {
+      globalListenersState.deleteConfigurationVersion(pinnedConfigKey);
+    }
+
+    // Update user task record to no longer reference a pinned config
+    userTaskRecord.setListenersConfigKey(-1L);
   }
 }
