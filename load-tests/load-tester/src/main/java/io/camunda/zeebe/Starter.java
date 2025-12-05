@@ -50,6 +50,7 @@ public class Starter extends App {
   private Timer dataAvailabilityLatencyTimer;
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
+  private ScheduledExecutorService piCheckExecutorService;
 
   Starter(final AppCfg config) {
     super(config);
@@ -70,6 +71,7 @@ public class Starter extends App {
     deployProcess(client, starterCfg);
 
     // setup to start instances on given rate
+    piCheckExecutorService = Executors.newScheduledThreadPool(3);
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
@@ -81,6 +83,7 @@ public class Starter extends App {
                 () -> {
                   if (!executorService.isShutdown()) {
                     executorService.shutdown();
+                    piCheckExecutorService.shutdown();
                     try {
                       executorService.awaitTermination(60, TimeUnit.SECONDS);
                     } catch (final InterruptedException e) {
@@ -100,6 +103,7 @@ public class Starter extends App {
 
     scheduledTask.cancel(true);
     executorService.shutdown();
+    piCheckExecutorService.shutdown();
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -190,7 +194,7 @@ public class Starter extends App {
             (resp, err) -> {
               if (err != null) {
                 // on error, we need to retry
-                executorService.schedule(
+                piCheckExecutorService.schedule(
                     () -> checkForProcessInstanceExistence(client, startTime, processInstanceKey),
                     100,
                     TimeUnit.MILLISECONDS);
