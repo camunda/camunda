@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -157,37 +157,37 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeIdsWithIncidents = statistics
-    ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
-    ?.map((flowNode) => flowNode.id);
+  const flowNodeStateOverlays = useMemo(() => {
+    const flowNodeIdsWithIncidents = statistics
+      ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
+      ?.map((flowNode) => flowNode.id);
 
-  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
-    (flowNodeId) => businessObjects?.[flowNodeId],
-  );
+    const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
+      (flowNodeId) => businessObjects?.[flowNodeId],
+    );
 
-  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
-    selectableFlowNodesWithIncidents,
-  );
+    const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+      selectableFlowNodesWithIncidents,
+    );
 
-  const allFlowNodeStateOverlays = [
-    ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
-      payload: {flowNodeState, count},
-      type: OVERLAY_TYPE_STATE,
-      flowNodeId,
-      position: overlayPositions[flowNodeState],
-    })) || []),
-    ...subprocessOverlays,
-  ];
+    const allFlowNodeStateOverlays = [
+      ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
+        payload: {flowNodeState, count},
+        type: OVERLAY_TYPE_STATE,
+        flowNodeId,
+        position: overlayPositions[flowNodeState],
+      })) || []),
+      ...subprocessOverlays,
+    ];
 
-  const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
-    (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
-  );
+    const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
+      (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
+    );
 
-  const flowNodeStateOverlays = executionCountToggleStore.state
-    .isExecutionCountVisible
-    ? allFlowNodeStateOverlays
-    : notCompletedFlowNodeStateOverlays;
-
+    return executionCountToggleStore.state.isExecutionCountVisible
+      ? allFlowNodeStateOverlays
+      : notCompletedFlowNodeStateOverlays;
+  }, [statistics, businessObjects]);
   const compensationAssociationIds = Object.values(
     processDefinitionData?.diagramModel.elementsById ?? {},
   )
