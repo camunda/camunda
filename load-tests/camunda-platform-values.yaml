@@ -72,10 +72,10 @@ orchestration:
   # Resources of the orchestration cluster
   resources:
     requests:
-      cpu: 2000m
+      cpu: 3500m
       memory: 2Gi
     limits:
-      cpu: 2000m
+      cpu: 3500m
       memory: 2Gi
 
   nodeSelector:
