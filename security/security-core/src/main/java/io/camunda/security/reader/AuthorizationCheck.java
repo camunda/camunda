@@ -28,4 +28,21 @@ public record AuthorizationCheck(boolean enabled, AuthorizationCondition authori
   public static AuthorizationCheck disabled() {
     return new AuthorizationCheck(false, null);
   }
+
+  public boolean hasAnyResourceAccess() {
+    return !enabled || hasAnyResourceIdAccess();
+  }
+
+  private boolean hasAnyResourceIdAccess() {
+    if (authorizationCondition == null) {
+      return false;
+    }
+
+    final var auths = authorizationCondition.authorizations();
+    if (auths == null || auths.isEmpty()) {
+      return false;
+    }
+
+    return auths.stream().anyMatch(Authorization::hasAnyResourceIds);
+  }
 }
