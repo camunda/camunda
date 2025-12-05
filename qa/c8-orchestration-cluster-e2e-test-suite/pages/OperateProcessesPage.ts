@@ -161,9 +161,7 @@ class OperateProcessesPage {
     );
     this.latestOperationProgressBar =
       this.latestOperationEntry.getByRole('progressbar');
-    this.operationSuccessMessage = page
-      .getByText(/\d+ operations? succeeded/)
-      .first();
+    this.operationSuccessMessage = page.getByText(/\d+ success/).first();
     this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
     this.expandOperationsButton = page.getByRole('button', {
       name: 'Expand Operations',

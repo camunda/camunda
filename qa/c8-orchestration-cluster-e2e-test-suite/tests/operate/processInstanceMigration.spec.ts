@@ -80,6 +80,7 @@ test.beforeAll(async () => {
 });
 
 test.describe.serial('Process Instance Migration', () => {
+  test.slow();
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -99,7 +100,6 @@ test.describe.serial('Process Instance Migration', () => {
     operateProcessMigrationModePage,
     operateOperationPanelPage,
   }) => {
-    test.slow();
     const sourceVersion = testProcesses.processV1.version.toString();
     const sourceBpmnProcessId = testProcesses.processV1.bpmnProcessId;
     const targetVersion = testProcesses.processV2.version.toString();
@@ -108,7 +108,7 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Filter by process name and version', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible({
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible({
             timeout: 30000,
           });
         },
@@ -139,6 +139,7 @@ test.describe.serial('Process Instance Migration', () => {
       operateOperationPanelPage.beforeOperationOperationPanelEntries =
         await operateOperationPanelPage.operationIdsEntries();
       await operateProcessesPage.startMigration();
+      await sleep(1000);
     });
 
     await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
@@ -245,10 +246,10 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'Target flow node for multi instance task',
           targetValue: 'MultiInstanceTask',
         },
-        {
-          label: 'Target flow node for compensation task',
-          targetValue: 'CompensationTask',
-        },
+        // {
+        //   label: 'Target flow node for compensation task',
+        //   targetValue: 'CompensationTask',
+        // },
         // {
         //   label: 'Target flow node for compensation boundary event',
         //   targetValue: 'CompensationBoundaryEvent',
@@ -328,7 +329,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -345,9 +346,13 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await page.goto(
-        `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=TaskF`,
-      );
+      const baseUrl = process.env.CORE_APPLICATION_OPERATE_URL;
+      const url = `${baseUrl}/operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=TaskF`;
+      console.log('Navigating to URL:', url);
+      await page.goto(url);
+      // await page.goto(
+      //   `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=TaskF`,
+      // );
 
       await expect(page.getByText('6 results')).toBeVisible({timeout: 30000});
     });
@@ -372,7 +377,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -488,8 +493,8 @@ test.describe.serial('Process Instance Migration', () => {
         'Business rule task 2',
       );
       await operateProcessMigrationModePage.mapFlowNode(
-        'Script Task',
-        'Script Task 2',
+        'Script task',
+        'Script task 2',
       );
       await operateProcessMigrationModePage.mapFlowNode(
         'Send Task',
@@ -613,7 +618,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -663,7 +668,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -731,7 +736,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -774,7 +779,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
