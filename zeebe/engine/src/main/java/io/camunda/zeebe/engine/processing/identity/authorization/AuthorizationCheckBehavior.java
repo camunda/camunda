@@ -233,7 +233,7 @@ public final class AuthorizationCheckBehavior {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(
-            AuthorizationRejection.ofTenant(
+            new AuthorizationRejection.Tenant(
                 new Rejection(rejectionType, request.getTenantErrorMessage())));
       }
     }
@@ -275,7 +275,7 @@ public final class AuthorizationCheckBehavior {
     }
 
     return Either.left(
-        AuthorizationRejection.ofPermission(
+        new AuthorizationRejection.Permission(
             new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage())));
   }
 
@@ -340,12 +340,12 @@ public final class AuthorizationCheckBehavior {
               .distinct()
               .collect(Collectors.joining("; "));
       // Use the first rejection type (should be FORBIDDEN or NOT_FOUND)
-      return Either.left(new Rejection(tenantRejections.get(0).type(), reason));
+      return Either.left(new Rejection(tenantRejections.getFirst().type(), reason));
     }
 
     // Fallback: return the first rejection if present
     if (!rejections.isEmpty()) {
-      return Either.left(rejections.get(0).rejection());
+      return Either.left(rejections.getFirst().rejection());
     }
 
     // Should not happen, but fallback to forbidden
