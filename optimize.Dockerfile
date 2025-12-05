@@ -13,6 +13,7 @@ WORKDIR /
 ARG VERSION=""
 ARG DISTRO=production
 ARG ARTIFACT_PATH=./optimize-distro/target
+ARG DISTBALL=""
 
 ENV TMP_DIR=/tmp/optimize \
     BUILD_DIR=/tmp/build
@@ -20,9 +21,10 @@ ENV TMP_DIR=/tmp/optimize \
 RUN mkdir -p ${TMP_DIR} && \
     mkdir -p ${BUILD_DIR}
 
-COPY ${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz ${BUILD_DIR}
-RUN tar -xzf ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz -C ${BUILD_DIR} && \
-    rm ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz
+# Support both legacy path and monorepo DISTBALL pattern
+COPY ${DISTBALL:-${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz} ${BUILD_DIR}/optimize-distro.tar.gz
+RUN tar -xzf ${BUILD_DIR}/optimize-distro.tar.gz -C ${BUILD_DIR} && \
+    rm ${BUILD_DIR}/optimize-distro.tar.gz
 COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 # Prevent environment-config.yaml from overriding service-config.yaml since the
 # service-config.yaml allows usage of OPTIMIZE_ environment variables
@@ -40,7 +42,7 @@ ARG BASE_IMAGE
 ARG BASE_DIGEST
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="optimize@camunda.com"
