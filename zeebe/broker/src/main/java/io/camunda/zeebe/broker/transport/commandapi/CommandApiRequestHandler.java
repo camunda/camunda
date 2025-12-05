@@ -31,6 +31,8 @@ import org.slf4j.Logger;
 final class CommandApiRequestHandler
     extends AsyncApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter> {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+  private static final String[] SUPPORTED_VALUE_TYPES =
+      ValueTypes.userCommands().map(Enum::name).toArray(String[]::new);
 
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
   private boolean isDiskSpaceAvailable = true;
@@ -111,8 +113,7 @@ final class CommandApiRequestHandler
     }
 
     if (value == null) {
-      errorWriter.unsupportedMessage(
-          valueType.name(), ValueTypes.userCommands().map(Enum::name).toArray(String[]::new));
+      errorWriter.unsupportedMessage(valueType.name(), SUPPORTED_VALUE_TYPES);
       return Either.left(errorWriter);
     }
 
