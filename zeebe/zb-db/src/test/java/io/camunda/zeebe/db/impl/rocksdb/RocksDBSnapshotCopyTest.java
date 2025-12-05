@@ -53,10 +53,13 @@ public class RocksDBSnapshotCopyTest {
   private RocksDBSnapshotCopy copy;
   private Random random;
   private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
+  private LRUCache lruCache;
+  private WriteBufferManager writeBufferManager;
 
   @BeforeEach
   void setup() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final int defaultPartitionCount = 3;
     factory =
         new ZeebeRocksDbFactory<>(
@@ -65,7 +68,7 @@ public class RocksDBSnapshotCopyTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+            writeBufferManager,
             defaultPartitionCount);
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);
@@ -75,6 +78,8 @@ public class RocksDBSnapshotCopyTest {
   @AfterEach
   public void tearDown() {
     sourceSnapshotPath.toFile().delete();
+    writeBufferManager.close();
+    lruCache.close();
   }
 
   @Test

@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.collections.MutableReference;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,6 +40,8 @@ public class RawTransactionalColumnFamilyTest {
   @AutoClose static ZeebeTransactionDb<ZbColumnFamilies> db;
   static Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies = new HashMap<>();
   private static TransactionContext context;
+  private static LRUCache lruCache;
+  private static WriteBufferManager writeBufferManager;
 
   static {
     RocksDB.loadLibrary();
@@ -46,7 +49,8 @@ public class RawTransactionalColumnFamilyTest {
 
   @BeforeAll
   static void setup() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final int defaultPartitionCount = 3;
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
@@ -55,7 +59,7 @@ public class RawTransactionalColumnFamilyTest {
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
             lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+            writeBufferManager,
             defaultPartitionCount);
     db = factory.createDb(path.toFile());
     context = db.createContext();
@@ -64,6 +68,12 @@ public class RawTransactionalColumnFamilyTest {
       final var rawCF = new RawTransactionalColumnFamily(db, cf);
       columnFamilies.put(cf, rawCF);
     }
+  }
+
+  @AfterAll
+  static void tearDown() {
+    writeBufferManager.close();
+    lruCache.close();
   }
 
   @ParameterizedTest
