@@ -19,7 +19,34 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
 
   public static final String INDEX_NAME = "audit-log";
   public static final String INDEX_VERSION = "8.9.0";
+
+  public static final String ACTOR_ID = "actorId";
+  public static final String ACTOR_TYPE = "actorType";
+  public static final String ANNOTATION = "annotation";
+  public static final String AUDIT_LOG_KEY = "auditLogKey";
+  public static final String BATCH_OPERATION_KEY = "batchOperationKey";
+  public static final String BATCH_OPERATION_TYPE = "batchOperationType";
+  public static final String CATEGORY = "category";
+  public static final String DECISION_DEFINITION_ID = "decisionDefinitionId";
+  public static final String DECISION_DEFINITION_KEY = "decisionDefinitionKey";
+  public static final String DECISION_EVALUATION_KEY = "decisionEvaluationKey";
+  public static final String DECISION_REQUIREMENTS_ID = "decisionRequirementsId";
+  public static final String DECISION_REQUIREMENTS_KEY = "decisionRequirementsKey";
+  public static final String DEPLOYMENT_KEY = "deploymentKey";
+  public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
   public static final String ENTITY_KEY = "entityKey";
+  public static final String ENTITY_TYPE = "entityType";
+  public static final String FORM_KEY = "formKey";
+  public static final String JOB_KEY = "jobKey";
+  public static final String OPERATION_TYPE = "operationType";
+  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String RESOURCE_KEY = "resourceKey";
+  public static final String RESULT = "result";
+  public static final String TENANT_ID = "tenantId";
+  public static final String TIMESTAMP = "timestamp";
+  public static final String USER_TASK_KEY = "userTaskKey";
 
   public static final EntityJoinRelationFactory<AuditLogJoinRelationshipType>
       JOIN_RELATION_FACTORY =

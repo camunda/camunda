@@ -43,6 +43,7 @@ import io.camunda.search.clients.transformers.aggregation.result.ProcessDefiniti
 import io.camunda.search.clients.transformers.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsTUAggregationResultTransformer;
+import io.camunda.search.clients.transformers.entity.AuditLogEntityTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.BatchOperationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.BatchOperationItemEntityTransformer;
@@ -69,6 +70,7 @@ import io.camunda.search.clients.transformers.entity.TenantMemberEntityTransform
 import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
+import io.camunda.search.clients.transformers.filter.AuditLogFilterTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
 import io.camunda.search.clients.transformers.filter.BatchOperationFilterTransformer;
 import io.camunda.search.clients.transformers.filter.BatchOperationItemFilterTransformer;
@@ -106,6 +108,7 @@ import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
+import io.camunda.search.clients.transformers.sort.AuditLogSortTransformer;
 import io.camunda.search.clients.transformers.sort.AuthorizationFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.BatchOperationFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.BatchOperationItemFieldSortingTransformer;
@@ -133,6 +136,7 @@ import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTrans
 import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
+import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.BatchOperationItemFilter;
@@ -166,6 +170,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -202,6 +207,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.search.sort.AuditLogSort;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
@@ -241,6 +247,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -260,6 +267,7 @@ import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
@@ -378,7 +386,8 @@ public final class ServiceTransformers {
             UserTaskQuery.class,
             UserQuery.class,
             VariableQuery.class,
-            ClusterVariableQuery.class)
+            ClusterVariableQuery.class,
+            AuditLogQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -410,6 +419,7 @@ public final class ServiceTransformers {
     mappers.put(TenantEntity.class, new TenantEntityTransformer());
     mappers.put(TenantMemberEntity.class, new TenantMemberEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
+    mappers.put(AuditLogEntity.class, new AuditLogEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
@@ -441,6 +451,7 @@ public final class ServiceTransformers {
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
     mappers.put(UsageMetricsSort.class, new UsageMetricsFieldSortingTransformer());
     mappers.put(UserSort.class, new UserFieldSortingTransformer());
+    mappers.put(AuditLogSort.class, new AuditLogSortTransformer());
 
     // filters -> search query
     mappers.put(
@@ -470,6 +481,9 @@ public final class ServiceTransformers {
         new DecisionInstanceFilterTransformer(
             indexDescriptors.get(DecisionInstanceTemplate.class)));
     mappers.put(UserFilter.class, new UserFilterTransformer(indexDescriptors.get(UserIndex.class)));
+    mappers.put(
+        AuditLogFilter.class,
+        new AuditLogFilterTransformer(indexDescriptors.get(AuditLogTemplate.class)));
     mappers.put(
         AuthorizationFilter.class,
         new AuthorizationFilterTransformer(indexDescriptors.get(AuthorizationIndex.class)));
