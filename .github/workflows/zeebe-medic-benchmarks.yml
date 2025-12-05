@@ -1,6 +1,6 @@
 # description: Deploys new Camunda load tests weekly. Multiple kinds of load tests are created - typical, realistic, latency
 # type: CI
-# owner: camunda/reliability-testing
+# owner: @camunda/reliability-testing
 name: Camunda weekly medic load test
 on:
   workflow_dispatch:
