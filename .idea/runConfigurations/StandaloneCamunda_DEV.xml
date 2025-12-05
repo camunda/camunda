@@ -12,7 +12,7 @@
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME" value="io.camunda.exporter.CamundaExporter" />
       <env name="CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS" value="false" />
     </envs>
-    <module name="camunda-zeebe" />
+    <module name="camunda-zeebe.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="io.camunda.application.StandaloneCamunda" />
     <extension name="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
