@@ -32,5 +32,6 @@ public enum ResourceType {
   TENANT,
   USER,
   USER_TASK,
+  AUDIT_LOG,
   UNKNOWN_ENUM_VALUE,
 }

@@ -670,6 +670,20 @@ public class AuthorizationCheckerTest {
               .thenResultContains(
                   PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)
               .build(),
+          CollectPermissionScenario.displayName(
+                  "hank AUDIT_LOG wildcard -> {READ, READ_OPERATOR_AUDIT_LOG}")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "hank",
+                      AuthorizationResourceType.AUDIT_LOG,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      Set.of(PermissionType.READ, PermissionType.READ_OPERATOR_AUDIT_LOG)))
+              .whenUser("hank")
+              .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUDIT_LOG)
+              .thenResultContains(PermissionType.READ, PermissionType.READ_OPERATOR_AUDIT_LOG)
+              .build(),
           CollectPermissionScenario.displayName("gina PROCESS_DEFINITION mismatch -> empty")
               .given(
                   authEntity(

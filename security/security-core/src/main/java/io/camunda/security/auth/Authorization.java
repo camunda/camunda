@@ -7,6 +7,7 @@
  */
 package io.camunda.security.auth;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
@@ -24,6 +25,7 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCE
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_OPERATOR_AUDIT_LOG;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USAGE_METRIC;
@@ -168,12 +170,20 @@ public record Authorization<T>(
       return permissionType(READ_USAGE_METRIC);
     }
 
+    public Builder<T> readOperatorAuditLog() {
+      return permissionType(READ_OPERATOR_AUDIT_LOG);
+    }
+
     public Builder<T> batchOperation() {
       return resourceType(BATCH);
     }
 
     public Builder<T> document() {
       return resourceType(DOCUMENT);
+    }
+
+    public Builder<T> auditLog() {
+      return resourceType(AUDIT_LOG);
     }
 
     public Builder<T> resourceId(final String resourceId) {
