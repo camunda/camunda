@@ -40,4 +40,5 @@ public record SearchClientReaders(
     UserReader userReader,
     UserTaskReader userTaskReader,
     VariableReader variableReader,
-    ClusterVariableReader clusterVariableReader) {}
+    ClusterVariableReader clusterVariableReader,
+    AuditLogReader auditLogReader) {}
