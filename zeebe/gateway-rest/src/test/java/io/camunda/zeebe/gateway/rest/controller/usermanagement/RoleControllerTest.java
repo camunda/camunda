@@ -58,6 +58,7 @@ public class RoleControllerTest extends RestControllerTest {
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean private SecurityConfiguration securityConfiguration;
+  private AuthenticationConfiguration authenticationConfiguration;
 
   @BeforeEach
   void setup() {
@@ -72,6 +73,8 @@ public class RoleControllerTest extends RestControllerTest {
     when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(groupServices);
     when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+    authenticationConfiguration = new AuthenticationConfiguration();
+    when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
   }
 
   @ParameterizedTest
@@ -951,12 +954,10 @@ public class RoleControllerTest extends RestControllerTest {
 
     final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
 
-    final var authenticationConfiguration = new AuthenticationConfiguration();
     final var oidcConfiguration = new OidcAuthenticationConfiguration();
     oidcConfiguration.setGroupsClaim("groups");
     authenticationConfiguration.setOidc(oidcConfiguration);
 
-    when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
     when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when

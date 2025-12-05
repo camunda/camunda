@@ -170,7 +170,8 @@ public class TenantController {
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
-    final boolean areGroupsManagedExternally = areGroupsManagedExternally();
+    final boolean areGroupsManagedExternally =
+        securityConfiguration.getAuthentication().areGroupsManagedExternally();
     return RequestMapper.toTenantMemberRequest(
             tenantId,
             groupId,
@@ -476,18 +477,5 @@ public class TenantController {
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateTenant(tenantRequest),
         ResponseMapper::toTenantUpdateResponse);
-  }
-
-  private boolean areGroupsManagedExternally() {
-    final var authentication = securityConfiguration.getAuthentication();
-    if (authentication == null) {
-      return false;
-    }
-    final var oidcConfiguration = authentication.getOidc();
-    if (oidcConfiguration == null) {
-      return false;
-    }
-    final var groupsClaim = oidcConfiguration.getGroupsClaim();
-    return groupsClaim != null && !groupsClaim.isEmpty();
   }
 }

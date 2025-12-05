@@ -259,7 +259,8 @@ public class RoleController {
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
-    final boolean areGroupsManagedExternally = areGroupsManagedExternally();
+    final boolean areGroupsManagedExternally =
+        securityConfiguration.getAuthentication().areGroupsManagedExternally();
     return RequestMapper.toRoleMemberRequest(
             roleId,
             groupId,
@@ -367,18 +368,5 @@ public class RoleController {
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .removeMember(request));
-  }
-
-  private boolean areGroupsManagedExternally() {
-    final var authentication = securityConfiguration.getAuthentication();
-    if (authentication == null) {
-      return false;
-    }
-    final var oidcConfiguration = authentication.getOidc();
-    if (oidcConfiguration == null) {
-      return false;
-    }
-    final var groupsClaim = oidcConfiguration.getGroupsClaim();
-    return groupsClaim != null && !groupsClaim.isEmpty();
   }
 }
