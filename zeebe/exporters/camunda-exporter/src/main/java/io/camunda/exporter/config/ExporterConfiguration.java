@@ -327,7 +327,7 @@ public class ExporterConfiguration {
   public static final class PostExportConfiguration {
     private int batchSize = 100;
     private int delayBetweenRuns = 2000;
-    private int maxDelayBetweenRuns = 60000;
+    private int maxDelayBetweenRuns = 5000;
     private boolean ignoreMissingData = false;
 
     public int getBatchSize() {
