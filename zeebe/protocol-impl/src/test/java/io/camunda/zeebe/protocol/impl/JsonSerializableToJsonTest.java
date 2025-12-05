@@ -4086,7 +4086,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<GlobalListenerBatchRecord>)
             () ->
                 new GlobalListenerBatchRecord()
-                    .setListenersConfigKey(1)
+                    .setGlobalListenerBatchKey(1)
                     .addTaskListener(
                         new GlobalListenerRecord()
                             .setType("global1")
@@ -4100,7 +4100,7 @@ final class JsonSerializableToJsonTest {
                             .setAfterNonGlobal(false)),
         """
       {
-        "listenersConfigKey": 1,
+        "globalListenerBatchKey": 1,
         "taskListeners": [
           {
             "type": "global1",
@@ -4123,7 +4123,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<GlobalListenerBatchRecord>) () -> new GlobalListenerBatchRecord(),
         """
       {
-        "listenersConfigKey": -1,
+        "globalListenerBatchKey": -1,
         "taskListeners": []
       }
       """

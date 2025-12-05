@@ -1795,8 +1795,8 @@ public class CompactRecordLogger {
   private String summarizeGlobalListenerBatch(final Record<?> record) {
     final var value = (GlobalListenerBatchRecordValue) record.getValue();
     final StringBuilder summary = new StringBuilder();
-    if (record.getKey() != value.getListenersConfigKey()) {
-      summary.append("configKey: ").append(shortenKey(value.getListenersConfigKey())).append(" ");
+    if (record.getKey() != value.getGlobalListenerBatchKey()) {
+      summary.append("key: ").append(shortenKey(value.getGlobalListenerBatchKey())).append(" ");
     }
     summary.append(
         value.getTaskListeners().stream()

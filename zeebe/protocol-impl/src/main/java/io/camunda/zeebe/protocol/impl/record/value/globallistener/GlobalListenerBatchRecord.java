@@ -18,22 +18,23 @@ import java.util.stream.Collectors;
 public final class GlobalListenerBatchRecord extends UnifiedRecordValue
     implements GlobalListenerBatchRecordValue {
 
-  private final LongProperty listenersConfigKey = new LongProperty("listenersConfigKey", -1L);
+  private final LongProperty globalListenerBatchKey =
+      new LongProperty("globalListenerBatchKey", -1L);
   private final ArrayProperty<GlobalListenerRecord> taskListenersProp =
       new ArrayProperty<>("taskListeners", GlobalListenerRecord::new);
 
   public GlobalListenerBatchRecord() {
     super(2);
-    declareProperty(listenersConfigKey).declareProperty(taskListenersProp);
+    declareProperty(globalListenerBatchKey).declareProperty(taskListenersProp);
   }
 
   @Override
-  public long getListenersConfigKey() {
-    return listenersConfigKey.getValue();
+  public long getGlobalListenerBatchKey() {
+    return globalListenerBatchKey.getValue();
   }
 
-  public GlobalListenerBatchRecord setListenersConfigKey(final long listenersConfigKey) {
-    this.listenersConfigKey.setValue(listenersConfigKey);
+  public GlobalListenerBatchRecord setGlobalListenerBatchKey(final long globalListenerBatchKey) {
+    this.globalListenerBatchKey.setValue(globalListenerBatchKey);
     return this;
   }
 
