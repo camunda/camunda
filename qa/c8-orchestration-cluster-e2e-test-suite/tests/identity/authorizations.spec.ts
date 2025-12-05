@@ -67,8 +67,7 @@ test.describe.serial('authorizations CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug #40284: https://github.com/camunda/camunda/issues/40284
-  test.skip('tries to create an authorization with invalid id', async ({
+  test('tries to create an authorization with invalid id', async ({
     identityAuthorizationsPage,
   }) => {
     await identityAuthorizationsPage.createAuthorizationButton.click();
