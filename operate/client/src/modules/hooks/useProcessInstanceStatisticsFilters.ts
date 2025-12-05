@@ -7,20 +7,22 @@
  */
 
 import {useSearchParams} from 'react-router-dom';
-import {type GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {
+  type GetProcessDefinitionStatisticsRequestBody,
+  type QueryProcessInstancesRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
 
-function useProcessInstanceStatisticsFilters(): GetProcessDefinitionStatisticsRequestBody {
-  const [searchParams] = useSearchParams();
-  const fullFilter = parseProcessInstancesSearchFilter(searchParams);
+type ProcessInstancesSearchFilter = NonNullable<
+  QueryProcessInstancesRequestBody['filter']
+>;
+type StatisticsFilter = NonNullable<
+  GetProcessDefinitionStatisticsRequestBody['filter']
+>;
 
-  if (!fullFilter) {
-    return {filter: undefined};
-  }
-
-  // Exclude fields not supported by statistics endpoint
-  // ProcessDefinitionStatisticsFilter only extends BaseProcessInstanceFilterFields,
-  // which does not include processDefinition* fields (they're passed via URL path parameter)
+const getValidStatisticsFilters = (
+  fullFilter: ProcessInstancesSearchFilter,
+): StatisticsFilter => {
   const {
     processDefinitionId,
     processDefinitionName,
@@ -30,9 +32,21 @@ function useProcessInstanceStatisticsFilters(): GetProcessDefinitionStatisticsRe
     ...statisticsFilter
   } = fullFilter;
 
-  return {
-    filter: statisticsFilter,
-  };
-}
+  return statisticsFilter;
+};
 
-export {useProcessInstanceStatisticsFilters};
+const useProcessInstanceStatisticsFilters =
+  (): GetProcessDefinitionStatisticsRequestBody => {
+    const [searchParams] = useSearchParams();
+    const fullFilter = parseProcessInstancesSearchFilter(searchParams);
+
+    if (!fullFilter) {
+      return {filter: undefined};
+    }
+
+    return {
+      filter: getValidStatisticsFilters(fullFilter),
+    };
+  };
+
+export {useProcessInstanceStatisticsFilters, getValidStatisticsFilters};
