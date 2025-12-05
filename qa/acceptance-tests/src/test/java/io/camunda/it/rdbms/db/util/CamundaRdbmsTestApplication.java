@@ -11,6 +11,7 @@ import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_
 
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -29,8 +30,14 @@ public final class CamundaRdbmsTestApplication
 
   private GenericContainer<?> databaseContainer;
 
+  private final Camunda unifiedConfig;
+
   public CamundaRdbmsTestApplication(final Class<?>... springConfigurations) {
     super(springConfigurations);
+
+    unifiedConfig = new Camunda();
+    //noinspection resource
+    withBean("camunda", unifiedConfig, Camunda.class);
   }
 
   public CamundaRdbmsTestApplication withDatabaseContainer(
@@ -40,18 +47,18 @@ public final class CamundaRdbmsTestApplication
   }
 
   public CamundaRdbmsTestApplication withRdbms() {
-    super.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms")
-        .withProperty("logging.level.io.camunda.db.rdbms", "DEBUG")
+    super.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG")
         .withProperty("logging.level.org.mybatis", "DEBUG");
+    setSecondaryStorageToRdbms();
     return this;
   }
 
   public CamundaRdbmsTestApplication withH2() {
-    super.withProperty(
-            "camunda.data.secondary-storage.rdbms.url",
-            "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
-        .withProperty("camunda.data.secondary-storage.rdbms.username", "sa")
-        .withProperty("camunda.data.secondary-storage.rdbms.password", "");
+    setSecondaryStorageToRdbms();
+    final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
+    rdbms.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    rdbms.setUsername("sa");
+    rdbms.setPassword("");
     return this;
   }
 
@@ -62,14 +69,10 @@ public final class CamundaRdbmsTestApplication
       databaseContainer.start();
 
       if (databaseContainer instanceof final JdbcDatabaseContainer<?> jdbcDatabaseContainer) {
-        super.withProperty(
-                "camunda.data.secondary-storage.rdbms.url", jdbcDatabaseContainer.getJdbcUrl())
-            .withProperty(
-                "camunda.data.secondary-storage.rdbms.username",
-                jdbcDatabaseContainer.getUsername())
-            .withProperty(
-                "camunda.data.secondary-storage.rdbms.password",
-                jdbcDatabaseContainer.getPassword());
+        final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
+        rdbms.setUrl(jdbcDatabaseContainer.getJdbcUrl());
+        rdbms.setUsername(jdbcDatabaseContainer.getUsername());
+        rdbms.setPassword(jdbcDatabaseContainer.getPassword());
       }
     }
 
@@ -119,10 +122,16 @@ public final class CamundaRdbmsTestApplication
     return false;
   }
 
+  /**
+   * Modifies the unified configuration (camunda.* properties).
+   *
+   * @param modifier a configuration function that accepts the Camunda configuration object
+   * @return itself for chaining
+   */
   @Override
   public CamundaRdbmsTestApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
-    throw new UnsupportedOperationException(
-        "CamundaRdbmsTestApplication does not support unified configuration");
+    modifier.accept(unifiedConfig);
+    return this;
   }
 
   public RdbmsService getRdbmsService() {
@@ -130,5 +139,12 @@ public final class CamundaRdbmsTestApplication
       throw new IllegalStateException("Application is not started");
     }
     return super.bean(RdbmsService.class);
+  }
+
+  private void setSecondaryStorageToRdbms() {
+    // set environment variable camunda.data.secondary-storage.type to ensure that
+    // ConditionalOnSecondaryStorageType behaves as expected
+    super.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms");
+    unifiedConfig.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
   }
 }
