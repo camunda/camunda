@@ -196,17 +196,33 @@ const TopPanel: React.FC = observer(() => {
         ? [flowNodeSelection.flowNodeId]
         : undefined;
   }, [flowNodeSelection?.anchorFlowNodeId, flowNodeSelection?.flowNodeId]);
-  const compensationAssociationIds = Object.values(
-    processDefinitionData?.diagramModel.elementsById ?? {},
-  )
-    .filter(isCompensationAssociation)
-    .filter(({targetRef}) => {
-      // check if the target element for the association was executed
-      return executedFlowNodes?.find(({elementId, completed}) => {
-        return targetRef?.id === elementId && completed > 0;
-      });
-    })
-    .map(({id}) => id);
+
+  const highlightedSequenceFlows = useMemo(() => {
+    const compensationAssociationIds = Object.values(
+      processDefinitionData?.diagramModel.elementsById ?? {},
+    )
+      .filter(isCompensationAssociation)
+      .filter(({targetRef}) => {
+        // check if the target element for the association was executed
+        return executedFlowNodes?.find(({elementId, completed}) => {
+          return targetRef?.id === elementId && completed > 0;
+        });
+      })
+      .map(({id}) => id);
+
+    return [
+      ...(processedSequenceFlowsFromHook || []),
+      ...compensationAssociationIds,
+    ];
+  }, [
+    processedSequenceFlowsFromHook,
+    processDefinitionData,
+    executedFlowNodes,
+  ]);
+
+  const highlightedSequenceFlowIds = useMemo(() => {
+    return executedFlowNodes?.map(({elementId}) => elementId);
+  }, [executedFlowNodes]);
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsByFlowNode).reduce<
@@ -391,13 +407,8 @@ const TopPanel: React.FC = observer(() => {
                     !isIncidentBarOpen && <MetadataPopover />
                   )
                 }
-                highlightedSequenceFlows={[
-                  ...(processedSequenceFlowsFromHook || []),
-                  ...compensationAssociationIds,
-                ]}
-                highlightedFlowNodeIds={executedFlowNodes?.map(
-                  ({elementId}) => elementId,
-                )}
+                highlightedSequenceFlows={highlightedSequenceFlows}
+                highlightedFlowNodeIds={highlightedSequenceFlowIds}
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
