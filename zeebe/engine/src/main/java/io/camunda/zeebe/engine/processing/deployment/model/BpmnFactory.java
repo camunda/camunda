@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
@@ -21,22 +22,27 @@ public final class BpmnFactory {
     /* utility class */
   }
 
-  public static BpmnTransformer createTransformer(final InstantSource clock) {
-    return new BpmnTransformer(createExpressionLanguage(new ZeebeFeelEngineClock(clock)));
+  public static BpmnTransformer createTransformer(
+      final InstantSource clock, final ExpressionLanguageMetrics expressionLanguageMetrics) {
+    return new BpmnTransformer(
+        createExpressionLanguage(new ZeebeFeelEngineClock(clock), expressionLanguageMetrics));
   }
 
   public static BpmnValidator createValidator(
       final InstantSource clock,
       final ExpressionProcessor expressionProcessor,
-      final int validatorResultsOutputMaxSize) {
+      final int validatorResultsOutputMaxSize,
+      final ExpressionLanguageMetrics expressionLanguageMetrics) {
     return new BpmnValidator(
-        createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
+        createExpressionLanguage(new ZeebeFeelEngineClock(clock), expressionLanguageMetrics),
         expressionProcessor,
         validatorResultsOutputMaxSize);
   }
 
   private static ExpressionLanguage createExpressionLanguage(
-      final ZeebeFeelEngineClock zeebeFeelEngineClock) {
-    return ExpressionLanguageFactory.createExpressionLanguage(zeebeFeelEngineClock);
+      final ZeebeFeelEngineClock zeebeFeelEngineClock,
+      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+    return ExpressionLanguageFactory.createExpressionLanguage(
+        zeebeFeelEngineClock, expressionLanguageMetrics);
   }
 }
