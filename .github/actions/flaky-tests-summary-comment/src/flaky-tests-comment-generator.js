@@ -9,7 +9,7 @@ async function createOrUpdateComment(context, github, currentData, prNumber, bra
   // Step 1: Fetch any existing flaky test comment
   const existingComment = await githubApi.getExistingComment(github, owner, repo, prNumber);
 
-  // Step 2: Parse existing comment to extract historical data
+  // Step 2: Parse existing comment to extract historical data (including URLs)
   const historicalData = existingComment ? helpers.parseComment(existingComment.body) : null;
   console.log('Historical data:', historicalData);
 
@@ -17,7 +17,7 @@ async function createOrUpdateComment(context, github, currentData, prNumber, bra
   const mergedData = (!historicalData || historicalData.length === 0) ? helpers.prepareFirstRunData(currentData) : helpers.mergeFlakyData(currentData, historicalData);
   console.log('Merged data:', JSON.stringify(mergedData, null, 2));
 
-  // Step 4: Generate comment content
+  // Step 4: Generate comment content (URLs from historical data will be reused)
   const comment = await buildComment(mergedData, github, branchName);
 
   // Step 5: Create or update comment
@@ -42,7 +42,13 @@ async function buildComment(mergedData, github, branchName) {
   mergedData.sort((a, b) => b.overallRetries - a.overallRetries);
 
   for (const test of mergedData) {
-    const url = await generateTestSourceUrl(test, github, branchName);
+    // Reuse URL from previous comment if available, otherwise search GitHub
+    let url = test.url || '';
+    if (!url) {
+      url = await generateTestSourceUrl(test, github, branchName);
+    } else {
+      console.log(`[flaky-tests] Reusing URL from previous comment for test: ${test.methodName || test.fullName}`);
+    }
 
     const testName = test.methodName || test.fullName;
     const formattedName = url ? `[**${testName}**](${url})` : `**${testName}**`;
