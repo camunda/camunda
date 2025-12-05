@@ -88,7 +88,7 @@
             "deniedReason": {
               "type": "text"
             },
-            "listenersConfigKey": {
+            "globalListenerBatchKey": {
               "type": "long"
             }
           }

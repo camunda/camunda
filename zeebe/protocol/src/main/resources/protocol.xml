@@ -80,6 +80,7 @@
       <validValue name="HISTORY_DELETION">62</validValue>
       <validValue name="CONDITIONAL_SUBSCRIPTION">63</validValue>
       <validValue name="CONDITIONAL_EVALUATION">64</validValue>
+      <validValue name="GLOBAL_LISTENER_BATCH">65</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
