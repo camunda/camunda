@@ -223,12 +223,22 @@ public final class EvaluateExpressionProcessor implements TypedRecordProcessor<E
       final ScopedEvaluationContext providedContext,
       final String tenantId) {
 
-    // For all scopes, prepend the provided context
-    // The base processor already contains cluster variables and process variable context
-    // When we call evaluateAnyExpression with a scopeKey:
-    // - negative scopeKey = no process scoping (for NONE and CLUSTER)
-    // - positive scopeKey = process scoping activated (for PROCESS_INSTANCE)
-    return baseExpressionProcessor.prependContext(providedContext);
+    return switch (scopeType) {
+      case NONE -> {// NONE: Only provided context
+        // Create a completely isolated processor without cluster or process variable contexts
+        final var isolatedContext = new IsolatedEvaluationContext(providedContext);
+        // Prepend this isolated context - it will block access to base contexts
+        yield baseExpressionProcessor.prependContext(isolatedContext);
+      }
+      case CLUSTER, PROCESS_INSTANCE -> // CLUSTER: Provided + cluster variables
+        // PROCESS_INSTANCE: Provided + process + cluster variables
+        //
+        // Both use the same base context (cluster + process variable contexts)
+        // The difference is the scopeKey parameter in evaluateAnyExpression:
+        // - CLUSTER uses scopeKey=-1 (process variables inactive)
+        // - PROCESS_INSTANCE uses scopeKey=processInstanceKey (process variables active)
+          baseExpressionProcessor.prependContext(providedContext);
+    };
   }
 
   /**
