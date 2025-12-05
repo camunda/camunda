@@ -172,7 +172,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerGlobalListenersEventAppliers(final MutableProcessingState state) {
-    register(GlobalListenerBatchIntent.CONFIGURED, NOOP_EVENT_APPLIER);
+    register(GlobalListenerBatchIntent.CONFIGURED, new GlobalListenerBatchConfiguredApplier(state));
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {

@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.globallisteners.GlobalListenersProcessors;
 import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionProcessors;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
@@ -357,6 +358,13 @@ public final class EngineProcessors {
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
         typedRecordProcessors, writers, processingState);
+    GlobalListenersProcessors.addGlobalListenersProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        writers,
+        commandDistributionBehavior,
+        config,
+        processingState);
 
     return typedRecordProcessors;
   }
