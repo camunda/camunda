@@ -115,4 +115,14 @@ public interface DecisionEvaluationRecordValue
    *     the evaluation was successful
    */
   String getFailedDecisionId();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy in which context the decision was
+   * evaluated. For decisions evaluated in top-level process instances, this is equal to {@link
+   * #getProcessInstanceKey()}. For decisions in child process instances (created via call
+   * activities), this is the key of the topmost parent process instance.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  long getRootProcessInstanceKey();
 }

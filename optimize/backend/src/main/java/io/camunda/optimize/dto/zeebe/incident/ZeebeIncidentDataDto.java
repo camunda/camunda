@@ -59,6 +59,11 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return -1L;
+  }
+
   public String getErrorMessage() {
     return this.errorMessage;
   }

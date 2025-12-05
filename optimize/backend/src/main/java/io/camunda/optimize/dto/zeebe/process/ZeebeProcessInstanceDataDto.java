@@ -122,6 +122,11 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     return Set.of();
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return -1L;
+  }
+
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {
     this.parentElementInstanceKey = parentElementInstanceKey;
   }

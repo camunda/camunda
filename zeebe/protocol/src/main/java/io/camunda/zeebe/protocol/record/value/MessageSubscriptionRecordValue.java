@@ -71,4 +71,14 @@ public interface MessageSubscriptionRecordValue
    *     returns {@code false} if the event is non-interrupting.
    */
   boolean isInterrupting();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For message subscriptions in
+   * top-level process instances, this is equal to {@link #getProcessInstanceKey()}. For message
+   * subscriptions in child process instances (created via call activities), this is the key of the
+   * topmost parent process instance.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  long getRootProcessInstanceKey();
 }

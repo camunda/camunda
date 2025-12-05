@@ -58,7 +58,11 @@ public class EventTriggerBehavior {
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
 
     variableBehavior =
-        new VariableBehavior(processingState.getVariableState(), writers.state(), keyGenerator);
+        new VariableBehavior(
+            processingState.getVariableState(),
+            processingState.getElementInstanceState(),
+            writers.state(),
+            keyGenerator);
     this.stateBehavior = stateBehavior;
   }
 
