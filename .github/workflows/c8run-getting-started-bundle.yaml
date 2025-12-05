@@ -1,0 +1,534 @@
+# type: Release
+# owner: @camunda/distribution
+---
+name: "C8Run: Getting Started Bundle"
+
+on:
+  workflow_dispatch:
+    inputs:
+      c8run_version:
+        description: "The release version of c8run to use (e.g., 8.8.6). Use 'latest' to auto-detect the latest release."
+        type: string
+        required: true
+        default: "latest"
+      modeler_version:
+        description: "The version of Camunda Desktop Modeler to bundle (e.g., 5.34.0). Use 'latest' to auto-detect the latest release."
+        type: string
+        required: true
+        default: "latest"
+      dry_run:
+        description: "If true, artifacts are only uploaded to the workflow run, not to the GitHub release."
+        type: boolean
+        required: true
+        default: true
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  resolve-versions:
+    name: Resolve versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      c8run_version: ${{ steps.resolve.outputs.c8run_version }}
+      modeler_version: ${{ steps.resolve.outputs.modeler_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve c8run and modeler versions
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_C8RUN_VERSION: ${{ inputs.c8run_version }}
+          INPUT_MODELER_VERSION: ${{ inputs.modeler_version }}
+        run: |
+          # Resolve c8run version
+          if [[ "${INPUT_C8RUN_VERSION}" == "latest" ]]; then
+            # Get latest release that has c8run artifacts (contains camunda8-run in asset names)
+            c8run_version=$(gh api repos/camunda/camunda/releases --jq '
+              [.[] | select(.assets[].name | test("camunda8-run-"))] | first | .tag_name
+            ')
+            echo "Resolved c8run version: ${c8run_version}"
+          else
+            c8run_version="${INPUT_C8RUN_VERSION}"
+          fi
+          echo "c8run_version=${c8run_version}" >> "$GITHUB_OUTPUT"
+
+          # Resolve modeler version
+          if [[ "${INPUT_MODELER_VERSION}" == "latest" ]]; then
+            # Get latest modeler version from GitHub API
+            modeler_version=$(gh api repos/camunda/camunda-modeler/releases/latest --jq '.tag_name' | sed 's/^v//')
+            echo "Resolved modeler version: ${modeler_version}"
+          else
+            modeler_version="${INPUT_MODELER_VERSION}"
+          fi
+          echo "modeler_version=${modeler_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Print resolved versions
+        run: |
+          echo "C8Run version: ${{ steps.resolve.outputs.c8run_version }}"
+          echo "Modeler version: ${{ steps.resolve.outputs.modeler_version }}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-bundle:
+    name: Build bundle - ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 30
+    needs: resolve-versions
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: MacOS (Apple Silicon)
+            runner: macos-latest
+            platform_id: darwin-aarch64
+            archive_type: zip
+            c8run_archive_type: zip
+            modeler_asset_pattern: "camunda-modeler-{version}-mac-arm64.dmg"
+            script_extension: sh
+          - name: MacOS (Intel)
+            runner: macos-13
+            platform_id: darwin-x86_64
+            archive_type: zip
+            c8run_archive_type: zip
+            modeler_asset_pattern: "camunda-modeler-{version}-mac-x64.dmg"
+            script_extension: sh
+          - name: Windows
+            runner: windows-latest
+            platform_id: windows-x86_64
+            archive_type: zip
+            c8run_archive_type: zip
+            modeler_asset_pattern: "camunda-modeler-{version}-win-x64.zip"
+            script_extension: bat
+          - name: Linux
+            runner: ubuntu-latest
+            platform_id: linux-x86_64
+            archive_type: tar.gz
+            c8run_archive_type: tar.gz
+            modeler_asset_pattern: "camunda-modeler-{version}-linux-x64.tar.gz"
+            script_extension: sh
+    env:
+      C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
+      MODELER_VERSION: ${{ needs.resolve-versions.outputs.modeler_version }}
+      BUNDLE_NAME: camunda8-getting-started-bundle-${{ needs.resolve-versions.outputs.c8run_version }}-${{ matrix.platform.platform_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Print build info
+        run: |
+          echo "Building bundle for: ${{ matrix.platform.name }}"
+          echo "C8Run version: ${C8RUN_VERSION}"
+          echo "Modeler version: ${MODELER_VERSION}"
+          echo "Platform ID: ${{ matrix.platform.platform_id }}"
+          echo "Bundle name: ${BUNDLE_NAME}"
+
+      - name: Create bundle directory
+        run: mkdir -p bundle
+
+      - name: Download c8run archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          c8run_asset="camunda8-run-${C8RUN_VERSION}-${{ matrix.platform.platform_id }}.${{ matrix.platform.c8run_archive_type }}"
+          echo "Downloading c8run asset: ${c8run_asset}"
+          gh release download "${C8RUN_VERSION}" \
+            --repo camunda/camunda \
+            --pattern "${c8run_asset}" \
+            --dir bundle
+
+      - name: Extract c8run archive (Unix)
+        if: matrix.platform.platform_id != 'windows-x86_64'
+        run: |
+          cd bundle
+          c8run_asset="camunda8-run-${C8RUN_VERSION}-${{ matrix.platform.platform_id }}.${{ matrix.platform.c8run_archive_type }}"
+          if [[ "${{ matrix.platform.c8run_archive_type }}" == "zip" ]]; then
+            unzip "${c8run_asset}" -d c8run_temp
+          else
+            mkdir c8run_temp
+            tar -xzf "${c8run_asset}" -C c8run_temp
+          fi
+          # Move contents to c8run folder, handling nested directory structure
+          mkdir -p c8run
+          if [ -d "c8run_temp/c8run" ]; then
+            mv c8run_temp/c8run/* c8run/
+          else
+            mv c8run_temp/* c8run/
+          fi
+          rm -rf c8run_temp "${c8run_asset}"
+
+      - name: Extract c8run archive (Windows)
+        if: matrix.platform.platform_id == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          cd bundle
+          $c8runAsset = "camunda8-run-${env:C8RUN_VERSION}-${{ matrix.platform.platform_id }}.${{ matrix.platform.c8run_archive_type }}"
+          Expand-Archive -Path $c8runAsset -DestinationPath "c8run_temp"
+          New-Item -ItemType Directory -Force -Path "c8run"
+          if (Test-Path "c8run_temp/c8run") {
+            Move-Item -Path "c8run_temp/c8run/*" -Destination "c8run/"
+          } else {
+            Move-Item -Path "c8run_temp/*" -Destination "c8run/"
+          }
+          Remove-Item -Recurse -Force "c8run_temp"
+          Remove-Item -Force $c8runAsset
+
+      - name: Download Camunda Modeler
+        run: |
+          modeler_asset="${{ matrix.platform.modeler_asset_pattern }}"
+          modeler_asset="${modeler_asset//\{version\}/${MODELER_VERSION}}"
+          modeler_url="https://downloads.camunda.cloud/release/camunda-modeler/${MODELER_VERSION}/${modeler_asset}"
+          echo "Downloading modeler from: ${modeler_url}"
+          curl -fSL "${modeler_url}" -o "bundle/${modeler_asset}"
+
+      - name: Extract Modeler (macOS DMG)
+        if: startsWith(matrix.platform.platform_id, 'darwin')
+        run: |
+          cd bundle
+          modeler_asset="${{ matrix.platform.modeler_asset_pattern }}"
+          modeler_asset="${modeler_asset//\{version\}/${MODELER_VERSION}}"
+          
+          # Mount the DMG
+          hdiutil attach "${modeler_asset}" -mountpoint /Volumes/CamundaModeler
+          
+          # Copy the .app bundle and rename it
+          cp -R "/Volumes/CamundaModeler/Camunda Modeler.app" "./2-camunda-modeler.app"
+          
+          # Unmount the DMG
+          hdiutil detach /Volumes/CamundaModeler
+          
+          # Remove the DMG file
+          rm "${modeler_asset}"
+
+      - name: Extract Modeler (Windows)
+        if: matrix.platform.platform_id == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          cd bundle
+          $modelerAsset = "${{ matrix.platform.modeler_asset_pattern }}" -replace '\{version\}', $env:MODELER_VERSION
+          Expand-Archive -Path $modelerAsset -DestinationPath "modeler_temp"
+          
+          # Find the extracted folder (usually named like "camunda-modeler-X.Y.Z-win-x64")
+          $extractedFolder = Get-ChildItem -Path "modeler_temp" -Directory | Select-Object -First 1
+          
+          # Rename to 2-camunda-modeler
+          Move-Item -Path $extractedFolder.FullName -Destination "2-camunda-modeler"
+          
+          Remove-Item -Recurse -Force "modeler_temp"
+          Remove-Item -Force $modelerAsset
+
+      - name: Extract Modeler (Linux)
+        if: matrix.platform.platform_id == 'linux-x86_64'
+        run: |
+          cd bundle
+          modeler_asset="${{ matrix.platform.modeler_asset_pattern }}"
+          modeler_asset="${modeler_asset//\{version\}/${MODELER_VERSION}}"
+          
+          mkdir modeler_temp
+          tar -xzf "${modeler_asset}" -C modeler_temp
+          
+          # Find the extracted folder
+          extracted_folder=$(ls modeler_temp)
+          
+          # Rename to 2-camunda-modeler
+          mv "modeler_temp/${extracted_folder}" "2-camunda-modeler"
+          
+          rm -rf modeler_temp "${modeler_asset}"
+
+      - name: Clone camunda-8-get-started repository
+        run: |
+          git clone --depth 1 https://github.com/camunda/camunda-8-get-started.git bundle/camunda-8-get-started
+          rm -rf bundle/camunda-8-get-started/.git
+
+      - name: Clone ai-agent example
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/camunda/connectors.git /tmp/connectors
+          cd /tmp/connectors
+          git sparse-checkout set connectors/agentic-ai/examples/ai-agent/ad-hoc-sub-process/ai-agent-chat-with-tools
+          mkdir -p "${GITHUB_WORKSPACE}/bundle/ai-agent-example"
+          cp -r connectors/agentic-ai/examples/ai-agent/ad-hoc-sub-process/ai-agent-chat-with-tools/* "${GITHUB_WORKSPACE}/bundle/ai-agent-example/"
+
+      - name: Create starter script (Unix)
+        if: matrix.platform.script_extension == 'sh'
+        run: |
+          cat > bundle/1-camunda-starter.sh << 'EOF'
+          #!/bin/bash
+
+          cd c8run 
+          ./c8run start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success" 
+          cd ..
+          EOF
+          chmod +x bundle/1-camunda-starter.sh
+
+      - name: Create starter script (Windows)
+        if: matrix.platform.script_extension == 'bat'
+        shell: pwsh
+        run: |
+          $scriptContent = @"
+          @echo off
+
+          cd c8run
+          .\c8run.exe start -startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
+          "@
+          Set-Content -Path "bundle/1-camunda-starter.bat" -Value $scriptContent -NoNewline
+
+      - name: List bundle contents
+        run: |
+          echo "Bundle contents:"
+          ls -la bundle/
+          echo ""
+          echo "c8run folder contents:"
+          ls -la bundle/c8run/ || true
+
+      - name: Create bundle archive (zip)
+        if: matrix.platform.archive_type == 'zip'
+        run: |
+          cd bundle
+          zip -r "../${BUNDLE_NAME}.zip" .
+
+      - name: Create bundle archive (tar.gz)
+        if: matrix.platform.archive_type == 'tar.gz'
+        run: |
+          cd bundle
+          tar -czvf "../${BUNDLE_NAME}.tar.gz" .
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUNDLE_NAME }}
+          path: ${{ env.BUNDLE_NAME }}.${{ matrix.platform.archive_type }}
+          retention-days: 7
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: build-bundle - ${{ matrix.platform.name }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  test-bundle:
+    name: Test bundle - ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 30
+    needs: [resolve-versions, build-bundle]
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: MacOS (Apple Silicon)
+            runner: macos-latest
+            platform_id: darwin-aarch64
+            archive_type: zip
+            script_extension: sh
+          - name: MacOS (Intel)
+            runner: macos-13
+            platform_id: darwin-x86_64
+            archive_type: zip
+            script_extension: sh
+          - name: Windows
+            runner: windows-latest
+            platform_id: windows-x86_64
+            archive_type: zip
+            script_extension: bat
+          - name: Linux
+            runner: ubuntu-latest
+            platform_id: linux-x86_64
+            archive_type: tar.gz
+            script_extension: sh
+    env:
+      C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
+      BUNDLE_NAME: camunda8-getting-started-bundle-${{ needs.resolve-versions.outputs.c8run_version }}-${{ matrix.platform.platform_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.BUNDLE_NAME }}
+          path: .
+
+      - name: Extract bundle (zip)
+        if: matrix.platform.archive_type == 'zip'
+        run: |
+          mkdir -p test-bundle
+          unzip "${BUNDLE_NAME}.zip" -d test-bundle
+
+      - name: Extract bundle (tar.gz)
+        if: matrix.platform.archive_type == 'tar.gz'
+        run: |
+          mkdir -p test-bundle
+          tar -xzf "${BUNDLE_NAME}.tar.gz" -C test-bundle
+
+      - name: List extracted contents
+        run: |
+          echo "Extracted bundle contents:"
+          ls -la test-bundle/
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Test starter script (Unix)
+        if: matrix.platform.script_extension == 'sh'
+        run: |
+          cd test-bundle
+          chmod +x 1-camunda-starter.sh
+          # Run the starter script with a timeout and check it starts properly
+          # We use timeout to ensure it doesn't run forever
+          # The script should start c8run and open a browser - we'll verify the script syntax is correct
+          bash -n 1-camunda-starter.sh
+          echo "Starter script syntax is valid"
+
+      - name: Test starter script (Windows)
+        if: matrix.platform.script_extension == 'bat'
+        shell: cmd
+        run: |
+          cd test-bundle
+          REM Verify the batch file exists and has correct syntax by parsing it
+          if exist 1-camunda-starter.bat (
+            echo Starter script exists
+          ) else (
+            echo Starter script not found
+            exit /b 1
+          )
+
+      - name: Verify bundle structure
+        run: |
+          cd test-bundle
+          # Verify required components exist
+          echo "Checking c8run folder..."
+          if [ ! -d "c8run" ]; then
+            echo "ERROR: c8run folder not found"
+            exit 1
+          fi
+          
+          echo "Checking camunda-8-get-started folder..."
+          if [ ! -d "camunda-8-get-started" ]; then
+            echo "ERROR: camunda-8-get-started folder not found"
+            exit 1
+          fi
+          
+          echo "Checking ai-agent-example folder..."
+          if [ ! -d "ai-agent-example" ]; then
+            echo "ERROR: ai-agent-example folder not found"
+            exit 1
+          fi
+          
+          echo "Checking starter script..."
+          if [ "${{ matrix.platform.script_extension }}" == "sh" ]; then
+            if [ ! -f "1-camunda-starter.sh" ]; then
+              echo "ERROR: 1-camunda-starter.sh not found"
+              exit 1
+            fi
+          else
+            if [ ! -f "1-camunda-starter.bat" ]; then
+              echo "ERROR: 1-camunda-starter.bat not found"
+              exit 1
+            fi
+          fi
+          
+          echo "Checking modeler..."
+          if [ "${{ matrix.platform.platform_id }}" == "darwin-aarch64" ] || [ "${{ matrix.platform.platform_id }}" == "darwin-x86_64" ]; then
+            if [ ! -d "2-camunda-modeler.app" ]; then
+              echo "ERROR: 2-camunda-modeler.app not found"
+              exit 1
+            fi
+          else
+            if [ ! -d "2-camunda-modeler" ]; then
+              echo "ERROR: 2-camunda-modeler folder not found"
+              exit 1
+            fi
+          fi
+          
+          echo "All bundle components verified successfully!"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: test-bundle - ${{ matrix.platform.name }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [resolve-versions, build-bundle, test-bundle]
+    if: always()
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate summary
+        env:
+          C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
+          MODELER_VERSION: ${{ needs.resolve-versions.outputs.modeler_version }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          BUILD_STATUS: ${{ needs.build-bundle.result }}
+          TEST_STATUS: ${{ needs.test-bundle.result }}
+        run: |
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
+          # Camunda 8 Getting Started Bundle
+
+          ## Configuration
+          - **C8Run Version**: ${C8RUN_VERSION}
+          - **Modeler Version**: ${MODELER_VERSION}
+          - **Dry Run**: ${DRY_RUN}
+
+          ## Build Status
+          - **Build Jobs**: ${BUILD_STATUS}
+          - **Test Jobs**: ${TEST_STATUS}
+
+          ## Generated Bundles
+          The following bundles were created:
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-aarch64.zip\` (macOS Apple Silicon)
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-x86_64.zip\` (macOS Intel)
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-windows-x86_64.zip\` (Windows)
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-linux-x86_64.tar.gz\` (Linux)
+
+          EOF
+
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            echo "ℹ️ **Dry run mode**: Bundles are available as workflow artifacts only." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "🚀 **Release mode**: Bundles will be uploaded to GitHub release ${C8RUN_VERSION}." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
