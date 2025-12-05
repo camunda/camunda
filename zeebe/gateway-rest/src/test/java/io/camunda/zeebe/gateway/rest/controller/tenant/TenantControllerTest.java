@@ -628,8 +628,12 @@ public class TenantControllerTest {
       verifyNoInteractions(tenantServices);
     }
 
+    /**
+     * Test for the group ID that contains special characters to simulate external groups that does
+     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     */
     @Test
-    void shouldAssignExternalGroupToTenantAndReturnNoContentWhenGroupClaimIsPresent() {
+    void shouldAssignExternalGroupToTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
       // given
       final var tenantId = "some-tenant-id";
       final var groupId = "group id";
@@ -650,6 +654,35 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1)).addMember(request);
+    }
+
+    /**
+     * Test for the group ID that contains special characters to simulate external groups that does
+     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     */
+    @Test
+    void shouldUnassignExternalGroupFromTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
+      // given
+      final var tenantId = "some-tenant-id";
+      final var groupId = "group id";
+      final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
+
+      when(securityConfiguration.getCompiledGroupIdValidationPattern())
+          .thenReturn(DEFAULT_EXTERNAL_ID_REGEX);
+      when(tenantServices.removeMember(request))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .delete()
+          .uri("%s/%s/groups/%s".formatted(TENANT_BASE_URL, tenantId, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then
+      verify(tenantServices, times(1)).removeMember(request);
     }
 
     private static Stream<Arguments> provideAddMemberByIdTestCases() {
