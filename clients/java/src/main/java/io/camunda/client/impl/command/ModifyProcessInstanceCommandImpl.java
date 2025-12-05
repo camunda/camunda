@@ -122,13 +122,13 @@ public final class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 moveElements(
+  public ModifyProcessInstanceCommandStep3 moveElements(
       final String sourceElementId, final String targetElementId) {
     return moveElements(sourceElementId, targetElementId, EMPTY_ANCESTOR_KEY);
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 moveElements(
+  public ModifyProcessInstanceCommandStep3 moveElements(
       final String sourceElementId,
       final String targetElementId,
       final long ancestorElementInstanceKey) {
@@ -149,7 +149,7 @@ public final class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 moveElementsWithSourceParentAsAncestor(
+  public ModifyProcessInstanceCommandStep3 moveElementsWithSourceParentAsAncestor(
       final String sourceElementId, final String targetElementId) {
     return addMoveInstruction(
         MoveInstruction.newBuilder()

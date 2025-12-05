@@ -79,7 +79,7 @@ public interface ModifyProcessInstanceCommandStep1
    * @param targetElementId the id of target element to move to
    * @return the builder for this command
    */
-  ModifyProcessInstanceCommandStep2 moveElements(
+  ModifyProcessInstanceCommandStep3 moveElements(
       final String sourceElementId, final String targetElementId);
 
   /**
@@ -97,7 +97,7 @@ public interface ModifyProcessInstanceCommandStep1
    *     created
    * @return the builder for this command
    */
-  ModifyProcessInstanceCommandStep2 moveElements(
+  ModifyProcessInstanceCommandStep3 moveElements(
       final String sourceElementId,
       final String targetElementId,
       final long ancestorElementInstanceKey);
@@ -115,7 +115,7 @@ public interface ModifyProcessInstanceCommandStep1
    * @param targetElementId the id of target element to move to
    * @return the builder for this command
    */
-  ModifyProcessInstanceCommandStep2 moveElementsWithSourceParentAsAncestor(
+  ModifyProcessInstanceCommandStep3 moveElementsWithSourceParentAsAncestor(
       final String sourceElementId, final String targetElementId);
 
   interface ModifyProcessInstanceCommandStep2
