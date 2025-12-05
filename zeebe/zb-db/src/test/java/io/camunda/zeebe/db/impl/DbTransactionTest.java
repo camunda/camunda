@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,15 +31,12 @@ import org.junit.rules.TemporaryFolder;
 public final class DbTransactionTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final ZeebeDbFactory<ColumnFamilies> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory();
-
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<ColumnFamilies> dbFactoryResources;
   private TransactionContext transactionContext;
-
+  private ZeebeDb<ColumnFamilies> zeebeDb;
   private ColumnFamily<DbLong, DbLong> oneColumnFamily;
   private ColumnFamily<DbLong, DbLong> twoColumnFamily;
   private ColumnFamily<DbLong, DbLong> threeColumnFamily;
-
   private DbLong oneKey;
   private DbLong oneValue;
   private DbLong twoValue;
@@ -48,8 +46,10 @@ public final class DbTransactionTest {
 
   @Before
   public void setup() throws Exception {
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+    final ZeebeDbFactory<ColumnFamilies> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
-    final ZeebeDb<ColumnFamilies> zeebeDb = dbFactory.createDb(pathName);
+    zeebeDb = dbFactory.createDb(pathName);
     transactionContext = zeebeDb.createContext();
 
     oneKey = new DbLong();
@@ -66,6 +66,16 @@ public final class DbTransactionTest {
     threeValue = new DbLong();
     threeColumnFamily =
         zeebeDb.createColumnFamily(ColumnFamilies.THREE, transactionContext, threeKey, threeValue);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (zeebeDb != null) {
+      zeebeDb.close();
+    }
+    if (dbFactoryResources != null) {
+      dbFactoryResources.close();
+    }
   }
 
   @Test

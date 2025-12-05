@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,8 +25,7 @@ import org.junit.rules.TemporaryFolder;
 public final class DbStringColumnFamilyTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory();
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbString, DbString> columnFamily;
   private DbString key;
@@ -33,6 +33,8 @@ public final class DbStringColumnFamilyTest {
 
   @Before
   public void setup() throws Exception {
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     zeebeDb = dbFactory.createDb(pathName);
 
@@ -41,6 +43,16 @@ public final class DbStringColumnFamilyTest {
     columnFamily =
         zeebeDb.createColumnFamily(
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), key, value);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (zeebeDb != null) {
+      zeebeDb.close();
+    }
+    if (dbFactoryResources != null) {
+      dbFactoryResources.close();
+    }
   }
 
   @Test

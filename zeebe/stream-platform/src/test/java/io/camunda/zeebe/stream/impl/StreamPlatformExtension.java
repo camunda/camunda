@@ -30,14 +30,15 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
 public class StreamPlatformExtension implements BeforeEachCallback {
 
   private static final String FIELD_STATE = "state";
-  final ZeebeDbFactory<ZbColumnFamilies> dbFactory;
+  final DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources;
 
   public StreamPlatformExtension() {
-    this(DefaultZeebeDbFactory.defaultFactory());
+    this(DefaultZeebeDbFactory.getDefaultFactoryResources());
   }
 
-  public StreamPlatformExtension(final ZeebeDbFactory<ZbColumnFamilies> dbFactory) {
-    this.dbFactory = dbFactory;
+  public StreamPlatformExtension(
+      final DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources) {
+    this.dbFactoryResources = dbFactoryResources;
   }
 
   @Override
@@ -56,7 +57,8 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     final var store = getStore(extensionContext);
 
     return (StreamProcessorTestContext)
-        store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new StreamProcessorTestContext(dbFactory));
+        store.getOrComputeIfAbsent(
+            FIELD_STATE, (key) -> new StreamProcessorTestContext(dbFactoryResources.factory));
   }
 
   private void injectFields(
@@ -92,6 +94,10 @@ public class StreamPlatformExtension implements BeforeEachCallback {
                 ExceptionUtils.throwAsUncheckedException(t);
               }
             });
+  }
+
+  public void afterEach() {
+    dbFactoryResources.close();
   }
 
   private static final class StreamProcessorTestContext implements AutoCloseable {
