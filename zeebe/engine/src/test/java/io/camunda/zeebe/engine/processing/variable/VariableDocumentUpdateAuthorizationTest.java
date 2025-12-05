@@ -10,13 +10,11 @@ package io.camunda.zeebe.engine.processing.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -110,14 +108,6 @@ public class VariableDocumentUpdateAuthorizationTest {
         .update(user.getUsername());
 
     // then
-    final var record =
-        RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withScopeKey(processInstanceKey)
-            .findFirst();
-    assertThat(record).isPresent();
-    assertThat(record.get().getAuthorizations())
-        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
-
     assertThat(
             RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
                 .withScopeKey(processInstanceKey)
