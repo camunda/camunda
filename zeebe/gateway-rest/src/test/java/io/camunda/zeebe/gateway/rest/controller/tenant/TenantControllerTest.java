@@ -76,6 +76,7 @@ public class TenantControllerTest {
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
     @MockitoBean private SecurityConfiguration securityConfiguration;
+    private AuthenticationConfiguration authenticationConfiguration;
 
     @BeforeEach
     void setup() {
@@ -84,6 +85,8 @@ public class TenantControllerTest {
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
       when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      authenticationConfiguration = new AuthenticationConfiguration();
+      when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
     }
 
     @ParameterizedTest
@@ -635,12 +638,10 @@ public class TenantControllerTest {
       final var groupId = "group id";
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
-      final var authenticationConfiguration = new AuthenticationConfiguration();
       final var oidcConfiguration = new OidcAuthenticationConfiguration();
       oidcConfiguration.setGroupsClaim("groups");
       authenticationConfiguration.setOidc(oidcConfiguration);
 
-      when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
       when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
       // when

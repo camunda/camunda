@@ -60,4 +60,9 @@ public class AuthenticationConfiguration {
   public void setProviders(final ProvidersConfiguration providers) {
     this.providers = providers;
   }
+
+  public boolean areGroupsManagedExternally() {
+    final var groupsClaim = getOidc().getGroupsClaim();
+    return groupsClaim != null && !groupsClaim.isEmpty();
+  }
 }
