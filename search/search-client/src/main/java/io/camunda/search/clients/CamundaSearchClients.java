@@ -116,6 +116,17 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public AuditLogEntity getAuditLog(final String id) {
+    return doGetWithReader(readers.auditLogReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Audit Log", id));
+  }
+
+  @Override
+  public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
+    return doSearchWithReader(readers.auditLogReader(), query);
+  }
+
+  @Override
   public AuthorizationEntity getAuthorization(final long key) {
     return doGetWithReader(readers.authorizationReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Authorization", key));
@@ -174,16 +185,6 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
       final ClusterVariableQuery query) {
     return doSearchWithReader(readers.clusterVariableReader(), query);
-  }
-
-  @Override
-  public AuditLogEntity getAuditLog(final String id) {
-    throw new RuntimeException("Not implemented yet");
-  }
-
-  @Override
-  public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
-    throw new RuntimeException("Not implemented yet");
   }
 
   @Override
