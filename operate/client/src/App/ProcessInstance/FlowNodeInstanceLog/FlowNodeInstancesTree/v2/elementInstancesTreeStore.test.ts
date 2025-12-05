@@ -762,7 +762,7 @@ describe('elementInstancesTreeStore', () => {
     ).toBe(true);
   });
 
-  it('should start polling when when setting root node', async () => {
+  it('should start polling when setting root node', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockSearchElementInstances().withSuccess(mockFirstPageResponse);
