@@ -91,7 +91,7 @@ export class OperateProcessMigrationModePage {
     targetFlowNodeName: string,
   ): Promise<void> {
     await this.page
-      .getByLabel(`Target element for ${sourceFlowNodeName}`, {exact: true})
+      .getByLabel(`Target flow node for ${sourceFlowNodeName}`, {exact: true})
       .selectOption(targetFlowNodeName);
   }
 

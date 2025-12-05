@@ -58,8 +58,23 @@ export class OperateDiagramPage {
     await this.page.mouse.up();
   }
 
-  clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).first().click({timeout: 20000});
+  async clickFlowNode(flowNodeName: string) {
+    const flowNode = this.getFlowNode(flowNodeName).first();
+    // Ensure element is visible and stable
+    await flowNode.waitFor({state: 'visible', timeout: 20000});
+    // Scroll into view to ensure it's in viewport
+    await flowNode.scrollIntoViewIfNeeded();
+    // Get the bounding box and click at the center to avoid edge overlays
+    const box = await flowNode.boundingBox();
+    if (box) {
+      await this.page.mouse.click(
+        box.x + box.width / 2,
+        box.y + box.height / 2,
+      );
+    } else {
+      // Fallback to regular click if bounding box is not available
+      await flowNode.click({timeout: 20000});
+    }
   }
 
   clickSubProcess(subProcessName: string) {
@@ -67,7 +82,6 @@ export class OperateDiagramPage {
     // This avoids clicking on child elements inside the sub process.
     return this.getFlowNode(subProcessName).click({
       position: {x: 5, y: 5},
-      force: true,
     });
   }
 
@@ -92,10 +106,13 @@ export class OperateDiagramPage {
     return this.diagram.locator(`[data-element-id="${eventId}"]`);
   }
 
-  showMetaData() {
-    return this.popover
-      .getByRole('button', {name: 'show more metadata'})
-      .click();
+  async showMetaData() {
+    await this.popover.waitFor({state: 'visible', timeout: 10000});
+    const metadataButton = this.popover.getByRole('button', {
+      name: 'show more metadata',
+    });
+    await metadataButton.waitFor({state: 'visible', timeout: 10000});
+    return metadataButton.click();
   }
 
   getExecutionCount(elementId: string) {
@@ -178,7 +195,9 @@ export class OperateDiagramPage {
       }),
     ).toBeVisible();
 
-    await expect(this.popover.getByText(incidentPattern)).toBeVisible();
+    await expect(
+      this.popover.locator('dd').getByText(incidentPattern),
+    ).toBeVisible();
   }
 
   async closeMetadataModal(): Promise<void> {
