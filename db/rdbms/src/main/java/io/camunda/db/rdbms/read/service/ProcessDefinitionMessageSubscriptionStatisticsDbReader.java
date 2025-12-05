@@ -23,9 +23,13 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
     extends AbstractEntityReader<ProcessDefinitionMessageSubscriptionStatisticsEntity>
     implements ProcessDefinitionMessageSubscriptionStatisticsReader {
 
+  // Fixed sort: processDefinitionKey asc, tenantId asc
+  // we don't allow sorting by other fields for this statistics type
+  private static final ProcessDefinitionMessageSubscriptionStatisticsSort FIXED_SORT =
+      ProcessDefinitionMessageSubscriptionStatisticsSort.of(
+          b -> b.processDefinitionKey().asc().tenantId().asc());
   private static final Logger LOG =
       LoggerFactory.getLogger(ProcessDefinitionMessageSubscriptionStatisticsDbReader.class);
-
   private final MessageSubscriptionMapper mapper;
 
   public ProcessDefinitionMessageSubscriptionStatisticsDbReader(
@@ -38,10 +42,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
   public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> aggregate(
       final ProcessDefinitionMessageSubscriptionStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
-    final var dbSort =
-        convertSort(
-            ProcessDefinitionMessageSubscriptionStatisticsSort.of(
-                b -> b.processDefinitionKey().asc().tenantId().asc()));
+    final var dbSort = convertSort(FIXED_SORT);
 
     if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return SearchQueryResult.empty();
@@ -63,11 +64,6 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
 
     final var results = mapper.getProcessDefinitionStatistics(dbQuery);
 
-    return buildSearchQueryResult(
-        results.size(),
-        results,
-        convertSort(
-            ProcessDefinitionMessageSubscriptionStatisticsSort.of(
-                b -> b.processDefinitionKey().asc().tenantId().asc())));
+    return buildSearchQueryResult(results.size(), results, convertSort(FIXED_SORT));
   }
 }
