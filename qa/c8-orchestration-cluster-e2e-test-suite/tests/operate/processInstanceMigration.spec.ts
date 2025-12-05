@@ -346,10 +346,12 @@ test.describe.serial('Process Instance Migration', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText).toBeVisible();
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
         },
         maxRetries: 4,
       });
