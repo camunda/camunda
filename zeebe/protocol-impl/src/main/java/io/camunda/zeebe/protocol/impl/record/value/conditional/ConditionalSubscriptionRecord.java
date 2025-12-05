@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.conditional;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -147,11 +148,6 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     return bufferAsString(catchEventIdProp.getValue());
   }
 
-  public ConditionalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
-    catchEventIdProp.setValue(catchEventId);
-    return this;
-  }
-
   @Override
   public String getCondition() {
     return BufferUtil.bufferAsString(conditionProp.getValue());
@@ -198,6 +194,16 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   public ConditionalSubscriptionRecord setInterrupting(final boolean interrupting) {
     interruptingProp.setValue(interrupting);
     return this;
+  }
+
+  public ConditionalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
+    catchEventIdProp.setValue(catchEventId);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCatchEventIdBuffer() {
+    return catchEventIdProp.getValue();
   }
 
   @Override
