@@ -19,6 +19,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
@@ -426,6 +427,14 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<CorrelatedMessageSubscription> instances =
         toSearchResponseInstances(response.getItems(), CorrelatedMessageSubscriptionImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<AuditLogResult> toAuditLogSearchResponse(
+      final AuditLogSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AuditLogResult> instances =
+        toSearchResponseInstances(response.getItems(), AuditLogResultImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 }

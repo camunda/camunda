@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.filter.builder;
 
-public enum AuditLogCategoryEnum {
-  OPERATOR,
-  USER_TASK,
-  ADMIN,
-  UNKNOWN_DEFAULT_OPEN_API,
-  UNKNOWN_ENUM_VALUE
-}
+import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
+
+public interface AuditLogOperationTypeFilterProperty
+    extends LikeProperty<AuditLogOperationTypeEnum, String, AuditLogOperationTypeFilterProperty> {}

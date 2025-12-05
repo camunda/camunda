@@ -28,5 +28,6 @@ public enum AuditLogOperationTypeEnum {
   RESUME,
   SUSPEND,
   UNASSIGN,
-  UPDATE
+  UPDATE,
+  UNKNOWN_ENUM_VALUE
 }

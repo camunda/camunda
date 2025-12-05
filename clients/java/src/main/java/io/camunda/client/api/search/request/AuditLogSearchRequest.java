@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.request;
 
-public enum AuditLogCategoryEnum {
-  OPERATOR,
-  USER_TASK,
-  ADMIN,
-  UNKNOWN_DEFAULT_OPEN_API,
-  UNKNOWN_ENUM_VALUE
-}
+import io.camunda.client.api.search.filter.AuditLogFilter;
+import io.camunda.client.api.search.response.AuditLogResult;
+import io.camunda.client.api.search.sort.AuditLogSort;
+
+public interface AuditLogSearchRequest
+    extends TypedSearchRequest<AuditLogFilter, AuditLogSort, AuditLogSearchRequest>,
+        TypedPageableRequest<AuditLogSearchRequest>,
+        FinalSearchRequestStep<AuditLogResult> {}

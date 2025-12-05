@@ -126,6 +126,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AuditLogSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
@@ -3000,4 +3001,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the audit log request
    */
   AuditLogGetRequest newAuditLogGetRequest(String auditLogKey);
+
+  /**
+   * Executes a search request to query audit logs by the audit log key.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newAuditLogSearchRequest()
+   *    .filter((f) -> f.processInstanceKey("myProcessInstanceKey"))
+   *    .sort((s) -> s.processDefinitionId().desc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   *
+   * @return a builder for the incidents by element instance search request
+   */
+  AuditLogSearchRequest newAuditLogSearchRequest();
 }

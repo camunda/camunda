@@ -25,7 +25,6 @@ import io.camunda.client.protocol.rest.AuditLogResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
-import io.camunda.client.util.RestGatewayService;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -36,14 +35,14 @@ public class GetAuditLogTest extends ClientRestTest {
   @Test
   void shouldGetAuditLog() {
     // given
-    gatewayService.onAuditLogRequest(
+    gatewayService.onGetAuditLogRequest(
         AUDIT_LOG_KEY, Instancio.create(AuditLogResult.class).auditLogKey(AUDIT_LOG_KEY));
     // when
     client.newAuditLogGetRequest(AUDIT_LOG_KEY).send().join();
 
     // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getAuditLogUrl(AUDIT_LOG_KEY));
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getAuditLogGetUrl(AUDIT_LOG_KEY));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 
@@ -51,7 +50,7 @@ public class GetAuditLogTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFound() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getAuditLogUrl(AUDIT_LOG_KEY),
+        RestGatewayPaths.getAuditLogGetUrl(AUDIT_LOG_KEY),
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
@@ -64,7 +63,7 @@ public class GetAuditLogTest extends ClientRestTest {
   void shouldRaiseExceptionOnServerError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getAuditLogUrl(AUDIT_LOG_KEY),
+        RestGatewayPaths.getAuditLogGetUrl(AUDIT_LOG_KEY),
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
