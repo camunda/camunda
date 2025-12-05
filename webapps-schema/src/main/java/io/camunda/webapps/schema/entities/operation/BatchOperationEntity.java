@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.operation;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +23,14 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   @BeforeVersion880 private OffsetDateTime startDate;
   @BeforeVersion880 private OffsetDateTime endDate;
   @BeforeVersion880 private String username;
+
+  // the type of the actor that performed the operation, (USER or CLIENT)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private BatchOperationActorType actorType;
+
+  // the id of the actor that performed the operation
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String actorId;
 
   @BeforeVersion880 private Integer instancesCount = 0;
   @BeforeVersion880 private Integer operationsTotalCount = 0;
@@ -156,6 +165,24 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
+  public BatchOperationActorType getActorType() {
+    return actorType;
+  }
+
+  public BatchOperationEntity setActorType(final BatchOperationActorType actorType) {
+    this.actorType = actorType;
+    return this;
+  }
+
+  public String getActorId() {
+    return actorId;
+  }
+
+  public BatchOperationEntity setActorId(final String actorId) {
+    this.actorId = actorId;
+    return this;
+  }
+
   public BatchOperationEntity withGeneratedId() {
     setId(UUID.randomUUID().toString());
     return this;
@@ -169,6 +196,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (username != null ? username.hashCode() : 0);
+    result = 31 * result + (actorType != null ? actorType.hashCode() : 0);
+    result = 31 * result + (actorId != null ? actorId.hashCode() : 0);
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
@@ -208,6 +237,12 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
       return false;
     }
     if (username != null ? !username.equals(that.username) : that.username != null) {
+      return false;
+    }
+    if (!Objects.equals(actorType, that.actorType)) {
+      return false;
+    }
+    if (!Objects.equals(actorId, that.actorId)) {
       return false;
     }
     if (instancesCount != null
@@ -254,6 +289,11 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
         + endDate
         + ", username='"
         + username
+        + '\''
+        + ", actorType="
+        + actorType
+        + ", actorId='"
+        + actorId
         + '\''
         + ", instancesCount="
         + instancesCount
