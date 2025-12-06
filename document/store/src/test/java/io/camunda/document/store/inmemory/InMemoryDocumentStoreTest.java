@@ -20,7 +20,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.platform.commons.support.ReflectionSupport;
 
 public class InMemoryDocumentStoreTest {
 
@@ -184,13 +189,13 @@ public class InMemoryDocumentStoreTest {
         .isInstanceOf(DocumentError.OperationNotSupported.class);
   }
 
-  @Test
-  public void shouldStoreContentType() {
+  @ParameterizedTest
+  @MethodSource("metadataSingleParamProvider")
+  public void shouldHandleMetadataParamsCorrectly(
+      final String fieldToCheck, final DocumentMetadataModel metadata) throws NoSuchFieldException {
     // given
     final InMemoryDocumentStore store = new InMemoryDocumentStore();
     final String id = "key";
-    final DocumentMetadataModel metadata =
-        new DocumentMetadataModel("application/json", null, null, null, null, null, null);
 
     // when
     final var request =
@@ -202,5 +207,36 @@ public class InMemoryDocumentStoreTest {
     assertThat(result).isInstanceOf(Either.Right.class);
     final var reference = ((Either.Right<DocumentError, DocumentReference>) result).value();
     assertThat(reference).isNotNull();
+    assertThat(reference.metadata())
+        .hasFieldOrPropertyWithValue(
+            fieldToCheck,
+            ReflectionSupport.tryToReadFieldValue(
+                    metadata.getClass().getDeclaredField(fieldToCheck), metadata)
+                .getOrThrow(
+                    (e) ->
+                        new NoSuchFieldException(
+                            "Missing field: " + fieldToCheck + ", message: " + e.getMessage())));
+  }
+
+  public static Stream<Arguments> metadataSingleParamProvider() {
+    return Stream.of(
+        Arguments.of(
+            "contentType",
+            new DocumentMetadataModel("text/plain", null, null, null, null, null, null)),
+        Arguments.of(
+            "fileName", new DocumentMetadataModel(null, "fileName", null, null, null, null, null)),
+        Arguments.of(
+            "expiresAt",
+            new DocumentMetadataModel(null, null, OffsetDateTime.now(), null, null, null, null)),
+        Arguments.of("size", new DocumentMetadataModel(null, null, null, 1L, null, null, null)),
+        Arguments.of(
+            "processDefinitionId",
+            new DocumentMetadataModel(null, null, null, null, "definitionId", null, null)),
+        Arguments.of(
+            "processInstanceKey",
+            new DocumentMetadataModel(null, null, null, null, null, 2L, null)),
+        Arguments.of(
+            "customProperties",
+            new DocumentMetadataModel(null, null, null, null, null, null, Map.of("key", "value"))));
   }
 }
