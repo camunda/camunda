@@ -1,7 +1,7 @@
 # type: Release
-# owner: @camunda/distribution
+# owner: @camunda/camundaex
 ---
-name: "C8Run: Getting Started Bundle"
+name: "Camunda 8: Getting Started Bundle"
 
 on:
   workflow_dispatch:
