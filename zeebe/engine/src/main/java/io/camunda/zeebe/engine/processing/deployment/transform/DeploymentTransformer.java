@@ -50,7 +50,8 @@ public final class DeploymentTransformer {
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
       final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
 
     final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
@@ -61,7 +62,8 @@ public final class DeploymentTransformer {
             expressionProcessor,
             featureFlags.enableStraightThroughProcessingLoopDetector(),
             config,
-            clock);
+            clock,
+            meterRegistry);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getDecisionState());

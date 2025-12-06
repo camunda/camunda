@@ -113,8 +113,9 @@ public final class DbProcessState implements MutableProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config,
-      final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock, config);
+      final InstantSource clock,
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
+    transformer = BpmnFactory.createTransformer(clock, config, meterRegistry);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();

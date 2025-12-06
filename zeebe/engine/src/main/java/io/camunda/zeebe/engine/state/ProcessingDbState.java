@@ -148,14 +148,15 @@ public class ProcessingDbState implements MutableProcessingState {
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
-    processState = new DbProcessState(zeebeDb, transactionContext, config, clock);
+    processState = new DbProcessState(zeebeDb, transactionContext, config, clock, meterRegistry);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);

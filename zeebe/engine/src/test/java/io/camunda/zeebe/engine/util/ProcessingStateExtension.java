@@ -168,7 +168,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
                 new EngineConfiguration(),
-                InstantSource.system());
+                InstantSource.system(),
+                null);
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }

@@ -99,7 +99,8 @@ public final class DeploymentCreateProcessor
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
     deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
@@ -122,7 +123,8 @@ public final class DeploymentCreateProcessor
             keyGenerator,
             featureFlags,
             config,
-            clock);
+            clock,
+            meterRegistry);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
