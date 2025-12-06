@@ -35,4 +35,16 @@ public interface AuditLogOperationTransformer<T extends Intent, R extends Record
   Set<RejectionType> getSupportedRejectionTypes();
 
   void transform(final AuditLogEntity entity, Record<R> record);
+
+  default boolean supports(final Record<R> record) {
+    switch (record.getRecordType()) {
+      case EVENT:
+        return getSupportedIntents().contains(record.getIntent());
+      case COMMAND_REJECTION:
+        return getSupportedCommandRejections().contains(record.getIntent())
+            && getSupportedRejectionTypes().contains(record.getRejectionType());
+      default:
+        return false;
+    }
+  }
 }
