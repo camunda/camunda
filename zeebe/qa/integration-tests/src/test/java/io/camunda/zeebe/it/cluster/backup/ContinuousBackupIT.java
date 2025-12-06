@@ -55,8 +55,7 @@ final class ContinuousBackupIT {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
-          .withUnifiedConfig(this::configureBroker)
-          .withProperty("zeebe.broker.experimental.continuousBackups", true);
+          .withUnifiedConfig(this::configureBroker);
 
   private BackupActuator backupActuator;
   private PartitionsActuator partitionsActuator;
@@ -263,6 +262,7 @@ final class ContinuousBackupIT {
         .getBackup()
         .setStore(PrimaryStorageBackup.BackupStoreType.GCS);
     cfg.getData().getPrimaryStorage().getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
+    cfg.getData().getPrimaryStorage().getBackup().setContinuous(true);
     cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
     cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
   }

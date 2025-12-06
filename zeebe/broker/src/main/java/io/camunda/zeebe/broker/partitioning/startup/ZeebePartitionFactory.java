@@ -249,7 +249,7 @@ public final class ZeebePartitionFactory {
   }
 
   private ToLongFunction<ZeebeDb> getBackupPositionSupplier() {
-    if (brokerCfg.getExperimental().isContinuousBackups()) {
+    if (brokerCfg.getData().getBackup().isContinuous()) {
       return StatePositionSupplier::getHighestBackupPosition;
     } else {
       // When continuous backups are disabled, act as if everything is backed up. Ensures
