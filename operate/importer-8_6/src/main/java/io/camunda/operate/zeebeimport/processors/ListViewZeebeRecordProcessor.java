@@ -32,6 +32,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -131,30 +132,58 @@ public class ListViewZeebeRecordProcessor {
     final String intentStr = record.getIntent().name();
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
-    // update activity instance
-    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
-    entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
-    entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setPositionIncident(record.getPosition());
-    entity.setActivityId(recordValue.getElementId());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
-
-    if (intentStr.equals(IncidentIntent.CREATED.name())) {
-      entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
-    } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
-      entity.setErrorMessage(null);
-    }
-
-    // set parent
+    final OperateEntity<?> entity;
+    final Map<String, Object> updateFields = new HashMap<>();
     final Long processInstanceKey = recordValue.getProcessInstanceKey();
-    entity.getJoinRelation().setParent(processInstanceKey);
 
-    LOGGER.debug("Activity instance for list view: id {}", entity.getId());
-    final var updateFields = new HashMap<String, Object>();
-    updateFields.put(ERROR_MSG, entity.getErrorMessage());
-    updateFields.put(INCIDENT_POSITION, entity.getPositionIncident());
+    // incident on process instance level
+    if (recordValue.getProcessInstanceKey() == recordValue.getElementInstanceKey()) {
+      final ProcessInstanceForListViewEntity piEntity = new ProcessInstanceForListViewEntity();
+      piEntity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
+      piEntity.setKey(recordValue.getElementInstanceKey());
+      piEntity.setProcessInstanceKey(processInstanceKey);
+      piEntity.setPartitionId(record.getPartitionId());
+      piEntity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+      piEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+      piEntity.setPositionIncident(record.getPosition());
+
+      if (intentStr.equals(IncidentIntent.CREATED.name())) {
+        piEntity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+      } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
+        piEntity.setErrorMessage(null);
+      }
+
+      updateFields.put(ERROR_MSG, StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+      updateFields.put(INCIDENT_POSITION, record.getPosition());
+
+      entity = piEntity;
+
+    } else {
+      // update activity instance
+      final FlowNodeInstanceForListViewEntity fniEntity = new FlowNodeInstanceForListViewEntity();
+      fniEntity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
+      fniEntity.setKey(recordValue.getElementInstanceKey());
+      fniEntity.setPartitionId(record.getPartitionId());
+      fniEntity.setPositionIncident(record.getPosition());
+      fniEntity.setActivityId(recordValue.getElementId());
+      fniEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+      fniEntity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+
+      if (intentStr.equals(IncidentIntent.CREATED.name())) {
+        fniEntity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+      } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
+        fniEntity.setErrorMessage(null);
+      }
+
+      // set parent
+      fniEntity.getJoinRelation().setParent(processInstanceKey);
+
+      LOGGER.debug("Activity instance for list view: id {}", fniEntity.getId());
+      updateFields.put(ERROR_MSG, fniEntity.getErrorMessage());
+      updateFields.put(INCIDENT_POSITION, fniEntity.getPositionIncident());
+
+      entity = fniEntity;
+    }
 
     batchRequest.upsertWithRouting(
         listViewTemplate.getFullQualifiedName(),
@@ -223,8 +252,7 @@ public class ListViewZeebeRecordProcessor {
     for (final Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry :
         records.entrySet()) {
       ProcessInstanceForListViewEntity piEntity = null;
-      final Map<Long, FlowNodeInstanceForListViewEntity> actEntities =
-          new HashMap<Long, FlowNodeInstanceForListViewEntity>();
+      final Map<Long, FlowNodeInstanceForListViewEntity> actEntities = new HashMap<>();
       final Long processInstanceKey = wiRecordsEntry.getKey();
 
       for (final Record<ProcessInstanceRecordValue> record : wiRecordsEntry.getValue()) {
@@ -269,6 +297,7 @@ public class ListViewZeebeRecordProcessor {
         updateFields.put(ListViewTemplate.PROCESS_VERSION, piEntity.getProcessVersion());
         updateFields.put(ListViewTemplate.PROCESS_KEY, piEntity.getProcessDefinitionKey());
         updateFields.put(ListViewTemplate.BPMN_PROCESS_ID, piEntity.getBpmnProcessId());
+        updateFields.put(ListViewTemplate.TREE_PATH, piEntity.getTreePath());
         updateFields.put(POSITION, piEntity.getPosition());
         if (piEntity.getState() != null) {
           updateFields.put(ListViewTemplate.STATE, piEntity.getState());

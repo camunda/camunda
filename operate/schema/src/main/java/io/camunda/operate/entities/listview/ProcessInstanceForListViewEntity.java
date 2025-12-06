@@ -47,6 +47,9 @@ public class ProcessInstanceForListViewEntity
 
   private Long position;
 
+  private Long positionIncident;
+  private String errorMessage;
+
   @JsonIgnore private Object[] sortValues;
 
   public Long getProcessInstanceKey() {
@@ -214,6 +217,22 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public Long getPositionIncident() {
+    return positionIncident;
+  }
+
+  public void setPositionIncident(final Long positionIncident) {
+    this.positionIncident = positionIncident;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -233,7 +252,9 @@ public class ProcessInstanceForListViewEntity
         incident,
         tenantId,
         joinRelation,
-        position);
+        position,
+        errorMessage,
+        positionIncident);
   }
 
   @Override
@@ -263,6 +284,8 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(treePath, that.treePath)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
-        && Objects.equals(position, that.position);
+        && Objects.equals(position, that.position)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(positionIncident, that.positionIncident);
   }
 }
