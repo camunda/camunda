@@ -35,28 +35,28 @@ public class SearchTestRule extends TestWatcher {
 
   public SearchTestRule() {}
 
-  public SearchTestRule(String indexPrefix) {
+  public SearchTestRule(final String indexPrefix) {
     searchTestRuleProvider.setIndexPrefix(indexPrefix);
   }
 
-  public SearchTestRule(Consumer<OperateProperties> operatePropertiesCustomizer) {
+  public SearchTestRule(final Consumer<OperateProperties> operatePropertiesCustomizer) {
     this.operatePropertiesCustomizer = operatePropertiesCustomizer;
   }
 
   @Override
-  protected void failed(Throwable e, Description description) {
+  protected void failed(final Throwable e, final Description description) {
     super.failed(e, description);
     searchTestRuleProvider.failed(e, description);
   }
 
   @Override
-  protected void starting(Description description) {
+  protected void starting(final Description description) {
     operatePropertiesCustomizer.accept(operateProperties);
     searchTestRuleProvider.starting(description);
   }
 
   @Override
-  protected void finished(Description description) {
+  protected void finished(final Description description) {
     searchTestRuleProvider.finished(description);
   }
 
@@ -73,46 +73,53 @@ public class SearchTestRule extends TestWatcher {
   }
 
   public void processAllRecordsAndWait(
-      Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
+      final Integer maxWaitingRounds,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(maxWaitingRounds, predicate, arguments);
   }
 
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
+  public void processAllRecordsAndWait(
+      final Predicate<Object[]> predicate, final Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(predicate, arguments);
   }
 
   public void processAllRecordsAndWait(
-      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(predicate, supplier, arguments);
   }
 
   public void processAllRecordsAndWait(
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Supplier<Object> supplier,
-      Object... arguments) {
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(runPostImport, predicate, supplier, arguments);
   }
 
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
+      final ImportValueType importValueType,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     searchTestRuleProvider.processRecordsWithTypeAndWait(importValueType, predicate, arguments);
   }
 
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType,
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Object... arguments) {
+      final ImportValueType importValueType,
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     searchTestRuleProvider.processRecordsWithTypeAndWait(
         importValueType, runPostImport, predicate, arguments);
   }
 
-  public void persistNew(OperateEntity... entitiesToPersist) {
+  public void persistNew(final OperateEntity... entitiesToPersist) {
     searchTestRuleProvider.persistNew(entitiesToPersist);
   }
 
-  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
+  public void persistOperateEntitiesNew(final List<? extends OperateEntity> operateEntities)
       throws PersistenceException {
     searchTestRuleProvider.persistOperateEntitiesNew(operateEntities);
   }
@@ -121,7 +128,16 @@ public class SearchTestRule extends TestWatcher {
     return searchTestRuleProvider.getEntityToAliasMap();
   }
 
-  public boolean indexExists(String index) throws IOException {
+  public boolean indexExists(final String index) throws IOException {
     return searchTestRuleProvider.indexExists(index);
+  }
+
+  public void blockIndexRead(final String index, final boolean block) throws IOException {
+    searchTestRuleProvider.blockIndexReads(index, block);
+  }
+
+  public <T> T getDocumentById(final String index, final String id, final Class<T> clazz)
+      throws IOException {
+    return searchTestRuleProvider.getDocument(index, id, clazz);
   }
 }
