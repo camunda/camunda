@@ -23,7 +23,14 @@ public final class ConditionalSubscriptionDeletedApplier
   }
 
   @Override
-  public void applyState(final long key, final ConditionalSubscriptionRecord value) {
-    conditionalSubscriptionState.delete(key, value);
+  public void applyState(final long key, final ConditionalSubscriptionRecord record) {
+    // root level conditional start event
+    if (record.getElementInstanceKey() < 0) {
+      conditionalSubscriptionState.deleteStart(key, record);
+      return;
+    }
+
+    // regular conditional subscription
+    conditionalSubscriptionState.delete(key, record);
   }
 }
