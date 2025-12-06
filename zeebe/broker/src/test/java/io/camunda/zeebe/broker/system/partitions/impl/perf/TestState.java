@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.perf;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
+
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ColumnFamily;
@@ -31,11 +34,19 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class TestState {
-
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;
+  private static LRUCache lruCache;
+  private static WriteBufferManager writeBufferManager;
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   TestContext generateContext(final long sizeInBytes) throws Exception {
     final var meterRegistry = new SimpleMeterRegistry();
@@ -82,11 +93,17 @@ final class TestState {
   }
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    final int defaultPartitionCount = 3;
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        SimpleMeterRegistry::new);
+        SimpleMeterRegistry::new,
+        lruCache,
+        writeBufferManager,
+        defaultPartitionCount);
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {
@@ -132,7 +149,7 @@ final class TestState {
 
     @Override
     public void close() throws Exception {
-      CloseHelper.quietCloseAll(snapshotStore, actorScheduler);
+      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, lruCache, writeBufferManager);
       FileUtil.deleteFolder(temporaryFolder);
     }
 

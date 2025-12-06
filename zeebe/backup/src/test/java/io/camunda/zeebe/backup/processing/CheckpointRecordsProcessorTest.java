@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -52,8 +54,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class CheckpointRecordsProcessorTest {
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   @TempDir Path database;
   final BackupManager backupManager = mock(BackupManager.class);
@@ -64,18 +73,26 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private ZeebeDb zeebedb;
+  private LRUCache lruCache;
+  private WriteBufferManager writeBufferManager;
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
       new AtomicInteger(3); // Default partition count for tests
 
   @BeforeEach
   void setup() {
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                SimpleMeterRegistry::new)
+                SimpleMeterRegistry::new,
+                lruCache,
+                writeBufferManager,
+                defaultPartitionCount)
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
@@ -106,6 +123,8 @@ final class CheckpointRecordsProcessorTest {
   @AfterEach
   void after() throws Exception {
     zeebedb.close();
+    writeBufferManager.close();
+    lruCache.close();
   }
 
   @Test

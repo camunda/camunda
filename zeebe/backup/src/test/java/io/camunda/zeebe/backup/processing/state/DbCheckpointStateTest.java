@@ -8,6 +8,8 @@
 package io.camunda.zeebe.backup.processing.state;
 
 import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKPOINT;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -24,28 +26,45 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class DbCheckpointStateTest {
 
-  @TempDir Path database;
-  private DbCheckpointState state;
-  private ZeebeDb zeebedb;
-
-  @AfterEach
-  void closeDb() throws Exception {
-    zeebedb.close();
+  static {
+    RocksDB.loadLibrary();
   }
 
+  @TempDir Path database;
+  private ZeebeDb zeebedb;
+  private DbCheckpointState state;
+  private LRUCache lruCache;
+  private WriteBufferManager writeBufferManager;
+
   @BeforeEach
-  void before() {
+  void setup() {
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                SimpleMeterRegistry::new)
+                SimpleMeterRegistry::new,
+                lruCache,
+                writeBufferManager,
+                defaultPartitionCount)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
+  }
+
+  @AfterEach
+  void tearDown() throws Exception {
+    zeebedb.close();
+    writeBufferManager.close();
+    lruCache.close();
   }
 
   @Test

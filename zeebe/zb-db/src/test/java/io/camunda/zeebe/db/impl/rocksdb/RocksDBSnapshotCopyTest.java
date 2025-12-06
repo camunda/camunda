@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
+import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -33,8 +35,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 public class RocksDBSnapshotCopyTest {
+
+  static {
+    RocksDB.loadLibrary();
+  }
+
   final long rowsPerCF = 100;
   @TempDir Path destinationPath;
   @TempDir Path sourceDBPath;
@@ -43,15 +53,23 @@ public class RocksDBSnapshotCopyTest {
   private RocksDBSnapshotCopy copy;
   private Random random;
   private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
+  private LRUCache lruCache;
+  private WriteBufferManager writeBufferManager;
 
   @BeforeEach
   void setup() {
+    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final int defaultPartitionCount = 3;
     factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            writeBufferManager,
+            defaultPartitionCount);
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);
     sourceSnapshotPath = sourcePath.resolve("snapshot");
@@ -60,6 +78,8 @@ public class RocksDBSnapshotCopyTest {
   @AfterEach
   public void tearDown() {
     sourceSnapshotPath.toFile().delete();
+    writeBufferManager.close();
+    lruCache.close();
   }
 
   @Test

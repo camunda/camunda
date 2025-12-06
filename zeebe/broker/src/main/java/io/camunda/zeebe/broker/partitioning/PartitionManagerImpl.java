@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import com.sun.management.OperatingSystemMXBean;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -47,6 +48,7 @@ import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,6 +59,9 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,16 +69,20 @@ public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
+  public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
-  private final ConcurrencyControl concurrencyControl;
 
+  static {
+    RocksDB.loadLibrary();
+  }
+
+  private final ConcurrencyControl concurrencyControl;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
   private final TopologyManagerImpl topologyManager;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
@@ -81,6 +90,7 @@ public final class PartitionManagerImpl
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
+  private final SharedRocksDbResources sharedRocksDbResources;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -109,7 +119,6 @@ public final class PartitionManagerImpl
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
@@ -119,6 +128,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
+    sharedRocksDbResources = getSharedCache(brokerCfg);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -138,7 +148,9 @@ public final class PartitionManagerImpl
             featureFlags,
             securityConfig,
             searchClientsProxy,
-            brokerRequestAuthorizationConverter);
+            brokerRequestAuthorizationConverter,
+            sharedRocksDbResources.sharedCache(),
+            sharedRocksDbResources.sharedWbm());
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
@@ -283,6 +295,7 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
+            sharedRocksDbResources.close();
             topologyManager.closeAsync().onComplete(result);
           }
         });
@@ -652,6 +665,69 @@ public final class PartitionManagerImpl
               concurrencyControl);
     } else {
       return CompletableActorFuture.completed();
+    }
+  }
+
+  static SharedRocksDbResources getSharedCache(final BrokerCfg brokerCfg) {
+    final long totalMemorySize =
+        ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
+    // Heap by default is 25% of the RAM, and off-heap (unless configured otherwise) is the same.
+    // So 50% of your RAM goes to the JVM, for both heap and off-heap (aka direct) memory.
+    // Leaving 50% of RAM for OS page cache and other processes.
+    final long maxRocksDbMem = totalMemorySize / 2;
+    final long blockCacheBytes =
+        switch (brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy()) {
+          case PARTITION ->
+              brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
+                  * brokerCfg.getCluster().getPartitionsCount();
+          case BROKER -> brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes();
+          case null ->
+              // default to PARTITION strategy for backward compatibility
+              brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
+                  * brokerCfg.getCluster().getPartitionsCount();
+        };
+
+    LOGGER.debug(
+        "Allocating {} bytes for RocksDB, with memory allocation strategy: {}",
+        blockCacheBytes,
+        brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
+    validateRocksDbMemory(brokerCfg, blockCacheBytes, maxRocksDbMem);
+
+    // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
+    // with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
+    // zeebeRocksDBFactory.
+    final long wbmLimitBytes = blockCacheBytes / 4;
+    final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
+    final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
+    return new SharedRocksDbResources(sharedCache, sharedWbm);
+  }
+
+  private static void validateRocksDbMemory(
+      final BrokerCfg brokerCfg, final long blockCacheBytes, final long maxRocksDbMem) {
+    if (blockCacheBytes > maxRocksDbMem) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB to be below or "
+                  + "equal half of ram memory, but was %.2f %%.",
+              ((double) blockCacheBytes / (2 * maxRocksDbMem) * 100)));
+    }
+
+    if (blockCacheBytes / brokerCfg.getCluster().getPartitionsCount()
+        < MINIMUM_PARTITION_MEMORY_LIMIT) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
+              MINIMUM_PARTITION_MEMORY_LIMIT,
+              blockCacheBytes / brokerCfg.getCluster().getPartitionsCount()));
+    }
+  }
+
+  record SharedRocksDbResources(LRUCache sharedCache, WriteBufferManager sharedWbm)
+      implements AutoCloseable {
+    @Override
+    public void close() {
+      sharedWbm.close();
+      sharedCache.close();
     }
   }
 
