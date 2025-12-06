@@ -83,4 +83,8 @@ public interface SearchTestRuleProvider {
   void setIndexPrefix(String indexPrefix);
 
   boolean indexExists(String index) throws IOException;
+
+  void blockIndexReads(String index, boolean block) throws IOException;
+
+  <T> T getDocument(String index, String id, Class<T> clazz) throws IOException;
 }
