@@ -34,6 +34,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_4.DbSignalSubscriptionMigrat
 import io.camunda.zeebe.engine.state.migration.to_8_5.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_6.DbDistributionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_7.DbDistributionMigrationState8dot7;
+import io.camunda.zeebe.engine.state.migration.to_8_8.DbPermissionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -131,6 +132,7 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbColumnFamilyCorrectionMigrationState columnFamilyCorrectionMigrationState;
   private final DbDistributionMigrationState distributionState;
   private final DbDistributionMigrationState8dot7 distributionState8dot7;
+  private final DbPermissionMigrationState permissionMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -291,6 +293,7 @@ public class DbMigrationState implements MutableMigrationState {
 
     distributionState = new DbDistributionMigrationState(zeebeDb, transactionContext);
     distributionState8dot7 = new DbDistributionMigrationState8dot7(zeebeDb, transactionContext);
+    permissionMigrationState = new DbPermissionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -517,5 +520,10 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateIdempotentCommandDistribution() {
     distributionState8dot7.migrateIdempotentCommandDistributions();
+  }
+
+  @Override
+  public void migrateMissingPermissionsForAuthorizations() {
+    permissionMigrationState.migrateMissingPermissionsForAuthorizations();
   }
 }
