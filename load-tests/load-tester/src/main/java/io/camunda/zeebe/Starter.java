@@ -14,9 +14,12 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -25,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,6 +49,10 @@ public class Starter extends App {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final StarterCfg starterCfg;
+  private Timer responseLatencyTimer;
+  private ScheduledExecutorService executorService;
+  private ScheduledExecutorService piCheckExecutorService;
+  private ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
 
   Starter(final AppCfg config) {
     super(config);
@@ -53,6 +61,22 @@ public class Starter extends App {
 
   @Override
   public void run() {
+    partitionToTimerMap = new ConcurrentHashMap<>();
+    partitionToTimerMap.put(
+        1,
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
+            .tag("partition", "1")
+            .register(registry));
+    partitionToTimerMap.put(
+        2,
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
+            .tag("partition", "2")
+            .register(registry));
+    partitionToTimerMap.put(
+        3,
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
+            .tag("partition", "3")
+            .register(registry));
     final CamundaClient client = createCamundaClient();
 
     // init - check for topology and deploy process
@@ -60,9 +84,9 @@ public class Starter extends App {
     deployProcess(client, starterCfg);
 
     // setup to start instances on given rate
+    piCheckExecutorService = Executors.newScheduledThreadPool(3);
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    final ScheduledExecutorService executorService =
-        Executors.newScheduledThreadPool(starterCfg.getThreads());
+    executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch, client);
 
@@ -72,6 +96,7 @@ public class Starter extends App {
                 () -> {
                   if (!executorService.isShutdown()) {
                     executorService.shutdown();
+                    piCheckExecutorService.shutdown();
                     try {
                       executorService.awaitTermination(60, TimeUnit.SECONDS);
                     } catch (final InterruptedException e) {
@@ -91,6 +116,7 @@ public class Starter extends App {
 
     scheduledTask.cancel(true);
     executorService.shutdown();
+    piCheckExecutorService.shutdown();
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -120,6 +146,7 @@ public class Starter extends App {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
 
+            final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
               requestFuture = startInstanceByMessagePublishing(client, vars);
@@ -127,10 +154,12 @@ public class Starter extends App {
               requestFuture =
                   startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), vars);
             } else {
-              requestFuture = startInstance(client, starterCfg.getProcessId(), vars);
+              requestFuture = startInstance(client, startTime, starterCfg.getProcessId(), vars);
             }
-            requestFuture.exceptionally(
-                (error) -> {
+            requestFuture.whenComplete(
+                (noop, error) -> {
+                  final long durationNanos = System.nanoTime() - startTime;
+                  responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
                     if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
                       // we don't want to flood the log
@@ -140,7 +169,6 @@ public class Starter extends App {
                           error);
                     }
                   }
-                  return null;
                 });
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
@@ -151,14 +179,50 @@ public class Starter extends App {
         TimeUnit.NANOSECONDS);
   }
 
-  private static CompletionStage<?> startInstance(
-      final CamundaClient client, final String processId, final HashMap<String, Object> variables) {
+  private CompletionStage<?> startInstance(
+      final CamundaClient client,
+      final long startTime,
+      final String processId,
+      final HashMap<String, Object> variables) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
         .variables(variables)
-        .send();
+        .send()
+        .thenApply(
+            (response) -> {
+              final long processInstanceKey = response.getProcessInstanceKey();
+              checkForProcessInstanceExistence(client, startTime, processInstanceKey);
+              return response;
+            });
+  }
+
+  private void checkForProcessInstanceExistence(
+      final CamundaClient client, final long startTime, final long processInstanceKey) {
+    client
+        .newProcessInstanceGetRequest(processInstanceKey)
+        .send()
+        .whenCompleteAsync(
+            (resp, err) -> {
+              if (err != null) {
+                // on error, we need to retry
+                piCheckExecutorService.schedule(
+                    () -> checkForProcessInstanceExistence(client, startTime, processInstanceKey),
+                    100,
+                    TimeUnit.MILLISECONDS);
+                LOG.trace("Failed to get process instance {}", processInstanceKey, err);
+              } else {
+                final long durationNanos = System.nanoTime() - startTime;
+                LOG.debug(
+                    "Process instance {} retrieved in {} ms",
+                    processInstanceKey,
+                    durationNanos / 1_000_000);
+
+                final int partitionId = Protocol.decodePartitionId(processInstanceKey);
+                partitionToTimerMap.get(partitionId).record(durationNanos, TimeUnit.NANOSECONDS);
+              }
+            });
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
