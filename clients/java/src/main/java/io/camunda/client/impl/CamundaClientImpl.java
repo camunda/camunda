@@ -137,6 +137,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AuditLogSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
@@ -286,6 +287,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.search.request.AuditLogSearchRequestImpl;
 import io.camunda.client.impl.search.request.AuthorizationsSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
@@ -1493,6 +1495,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AuditLogGetRequest newAuditLogGetRequest(final String auditLogKey) {
     return new AuditLogGetRequestImpl(httpClient, auditLogKey);
+  }
+
+  @Override
+  public AuditLogSearchRequest newAuditLogByOperationKeySearchRequest() {
+    return new AuditLogSearchRequestImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

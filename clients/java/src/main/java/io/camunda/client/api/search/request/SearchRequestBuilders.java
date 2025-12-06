@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.request;
 
+import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
@@ -38,6 +39,7 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
+import io.camunda.client.api.search.sort.AuditLogSort;
 import io.camunda.client.api.search.sort.AuthorizationSort;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
@@ -90,6 +92,7 @@ import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
+import io.camunda.client.impl.search.sort.AuditLogSortImpl;
 import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationSortImpl;
@@ -451,6 +454,18 @@ public final class SearchRequestBuilders {
   public static CorrelatedMessageSubscriptionSort correlatedMessageSubscriptionSort(
       final Consumer<CorrelatedMessageSubscriptionSort> fn) {
     final CorrelatedMessageSubscriptionSort sort = new CorrelatedMessageSubscriptionSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AuditLogFilter auditLogFilter(final Consumer<AuditLogFilter> fn) {
+    final AuditLogFilter filter = new io.camunda.client.impl.search.filter.AuditLogFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AuditLogSort auditLogSort(final Consumer<AuditLogSort> fn) {
+    final AuditLogSort sort = new AuditLogSortImpl();
     fn.accept(sort);
     return sort;
   }
