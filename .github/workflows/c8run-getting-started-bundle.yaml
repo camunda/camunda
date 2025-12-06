@@ -297,11 +297,17 @@ jobs:
           echo "c8run folder contents:"
           ls -la bundle/c8run/ || true
 
-      - name: Create bundle archive (zip)
-        if: matrix.platform.archive_type == 'zip'
+      - name: Create bundle archive (zip - Unix)
+        if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id != 'windows-x86_64'
         run: |
           cd bundle
           zip -r "../${BUNDLE_NAME}.zip" .
+
+      - name: Create bundle archive (zip - Windows)
+        if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "bundle/*" -DestinationPath "${env:BUNDLE_NAME}.zip"
 
       - name: Create bundle archive (tar.gz)
         if: matrix.platform.archive_type == 'tar.gz'
@@ -370,11 +376,18 @@ jobs:
           name: ${{ env.BUNDLE_NAME }}
           path: .
 
-      - name: Extract bundle (zip)
-        if: matrix.platform.archive_type == 'zip'
+      - name: Extract bundle (zip - Unix)
+        if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id != 'windows-x86_64'
         run: |
           mkdir -p test-bundle
           unzip "${BUNDLE_NAME}.zip" -d test-bundle
+
+      - name: Extract bundle (zip - Windows)
+        if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "test-bundle"
+          Expand-Archive -Path "${env:BUNDLE_NAME}.zip" -DestinationPath "test-bundle"
 
       - name: Extract bundle (tar.gz)
         if: matrix.platform.archive_type == 'tar.gz'
