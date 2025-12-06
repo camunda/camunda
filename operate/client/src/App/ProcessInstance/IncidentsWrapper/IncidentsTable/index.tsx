@@ -21,9 +21,13 @@ import {
   getIncidentErrorName,
   isSingleIncidentSelected,
 } from 'modules/utils/incidents';
-import {clearSelection, selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {
+  clearSelection as clearSelectionV1,
+  selectFlowNode,
+} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type IncidentsTableProps = {
   processInstanceKey: string;
@@ -65,6 +69,9 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
       setModalTitle(`Element "${elementName}" Error`);
     };
 
+    const {selectElementInstance, clearSelection} =
+      useProcessInstanceElementSelection();
+
     const isJobKeyPresent = incidents.some(({jobKey}) => !!jobKey);
 
     return (
@@ -87,8 +94,13 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             if (
               isSingleIncidentSelected(incidents, incident.elementInstanceKey)
             ) {
-              clearSelection(rootNode);
+              clearSelectionV1(rootNode);
+              clearSelection();
             } else {
+              selectElementInstance(
+                incident.elementId,
+                incident.elementInstanceKey,
+              );
               selectFlowNode(rootNode, {
                 flowNodeId: incident.elementId,
                 flowNodeInstanceId: incident.elementInstanceKey,

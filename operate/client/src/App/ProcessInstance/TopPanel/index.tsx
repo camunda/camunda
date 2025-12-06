@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -41,7 +41,7 @@ import {useExecutedFlowNodes} from 'modules/queries/flownodeInstancesStatistics/
 import {useModificationsByFlowNode} from 'modules/hooks/modifications';
 import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagram';
 import {
-  clearSelection,
+  clearSelection as clearSelectionV1,
   getSelectedRunningInstanceCount,
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
@@ -72,6 +72,7 @@ import {isRequestError} from 'modules/request';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -130,6 +131,8 @@ const TopPanel: React.FC = observer(() => {
   const rootNode = useRootNode();
   const isRootNodeSelected = useIsRootNodeSelected();
 
+  const {clearSelection, selectElement} = useProcessInstanceElementSelection();
+
   const {
     data: processDefinitionData,
     isPending: isXmlFetching,
@@ -154,48 +157,72 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeIdsWithIncidents = statistics
-    ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
-    ?.map((flowNode) => flowNode.id);
+  const flowNodeStateOverlays = useMemo(() => {
+    const flowNodeIdsWithIncidents = statistics
+      ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
+      ?.map((flowNode) => flowNode.id);
 
-  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
-    (flowNodeId) => businessObjects?.[flowNodeId],
-  );
+    const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
+      (flowNodeId) => businessObjects?.[flowNodeId],
+    );
 
-  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
-    selectableFlowNodesWithIncidents,
-  );
+    const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+      selectableFlowNodesWithIncidents,
+    );
 
-  const allFlowNodeStateOverlays = [
-    ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
-      payload: {flowNodeState, count},
-      type: OVERLAY_TYPE_STATE,
-      flowNodeId,
-      position: overlayPositions[flowNodeState],
-    })) || []),
-    ...subprocessOverlays,
-  ];
+    const allFlowNodeStateOverlays = [
+      ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
+        payload: {flowNodeState, count},
+        type: OVERLAY_TYPE_STATE,
+        flowNodeId,
+        position: overlayPositions[flowNodeState],
+      })) || []),
+      ...subprocessOverlays,
+    ];
 
-  const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
-    (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
-  );
+    const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
+      (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
+    );
 
-  const flowNodeStateOverlays = executionCountToggleStore.state
-    .isExecutionCountVisible
-    ? allFlowNodeStateOverlays
-    : notCompletedFlowNodeStateOverlays;
+    return executionCountToggleStore.state.isExecutionCountVisible
+      ? allFlowNodeStateOverlays
+      : notCompletedFlowNodeStateOverlays;
+  }, [statistics, businessObjects]);
 
-  const compensationAssociationIds = Object.values(
-    processDefinitionData?.diagramModel.elementsById ?? {},
-  )
-    .filter(isCompensationAssociation)
-    .filter(({targetRef}) => {
-      // check if the target element for the association was executed
-      return executedFlowNodes?.find(({elementId, completed}) => {
-        return targetRef?.id === elementId && completed > 0;
-      });
-    })
-    .map(({id}) => id);
+  const selectedFlowNode = useMemo(() => {
+    return flowNodeSelection?.anchorFlowNodeId
+      ? [flowNodeSelection.anchorFlowNodeId]
+      : flowNodeSelection?.flowNodeId
+        ? [flowNodeSelection.flowNodeId]
+        : undefined;
+  }, [flowNodeSelection?.anchorFlowNodeId, flowNodeSelection?.flowNodeId]);
+
+  const highlightedSequenceFlows = useMemo(() => {
+    const compensationAssociationIds = Object.values(
+      processDefinitionData?.diagramModel.elementsById ?? {},
+    )
+      .filter(isCompensationAssociation)
+      .filter(({targetRef}) => {
+        // check if the target element for the association was executed
+        return executedFlowNodes?.find(({elementId, completed}) => {
+          return targetRef?.id === elementId && completed > 0;
+        });
+      })
+      .map(({id}) => id);
+
+    return [
+      ...(processedSequenceFlowsFromHook || []),
+      ...compensationAssociationIds,
+    ];
+  }, [
+    processedSequenceFlowsFromHook,
+    processDefinitionData,
+    executedFlowNodes,
+  ]);
+
+  const highlightedSequenceFlowIds = useMemo(() => {
+    return executedFlowNodes?.map(({elementId}) => elementId);
+  }, [executedFlowNodes]);
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsByFlowNode).reduce<
@@ -338,16 +365,12 @@ const TopPanel: React.FC = observer(() => {
                     ? modifiableFlowNodes
                     : selectableFlowNodes
                 }
-                selectedFlowNodeIds={
-                  flowNodeSelection?.anchorFlowNodeId
-                    ? [flowNodeSelection.anchorFlowNodeId]
-                    : flowNodeSelection?.flowNodeId
-                      ? [flowNodeSelection.flowNodeId]
-                      : undefined
-                }
+                selectedFlowNodeIds={selectedFlowNode}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
-                    clearSelection(rootNode);
+                    clearSelectionV1(rootNode);
+                    clearSelection();
+
                     finishMovingToken(
                       affectedTokenCount,
                       visibleAffectedTokenCount,
@@ -357,6 +380,11 @@ const TopPanel: React.FC = observer(() => {
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {
+                      if (flowNodeId !== undefined) {
+                        selectElement(flowNodeId, isMultiInstance);
+                      } else {
+                        clearSelection();
+                      }
                       selectFlowNode(rootNode, {
                         flowNodeId,
                         isMultiInstance,
@@ -379,13 +407,8 @@ const TopPanel: React.FC = observer(() => {
                     !isIncidentBarOpen && <MetadataPopover />
                   )
                 }
-                highlightedSequenceFlows={[
-                  ...(processedSequenceFlowsFromHook || []),
-                  ...compensationAssociationIds,
-                ]}
-                highlightedFlowNodeIds={executedFlowNodes?.map(
-                  ({elementId}) => elementId,
-                )}
+                highlightedSequenceFlows={highlightedSequenceFlows}
+                highlightedFlowNodeIds={highlightedSequenceFlowIds}
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {

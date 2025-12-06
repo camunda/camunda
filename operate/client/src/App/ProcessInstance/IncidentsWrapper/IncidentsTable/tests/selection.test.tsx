@@ -12,6 +12,7 @@ import {render, screen} from 'modules/testing-library';
 import {Wrapper, firstIncident, secondIncident} from './mocks';
 import * as selectionUtils from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 
 // TanStack query is still fetching the data when the test executes, so "useRootNode"
 // falls back to undefined for the flowNodeInstanceId.
@@ -24,6 +25,20 @@ describe('Selection', () => {
         hasIncident: true,
       }),
     );
+    mockFetchElementInstance('18239123812938').withSuccess({
+      elementInstanceKey: '18239123812938',
+      elementId: 'StartEvent_1',
+      elementName: 'Start Event',
+      type: 'START_EVENT',
+      state: 'COMPLETED',
+      startDate: '2020-08-18T12:07:33.953+0000',
+      endDate: '2020-08-18T12:07:34.034+0000',
+      processDefinitionId: 'calledInstance',
+      processInstanceKey: '1',
+      processDefinitionKey: '123',
+      hasIncident: true,
+      tenantId: '<default>',
+    });
   });
 
   it('should deselect selected incident', async () => {
