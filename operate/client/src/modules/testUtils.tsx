@@ -16,6 +16,7 @@ import type {
   Variable,
   CurrentUser,
   Incident,
+  ProcessDefinition,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
@@ -36,6 +37,10 @@ const randomIdIterator = createRandomId('id');
 const randomProcessIdIterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
+
+function searchResult<T>(items: T[], totalItems = items.length) {
+  return {items, page: {totalItems}};
+}
 
 const createIncident = (options: Partial<Incident> = {}): Incident => {
   return {
@@ -145,6 +150,22 @@ const createProcessInstance = (
     tenantId: '<default>',
     startDate: '2018-06-21',
     hasIncident: false,
+    ...options,
+  };
+};
+
+const createProcessDefinition = (
+  options: Partial<ProcessDefinition> = {},
+): ProcessDefinition => {
+  return {
+    name: 'Big variable process',
+    processDefinitionId: 'bigVarProcess',
+    processDefinitionKey: '2223894723423800',
+    resourceName: 'processes/process.bpmn',
+    version: 1,
+    versionTag: undefined,
+    tenantId: '<default>',
+    hasStartForm: false,
     ...options,
   };
 };
@@ -1242,6 +1263,7 @@ const mockProcessInstancesV2 = {
 };
 
 export {
+  searchResult,
   createIncident,
   createEnhancedIncident,
   createOperation,
@@ -1270,5 +1292,6 @@ export {
   createBatchOperation,
   createUser,
   createProcessInstance,
+  createProcessDefinition,
   createInstance,
 };
