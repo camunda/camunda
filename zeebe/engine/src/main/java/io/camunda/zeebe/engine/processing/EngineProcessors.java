@@ -157,7 +157,8 @@ public final class EngineProcessors {
             typedRecordProcessorContext.getPartitionId(),
             routingInfo,
             interPartitionCommandSender,
-            distributionMetrics);
+            distributionMetrics,
+            clock);
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(

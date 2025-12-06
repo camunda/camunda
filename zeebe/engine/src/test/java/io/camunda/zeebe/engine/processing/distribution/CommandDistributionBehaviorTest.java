@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -62,6 +63,7 @@ class CommandDistributionBehaviorTest {
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
   private Writers writers;
+  private ControllableStreamClock clock;
 
   private long key;
   private ValueType valueType;
@@ -76,6 +78,7 @@ class CommandDistributionBehaviorTest {
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
     writers = new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    clock = mock(ControllableStreamClock.class);
 
     key = Protocol.encodePartitionId(1, 100);
     valueType = ValueType.DEPLOYMENT;
@@ -103,7 +106,8 @@ class CommandDistributionBehaviorTest {
             1,
             RoutingInfo.forStaticPartitions(1),
             mockInterpartitionCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     // when distributing to all partitions
     behavior.withKey(key).unordered().distribute(command);
@@ -126,7 +130,8 @@ class CommandDistributionBehaviorTest {
             1,
             RoutingInfo.forStaticPartitions(3),
             mockInterpartitionCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     // when distributing to all partitions
     behavior.withKey(key).unordered().distribute(command);
@@ -163,7 +168,8 @@ class CommandDistributionBehaviorTest {
             2,
             RoutingInfo.forStaticPartitions(4),
             mockInterpartitionCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     // when distributing to partitions 1 and 3
     behavior.withKey(key).unordered().forPartitions(Set.of(1, 3)).distribute(command);
@@ -200,7 +206,8 @@ class CommandDistributionBehaviorTest {
             1,
             RoutingInfo.forStaticPartitions(3),
             mockInterpartitionCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     // given command with auth info
     final var authInfo =
@@ -249,7 +256,8 @@ class CommandDistributionBehaviorTest {
             1,
             RoutingInfo.forStaticPartitions(3),
             mockInterpartitionCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     // when distributing first command in queue to all partitions
     behavior.withKey(key).inQueue("test-queue").distribute(command);
@@ -284,7 +292,8 @@ class CommandDistributionBehaviorTest {
             1,
             RoutingInfo.forStaticPartitions(3),
             mockInterpartitionCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     final var firstKey = Protocol.encodePartitionId(1, 100);
     final var secondKey = Protocol.encodePartitionId(1, 101);
@@ -332,7 +341,8 @@ class CommandDistributionBehaviorTest {
               1,
               RoutingInfo.forStaticPartitions(2),
               mockInterpartitionCommandSender,
-              mockDistributionMetrics);
+              mockDistributionMetrics,
+              clock);
     }
 
     @Test
