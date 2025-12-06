@@ -205,10 +205,10 @@ jobs:
           modeler_asset="${modeler_asset//\{version\}/${MODELER_VERSION}}"
           
           # Mount the DMG
-          hdiutil attach "${modeler_asset}" -mountpoint /Volumes/CamundaModeler
+          hdiutil attach "${modeler_asset}" -mountpoint /Volumes/CamundaModeler -nobrowse
           
-          # Copy the .app bundle and rename it
-          cp -R "/Volumes/CamundaModeler/Camunda Modeler.app" "./2-camunda-modeler.app"
+          # Copy the .app bundle using ditto to preserve macOS metadata and code signatures
+          ditto "/Volumes/CamundaModeler/Camunda Modeler.app" "./2-camunda-modeler.app"
           
           # Unmount the DMG
           hdiutil detach /Volumes/CamundaModeler
