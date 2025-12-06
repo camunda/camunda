@@ -71,16 +71,23 @@ func TestReadPIDFromFile_InvalidPID(t *testing.T) {
 	}
 }
 
-func TestCleanUp_RemovesPIDFile(t *testing.T) {
+func TestCleanUp_RemovesPIDAndLockFiles(t *testing.T) {
 	dir := t.TempDir()
 	pidPath := filepath.Join(dir, "cleanup.pid")
 	if err := os.WriteFile(pidPath, []byte("123"), 0644); err != nil {
 		t.Fatalf("Failed to write PID file: %v", err)
 	}
+	lockPath := pidPath + ".lock"
+	if err := os.WriteFile(lockPath, []byte(""), 0644); err != nil {
+		t.Fatalf("Failed to write lock file: %v", err)
+	}
 	h := &ProcessHandler{}
 	h.cleanUp(pidPath)
 	if _, err := os.Stat(pidPath); !os.IsNotExist(err) {
 		t.Error("PID file was not removed by cleanUp")
+	}
+	if _, err := os.Stat(lockPath); !os.IsNotExist(err) {
+		t.Error("Lock file was not removed by cleanUp")
 	}
 }
 

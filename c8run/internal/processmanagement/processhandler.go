@@ -50,9 +50,14 @@ func (p *ProcessHandler) cleanUp(pidPath string) {
 	if err != nil {
 		return
 	}
-	defer releaseLock(fileLock, lockPath)
+	defer func() {
+		releaseLock(fileLock, lockPath)
+		if err := os.Remove(lockPath); err != nil && !os.IsNotExist(err) {
+			log.Err(err).Msgf("Failed to remove lock file: %s", lockPath)
+		}
+	}()
 
-	if err := os.Remove(pidPath); err != nil {
+	if err := os.Remove(pidPath); err != nil && !os.IsNotExist(err) {
 		log.Err(err).Msgf("Failed to remove pid file: %s", pidPath)
 	}
 }
