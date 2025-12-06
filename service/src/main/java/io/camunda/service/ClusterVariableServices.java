@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteClusterVariableR
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import java.util.concurrent.CompletableFuture;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ClusterVariableServices
@@ -57,54 +58,57 @@ public final class ClusterVariableServices
   }
 
   public CompletableFuture<ClusterVariableRecord> createGloballyScopedClusterVariable(
-      final String name, final Object value) {
+      final ClusterVariableRequest request) {
     return sendBrokerRequest(
         new BrokerCreateClusterVariableRequest()
-            .setName(name)
-            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
+            .setName(request.name())
+            .setValue(toDirectBufferValue(request.value()))
             .setGlobalScope());
   }
 
   public CompletableFuture<ClusterVariableRecord> createTenantScopedClusterVariable(
-      final String name, final Object value, final String tenantId) {
+      final ClusterVariableRequest request) {
     return sendBrokerRequest(
         new BrokerCreateClusterVariableRequest()
-            .setName(name)
-            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
-            .setTenantScope(tenantId));
+            .setName(request.name())
+            .setValue(toDirectBufferValue(request.value()))
+            .setTenantScope(request.tenantId()));
   }
 
   public CompletableFuture<ClusterVariableRecord> deleteGloballyScopedClusterVariable(
-      final String name) {
+      final ClusterVariableRequest request) {
     return sendBrokerRequest(
-        new BrokerDeleteClusterVariableRequest().setName(name).setGlobalScope());
+        new BrokerDeleteClusterVariableRequest().setName(request.name()).setGlobalScope());
   }
 
   public CompletableFuture<ClusterVariableRecord> deleteTenantScopedClusterVariable(
-      final String name, final String tenantId) {
+      final ClusterVariableRequest request) {
     return sendBrokerRequest(
-        new BrokerDeleteClusterVariableRequest().setName(name).setTenantScope(tenantId));
+        new BrokerDeleteClusterVariableRequest()
+            .setName(request.name())
+            .setTenantScope(request.tenantId()));
   }
 
-  public ClusterVariableEntity getGloballyScopedClusterVariable(final String name) {
+  public ClusterVariableEntity getGloballyScopedClusterVariable(
+      final ClusterVariableRequest request) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         CamundaAuthentication.anonymous()))
-                .getClusterVariable(name));
+                .getClusterVariable(request.name()));
   }
 
   public ClusterVariableEntity getTenantScopedClusterVariable(
-      final String name, final String tenantId) {
+      final ClusterVariableRequest request) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         CamundaAuthentication.anonymous()))
-                .getClusterVariable(name, tenantId));
+                .getClusterVariable(request.name(), request.tenantId()));
   }
 
   @Override
@@ -117,4 +121,10 @@ public final class ClusterVariableServices
                         CamundaAuthentication.anonymous()))
                 .searchClusterVariables(query));
   }
+
+  private DirectBuffer toDirectBufferValue(final Object value) {
+    return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+  }
+
+  public record ClusterVariableRequest(String name, Object value, String tenantId) {}
 }

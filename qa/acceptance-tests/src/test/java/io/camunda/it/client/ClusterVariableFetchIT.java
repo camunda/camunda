@@ -59,7 +59,7 @@ public class ClusterVariableFetchIT {
     // given
     final var variableName = "tenantVarGet_" + UUID.randomUUID();
     final var variableValue = "testValue_" + UUID.randomUUID();
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     camundaClient
         .newTenantScopedClusterVariableCreateRequest(tenantId)
@@ -134,7 +134,7 @@ public class ClusterVariableFetchIT {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newTenantScopedClusterVariableGetRequest("tenant_" + UUID.randomUUID())
+                    .newTenantScopedClusterVariableGetRequest("tenant_1")
                     .withName("nonExistentVar_" + UUID.randomUUID())
                     .send()
                     .join())
@@ -154,7 +154,7 @@ public class ClusterVariableFetchIT {
         .send()
         .join();
 
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     // when / then
     assertThatThrownBy(
@@ -173,7 +173,7 @@ public class ClusterVariableFetchIT {
     // given
     final var variableName = "tenantVarNoGlobalGet_" + UUID.randomUUID();
     final var variableValue = "testValue_" + UUID.randomUUID();
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     camundaClient
         .newTenantScopedClusterVariableCreateRequest(tenantId)
