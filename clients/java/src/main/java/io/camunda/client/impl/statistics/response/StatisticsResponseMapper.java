@@ -20,11 +20,18 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
+import io.camunda.client.api.search.response.OffsetResponse;
+import io.camunda.client.api.search.response.OffsetResponsePage;
+import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
+import io.camunda.client.impl.search.response.OffsetResponseImpl;
+import io.camunda.client.impl.search.response.OffsetResponsePageImpl;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
 import java.util.Collections;
@@ -32,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class StatisticsResponseMapper {
@@ -93,5 +101,32 @@ public class StatisticsResponseMapper {
         ofNullable(response.getProcessInstances()).orElse(0L),
         ofNullable(response.getDecisionInstances()).orElse(0L),
         ofNullable(response.getAssignees()).orElse(0L));
+  }
+
+  public static OffsetResponse<ProcessDefinitionInstanceStatistics>
+      toProcessDefinitionInstanceStatisticsResponse(
+          final ProcessDefinitionInstanceStatisticsQueryResult response) {
+    final OffsetResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ProcessDefinitionInstanceStatistics> items =
+        toSearchResponseInstances(
+            response.getItems(), ProcessDefinitionInstanceStatisticsImpl::new);
+
+    return new OffsetResponseImpl<>(items, page);
+  }
+
+  private static OffsetResponsePage toSearchResponsePage(
+      final ProcessDefinitionInstanceStatisticsPageResponse pageResponse) {
+    if (pageResponse == null) {
+      return new OffsetResponsePageImpl(0L, false);
+    }
+    return new OffsetResponsePageImpl(
+        pageResponse.getTotalItems(), pageResponse.getHasMoreTotalItems());
+  }
+
+  private static <T, R> List<R> toSearchResponseInstances(
+      final List<T> items, final Function<T, R> mapper) {
+    return Optional.ofNullable(items)
+        .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
   }
 }
