@@ -13,9 +13,9 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -83,19 +83,13 @@ public class ConditionalEvaluationProcessor
   public void processRecord(final TypedRecord<ConditionalEvaluationRecord> command) {
     final var record = command.getValue();
 
-    final var isAuthNeeded =
-        !authCheckBehavior.isInternalCommand(
-            command.hasRequestMetadata(), command.getBatchOperationReference());
-
-    if (isAuthNeeded) {
-      if (!authCheckBehavior.isAssignedToTenant(command, record.getTenantId())) {
-        final var message =
-            "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant."
-                .formatted(record.getTenantId());
-        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
-        return;
-      }
+    if (!authCheckBehavior.isAssignedToTenant(command, record.getTenantId())) {
+      final var failureMessage =
+          "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant."
+              .formatted(record.getTenantId());
+      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, failureMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, failureMessage);
+      return;
     }
 
     final var processDefinitionKey = record.getProcessDefinitionKey();
@@ -105,12 +99,11 @@ public class ConditionalEvaluationProcessor
       final var process =
           processState.getProcessByKeyAndTenant(processDefinitionKey, record.getTenantId());
       if (process == null) {
-        rejectionWriter.appendRejection(
-            command,
-            RejectionType.NOT_FOUND,
-            String.format(
-                "Expected to evaluate conditional with command key '%d' for process definition key '%d', but no such process was found",
-                command.getKey(), processDefinitionKey));
+        final var failureMessage =
+            "Expected to evaluate conditional with command key '%d' for process definition key '%d', but no such process was found"
+                .formatted(command.getKey(), processDefinitionKey);
+        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, failureMessage);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, failureMessage);
         return;
       }
       matchedStartEvents = collectMatchingStartEvents(record, process);
@@ -118,14 +111,9 @@ public class ConditionalEvaluationProcessor
       matchedStartEvents = collectMatchingStartEvents(record);
     }
 
-    if (isAuthNeeded) {
-      for (final var match : matchedStartEvents) {
-        checkAuthorizationToStartProcessInstance(command, match.process());
-      }
+    for (final var match : matchedStartEvents) {
+      checkAuthorizationToStartProcessInstance(command, match.process());
     }
-
-    final long eventKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(eventKey, ConditionalEvaluationIntent.EVALUATED, record);
 
     for (final var match : matchedStartEvents) {
       eventHandle.activateProcessInstanceForStartEvent(
@@ -136,10 +124,11 @@ public class ConditionalEvaluationProcessor
           record.getTenantId());
     }
 
-    if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(
-          eventKey, ConditionalEvaluationIntent.EVALUATED, record, command);
-    }
+    final long eventKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(eventKey, ConditionalEvaluationIntent.EVALUATED, record);
+
+    responseWriter.writeEventOnCommand(
+        eventKey, ConditionalEvaluationIntent.EVALUATED, record, command);
   }
 
   @Override
@@ -192,6 +181,7 @@ public class ConditionalEvaluationProcessor
 
     final List<MatchedStartEvent> matches = new ArrayList<>();
 
+    final var context = new InMemoryVariableEvaluationContext(variables);
     executableProcess.getStartEvents().stream()
         .filter(ExecutableStartEvent::isConditional)
         .filter(
@@ -214,8 +204,7 @@ public class ConditionalEvaluationProcessor
               final var conditionExpression = startEvent.getConditional().getConditionExpression();
 
               final var result =
-                  expressionProcessor.evaluateBooleanExpression(
-                      conditionExpression, new InMemoryVariableEvaluationContext(variables));
+                  expressionProcessor.evaluateBooleanExpression(conditionExpression, context);
 
               if (result.isRight()) {
                 if (Boolean.TRUE.equals(result.get())) {
@@ -236,14 +225,15 @@ public class ConditionalEvaluationProcessor
   private void checkAuthorizationToStartProcessInstance(
       final TypedRecord<ConditionalEvaluationRecord> command, final DeployedProcess process) {
     final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.CREATE_PROCESS_INSTANCE,
-                command.getValue().getTenantId())
-            .addResourceId(BufferUtil.bufferAsString(process.getBpmnProcessId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
+            .tenantId(command.getValue().getTenantId())
+            .addResourceId(BufferUtil.bufferAsString(process.getBpmnProcessId()))
+            .build();
 
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest.build());
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
       throw new ForbiddenException(authRequest);
     }

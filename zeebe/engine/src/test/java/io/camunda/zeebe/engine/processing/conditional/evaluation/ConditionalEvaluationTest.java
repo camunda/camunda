@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -53,16 +55,14 @@ public class ConditionalEvaluationTest {
         .deploy();
 
     // when
-    engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
+    final var evaluatedRecord =
+        engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .exists())
-        .isTrue();
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -75,44 +75,52 @@ public class ConditionalEvaluationTest {
     final String process1 = "process-" + UUID.randomUUID();
     final String process2 = "process-" + UUID.randomUUID();
 
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(process1)
-                .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
-                .endEvent()
-                .done())
-        .deploy();
+    final var deployment1 =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(process1)
+                    .startEvent()
+                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .endEvent()
+                    .done())
+            .deploy();
 
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(process2)
-                .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
-                .endEvent()
-                .done())
-        .deploy();
+    final var processDefinitionKey1 =
+        deployment1.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+
+    final var deployment2 =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(process2)
+                    .startEvent()
+                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey2 =
+        deployment2.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
 
     // when
-    engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
+    final var evaluatedRecord =
+        engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .exists())
-        .isTrue();
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+    assertThat(evaluatedRecord.getValue().getVariables())
+        .containsOnly(Map.entry("x", 1000), Map.entry("y", 100));
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(process1)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
         .isTrue();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(process2)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -133,16 +141,18 @@ public class ConditionalEvaluationTest {
         .deploy();
 
     // when
-    engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
+    final var evaluatedRecord =
+        engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .exists())
-        .isTrue();
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATE,
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATED)
+                .processInstanceRecords()
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -163,16 +173,18 @@ public class ConditionalEvaluationTest {
         .deploy();
 
     // when
-    engine.conditionalEvaluation().withVariables(Map.of("a", 1000, "b", "test")).evaluate();
+    final var evaluatedRecord =
+        engine.conditionalEvaluation().withVariables(Map.of("a", 1000, "b", "test")).evaluate();
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .exists())
-        .isTrue();
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATE,
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATED)
+                .processInstanceRecords()
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -193,14 +205,17 @@ public class ConditionalEvaluationTest {
         .deploy();
 
     // when
-    engine
-        .conditionalEvaluation()
-        .withVariables(Map.of("x", 1000, "y", 100, "a", "123"))
-        .evaluate();
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("x", 1000, "y", 100, "a", "123"))
+            .evaluate();
 
     // then
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -221,11 +236,14 @@ public class ConditionalEvaluationTest {
         .deploy();
 
     // when
-    engine.conditionalEvaluation().withVariable("orderAmount", 1000).evaluate();
+    final var evaluatedRecord =
+        engine.conditionalEvaluation().withVariable("orderAmount", 1000).evaluate();
 
     // then
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -246,16 +264,18 @@ public class ConditionalEvaluationTest {
         .deploy();
 
     // when
-    engine.conditionalEvaluation().withVariable("orderAmount", 100).evaluate();
+    final var evaluatedRecord =
+        engine.conditionalEvaluation().withVariable("orderAmount", 100).evaluate();
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .exists())
-        .isTrue();
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATE,
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATED)
+                .processInstanceRecords()
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -279,14 +299,54 @@ public class ConditionalEvaluationTest {
         .deploy();
 
     // when
-    engine
-        .conditionalEvaluation()
-        .withVariables(Map.of("status", "VIP", "orderAmount", 1000))
-        .evaluate();
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("status", "VIP", "orderAmount", 1000))
+            .evaluate();
 
     // then
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(evaluatedRecord.getValue().getVariables())
+        .containsOnly(Map.entry("status", "VIP"), Map.entry("orderAmount", 1000));
+    assertThat(evaluatedRecord.getValue().getTenantId())
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(processId)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldEvaluateConditionWithNestedVariableAccess() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .condition(c -> c.condition("=order.total > 50").zeebeVariableNames("order"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("order", Map.of("total", 51)))
+            .evaluate();
+
+    // then
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+    assertThat(evaluatedRecord.getValue().getVariables()).containsOnlyKeys("order");
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -296,11 +356,15 @@ public class ConditionalEvaluationTest {
   @Test
   public void shouldEvaluateSpecificProcessByKey() {
     // given
+
+    final var process1Id = "process-" + UUID.randomUUID();
+    final var process2Id = "process-" + UUID.randomUUID();
+
     final var deployment1 =
         engine
             .deployment()
             .withXmlResource(
-                Bpmn.createExecutableProcess("process-" + UUID.randomUUID())
+                Bpmn.createExecutableProcess(process1Id)
                     .startEvent()
                     .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
                     .endEvent()
@@ -311,7 +375,7 @@ public class ConditionalEvaluationTest {
         engine
             .deployment()
             .withXmlResource(
-                Bpmn.createExecutableProcess("process-" + UUID.randomUUID())
+                Bpmn.createExecutableProcess(process2Id)
                     .startEvent()
                     .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
                     .endEvent()
@@ -324,22 +388,34 @@ public class ConditionalEvaluationTest {
         deployment2.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
 
     // when
-    engine
-        .conditionalEvaluation()
-        .withProcessDefinitionKey(process1Key)
-        .withVariables(Map.of("x", 100, "y", 1))
-        .evaluate();
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withProcessDefinitionKey(process1Key)
+            .withVariables(Map.of("x", 100, "y", 1))
+            .evaluate();
 
     // then
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(process1Key);
+
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessDefinitionKey(process1Key)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
         .isTrue();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATE,
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && ((ProcessInstanceRecordValue) r.getValue())
+                                .getBpmnProcessId()
+                                .equals(process1Id))
+                .processInstanceRecords()
                 .withProcessDefinitionKey(process2Key)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -381,14 +457,14 @@ public class ConditionalEvaluationTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessDefinitionKey(process1Key)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
         .isTrue();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessDefinitionKey(process2Key)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -452,7 +528,7 @@ public class ConditionalEvaluationTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(process1Id)
                 .withTenantId(tenant1)
                 .withElementType(BpmnElementType.PROCESS)
@@ -460,7 +536,15 @@ public class ConditionalEvaluationTest {
         .isTrue();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATE,
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && ((ProcessInstanceRecordValue) r.getValue())
+                                .getBpmnProcessId()
+                                .equals(process1Id))
+                .processInstanceRecords()
                 .withTenantId(tenant2)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -490,7 +574,11 @@ public class ConditionalEvaluationTest {
         .isTrue();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATE,
+                    r -> r.getIntent() == ConditionalEvaluationIntent.EVALUATED)
+                .processInstanceRecords()
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
@@ -518,7 +606,7 @@ public class ConditionalEvaluationTest {
     // then
     Assertions.assertThat(record).hasIntent(ConditionalEvaluationIntent.EVALUATED);
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(processId)
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())

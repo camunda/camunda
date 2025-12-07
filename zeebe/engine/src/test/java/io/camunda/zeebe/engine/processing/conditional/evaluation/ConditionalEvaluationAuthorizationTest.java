@@ -79,19 +79,22 @@ public class ConditionalEvaluationAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToEvaluateConditionalWithDefaultUser() {
     // when
-    engine
-        .conditionalEvaluation()
-        .withVariables(Map.of("x", 100, "y", 1))
-        .evaluate(DEFAULT_USER.getUsername());
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("x", 100, "y", 1))
+            .evaluate(DEFAULT_USER.getUsername());
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .limit(1))
-        .hasSize(1);
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(evaluatedRecord.getValue().getVariables())
+        .containsOnly(Map.entry("x", 100), Map.entry("y", 1));
+    assertThat(evaluatedRecord.getValue().getTenantId())
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(PROCESS_ID)
                 .limit(1))
         .hasSize(1);
@@ -106,20 +109,71 @@ public class ConditionalEvaluationAuthorizationTest {
         user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
 
     // when
-    engine
-        .conditionalEvaluation()
-        .withVariables(Map.of("x", 100, "y", 1))
-        .evaluate(user.getUsername());
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("x", 100, "y", 1))
+            .evaluate(user.getUsername());
 
     // then
-    assertThat(
-            RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
-                .limit(1))
-        .hasSize(1);
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(evaluatedRecord.getValue().getVariables())
+        .containsOnly(Map.entry("x", 100), Map.entry("y", 1));
+    assertThat(evaluatedRecord.getValue().getTenantId())
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(PROCESS_ID)
+                .limit(1))
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToEvaluateConditionalForNonDefaultTenant() {
+    // given
+    final String customTenant = "custom-tenant";
+    final String customProcessId = "custom-tenant-process";
+
+    engine.tenant().newTenant().withTenantId(customTenant).withName("Custom Tenant").create();
+    assignUserToTenant(customTenant, DEFAULT_USER.getUsername());
+
+    final var user = createUser();
+    assignUserToTenant(customTenant, user.getUsername());
+    addPermissionsToUser(
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
+
+    engine
+        .deployment()
+        .withXmlResource(
+            "custom-tenant-process.bpmn",
+            Bpmn.createExecutableProcess(customProcessId)
+                .startEvent()
+                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .endEvent()
+                .done())
+        .withTenantId(customTenant)
+        .deploy(DEFAULT_USER.getUsername());
+
+    // when
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withTenantId(customTenant)
+            .withVariables(Map.of("x", 100, "y", 1))
+            .evaluate(user.getUsername());
+
+    // then
+    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
+    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(evaluatedRecord.getValue().getVariables())
+        .containsOnly(Map.entry("x", 100), Map.entry("y", 1));
+    assertThat(evaluatedRecord.getValue().getTenantId()).isEqualTo(customTenant);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(customProcessId)
                 .limit(1))
         .hasSize(1);
   }
@@ -183,12 +237,6 @@ public class ConditionalEvaluationAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(secondProcessId));
-
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .isEmpty();
   }
 
   @Test
