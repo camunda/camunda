@@ -97,7 +97,7 @@ jobs:
       matrix:
         platform:
           - name: MacOS (Apple Silicon)
-            runner: macos-latest
+            runner: macos-14
             platform_id: darwin-aarch64
             archive_type: zip
             c8run_archive_type: zip
@@ -165,11 +165,12 @@ jobs:
             tar -xzf "${c8run_asset}" -C c8run_temp
           fi
           # Move contents to c8run folder, handling nested directory structure
+          # Use rsync to include hidden files
           mkdir -p c8run
           if [ -d "c8run_temp/c8run" ]; then
-            mv c8run_temp/c8run/* c8run/
+            rsync -a c8run_temp/c8run/ c8run/
           else
-            mv c8run_temp/* c8run/
+            rsync -a c8run_temp/ c8run/
           fi
           rm -rf c8run_temp "${c8run_asset}"
 
@@ -182,9 +183,13 @@ jobs:
           Expand-Archive -Path $c8runAsset -DestinationPath "c8run_temp"
           New-Item -ItemType Directory -Force -Path "c8run"
           if (Test-Path "c8run_temp/c8run") {
-            Move-Item -Path "c8run_temp/c8run/*" -Destination "c8run/"
+            # Copy all items including hidden files
+            Copy-Item -Path "c8run_temp/c8run/*" -Destination "c8run/" -Recurse -Force
+            Get-ChildItem -Path "c8run_temp/c8run" -Hidden | Copy-Item -Destination "c8run/" -Recurse -Force
           } else {
-            Move-Item -Path "c8run_temp/*" -Destination "c8run/"
+            # Copy all items including hidden files
+            Copy-Item -Path "c8run_temp/*" -Destination "c8run/" -Recurse -Force
+            Get-ChildItem -Path "c8run_temp" -Hidden | Copy-Item -Destination "c8run/" -Recurse -Force
           }
           Remove-Item -Recurse -Force "c8run_temp"
           Remove-Item -Force $c8runAsset
@@ -294,25 +299,29 @@ jobs:
           echo "Bundle contents:"
           ls -la bundle/
           echo ""
-          echo "c8run folder contents:"
+          echo "c8run folder contents (including hidden files):"
           ls -la bundle/c8run/ || true
 
       - name: Create bundle archive (zip - Unix)
         if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id != 'windows-x86_64'
         run: |
           cd bundle
-          zip -r "../${BUNDLE_NAME}.zip" .
+          # Include hidden files in the zip archive
+          zip -r "../${BUNDLE_NAME}.zip" . -x "*.DS_Store"
 
       - name: Create bundle archive (zip - Windows)
         if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id == 'windows-x86_64'
         shell: pwsh
         run: |
-          Compress-Archive -Path "bundle/*" -DestinationPath "${env:BUNDLE_NAME}.zip"
+          # Include hidden files in the archive
+          $items = Get-ChildItem -Path "bundle" -Force
+          Compress-Archive -Path $items.FullName -DestinationPath "${env:BUNDLE_NAME}.zip"
 
       - name: Create bundle archive (tar.gz)
         if: matrix.platform.archive_type == 'tar.gz'
         run: |
           cd bundle
+          # tar includes hidden files by default
           tar -czvf "../${BUNDLE_NAME}.tar.gz" .
 
       - name: Upload bundle artifact
@@ -321,6 +330,7 @@ jobs:
           name: ${{ env.BUNDLE_NAME }}
           path: ${{ env.BUNDLE_NAME }}.${{ matrix.platform.archive_type }}
           retention-days: 7
+          compression-level: 0
 
       - name: Observe build status
         if: always()
@@ -345,7 +355,7 @@ jobs:
       matrix:
         platform:
           - name: MacOS (Apple Silicon)
-            runner: macos-latest
+            runner: macos-14
             platform_id: darwin-aarch64
             archive_type: zip
             script_extension: sh
