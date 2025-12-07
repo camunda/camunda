@@ -336,19 +336,18 @@ jobs:
         run: |
           # Debug: List bundle contents before archiving
           Write-Host "Bundle directory contents before archiving:"
-          Get-ChildItem -Path "bundle" -Force | ForEach-Object { Write-Host $_.Name }
+          Get-ChildItem -Path "bundle" -Force -Recurse | Select-Object -First 50 | ForEach-Object { Write-Host $_.FullName }
           Write-Host ""
           
           # Create zip preserving directory structure
           # Use 7-Zip which is available on Windows runners and properly handles directory structures
-          Push-Location "bundle"
-          # Use . to include all contents including hidden files, with -r for recursive
-          7z a -tzip "..\${env:BUNDLE_NAME}.zip" . -r -x!*.zip
-          Pop-Location
+          # Use explicit path with wildcard to include all files and folders
+          $zipPath = Join-Path (Get-Location) "${env:BUNDLE_NAME}.zip"
+          7z a -tzip $zipPath ".\bundle\*" -r
           
           # Debug: List zip contents
           Write-Host "Archive contents:"
-          7z l "${env:BUNDLE_NAME}.zip"
+          7z l $zipPath
 
       - name: Create bundle archive (tar.gz)
         if: matrix.platform.archive_type == 'tar.gz'
