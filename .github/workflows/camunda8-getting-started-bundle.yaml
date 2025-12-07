@@ -228,25 +228,29 @@ jobs:
           cd bundle
           $modelerAsset = "${{ matrix.platform.modeler_asset_pattern }}" -replace '\{version\}', $env:MODELER_VERSION
           
-          # Extract directly to bundle folder - the archive contains a single folder
-          Expand-Archive -Path $modelerAsset -DestinationPath "."
+          # Extract to temp folder first
+          Expand-Archive -Path $modelerAsset -DestinationPath "modeler_temp"
           
           # Find the extracted folder (named like "camunda-modeler-X.Y.Z-win-x64")
-          $extractedFolder = Get-ChildItem -Path "." -Directory | Where-Object { $_.Name -like "camunda-modeler-*" } | Select-Object -First 1
+          $extractedFolder = Get-ChildItem -Path "modeler_temp" -Directory | Select-Object -First 1
           $modelerFolderName = $extractedFolder.Name
+          
+          # Move the modeler folder to bundle root
+          Move-Item -Path $extractedFolder.FullName -Destination "."
+          Remove-Item -Recurse -Force "modeler_temp"
           
           Write-Host "Modeler extracted to: $modelerFolderName"
           Write-Host "Contents:"
           Get-ChildItem -Path $modelerFolderName | Select-Object Name
           
-          # Create a Windows shortcut to the Camunda Modeler.exe
-          $WshShell = New-Object -ComObject WScript.Shell
-          $Shortcut = $WshShell.CreateShortcut("$PWD\2-camunda-modeler.lnk")
-          $Shortcut.TargetPath = "$PWD\$modelerFolderName\Camunda Modeler.exe"
-          $Shortcut.WorkingDirectory = "$PWD\$modelerFolderName"
-          $Shortcut.Save()
+          # Create a batch file launcher instead of shortcut (supports relative paths)
+          $batchContent = @"
+          @echo off
+          start "" "%~dp0$modelerFolderName\Camunda Modeler.exe"
+          "@
+          Set-Content -Path "2-camunda-modeler.bat" -Value $batchContent
           
-          Write-Host "Created shortcut: 2-camunda-modeler.lnk -> $modelerFolderName\Camunda Modeler.exe"
+          Write-Host "Created launcher: 2-camunda-modeler.bat -> $modelerFolderName\Camunda Modeler.exe"
           
           Remove-Item -Force $modelerAsset
 
@@ -494,9 +498,9 @@ jobs:
               exit 1
             fi
           elif [ "${{ matrix.platform.platform_id }}" == "windows-x86_64" ]; then
-            # Windows has a shortcut and modeler folder
-            if [ ! -f "2-camunda-modeler.lnk" ]; then
-              echo "ERROR: 2-camunda-modeler.lnk shortcut not found"
+            # Windows has a batch launcher and modeler folder
+            if [ ! -f "2-camunda-modeler.bat" ]; then
+              echo "ERROR: 2-camunda-modeler.bat launcher not found"
               exit 1
             fi
             # Check that a camunda-modeler-* folder exists
