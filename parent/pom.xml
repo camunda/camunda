@@ -149,7 +149,7 @@
 
     <version.commons-io>2.17.0</version.commons-io>
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
-    <version.unboundid-ldapsdk>7.0.3</version.unboundid-ldapsdk>
+    <version.unboundid-ldapsdk>7.0.4</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
     <version.springdoc>2.8.14</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
