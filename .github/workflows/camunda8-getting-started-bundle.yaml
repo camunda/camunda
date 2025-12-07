@@ -227,30 +227,40 @@ jobs:
         run: |
           cd bundle
           $modelerAsset = "${{ matrix.platform.modeler_asset_pattern }}" -replace '\{version\}', $env:MODELER_VERSION
+          $expectedFolderName = "camunda-modeler-$($env:MODELER_VERSION)-win-x64"
           
           # Extract to temp folder first
           Expand-Archive -Path $modelerAsset -DestinationPath "modeler_temp"
           
-          # Find the extracted folder (named like "camunda-modeler-X.Y.Z-win-x64")
-          $extractedFolder = Get-ChildItem -Path "modeler_temp" -Directory | Select-Object -First 1
-          $modelerFolderName = $extractedFolder.Name
+          # Debug: List what was extracted
+          Write-Host "Extracted contents of modeler_temp:"
+          Get-ChildItem -Path "modeler_temp" -Force | ForEach-Object { Write-Host "  $($_.Name)" }
           
-          # Move the modeler folder to bundle root
-          Move-Item -Path $extractedFolder.FullName -Destination "."
+          # Check if the expected folder exists (zip has parent folder structure)
+          if (Test-Path "modeler_temp/$expectedFolderName") {
+            Write-Host "Found expected modeler folder: $expectedFolderName"
+            Move-Item -Path "modeler_temp/$expectedFolderName" -Destination "."
+          } else {
+            # Zip is flat (no parent folder) - create the folder and move contents into it
+            Write-Host "Modeler zip is flat, creating folder: $expectedFolderName"
+            New-Item -ItemType Directory -Path "$expectedFolderName" -Force
+            Get-ChildItem -Path "modeler_temp" -Force | Move-Item -Destination "$expectedFolderName/"
+          }
+          
           Remove-Item -Recurse -Force "modeler_temp"
           
-          Write-Host "Modeler extracted to: $modelerFolderName"
-          Write-Host "Contents:"
-          Get-ChildItem -Path $modelerFolderName | Select-Object Name
+          Write-Host "Modeler extracted to: $expectedFolderName"
+          Write-Host "First 10 items in modeler folder:"
+          Get-ChildItem -Path $expectedFolderName | Select-Object -First 10 | ForEach-Object { Write-Host "  $($_.Name)" }
           
           # Create a batch file launcher instead of shortcut (supports relative paths)
           $batchContent = @"
           @echo off
-          start "" "%~dp0$modelerFolderName\Camunda Modeler.exe"
+          start "" "%~dp0$expectedFolderName\Camunda Modeler.exe"
           "@
           Set-Content -Path "2-camunda-modeler.bat" -Value $batchContent
           
-          Write-Host "Created launcher: 2-camunda-modeler.bat -> $modelerFolderName\Camunda Modeler.exe"
+          Write-Host "Created launcher: 2-camunda-modeler.bat -> $expectedFolderName\Camunda Modeler.exe"
           
           Remove-Item -Force $modelerAsset
 
