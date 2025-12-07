@@ -195,12 +195,16 @@ jobs:
           Remove-Item -Force $c8runAsset
 
       - name: Download Camunda Modeler
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           modeler_asset="${{ matrix.platform.modeler_asset_pattern }}"
           modeler_asset="${modeler_asset//\{version\}/${MODELER_VERSION}}"
-          modeler_url="https://downloads.camunda.cloud/release/camunda-modeler/${MODELER_VERSION}/${modeler_asset}"
-          echo "Downloading modeler from: ${modeler_url}"
-          curl -fSL "${modeler_url}" -o "bundle/${modeler_asset}"
+          echo "Downloading modeler asset: ${modeler_asset} from GitHub release v${MODELER_VERSION}"
+          gh release download "v${MODELER_VERSION}" \
+            --repo camunda/camunda-modeler \
+            --pattern "${modeler_asset}" \
+            --dir bundle
 
       - name: Extract Modeler (macOS DMG)
         if: startsWith(matrix.platform.platform_id, 'darwin')
