@@ -227,15 +227,27 @@ jobs:
         run: |
           cd bundle
           $modelerAsset = "${{ matrix.platform.modeler_asset_pattern }}" -replace '\{version\}', $env:MODELER_VERSION
-          Expand-Archive -Path $modelerAsset -DestinationPath "modeler_temp"
           
-          # Find the extracted folder (usually named like "camunda-modeler-X.Y.Z-win-x64")
-          $extractedFolder = Get-ChildItem -Path "modeler_temp" -Directory | Select-Object -First 1
+          # Extract directly to bundle folder - the archive contains a single folder
+          Expand-Archive -Path $modelerAsset -DestinationPath "."
           
-          # Rename to 2-camunda-modeler
-          Move-Item -Path $extractedFolder.FullName -Destination "2-camunda-modeler"
+          # Find the extracted folder (named like "camunda-modeler-X.Y.Z-win-x64")
+          $extractedFolder = Get-ChildItem -Path "." -Directory | Where-Object { $_.Name -like "camunda-modeler-*" } | Select-Object -First 1
+          $modelerFolderName = $extractedFolder.Name
           
-          Remove-Item -Recurse -Force "modeler_temp"
+          Write-Host "Modeler extracted to: $modelerFolderName"
+          Write-Host "Contents:"
+          Get-ChildItem -Path $modelerFolderName | Select-Object Name
+          
+          # Create a Windows shortcut to the Camunda Modeler.exe
+          $WshShell = New-Object -ComObject WScript.Shell
+          $Shortcut = $WshShell.CreateShortcut("$PWD\2-camunda-modeler.lnk")
+          $Shortcut.TargetPath = "$PWD\$modelerFolderName\Camunda Modeler.exe"
+          $Shortcut.WorkingDirectory = "$PWD\$modelerFolderName"
+          $Shortcut.Save()
+          
+          Write-Host "Created shortcut: 2-camunda-modeler.lnk -> $modelerFolderName\Camunda Modeler.exe"
+          
           Remove-Item -Force $modelerAsset
 
       - name: Extract Modeler (Linux)
@@ -479,6 +491,17 @@ jobs:
           if [ "${{ matrix.platform.platform_id }}" == "darwin-aarch64" ] || [ "${{ matrix.platform.platform_id }}" == "darwin-x86_64" ]; then
             if [ ! -d "2-camunda-modeler.app" ]; then
               echo "ERROR: 2-camunda-modeler.app not found"
+              exit 1
+            fi
+          elif [ "${{ matrix.platform.platform_id }}" == "windows-x86_64" ]; then
+            # Windows has a shortcut and modeler folder
+            if [ ! -f "2-camunda-modeler.lnk" ]; then
+              echo "ERROR: 2-camunda-modeler.lnk shortcut not found"
+              exit 1
+            fi
+            # Check that a camunda-modeler-* folder exists
+            if ! ls -d camunda-modeler-* 1> /dev/null 2>&1; then
+              echo "ERROR: camunda-modeler-* folder not found"
               exit 1
             fi
           else
