@@ -10,7 +10,6 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
-import com.nimbusds.jose.JOSEObjectType;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
@@ -152,9 +151,6 @@ public class WebSecurityConfig {
           "/new/**",
           "/tasklist/new/**",
           "/favicon.ico");
-  // We explicitly support the "at+jwt" JWT 'typ' header defined in
-  // https://datatracker.ietf.org/doc/html/rfc9068#name-header
-  static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
   private static final String SPRING_DEFAULT_UI_CSS = "/default-ui.css";
   public static final Set<String> WEBAPP_PATHS =
       Set.of(
