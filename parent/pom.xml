@@ -171,7 +171,7 @@
 
     <version.elasticsearch-test-container>2.0.2</version.elasticsearch-test-container>
     <version.postgres-test-container>2.0.2</version.postgres-test-container>
-    <version.elasticsearch7>7.17.29</version.elasticsearch7>
+    <version.elasticsearch7>8.18.8</version.elasticsearch7>
     <version.lz4>1.8.1</version.lz4>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
