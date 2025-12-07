@@ -462,29 +462,116 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Test starter script (Unix)
+      - name: Run starter script integration test (Unix)
         if: matrix.platform.script_extension == 'sh'
         run: |
           cd test-bundle
           chmod +x 1-camunda-starter.sh
-          # Run the starter script with a timeout and check it starts properly
-          # We use timeout to ensure it doesn't run forever
-          # The script should start c8run and open a browser - we'll verify the script syntax is correct
-          bash -n 1-camunda-starter.sh
-          echo "Starter script syntax is valid"
+          chmod +x c8run/c8run
+          
+          # Run c8run in background and capture PID
+          echo "Starting c8run..."
+          cd c8run
+          ./c8run start &
+          C8RUN_PID=$!
+          cd ..
+          
+          # Wait for c8run to start (check for REST API availability)
+          echo "Waiting for c8run to start..."
+          MAX_WAIT=120
+          WAITED=0
+          while [ $WAITED -lt $MAX_WAIT ]; do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health 2>/dev/null | grep -q "200"; then
+              echo "c8run is healthy!"
+              break
+            fi
+            sleep 5
+            WAITED=$((WAITED + 5))
+            echo "Waiting... ($WAITED/$MAX_WAIT seconds)"
+          done
+          
+          if [ $WAITED -ge $MAX_WAIT ]; then
+            echo "ERROR: c8run did not start within $MAX_WAIT seconds"
+            # Try to show logs
+            cat c8run/log/*.log 2>/dev/null || true
+            exit 1
+          fi
+          
+          # Verify the API is responding
+          echo "Verifying c8run REST API..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health)
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "ERROR: c8run health check failed with status $HTTP_STATUS"
+            exit 1
+          fi
+          
+          echo "Integration test passed - c8run started successfully!"
+          
+          # Graceful shutdown
+          echo "Stopping c8run..."
+          cd c8run
+          ./c8run stop || true
+          cd ..
+          
+          # Wait for shutdown
+          sleep 5
+          echo "c8run stopped"
 
-      - name: Test starter script (Windows)
+      - name: Run starter script integration test (Windows)
         if: matrix.platform.script_extension == 'bat'
-        shell: cmd
+        shell: pwsh
         run: |
           cd test-bundle
-          REM Verify the batch file exists and has correct syntax by parsing it
-          if exist 1-camunda-starter.bat (
-            echo Starter script exists
-          ) else (
-            echo Starter script not found
-            exit /b 1
-          )
+          
+          # Start c8run in background
+          Write-Host "Starting c8run..."
+          $process = Start-Process -FilePath "c8run\c8run.exe" -ArgumentList "start" -PassThru -NoNewWindow
+          
+          # Wait for c8run to start (check for REST API availability)
+          Write-Host "Waiting for c8run to start..."
+          $maxWait = 120
+          $waited = 0
+          $started = $false
+          
+          while ($waited -lt $maxWait) {
+            try {
+              $response = Invoke-WebRequest -Uri "http://localhost:8080/actuator/health" -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
+              if ($response.StatusCode -eq 200) {
+                Write-Host "c8run is healthy!"
+                $started = $true
+                break
+              }
+            } catch {
+              # Expected while starting up
+            }
+            Start-Sleep -Seconds 5
+            $waited += 5
+            Write-Host "Waiting... ($waited/$maxWait seconds)"
+          }
+          
+          if (-not $started) {
+            Write-Host "ERROR: c8run did not start within $maxWait seconds"
+            # Try to show logs
+            Get-Content -Path "c8run\log\*.log" -ErrorAction SilentlyContinue
+            exit 1
+          }
+          
+          # Verify the API is responding
+          Write-Host "Verifying c8run REST API..."
+          $response = Invoke-WebRequest -Uri "http://localhost:8080/actuator/health" -UseBasicParsing
+          if ($response.StatusCode -ne 200) {
+            Write-Host "ERROR: c8run health check failed with status $($response.StatusCode)"
+            exit 1
+          }
+          
+          Write-Host "Integration test passed - c8run started successfully!"
+          
+          # Graceful shutdown
+          Write-Host "Stopping c8run..."
+          Start-Process -FilePath "c8run\c8run.exe" -ArgumentList "stop" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+          
+          Start-Sleep -Seconds 5
+          Write-Host "c8run stopped"
 
       - name: Verify bundle structure
         run: |
