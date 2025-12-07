@@ -43,7 +43,7 @@ public final class JobHandlerMetrics {
   }
 
   /** Contains constants for the tags used in job handler metrics. */
-  enum Tag {
+  public enum Tag {
     TYPE("type"),
     ACTION("action");
 
@@ -59,7 +59,7 @@ public final class JobHandlerMetrics {
   }
 
   /** Contains constants for the names of job handler metrics. */
-  enum Name {
+  public enum Name {
     INVOCATION("camunda.job.invocations"),
     EXECUTION_TIME("camunda.job.execution-time");
 
@@ -79,7 +79,7 @@ public final class JobHandlerMetrics {
    *
    * <p>These are used as values for the {@link Tag#ACTION} tag.
    */
-  enum Action {
+  public enum Action {
     ACTIVATED("activated"),
     COMPLETED("completed"),
     FAILED("failed"),
