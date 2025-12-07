@@ -332,9 +332,11 @@ jobs:
         if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id == 'windows-x86_64'
         shell: pwsh
         run: |
-          # Include hidden files in the archive
-          $items = Get-ChildItem -Path "bundle" -Force
-          Compress-Archive -Path $items.FullName -DestinationPath "${env:BUNDLE_NAME}.zip"
+          # Create zip preserving directory structure
+          # Use 7-Zip which is available on Windows runners and properly handles directory structures
+          Push-Location "bundle"
+          7z a -tzip "..\${env:BUNDLE_NAME}.zip" * -r
+          Pop-Location
 
       - name: Create bundle archive (tar.gz)
         if: matrix.platform.archive_type == 'tar.gz'
