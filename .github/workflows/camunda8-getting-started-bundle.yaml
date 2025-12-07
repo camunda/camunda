@@ -97,14 +97,14 @@ jobs:
       matrix:
         platform:
           - name: MacOS (Apple Silicon)
-            runner: macos-15
+            runner: macos-latest
             platform_id: darwin-aarch64
             archive_type: zip
             c8run_archive_type: zip
             modeler_asset_pattern: "camunda-modeler-{version}-mac-arm64.dmg"
             script_extension: sh
           - name: MacOS (Intel)
-            runner: macos-15-large
+            runner: macos-15-intel
             platform_id: darwin-x86_64
             archive_type: zip
             c8run_archive_type: zip
@@ -355,12 +355,12 @@ jobs:
       matrix:
         platform:
           - name: MacOS (Apple Silicon)
-            runner: macos-15
+            runner: macos-latest
             platform_id: darwin-aarch64
             archive_type: zip
             script_extension: sh
           - name: MacOS (Intel)
-            runner: macos-15-large
+            runner: macos-15-intel
             platform_id: darwin-x86_64
             archive_type: zip
             script_extension: sh
