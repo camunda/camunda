@@ -261,16 +261,19 @@ jobs:
           modeler_asset="${{ matrix.platform.modeler_asset_pattern }}"
           modeler_asset="${modeler_asset//\{version\}/${MODELER_VERSION}}"
           
-          mkdir modeler_temp
-          tar -xzf "${modeler_asset}" -C modeler_temp
+          # Extract directly - the archive contains a folder like "camunda-modeler-X.Y.Z-linux-x64"
+          tar -xzf "${modeler_asset}"
           
-          # Find the extracted folder
-          extracted_folder=$(ls modeler_temp)
+          # Find the extracted folder name using find instead of ls
+          modeler_folder=$(find . -maxdepth 1 -type d -name "camunda-modeler-*" -printf '%f\n' | head -1)
+          echo "Modeler extracted to: ${modeler_folder}"
           
-          # Rename to 2-camunda-modeler
-          mv "modeler_temp/${extracted_folder}" "2-camunda-modeler"
+          # Create a symlink to the Camunda Modeler executable
+          ln -s "${modeler_folder}/camunda-modeler" "2-camunda-modeler"
           
-          rm -rf modeler_temp "${modeler_asset}"
+          echo "Created symlink: 2-camunda-modeler -> ${modeler_folder}/camunda-modeler"
+          
+          rm -f "${modeler_asset}"
 
       - name: Clone camunda-8-get-started repository
         run: |
@@ -508,9 +511,15 @@ jobs:
               echo "ERROR: camunda-modeler-* folder not found"
               exit 1
             fi
-          else
-            if [ ! -d "2-camunda-modeler" ]; then
-              echo "ERROR: 2-camunda-modeler folder not found"
+          elif [ "${{ matrix.platform.platform_id }}" == "linux-x86_64" ]; then
+            # Linux has a symlink and modeler folder
+            if [ ! -L "2-camunda-modeler" ]; then
+              echo "ERROR: 2-camunda-modeler symlink not found"
+              exit 1
+            fi
+            # Check that a camunda-modeler-* folder exists
+            if ! ls -d camunda-modeler-* 1> /dev/null 2>&1; then
+              echo "ERROR: camunda-modeler-* folder not found"
               exit 1
             fi
           fi
