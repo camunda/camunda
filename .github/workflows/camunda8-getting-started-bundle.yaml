@@ -560,11 +560,64 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  upload-to-release:
+    name: Upload to GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [resolve-versions, build-bundle, test-bundle]
+    if: ${{ !inputs.dry_run && needs.build-bundle.result == 'success' && needs.test-bundle.result == 'success' }}
+    permissions:
+      contents: write
+    env:
+      C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all bundle artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bundles
+          pattern: camunda8-getting-started-bundle-*
+
+      - name: List downloaded bundles
+        run: |
+          echo "Downloaded bundles:"
+          find bundles -type f -name "*.zip" -o -name "*.tar.gz" | while read f; do
+            echo "  - $(basename $f) ($(du -h "$f" | cut -f1))"
+          done
+
+      - name: Upload bundles to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Uploading bundles to release: ${C8RUN_VERSION}"
+          
+          # Find all bundle files and upload them
+          find bundles -type f \( -name "*.zip" -o -name "*.tar.gz" \) | while read bundle_file; do
+            bundle_name=$(basename "$bundle_file")
+            echo "Uploading: ${bundle_name}"
+            gh release upload "${C8RUN_VERSION}" "$bundle_file" \
+              --repo camunda/camunda \
+              --clobber
+          done
+          
+          echo "All bundles uploaded successfully!"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [resolve-versions, build-bundle, test-bundle]
+    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release]
     if: always()
     permissions:
       contents: read
@@ -578,6 +631,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           BUILD_STATUS: ${{ needs.build-bundle.result }}
           TEST_STATUS: ${{ needs.test-bundle.result }}
+          UPLOAD_STATUS: ${{ needs.upload-to-release.result }}
         run: |
           cat << EOF >> "$GITHUB_STEP_SUMMARY"
           # Camunda 8 Getting Started Bundle
@@ -590,6 +644,7 @@ jobs:
           ## Build Status
           - **Build Jobs**: ${BUILD_STATUS}
           - **Test Jobs**: ${TEST_STATUS}
+          - **Upload to Release**: ${UPLOAD_STATUS:-skipped}
 
           ## Generated Bundles
           The following bundles were created:
@@ -603,7 +658,11 @@ jobs:
           if [[ "${DRY_RUN}" == "true" ]]; then
             echo "ℹ️ **Dry run mode**: Bundles are available as workflow artifacts only." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "🚀 **Release mode**: Bundles will be uploaded to GitHub release ${C8RUN_VERSION}." >> "$GITHUB_STEP_SUMMARY"
+            if [[ "${UPLOAD_STATUS}" == "success" ]]; then
+              echo "✅ **Release mode**: Bundles have been uploaded to GitHub release ${C8RUN_VERSION}." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "❌ **Release mode**: Upload to GitHub release ${C8RUN_VERSION} failed or was skipped." >> "$GITHUB_STEP_SUMMARY"
+            fi
           fi
 
       - name: Observe build status
