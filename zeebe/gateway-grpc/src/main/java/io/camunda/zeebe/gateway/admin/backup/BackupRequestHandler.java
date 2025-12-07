@@ -16,8 +16,10 @@ import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.InstantSource;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -127,6 +129,32 @@ public final class BackupRequestHandler implements BackupApi {
 
                         return aggregatePartitionStatus(backupId, partitionStatuses);
                       });
+            });
+  }
+
+  @Override
+  public CompletionStage<CheckpointStateResponse> getLatestCheckpointState(
+      final CheckpointType type) {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var statusesReceived =
+                  topology.getPartitions().stream()
+                      .map(partitionId -> createCheckpointRequest(partitionId, type))
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
+                  .thenApply(
+                      ignore ->
+                          statusesReceived.stream()
+                              .map(response -> response.join().getResponse())
+                              .toList()
+                              .stream()
+                              .max(
+                                  Comparator.comparingLong(
+                                      CheckpointStateResponse::getCheckpointId))
+                              .orElse(new CheckpointStateResponse()));
             });
   }
 
@@ -334,6 +362,25 @@ public final class BackupRequestHandler implements BackupApi {
     final var request = new BackupDeleteRequest();
     request.setPartitionId(partitionId);
     request.setBackupId(backupId);
+    return request;
+  }
+
+  private CheckpointStateResponse aggregateCheckpointResponses(
+      final List<CheckpointStateResponse> responses) {
+    var highestCheckpointResponse = responses.getFirst();
+    for (final var response : responses) {
+      if (response.getCheckpointId() > highestCheckpointResponse.getCheckpointId()) {
+        highestCheckpointResponse = response;
+      }
+    }
+    return highestCheckpointResponse;
+  }
+
+  private BrokerCheckpointStateRequest createCheckpointRequest(
+      final int partitionId, final CheckpointType type) {
+    final var request = new BrokerCheckpointStateRequest();
+    request.setPartitionId(partitionId);
+    request.setCheckpointType(type);
     return request;
   }
 }

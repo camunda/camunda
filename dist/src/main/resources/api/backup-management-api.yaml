@@ -111,6 +111,17 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
+  /backupRuntime/state/{type}:
+    get:
+      summary: Get latest checkpoint state
+      description: Information about the latest checkpoint of the given type.
+      parameters:
+        - $ref: '#/components/parameters/CheckpointType'
+      responses:
+        '200':
+          description: OK
+          $ref: '#/components/responses/CheckpointState'
+
 
   # Section on historic backups
   /backupHistory:
@@ -228,6 +239,15 @@ components:
           - $ref: '#/components/schemas/BackupId'
           - $ref: '#/components/schemas/BackupIdPrefix'
 
+    CheckpointType:
+      description: The type of the latest checkpoint.
+      in: path
+      required: true
+      example: backup
+      name: type
+      schema:
+        $ref: '#/components/schemas/CheckpointRequestType'
+
   responses:
     Error:
       description: Generic error response
@@ -246,7 +266,7 @@ components:
               - $ref: '#/components/schemas/BackupInfo'
     BackupList:
       description: |
-       List of all available backups.
+        List of all available backups.
       content:
         application/json:
           schema:
@@ -286,6 +306,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/TakeBackupHistoryResponse'
+
+    CheckpointState:
+      description: Response for checkpoint state request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CheckpointState'
   schemas:
     Error:
       title: Error response
@@ -356,6 +383,33 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/BackupInfo'
+    CheckpointRequestType:
+      title: Checkpoint Request Type
+      description: The type of checkpoint to query.
+      type: string
+      enum:
+        - backup
+        - checkpoint
+      example: backup
+    CheckpointType:
+      title: Checkpoint Type
+      description: The type of the checkpoint.
+      type: string
+      enum:
+        - MANUAL_BACKUP
+        - SCHEDULED_BACKUP
+        - MARKER
+      example: SCHEDULED_BACKUP
+    CheckpointId:
+      title: Checkpoint ID
+      description: |
+        The ID of the latest checkpoint. The ID of the checkpoint must be a positive numerical value.
+        As checkpoints are logically ordered by their IDs (ascending), each successive checkpoint
+        must use a higher ID than the previous one.
+      type: integer
+      format: int64
+      example: 1
+      minimum: 0
 
     BackupInfo:
       title: Backup Info
@@ -468,8 +522,8 @@ components:
       type: object
       properties:
         message:
-           description: A message indicating backup has been triggered
-           type: string
+          description: A message indicating backup has been triggered
+          type: string
 
     TakeBackupHistoryRequest:
       title: TakeBackupRequest
@@ -545,3 +599,37 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/HistoryBackupInfo'
+
+    CheckpointState:
+      title: Checkpoint State
+      description: |
+        Detailed information about the latest state of the cluster in regards to checkpoints. This
+        can either be in terms of backups or just logstream checkpoints.
+      type: object
+      properties:
+        checkpointId:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/CheckpointId'
+        checkpointType:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/CheckpointType'
+        partitionId:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/PartitionId'
+        checkpointPosition:
+          readOnly: true
+          type: integer
+          format: int64
+          example: 1500
+        checkpointTimestamp:
+          readOnly: true
+          type: string
+          format: date-time
+          example: "2022-09-15T13:10:38.176514094Z"
+      required:
+        - backupId
+        - state
+        - details

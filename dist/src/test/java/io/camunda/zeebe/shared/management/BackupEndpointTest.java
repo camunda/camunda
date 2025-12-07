@@ -36,8 +36,10 @@ import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
@@ -666,6 +668,104 @@ final class BackupEndpointTest {
 
       // then
       assertThat(response.getStatus()).isEqualTo(204);
+    }
+  }
+
+  @Nested
+  final class StateTest {
+    @Test
+    void shouldReturnCheckpointState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setCheckpointType(CheckpointType.MARKER);
+      stateResponse.setCheckpointId(1L);
+      stateResponse.setPartitionId(1);
+      stateResponse.setCheckpointPosition(10L);
+      stateResponse.setCheckpointTimestamp(20L);
+
+      when(api.getLatestCheckpointState(CheckpointType.MARKER))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.state("checkpoint");
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnBackupOnDifferentTypeState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setCheckpointType(CheckpointType.MANUAL_BACKUP);
+      stateResponse.setCheckpointId(1L);
+      stateResponse.setPartitionId(1);
+      stateResponse.setCheckpointPosition(10L);
+      stateResponse.setCheckpointTimestamp(20L);
+
+      when(api.getLatestCheckpointState(CheckpointType.SCHEDULED_BACKUP))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.state("backup");
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnBackupState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setCheckpointType(CheckpointType.SCHEDULED_BACKUP);
+      stateResponse.setCheckpointId(1L);
+      stateResponse.setPartitionId(1);
+      stateResponse.setCheckpointPosition(10L);
+      stateResponse.setCheckpointTimestamp(20L);
+
+      when(api.getLatestCheckpointState(CheckpointType.SCHEDULED_BACKUP))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.state("backup");
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnEmptyState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+
+      final var stateResponse = new CheckpointStateResponse();
+
+      when(api.getLatestCheckpointState(CheckpointType.SCHEDULED_BACKUP))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.state("backup");
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
     }
   }
 }

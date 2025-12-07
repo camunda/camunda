@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public interface BackupApi {
   String WILDCARD = "*";
+  String CHECKPOINT = "checkpoint";
+  String BACKUP = "backup";
 
   /**
    * Triggers backup on all partitions. Returned future is completed successfully after all
@@ -45,6 +49,17 @@ public interface BackupApi {
    * @return the status of the backup
    */
   CompletionStage<BackupStatus> getStatus(long backupId);
+
+  /**
+   * Returns the latest checkpoint info for the given type amongst all partitions.
+   *
+   * @param type {@link CheckpointType} of which the latest checkpoint state is requested. This
+   *     argument is aggregated in the meaning that {@link CheckpointType#MARKER} is interpreted as
+   *     "the latest checkpoint of any type" and {@link CheckpointType#MANUAL_BACKUP} or {@link
+   *     CheckpointType#SCHEDULED_BACKUP} as "the latest backup of any type".
+   * @return the latest checkpoint state for the given type
+   */
+  CompletionStage<CheckpointStateResponse> getLatestCheckpointState(CheckpointType type);
 
   /**
    * @return a list of available backups

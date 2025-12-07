@@ -67,4 +67,13 @@ public abstract class BackupEndpointStandaloneTest {
     // then
     verify(backupEndpoint).delete(11L);
   }
+
+  @Test
+  public void shouldCallStateWhenIsStandalone() {
+    // when
+    backupEndpointStandalone.state("checkpoint");
+
+    // then
+    verify(backupEndpoint).state("checkpoint");
+  }
 }

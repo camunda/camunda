@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.backupapi;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
@@ -46,6 +48,7 @@ public final class BackupApiRequestHandler
   private final LogStreamWriter logStreamWriter;
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
+  private final CheckpointState checkpointState;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
 
@@ -53,12 +56,14 @@ public final class BackupApiRequestHandler
       final AtomixServerTransport transport,
       final LogStreamWriter logStreamWriter,
       final BackupManager backupManager,
+      final CheckpointState checkpointState,
       final int partitionId,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.logStreamWriter = logStreamWriter;
     this.transport = transport;
     this.backupManager = backupManager;
+    this.checkpointState = checkpointState;
     this.partitionId = partitionId;
     this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partitionId, RequestType.BACKUP);
@@ -93,6 +98,7 @@ public final class BackupApiRequestHandler
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
+      case QUERY_STATE -> handleQueryStateRequest(requestReader, responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -204,6 +210,30 @@ public final class BackupApiRequestHandler
                 result.complete(Either.left(errorWriter));
               }
             });
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleQueryStateRequest(
+      final BackupApiRequestReader requestReader,
+      final BackupApiResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+    final var type = requestReader.checkpointType();
+    final var response = new CheckpointStateResponse();
+    response.setPartitionId(requestReader.partitionId());
+    if (type == CheckpointType.MANUAL_BACKUP || type == CheckpointType.SCHEDULED_BACKUP) {
+      response.setCheckpointId(checkpointState.getLatestBackupId());
+      response.setCheckpointTimestamp(checkpointState.getLatestBackupTimestamp());
+      response.setCheckpointType(checkpointState.getLatestBackupType());
+      response.setCheckpointPosition(checkpointState.getLatestBackupPosition());
+    } else {
+      response.setCheckpointId(checkpointState.getLatestCheckpointId());
+      response.setCheckpointTimestamp(checkpointState.getLatestCheckpointTimestamp());
+      response.setCheckpointType(checkpointState.getLatestCheckpointType());
+      response.setCheckpointPosition(checkpointState.getLatestCheckpointPosition());
+    }
+    result.complete(Either.right(responseWriter.withCheckpointState(response)));
     return result;
   }
 

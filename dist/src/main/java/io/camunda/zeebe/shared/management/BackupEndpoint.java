@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
@@ -99,19 +100,23 @@ public final class BackupEndpoint {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
-    if (prefixOrId.endsWith(BackupApi.WILDCARD)) {
-      return listPrefix(prefixOrId);
+  public WebEndpointResponse<?> query(@Selector final String prefixOrIdOrType) {
+    if (BackupApi.CHECKPOINT.equals(prefixOrIdOrType)
+        || BackupApi.BACKUP.equals(prefixOrIdOrType)) {
+      return state(prefixOrIdOrType);
+    }
+    if (prefixOrIdOrType.endsWith(BackupApi.WILDCARD)) {
+      return listPrefix(prefixOrIdOrType);
     }
     final long id;
     try {
-      id = Long.parseLong(prefixOrId);
+      id = Long.parseLong(prefixOrIdOrType);
     } catch (final NumberFormatException e) {
       return new WebEndpointResponse<>(
           new Error()
               .message(
                   "Expected a backup ID or prefix ending with '*', but got '%s'."
-                      .formatted(prefixOrId)),
+                      .formatted(prefixOrIdOrType)),
           400);
     }
     return status(id);
@@ -122,6 +127,17 @@ public final class BackupEndpoint {
     try {
       api.deleteBackup(id).toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
+    } catch (final Exception e) {
+      return mapErrorResponse(e);
+    }
+  }
+
+  private WebEndpointResponse<?> state(final String type) {
+    try {
+      final var cpType =
+          BackupApi.BACKUP.equals(type) ? CheckpointType.SCHEDULED_BACKUP : CheckpointType.MARKER;
+      final var checkpointState = api.getLatestCheckpointState(cpType).toCompletableFuture().join();
+      return new WebEndpointResponse<>(checkpointState);
     } catch (final Exception e) {
       return mapErrorResponse(e);
     }
