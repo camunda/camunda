@@ -326,17 +326,29 @@ jobs:
         run: |
           # Use ditto to create zip archive - this preserves macOS extended attributes, 
           # resource forks, and code signatures which are essential for .app bundles
-          ditto -c -k --keepParent --zlibCompressionLevel 6 "bundle" "${BUNDLE_NAME}.zip"
+          # Archive from within the bundle directory so the zip contains the contents, not the parent folder
+          cd bundle
+          ditto -c -k --sequesterRsrc --zlibCompressionLevel 6 . "../${BUNDLE_NAME}.zip"
 
       - name: Create bundle archive (zip - Windows)
         if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id == 'windows-x86_64'
         shell: pwsh
         run: |
+          # Debug: List bundle contents before archiving
+          Write-Host "Bundle directory contents before archiving:"
+          Get-ChildItem -Path "bundle" -Force | ForEach-Object { Write-Host $_.Name }
+          Write-Host ""
+          
           # Create zip preserving directory structure
           # Use 7-Zip which is available on Windows runners and properly handles directory structures
           Push-Location "bundle"
-          7z a -tzip "..\${env:BUNDLE_NAME}.zip" * -r
+          # Use . to include all contents including hidden files, with -r for recursive
+          7z a -tzip "..\${env:BUNDLE_NAME}.zip" . -r -x!*.zip
           Pop-Location
+          
+          # Debug: List zip contents
+          Write-Host "Archive contents:"
+          7z l "${env:BUNDLE_NAME}.zip"
 
       - name: Create bundle archive (tar.gz)
         if: matrix.platform.archive_type == 'tar.gz'
