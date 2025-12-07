@@ -321,12 +321,12 @@ jobs:
           echo "c8run folder contents (including hidden files):"
           ls -la bundle/c8run/ || true
 
-      - name: Create bundle archive (zip - Unix)
-        if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id != 'windows-x86_64'
+      - name: Create bundle archive (zip - macOS)
+        if: matrix.platform.archive_type == 'zip' && startsWith(matrix.platform.platform_id, 'darwin')
         run: |
-          cd bundle
-          # Include hidden files in the zip archive
-          zip -r "../${BUNDLE_NAME}.zip" . -x "*.DS_Store"
+          # Use ditto to create zip archive - this preserves macOS extended attributes, 
+          # resource forks, and code signatures which are essential for .app bundles
+          ditto -c -k --keepParent --zlibCompressionLevel 6 "bundle" "${BUNDLE_NAME}.zip"
 
       - name: Create bundle archive (zip - Windows)
         if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id == 'windows-x86_64'
