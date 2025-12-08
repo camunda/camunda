@@ -15,10 +15,11 @@
  */
 package io.camunda.process.test.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.byProcessId;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.dsl.TestCase;
+import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.api.dsl.TestScenarioSource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -27,22 +28,27 @@ import org.junit.jupiter.params.ParameterizedTest;
 @CamundaProcessTest
 public class TestScenarioIT {
 
-  // to be injected
   private CamundaClient client;
-  private CamundaProcessTestContext processTestContext;
+  private TestScenarioRunner testScenarioRunner;
 
   @ParameterizedTest
   @TestScenarioSource
-  void shouldPass(final TestCase testCase) {
+  void shouldPass(final TestCase testCase, final String scenarioFile) {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process").startEvent("start").name("end").done();
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .name("Start")
+            .endEvent("end")
+            .name("End")
+            .done();
 
     client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
     // when
+    testScenarioRunner.run(testCase);
 
     // then
-    assertThat(testCase).isNotNull();
+    CamundaAssert.assertThatProcessInstance(byProcessId("process")).isCreated();
   }
 }
