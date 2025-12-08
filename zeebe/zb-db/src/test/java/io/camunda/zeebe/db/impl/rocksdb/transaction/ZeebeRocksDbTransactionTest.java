@@ -20,6 +20,7 @@ import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.io.File;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,16 +33,23 @@ import org.rocksdb.Status.SubCode;
 public final class ZeebeRocksDbTransactionTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory();
-
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
   private TransactionContext transactionContext;
 
   @Before
   public void setup() throws Exception {
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     final ZeebeDb<DefaultColumnFamily> zeebeDb = dbFactory.createDb(pathName);
     transactionContext = zeebeDb.createContext();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (dbFactoryResources != null) {
+      dbFactoryResources.close();
+    }
   }
 
   @Test(expected = ZeebeDbException.class)

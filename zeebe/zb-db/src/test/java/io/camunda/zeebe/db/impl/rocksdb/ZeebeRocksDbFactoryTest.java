@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,6 +54,12 @@ final class ZeebeRocksDbFactoryTest {
 
   private LRUCache lruCache;
   private WriteBufferManager writeBufferManager;
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+
+  @BeforeEach
+  void setUp() {
+    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+  }
 
   @AfterEach
   void tearDown() {
@@ -62,12 +69,15 @@ final class ZeebeRocksDbFactoryTest {
     if (lruCache != null) {
       lruCache.close();
     }
+    if (dbFactoryResources != null) {
+      dbFactoryResources.close();
+    }
   }
 
   @Test
   void shouldCreateNewDb(final @TempDir File pathName) throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
 
     // when
     final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
@@ -81,7 +91,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldCreateTwoNewDbs(final @TempDir File firstPath, final @TempDir File secondPath)
       throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
 
     // when
     final ZeebeDb<DefaultColumnFamily> firstDb = dbFactory.createDb(firstPath);
@@ -105,8 +115,7 @@ final class ZeebeRocksDbFactoryTest {
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+        (ZeebeRocksDbFactory<DefaultColumnFamily>) dbFactoryResources.factory;
     lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
@@ -146,8 +155,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldCreateDbWithExpectedOptions() {
     // given
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+        (ZeebeRocksDbFactory<DefaultColumnFamily>) dbFactoryResources.factory;
 
     // then - options should match our defaults
     validateDefaultExpectedOptions(
@@ -215,7 +223,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldOpenSnapshotOnlyDb(final @TempDir File path, final @TempDir File tempDir)
       throws Exception {
     // given
-    final var factory = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+    final var factory = dbFactoryResources.factory;
     final var key = new DbString();
     final var value = new DbString();
     key.wrapString("foo");
@@ -249,7 +257,7 @@ final class ZeebeRocksDbFactoryTest {
   @Test
   void shouldFailToOpenNonExistentSnapshotOnlyDb(final @TempDir File path) {
     // given
-    final var factory = DefaultZeebeDbFactory.getDefaultFactory();
+    final var factory = dbFactoryResources.factory;
     assertThat(path.delete()).isTrue();
 
     // when - then
@@ -264,7 +272,7 @@ final class ZeebeRocksDbFactoryTest {
       final ThrowingConsumer<ZeebeDb<DefaultColumnFamily>> assertions, final @TempDir File dbPath)
       throws Exception {
     // given
-    final var factory = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+    final var factory = dbFactoryResources.factory;
     final var key = new DbString();
     final var value = new DbString();
     key.wrapString("foo");
