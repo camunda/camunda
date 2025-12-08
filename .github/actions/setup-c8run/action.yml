@@ -194,6 +194,7 @@ runs:
       shell: bash
       working-directory: ./c8run
 
+<<<<<<< HEAD
     - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
@@ -201,6 +202,10 @@ runs:
 
     - name: Set env
       if: ${{ inputs.os == 'ubuntu-latest' || inputs.os == 'macos-13' }}
+=======
+    - if: ${{ inputs.os == 'macos-15-intel' }}
+      name: Set env
+>>>>>>> 2ac4fce3 (fix: deprecated non supported github runner macos-13)
       shell: bash
       run: echo "JAVA_HOME=$(echo $JAVA_HOME_22_X64)" >> $GITHUB_ENV
 
