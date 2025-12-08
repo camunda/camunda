@@ -92,6 +92,8 @@ jobs:
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       PUSH_CHANGES: ${{ !inputs.dryRun }}
+      PROFILE_FLAGS: ${{ inputs.includeOptimize && '' || '-P!include-optimize' }}
+      ARGUMENTS_PROFILE: ${{ inputs.includeOptimize && '' || '-P!include-optimize' }}
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
@@ -180,15 +182,6 @@ jobs:
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
           
-          # Conditionally set profile flags based on includeOptimize input
-          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
-            PROFILE_FLAGS=""
-            ARGUMENTS_PROFILE=""
-          else
-            PROFILE_FLAGS="-P\!include-optimize"
-            ARGUMENTS_PROFILE="-P!include-optimize"
-          fi
-          
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -215,15 +208,6 @@ jobs:
           # -DskipQaBuild=true -P-autoFormat
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
-
-          # Conditionally set profile flags based on includeOptimize input
-          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
-            PROFILE_FLAGS=""
-            ARGUMENTS_PROFILE=""
-          else
-            PROFILE_FLAGS="-P\!include-optimize"
-            ARGUMENTS_PROFILE="-P!include-optimize"
-          fi
 
           # shellcheck disable=SC2016
           ./mvnw release:perform -B \
