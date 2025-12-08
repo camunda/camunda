@@ -25,7 +25,10 @@ defaults:
 jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
-    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
+    timeout-minutes: 60
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -62,7 +65,7 @@ jobs:
             name: "Camunda QA Integration Module"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
             maven-build-threads: 2
-            maven-test-fork-count: 2
+            maven-test-fork-count: 7
             runs-on: aws-core-8-default
             owner: "General"
     steps:
