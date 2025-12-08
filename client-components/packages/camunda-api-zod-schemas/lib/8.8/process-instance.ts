@@ -33,7 +33,7 @@ import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from 
 
 const processInstanceVariableFilterSchema = z.object({
 	name: z.string(),
-	value: z.string(),
+	value: advancedStringFilterSchema,
 });
 
 const advancedProcessInstanceStateFilterSchema = z

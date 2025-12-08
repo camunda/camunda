@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.23
+
+### 🚀 Enhancements
+
+- update pi variable filer schema ([#42253](https://github.com/camunda/camunda/pull/42253))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.22
 
 ### 🚀 Enhancements
