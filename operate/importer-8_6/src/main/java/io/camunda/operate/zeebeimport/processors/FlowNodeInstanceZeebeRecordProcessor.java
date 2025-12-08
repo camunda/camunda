@@ -110,6 +110,10 @@ public class FlowNodeInstanceZeebeRecordProcessor {
 
     if (recordValue.getProcessInstanceKey() == recordValue.getElementInstanceKey()) {
       // Incident is on process instance level, so no need to update FNI
+      LOGGER.debug(
+          "Process instance {} root incident {}, skipping FNI update",
+          recordValue.getProcessInstanceKey(),
+          record.getKey());
       return;
     }
 
