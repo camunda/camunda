@@ -744,7 +744,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   notify-developer-portal:
-    name: Send Slack Notification
+    name: Send Slack Notification to prj-developer-portal
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [resolve-versions, build-bundle, test-bundle, upload-to-release]
