@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
