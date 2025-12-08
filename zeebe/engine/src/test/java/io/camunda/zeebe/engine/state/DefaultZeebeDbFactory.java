@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.rocksdb.LRUCache;
@@ -33,6 +34,8 @@ public final class DefaultZeebeDbFactory {
     final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final WriteBufferManager writeBufferManager =
         new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final SharedRocksDbResources sharedRocksDbResources =
+        new SharedRocksDbResources(lruCache, writeBufferManager, DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     final ZeebeDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
@@ -40,30 +43,25 @@ public final class DefaultZeebeDbFactory {
             consistencyChecks,
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             defaultPartitionCount);
-    return new ZeebeDbFactoryResources(factory, lruCache, writeBufferManager);
+    return new ZeebeDbFactoryResources(factory, sharedRocksDbResources);
   }
 
   public static class ZeebeDbFactoryResources implements AutoCloseable {
     public final ZeebeDbFactory<ZbColumnFamilies> factory;
-    private final LRUCache lruCache;
-    private final WriteBufferManager writeBufferManager;
+    private final SharedRocksDbResources sharedRocksDbResources;
 
     public ZeebeDbFactoryResources(
         final ZeebeDbFactory<ZbColumnFamilies> factory,
-        final LRUCache lruCache,
-        final WriteBufferManager writeBufferManager) {
+        final SharedRocksDbResources sharedRocksDbResources) {
       this.factory = factory;
-      this.lruCache = lruCache;
-      this.writeBufferManager = writeBufferManager;
+      this.sharedRocksDbResources = sharedRocksDbResources;
     }
 
     @Override
     public void close() {
-      writeBufferManager.close();
-      lruCache.close();
+      sharedRocksDbResources.close();
     }
   }
 }

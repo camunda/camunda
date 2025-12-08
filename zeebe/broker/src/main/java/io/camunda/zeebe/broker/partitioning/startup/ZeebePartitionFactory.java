@@ -56,6 +56,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -80,8 +81,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.ToLongFunction;
-import org.rocksdb.LRUCache;
-import org.rocksdb.WriteBufferManager;
 
 public final class ZeebePartitionFactory {
 
@@ -104,8 +103,7 @@ public final class ZeebePartitionFactory {
   private final SecurityConfiguration securityConfig;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
-  private final LRUCache lruCache;
-  private final WriteBufferManager writeBufferManager;
+  private final SharedRocksDbResources sharedRocksDbResources;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -125,8 +123,7 @@ public final class ZeebePartitionFactory {
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final LRUCache lruCache,
-      final WriteBufferManager writeBufferManager) {
+      final SharedRocksDbResources sharedRocksDbResources) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -144,8 +141,7 @@ public final class ZeebePartitionFactory {
     this.securityConfig = securityConfig;
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
-    this.lruCache = lruCache;
-    this.writeBufferManager = writeBufferManager;
+    this.sharedRocksDbResources = sharedRocksDbResources;
   }
 
   public ZeebePartition constructPartition(
@@ -167,8 +163,7 @@ public final class ZeebePartitionFactory {
             consistencyChecks.getSettings(),
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             brokerCfg.getCluster().getPartitionsCount());
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);

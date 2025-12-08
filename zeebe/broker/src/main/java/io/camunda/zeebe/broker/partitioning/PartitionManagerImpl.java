@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -128,7 +129,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = getSharedCache(brokerCfg);
+    sharedRocksDbResources = allocateSharedCache(brokerCfg);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -149,8 +150,7 @@ public final class PartitionManagerImpl
             securityConfig,
             searchClientsProxy,
             brokerRequestAuthorizationConverter,
-            sharedRocksDbResources.sharedCache(),
-            sharedRocksDbResources.sharedWbm());
+            sharedRocksDbResources);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
@@ -668,7 +668,7 @@ public final class PartitionManagerImpl
     }
   }
 
-  static SharedRocksDbResources getSharedCache(final BrokerCfg brokerCfg) {
+  static SharedRocksDbResources allocateSharedCache(final BrokerCfg brokerCfg) {
     final long totalMemorySize =
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
     // Heap by default is 25% of the RAM, and off-heap (unless configured otherwise) is the same.
@@ -699,7 +699,7 @@ public final class PartitionManagerImpl
     final long wbmLimitBytes = blockCacheBytes / 4;
     final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
     final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
-    return new SharedRocksDbResources(sharedCache, sharedWbm);
+    return new SharedRocksDbResources(sharedCache, sharedWbm, blockCacheBytes);
   }
 
   private static void validateRocksDbMemory(
@@ -719,15 +719,6 @@ public final class PartitionManagerImpl
               "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
               MINIMUM_PARTITION_MEMORY_LIMIT,
               blockCacheBytes / brokerCfg.getCluster().getPartitionsCount()));
-    }
-  }
-
-  record SharedRocksDbResources(LRUCache sharedCache, WriteBufferManager sharedWbm)
-      implements AutoCloseable {
-    @Override
-    public void close() {
-      sharedWbm.close();
-      sharedCache.close();
     }
   }
 
