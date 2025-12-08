@@ -248,8 +248,9 @@ class OperateProcessInstancePage {
 
   async getProcessInstanceKey(): Promise<string> {
     const processInstanceKey = this.page
-      .locator('[data-testid="cell-processInstanceKey"]')
-      .first();
+      .getByTestId('instance-header')
+      .locator('table tbody tr td')
+      .nth(1);
     return (await processInstanceKey.textContent()) ?? '';
   }
 
