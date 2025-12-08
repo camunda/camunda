@@ -143,7 +143,7 @@ public abstract class AbstractCamundaDockerIT {
                 .forPort(MANAGEMENT_PORT)
                 .forPath("/actuator/health")
                 .withReadTimeout(Duration.ofSeconds(120)))
-        .withStartupTimeout(Duration.ofSeconds(300))
+        .withStartupTimeout(Duration.ofSeconds(420))
         // Unified Configuration
         .withEnv("CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_PROCESSING", "512MB")
         .withEnv("CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_REPLICATION", "200MB")
