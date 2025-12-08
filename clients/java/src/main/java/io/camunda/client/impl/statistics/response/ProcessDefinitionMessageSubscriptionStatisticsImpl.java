@@ -16,29 +16,44 @@
 package io.camunda.client.impl.statistics.response;
 
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
-import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsResult;
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessDefinitionMessageSubscriptionStatisticsImpl
     implements ProcessDefinitionMessageSubscriptionStatistics {
-  private final List<ProcessDefinitionMessageSubscriptionStatisticsResult> items;
+  private final List<ProcessDefinitionMessageSubscriptionStatisticsItem> items;
   private final String endCursor;
 
   public ProcessDefinitionMessageSubscriptionStatisticsImpl(
-      final List<ProcessDefinitionMessageSubscriptionStatisticsResult> items,
+      final List<ProcessDefinitionMessageSubscriptionStatisticsItem> items,
       final String endCursor) {
     this.items = items;
     this.endCursor = endCursor;
   }
 
   @Override
-  public List<ProcessDefinitionMessageSubscriptionStatisticsResult> items() {
+  public List<ProcessDefinitionMessageSubscriptionStatisticsItem> items() {
     return items;
   }
 
   @Override
   public String getEndCursor() {
     return endCursor;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(items, endCursor);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessDefinitionMessageSubscriptionStatisticsImpl that = (ProcessDefinitionMessageSubscriptionStatisticsImpl) o;
+    return Objects.equals(items, that.items) && Objects.equals(endCursor, that.endCursor);
   }
 
   @Override

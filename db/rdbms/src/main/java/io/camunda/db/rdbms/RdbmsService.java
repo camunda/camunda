@@ -259,7 +259,7 @@ public class RdbmsService {
   }
 
   public ProcessDefinitionMessageSubscriptionStatisticsDbReader
-  getProcessDefinitionMessageSubscriptionStatisticsDbReader() {
+      getProcessDefinitionMessageSubscriptionStatisticsDbReader() {
     return processDefinitionMessageSubscriptionStatisticsDbReader;
   }
 

@@ -15,17 +15,14 @@
  */
 package io.camunda.client.api.statistics.response;
 
-import java.util.List;
+public interface ProcessDefinitionMessageSubscriptionStatisticsItem {
+  String getProcessDefinitionId();
 
-public interface ProcessDefinitionMessageSubscriptionStatistics {
+  String getTenantId();
 
-  /**
-   * @return the list of message subscription process definition statistics items
-   */
-  List<ProcessDefinitionMessageSubscriptionStatisticsItem> items();
+  String getProcessDefinitionKey();
 
-  /**
-   * @return the cursor for pagination
-   */
-  String getEndCursor();
+  Long getProcessInstancesWithActiveSubscriptions();
+
+  Long getActiveSubscriptions();
 }
