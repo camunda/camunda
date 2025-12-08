@@ -20,7 +20,6 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ClusterVariableDbReaderTest {

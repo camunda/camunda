@@ -26,8 +26,8 @@ class DecisionDefinitionWriterTest {
   @Test
   void shouldCreateDecisionDefinition() {
     final var model =
-        new DecisionDefinitionDbModel(123L, "decision1", "Decision Name", "1.0", 1, "<default>", 1L);
-
+        new DecisionDefinitionDbModel(
+            123L, "decision1", "Decision Name", "1.0", 1, "<default>", 1L, null, -1);
     writer.create(model);
 
     verify(executionQueue)

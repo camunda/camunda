@@ -53,8 +53,7 @@ class GroupWriterTest {
   void shouldUpdateGroupWhenNotMerged() {
     when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(false);
 
-    final var model =
-        new GroupDbModel.Builder().groupId("group1").name("Updated Name").build();
+    final var model = new GroupDbModel.Builder().groupId("group1").name("Updated Name").build();
 
     writer.update(model);
 

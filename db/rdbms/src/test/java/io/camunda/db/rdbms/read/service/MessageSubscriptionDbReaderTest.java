@@ -34,8 +34,7 @@ class MessageSubscriptionDbReaderTest {
     final MessageSubscriptionQuery query = MessageSubscriptionQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(
-                Authorization.of(a -> a.readProcessInstance().read())),
+            AuthorizationCheck.enabled(Authorization.of(a -> a.readProcessInstance().read())),
             TenantCheck.disabled());
 
     final var items = messageSubscriptionDbReader.search(query, resourceAccessChecks).items();

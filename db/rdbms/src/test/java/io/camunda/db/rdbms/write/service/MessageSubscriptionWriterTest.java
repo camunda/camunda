@@ -28,8 +28,7 @@ class MessageSubscriptionWriterTest {
 
   @Test
   void shouldCreateMessageSubscription() {
-    final var model =
-        new MessageSubscriptionDbModel.Builder().messageSubscriptionKey(123L).build();
+    final var model = new MessageSubscriptionDbModel.Builder().messageSubscriptionKey(123L).build();
 
     writer.create(model);
 
@@ -46,8 +45,7 @@ class MessageSubscriptionWriterTest {
 
   @Test
   void shouldUpdateMessageSubscription() {
-    final var model =
-        new MessageSubscriptionDbModel.Builder().messageSubscriptionKey(123L).build();
+    final var model = new MessageSubscriptionDbModel.Builder().messageSubscriptionKey(123L).build();
 
     writer.update(model);
 
