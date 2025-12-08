@@ -745,11 +745,87 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  notify-slack:
+    name: Send Slack Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release]
+    if: ${{ !inputs.dry_run && needs.upload-to-release.result == 'success' }}
+    permissions:
+      contents: read
+    env:
+      C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
+      MODELER_VERSION: ${{ needs.resolve-versions.outputs.modeler_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send Slack notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVELOPER_PORTAL_WEBHOOK }}
+        run: |
+          RELEASE_BASE_URL="https://github.com/camunda/camunda/releases/download/${C8RUN_VERSION}"
+          
+          # Build the Slack message payload
+          # User IDs to tag: UPAQETUHZ, U08Q31GGFNW, UCFU9K4UD
+          MESSAGE=$(cat << EOF
+          {
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "Hey <@UPAQETUHZ>, <@U08Q31GGFNW>, <@UCFU9K4UD>,\na new Camunda 8 Getting Started bundle has been packaged:"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*🔧 Configuration:*\n• C8Run Version: \`${C8RUN_VERSION}\`\n• Modeler Version: \`${MODELER_VERSION}\`"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*⏩ Download links:*\n• <${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-aarch64.zip|camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-aarch64.zip> (macOS Apple Silicon)\n• <${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-x86_64.zip|camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-x86_64.zip> (macOS Intel)\n• <${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-windows-x86_64.zip|camunda8-getting-started-bundle-${C8RUN_VERSION}-windows-x86_64.zip> (Windows)\n• <${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-linux-x86_64.tar.gz|camunda8-getting-started-bundle-${C8RUN_VERSION}-linux-x86_64.tar.gz> (Linux)"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "Thanks for your attention!"
+                }
+              }
+            ]
+          }
+          EOF
+          )
+          
+          echo "Sending Slack notification..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "${MESSAGE}" \
+            "${SLACK_WEBHOOK_URL}"
+          
+          echo "Slack notification sent!"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release]
+    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release, notify-slack]
     if: always()
     permissions:
       contents: read
@@ -764,6 +840,7 @@ jobs:
           BUILD_STATUS: ${{ needs.build-bundle.result }}
           TEST_STATUS: ${{ needs.test-bundle.result }}
           UPLOAD_STATUS: ${{ needs.upload-to-release.result }}
+          SLACK_STATUS: ${{ needs.notify-slack.result }}
         run: |
           RELEASE_BASE_URL="https://github.com/camunda/camunda/releases/download/${C8RUN_VERSION}"
           
@@ -779,6 +856,7 @@ jobs:
           - **Build Jobs**: ${BUILD_STATUS}
           - **Test Jobs**: ${TEST_STATUS}
           - **Upload to Release**: ${UPLOAD_STATUS:-skipped}
+          - **Slack Notification**: ${SLACK_STATUS:-skipped}
 
           ## Generated Bundles
           EOF
