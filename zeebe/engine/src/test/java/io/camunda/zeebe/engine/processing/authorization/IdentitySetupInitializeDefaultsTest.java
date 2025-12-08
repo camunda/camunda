@@ -238,6 +238,10 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.ACCESS),
             auth ->
                 Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SYSTEM)
                     .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.READ_USAGE_METRIC),
             auth ->
@@ -293,12 +297,7 @@ public class IdentitySetupInitializeDefaultsTest {
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.AUDIT_LOG)
                     .hasOnlyPermissionTypes(
-                        PermissionType.READ, PermissionType.READ_OPERATOR_AUDIT_LOG)
-                    .hasOnlyPermissionTypes(PermissionType.READ),
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
-                    .hasOnlyPermissionTypes(PermissionType.READ));
+                        PermissionType.READ, PermissionType.READ_OPERATOR_AUDIT_LOG));
   }
 
   @Test
