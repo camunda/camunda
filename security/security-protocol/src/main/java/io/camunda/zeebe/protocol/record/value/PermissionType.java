@@ -42,7 +42,6 @@ public enum PermissionType {
   READ_PROCESS_INSTANCE(true),
   READ_USAGE_METRIC(true),
   READ_USER_TASK(true),
-  READ_OPERATOR_AUDIT_LOG(true),
 
   UPDATE,
   UPDATE_PROCESS_INSTANCE,

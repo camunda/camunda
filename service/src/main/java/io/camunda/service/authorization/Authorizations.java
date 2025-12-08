@@ -97,11 +97,8 @@ public abstract class Authorizations {
   public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
 
-  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_ALL_AUTHORIZATION =
+  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_AUTHORIZATION =
       Authorization.of(a -> a.auditLog().read());
-
-  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_OPERATOR_AUTHORIZATION =
-      Authorization.of(a -> a.auditLog().readOperatorAuditLog());
 
   public static final Authorization<ClusterVariableEntity> CLUSTER_VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.clusterVariable().read());

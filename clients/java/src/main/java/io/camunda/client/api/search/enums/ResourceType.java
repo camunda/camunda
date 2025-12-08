@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.enums;
 
 public enum ResourceType {
+  AUDIT_LOG,
   AUTHORIZATION,
   BATCH,
   CLUSTER_VARIABLE,
@@ -33,6 +34,5 @@ public enum ResourceType {
   TENANT,
   USER,
   USER_TASK,
-  AUDIT_LOG,
   UNKNOWN_ENUM_VALUE,
 }
