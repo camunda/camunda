@@ -1431,7 +1431,7 @@ components:
         ancestorScopeInstruction:
           $ref: '#/components/schemas/AncestorScopeInstruction'
         variableInstructions:
-          description: Instructions describing which variables should be created.
+          description: Instructions describing which variables to create or update.
           type: array
           items:
             $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
