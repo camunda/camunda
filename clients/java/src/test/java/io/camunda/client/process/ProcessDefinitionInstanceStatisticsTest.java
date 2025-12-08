@@ -41,7 +41,7 @@ public class ProcessDefinitionInstanceStatisticsTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/process-definition/statistics/process-instances");
+    assertThat(request.getUrl()).isEqualTo("/v2/process-definitions/statistics/process-instances");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     Assertions.assertThat(request.getBodyAsString()).isEqualTo("{\"sort\":[]}");
   }
