@@ -44,9 +44,7 @@ final class StandaloneBackupManagerIT {
 
   // Configure the backup manager for testing
   @TestZeebe(autoStart = false)
-  final TestStandaloneBackupManager backupManager =
-      new TestStandaloneBackupManager()
-          .withProperty("camunda.data.backup.repository-name", REPOSITORY_NAME);
+  final TestStandaloneBackupManager backupManager = new TestStandaloneBackupManager();
 
   // Configure the schema manager to create indices and templates in test setup
   @TestZeebe(autoStart = false)
@@ -69,7 +67,7 @@ final class StandaloneBackupManagerIT {
       strategy.startContainer();
       strategy.createAdminClient();
       strategy.configureStandaloneSchemaManager(schemaManager);
-      strategy.configureStandaloneBackupManager(backupManager);
+      strategy.configureStandaloneBackupManager(backupManager, REPOSITORY_NAME);
       strategy.configureCamundaApplication(camunda);
       // create the schema
       schemaManager.start();

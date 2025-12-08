@@ -94,13 +94,23 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
   }
 
   @Override
-  public void configureStandaloneBackupManager(final TestStandaloneBackupManager backupManager) {
+  public void configureStandaloneBackupManager(
+      final TestStandaloneBackupManager backupManager, final String repositoryName) {
     backupManager
-        .withProperty("camunda.data.secondary-storage.type", "opensearch")
-        .withProperty("camunda.data.secondary-storage.opensearch.url", url)
-        .withProperty("camunda.data.secondary-storage.opensearch.username", container.getUsername())
-        .withProperty(
-            "camunda.data.secondary-storage.opensearch.password", container.getPassword());
+        .withSecondaryStorageType(SecondaryStorageType.opensearch)
+        .withUnifiedConfig(
+            cfg -> {
+              final var opensearch = cfg.getData().getSecondaryStorage().getOpensearch();
+              opensearch.setUrl(url);
+              opensearch.setUsername(container.getUsername());
+              opensearch.setPassword(container.getPassword());
+
+              cfg.getData()
+                  .getSecondaryStorage()
+                  .getOpensearch()
+                  .getBackup()
+                  .setRepositoryName(repositoryName);
+            });
   }
 
   @Override
