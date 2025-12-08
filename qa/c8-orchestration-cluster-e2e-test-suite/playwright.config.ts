@@ -54,6 +54,11 @@ const changedFolders =
 // Projects
 const normalProjects = [
   {
+    name: 'api-tests',
+    testMatch: ['tests/api/**/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+  },
+  {
     name: 'chromium',
     use: devices['Desktop Chrome'],
     testMatch: changedFolders.includes('chromium')
@@ -70,8 +75,13 @@ const normalProjects = [
           'v2-stateless-tests/**',
           'tests/tasklist/v1/**',
           'tests/common-flows/v1/**',
+          'tests/api/**/*.spec.ts',
         ]
-      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+      : [
+          'tests/tasklist/v1/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/api/**/*.spec.ts',
+        ],
     teardown: 'chromium-subset',
   },
   {
@@ -80,7 +90,7 @@ const normalProjects = [
       ? 'tests/tasklist/task-panel.spec.ts'
       : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Chrome'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'firefox',
@@ -99,8 +109,13 @@ const normalProjects = [
           'v2-stateless-tests/**',
           'tests/tasklist/v1/**',
           'tests/common-flows/v1/**',
+          'tests/api/**/*.spec.ts',
         ]
-      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+      : [
+          'tests/tasklist/v1/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/api/**/*.spec.ts',
+        ],
     teardown: 'firefox-subset',
   },
   {
@@ -109,7 +124,7 @@ const normalProjects = [
       ? 'tests/tasklist/task-panel.spec.ts'
       : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Firefox'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'msedge',
@@ -128,8 +143,13 @@ const normalProjects = [
           'v2-stateless-tests/**',
           'tests/tasklist/v1/**',
           'tests/common-flows/v1/**',
+          'tests/api/**/*.spec.ts',
         ]
-      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+      : [
+          'tests/tasklist/v1/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/api/**/*.spec.ts',
+        ],
     teardown: 'msedge-subset',
   },
   {
@@ -138,7 +158,7 @@ const normalProjects = [
       ? 'tests/tasklist/task-panel.spec.ts'
       : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Edge'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'tasklist-v1-e2e',
@@ -147,6 +167,7 @@ const normalProjects = [
     testIgnore: [
       'tests/tasklist/v1/task-panel.spec.ts',
       'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
     ],
     teardown: 'chromium-subset',
   },
@@ -154,14 +175,18 @@ const normalProjects = [
     name: 'tasklist-v2-e2e',
     testMatch: ['tests/tasklist/*.spec.ts'],
     use: devices['Desktop Edge'],
-    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    testIgnore: [
+      'tests/tasklist/task-panel.spec.ts',
+      'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
+    ],
     teardown: 'chromium-subset',
   },
   {
     name: 'identity-e2e',
     testMatch: ['tests/identity/*.spec.ts'],
     use: devices['Desktop Chrome'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
 ];
 
