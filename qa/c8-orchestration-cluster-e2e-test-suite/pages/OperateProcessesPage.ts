@@ -316,7 +316,9 @@ class OperateProcessesPage {
 
           // Wait for the element to be attached and stable
           await checkbox.waitFor({state: 'attached', timeout: 5000});
-          await checkbox.click({timeout: 10000});
+          if (!(await checkbox.isChecked())) {
+            await checkbox.click({timeout: 10000});
+          }
           await sleep(100);
           break;
         } catch (error) {
@@ -334,6 +336,9 @@ class OperateProcessesPage {
         }
       }
     }
+    await expect(
+      this.page.getByText(`${count} items selected`).first(),
+    ).toBeVisible();
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
