@@ -58,7 +58,7 @@ class PartitionManagerImplTest {
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
                   // ensure resources are closed
                 }
               })
@@ -79,7 +79,7 @@ class PartitionManagerImplTest {
       final var throwable =
           catchThrowable(
               () -> {
-                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
                   // we expect this to fail, but if it doesn't, the resources are closed
                 }
               });
@@ -105,7 +105,7 @@ class PartitionManagerImplTest {
       final var throwable =
           catchThrowable(
               () -> {
-                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
                   // we expect this to fail, but if it doesn't, the resources are closed
                 }
               });
@@ -136,7 +136,7 @@ class PartitionManagerImplTest {
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                try (final var ignored = PartitionManagerImpl.getSharedCache(brokerCfg)) {
+                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
                   // ensure resources are closed
                 }
               })

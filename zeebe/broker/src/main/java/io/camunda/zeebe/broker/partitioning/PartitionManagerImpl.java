@@ -128,7 +128,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = getSharedCache(brokerCfg);
+    sharedRocksDbResources = allocateSharedCache(brokerCfg);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -668,7 +668,7 @@ public final class PartitionManagerImpl
     }
   }
 
-  static SharedRocksDbResources getSharedCache(final BrokerCfg brokerCfg) {
+  static SharedRocksDbResources allocateSharedCache(final BrokerCfg brokerCfg) {
     final long totalMemorySize =
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
     // Heap by default is 25% of the RAM, and off-heap (unless configured otherwise) is the same.
