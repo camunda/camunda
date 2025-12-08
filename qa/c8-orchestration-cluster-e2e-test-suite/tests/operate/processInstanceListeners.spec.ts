@@ -116,6 +116,7 @@ test.describe('Process Instance Listeners', () => {
 
   test('Listeners list filtered by flow node instance', async ({
     operateProcessInstancePage,
+    operateProcessModificationModePage,
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
@@ -136,11 +137,11 @@ test.describe('Process Instance Listeners', () => {
 
     await test.step('Add a new flow node instance', async () => {
       await operateProcessInstancePage.startModificationFlow();
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
-        'Service Task B',
+      await operateProcessModificationModePage.clickFlowNode(
+        'taskWithListener',
       );
-      await operateProcessInstancePage.addSingleFlowNodeInstanceButton.click();
-      await operateProcessInstancePage.applyModifications();
+      await operateProcessModificationModePage.clickAddModificationButtononPopup();
+      await operateProcessModificationModePage.applyChanges();
     });
 
     await test.step('Wait for new instance to appear and verify listener count', async () => {
@@ -272,6 +273,7 @@ test.describe('Process Instance Listeners', () => {
 
   test('Listeners on process instance or participant (root flow node)', async ({
     operateProcessInstancePage,
+    operateProcessModificationModePage,
   }) => {
     const processInstanceKey =
       initialData.processWithListenerOnRootInstance.processInstanceKey;
@@ -282,14 +284,12 @@ test.describe('Process Instance Listeners', () => {
       });
 
       await operateProcessInstancePage.startModificationFlow();
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
-        'Service Task B',
+      await operateProcessModificationModePage.clickFlowNode(
+        'taskWithListener',
       );
-      await operateProcessInstancePage.moveSelectedInstanceButton.click({
-        timeout: 30000,
-      });
-      await operateProcessInstancePage.diagramHelper.clickEvent('EndEvent');
-      await operateProcessInstancePage.applyModifications();
+      await operateProcessModificationModePage.clickCancelButtononPopup();
+      await operateProcessModificationModePage.clickFlowNode('EndEvent');
+      await operateProcessModificationModePage.applyChanges();
     });
 
     await test.step('Select root process node and verify listeners tab visibility', async () => {

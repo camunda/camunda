@@ -43,10 +43,6 @@ class OperateProcessInstancePage {
   readonly modifyDialog: Locator;
   readonly modifyDialogContinueButton: Locator;
   readonly continueButton: Locator;
-  readonly applyModificationsButton: Locator;
-  readonly applyButton: Locator;
-  readonly addSingleFlowNodeInstanceButton: Locator;
-  readonly moveSelectedInstanceButton: Locator;
   readonly executionListenerText: Locator;
   readonly taskListenerText: Locator;
   readonly stateOverlayActive: Locator;
@@ -97,9 +93,6 @@ class OperateProcessInstancePage {
     this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
       hasText: /^Migrated/,
     });
-    this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
-    this.listenerTypeFilter = page.getByTestId('listener-type-filter');
-    this.variableAddedBanner = this.page.getByText('Variable added');
     this.modifyDialog = this.page.getByLabel(
       'Process Instance Modification Mode',
     );
@@ -107,16 +100,6 @@ class OperateProcessInstancePage {
       name: 'Continue',
     });
     this.continueButton = page.getByRole('button', {name: 'Continue'});
-    this.applyModificationsButton = page.getByRole('button', {
-      name: 'Apply Modifications',
-    });
-    this.applyButton = page.getByRole('button', {name: 'Apply', exact: true});
-    this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
-      name: 'Add single flow node instance',
-    });
-    this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this flow node to another target',
-    });
     this.executionListenerText = page.getByText('Execution listener');
     this.taskListenerText = page.getByText('Task listener');
     this.stateOverlayActive = page.getByTestId('state-overlay-active');
@@ -367,11 +350,6 @@ class OperateProcessInstancePage {
     return filteredElementsData;
   }
 
-  /**
-   *
-   * @param itemName
-   * @param expectedStatus array of icons in expected order in history, can be 'COMPLETED', 'ACTIVE', 'TERMINATED', 'INCIDENT'
-   */
   async verifyHistoryItemsStatus(
     itemName: string,
     expectedStatus: string[],
@@ -466,13 +444,6 @@ class OperateProcessInstancePage {
   async startModificationFlow(): Promise<void> {
     await this.modifyInstanceButton.click();
     await this.continueButton.click();
-  }
-
-  async applyModifications(): Promise<void> {
-    await expect(this.applyModificationsButton).toBeEnabled({timeout: 10000});
-
-    await this.applyModificationsButton.click();
-    await this.applyButton.click();
   }
 }
 
