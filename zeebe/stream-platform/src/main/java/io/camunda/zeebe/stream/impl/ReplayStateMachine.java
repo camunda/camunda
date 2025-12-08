@@ -323,6 +323,13 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     return lastReplayedEventPosition;
   }
 
+  String describeCurrentState() {
+    return switch (currentState) {
+      case AWAIT_RECORD -> "awaiting record to replay";
+      case REPLAY_EVENT -> "replaying event %s".formatted(typedEvent);
+    };
+  }
+
   public void close() {
     logStream.removeRecordAvailableListener(this);
   }

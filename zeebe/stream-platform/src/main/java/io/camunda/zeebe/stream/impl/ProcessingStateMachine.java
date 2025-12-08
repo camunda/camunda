@@ -194,6 +194,17 @@ public final class ProcessingStateMachine {
     clock = context.getClock();
   }
 
+  String describeCurrentState() {
+    if (errorHandlingPhase != ErrorHandlingPhase.NO_ERROR) {
+      return String.format(
+          "in error handling phase %s for '%s %s'", errorHandlingPhase, currentRecord, metadata);
+    } else if (inProcessing) {
+      return String.format("processing '%s %s'", currentRecord, metadata);
+    } else {
+      return String.format("finished processing '%s %s'", currentRecord, metadata);
+    }
+  }
+
   private void skipRecord() {
     notifySkippedListener(currentRecord);
     markProcessingCompleted();
