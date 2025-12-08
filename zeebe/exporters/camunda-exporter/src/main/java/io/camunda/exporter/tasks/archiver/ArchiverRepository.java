@@ -65,6 +65,13 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
 
+  /**
+   * Gets the document counts for each known index in the secondary database.
+   *
+   * @return A map where the key is the index name and the value is the document count
+   */
+  CompletableFuture<Map<String, Long>> getDocumentCountsPerIndex();
+
   default String getRetentionPolicyName(
       final String indexName, final RetentionConfiguration retentionConfiguration) {
     return INDEX_TO_RETENTION_POLICY_FIELD
@@ -137,6 +144,11 @@ public interface ArchiverRepository extends AutoCloseable {
     @Override
     public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
       return CompletableFuture.completedFuture(0);
+    }
+
+    @Override
+    public CompletableFuture<Map<String, Long>> getDocumentCountsPerIndex() {
+      return CompletableFuture.completedFuture(Map.of());
     }
 
     @Override
