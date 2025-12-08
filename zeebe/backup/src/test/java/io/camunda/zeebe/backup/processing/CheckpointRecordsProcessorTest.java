@@ -30,6 +30,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -73,16 +74,19 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private ZeebeDb zeebedb;
-  private LRUCache lruCache;
-  private WriteBufferManager writeBufferManager;
+  private SharedRocksDbResources sharedRocksDbResources;
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
       new AtomicInteger(3); // Default partition count for tests
 
   @BeforeEach
   void setup() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    sharedRocksDbResources =
+        new SharedRocksDbResources(
+            lruCache,
+            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+            DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -90,8 +94,7 @@ final class CheckpointRecordsProcessorTest {
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
-                lruCache,
-                writeBufferManager,
+                sharedRocksDbResources,
                 defaultPartitionCount)
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
@@ -123,8 +126,7 @@ final class CheckpointRecordsProcessorTest {
   @AfterEach
   void after() throws Exception {
     zeebedb.close();
-    writeBufferManager.close();
-    lruCache.close();
+    sharedRocksDbResources.close();
   }
 
   @Test
@@ -151,7 +153,7 @@ final class CheckpointRecordsProcessorTest {
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
-    final Event followupEvent = result.records().get(0);
+    final Event followupEvent = result.records().getFirst();
     assertThat(followupEvent.intent()).isEqualTo(CheckpointIntent.CREATED);
     assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
     assertThat(followupEvent.value()).isNotNull();

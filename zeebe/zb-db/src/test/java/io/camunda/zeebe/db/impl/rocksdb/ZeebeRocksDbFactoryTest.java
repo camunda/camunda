@@ -26,6 +26,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -52,22 +53,24 @@ final class ZeebeRocksDbFactoryTest {
     RocksDB.loadLibrary();
   }
 
-  private LRUCache lruCache;
-  private WriteBufferManager writeBufferManager;
+  private SharedRocksDbResources sharedRocksDbResources;
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
 
   @BeforeEach
   void setUp() {
     dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    sharedRocksDbResources =
+        new SharedRocksDbResources(
+            lruCache,
+            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+            DEFAULT_CACHE_SIZE);
   }
 
   @AfterEach
   void tearDown() {
-    if (writeBufferManager != null) {
-      writeBufferManager.close();
-    }
-    if (lruCache != null) {
-      lruCache.close();
+    if (sharedRocksDbResources != null) {
+      sharedRocksDbResources.close();
     }
     if (dbFactoryResources != null) {
       dbFactoryResources.close();
@@ -116,17 +119,15 @@ final class ZeebeRocksDbFactoryTest {
 
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>) dbFactoryResources.factory;
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+
     final int defaultPartitionCount = 3;
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             defaultPartitionCount);
 
     // when
@@ -173,16 +174,13 @@ final class ZeebeRocksDbFactoryTest {
     rocksDbConfiguration.setMemoryLimit(
         rocksDbConfiguration.getMemoryLimit() * defaultPartitionCount);
 
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             rocksDbConfiguration,
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             defaultPartitionCount);
 
     // then - options should match our defaults
@@ -198,17 +196,14 @@ final class ZeebeRocksDbFactoryTest {
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             defaultPartitionCount);
 
     // expect

@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -39,13 +40,15 @@ final class DbCheckpointStateTest {
   @TempDir Path database;
   private ZeebeDb zeebedb;
   private DbCheckpointState state;
-  private LRUCache lruCache;
-  private WriteBufferManager writeBufferManager;
+  private SharedRocksDbResources sharedRocksDbResources;
 
   @BeforeEach
   void setup() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    final WriteBufferManager writeBufferManager =
+        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    sharedRocksDbResources =
+        new SharedRocksDbResources(lruCache, writeBufferManager, DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -53,8 +56,7 @@ final class DbCheckpointStateTest {
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new,
-                lruCache,
-                writeBufferManager,
+                sharedRocksDbResources,
                 defaultPartitionCount)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
@@ -63,8 +65,7 @@ final class DbCheckpointStateTest {
   @AfterEach
   void tearDown() throws Exception {
     zeebedb.close();
-    writeBufferManager.close();
-    lruCache.close();
+    sharedRocksDbResources.close();
   }
 
   @Test
