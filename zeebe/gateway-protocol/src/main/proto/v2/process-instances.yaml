@@ -1357,7 +1357,7 @@ components:
           items:
             $ref: '#/components/schemas/ProcessInstanceModificationActivateInstruction'
         moveInstructions:
-          description: Instructions describing which elements to moved from one scope to another.
+          description: Instructions describing which elements to move from one scope to another.
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceModificationMoveInstruction'
