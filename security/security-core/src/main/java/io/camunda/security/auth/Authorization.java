@@ -49,6 +49,10 @@ public record Authorization<T>(
     @JsonProperty("resource_ids") List<String> resourceIds,
     @JsonIgnore Function<T, String> resourceIdSupplier) {
 
+  public boolean hasAnyResourceIds() {
+    return resourceIds != null && !resourceIds.isEmpty();
+  }
+
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final String resourceId) {
     return of(

@@ -111,10 +111,4 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
         model.resourcePropertyName(),
         new HashSet<>(model.permissionTypes()));
   }
-
-  @Override
-  protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.authorizationCheck().enabled()
-        && !resourceAccessChecks.hasAnyResourceId();
-  }
 }

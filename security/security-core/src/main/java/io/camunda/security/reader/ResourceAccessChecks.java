@@ -14,7 +14,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, TenantCheck tenantCheck) {
@@ -48,22 +47,15 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
    *     IDs authorized for that type across all applicable authorization branches
    */
   public Map<String, List<String>> getAuthorizedResourceIdsByType() {
-    if (authorizationCheck == null
-        || !authorizationCheck.enabled()
-        || authorizationCheck.authorizationCondition() == null) {
+    if (!authorizationCheck.enabled() || !authorizationCheck.hasAnyResourceAccess()) {
       return Collections.emptyMap();
     }
 
     final var auths = authorizationCheck.authorizationCondition().authorizations();
-
-    if (auths == null || auths.isEmpty()) {
-      return Collections.emptyMap();
-    }
-
     return auths.stream()
         .filter(Objects::nonNull)
         .filter(auth -> auth.resourceType() != null)
-        .filter(auth -> auth.resourceIds() != null && !auth.resourceIds().isEmpty())
+        .filter(Authorization::hasAnyResourceIds)
         .collect(
             Collectors.groupingBy(
                 auth -> auth.resourceType().name(),
@@ -76,33 +68,11 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
                     List::copyOf)));
   }
 
-  /**
-   * @return {@code true} if any authorization branch provides at least one resource ID; {@code
-   *     false} otherwise.
-   */
-  public boolean hasAnyResourceId() {
-    if (authorizationCheck == null
-        || !authorizationCheck.enabled()
-        || authorizationCheck.authorizationCondition() == null) {
-      return false;
-    }
-
-    final var auths = authorizationCheck.authorizationCondition().authorizations();
-    if (auths == null || auths.isEmpty()) {
-      return false;
-    }
-
-    return auths.stream()
-        .map(Authorization::resourceIds)
-        .filter(Objects::nonNull)
-        .anyMatch(r -> !r.isEmpty());
-  }
-
   public List<String> getAuthorizedTenantIds() {
-    if (tenantCheck == null || !tenantCheck.enabled()) {
-      return List.of();
+    if (!tenantCheck.hasAnyTenantAccess()) {
+      return Collections.emptyList();
     }
 
-    return Optional.of(tenantCheck).map(TenantCheck::tenantIds).orElse(List.of());
+    return tenantCheck.tenantIds();
   }
 }

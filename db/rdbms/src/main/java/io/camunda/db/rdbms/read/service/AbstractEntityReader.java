@@ -157,10 +157,15 @@ abstract class AbstractEntityReader<T> {
    * @return {@code true} if the search result should be empty, {@code false
    */
   protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.authorizationCheck().enabled()
-            && !resourceAccessChecks.hasAnyResourceId()
-        || resourceAccessChecks.tenantCheck().enabled()
-            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
+    return noResourceAccess(resourceAccessChecks) || noTenantAccess(resourceAccessChecks);
+  }
+
+  protected boolean noResourceAccess(final ResourceAccessChecks resourceAccessChecks) {
+    return !resourceAccessChecks.authorizationCheck().hasAnyResourceAccess();
+  }
+
+  protected boolean noTenantAccess(final ResourceAccessChecks resourceAccessChecks) {
+    return !resourceAccessChecks.tenantCheck().hasAnyTenantAccess();
   }
 
   /**
