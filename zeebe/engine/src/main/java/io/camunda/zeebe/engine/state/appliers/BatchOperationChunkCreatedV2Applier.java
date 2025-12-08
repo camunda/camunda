@@ -25,7 +25,8 @@ public class BatchOperationChunkCreatedV2Applier
 
   @Override
   public void applyState(final long chunkKey, final BatchOperationChunkRecord value) {
-    batchOperationState.appendItemKeys(
+    batchOperationState.addChunk(
+        chunkKey,
         value.getBatchOperationKey(),
         value.getItems().stream()
             .map(BatchOperationItemValue::getItemKey)
