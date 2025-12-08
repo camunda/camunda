@@ -8,7 +8,6 @@
 package io.camunda.zeebe.db.impl;
 
 import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -31,32 +30,14 @@ public final class DefaultZeebeDbFactory {
     RocksDB.loadLibrary();
   }
 
-  public static <
-          ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
-    return getDefaultFactory(SimpleMeterRegistry::new);
-  }
-
-  public static <
-          ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
-          final Supplier<MeterRegistry> meterRegistry) {
-    // enable consistency checks for tests
-    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    final int defaultPartitionCount = 3;
-    return new ZeebeRocksDbFactory<>(
-        new RocksDbConfiguration(),
-        consistencyChecks,
-        new AccessMetricsConfiguration(Kind.NONE, 1),
-        meterRegistry,
-        lruCache,
-        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
-        defaultPartitionCount);
+  public static <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactoryResources<T> getDefaultFactoryResources() {
+    return getDefaultFactoryResources(SimpleMeterRegistry::new);
   }
 
   public static <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactoryResources<T> getDefaultFactoryResources() {
+      ZeebeDbFactoryResources<T> getDefaultFactoryResources(
+          final Supplier<MeterRegistry> meterRegistry) {
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
     final WriteBufferManager writeBufferManager =
@@ -67,7 +48,7 @@ public final class DefaultZeebeDbFactory {
             new RocksDbConfiguration(),
             consistencyChecks,
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
+            meterRegistry,
             lruCache,
             writeBufferManager,
             defaultPartitionCount);
