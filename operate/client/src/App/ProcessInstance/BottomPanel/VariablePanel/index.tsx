@@ -46,7 +46,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();
-  const [selectedTab, setSelectedTab] = useState<TabId>(tabIds.variables);
+  const [selectedTab, setSelectedTab] = useState<TabId>('variables');
 
   const shouldFetchListeners = flowNodeInstanceId || flowNodeId;
   const {

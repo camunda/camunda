@@ -6,24 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect, beforeEach, vi, type Mock} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {OperationsLog} from './index';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import * as auditLogsModule from 'modules/queries/auditLog/useAuditLogs.ts';
 import {MemoryRouter} from 'react-router-dom';
 import React from 'react';
+import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs.ts';
 import {notificationsStore} from 'modules/stores/notifications.tsx';
 
-vi.mock('modules/queries/auditLog/useAuditLogs.ts');
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
   },
 }));
-
-const useAuditLogsSpy = auditLogsModule.useAuditLogs as unknown as Mock;
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   return (
@@ -34,16 +31,8 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 };
 
 describe('OperationsLog', () => {
-  beforeEach(() => {
-    useAuditLogsSpy.mockReset();
-  });
-
   it('should show skeleton state when data undefined', () => {
-    useAuditLogsSpy.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: null,
-    });
+    mockQueryAuditLogs().withServerError();
 
     render(<OperationsLog flowNodeInstanceId="123" isVisible={false} />, {
       wrapper: Wrapper,
@@ -52,44 +41,41 @@ describe('OperationsLog', () => {
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
   });
 
-  it('should render empty state when no items are present', () => {
-    useAuditLogsSpy.mockReturnValue({
-      data: {items: []},
-      isLoading: false,
-      error: null,
+  it('should render empty state when no items are present', async () => {
+    mockQueryAuditLogs().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible />, {
+    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
       wrapper: Wrapper,
     });
 
     expect(
-      screen.getByText('No operations found for this instance'),
+      await screen.findByText('No operations found for this instance'),
     ).toBeInTheDocument();
   });
 
-  it('should render rows when data is present', () => {
-    const item = {
-      auditLogKey: '1',
-      entityKey: '1',
-      operationType: 'UPDATE',
-      entityType: 'VARIABLE',
-      result: 'SUCCESS',
-      actorId: 'user1',
-      timestamp: '2024-01-01T00:00:00.000Z',
-      description: 'Updated variable',
-      details: {},
-    } as const;
-
-    useAuditLogsSpy.mockReturnValue({
-      data: {
-        items: [item],
-      },
-      isLoading: false,
-      error: null,
+  it('should render rows when data is present', async () => {
+    mockQueryAuditLogs().withSuccess({
+      items: [
+        {
+          auditLogKey: '123',
+          entityKey: '1',
+          operationType: 'UPDATE',
+          entityType: 'VARIABLE',
+          result: 'SUCCESS',
+          actorId: 'user1',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          annotation: 'Updated variable',
+          actorType: 'USER',
+          category: 'USER_TASK',
+        },
+      ],
+      page: {totalItems: 1},
     });
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible />, {
+    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
       wrapper: Wrapper,
     });
 
@@ -106,7 +92,7 @@ describe('OperationsLog', () => {
       screen.getByRole('columnheader', {name: /time/i}),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/update variable/i)).toBeInTheDocument();
+    expect(await screen.findByText(/update variable/i)).toBeInTheDocument();
     expect(screen.getByText(/success/i)).toBeInTheDocument();
     expect(screen.getByText('user1')).toBeInTheDocument();
     expect(screen.getByText('2024-01-01 00:00:00')).toBeInTheDocument();
@@ -116,34 +102,31 @@ describe('OperationsLog', () => {
   });
 
   it('should handle loading state', () => {
-    useAuditLogsSpy.mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
+    mockQueryAuditLogs().withDelay({
+      items: [],
+      page: {totalItems: 0},
     });
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible />, {
+    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
       wrapper: Wrapper,
     });
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
   });
 
-  it('should handle error state', () => {
-    useAuditLogsSpy.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Failed to fetch'),
-    });
+  it('should handle error state', async () => {
+    mockQueryAuditLogs().withNetworkError();
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible />, {
+    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
       wrapper: Wrapper,
     });
 
-    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-      isDismissable: true,
-      kind: 'error',
-      title: 'Audit logs could not be fetched',
-    });
+    await waitFor(() =>
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        isDismissable: true,
+        kind: 'error',
+        title: 'Audit logs could not be fetched',
+      }),
+    );
   });
 });
