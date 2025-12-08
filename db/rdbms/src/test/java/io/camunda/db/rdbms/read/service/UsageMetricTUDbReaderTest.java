@@ -13,8 +13,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel.UsageMetricTUStatisticsDbModel;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
+import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel.UsageMetricTUStatisticsDbModel;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 import org.junit.jupiter.api.Test;

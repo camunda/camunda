@@ -25,8 +25,7 @@ class MappingRuleWriterTest {
 
   @Test
   void shouldCreateMappingRule() {
-    final var model =
-        new MappingRuleDbModel("rule1", 123L, "claim1", "value1", "Test Mapping");
+    final var model = new MappingRuleDbModel("rule1", 123L, "claim1", "value1", "Test Mapping");
 
     writer.create(model);
 
@@ -43,8 +42,7 @@ class MappingRuleWriterTest {
 
   @Test
   void shouldUpdateMappingRule() {
-    final var model =
-        new MappingRuleDbModel("rule1", 123L, "claim1", "value1", "Test Mapping");
+    final var model = new MappingRuleDbModel("rule1", 123L, "claim1", "value1", "Test Mapping");
 
     writer.update(model);
 
