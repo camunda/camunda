@@ -8,7 +8,12 @@
         "behavior": "ignore",
         "ignoreMissingAnnotations": true
       },
-      "matchOverloads": false
+      "matchOverloads": false,
+      "checks": {
+        "varargOverloadsOnlyDifferInVarargParameter": {
+          "reportUnchanged": false
+        }
+      }
     }
   },
   {
