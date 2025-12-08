@@ -259,6 +259,16 @@ test.describe('delete finished instances', () => {
         });
       }
 
+      if (route.request().url().includes('/v2/process-definitions/search')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify(mockProcessDefinitions),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
       if (route.request().url().includes('/api/process-instances')) {
         return route.fulfill({
           status: 200,

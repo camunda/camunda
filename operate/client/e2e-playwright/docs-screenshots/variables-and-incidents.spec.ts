@@ -43,19 +43,16 @@ test.describe('variables and incidents', () => {
             tenantId: '<default>',
           },
         ],
-        processDefinitions: {
-          items: [
-            {
-              processDefinitionId: 'order-process',
-              version: 1,
-              name: 'order-process',
-              processDefinitionKey: '2251799813686456',
-              tenantId: '<default>',
-              hasStartForm: false,
-            },
-          ],
-          page: {totalItems: 1},
-        },
+        processDefinitions: [
+          {
+            processDefinitionId: 'order-process',
+            version: 1,
+            name: 'order-process',
+            processDefinitionKey: '2251799813686456',
+            tenantId: '<default>',
+            hasStartForm: false,
+          },
+        ],
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
           processInstances: [

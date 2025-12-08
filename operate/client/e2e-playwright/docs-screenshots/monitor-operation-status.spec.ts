@@ -40,12 +40,9 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
-        processDefinitions: {
-          ...mockProcessDefinitions,
-          items: mockProcessDefinitions.items.filter(
-            (d) => d.processDefinitionId === 'orderProcess',
-          ),
-        },
+        processDefinitions: mockProcessDefinitions.filter(
+          (d) => d.processDefinitionId === 'orderProcess',
+        ),
         batchOperations: {
           items: [
             {
