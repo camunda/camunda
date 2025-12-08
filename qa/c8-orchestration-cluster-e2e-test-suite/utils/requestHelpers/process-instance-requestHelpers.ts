@@ -28,6 +28,45 @@ export async function getProcessDefinitionKey(
   return json.processDefinitionKey;
 }
 
+export async function createCancellationBatch(
+  request: APIRequestContext,
+): Promise<string> {
+  for (let i = 0; i < 3; i++) {
+    const startRes = await request.post(buildUrl('/process-instances'), {
+      headers: jsonHeaders(),
+      data: {
+        processDefinitionId: 'batch_cancellation_process',
+      },
+    });
+    await assertStatusCode(startRes, 200);
+  }
+
+  const batchRes = await request.post(
+    buildUrl('/process-instances/cancellation'),
+    {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          processDefinitionId: 'batch_cancellation_process',
+        },
+      },
+    },
+  );
+  await assertStatusCode(batchRes, 200);
+
+  const json = await batchRes.json();
+  const key = (json.batchOperationKey ?? json.key) as
+    | string
+    | number
+    | undefined;
+  if (!key) {
+    throw new Error(
+      'batchOperationKey missing from batch cancellation response',
+    );
+  }
+  return String(key);
+}
+
 export async function searchJobKeysForProcessInstance(
   request: APIRequestContext,
   processInstanceKey: string,
