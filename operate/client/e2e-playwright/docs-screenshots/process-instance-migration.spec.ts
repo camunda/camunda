@@ -46,12 +46,9 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
-        processDefinitions: {
-          ...mockProcessDefinitions,
-          items: mockProcessDefinitions.items.filter(
-            (d) => d.processDefinitionId === 'orderProcess',
-          ),
-        },
+        processDefinitions: mockProcessDefinitions.filter(
+          (d) => d.processDefinitionId === 'orderProcess',
+        ),
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: mockOrderProcessInstances,
         statisticsV2: {
@@ -138,12 +135,9 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
-        processDefinitions: {
-          ...mockProcessDefinitions,
-          items: mockProcessDefinitions.items.filter(
-            (d) => d.processDefinitionId === 'orderProcess',
-          ),
-        },
+        processDefinitions: mockProcessDefinitions.filter(
+          (d) => d.processDefinitionId === 'orderProcess',
+        ),
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess_v2.bpmn',
         ),
@@ -227,12 +221,9 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
-        processDefinitions: {
-          ...mockProcessDefinitions,
-          items: mockProcessDefinitions.items.filter(
-            (d) => d.processDefinitionId === 'orderProcess',
-          ),
-        },
+        processDefinitions: mockProcessDefinitions.filter(
+          (d) => d.processDefinitionId === 'orderProcess',
+        ),
         batchOperations: {
           items: [
             {
@@ -379,9 +370,7 @@ test.describe('process instance migration', () => {
     ).toHaveCount(4);
 
     // Verify user task element is shown
-    await expect(
-      page.getByText('A', {exact: true}),
-    ).toHaveCount(2);
+    await expect(page.getByText('A', {exact: true})).toHaveCount(2);
 
     // Map the ad hoc subprocess
     await migrationView.mapFlowNode({
@@ -398,8 +387,12 @@ test.describe('process instance migration', () => {
     await migrationView.nextButton.click();
 
     // Wait for overlays to appear
-    await expect(page.getByTestId('state-overlay-active').first()).toBeVisible();
-    await expect(page.getByTestId('modifications-overlay').first()).toBeVisible();
+    await expect(
+      page.getByTestId('state-overlay-active').first(),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId('modifications-overlay').first(),
+    ).toBeVisible();
 
     // Mock the migration operation
     await page.route(
@@ -417,11 +410,13 @@ test.describe('process instance migration', () => {
     // Confirm migration
     await migrationView.confirmButton.click();
 
-    await migrationView.migrationConfirmationModal.getByRole('textbox').fill('MIGRATE');
+    await migrationView.migrationConfirmationModal
+      .getByRole('textbox')
+      .fill('MIGRATE');
 
     await migrationView.migrationConfirmationModal
       .getByRole('button', {name: /confirm/i})
-      .click()
+      .click();
 
     // Mock the migrated process instances
     await page.route(
@@ -484,7 +479,9 @@ test.describe('process instance migration', () => {
     });
 
     // Wait for process instances table to have data
-    await expect(processesPage.processInstancesTable.getByRole('row')).not.toHaveCount(0);
+    await expect(
+      processesPage.processInstancesTable.getByRole('row'),
+    ).not.toHaveCount(0);
 
     await processesPage.diagram.moveCanvasHorizontally(-200);
 
