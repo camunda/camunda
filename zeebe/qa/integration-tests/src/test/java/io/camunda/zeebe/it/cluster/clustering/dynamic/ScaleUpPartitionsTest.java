@@ -92,23 +92,20 @@ public class ScaleUpPartitionsTest {
             .withBrokerConfig(
                 b ->
                     b.withUnifiedConfig(
-                            cfg -> {
-                              final var backup = cfg.getData().getPrimaryStorage().getBackup();
-                              backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
-                              backup.getFilesystem().setBasePath(backupPath.toString());
+                        cfg -> {
+                          final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                          backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+                          backup.getFilesystem().setBasePath(backupPath.toString());
 
-                              final var membership = cfg.getCluster().getMembership();
-                              membership.setSyncInterval(Duration.ofSeconds(1));
-                              membership.setGossipInterval(Duration.ofMillis(500));
-                            })
-                        // set distribution via properties because it is not yet supported in
-                        // unified config
-                        .withProperty(
-                            "zeebe.broker.experimental.engine.distribution.maxBackoffDuration",
-                            "1s")
-                        .withProperty(
-                            "zeebe.broker.experimental.engine.distribution.redistributionInterval",
-                            "200ms"))
+                          final var membership = cfg.getCluster().getMembership();
+                          membership.setSyncInterval(Duration.ofSeconds(1));
+                          membership.setGossipInterval(Duration.ofMillis(500));
+
+                          final var distribution =
+                              cfg.getProcessing().getEngine().getDistribution();
+                          distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                          distribution.setRedistributionInterval(Duration.ofMillis(200));
+                        }))
             .build();
   }
 
