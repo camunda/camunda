@@ -461,7 +461,8 @@ public final class RecordingExporter implements Exporter {
   }
 
   public static EvaluateExpressionRecordStream expressionRecords() {
-    return new EvaluateExpressionRecordStream(records(ValueType.EXPRESSION, ExpressionRecordValue.class));
+    return new EvaluateExpressionRecordStream(
+        records(ValueType.EXPRESSION, ExpressionRecordValue.class));
   }
 
   public static SignalRecordStream signalRecords(final SignalIntent intent) {

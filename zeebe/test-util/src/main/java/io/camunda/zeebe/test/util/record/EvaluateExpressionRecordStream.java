@@ -11,10 +11,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import java.util.stream.Stream;
 
-public class EvaluateExpressionRecordStream extends ExporterRecordStream<ExpressionRecordValue, EvaluateExpressionRecordStream> {
+public class EvaluateExpressionRecordStream
+    extends ExporterRecordStream<ExpressionRecordValue, EvaluateExpressionRecordStream> {
 
-  public EvaluateExpressionRecordStream(
-      final Stream<Record<ExpressionRecordValue>> wrappedStream) {
+  public EvaluateExpressionRecordStream(final Stream<Record<ExpressionRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
