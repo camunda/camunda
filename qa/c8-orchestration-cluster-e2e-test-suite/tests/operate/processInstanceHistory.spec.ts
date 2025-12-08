@@ -35,8 +35,6 @@ const eventOrderCancelledEnd = 'OrderCancelledEnd';
 const activitySecondSubprocess = 'SecondSubprocess';
 const eventStartSecondSubProcess = 'StartSecondSubProcess';
 const activitySendItems = 'SendItems';
-const eventEndSecondSubProcess = 'EndSecondSubProcess';
-const eventEndGlobal = 'EndGlobal';
 
 test.beforeAll(async () => {
   await deploy([
