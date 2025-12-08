@@ -274,9 +274,7 @@ jobs:
       - name: Clone camunda-8-get-started repository
         run: |
           git clone --depth 1 https://github.com/camunda/camunda-8-get-started.git bundle/camunda-8-get-started
-          # Remove .git and .gitmodules to avoid warnings in checkout post-cleanup
           rm -rf bundle/camunda-8-get-started/.git
-          rm -f bundle/camunda-8-get-started/.gitmodules
 
       - name: Clone ai-agent example
         run: |
