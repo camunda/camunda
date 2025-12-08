@@ -51,7 +51,7 @@ public class HistoryDeletionJob implements BackgroundTask {
   }
 
   private CompletionStage<Integer> deleteBatch(final HistoryDeletionBatch batch) {
-    logger.debug("Deleting history for process instances with ids: {}", batch.ids());
+    logger.trace("Deleting history for process instances with ids: {}", batch.ids());
     // TODO perform actual deletion
     //  ES: https://github.com/camunda/camunda/issues/41105
     //  OS: https://github.com/camunda/camunda/issues/41109
