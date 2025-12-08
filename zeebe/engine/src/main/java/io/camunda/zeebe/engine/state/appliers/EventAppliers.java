@@ -734,7 +734,7 @@ public final class EventAppliers implements EventApplier {
     register(
         BatchOperationChunkIntent.CREATED,
         2,
-        new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
+        new BatchOperationChunkCreatedV2Applier(state.getBatchOperationState()));
     register(
         BatchOperationExecutionIntent.EXECUTING,
         new BatchOperationExecutingApplier(state.getBatchOperationState()));
