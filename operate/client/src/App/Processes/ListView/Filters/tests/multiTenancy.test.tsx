@@ -22,6 +22,7 @@ import {
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 
 describe('Filters', () => {
   beforeEach(() => {
@@ -128,6 +129,7 @@ describe('Filters', () => {
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
+    mockFetchGroupedProcesses().withSuccess([]);
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
         createProcessDefinition({version: 2, tenantId: '<tenant-A>'}),
@@ -217,6 +219,8 @@ describe('Filters', () => {
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
+    mockFetchGroupedProcesses().withSuccess([]);
+    mockFetchGroupedProcesses().withSuccess([]);
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
         createProcessDefinition({version: 2, tenantId: 'tenant-b'}),
