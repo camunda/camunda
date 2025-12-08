@@ -49,6 +49,11 @@ class OperateProcessInstancePage {
   readonly taskListenerText: Locator;
   readonly stateOverlayActive: Locator;
   readonly stateOverlayCompletedEndEvents: Locator;
+  readonly cancelInstanceButton: (instanceId: string) => Locator;
+  readonly incidentBannerButton: (count: number) => Locator;
+  readonly incidentTypeFilter: Locator;
+  readonly executionCountToggle: Locator;
+  readonly endDateField: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -110,6 +115,19 @@ class OperateProcessInstancePage {
     this.stateOverlayCompletedEndEvents = page.getByTestId(
       'state-overlay-completedEndEvents',
     );
+    this.cancelInstanceButton = (instanceId: string) =>
+      page.getByRole('button', {name: `Cancel Instance ${instanceId}`});
+    this.incidentBannerButton = (count: number) =>
+      page.getByRole('button', {
+        name: new RegExp(`view ${count} incidents in instance`, 'i'),
+      });
+    this.incidentTypeFilter = page.getByRole('combobox', {
+      name: /filter by incident type/i,
+    });
+    this.executionCountToggle = this.instanceHistory.locator(
+      '[aria-label="show execution count"], [aria-label="hide execution count"]',
+    );
+    this.endDateField = this.instanceHeader.getByTestId('end-date');
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -323,6 +341,65 @@ class OperateProcessInstancePage {
 
     await this.applyModificationsButton.click();
     await this.applyButton.click();
+  }
+
+  getTreeItem(name: string | RegExp, exact?: boolean): Locator {
+    return this.page.getByRole('treeitem', {name, exact});
+  }
+
+  async clickTreeItem(name: string | RegExp, exact?: boolean): Promise<void> {
+    await this.getTreeItem(name, exact).click();
+  }
+
+  getIncidentRow(incidentType: string | RegExp): Locator {
+    return this.incidentsTable.getByRole('row', {name: incidentType});
+  }
+
+  async retryIncident(incidentType: string | RegExp): Promise<void> {
+    await this.getIncidentRow(incidentType)
+      .getByRole('button', {name: 'Retry Incident'})
+      .click();
+  }
+
+  async cancelInstance(instanceId: string): Promise<void> {
+    await this.cancelInstanceButton(instanceId).click();
+    await this.applyButton.click();
+  }
+
+  async clickIncidentBanner(count: number): Promise<void> {
+    await this.incidentBannerButton(count).click();
+  }
+
+  async toggleExecutionCount(): Promise<void> {
+    const toggle = this.page.locator(
+      '[aria-label="show execution count"], [aria-label="hide execution count"]',
+    );
+    if (await toggle.isVisible()) {
+      await toggle.click({force: true});
+    }
+  }
+
+  getDiagramElement(elementId: string): Locator {
+    return this.diagram.locator(`[data-element-id="${elementId}"]`);
+  }
+
+  async getDiagramElementBadge(elementId: string) {
+    return this.page.$(`[data-element-id="${elementId}"] .badge`);
+  }
+
+  async verifyExecutionCountBadgesNotVisible(
+    elementIds: string[],
+  ): Promise<void> {
+    for (const elementId of elementIds) {
+      const badge = await this.getDiagramElementBadge(elementId);
+      expect(badge).toBeNull();
+    }
+  }
+
+  async verifyExecutionCountBadgesVisible(elementIds: string[]): Promise<void> {
+    for (const elementId of elementIds) {
+      await expect(this.getDiagramElement(elementId)).toBeVisible();
+    }
   }
 }
 
