@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.engine.state.mutable.MutableConditionalSubscriptionState;
@@ -26,13 +27,11 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
   private final DbString tenantIdKey;
 
   private final DbTenantAwareKey<DbLong> tenantAwareSubscriptionKey;
-  private final DbCompositeKey<DbLong, DbLong> scopeKeyAndSubscriptionKey;
-  private final DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>>
-      tenantAwareScopeKeyAndSubscriptionKey;
   private final ColumnFamily<DbTenantAwareKey<DbLong>, ConditionalSubscription>
       conditionalKeyColumnFamily;
-  private final ColumnFamily<
-          DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>>, ConditionalSubscription>
+  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>
+      scopeKeyAndTenantAwareSubscriptionKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>, DbNil>
       scopeKeyColumnFamily;
 
   public DbConditionalSubscriptionState(
@@ -49,16 +48,14 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
             tenantAwareSubscriptionKey,
             conditionalSubscription);
 
-    scopeKeyAndSubscriptionKey = new DbCompositeKey<>(scopeKey, subscriptionKey);
-    tenantAwareScopeKeyAndSubscriptionKey =
-        new DbTenantAwareKey<>(
-            tenantIdKey, scopeKeyAndSubscriptionKey, DbTenantAwareKey.PlacementType.PREFIX);
+    scopeKeyAndTenantAwareSubscriptionKey =
+        new DbCompositeKey<>(scopeKey, tenantAwareSubscriptionKey);
     scopeKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_SCOPE_KEY,
             transactionContext,
-            tenantAwareScopeKeyAndSubscriptionKey,
-            conditionalSubscription);
+            scopeKeyAndTenantAwareSubscriptionKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -69,7 +66,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     scopeKey.wrapLong(subscription.getScopeKey());
 
     conditionalKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
-    scopeKeyColumnFamily.insert(tenantAwareScopeKeyAndSubscriptionKey, conditionalSubscription);
+    scopeKeyColumnFamily.insert(scopeKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -79,7 +76,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     scopeKey.wrapLong(subscription.getScopeKey());
 
     conditionalKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
-    scopeKeyColumnFamily.deleteExisting(tenantAwareScopeKeyAndSubscriptionKey);
+    scopeKeyColumnFamily.deleteExisting(scopeKeyAndTenantAwareSubscriptionKey);
   }
 
   @Override
@@ -95,11 +92,17 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     this.scopeKey.wrapLong(scopeKey);
 
     scopeKeyColumnFamily.whileEqualPrefix(
-        new DbTenantAwareKey<>(tenantIdKey, this.scopeKey, DbTenantAwareKey.PlacementType.PREFIX),
-        (ignore, subscription) -> {
-          final ConditionalSubscription copySubscription = new ConditionalSubscription();
-          copySubscription.copyFrom(subscription);
-          visitor.visit(copySubscription);
+        this.scopeKey,
+        (key, ignore) -> {
+          subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
+          tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
+          final var subscription =
+              conditionalKeyColumnFamily.get(
+                  tenantAwareSubscriptionKey, ConditionalSubscription::new);
+
+          if (subscription != null) {
+            visitor.visit(subscription);
+          }
         });
   }
 }
