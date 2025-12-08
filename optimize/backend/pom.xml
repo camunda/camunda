@@ -672,13 +672,6 @@
       <version>${version.httpclient}</version>
     </dependency>
 
-    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
-    <dependency>
-      <groupId>org.apache.tika</groupId>
-      <artifactId>tika-core</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>jakarta.servlet</groupId>
