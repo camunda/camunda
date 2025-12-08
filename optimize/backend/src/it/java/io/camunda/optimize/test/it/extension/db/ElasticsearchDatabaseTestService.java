@@ -130,10 +130,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
-import org.apache.tika.utils.StringUtils;
 import org.elasticsearch.client.Request;
 import org.mockserver.integration.ClientAndServer;
 

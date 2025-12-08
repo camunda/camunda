@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
-import org.apache.tika.utils.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public abstract class DatabaseClient implements ConfigurationReloadable {
