@@ -310,7 +310,7 @@ jobs:
         run: >
           helm upgrade --install ${{ inputs.name }} charts/${{ env.HELM_CHART }}/ --wait --timeout 35m0s
           --namespace ${{ inputs.name }}
-          --reuse-values
+          --reset-then-reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set zeebe.image.repository=gcr.io/zeebe-io/zeebe
