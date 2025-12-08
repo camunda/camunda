@@ -305,14 +305,26 @@ jobs:
       - name: Create starter script (Unix)
         if: matrix.platform.script_extension == 'sh'
         run: |
-          cat > bundle/1-camunda-starter.sh << 'EOF'
+          cat > bundle/camunda-start.sh << 'EOF'
           #!/bin/bash
 
           cd c8run 
           ./c8run start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success" 
           cd ..
           EOF
-          chmod +x bundle/1-camunda-starter.sh
+          chmod +x bundle/camunda-start.sh
+
+      - name: Create stop script (Unix)
+        if: matrix.platform.script_extension == 'sh'
+        run: |
+          cat > bundle/camunda-stop.sh << 'EOF'
+          #!/bin/bash
+
+          cd c8run
+          ./c8run stop
+          cd ..
+          EOF
+          chmod +x bundle/camunda-stop.sh
 
       - name: Create starter script (Windows)
         if: matrix.platform.script_extension == 'bat'
@@ -325,7 +337,20 @@ jobs:
           .\c8run.exe start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
           cd ..
           "@
-          Set-Content -Path "bundle/1-camunda-starter.bat" -Value $scriptContent
+          Set-Content -Path "bundle/camunda-start.bat" -Value $scriptContent
+
+      - name: Create stop script (Windows)
+        if: matrix.platform.script_extension == 'bat'
+        shell: pwsh
+        run: |
+          $scriptContent = @"
+          @echo off
+
+          cd c8run
+          .\c8run.exe stop
+          cd ..
+          "@
+          Set-Content -Path "bundle/camunda-stop.bat" -Value $scriptContent
 
       - name: List bundle contents
         run: |
@@ -466,15 +491,14 @@ jobs:
         if: matrix.platform.script_extension == 'sh'
         run: |
           cd test-bundle
-          chmod +x 1-camunda-starter.sh
+          chmod +x camunda-start.sh
+          chmod +x camunda-stop.sh
           chmod +x c8run/c8run
           
-          # Run c8run in background and capture PID
-          echo "Starting c8run..."
-          cd c8run
-          ./c8run start &
-          C8RUN_PID=$!
-          cd ..
+          # Run the camunda-start script in background
+          echo "Starting c8run via camunda-start.sh..."
+          ./camunda-start.sh &
+          START_PID=$!
           
           # Wait for c8run to start (check for REST API availability)
           echo "Waiting for c8run to start..."
@@ -507,11 +531,9 @@ jobs:
           
           echo "Integration test passed - c8run started successfully!"
           
-          # Graceful shutdown
-          echo "Stopping c8run..."
-          cd c8run
-          ./c8run stop || true
-          cd ..
+          # Graceful shutdown using the stop script
+          echo "Stopping c8run via camunda-stop.sh..."
+          ./camunda-stop.sh || true
           
           # Wait for shutdown
           sleep 5
@@ -523,9 +545,9 @@ jobs:
         run: |
           cd test-bundle
           
-          # Start c8run in background
-          Write-Host "Starting c8run..."
-          $process = Start-Process -FilePath "c8run\c8run.exe" -ArgumentList "start" -PassThru -NoNewWindow
+          # Start c8run using the camunda-start script in background
+          Write-Host "Starting c8run via camunda-start.bat..."
+          $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-start.bat" -PassThru -NoNewWindow
           
           # Wait for c8run to start (check for REST API availability)
           Write-Host "Waiting for c8run to start..."
@@ -566,9 +588,9 @@ jobs:
           
           Write-Host "Integration test passed - c8run started successfully!"
           
-          # Graceful shutdown
-          Write-Host "Stopping c8run..."
-          Start-Process -FilePath "c8run\c8run.exe" -ArgumentList "stop" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+          # Graceful shutdown using the stop script
+          Write-Host "Stopping c8run via camunda-stop.bat..."
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-stop.bat" -Wait -NoNewWindow -ErrorAction SilentlyContinue
           
           Start-Sleep -Seconds 5
           Write-Host "c8run stopped"
@@ -595,15 +617,23 @@ jobs:
             exit 1
           fi
           
-          echo "Checking starter script..."
+          echo "Checking starter and stop scripts..."
           if [ "${{ matrix.platform.script_extension }}" == "sh" ]; then
-            if [ ! -f "1-camunda-starter.sh" ]; then
-              echo "ERROR: 1-camunda-starter.sh not found"
+            if [ ! -f "camunda-start.sh" ]; then
+              echo "ERROR: camunda-start.sh not found"
+              exit 1
+            fi
+            if [ ! -f "camunda-stop.sh" ]; then
+              echo "ERROR: camunda-stop.sh not found"
               exit 1
             fi
           else
-            if [ ! -f "1-camunda-starter.bat" ]; then
-              echo "ERROR: 1-camunda-starter.bat not found"
+            if [ ! -f "camunda-start.bat" ]; then
+              echo "ERROR: camunda-start.bat not found"
+              exit 1
+            fi
+            if [ ! -f "camunda-stop.bat" ]; then
+              echo "ERROR: camunda-stop.bat not found"
               exit 1
             fi
           fi
