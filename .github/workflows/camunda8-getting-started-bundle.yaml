@@ -234,29 +234,10 @@ jobs:
           $modelerAsset = "${{ matrix.platform.modeler_asset_pattern }}" -replace '\{version\}', $env:MODELER_VERSION
           $expectedFolderName = "camunda-modeler-$($env:MODELER_VERSION)-win-x64"
           
-          # Extract to temp folder first
-          Expand-Archive -Path $modelerAsset -DestinationPath "modeler_temp"
-          
-          # Debug: List what was extracted
-          Write-Host "Extracted contents of modeler_temp:"
-          Get-ChildItem -Path "modeler_temp" -Force | ForEach-Object { Write-Host "  $($_.Name)" }
-          
-          # Check if the expected folder exists (zip has parent folder structure)
-          if (Test-Path "modeler_temp/$expectedFolderName") {
-            Write-Host "Found expected modeler folder: $expectedFolderName"
-            Move-Item -Path "modeler_temp/$expectedFolderName" -Destination "."
-          } else {
-            # Zip is flat (no parent folder) - create the folder and move contents into it
-            Write-Host "Modeler zip is flat, creating folder: $expectedFolderName"
-            New-Item -ItemType Directory -Path "$expectedFolderName" -Force
-            Get-ChildItem -Path "modeler_temp" -Force | Move-Item -Destination "$expectedFolderName/"
-          }
-          
-          Remove-Item -Recurse -Force "modeler_temp"
+          # Extract directly to the expected folder name
+          Expand-Archive -Path $modelerAsset -DestinationPath "$expectedFolderName"
           
           Write-Host "Modeler extracted to: $expectedFolderName"
-          Write-Host "First 10 items in modeler folder:"
-          Get-ChildItem -Path $expectedFolderName | Select-Object -First 10 | ForEach-Object { Write-Host "  $($_.Name)" }
           
           # Create a batch file launcher instead of shortcut (supports relative paths)
           $batchContent = @"
@@ -374,20 +355,9 @@ jobs:
         if: matrix.platform.archive_type == 'zip' && matrix.platform.platform_id == 'windows-x86_64'
         shell: pwsh
         run: |
-          # Debug: List bundle contents before archiving
-          Write-Host "Bundle directory contents before archiving:"
-          Get-ChildItem -Path "bundle" -Force -Recurse | Select-Object -First 50 | ForEach-Object { Write-Host $_.FullName }
-          Write-Host ""
-          
-          # Create zip preserving directory structure
-          # Use 7-Zip which is available on Windows runners and properly handles directory structures
-          # Use explicit path with wildcard to include all files and folders
+          # Create zip preserving directory structure using 7-Zip
           $zipPath = Join-Path (Get-Location) "${env:BUNDLE_NAME}.zip"
           7z a -tzip $zipPath ".\bundle\*" -r
-          
-          # Debug: List zip contents
-          Write-Host "Archive contents:"
-          7z l $zipPath
 
       - name: Create bundle archive (tar.gz)
         if: matrix.platform.archive_type == 'tar.gz'
@@ -492,14 +462,23 @@ jobs:
         if: matrix.platform.script_extension == 'sh'
         run: |
           cd test-bundle
-          chmod +x camunda-start.sh
-          chmod +x camunda-stop.sh
-          chmod +x c8run/c8run
           
           # Run the camunda-start script in background
           echo "Starting c8run via camunda-start.sh..."
           ./camunda-start.sh &
           START_PID=$!
+          
+          # Check if the start script process exited immediately with an error
+          sleep 2
+          if ! kill -0 $START_PID 2>/dev/null; then
+            wait $START_PID
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -ne 0 ]; then
+              echo "ERROR: camunda-start.sh failed with exit code $EXIT_CODE"
+              cat c8run/log/*.log 2>/dev/null || true
+              exit 1
+            fi
+          fi
           
           # Wait for c8run to start (check for actuator health on port 9600)
           echo "Waiting for c8run to start..."
@@ -526,7 +505,12 @@ jobs:
           
           # Graceful shutdown using the stop script
           echo "Stopping c8run via camunda-stop.sh..."
-          ./camunda-stop.sh || true
+          ./camunda-stop.sh
+          STOP_EXIT_CODE=$?
+          if [ $STOP_EXIT_CODE -ne 0 ]; then
+            echo "ERROR: camunda-stop.sh failed with exit code $STOP_EXIT_CODE"
+            exit 1
+          fi
           
           # Wait for shutdown
           sleep 5
@@ -541,6 +525,14 @@ jobs:
           # Start c8run using the camunda-start script in background
           Write-Host "Starting c8run via camunda-start.bat..."
           $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-start.bat" -PassThru -NoNewWindow
+          
+          # Wait a moment and check if the process exited with an error
+          Start-Sleep -Seconds 2
+          if ($process.HasExited -and $process.ExitCode -ne 0) {
+            Write-Host "ERROR: camunda-start.bat failed with exit code $($process.ExitCode)"
+            Get-Content -Path "c8run\log\*.log" -ErrorAction SilentlyContinue
+            exit 1
+          }
           
           # Wait for c8run to start (check for actuator health on port 9600)
           Write-Host "Waiting for c8run to start..."
@@ -575,7 +567,11 @@ jobs:
           
           # Graceful shutdown using the stop script
           Write-Host "Stopping c8run via camunda-stop.bat..."
-          Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-stop.bat" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+          $stopProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-stop.bat" -Wait -NoNewWindow -PassThru
+          if ($stopProcess.ExitCode -ne 0) {
+            Write-Host "ERROR: camunda-stop.bat failed with exit code $($stopProcess.ExitCode)"
+            exit 1
+          }
           
           Start-Sleep -Seconds 5
           Write-Host "c8run stopped"
@@ -739,6 +735,8 @@ jobs:
           TEST_STATUS: ${{ needs.test-bundle.result }}
           UPLOAD_STATUS: ${{ needs.upload-to-release.result }}
         run: |
+          RELEASE_BASE_URL="https://github.com/camunda/camunda/releases/download/${C8RUN_VERSION}"
+          
           cat << EOF >> "$GITHUB_STEP_SUMMARY"
           # Camunda 8 Getting Started Bundle
 
@@ -753,21 +751,39 @@ jobs:
           - **Upload to Release**: ${UPLOAD_STATUS:-skipped}
 
           ## Generated Bundles
+          EOF
+
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            cat << EOF >> "$GITHUB_STEP_SUMMARY"
+          The following bundles were created (available as workflow artifacts):
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-aarch64.zip\` (macOS Apple Silicon)
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-x86_64.zip\` (macOS Intel)
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-windows-x86_64.zip\` (Windows)
+          - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-linux-x86_64.tar.gz\` (Linux)
+
+          ℹ️ **Dry run mode**: Bundles are available as workflow artifacts only.
+          EOF
+          else
+            if [[ "${UPLOAD_STATUS}" == "success" ]]; then
+              cat << EOF >> "$GITHUB_STEP_SUMMARY"
+          The following bundles have been uploaded to the release:
+          - [camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-aarch64.zip](${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-aarch64.zip) (macOS Apple Silicon)
+          - [camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-x86_64.zip](${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-x86_64.zip) (macOS Intel)
+          - [camunda8-getting-started-bundle-${C8RUN_VERSION}-windows-x86_64.zip](${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-windows-x86_64.zip) (Windows)
+          - [camunda8-getting-started-bundle-${C8RUN_VERSION}-linux-x86_64.tar.gz](${RELEASE_BASE_URL}/camunda8-getting-started-bundle-${C8RUN_VERSION}-linux-x86_64.tar.gz) (Linux)
+
+          ✅ **Release mode**: Bundles have been uploaded to [GitHub release ${C8RUN_VERSION}](https://github.com/camunda/camunda/releases/tag/${C8RUN_VERSION}).
+          EOF
+            else
+              cat << EOF >> "$GITHUB_STEP_SUMMARY"
           The following bundles were created:
           - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-aarch64.zip\` (macOS Apple Silicon)
           - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-darwin-x86_64.zip\` (macOS Intel)
           - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-windows-x86_64.zip\` (Windows)
           - \`camunda8-getting-started-bundle-${C8RUN_VERSION}-linux-x86_64.tar.gz\` (Linux)
 
+          ❌ **Release mode**: Upload to GitHub release ${C8RUN_VERSION} failed or was skipped.
           EOF
-
-          if [[ "${DRY_RUN}" == "true" ]]; then
-            echo "ℹ️ **Dry run mode**: Bundles are available as workflow artifacts only." >> "$GITHUB_STEP_SUMMARY"
-          else
-            if [[ "${UPLOAD_STATUS}" == "success" ]]; then
-              echo "✅ **Release mode**: Bundles have been uploaded to GitHub release ${C8RUN_VERSION}." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "❌ **Release mode**: Upload to GitHub release ${C8RUN_VERSION} failed or was skipped." >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
 
