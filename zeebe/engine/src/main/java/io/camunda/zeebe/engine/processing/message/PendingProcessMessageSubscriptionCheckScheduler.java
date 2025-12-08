@@ -16,7 +16,7 @@ import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import java.time.Duration;
 import java.time.InstantSource;
 
-public final class PendingProcessMessageSubscriptionChecker
+public final class PendingProcessMessageSubscriptionCheckScheduler
     implements StreamProcessorLifecycleAware {
 
   private static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
@@ -30,7 +30,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private boolean schouldRescheduleTimer = false;
   private final InstantSource clock;
 
-  public PendingProcessMessageSubscriptionChecker(
+  public PendingProcessMessageSubscriptionCheckScheduler(
       final SubscriptionCommandSender commandSender,
       final PendingProcessMessageSubscriptionState pendingState,
       final InstantSource clock) {

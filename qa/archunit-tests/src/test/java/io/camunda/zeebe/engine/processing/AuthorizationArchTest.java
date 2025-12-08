@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPreconditionChecker;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPreconditionValidator;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -94,10 +94,10 @@ public class AuthorizationArchTest {
                 ArchConditions.callMethod(
                     JobUpdateBehaviour.class, "isAuthorized", TypedRecord.class, JobRecord.class))
             // Or the processor should have delegated authorization to the
-            // UserTaskCommandPreconditionChecker
+            // UserTaskCommandPreconditionValidator
             .or(
                 ArchConditions.callMethod(
-                    UserTaskCommandPreconditionChecker.class, "check", TypedRecord.class))
+                    UserTaskCommandPreconditionValidator.class, "check", TypedRecord.class))
             // Or the processor should have delegate authorization to the PermissionsBehavior
             .or(
                 ArchConditions.callMethod(
@@ -118,7 +118,7 @@ public class AuthorizationArchTest {
       @Override
       public boolean test(final JavaClass javaClass) {
         return Predicates.assignableFrom(JobUpdateBehaviour.class)
-            .or(Predicates.assignableFrom(UserTaskCommandPreconditionChecker.class))
+            .or(Predicates.assignableFrom(UserTaskCommandPreconditionValidator.class))
             .or(Predicates.assignableFrom(PermissionsBehavior.class))
             .test(javaClass);
       }

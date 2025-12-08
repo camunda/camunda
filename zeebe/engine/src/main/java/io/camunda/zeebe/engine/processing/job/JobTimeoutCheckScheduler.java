@@ -20,8 +20,8 @@ import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class JobTimeoutChecker implements Task {
-  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutChecker.class);
+final class JobTimeoutCheckScheduler implements Task {
+  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckScheduler.class);
 
   private boolean shouldReschedule = false;
 
@@ -37,7 +37,7 @@ final class JobTimeoutChecker implements Task {
   private final int batchLimit;
   private final InstantSource clock;
 
-  public JobTimeoutChecker(
+  public JobTimeoutCheckScheduler(
       final JobState state,
       final Duration pollingInterval,
       final int batchLimit,
