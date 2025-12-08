@@ -79,6 +79,7 @@ env:
   # Always force includeOptimize to false to maintain consistent behavior - Optimize is always excluded
   INCLUDE_OPTIMIZE: false
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
+  PLATFORMS: "linux/amd64,linux/arm64"
 jobs:
   # Release job performs Maven prepare and perform release operations, managing release artifacts and repository changes.
   # Flags impact:
@@ -320,7 +321,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
@@ -419,7 +419,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
       DOCKER_IMAGE: camunda/operate
     steps:
@@ -521,7 +520,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       DOCKER_IMAGE: camunda/tasklist
     steps:
@@ -624,7 +622,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
       DOCKER_IMAGE: camunda/optimize
     steps:
@@ -733,7 +730,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
