@@ -16,16 +16,16 @@ import {
   auditLogSortFieldEnum,
 } from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {Container, OperationLogName} from './styled';
-import {SortableTable} from '../../../../../modules/components/SortableTable';
-import {getSortParams} from '../../../../../modules/utils/filter';
+import {SortableTable} from 'modules/components/SortableTable';
+import {getSortParams} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
-import {StateIcon} from '../../../../../modules/components/StateIcon';
+import {StateIcon} from 'modules/components/StateIcon';
 import {Information} from '@carbon/react/icons';
 import {Button} from '@carbon/react';
-import {notificationsStore} from '../../../../../modules/stores/notifications';
-import {logger} from '../../../../../modules/logger';
-import {tracking} from '../../../../../modules/tracking';
-import {spaceAndCapitalize} from '../../../../../modules/utils/spaceAndCapitalize';
+import {notificationsStore} from 'modules/stores/notifications';
+import {logger} from 'modules/logger';
+import {tracking} from 'modules/tracking';
+import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 
 type Props = {
   flowNodeInstanceId?: string | undefined;

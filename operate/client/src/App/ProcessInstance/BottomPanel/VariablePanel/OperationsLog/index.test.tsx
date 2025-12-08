@@ -14,7 +14,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import * as auditLogsModule from 'modules/queries/auditLog/useAuditLogs.ts';
 import {MemoryRouter} from 'react-router-dom';
 import React from 'react';
-import {notificationsStore} from '../../../../../modules/stores/notifications.tsx';
+import {notificationsStore} from 'modules/stores/notifications.tsx';
 
 vi.mock('modules/queries/auditLog/useAuditLogs.ts');
 vi.mock('modules/stores/notifications', () => ({

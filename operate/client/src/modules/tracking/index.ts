@@ -294,9 +294,6 @@ type Events =
   | {
       eventName: 'batch-move-modification-apply-button-clicked';
     }
-  /**
-   * Audit logs
-   */
   | {
       eventName: 'audit-logs-fetch-failed';
     };
