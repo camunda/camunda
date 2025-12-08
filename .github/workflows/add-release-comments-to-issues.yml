@@ -21,10 +21,15 @@ on:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
+permissions: {}
+
 jobs:
   add-release-comments:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
     permissions:
       issues: write
       contents: read
