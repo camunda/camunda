@@ -77,12 +77,12 @@ public record SearchTopHitsAggregator<T>(
     @Override
     public SearchTopHitsAggregator<T> build() {
       return new SearchTopHitsAggregator<T>(
-          Objects.requireNonNull(name, "Expected non-null fields for name."),
+          Objects.requireNonNull(name, "Expected non-null field for name."),
           Objects.requireNonNullElse(fields, List.of()),
           Objects.requireNonNullElse(sortOption, NoSort.NO_SORT),
           size,
           aggregations,
-          Objects.requireNonNull(documentClass, "Expected non-null fields for documentClass."));
+          Objects.requireNonNull(documentClass, "Expected non-null field for documentClass."));
     }
   }
 }
