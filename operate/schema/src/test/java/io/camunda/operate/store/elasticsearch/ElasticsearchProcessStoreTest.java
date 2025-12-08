@@ -319,7 +319,7 @@ public class ElasticsearchProcessStoreTest {
   @Test
   public void testExceptionDuringGetProcessInstancesByParentKeys() throws IOException {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(tenantAwareClient.search(any(), any())).thenThrow(new IOException());
+    when(es8Client.search(any(SearchRequest.class), any())).thenThrow(new IOException());
 
     final Exception exception =
         assertThatExceptionOfType(OperateRuntimeException.class)

@@ -9,22 +9,19 @@ package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -35,37 +32,31 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired private ElasticsearchClient es8Client;
 
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Override
   public Map<Long, String> getListViewIndicesForProcessInstances(
-      final List<Long> processInstanceIds) throws IOException {
+      final List<Long> processInstanceIds) {
     final List<String> processInstanceIdsAsStrings = map(processInstanceIds, Object::toString);
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, ElasticsearchUtil.QueryType.ALL);
-    searchRequest
-        .source()
-        .query(QueryBuilders.idsQuery().addIds(toSafeArrayOfStrings(processInstanceIdsAsStrings)));
+    final var query = ElasticsearchUtil.idsQuery(toSafeArrayOfStrings(processInstanceIdsAsStrings));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final Map<Long, String> processInstanceId2IndexName = new HashMap<>();
-    tenantAwareClient.search(
-        searchRequest,
-        () -> {
-          ElasticsearchUtil.scrollWith(
-              searchRequest,
-              esClient,
-              searchHits -> {
-                for (final SearchHit searchHit : searchHits.getHits()) {
-                  final String indexName = searchHit.getIndex();
-                  final Long id = Long.valueOf(searchHit.getId());
-                  processInstanceId2IndexName.put(id, indexName);
-                }
-              });
-          return null;
-        });
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(listViewTemplate, QueryType.ALL))
+            .query(tenantAwareQuery);
+
+    final var resStream =
+        ElasticsearchUtil.scrollAllStream(
+            es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
+
+    final var processInstanceId2IndexName =
+        resStream
+            .flatMap(res -> res.hits().hits().stream())
+            .collect(Collectors.toMap(hit -> Long.valueOf(hit.id()), hit -> hit.index()));
 
     if (processInstanceId2IndexName.isEmpty()) {
       throw new NotFoundException(

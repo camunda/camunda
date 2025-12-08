@@ -9,17 +9,23 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
+import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
+import static io.camunda.operate.util.ElasticsearchUtil.sortOrder;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
@@ -54,9 +60,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -74,6 +78,8 @@ public class ElasticsearchChecks {
 
   @Autowired UserTaskReader userTaskReader;
   @Autowired private RestHighLevelClient esClient;
+
+  @Autowired private ElasticsearchClient es8Client;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -474,44 +480,68 @@ public class ElasticsearchChecks {
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(processInstanceKeyQuery))
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .query(query)
+            .sort(
+                sortOrder(
+                    FlowNodeInstanceTemplate.POSITION,
+                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
     try {
-      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(es8Client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
 
   public List<MessageSubscriptionEntity> getAllMessageSubscriptions(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(messageSubscriptionTemplate)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceKeyQuery)));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(messageSubscriptionTemplate, QueryType.ALL))
+            .query(query)
+            .sort(
+                sortOrder(
+                    FlowNodeInstanceTemplate.POSITION,
+                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
     try {
-      return scroll(searchRequest, MessageSubscriptionEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(es8Client, searchRequestBuilder, MessageSubscriptionEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances() {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(matchAllQuery())
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .query(q -> q.matchAll(m -> m))
+            .sort(
+                sortOrder(
+                    FlowNodeInstanceTemplate.POSITION,
+                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
     try {
-      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(es8Client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
@@ -580,14 +610,21 @@ public class ElasticsearchChecks {
   }
 
   public List<VariableEntity> getAllVariables(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceKeyQuery)));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(variableTemplate, QueryType.ALL))
+            .query(query);
     try {
-      return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollAllStream(es8Client, searchRequestBuilder, VariableEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
   }
