@@ -30,6 +30,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatingRec
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -81,6 +82,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -103,6 +105,16 @@ import org.springframework.test.context.TestPropertySource;
 class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      new VendorDatabaseProperties(
+          new Properties() {
+            {
+              setProperty("variableValue.previewSize", "100");
+              setProperty("userCharColumn.size", "50");
+              setProperty("errorMessage.size", "500");
+              setProperty("disableFkBeforeTruncate", "true");
+            }
+          });
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -110,7 +122,7 @@ class RdbmsExporterIT {
 
   @BeforeEach
   void setUp() {
-    exporter = new RdbmsExporterWrapper(rdbmsService);
+    exporter = new RdbmsExporterWrapper(rdbmsService, vendorDatabaseProperties);
     exporter.configure(
         new ExporterContext(
             null,

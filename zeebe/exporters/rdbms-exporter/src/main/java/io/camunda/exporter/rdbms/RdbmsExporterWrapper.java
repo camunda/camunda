@@ -7,7 +7,10 @@
  */
 package io.camunda.exporter.rdbms;
 
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
+
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
@@ -36,6 +39,8 @@ import io.camunda.exporter.rdbms.handlers.UsageMetricExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
+import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
+import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
@@ -64,6 +69,7 @@ public class RdbmsExporterWrapper implements Exporter {
   public static final String NAMESPACE = "camunda.rdbms.exporter.cache";
 
   private final RdbmsService rdbmsService;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private RdbmsExporter exporter;
 
@@ -71,7 +77,9 @@ public class RdbmsExporterWrapper implements Exporter {
   private ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
   private ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
-  public RdbmsExporterWrapper(final RdbmsService rdbmsService) {
+  public RdbmsExporterWrapper(
+      final RdbmsService rdbmsService, final VendorDatabaseProperties vendorDatabaseProperties) {
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.rdbmsService = rdbmsService;
   }
 
@@ -210,6 +218,8 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
         new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
             rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
+
+    registerAuditLogHandlers(rdbmsWriter, builder);
   }
 
   private void createBatchOperationHandlers(
@@ -245,5 +255,15 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         new ProcessInstanceModificationBatchOperationExportHandler(
             rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+  }
+
+  private void registerAuditLogHandlers(
+      final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
+    final var processInstanceModificationAuditLogHandler =
+        new AuditLogExportHandler<>(
+            rdbmsWriter.getAuditLogWriter(),
+            vendorDatabaseProperties,
+            new ProcessInstanceModificationAuditLogTransformer());
+    builder.withHandler(PROCESS_INSTANCE_MODIFICATION, processInstanceModificationAuditLogHandler);
   }
 }
