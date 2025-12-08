@@ -43,8 +43,8 @@ public final class BackupEndpointStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
-    return backupEndpoint.query(prefixOrId);
+  public WebEndpointResponse<?> query(@Selector final String prefixOrIdOrType) {
+    return backupEndpoint.query(prefixOrIdOrType);
   }
 
   @DeleteOperation

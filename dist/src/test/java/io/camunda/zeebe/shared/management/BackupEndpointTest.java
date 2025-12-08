@@ -690,7 +690,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.state("checkpoint");
+      final WebEndpointResponse<?> response = endpoint.query("checkpoint");
 
       // then
       assertThat(response.getBody())
@@ -715,7 +715,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.state("backup");
+      final WebEndpointResponse<?> response = endpoint.query("backup");
 
       // then
       assertThat(response.getBody())
@@ -740,7 +740,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.state("backup");
+      final WebEndpointResponse<?> response = endpoint.query("backup");
 
       // then
       assertThat(response.getBody())
@@ -760,7 +760,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.state("backup");
+      final WebEndpointResponse<?> response = endpoint.query("backup");
 
       // then
       assertThat(response.getBody())
