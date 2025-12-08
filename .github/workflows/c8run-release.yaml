@@ -66,7 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macos-latest is ARM, mac os 13 will execute on x86 runner.
+        # macos-latest is ARM, macos-15-intel will execute on x86 runner.
         os:
           - name: Ubuntu (AMD64)
             id: ubuntu-latest
@@ -85,7 +85,7 @@ jobs:
             command: ./c8run
             packagingCmd: ./packager
           - name: MacOS (AMD64)
-            id: macos-13
+            id: macos-15-intel
             artifactFileSuffix: darwin-x86_64.zip
             workingDir: ./c8run
             c8runArtifactName: c8run
