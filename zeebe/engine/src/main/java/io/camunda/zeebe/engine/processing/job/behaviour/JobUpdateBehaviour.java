@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.job.behaviour;
 
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -64,12 +64,13 @@ public class JobUpdateBehaviour {
   public Either<Rejection, JobRecord> isAuthorized(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                job.getTenantId())
-            .addResourceId(job.getBpmnProcessId());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+            .tenantId(job.getTenantId())
+            .addResourceId(job.getBpmnProcessId())
+            .build();
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> job);
   }
 

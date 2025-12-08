@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -137,12 +137,13 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   private void checkAuthorization(
       final TypedRecord<ResourceRecord> command, final PersistedResource resource) {
     final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.RESOURCE,
-                PermissionType.READ,
-                resource.getTenantId())
-            .addResourceId(BufferUtil.bufferAsString(resource.getResourceId()));
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(PermissionType.READ)
+            .tenantId(resource.getTenantId())
+            .addResourceId(BufferUtil.bufferAsString(resource.getResourceId()))
+            .build();
     if (authorizationCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);
     }
