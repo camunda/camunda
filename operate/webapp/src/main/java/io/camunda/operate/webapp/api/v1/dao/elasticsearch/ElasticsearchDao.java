@@ -12,12 +12,18 @@ import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -39,6 +45,10 @@ public abstract class ElasticsearchDao<T> {
   @Autowired
   @Qualifier("esClient")
   protected RestHighLevelClient elasticsearch;
+
+  @Autowired protected ElasticsearchClient es8Client;
+
+  @Autowired protected ElasticsearchTenantHelper tenantHelper;
 
   @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -73,12 +83,50 @@ public abstract class ElasticsearchDao<T> {
     searchSourceBuilder.sort(SortBuilders.fieldSort(uniqueSortKey).order(SortOrder.ASC));
   }
 
+  private SortOptions toFieldSort(final Sort sort) {
+    final var order =
+        (sort.getOrder() == Order.DESC)
+            ? co.elastic.clients.elasticsearch._types.SortOrder.Desc
+            : co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+
+    return SortOptions.of(s -> s.field(f -> f.field(sort.getField()).order(order)));
+  }
+
+  protected void buildSorting(
+      final Query<T> query,
+      final String uniqueSortKey,
+      final SearchRequest.Builder searchRequestBuilder) {
+    final List<Sort> sorts = query.getSort();
+    if (sorts != null) {
+      searchRequestBuilder.sort(sorts.stream().map(this::toFieldSort).toList());
+    }
+
+    final var uniqueKeySort =
+        SortOptions.of(
+            s ->
+                s.field(
+                    f ->
+                        f.field(uniqueSortKey)
+                            .order(co.elastic.clients.elasticsearch._types.SortOrder.Asc)));
+
+    searchRequestBuilder.sort(uniqueKeySort);
+  }
+
   protected void buildPaging(final Query<T> query, final SearchSourceBuilder searchSourceBuilder) {
     final Object[] searchAfter = query.getSearchAfter();
     if (searchAfter != null) {
       searchSourceBuilder.searchAfter(searchAfter);
     }
     searchSourceBuilder.size(query.getSize());
+  }
+
+  protected void buildPaging(
+      final Query<T> query, final SearchRequest.Builder searchRequestBuilder) {
+    final Object[] searchAfter = query.getSearchAfter();
+    if (searchAfter != null) {
+      searchRequestBuilder.searchAfter(Arrays.stream(searchAfter).map(FieldValue::of).toList());
+    }
+    searchRequestBuilder.size(query.getSize());
   }
 
   protected SearchSourceBuilder buildQueryOn(
@@ -90,8 +138,25 @@ public abstract class ElasticsearchDao<T> {
     return searchSourceBuilder;
   }
 
+  protected SearchRequest.Builder buildQueryOn(
+      final Query<T> query,
+      final String uniqueKey,
+      final SearchRequest.Builder searchRequestBuilder,
+      final boolean isTenantAware) {
+    logger.debug("Build query for Elasticsearch from query {}", query);
+    buildSorting(query, uniqueKey, searchRequestBuilder);
+    buildPaging(query, searchRequestBuilder);
+    buildFiltering(query, searchRequestBuilder, isTenantAware);
+    return searchRequestBuilder;
+  }
+
   protected abstract void buildFiltering(
       final Query<T> query, final SearchSourceBuilder searchSourceBuilder);
+
+  protected abstract void buildFiltering(
+      final Query<T> query,
+      final SearchRequest.Builder searchRequestBuilder,
+      final boolean isTenantAware);
 
   protected QueryBuilder buildTermQuery(final String name, final String value) {
     if (!stringIsEmpty(value)) {
