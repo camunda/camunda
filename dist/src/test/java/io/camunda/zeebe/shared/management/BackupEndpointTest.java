@@ -37,6 +37,7 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -686,7 +688,7 @@ final class BackupEndpointTest {
       stateResponse.setCheckpointPosition(10L);
       stateResponse.setCheckpointTimestamp(20L);
 
-      when(api.getLatestCheckpointState(CheckpointType.MARKER))
+      when(api.getCheckpointState(CheckpointType.MARKER))
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
@@ -711,7 +713,7 @@ final class BackupEndpointTest {
       stateResponse.setCheckpointPosition(10L);
       stateResponse.setCheckpointTimestamp(20L);
 
-      when(api.getLatestCheckpointState(CheckpointType.SCHEDULED_BACKUP))
+      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
@@ -736,7 +738,7 @@ final class BackupEndpointTest {
       stateResponse.setCheckpointPosition(10L);
       stateResponse.setCheckpointTimestamp(20L);
 
-      when(api.getLatestCheckpointState(CheckpointType.SCHEDULED_BACKUP))
+      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
@@ -756,7 +758,41 @@ final class BackupEndpointTest {
 
       final var stateResponse = new CheckpointStateResponse();
 
-      when(api.getLatestCheckpointState(CheckpointType.SCHEDULED_BACKUP))
+      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.query("backup");
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnAllPartitionsState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setCheckpointType(CheckpointType.SCHEDULED_BACKUP);
+      stateResponse.setCheckpointId(1L);
+      stateResponse.setPartitionId(1);
+      stateResponse.setCheckpointPosition(10L);
+      stateResponse.setCheckpointTimestamp(20L);
+
+      final PartitionCheckpointState p1State =
+          new PartitionCheckpointState(1, 1L, CheckpointType.SCHEDULED_BACKUP, 20L, 10L);
+      final PartitionCheckpointState p2State =
+          new PartitionCheckpointState(2, 1L, CheckpointType.SCHEDULED_BACKUP, 20L, 20L);
+      final PartitionCheckpointState p3State =
+          new PartitionCheckpointState(3, 1L, CheckpointType.SCHEDULED_BACKUP, 30L, 40L);
+
+      stateResponse.setCheckpointStates(Set.of(p1State, p2State, p3State));
+
+      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
           .thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when

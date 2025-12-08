@@ -223,11 +223,23 @@ public final class BackupApiRequestHandler
     final var response = new CheckpointStateResponse();
     response.setPartitionId(requestReader.partitionId());
     if (type == CheckpointType.MANUAL_BACKUP || type == CheckpointType.SCHEDULED_BACKUP) {
+      if (checkpointState.getLatestBackupId() == CheckpointState.NO_CHECKPOINT) {
+        errorWriter.errorCode(ErrorCode.NO_CHECKPOINT_PRESENT).errorMessage("No backup present");
+        result.complete(Either.left(errorWriter));
+        return result;
+      }
       response.setCheckpointId(checkpointState.getLatestBackupId());
       response.setCheckpointTimestamp(checkpointState.getLatestBackupTimestamp());
       response.setCheckpointType(checkpointState.getLatestBackupType());
       response.setCheckpointPosition(checkpointState.getLatestBackupPosition());
     } else {
+      if (checkpointState.getLatestCheckpointId() == CheckpointState.NO_CHECKPOINT) {
+        errorWriter
+            .errorCode(ErrorCode.NO_CHECKPOINT_PRESENT)
+            .errorMessage("No checkpoint present");
+        result.complete(Either.left(errorWriter));
+        return result;
+      }
       response.setCheckpointId(checkpointState.getLatestCheckpointId());
       response.setCheckpointTimestamp(checkpointState.getLatestCheckpointTimestamp());
       response.setCheckpointType(checkpointState.getLatestCheckpointType());

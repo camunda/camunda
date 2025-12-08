@@ -69,7 +69,7 @@ public abstract class BackupEndpointStandaloneTest {
   }
 
   @Test
-  public void shouldCallStateWhenIsStandalone() {
+  public void shouldCallQueryWhenIsStandalone() {
     // when
     backupEndpointStandalone.query("checkpoint");
 

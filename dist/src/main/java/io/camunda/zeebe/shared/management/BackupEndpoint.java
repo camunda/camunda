@@ -136,7 +136,7 @@ public final class BackupEndpoint {
     try {
       final var cpType =
           BackupApi.BACKUP.equals(type) ? CheckpointType.SCHEDULED_BACKUP : CheckpointType.MARKER;
-      final var checkpointState = api.getLatestCheckpointState(cpType).toCompletableFuture().join();
+      final var checkpointState = api.getCheckpointState(cpType).toCompletableFuture().join();
       return new WebEndpointResponse<>(checkpointState);
     } catch (final Exception e) {
       return mapErrorResponse(e);

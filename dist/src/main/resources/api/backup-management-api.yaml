@@ -70,15 +70,15 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
-  /backupRuntime/{backupIdOrPrefix}:
+  /backupRuntime/{backupIdOrPrefixOrCheckpointType}:
     get:
       summary: Get information of a runtime backup
       description: A detailed information of the backup with the give backup id.
       parameters:
-        - $ref: '#/components/parameters/BackupIdOrPrefix'
+        - $ref: '#/components/parameters/BackupIdOrPrefixOrCheckpointType'
       responses:
         '200':
-          $ref: '#/components/responses/BackupStatusOrList'
+          $ref: '#/components/responses/BackupStatusOrListOrCheckpointState'
         '400':
           description: Backup is not enabled or configured on the brokers
           $ref: '#/components/responses/Error'
@@ -111,17 +111,6 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
-  /backupRuntime/state/{type}:
-    get:
-      summary: Get latest checkpoint state
-      description: Information about the latest checkpoint of the given type.
-      parameters:
-        - $ref: '#/components/parameters/CheckpointType'
-      responses:
-        '200':
-          description: OK
-          $ref: '#/components/responses/CheckpointState'
-
 
   # Section on historic backups
   /backupHistory:
@@ -229,24 +218,18 @@ components:
       description: Id of the backup
       schema:
         $ref: '#/components/schemas/BackupId'
-    BackupIdOrPrefix:
-      name: backupIdOrPrefix
+    BackupIdOrPrefixOrCheckpointType:
+      name: backupIdOrPrefixOrCheckpointType
       required: true
       in: path
-      description: A prefix of ids ending with '*', or a full backup id. Defaults to '*', matching all backup ids.
+      description: |
+        A prefix of ids ending with '*', or a full backup id. Defaults to '*', matching all backup ids.
+        Alternatively, the value can be 'backup' or 'checkpoint' to query for the checkpoint state.
       schema:
         oneOf:
           - $ref: '#/components/schemas/BackupId'
           - $ref: '#/components/schemas/BackupIdPrefix'
-
-    CheckpointType:
-      description: The type of the latest checkpoint.
-      in: path
-      required: true
-      example: backup
-      name: type
-      schema:
-        $ref: '#/components/schemas/CheckpointRequestType'
+          - $ref: '#/components/schemas/CheckpointRequestType'
 
   responses:
     Error:
@@ -255,15 +238,18 @@ components:
         application/json:
           schema:
             "$ref": "#/components/schemas/Error"
-    BackupStatusOrList:
+    BackupStatusOrListOrCheckpointState:
       description: |
-        Status of a single backup or list of statuses when querying for multiple backups
+        Status of a single backup or list of statuses when querying for multiple backups. When querying
+        for a checkpoint state, the response contains the the earliest checkpoint in the cluster, alongside
+        the checkpoint state per partition.
       content:
         application/json:
           schema:
             oneOf:
               - $ref: '#/components/schemas/BackupList'
               - $ref: '#/components/schemas/BackupInfo'
+              - $ref: '#/components/schemas/CheckpointState'
     BackupList:
       description: |
         List of all available backups.
@@ -603,33 +589,37 @@ components:
     CheckpointState:
       title: Checkpoint State
       description: |
-        Detailed information about the latest state of the cluster in regards to checkpoints. This
-        can either be in terms of backups or just logstream checkpoints.
+        Information about the checkpoint state for the cluster.
+      type: object
+      properties:
+          checkpointState:
+            $ref: '#/components/schemas/PartitionCheckpointState'
+          checkpointStates:
+            type: array
+            description: List of checkpoint states per partition
+            items:
+              $ref: '#/components/schemas/PartitionCheckpointState'
+
+    PartitionCheckpointState:
+      title: Partition Checkpoint State
+      description: |
+        Detailed information about the checkpoint state for a given partition.
       type: object
       properties:
         checkpointId:
-          readOnly: true
           allOf:
             - $ref: '#/components/schemas/CheckpointId'
         checkpointType:
-          readOnly: true
           allOf:
             - $ref: '#/components/schemas/CheckpointType'
         partitionId:
-          readOnly: true
           allOf:
             - $ref: '#/components/schemas/PartitionId'
         checkpointPosition:
-          readOnly: true
           type: integer
           format: int64
           example: 1500
         checkpointTimestamp:
-          readOnly: true
-          type: string
-          format: date-time
-          example: "2022-09-15T13:10:38.176514094Z"
-      required:
-        - backupId
-        - state
-        - details
+          type: integer
+          format: int64
+          example: 1765208671134

@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
@@ -440,12 +441,13 @@ final class BackupApiRequestHandlerTest {
     handleRequest(request);
 
     assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
-    assertThat(stateResponse)
-        .returns(10L, CheckpointStateResponse::getCheckpointId)
-        .returns(1, CheckpointStateResponse::getPartitionId)
-        .returns(CheckpointType.SCHEDULED_BACKUP, CheckpointStateResponse::getCheckpointType)
-        .returns(100L, CheckpointStateResponse::getCheckpointTimestamp)
-        .returns(20L, CheckpointStateResponse::getCheckpointPosition);
+    assertThat(stateResponse.getCheckpointState())
+        .returns(10L, PartitionCheckpointState::checkpointId)
+        .returns(1, PartitionCheckpointState::partitionId)
+        .returns(CheckpointType.SCHEDULED_BACKUP, PartitionCheckpointState::checkpointType)
+        .returns(100L, PartitionCheckpointState::checkpointTimestamp)
+        .returns(20L, PartitionCheckpointState::checkpointPosition);
+    assertThat(stateResponse.getCheckpointStates()).isEmpty();
   }
 
   @Test
@@ -466,12 +468,61 @@ final class BackupApiRequestHandlerTest {
     handleRequest(request);
 
     assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
-    assertThat(stateResponse)
-        .returns(10L, CheckpointStateResponse::getCheckpointId)
-        .returns(1, CheckpointStateResponse::getPartitionId)
-        .returns(CheckpointType.SCHEDULED_BACKUP, CheckpointStateResponse::getCheckpointType)
-        .returns(100L, CheckpointStateResponse::getCheckpointTimestamp)
-        .returns(20L, CheckpointStateResponse::getCheckpointPosition);
+    assertThat(stateResponse.getCheckpointState())
+        .returns(10L, PartitionCheckpointState::checkpointId)
+        .returns(1, PartitionCheckpointState::partitionId)
+        .returns(CheckpointType.SCHEDULED_BACKUP, PartitionCheckpointState::checkpointType)
+        .returns(100L, PartitionCheckpointState::checkpointTimestamp)
+        .returns(20L, PartitionCheckpointState::checkpointPosition);
+    assertThat(stateResponse.getCheckpointStates()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnErrorWhenNoCheckpointIsPresent() {
+    // given
+    when(checkpointState.getLatestCheckpointId()).thenReturn(-1L);
+
+    final var request =
+        new BackupRequest()
+            .setType(BackupRequestType.QUERY_STATE)
+            .setPartitionId(1)
+            .setCheckpointType(CheckpointType.MARKER);
+
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.NO_CHECKPOINT_PRESENT);
+  }
+
+  @Test
+  void shouldReturnErrorWhenNoBackupIsPresent() {
+    // given
+    when(checkpointState.getLatestBackupId()).thenReturn(-1L);
+
+    final var request =
+        new BackupRequest()
+            .setType(BackupRequestType.QUERY_STATE)
+            .setPartitionId(1)
+            .setCheckpointType(CheckpointType.SCHEDULED_BACKUP);
+
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.NO_CHECKPOINT_PRESENT);
   }
 
   private void handleRequest(final BackupRequest request) {

@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.InstantSource;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -133,8 +135,7 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   @Override
-  public CompletionStage<CheckpointStateResponse> getLatestCheckpointState(
-      final CheckpointType type) {
+  public CompletionStage<CheckpointStateResponse> getCheckpointState(final CheckpointType type) {
     return checkTopologyComplete()
         .thenCompose(
             topology -> {
@@ -149,12 +150,8 @@ public final class BackupRequestHandler implements BackupApi {
                       ignore ->
                           statusesReceived.stream()
                               .map(response -> response.join().getResponse())
-                              .toList()
-                              .stream()
-                              .max(
-                                  Comparator.comparingLong(
-                                      CheckpointStateResponse::getCheckpointId))
-                              .orElse(new CheckpointStateResponse()));
+                              .collect(Collectors.toSet()))
+                  .thenApply(this::aggregateCheckpointResponses);
             });
   }
 
@@ -366,14 +363,27 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   private CheckpointStateResponse aggregateCheckpointResponses(
-      final List<CheckpointStateResponse> responses) {
-    var highestCheckpointResponse = responses.getFirst();
-    for (final var response : responses) {
-      if (response.getCheckpointId() > highestCheckpointResponse.getCheckpointId()) {
-        highestCheckpointResponse = response;
-      }
-    }
-    return highestCheckpointResponse;
+      final Set<CheckpointStateResponse> responses) {
+    final CheckpointStateResponse response = new CheckpointStateResponse();
+
+    final var partitionStates =
+        responses.stream()
+            .map(CheckpointStateResponse::getCheckpointState)
+            .collect(Collectors.toSet());
+
+    partitionStates.stream()
+        .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
+        .ifPresent(
+            state -> {
+              response.setCheckpointId(state.checkpointId());
+              response.setCheckpointType(state.checkpointType());
+              response.setCheckpointPosition(state.checkpointPosition());
+              response.setCheckpointTimestamp(state.checkpointTimestamp());
+              response.setPartitionId(state.partitionId());
+            });
+
+    response.setCheckpointStates(partitionStates);
+    return response;
   }
 
   private BrokerCheckpointStateRequest createCheckpointRequest(

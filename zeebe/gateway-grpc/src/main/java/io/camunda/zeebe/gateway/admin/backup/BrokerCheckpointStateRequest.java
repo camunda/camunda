@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
-import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
+import io.camunda.zeebe.protocol.management.CheckpointStateResponseDecoder;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -25,7 +25,7 @@ public class BrokerCheckpointStateRequest extends BrokerRequest<CheckpointStateR
   private final CheckpointStateResponse response = new CheckpointStateResponse();
 
   public BrokerCheckpointStateRequest() {
-    super(ExecuteCommandResponseDecoder.SCHEMA_ID, ExecuteCommandResponseDecoder.TEMPLATE_ID);
+    super(CheckpointStateResponseDecoder.SCHEMA_ID, CheckpointStateResponseDecoder.TEMPLATE_ID);
     request.setType(BackupRequestType.QUERY_STATE);
   }
 
@@ -74,7 +74,7 @@ public class BrokerCheckpointStateRequest extends BrokerRequest<CheckpointStateR
 
   @Override
   protected BrokerResponse<CheckpointStateResponse> readResponse() {
-    return new BrokerResponse<>(response, response.getPartitionId(), -1);
+    return new BrokerResponse<>(response, response.getCheckpointState().partitionId(), -1);
   }
 
   @Override

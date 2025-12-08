@@ -59,7 +59,7 @@ public interface BackupApi {
    *     CheckpointType#SCHEDULED_BACKUP} as "the latest backup of any type".
    * @return the latest checkpoint state for the given type
    */
-  CompletionStage<CheckpointStateResponse> getLatestCheckpointState(CheckpointType type);
+  CompletionStage<CheckpointStateResponse> getCheckpointState(CheckpointType type);
 
   /**
    * @return a list of available backups
