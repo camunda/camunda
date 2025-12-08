@@ -743,7 +743,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  notify-slack:
+  notify-developer-portal:
     name: Send Slack Notification
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -823,7 +823,7 @@ jobs:
     name: Build Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release, notify-slack]
+    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release, notify-developer-portal]
     if: always()
     permissions:
       contents: read
@@ -838,7 +838,7 @@ jobs:
           BUILD_STATUS: ${{ needs.build-bundle.result }}
           TEST_STATUS: ${{ needs.test-bundle.result }}
           UPLOAD_STATUS: ${{ needs.upload-to-release.result }}
-          SLACK_STATUS: ${{ needs.notify-slack.result }}
+          SLACK_STATUS: ${{ needs.notify-developer-portal.result }}
         run: |
           RELEASE_BASE_URL="https://github.com/camunda/camunda/releases/download/${C8RUN_VERSION}"
           
