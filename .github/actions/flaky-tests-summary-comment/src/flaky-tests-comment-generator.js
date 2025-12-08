@@ -72,16 +72,30 @@ async function buildComment(mergedData, github, branchName) {
 }
 
 async function generateTestSourceUrl(test, github, branchName) {
-    const originalUrl = await githubApi.getTestSourceUrl(test, github);
-    const testName = test.methodName || test.fullName;
-    console.log(`[flaky-tests] Original URL for test ${testName}: ${originalUrl}`);
+    try {
+        const originalUrl = await githubApi.getTestSourceUrl(test, github);
+        const testName = test.methodName || test.fullName;
+        console.log(`[flaky-tests] Original URL for test ${testName}: ${originalUrl}`);
 
-    if (!originalUrl || typeof originalUrl !== 'string') {
-        console.warn(`[flaky-tests] No valid source URL found for test: ${testName}`);
+        if (!originalUrl || typeof originalUrl !== 'string') {
+            console.warn(`[flaky-tests] No valid source URL found for test: ${testName}`);
+            return '';
+        }
+
+        // Safely encode branch name and ensure URL replacement works
+        const encodedBranch = encodeURIComponent(branchName);
+        if (originalUrl.includes('/blob/')) {
+            return originalUrl.replace(/\/blob\/[^/]+/, `/tree/${encodedBranch}`);
+        } else {
+            // Fallback: return original URL if pattern doesn't match expected format
+            console.warn(`[flaky-tests] Unexpected URL format, returning original: ${originalUrl}`);
+            return originalUrl;
+        }
+    } catch (error) {
+        const testName = test.methodName || test.fullName;
+        console.error(`[flaky-tests] Failed to generate URL for test ${testName}:`, error.message);
         return '';
     }
-
-    return originalUrl.replace(/blob\/[^/]+/, `tree/${branchName}`);
 }
 
 module.exports = { createOrUpdateComment };

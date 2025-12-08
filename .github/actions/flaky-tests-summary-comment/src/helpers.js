@@ -40,7 +40,7 @@ function parseComment(body) {
       const methodMatchWithUrl = line.match(/-\s\[\*\*(.+?)\*\*\]\((.+?)\)/);
       const methodMatchPlain = line.match(/-\s\*\*(.+?)\*\*/);
       
-      if (methodMatchWithUrl || methodMatchPlain) {
+      if ((methodMatchWithUrl || methodMatchPlain) && !line.includes('Overall retries:')) {
         // Save previous test if any
         if (Object.keys(currentTest).length > 0) {
           flakyTests.push(currentTest);
@@ -77,7 +77,7 @@ function parseComment(body) {
 
       // Match overall retries
       const overallMatch = line.match(/Overall retries:\s+(?:\*\*)?(\d+)(?:\*\*)?\s+\(per run:\s+\[([^\]]+)\]\)/);
-      if (overallMatch) {
+      if (overallMatch && (currentTest.methodName || currentTest.fullName)) {
         currentTest.overallRetries = parseInt(overallMatch[1], 10);
         currentTest.failuresHistory = overallMatch[2].split(',').map(n => parseInt(n.trim(), 10));
       }
