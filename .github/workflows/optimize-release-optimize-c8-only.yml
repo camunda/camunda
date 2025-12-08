@@ -275,20 +275,6 @@ jobs:
             git push origin :refs/tags/"${TAG}"
           fi
 
-      - name: Create a GitHub release
-        if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.4.0
-        with:
-          route: POST /repos/camunda/camunda/releases
-          draft: true
-          name: ${{ env.TAG }}
-          tag_name: ${{ env.TAG }}
-          make_latest: \"false\"
-          body: |
-            Please refer to the [Camunda Monorepo ${{ env.RELEASE_VERSION }} Release Notes](https://github.com/camunda/camunda/releases/tag/${{ env.RELEASE_VERSION }}) for full details.
-
       - name: Auto-update previous version
         run: |
           if [ "$IS_PATCH" = "false" ]; then
@@ -387,6 +373,20 @@ jobs:
           version: ${{ env.RELEASE_VERSION }}
           date: ${{ env.DATE }}
           revision: ${{ env.REVISION }}
+
+      - name: Create a GitHub release
+              if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              uses: octokit/request-action@v2.4.0
+              with:
+                route: POST /repos/camunda/camunda/releases
+                draft: false
+                name: ${{ env.TAG }}
+                tag_name: ${{ env.TAG }}
+                make_latest: \"false\"
+                body: |
+                  Please refer to the [Camunda Monorepo ${{ env.RELEASE_VERSION }} Release Notes](https://github.com/camunda/camunda/releases/tag/${{ env.RELEASE_VERSION }}) for full details.
 
       - name: Docker log dump
         if: always()
