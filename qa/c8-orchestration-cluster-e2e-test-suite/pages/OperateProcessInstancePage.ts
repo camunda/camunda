@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Page, Locator, expect } from '@playwright/test';
-import { sleep } from 'utils/sleep';
+import {Page, Locator, expect} from '@playwright/test';
+import {sleep} from 'utils/sleep';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -42,6 +42,15 @@ class OperateProcessInstancePage {
   readonly migratedTag: Locator;
   readonly modifyDialog: Locator;
   readonly modifyDialogContinueButton: Locator;
+  readonly continueButton: Locator;
+  readonly applyModificationsButton: Locator;
+  readonly applyButton: Locator;
+  readonly addSingleFlowNodeInstanceButton: Locator;
+  readonly moveSelectedInstanceButton: Locator;
+  readonly executionListenerText: Locator;
+  readonly taskListenerText: Locator;
+  readonly stateOverlayActive: Locator;
+  readonly stateOverlayCompletedEndEvents: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -68,11 +77,11 @@ class OperateProcessInstancePage {
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single flow node instance in the instance history',
     );
-    this.addVariableButton = page.getByRole('button', { name: 'Add variable' });
-    this.saveVariableButton = page.getByRole('button', { name: 'Save variable' });
-    this.newVariableNameField = page.getByRole('textbox', { name: 'Name' });
-    this.newVariableValueField = page.getByRole('textbox', { name: 'Value' });
-    this.editVariableValueField = page.getByRole('textbox', { name: 'Value' });
+    this.addVariableButton = page.getByRole('button', {name: 'Add variable'});
+    this.saveVariableButton = page.getByRole('button', {name: 'Save variable'});
+    this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
+    this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
+    this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
     this.variableSpinner = page.getByTestId('full-variable-loader');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(
@@ -97,6 +106,23 @@ class OperateProcessInstancePage {
     this.modifyDialogContinueButton = this.modifyDialog.getByRole('button', {
       name: 'Continue',
     });
+    this.continueButton = page.getByRole('button', {name: 'Continue'});
+    this.applyModificationsButton = page.getByRole('button', {
+      name: 'Apply Modifications',
+    });
+    this.applyButton = page.getByRole('button', {name: 'Apply', exact: true});
+    this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
+      name: 'Add single flow node instance',
+    });
+    this.moveSelectedInstanceButton = page.getByRole('button', {
+      name: 'Move selected instance in this flow node to another target',
+    });
+    this.executionListenerText = page.getByText('Execution listener');
+    this.taskListenerText = page.getByText('Task listener');
+    this.stateOverlayActive = page.getByTestId('state-overlay-active');
+    this.stateOverlayCompletedEndEvents = page.getByTestId(
+      'state-overlay-completedEndEvents',
+    );
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -169,7 +195,7 @@ class OperateProcessInstancePage {
   getListenerTypeFilterOption = (
     option: 'Execution listeners' | 'User task listeners' | 'All listeners',
   ) => {
-    return this.listenerTypeFilter.getByText(option, { exact: true });
+    return this.listenerTypeFilter.getByText(option, {exact: true});
   };
 
   async undoModification() {
@@ -221,10 +247,7 @@ class OperateProcessInstancePage {
   }
 
   async getProcessInstanceKey(): Promise<string> {
-    const processInstanceKey = this.page
-      .getByTestId('instance-header')
-      .locator('table tbody tr td')
-      .nth(1);
+    const processInstanceKey = this.page.locator('table tbody tr td').nth(1);
     return (await processInstanceKey.textContent()) ?? '';
   }
 
@@ -240,7 +263,7 @@ class OperateProcessInstancePage {
     return this.incidentsTable.getByRole('row').filter({
       has: this.page
         .getByTestId('cell-errorMessage')
-        .filter({ hasText: errorMessage }),
+        .filter({hasText: errorMessage}),
     });
   }
 
@@ -272,7 +295,7 @@ class OperateProcessInstancePage {
     mainProcessName: string,
   ): Promise<number> {
     const expandingElements = this.instanceHistory
-      .getByLabel(mainProcessName, { exact: true })
+      .getByLabel(mainProcessName, {exact: true})
       .getByRole('group')
       .locator('.cds--tree-parent-node__toggle-icon');
     return await expandingElements.count();
@@ -303,7 +326,7 @@ class OperateProcessInstancePage {
   ): Promise<Locator> {
     return this.instanceHistory
       .getByRole('group')
-      .getByLabel(parentElementName, { exact: true });
+      .getByLabel(parentElementName, {exact: true});
   }
 
   async getNestedGroupInHistoryLocator(
@@ -361,6 +384,93 @@ class OperateProcessInstancePage {
       expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
     }
   }
+
+  async gotoProcessInstancePage({id}: {id: string}): Promise<void> {
+    await this.page.goto(`/operate/processes/${id}`);
+  }
+
+  get diagramHelper() {
+    return {
+      clickFlowNode: (flowNodeName: string) => {
+        return this.diagram
+          .getByText(flowNodeName)
+          .first()
+          .click({timeout: 20000});
+      },
+      getFlowNode: (flowNodeName: string) => {
+        return this.diagram.getByText(flowNodeName);
+      },
+      clickEvent: async (eventName: string) => {
+        await this.diagram
+          .locator(`[data-element-id="${eventName}"]`)
+          .click({timeout: 20000});
+      },
+      moveCanvasHorizontally: async (dx: number) => {
+        const boundingBox = await this.diagram.boundingBox();
+        if (!boundingBox) {
+          throw new Error('Diagram not found');
+        }
+
+        const startX = boundingBox.x + boundingBox.width / 2;
+        const startY = boundingBox.y + 50;
+
+        await this.page.mouse.move(startX, startY);
+        await this.page.mouse.down();
+        await this.page.mouse.move(startX + dx, startY);
+        await this.page.mouse.up();
+      },
+    };
+  }
+
+  getListenerRows(listenerType?: 'execution' | 'task'): Locator {
+    if (listenerType === 'execution') {
+      return this.page
+        .getByRole('row')
+        .filter({hasText: /execution listener/i});
+    }
+    if (listenerType === 'task') {
+      return this.page.getByRole('row').filter({hasText: /task listener/i});
+    }
+    return this.page.getByRole('row').filter({hasText: /listener/i});
+  }
+
+  getExecutionListenerText(exact = false): Locator {
+    return this.page.getByText('Execution listener', {exact});
+  }
+
+  getTaskListenerText(exact = false): Locator {
+    return this.page.getByText('Task listener', {exact});
+  }
+
+  getInstanceHistoryElement(elementText: string | RegExp): Locator {
+    return this.instanceHistory.getByText(elementText);
+  }
+
+  async clickInstanceHistoryElement(
+    elementText: string | RegExp,
+  ): Promise<void> {
+    await this.getInstanceHistoryElement(elementText).click();
+  }
+
+  async openListenersTab(): Promise<void> {
+    await this.listenersTabButton.click();
+  }
+
+  async verifyListenersTabVisible(): Promise<void> {
+    await expect(this.listenersTabButton).toBeVisible();
+  }
+
+  async startModificationFlow(): Promise<void> {
+    await this.modifyInstanceButton.click();
+    await this.continueButton.click();
+  }
+
+  async applyModifications(): Promise<void> {
+    await expect(this.applyModificationsButton).toBeEnabled({timeout: 10000});
+
+    await this.applyModificationsButton.click();
+    await this.applyButton.click();
+  }
 }
 
-export { OperateProcessInstancePage };
+export {OperateProcessInstancePage};
