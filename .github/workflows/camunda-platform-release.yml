@@ -183,6 +183,8 @@ jobs:
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
           
+          # shellcheck disable=SC2086 
+          # TODO: remove hellcheck disable=SC2086 when includeOptimize is no longer required
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -210,7 +212,8 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
-          # shellcheck disable=SC2016
+          # shellcheck disable=SC2016,SC2086 
+          # TODO: remove SC2086 when includeOptimize is no longer required
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
