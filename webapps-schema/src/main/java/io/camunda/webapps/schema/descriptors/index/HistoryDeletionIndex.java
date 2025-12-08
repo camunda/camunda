@@ -20,6 +20,7 @@ public class HistoryDeletionIndex extends AbstractIndexDescriptor implements Pri
   public static final String RESOURCE_KEY = "resourceKey";
   public static final String RESOURCE_TYPE = "resourceType";
   public static final String BATCH_OPERATION_KEY = "batchOperationKey";
+  public static final String PARTITION_ID = "partitionId";
 
   public HistoryDeletionIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

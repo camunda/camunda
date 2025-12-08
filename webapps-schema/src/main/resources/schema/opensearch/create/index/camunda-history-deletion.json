@@ -13,6 +13,9 @@
       },
       "batchOperationKey": {
         "type": "long"
+      },
+      "partitionId": {
+        "type": "integer"
       }
     }
   }

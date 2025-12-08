@@ -24,6 +24,9 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private long batchOperationKey;
 
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private long partitionId;
+
   @Override
   public String getId() {
     return id;
@@ -62,6 +65,20 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
     return this;
   }
 
+  public long getPartitionId() {
+    return partitionId;
+  }
+
+  public HistoryDeletionEntity setPartitionId(final long partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, resourceKey, resourceType, batchOperationKey, partitionId);
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
@@ -71,12 +88,8 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
     return resourceKey == that.resourceKey
         && batchOperationKey == that.batchOperationKey
         && Objects.equals(id, that.id)
-        && Objects.equals(resourceType, that.resourceType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, resourceKey, resourceType, batchOperationKey);
+        && Objects.equals(resourceType, that.resourceType)
+        && partitionId == that.partitionId;
   }
 
   @Override
@@ -92,6 +105,8 @@ public class HistoryDeletionEntity implements ExporterEntity<HistoryDeletionEnti
         + '\''
         + ", batchOperationKey="
         + batchOperationKey
+        + ", partitionId="
+        + partitionId
         + '}';
   }
 }
