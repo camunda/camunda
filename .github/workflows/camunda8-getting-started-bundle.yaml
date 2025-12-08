@@ -463,21 +463,13 @@ jobs:
         run: |
           cd test-bundle
           
-          # Run the camunda-start script in background
+          # Run the camunda-start script (c8run forks to background internally)
           echo "Starting c8run via camunda-start.sh..."
-          ./camunda-start.sh &
-          START_PID=$!
-          
-          # Check if the start script process exited immediately with an error
-          sleep 2
-          if ! kill -0 $START_PID 2>/dev/null; then
-            wait $START_PID
-            EXIT_CODE=$?
-            if [ $EXIT_CODE -ne 0 ]; then
-              echo "ERROR: camunda-start.sh failed with exit code $EXIT_CODE"
-              cat c8run/log/*.log 2>/dev/null || true
-              exit 1
-            fi
+          ./camunda-start.sh
+          if [ $? -ne 0 ]; then
+            echo "ERROR: camunda-start.sh failed with exit code $?"
+            cat c8run/log/*.log 2>/dev/null || true
+            exit 1
           fi
           
           # Wait for c8run to start (check for actuator health on port 9600)
@@ -496,7 +488,6 @@ jobs:
           
           if [ $WAITED -ge $MAX_WAIT ]; then
             echo "ERROR: c8run did not start within $MAX_WAIT seconds"
-            # Try to show logs
             cat c8run/log/*.log 2>/dev/null || true
             exit 1
           fi
@@ -506,13 +497,11 @@ jobs:
           # Graceful shutdown using the stop script
           echo "Stopping c8run via camunda-stop.sh..."
           ./camunda-stop.sh
-          STOP_EXIT_CODE=$?
-          if [ $STOP_EXIT_CODE -ne 0 ]; then
-            echo "ERROR: camunda-stop.sh failed with exit code $STOP_EXIT_CODE"
+          if [ $? -ne 0 ]; then
+            echo "ERROR: camunda-stop.sh failed with exit code $?"
             exit 1
           fi
           
-          # Wait for shutdown
           sleep 5
           echo "c8run stopped"
 
@@ -522,14 +511,11 @@ jobs:
         run: |
           cd test-bundle
           
-          # Start c8run using the camunda-start script in background
+          # Start c8run using the camunda-start script (c8run forks to background internally)
           Write-Host "Starting c8run via camunda-start.bat..."
-          $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-start.bat" -PassThru -NoNewWindow
-          
-          # Wait a moment and check if the process exited with an error
-          Start-Sleep -Seconds 2
-          if ($process.HasExited -and $process.ExitCode -ne 0) {
-            Write-Host "ERROR: camunda-start.bat failed with exit code $($process.ExitCode)"
+          & cmd.exe /c "camunda-start.bat"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: camunda-start.bat failed with exit code $LASTEXITCODE"
             Get-Content -Path "c8run\log\*.log" -ErrorAction SilentlyContinue
             exit 1
           }
@@ -558,7 +544,6 @@ jobs:
           
           if (-not $started) {
             Write-Host "ERROR: c8run did not start within $maxWait seconds"
-            # Try to show logs
             Get-Content -Path "c8run\log\*.log" -ErrorAction SilentlyContinue
             exit 1
           }
@@ -567,9 +552,9 @@ jobs:
           
           # Graceful shutdown using the stop script
           Write-Host "Stopping c8run via camunda-stop.bat..."
-          $stopProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-stop.bat" -Wait -NoNewWindow -PassThru
-          if ($stopProcess.ExitCode -ne 0) {
-            Write-Host "ERROR: camunda-stop.bat failed with exit code $($stopProcess.ExitCode)"
+          & cmd.exe /c "camunda-stop.bat"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: camunda-stop.bat failed with exit code $LASTEXITCODE"
             exit 1
           }
           
