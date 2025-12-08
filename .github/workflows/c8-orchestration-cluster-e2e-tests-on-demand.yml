@@ -83,13 +83,7 @@ jobs:
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
-            if [[ "${{ matrix.tasklist_mode }}" == "v1" ]]; then
-              echo "Starting with Tasklist V1 mode enabled"
-              CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
-            else
-              echo "Starting with default Tasklist V2 mode"
-              DATABASE=elasticsearch docker compose up -d camunda
-            fi
+            DATABASE=elasticsearch docker compose up -d camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -196,11 +190,9 @@ jobs:
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
             export ZEEBE_REST_ADDRESS="http://localhost:8089"
-            TEST_ARGS=(--project=chromium)
           else
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
-            TEST_ARGS=(--project=chromium)
           fi
           
           base="${{ needs.validate-branch.outputs.base }}"
@@ -255,7 +247,7 @@ jobs:
       fail-fast: false
       matrix:
         tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
-    needs: [validate-branch, c8-orchestration-cluster-api-tests]
+    needs: [validate-branch]
     runs-on: ubuntu-latest
     steps:
       - name: Print input and base branch
