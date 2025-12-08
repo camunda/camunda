@@ -450,6 +450,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "c8-orchestration-cluster-e2e-tests/${{ matrix.tasklist_mode }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
