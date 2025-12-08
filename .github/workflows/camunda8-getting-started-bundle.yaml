@@ -550,22 +550,10 @@ jobs:
         run: |
           cd test-bundle
           
-          # Create a fake browser script to capture URLs that c8run tries to open
-          # Some Go browser libraries respect the BROWSER environment variable
-          $fakeBrowserDir = "$env:TEMP\fake-browser"
-          New-Item -ItemType Directory -Force -Path $fakeBrowserDir | Out-Null
-          
-          $fakeBrowserScript = @"
-          @echo off
-          echo %* >> $env:TEMP\opened-urls.log
-          "@
-          Set-Content -Path "$fakeBrowserDir\fake-browser.bat" -Value $fakeBrowserScript
-          
-          # Set BROWSER env var (works with some Go browser libraries)
-          $env:BROWSER = "$fakeBrowserDir\fake-browser.bat"
-          
-          # Clean any previous log
-          Remove-Item -Path "$env:TEMP\opened-urls.log" -ErrorAction SilentlyContinue
+          # NOTE: On Windows, c8run uses the 'start' command to open URLs, which is a shell
+          # builtin that cannot be intercepted. Unlike Unix where we can override 'open' or
+          # 'xdg-open' via PATH, there's no reliable way to capture the URL that c8run opens.
+          # Therefore, we only verify that c8run starts successfully on Windows.
           
           # Start c8run using the camunda-start script (c8run forks to background internally)
           Write-Host "Starting c8run via camunda-start.bat..."
@@ -604,25 +592,8 @@ jobs:
             exit 1
           }
           
-          # Check if the expected URL was opened
-          Write-Host "Checking if startup URL was opened..."
-          $expectedUrl = "https://developers.camunda.com/quick-start?c8run_start=success"
-          $logFile = "$env:TEMP\opened-urls.log"
-          if (Test-Path $logFile) {
-            Write-Host "URLs that were opened:"
-            Get-Content $logFile
-            if (Select-String -Path $logFile -Pattern $expectedUrl -Quiet) {
-              Write-Host "✓ Startup URL verification passed!"
-            } else {
-              Write-Host "WARNING: Expected URL '$expectedUrl' was not found in opened URLs"
-              Write-Host "On Windows, c8run uses 'start' command which doesn't respect BROWSER env var"
-            }
-          } else {
-            Write-Host "WARNING: No URLs were captured"
-            Write-Host "On Windows, c8run uses 'start' command which doesn't respect BROWSER env var"
-          }
-          
           Write-Host "Integration test passed - c8run started successfully!"
+          Write-Host "NOTE: Startup URL verification skipped on Windows (start command cannot be intercepted)"
           
           # Graceful shutdown using the stop script
           Write-Host "Stopping c8run via camunda-stop.bat..."
