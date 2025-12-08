@@ -501,12 +501,12 @@ jobs:
           ./camunda-start.sh &
           START_PID=$!
           
-          # Wait for c8run to start (check for REST API availability)
+          # Wait for c8run to start (check for actuator health on port 9600)
           echo "Waiting for c8run to start..."
           MAX_WAIT=120
           WAITED=0
           while [ $WAITED -lt $MAX_WAIT ]; do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health 2>/dev/null | grep -q "200"; then
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:9600/actuator/health 2>/dev/null | grep -q "200"; then
               echo "c8run is healthy!"
               break
             fi
@@ -519,14 +519,6 @@ jobs:
             echo "ERROR: c8run did not start within $MAX_WAIT seconds"
             # Try to show logs
             cat c8run/log/*.log 2>/dev/null || true
-            exit 1
-          fi
-          
-          # Verify the API is responding
-          echo "Verifying c8run REST API..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health)
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "ERROR: c8run health check failed with status $HTTP_STATUS"
             exit 1
           fi
           
@@ -550,7 +542,7 @@ jobs:
           Write-Host "Starting c8run via camunda-start.bat..."
           $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "camunda-start.bat" -PassThru -NoNewWindow
           
-          # Wait for c8run to start (check for REST API availability)
+          # Wait for c8run to start (check for actuator health on port 9600)
           Write-Host "Waiting for c8run to start..."
           $maxWait = 120
           $waited = 0
@@ -558,7 +550,7 @@ jobs:
           
           while ($waited -lt $maxWait) {
             try {
-              $response = Invoke-WebRequest -Uri "http://localhost:8080/actuator/health" -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
+              $response = Invoke-WebRequest -Uri "http://localhost:9600/actuator/health" -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
               if ($response.StatusCode -eq 200) {
                 Write-Host "c8run is healthy!"
                 $started = $true
@@ -576,14 +568,6 @@ jobs:
             Write-Host "ERROR: c8run did not start within $maxWait seconds"
             # Try to show logs
             Get-Content -Path "c8run\log\*.log" -ErrorAction SilentlyContinue
-            exit 1
-          }
-          
-          # Verify the API is responding
-          Write-Host "Verifying c8run REST API..."
-          $response = Invoke-WebRequest -Uri "http://localhost:8080/actuator/health" -UseBasicParsing
-          if ($response.StatusCode -ne 200) {
-            Write-Host "ERROR: c8run health check failed with status $($response.StatusCode)"
             exit 1
           }
           
