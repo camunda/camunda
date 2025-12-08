@@ -17,8 +17,8 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -30,7 +30,7 @@ public class CamundaUserDetailsServiceTest {
   @Mock private UserServices userService;
   private CamundaUserDetailsService userDetailsService;
 
-  @Before
+  @BeforeEach
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
     userDetailsService = new CamundaUserDetailsService(userService);
