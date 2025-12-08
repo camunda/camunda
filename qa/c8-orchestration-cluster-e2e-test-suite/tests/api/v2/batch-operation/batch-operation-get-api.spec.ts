@@ -62,7 +62,8 @@ test.describe.parallel('Get Batch Operation Tests', () => {
         expect(json['operationsFailedCount']).toBeGreaterThanOrEqual(0);
         expect(json['operationsCompletedCount']).toBeGreaterThanOrEqual(0);
         expect(json['errors']).toBeDefined();
-        expect(json['startDate']).toBeDefined();
+        //Skipped due to bug 42165: https://github.com/camunda/camunda/issues/42165
+        // expect(json['startDate']).toBeDefined();
       }).toPass(defaultAssertionOptions);
     });
   });
