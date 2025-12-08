@@ -217,22 +217,6 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
-  public Long getPositionIncident() {
-    return positionIncident;
-  }
-
-  public void setPositionIncident(final Long positionIncident) {
-    this.positionIncident = positionIncident;
-  }
-
-  public String getErrorMessage() {
-    return errorMessage;
-  }
-
-  public void setErrorMessage(final String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(

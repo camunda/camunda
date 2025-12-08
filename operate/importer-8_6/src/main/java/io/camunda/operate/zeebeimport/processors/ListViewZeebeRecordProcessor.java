@@ -145,16 +145,6 @@ public class ListViewZeebeRecordProcessor {
       piEntity.setPartitionId(record.getPartitionId());
       piEntity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
       piEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-      piEntity.setPositionIncident(record.getPosition());
-
-      if (intentStr.equals(IncidentIntent.CREATED.name())) {
-        piEntity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
-      } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
-        piEntity.setErrorMessage(null);
-      }
-
-      updateFields.put(ERROR_MSG, StringUtils.trimWhitespace(recordValue.getErrorMessage()));
-      updateFields.put(INCIDENT_POSITION, record.getPosition());
 
       entity = piEntity;
 

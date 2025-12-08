@@ -396,7 +396,7 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
     searchTestRule.blockIndexRead(zeebeProcessInstanceIndex, false);
 
     searchTestRule.processRecordsWithTypeAndWait(
-        ImportValueType.PROCESS_INSTANCE, true, incidentsArePresentCheck, pi, 1);
+        ImportValueType.PROCESS_INSTANCE, true, processInstanceHasBeenUpdated, pi);
 
     Awaitility.await("process instance with incident is imported")
         .pollInterval(Duration.ofSeconds(2))
@@ -408,8 +408,11 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
                       listViewIndex, String.valueOf(pi), ProcessInstanceForListViewEntity.class);
 
               assertThat(doc).isNotNull();
-              assertThat(doc.getErrorMessage()).isEqualTo("start listener failed");
-              assertThat(doc.getPositionIncident()).isGreaterThan(0L);
+              assertThat(doc.getProcessDefinitionKey()).isGreaterThan(0L);
+              assertThat(doc.getProcessName()).isNotEmpty();
+              assertThat(doc.getProcessVersion()).isGreaterThan(0);
+              assertThat(doc.getBpmnProcessId()).isNotEmpty();
+              assertThat(doc.getTreePath()).isNotEmpty();
             });
   }
 

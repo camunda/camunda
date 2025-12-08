@@ -195,6 +195,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected OperateTester tester;
 
   @Autowired
+  @Qualifier("processInstanceHasBeenUpdated")
+  protected Predicate<Object[]> processInstanceHasBeenUpdated;
+
+  @Autowired
   @Qualifier("decisionsAreDeployedCheck")
   private Predicate<Object[]> decisionsAreDeployedCheck;
 

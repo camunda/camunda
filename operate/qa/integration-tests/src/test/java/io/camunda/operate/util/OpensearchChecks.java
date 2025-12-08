@@ -1161,4 +1161,15 @@ public class OpensearchChecks {
           > 0;
     };
   }
+
+  @Bean(name = "processInstanceHasBeenUpdated")
+  public Predicate<Object[]> getProcessInstanceHasBeenUpdated() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      final Long processInstanceKey = (Long) objects[0];
+      final var pi = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+      return pi.getTreePath() != null && pi.getBpmnProcessId() != null;
+    };
+  }
 }
