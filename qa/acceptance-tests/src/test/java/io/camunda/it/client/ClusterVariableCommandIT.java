@@ -51,7 +51,7 @@ public class ClusterVariableCommandIT {
     // given
     final var variableName = "tenantVar_" + UUID.randomUUID();
     final var variableValue = "testValue_" + UUID.randomUUID();
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     // when
     final var response =
@@ -138,7 +138,7 @@ public class ClusterVariableCommandIT {
     // given
     final var variableName = "duplicateTenantVar_" + UUID.randomUUID();
     final var variableValue = "testValue_" + UUID.randomUUID();
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     camundaClient
         .newTenantScopedClusterVariableCreateRequest(tenantId)
@@ -164,7 +164,7 @@ public class ClusterVariableCommandIT {
     final var variableName = "sameNameVar_" + UUID.randomUUID();
     final var globalValue = "globalValue_" + UUID.randomUUID();
     final var tenantValue = "tenantValue_" + UUID.randomUUID();
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     // when - create in global scope
     final var response1 =
@@ -228,7 +228,7 @@ public class ClusterVariableCommandIT {
     // given
     final var variableName = "tenantVarDelete_" + UUID.randomUUID();
     final var variableValue = "testValue_" + UUID.randomUUID();
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     camundaClient
         .newTenantScopedClusterVariableCreateRequest(tenantId)
@@ -295,8 +295,8 @@ public class ClusterVariableCommandIT {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newTenantScopedClusterVariableDeleteRequest("tenant_" + UUID.randomUUID())
-                    .delete("nonExistentVar_" + UUID.randomUUID())
+                    .newTenantScopedClusterVariableDeleteRequest("tenant_123")
+                    .delete("nonExistentVar_657")
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -315,7 +315,7 @@ public class ClusterVariableCommandIT {
         .send()
         .join();
 
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     // when / then
     assertThatThrownBy(
@@ -334,7 +334,7 @@ public class ClusterVariableCommandIT {
     // given
     final var variableName = "tenantVarNoGlobalDelete_" + UUID.randomUUID();
     final var variableValue = "testValue_" + UUID.randomUUID();
-    final var tenantId = "tenant_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
 
     camundaClient
         .newTenantScopedClusterVariableCreateRequest(tenantId)
