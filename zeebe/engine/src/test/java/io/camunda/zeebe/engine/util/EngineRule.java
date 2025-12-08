@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
+import io.camunda.zeebe.engine.util.client.ConditionalEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
@@ -519,6 +520,10 @@ public final class EngineRule extends ExternalResource {
 
   public SignalClient signal() {
     return new SignalClient(environmentRule);
+  }
+
+  public ConditionalEvaluationClient conditionalEvaluation() {
+    return new ConditionalEvaluationClient(environmentRule);
   }
 
   public UserTaskClient userTask() {
