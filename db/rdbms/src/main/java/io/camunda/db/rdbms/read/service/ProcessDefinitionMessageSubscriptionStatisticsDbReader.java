@@ -16,6 +16,8 @@ import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQue
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessDefinitionMessageSubscriptionStatisticsSort;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +51,15 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
     }
 
     final var dbPage = convertPaging(dbSort, query.page());
-
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
     final var dbQuery =
         ProcessDefinitionMessageSubscriptionStatisticsDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .page(dbPage));
 
