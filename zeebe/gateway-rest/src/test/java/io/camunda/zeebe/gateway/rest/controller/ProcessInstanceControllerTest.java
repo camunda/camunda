@@ -1341,6 +1341,52 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectModifyProcessInstanceWithVariableInstructionsElementNullOnMove() {
+    // given
+    final var request =
+        """
+            {
+              "moveInstructions": [
+                {
+                  "sourceElementId": "elementId",
+                  "targetElementId": "elementId2",
+                  "variableInstructions": [
+                    {
+                      "scopeId": "scopeId"
+                    }
+                  ]
+                }
+              ],
+              "operationReference": 123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No variables provided.",
+                "instance":"/v2/process-instances/1/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
   void shouldRejectModifyProcessInstanceWithTerminateInstructionsNoElement() {
     // given
     final var request =
@@ -1446,6 +1492,86 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
             Use any of the following values: [direct, sourceParent, DirectAncestorKeyInstruction, \
             SourceParentAncestorKeyInstruction]",
+                "instance":"/v2/process-instances/1/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithMoveInstructionsTargetElementNull() {
+    // given
+    final var request =
+        """
+            {
+              "moveInstructions": [
+                {
+                  "sourceElementId": "elementId"
+                }
+              ],
+              "operationReference": 123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail": "No targetElementId provided.",
+                "instance":"/v2/process-instances/1/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithMoveInstructionsSourceElementNull() {
+    // given
+    final var request =
+        """
+            {
+              "moveInstructions": [
+                {
+                  "targetElementId": "elementId"
+                }
+              ],
+              "operationReference": 123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail": "No sourceElementId provided.",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 

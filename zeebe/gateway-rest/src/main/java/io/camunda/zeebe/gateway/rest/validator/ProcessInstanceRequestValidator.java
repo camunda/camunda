@@ -258,6 +258,15 @@ public class ProcessInstanceRequestValidator {
                 direct.getAncestorElementInstanceKey(), "ancestorElementInstanceKey", violations);
           }
         });
+    final var variableInstructions =
+        instructions.stream()
+            .flatMap(instruction -> instruction.getVariableInstructions().stream())
+            .toList();
+    validateInstructions(
+        variableInstructions,
+        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
   }
 
   private static void validateMoveBatchInstructions(
