@@ -7,11 +7,13 @@
  */
 
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {makeAutoObservable} from 'mobx';
+import {makeObservable, observable, action, override} from 'mobx';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from 'modules/stores/networkReconnectionHandler';
 
 const PAGE_SIZE = 50;
+const POLLING_INTERVAL = 5000;
 
 type PageMetadata = {
   totalItems: number;
@@ -32,7 +34,7 @@ type State = {
   abortControllers: Map<string, AbortController>;
 };
 
-class ElementInstancesTreeStore {
+class ElementInstancesTreeStore extends NetworkReconnectionHandler {
   state: State = {
     rootScopeKey: null,
     nodes: new Map(),
@@ -40,8 +42,21 @@ class ElementInstancesTreeStore {
     abortControllers: new Map(),
   };
 
+  isPollRequestRunning: boolean = false;
+  intervalId: ReturnType<typeof setInterval> | null = null;
+  pollAbortController: AbortController | null = null;
+
   constructor() {
-    makeAutoObservable(this);
+    super();
+    makeObservable(this, {
+      state: observable,
+      setRootNode: action,
+      expandNode: action,
+      collapseNode: action,
+      toggleNode: action,
+      setNodeData: action,
+      reset: override,
+    });
   }
 
   private getOrCreateAbortController = (scopeKey: string): AbortController => {
@@ -56,10 +71,25 @@ class ElementInstancesTreeStore {
     return controller;
   };
 
-  setRootNode = async (processInstanceKey: string) => {
-    if (this.state.rootScopeKey === processInstanceKey) {
+  setRootNode = async (
+    processInstanceKey: string,
+    config?: {
+      enablePolling?: boolean;
+    },
+  ) => {
+    const isNewRoot = this.state.rootScopeKey !== processInstanceKey;
+    const isPollingEnabled = config?.enablePolling ?? false;
+
+    if (!isNewRoot) {
+      if (isPollingEnabled && this.intervalId === null) {
+        this.startPolling();
+      } else if (!isPollingEnabled && this.intervalId !== null) {
+        this.stopPolling();
+      }
       return;
     }
+
+    this.stopPolling();
 
     this.state.abortControllers.forEach((controller) => {
       controller.abort();
@@ -73,6 +103,10 @@ class ElementInstancesTreeStore {
     this.state.expandedNodes.add(processInstanceKey);
 
     await this.fetchFirstPage(processInstanceKey);
+
+    if (isPollingEnabled) {
+      this.startPolling();
+    }
   };
 
   expandNode = async (scopeKey: string) => {
@@ -110,7 +144,7 @@ class ElementInstancesTreeStore {
     }
 
     if (response !== null) {
-      this.state.nodes.set(scopeKey, {
+      this.setNodeData(scopeKey, {
         items: response.items,
         pageMetadata: {
           totalItems: response.page.totalItems,
@@ -211,7 +245,7 @@ class ElementInstancesTreeStore {
     }
 
     if (response !== null) {
-      this.state.nodes.set(scopeKey, {
+      this.setNodeData(scopeKey, {
         items: response.items,
         pageMetadata: {
           totalItems: response.page.totalItems,
@@ -266,7 +300,7 @@ class ElementInstancesTreeStore {
     }
 
     if (response !== null) {
-      this.state.nodes.set(scopeKey, {
+      this.setNodeData(scopeKey, {
         items: response.items,
         pageMetadata: {
           totalItems: response.page.totalItems,
@@ -287,12 +321,12 @@ class ElementInstancesTreeStore {
   private setNodeStatus = (scopeKey: string, status: NodeData['status']) => {
     const nodeData = this.state.nodes.get(scopeKey);
     if (nodeData) {
-      this.state.nodes.set(scopeKey, {
+      this.setNodeData(scopeKey, {
         ...nodeData,
         status,
       });
     } else {
-      this.state.nodes.set(scopeKey, {
+      this.setNodeData(scopeKey, {
         items: [],
         pageMetadata: {
           totalItems: 0,
@@ -330,7 +364,14 @@ class ElementInstancesTreeStore {
     return nodeData.pageMetadata.windowStart > 0;
   };
 
-  reset = () => {
+  setNodeData = (scopeKey: string, newNodeData: NodeData) => {
+    this.state.nodes.set(scopeKey, newNodeData);
+  };
+
+  reset() {
+    super.reset();
+    this.stopPolling();
+
     this.state.abortControllers.forEach((controller) => {
       controller.abort();
     });
@@ -339,6 +380,121 @@ class ElementInstancesTreeStore {
     this.state.rootScopeKey = null;
     this.state.nodes.clear();
     this.state.expandedNodes.clear();
+  }
+
+  private hasRunningChildren = (scopeKey: string): boolean => {
+    const nodeData = this.state.nodes.get(scopeKey);
+    if (!nodeData) {
+      return false;
+    }
+
+    return nodeData.items.some((item) => item.state === 'ACTIVE');
+  };
+
+  pollExpandedNodes = async () => {
+    if (document.visibilityState === 'hidden') {
+      return;
+    }
+
+    if (!this.state.rootScopeKey || this.isPollRequestRunning) {
+      return;
+    }
+
+    this.isPollRequestRunning = true;
+
+    this.pollAbortController = new AbortController();
+    const signal = this.pollAbortController.signal;
+
+    const expandedNodesArray = Array.from(this.state.expandedNodes);
+
+    const nodesToPoll = expandedNodesArray.filter((scopeKey) => {
+      if (scopeKey === this.state.rootScopeKey) {
+        return true;
+      }
+      return this.hasRunningChildren(scopeKey);
+    });
+
+    try {
+      await Promise.all(
+        nodesToPoll.map(async (scopeKey) => {
+          const nodeData = this.state.nodes.get(scopeKey);
+          if (!nodeData) {
+            return;
+          }
+
+          const requestedWindowStart = nodeData.pageMetadata.windowStart;
+
+          const {response, error} = await searchElementInstances(
+            {
+              filter: {elementInstanceScopeKey: scopeKey},
+              page: {
+                limit: PAGE_SIZE * 2,
+                from: requestedWindowStart,
+              },
+              sort: [{field: 'startDate', order: 'asc'}],
+            },
+            signal,
+          );
+
+          if (signal.aborted || this.intervalId === null) {
+            return;
+          }
+
+          const currentNodeData = this.state.nodes.get(scopeKey);
+          if (!currentNodeData) {
+            return;
+          }
+
+          if (
+            currentNodeData.pageMetadata.windowStart !== requestedWindowStart
+          ) {
+            return;
+          }
+
+          if (response !== null) {
+            this.setNodeData(scopeKey, {
+              ...currentNodeData,
+              items: response.items,
+              pageMetadata: {
+                ...currentNodeData.pageMetadata,
+                totalItems: response.page.totalItems,
+              },
+            });
+          } else {
+            if (!signal.aborted) {
+              logger.error('Failed to poll element instances', error);
+            }
+          }
+        }),
+      );
+    } finally {
+      this.isPollRequestRunning = false;
+      this.pollAbortController = null;
+    }
+  };
+
+  startPolling = () => {
+    if (this.intervalId !== null || !this.state.rootScopeKey) {
+      return;
+    }
+
+    this.intervalId = setInterval(() => {
+      if (!this.isPollRequestRunning) {
+        this.pollExpandedNodes();
+      }
+    }, POLLING_INTERVAL);
+  };
+
+  stopPolling = () => {
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+
+    if (this.pollAbortController !== null) {
+      this.pollAbortController.abort();
+      this.pollAbortController = null;
+    }
   };
 }
 
