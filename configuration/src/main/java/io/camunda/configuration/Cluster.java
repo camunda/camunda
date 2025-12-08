@@ -13,6 +13,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +121,19 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
+
+  /**
+   * The partitioning configuration allow configuring experimental settings related to partitioning.
+   *
+   * <p>At the moment, it lets users configure the scheme - that is, how partitions are distributed
+   * across the brokers. The default scheme is currently {@link Scheme#ROUND_ROBIN}.
+   *
+   * <p>When using {@link Scheme#FIXED}, a map of brokers to a list of partitions should be
+   * specified under {@link Partitioning#fixed}. This map takes keys as the broker node IDs, with
+   * values as a list of partition IDs. The mapping must be exhaustive, meaning all brokers should
+   * appear, and all partitions should be specified with the appropriate replication factor.
+   */
+  @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
 
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
@@ -253,6 +267,14 @@ public class Cluster implements Cloneable {
 
   public void setGlobalListeners(final GlobalListenersCfg globalListeners) {
     this.globalListeners = globalListeners;
+  }
+
+  public Partitioning getPartitioning() {
+    return partitioning;
+  }
+
+  public void setPartitioning(final Partitioning partitioning) {
+    this.partitioning = partitioning;
   }
 
   @Override

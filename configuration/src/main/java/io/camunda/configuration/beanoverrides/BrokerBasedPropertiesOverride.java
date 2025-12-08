@@ -16,6 +16,7 @@ import io.camunda.configuration.Export;
 import io.camunda.configuration.Exporter;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
+import io.camunda.configuration.FixedPartition;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.InterceptorPlugin;
@@ -25,6 +26,7 @@ import io.camunda.configuration.Limit;
 import io.camunda.configuration.Membership;
 import io.camunda.configuration.Metrics;
 import io.camunda.configuration.NodeIdProvider.Type;
+import io.camunda.configuration.Partitioning;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.Processing;
@@ -44,6 +46,7 @@ import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
+import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
@@ -58,6 +61,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStore
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
@@ -362,6 +366,33 @@ public class BrokerBasedPropertiesOverride {
             CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
 
     populateFromGlobalListeners(override);
+
+    populateFromPartitioning(override);
+  }
+
+  private void populateFromPartitioning(final BrokerBasedProperties override) {
+    final Partitioning partitioning =
+        unifiedConfiguration.getCamunda().getCluster().getPartitioning();
+
+    // Order between legacy and new partitioning props is not guaranteed.
+    // Log common partitioning warning instead of using UnifiedConfigurationHelper logging.
+    final var partioningCfg = override.getExperimental().getPartitioning();
+    if (partioningCfg.getScheme() == Scheme.FIXED && !partioningCfg.getFixed().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.cluster.partitioning.fixed", "zeebe.broker.experimental.partitioning.fixed");
+      LOGGER.warn(warningMessage);
+    }
+
+    if (partitioning.getScheme() == Partitioning.Scheme.FIXED
+        && !partitioning.getFixed().isEmpty()) {
+      final PartitioningCfg partitioningCfg = override.getExperimental().getPartitioning();
+      partitioningCfg.setScheme(Scheme.valueOf(partitioning.getScheme().name()));
+      final var fixedPartitionCfgList =
+          partitioning.getFixed().stream().map(FixedPartition::toFixedPartitionCfg).toList();
+      partitioningCfg.setFixed(fixedPartitionCfgList);
+    }
   }
 
   private void populateFromLongPolling(final BrokerBasedProperties override) {
