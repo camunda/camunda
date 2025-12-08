@@ -195,14 +195,9 @@ jobs:
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
           
-          base="${{ needs.validate-branch.outputs.base }}"
-          if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
-            echo "Running API tests for older branches (8.6/8.7)"
-            npm run test -- --project=api-tests
-          else
-            echo "Running all API tests (V1 and V2)"
-            npm run test -- --project=api-tests
-          fi
+          echo "Running API tests"
+          npm run test -- --project=api-tests
+          
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
