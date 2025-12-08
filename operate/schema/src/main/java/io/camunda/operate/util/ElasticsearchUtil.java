@@ -479,6 +479,13 @@ public abstract class ElasticsearchUtil {
   }
 
   public static Query termsQuery(final String name, final Collection<?> values) {
+    if (values.contains(null)) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query ["
+              + name
+              + "] where terms field is "
+              + values);
+    }
     return Query.of(
         q ->
             q.terms(
@@ -490,6 +497,11 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> Query termsQuery(final String name, final T value) {
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query [" + name + "] with null value");
+    }
+
     return termsQuery(name, Collections.singletonList(value));
   }
 
