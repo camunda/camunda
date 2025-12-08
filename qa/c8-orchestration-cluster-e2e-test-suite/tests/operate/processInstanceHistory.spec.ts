@@ -23,15 +23,10 @@ type ProcessInstance = {processInstanceKey: number};
 let incidentProcessInstance: ProcessInstance;
 let embeddedSubprocessInstance: ProcessInstance;
 
-const startEventStartGlobal = 'StartGlobal';
 const activityNode = 'Node';
 const activityFirstSubprocess = 'FirstSubprocess';
-const eventStartFirstSubProcess = 'StartFirstSubProcess';
 const activityCollectMoney = 'CollectMoney';
-const activityFetchItems = 'FetchItems';
 const eventEndFirstSubProcess = 'EndFirstSubProcess';
-const eventOrderCancelled = 'OrderCanceled';
-const eventOrderCancelledEnd = 'OrderCancelledEnd';
 const activitySecondSubprocess = 'SecondSubprocess';
 const eventStartSecondSubProcess = 'StartSecondSubProcess';
 const activitySendItems = 'SendItems';
@@ -149,8 +144,15 @@ test.describe('Process Instance History', () => {
       await operateFiltersPanelPage.fillVariableNameFilter('wuf');
       await operateFiltersPanelPage.fillVariableValueFilter('1');
       await operateProcessesPage.clickProcessInstanceLink();
-      const key = await operateProcessInstancePage.getProcessInstanceKey();
-      expect(key).toContain(`${incidentProcessInstanceKey}`);
+      await waitForAssertion({
+        assertion: async () => {
+          const key = await operateProcessInstancePage.getProcessInstanceKey();
+          expect(key).toContain(`${incidentProcessInstanceKey}`);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
       await expect(operateProcessInstancePage.instanceHistory).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
@@ -372,8 +374,15 @@ test.describe('Process Instance History', () => {
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
-      const key = await operateProcessInstancePage.getProcessInstanceKey();
-      expect(key).toContain(`${embeddedProcessInstanceModificationPIK}`);
+      await waitForAssertion({
+        assertion: async () => {
+          const key = await operateProcessInstancePage.getProcessInstanceKey();
+          expect(key).toContain(`${embeddedProcessInstanceModificationPIK}`);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Verify one active token', async () => {
