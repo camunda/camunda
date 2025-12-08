@@ -52,7 +52,8 @@ public class ProcessDefinitionMessageSubscriptionStatisticsImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final ProcessDefinitionMessageSubscriptionStatisticsImpl that = (ProcessDefinitionMessageSubscriptionStatisticsImpl) o;
+    final ProcessDefinitionMessageSubscriptionStatisticsImpl that =
+        (ProcessDefinitionMessageSubscriptionStatisticsImpl) o;
     return Objects.equals(items, that.items) && Objects.equals(endCursor, that.endCursor);
   }
 
