@@ -10,6 +10,7 @@ package io.camunda.security.auth;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DOCUMENT;
@@ -184,6 +185,10 @@ public record Authorization<T>(
 
     public Builder<T> auditLog() {
       return resourceType(AUDIT_LOG);
+    }
+
+    public Builder<T> clusterVariable() {
+      return resourceType(CLUSTER_VARIABLE);
     }
 
     public Builder<T> resourceId(final String resourceId) {
