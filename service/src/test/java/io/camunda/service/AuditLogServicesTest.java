@@ -22,17 +22,10 @@ import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.time.OffsetDateTime;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -48,17 +41,17 @@ class AuditLogServicesTest {
       new AuditLogEntity.Builder()
           .auditLogKey("auditLogKey")
           .entityKey("entityKey")
-          .entityType(AuditLogEntityType.USER)
-          .operationType(AuditLogOperationType.CREATE)
+          .entityType(AuditLogEntity.AuditLogEntityType.USER)
+          .operationType(AuditLogEntity.AuditLogOperationType.CREATE)
           .batchOperationKey(456L)
           .batchOperationType(BatchOperationType.ADD_VARIABLE)
           .timestamp(OffsetDateTime.now())
           .actorId("actorId")
-          .actorType(AuditLogActorType.USER)
+          .actorType(AuditLogEntity.AuditLogActorType.USER)
           .tenantId("tenant-1")
-          .result(AuditLogOperationResult.SUCCESS)
+          .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
           .annotation("annotation")
-          .category(AuditLogOperationCategory.OPERATOR)
+          .category(AuditLogEntity.AuditLogOperationCategory.OPERATOR)
           .processDefinitionId("processDefinitionId")
           .processDefinitionKey(789L)
           .processInstanceKey(987L)
@@ -87,12 +80,7 @@ class AuditLogServicesTest {
   void setUp() {
     MockitoAnnotations.openMocks(this);
 
-    final SecurityContext securityContext = org.mockito.Mockito.mock(SecurityContext.class);
-    when(securityContextProvider.provideSecurityContext(
-            any(CamundaAuthentication.class), any(AuthorizationCondition.class)))
-        .thenReturn(securityContext);
-    when(auditLogSearchClient.withSecurityContext(any(SecurityContext.class)))
-        .thenReturn(auditLogSearchClient);
+    when(auditLogSearchClient.withSecurityContext(any())).thenReturn(auditLogSearchClient);
 
     auditLogServices =
         new AuditLogServices(
@@ -142,8 +130,7 @@ class AuditLogServicesTest {
   public void searchShouldThrowForbiddenExceptionIfNotAuthorized() {
     // given
     when(auditLogSearchClient.searchAuditLogs(query))
-        .thenThrow(
-            new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_ALL_AUTHORIZATION));
+        .thenThrow(new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_AUTHORIZATION));
     when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
@@ -164,9 +151,7 @@ class AuditLogServicesTest {
     final var key = "123";
 
     when(auditLogSearchClient.getAuditLog(key))
-        .thenThrow(
-            new ResourceAccessDeniedException(
-                Authorizations.AUDIT_LOG_READ_OPERATOR_AUTHORIZATION));
+        .thenThrow(new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_AUTHORIZATION));
 
     // when
     final ThrowingCallable executeGetByKey = () -> auditLogServices.getAuditLog(key);
@@ -176,8 +161,7 @@ class AuditLogServicesTest {
         (ServiceException)
             assertThatThrownBy(executeGetByKey).isInstanceOf(ServiceException.class).actual();
     assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_OPERATOR_AUDIT_LOG' on resource 'AUDIT_LOG'");
+        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'AUDIT_LOG'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
   }
 }

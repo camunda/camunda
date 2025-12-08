@@ -11,5 +11,5 @@ public enum AuditLogOperationCategory {
   UNKNOWN,
   ADMIN,
   OPERATOR,
-  USER_TASK;
+  USER_TASK
 }

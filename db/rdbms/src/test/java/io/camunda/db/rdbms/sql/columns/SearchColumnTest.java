@@ -10,6 +10,12 @@ package io.camunda.db.rdbms.sql.columns;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
@@ -25,11 +31,6 @@ import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
@@ -163,7 +164,12 @@ public class SearchColumnTest {
               AuditLogOperationType.class,
               List.of(
                   Tuple.of(AuditLogOperationType.CREATE, AuditLogOperationType.CREATE),
-                  Tuple.of(AuditLogOperationType.CREATE, "CREATE"))));
+                  Tuple.of(AuditLogOperationType.CREATE, "CREATE"))),
+          Map.entry(
+              AuditLogTenantScope.class,
+              List.of(
+                  Tuple.of(AuditLogTenantScope.TENANT, AuditLogTenantScope.TENANT),
+                  Tuple.of(AuditLogTenantScope.TENANT, "TENANT"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()

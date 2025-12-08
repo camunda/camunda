@@ -8,7 +8,7 @@
 package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
@@ -26,6 +26,6 @@ public class BatchOperationLifecycleManagementAuditLogTransformer
   public void transform(
       final Record<BatchOperationLifecycleManagementRecordValue> record, final Builder entity) {
     // no-op, batch operation key is already set in the common handler
-    entity.tenantScope(AuditLogTenantScope.GLOBAL);
+    entity.tenantScope(AuditLogEntity.AuditLogTenantScope.GLOBAL);
   }
 }

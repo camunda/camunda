@@ -9,10 +9,10 @@ package io.camunda.zeebe.exporter.common.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration.ActorAuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import java.util.Optional;
