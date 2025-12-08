@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -26,6 +27,7 @@ public final class ProcessingStateRule extends ExternalResource {
   private final int partition;
   private ZeebeDb<ZbColumnFamilies> db;
   private MutableProcessingState processingState;
+  private ZeebeDbFactoryResources zeebeDbFactoryResources;
 
   public ProcessingStateRule() {
     this(Protocol.DEPLOYMENT_PARTITION);
@@ -38,6 +40,7 @@ public final class ProcessingStateRule extends ExternalResource {
   @Override
   protected void before() throws Throwable {
     tempFolder.create();
+    zeebeDbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     db = createNewDb();
 
     final var context = db.createContext();
@@ -58,6 +61,7 @@ public final class ProcessingStateRule extends ExternalResource {
   protected void after() {
     try {
       db.close();
+      zeebeDbFactoryResources.close();
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
@@ -70,8 +74,7 @@ public final class ProcessingStateRule extends ExternalResource {
 
   public ZeebeDb<ZbColumnFamilies> createNewDb() {
     try {
-
-      return DefaultZeebeDbFactory.defaultFactory().createDb(tempFolder.newFolder());
+      return zeebeDbFactoryResources.factory.createDb(tempFolder.newFolder());
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
