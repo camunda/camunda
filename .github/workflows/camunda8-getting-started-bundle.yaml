@@ -819,11 +819,71 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  notify-release:
+    name: Notify Slack (Release Announcement)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [resolve-versions, upload-to-release]
+    if: inputs.dry_run == false && needs.upload-to-release.result == 'success'
+    permissions: {}
+    steps:
+      - name: Send release announcement to Slack
+        env:
+          C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
+        run: |
+          RELEASE_URL="https://github.com/camunda/camunda/releases/tag/${C8RUN_VERSION}"
+          
+          MESSAGE=":announcement: A new Camunda 8 Getting Started Bundle was just published [<${RELEASE_URL}|${C8RUN_VERSION}>]!"
+          
+          PAYLOAD=$(jq -n --arg text "$MESSAGE" '{text: $text}')
+          
+          curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_RELEASE_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify-failure:
+    name: Notify Slack (Build Failure)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release]
+    if: always() && (needs.build-bundle.result == 'failure' || needs.test-bundle.result == 'failure' || needs.upload-to-release.result == 'failure')
+    permissions: {}
+    steps:
+      - name: Send failure notification to Slack
+        run: |
+          MESSAGE=":alarm: Camunda 8: Getting Started Bundle build failed, <@S064J3N99A5> please check and resolve the issue"
+          
+          PAYLOAD=$(jq -n --arg text "$MESSAGE" '{text: $text}')
+          
+          curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release, notify-developer-portal]
+    needs: [resolve-versions, build-bundle, test-bundle, upload-to-release, notify-developer-portal, notify-release, notify-failure]
     if: always()
     permissions:
       contents: read
