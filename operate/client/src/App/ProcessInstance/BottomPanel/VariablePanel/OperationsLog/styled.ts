@@ -8,6 +8,11 @@
 
 import styled from 'styled-components';
 
+import {
+  CheckmarkFilled as BaseCheckmarkFilled,
+  ErrorFilled as BaseErrorFilled,
+} from '@carbon/react/icons';
+
 const Container = styled.section`
   height: 100%;
   display: flex;
@@ -20,4 +25,12 @@ const OperationLogName = styled.div`
   gap: var(--cds-spacing-04);
 `;
 
-export {Container, OperationLogName};
+const CheckmarkFilled = styled(BaseCheckmarkFilled)`
+  fill: var(--cds-support-success);
+`;
+
+const ErrorFilled = styled(BaseErrorFilled)`
+  fill: var(--cds-support-error);
+`;
+
+export {Container, OperationLogName, CheckmarkFilled, ErrorFilled};
