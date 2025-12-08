@@ -151,6 +151,19 @@ public final class TestHelper {
   }
 
   public static DeploymentEvent deployResourceForTenant(
+      final CamundaClient camundaClient,
+      final BpmnModelInstance processModel,
+      final String resourceName,
+      final String tenantId) {
+    return camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(processModel, resourceName)
+        .tenantId(tenantId)
+        .send()
+        .join();
+  }
+
+  public static DeploymentEvent deployResourceForTenant(
       final CamundaClient camundaClient, final String resourceName, final String tenantId) {
     return camundaClient
         .newDeployResourceCommand()
@@ -183,6 +196,47 @@ public final class TestHelper {
         .latestVersion()
         .send()
         .join();
+  }
+
+  public static ProcessInstanceEvent startProcessInstance(
+      final CamundaClient camundaClient, final long processDefinitionKey) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .send()
+        .join();
+  }
+
+  public static ProcessInstanceEvent startProcessInstance(
+      final CamundaClient camundaClient, final long processDefinitionKey, final String tenantId) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .tenantId(tenantId)
+        .send()
+        .join();
+  }
+
+  /**
+   * Send complete job command for a given job key.
+   *
+   * @param camundaClient the Camunda client
+   * @param jobKey the job key to complete
+   */
+  public static void completeJob(final CamundaClient camundaClient, final long jobKey) {
+    camundaClient.newCompleteCommand(jobKey).send().join();
+  }
+
+  /**
+   * Cancels the given process instance and waits for it to be terminated.
+   *
+   * @param camundaClient the Camunda client
+   * @param instance the process instance event
+   */
+  public static void cancelInstance(
+      final CamundaClient camundaClient, final ProcessInstanceEvent instance) {
+    camundaClient.newCancelInstanceCommand(instance.getProcessInstanceKey()).send().join();
+    waitForProcessInstanceToBeTerminated(camundaClient, instance.getProcessInstanceKey());
   }
 
   public static ProcessInstanceEvent startProcessInstanceForTenant(
@@ -592,6 +646,23 @@ public final class TestHelper {
               final var result =
                   camundaClient.newElementInstanceSearchRequest().filter(filter).send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
+            });
+  }
+
+  public static void waitForJobs(
+      final CamundaClient camundaClient, final List<Long> processInstanceKeys) {
+    Awaitility.await("should wait until jobs are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newJobSearchRequest()
+                      .filter(f -> f.processInstanceKey(b -> b.in(processInstanceKeys)))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(processInstanceKeys.size());
             });
   }
 

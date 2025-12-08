@@ -66,7 +66,7 @@ public class ProcessDefinitionInstanceStatisticsRequestImpl
     final HttpCamundaFuture<OffsetResponse<ProcessDefinitionInstanceStatistics>> result =
         new HttpCamundaFuture<>();
     httpClient.post(
-        "/process-definition/statistics/process-instances",
+        "/process-definitions/statistics/process-instances",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ProcessDefinitionInstanceStatisticsQueryResult.class,
