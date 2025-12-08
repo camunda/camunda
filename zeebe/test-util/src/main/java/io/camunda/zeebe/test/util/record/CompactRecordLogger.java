@@ -1017,6 +1017,20 @@ public class CompactRecordLogger {
 
     result.append(formatVariables(value)).append(formatTenant(value));
 
+    // Add started process instances if any
+    if (!value.getStartedProcessInstances().isEmpty()) {
+      result.append(" -> started: [");
+      result.append(
+          value.getStartedProcessInstances().stream()
+              .map(
+                  instance ->
+                      shortenKey(instance.getProcessDefinitionKey())
+                          + ":"
+                          + shortenKey(instance.getProcessInstanceKey()))
+              .collect(Collectors.joining(", ")));
+      result.append("]");
+    }
+
     return result.toString();
   }
 

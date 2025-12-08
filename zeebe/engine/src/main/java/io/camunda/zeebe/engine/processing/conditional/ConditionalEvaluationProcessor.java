@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.conditional.evaluation;
+package io.camunda.zeebe.engine.processing.conditional;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -44,6 +44,11 @@ public class ConditionalEvaluationProcessor
     implements TypedRecordProcessor<ConditionalEvaluationRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConditionalEvaluationProcessor.class);
+
+  private static final String NO_PROCESS_DEFINITION_FOUND_MESSAGE =
+      "Expected to evaluate conditional with command key '%d' for process definition key '%d', but no such process was found.";
+  private static final String USER_NOT_ASSIGNED_TO_TENANT_MESSAGE =
+      "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant.";
 
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
@@ -85,8 +90,7 @@ public class ConditionalEvaluationProcessor
 
     if (!authCheckBehavior.isAssignedToTenant(command, record.getTenantId())) {
       final var failureMessage =
-          "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant."
-              .formatted(record.getTenantId());
+          USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId());
       rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, failureMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, failureMessage);
       return;
@@ -100,8 +104,7 @@ public class ConditionalEvaluationProcessor
           processState.getProcessByKeyAndTenant(processDefinitionKey, record.getTenantId());
       if (process == null) {
         final var failureMessage =
-            "Expected to evaluate conditional with command key '%d' for process definition key '%d', but no such process was found"
-                .formatted(command.getKey(), processDefinitionKey);
+            NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(command.getKey(), processDefinitionKey);
         rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, failureMessage);
         responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, failureMessage);
         return;
@@ -116,12 +119,16 @@ public class ConditionalEvaluationProcessor
     }
 
     for (final var match : matchedStartEvents) {
+      final long processInstanceKey = keyGenerator.nextKey();
+
       eventHandle.activateProcessInstanceForStartEvent(
           match.process().getKey(),
-          keyGenerator.nextKey(),
+          processInstanceKey,
           match.startEventId(),
           record.getVariablesBuffer(),
           record.getTenantId());
+
+      record.addStartedProcessInstance(match.process().getKey(), processInstanceKey);
     }
 
     final long eventKey = keyGenerator.nextKey();

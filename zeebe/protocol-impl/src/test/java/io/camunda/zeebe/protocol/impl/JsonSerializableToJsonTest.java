@@ -32,8 +32,8 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -4051,14 +4051,26 @@ final class JsonSerializableToJsonTest {
                 new ConditionalEvaluationRecord()
                     .setTenantId("tenant-1")
                     .setProcessDefinitionKey(456L)
-                    .setVariables(VARIABLES_MSGPACK),
+                    .setVariables(VARIABLES_MSGPACK)
+                    .addStartedProcessInstance(123L, 789L)
+                    .addStartedProcessInstance(456L, 999L),
         """
                 {
+                  "processDefinitionKey": 456,
+                  "startedProcessInstances": [
+                    {
+                      "processDefinitionKey": 123,
+                      "processInstanceKey": 789
+                    },
+                    {
+                      "processDefinitionKey": 456,
+                      "processInstanceKey": 999
+                    }
+                  ],
+                  "tenantId": "tenant-1",
                   "variables": {
                     "foo": "bar"
-                  },
-                  "tenantId":"tenant-1",
-                  "processDefinitionKey":456
+                  }
                 }
                 """
       },
@@ -4073,9 +4085,10 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) ConditionalEvaluationRecord::new,
         """
                 {
-                "processDefinitionKey":-1,
-                "variables":{},
-                "tenantId":"<default>"
+                  "processDefinitionKey": -1,
+                  "startedProcessInstances": [],
+                  "tenantId": "<default>",
+                  "variables": {}
                 }
                 """
       },
