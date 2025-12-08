@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.24
+
+### 🚀 Enhancements
+
+- update pd variable filter schema ([#42275](https://github.com/camunda/camunda/pull/42275))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.23
 
 ### 🚀 Enhancements
