@@ -156,9 +156,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>io.camunda:zeebe-protocol</dep>
-          </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <dependency>io.camunda:zeebe-protocol</dependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>
