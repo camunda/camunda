@@ -136,17 +136,13 @@ public class ListViewZeebeRecordProcessor {
     final Map<String, Object> updateFields = new HashMap<>();
     final Long processInstanceKey = recordValue.getProcessInstanceKey();
 
-    // incident on process instance level
     if (recordValue.getProcessInstanceKey() == recordValue.getElementInstanceKey()) {
-      final ProcessInstanceForListViewEntity piEntity = new ProcessInstanceForListViewEntity();
-      piEntity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
-      piEntity.setKey(recordValue.getElementInstanceKey());
-      piEntity.setProcessInstanceKey(processInstanceKey);
-      piEntity.setPartitionId(record.getPartitionId());
-      piEntity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
-      piEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-
-      entity = piEntity;
+      // incident on process instance level
+      LOGGER.debug(
+          "Process instance {} root incident {}, skipping list view incident record processing",
+          recordValue.getProcessInstanceKey(),
+          record.getKey());
+      return;
 
     } else {
       // update activity instance

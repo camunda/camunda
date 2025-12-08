@@ -46,10 +46,6 @@ public class ProcessInstanceForListViewEntity
       new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
 
   private Long position;
-
-  private Long positionIncident;
-  private String errorMessage;
-
   @JsonIgnore private Object[] sortValues;
 
   public Long getProcessInstanceKey() {
@@ -236,9 +232,7 @@ public class ProcessInstanceForListViewEntity
         incident,
         tenantId,
         joinRelation,
-        position,
-        errorMessage,
-        positionIncident);
+        position);
   }
 
   @Override
@@ -268,8 +262,6 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(treePath, that.treePath)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
-        && Objects.equals(position, that.position)
-        && Objects.equals(errorMessage, that.errorMessage)
-        && Objects.equals(positionIncident, that.positionIncident);
+        && Objects.equals(position, that.position);
   }
 }

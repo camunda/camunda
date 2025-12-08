@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -59,6 +60,7 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
   @Autowired protected DatabaseInfo databaseInfo;
   @Autowired private UpdateVariableHandler updateVariableHandler;
   @MockBean private IncidentNotifier incidentNotifier;
+  @Autowired private Predicate<Object[]> processInstanceExistsCheck;
 
   @Override
   @Before
@@ -345,6 +347,7 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(incidentResponse.getFlowNodes().get(0).getCount()).isEqualTo(2);
   }
 
+  // Regression https://github.com/camunda/camunda/issues/42059
   @Test
   public void testProcessInstanceIncidentImporting() throws IOException {
 
@@ -386,17 +389,11 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
     searchTestRule.processRecordsWithTypeAndWait(
         ImportValueType.INCIDENT, false, incidentsArePresentCheck, pi, 1);
 
-    Awaitility.await("incident is processed")
-        .pollInterval(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(20))
-        .untilAsserted(
-            () -> assertThat(tester.getProcessInstanceByIds(List.of(pi)).isEmpty()).isFalse());
-
     // unblock reads on zeebe process instance index to allow process instance to be parsed
     searchTestRule.blockIndexRead(zeebeProcessInstanceIndex, false);
 
     searchTestRule.processRecordsWithTypeAndWait(
-        ImportValueType.PROCESS_INSTANCE, true, processInstanceHasBeenUpdated, pi);
+        ImportValueType.PROCESS_INSTANCE, true, processInstanceExistsCheck, List.of(pi));
 
     Awaitility.await("process instance with incident is imported")
         .pollInterval(Duration.ofSeconds(2))
