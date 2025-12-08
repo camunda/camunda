@@ -2185,6 +2185,11 @@
         <version>${version.caffeine}</version>
       </dependency>
 
+      <dependency>
+        <groupId>com.github.wnameless.json</groupId>
+        <artifactId>json-base</artifactId>
+        <version>2.5.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
