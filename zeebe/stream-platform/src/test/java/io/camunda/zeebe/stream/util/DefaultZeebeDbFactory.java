@@ -28,21 +28,6 @@ public final class DefaultZeebeDbFactory {
     RocksDB.loadLibrary();
   }
 
-  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
-    // enable consistency checks for tests
-    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    final int defaultPartitionCount = 3;
-    return new ZeebeRocksDbFactory<>(
-        new RocksDbConfiguration(),
-        consistencyChecks,
-        new AccessMetricsConfiguration(Kind.NONE, 1),
-        SimpleMeterRegistry::new,
-        lruCache,
-        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
-        defaultPartitionCount);
-  }
-
   public static ZeebeDbFactoryResources getDefaultFactoryResources() {
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
