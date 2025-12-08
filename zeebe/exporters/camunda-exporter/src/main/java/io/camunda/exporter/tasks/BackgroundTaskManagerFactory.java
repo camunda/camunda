@@ -264,13 +264,14 @@ public final class BackgroundTaskManagerFactory {
 
   private OpenSearchHistoryDeletionRepository createHistoryDeletionRepository(
       final OpenSearchAsyncClient asyncClient) {
-    return new OpenSearchHistoryDeletionRepository(resourceProvider, asyncClient, executor, logger);
+    return new OpenSearchHistoryDeletionRepository(
+        resourceProvider, asyncClient, executor, logger, partitionId);
   }
 
   private ElasticsearchHistoryDeletionRepository createHistoryDeletionRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchHistoryDeletionRepository(
-        resourceProvider, asyncClient, executor, logger);
+        resourceProvider, asyncClient, executor, logger, partitionId);
   }
 
   private ReschedulingTask buildRolloverPeriodJob() {

@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -31,12 +32,14 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
     implements HistoryDeletionRepository {
 
   private final IndexDescriptor indexDescriptor;
+  private final int partitionId;
 
   public OpenSearchHistoryDeletionRepository(
       final ExporterResourceProvider resourceProvider,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
-      final Logger logger) {
+      final Logger logger,
+      final int partitionId) {
     super(client, executor, logger);
     indexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
@@ -44,6 +47,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             .findFirst()
             .orElseThrow(
                 () -> new IllegalStateException("No HistoryDeletionIndex descriptor found"));
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -76,6 +80,12 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
         .source(source -> source.fetch(false))
         .size(100) // TODO add configurable values
         .sort(s -> s.field(f -> f.field("id").order(SortOrder.Asc)))
+        .query(
+            q ->
+                q.term(
+                    t ->
+                        t.field(HistoryDeletionIndex.PARTITION_ID)
+                            .value(FieldValue.of(partitionId))))
         .build();
   }
 

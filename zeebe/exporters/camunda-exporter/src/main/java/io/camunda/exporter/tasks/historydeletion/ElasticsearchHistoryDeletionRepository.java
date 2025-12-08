@@ -29,12 +29,14 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
     implements HistoryDeletionRepository {
 
   private final IndexDescriptor indexDescriptor;
+  private final int partitionId;
 
   public ElasticsearchHistoryDeletionRepository(
       final ExporterResourceProvider resourceProvider,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
-      final Logger logger) {
+      final Logger logger,
+      final int partitionId) {
     super(client, executor, logger);
     indexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
@@ -42,6 +44,7 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
             .findFirst()
             .orElseThrow(
                 () -> new IllegalStateException("No HistoryDeletionIndex descriptor found"));
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -75,6 +78,7 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
         .source(source -> source.fetch(false))
         .size(100) // TODO add configurable values
         .sort(s -> s.field(f -> f.field("id").order(SortOrder.Asc)))
+        .query(q -> q.term(t -> t.field(HistoryDeletionIndex.PARTITION_ID).value(partitionId)))
         .build();
   }
 }
