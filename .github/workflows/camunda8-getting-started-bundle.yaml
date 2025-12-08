@@ -217,7 +217,8 @@ jobs:
           hdiutil attach "${modeler_asset}" -mountpoint /Volumes/CamundaModeler -nobrowse
           
           # Copy the .app bundle using ditto to preserve macOS metadata and code signatures
-          ditto "/Volumes/CamundaModeler/Camunda Modeler.app" "./2-camunda-modeler.app"
+          # Keep the original name "Camunda Modeler.app"
+          ditto "/Volumes/CamundaModeler/Camunda Modeler.app" "./Camunda Modeler.app"
           
           # Unmount the DMG
           hdiutil detach /Volumes/CamundaModeler
@@ -262,9 +263,9 @@ jobs:
           @echo off
           start "" "%~dp0$expectedFolderName\Camunda Modeler.exe"
           "@
-          Set-Content -Path "2-camunda-modeler.bat" -Value $batchContent
+          Set-Content -Path "camunda-modeler.bat" -Value $batchContent
           
-          Write-Host "Created launcher: 2-camunda-modeler.bat -> $expectedFolderName\Camunda Modeler.exe"
+          Write-Host "Created launcher: camunda-modeler.bat -> $expectedFolderName\Camunda Modeler.exe"
           
           Remove-Item -Force $modelerAsset
 
@@ -283,9 +284,9 @@ jobs:
           echo "Modeler extracted to: ${modeler_folder}"
           
           # Create a symlink to the Camunda Modeler executable
-          ln -s "${modeler_folder}/camunda-modeler" "2-camunda-modeler"
+          ln -s "${modeler_folder}/camunda-modeler" "camunda-modeler"
           
-          echo "Created symlink: 2-camunda-modeler -> ${modeler_folder}/camunda-modeler"
+          echo "Created symlink: camunda-modeler -> ${modeler_folder}/camunda-modeler"
           
           rm -f "${modeler_asset}"
 
@@ -640,14 +641,14 @@ jobs:
           
           echo "Checking modeler..."
           if [ "${{ matrix.platform.platform_id }}" == "darwin-aarch64" ] || [ "${{ matrix.platform.platform_id }}" == "darwin-x86_64" ]; then
-            if [ ! -d "2-camunda-modeler.app" ]; then
-              echo "ERROR: 2-camunda-modeler.app not found"
+            if [ ! -d "Camunda Modeler.app" ]; then
+              echo "ERROR: Camunda Modeler.app not found"
               exit 1
             fi
           elif [ "${{ matrix.platform.platform_id }}" == "windows-x86_64" ]; then
             # Windows has a batch launcher and modeler folder
-            if [ ! -f "2-camunda-modeler.bat" ]; then
-              echo "ERROR: 2-camunda-modeler.bat launcher not found"
+            if [ ! -f "camunda-modeler.bat" ]; then
+              echo "ERROR: camunda-modeler.bat launcher not found"
               exit 1
             fi
             # Check that a camunda-modeler-* folder exists
@@ -657,12 +658,12 @@ jobs:
             fi
           elif [ "${{ matrix.platform.platform_id }}" == "linux-x86_64" ]; then
             # Linux has a symlink and modeler folder
-            if [ ! -L "2-camunda-modeler" ]; then
-              echo "ERROR: 2-camunda-modeler symlink not found"
+            if [ ! -L "camunda-modeler" ]; then
+              echo "ERROR: camunda-modeler symlink not found"
               exit 1
             fi
             # Check that a camunda-modeler-* folder exists
-            if ! ls -d camunda-modeler-* 1> /dev/null 2>&1; then
+            if ! ls -d camunda-modeler-*-linux-x64 1> /dev/null 2>&1; then
               echo "ERROR: camunda-modeler-* folder not found"
               exit 1
             fi
