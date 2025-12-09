@@ -147,8 +147,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          INCLUDE_SLACK_REPORTER: true
-          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CORE_APPLICATION_URL: "http://localhost:8080"
