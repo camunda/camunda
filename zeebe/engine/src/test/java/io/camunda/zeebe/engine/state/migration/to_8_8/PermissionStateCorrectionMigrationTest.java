@@ -13,11 +13,9 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.Permissions;
-import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -53,8 +51,6 @@ public class PermissionStateCorrectionMigrationTest {
   private ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, Permissions>
       permissionsColumnFamily;
 
-  private ColumnFamily<DbLong, PersistedAuthorization> authorizationByAuthorizationKeyColumnFamily;
-
   @BeforeEach
   void setup() {
     state = new DbAuthorizationState(zeebeDb, transactionContext);
@@ -71,33 +67,21 @@ public class PermissionStateCorrectionMigrationTest {
             transactionContext,
             ownerTypeOwnerIdAndResourceType,
             new Permissions());
-
-    // authorization key -> authorization
-    final DbLong authorizationKey = new DbLong();
-    authorizationByAuthorizationKeyColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.AUTHORIZATIONS,
-            transactionContext,
-            authorizationKey,
-            new PersistedAuthorization());
   }
 
   @Test
   void shouldMigrateWhenPermissionTypeIsMissing() {
     // given
-    final var authorizationKey = 1L;
-    final var resourceId = "process-definition-1";
-    final var permissionTypes =
-        Set.of(PermissionType.CREATE_PROCESS_INSTANCE, PermissionType.DELETE_PROCESS_INSTANCE);
-    final var authorizationRecord =
-        generateAuthorizationRecord(authorizationKey, resourceId, permissionTypes);
-
-    state.create(authorizationKey, authorizationRecord);
+    final var authorization1 =
+        createAuthorization(
+            1L,
+            "process-definition-1",
+            Set.of(PermissionType.CREATE_PROCESS_INSTANCE, PermissionType.DELETE_PROCESS_INSTANCE));
 
     // verify permissionState is complete
-    ownerType.wrapString(authorizationRecord.getOwnerType().name());
-    ownerId.wrapString(authorizationRecord.getOwnerId());
-    resourceType.wrapString(authorizationRecord.getResourceType().name());
+    ownerType.wrapString(authorization1.getOwnerType().name());
+    ownerId.wrapString(authorization1.getOwnerId());
+    resourceType.wrapString(authorization1.getResourceType().name());
 
     final var existingPermissionsForOwner =
         permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType, Permissions::new);
@@ -107,18 +91,19 @@ public class PermissionStateCorrectionMigrationTest {
                 .getPermissions()
                 .get(PermissionType.CREATE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId));
+        .containsExactly(AuthorizationScope.of(authorization1.getResourceId()));
     assertThat(
             existingPermissionsForOwner
                 .getPermissions()
                 .get(PermissionType.DELETE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId));
+        .containsExactly(AuthorizationScope.of(authorization1.getResourceId()));
 
     // here we want to put the permissions CF into a state where one permission is missing
     // to allow the migration to add it back
     existingPermissionsForOwner.removeAuthorizationScopes(
-        PermissionType.CREATE_PROCESS_INSTANCE, Set.of(AuthorizationScope.of(resourceId)));
+        PermissionType.CREATE_PROCESS_INSTANCE,
+        Set.of(AuthorizationScope.of(authorization1.getResourceId())));
 
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, existingPermissionsForOwner);
 
@@ -129,7 +114,7 @@ public class PermissionStateCorrectionMigrationTest {
                 .getPermissions()
                 .get(PermissionType.DELETE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId));
+        .containsExactly(AuthorizationScope.of(authorization1.getResourceId()));
 
     // verify that after the migration is run, the missing permission is added back
     final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
@@ -141,32 +126,25 @@ public class PermissionStateCorrectionMigrationTest {
     assertThat(
             permissionsAfterMigration.getPermissions().get(PermissionType.CREATE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId));
+        .containsExactly(AuthorizationScope.of(authorization1.getResourceId()));
     assertThat(
             permissionsAfterMigration.getPermissions().get(PermissionType.DELETE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId));
+        .containsExactly(AuthorizationScope.of(authorization1.getResourceId()));
   }
 
   @Test
   void shouldMigrateWhenAuthorizationScopeIsMissing() {
     // given
-    final var authorizationKey1 = 1L;
-    final var resourceId1 = "process-definition-1";
-    final var permissionTypes1 =
-        Set.of(PermissionType.CREATE_PROCESS_INSTANCE, PermissionType.DELETE_PROCESS_INSTANCE);
     final var authorizationRecord1 =
-        generateAuthorizationRecord(authorizationKey1, resourceId1, permissionTypes1);
+        createAuthorization(
+            1L,
+            "process-definition-1",
+            Set.of(PermissionType.CREATE_PROCESS_INSTANCE, PermissionType.DELETE_PROCESS_INSTANCE));
 
-    state.create(authorizationKey1, authorizationRecord1);
-
-    final var authorizationKey2 = 2L;
-    final var resourceId2 = "process-definition-2";
-    final var permissionTypes2 = Set.of(PermissionType.CREATE_PROCESS_INSTANCE);
     final var authorizationRecord2 =
-        generateAuthorizationRecord(authorizationKey2, resourceId2, permissionTypes2);
-
-    state.create(authorizationKey2, authorizationRecord2);
+        createAuthorization(
+            2L, "process-definition-2", Set.of(PermissionType.CREATE_PROCESS_INSTANCE));
 
     // verify permissionState is complete
     ownerType.wrapString(authorizationRecord1.getOwnerType().name());
@@ -182,18 +160,20 @@ public class PermissionStateCorrectionMigrationTest {
                 .get(PermissionType.CREATE_PROCESS_INSTANCE))
         .isNotEmpty()
         .containsExactlyInAnyOrder(
-            AuthorizationScope.of(resourceId1), AuthorizationScope.of(resourceId2));
+            AuthorizationScope.of(authorizationRecord1.getResourceId()),
+            AuthorizationScope.of(authorizationRecord2.getResourceId()));
     assertThat(
             existingPermissionsForOwner
                 .getPermissions()
                 .get(PermissionType.DELETE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId1));
+        .containsExactly(AuthorizationScope.of(authorizationRecord1.getResourceId()));
 
     // here we want to put the permissions CF into a state where one permission is missing
     // to allow the migration to add it back
     existingPermissionsForOwner.removeAuthorizationScopes(
-        PermissionType.CREATE_PROCESS_INSTANCE, Set.of(AuthorizationScope.of(resourceId1)));
+        PermissionType.CREATE_PROCESS_INSTANCE,
+        Set.of(AuthorizationScope.of(authorizationRecord1.getResourceId())));
 
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, existingPermissionsForOwner);
 
@@ -202,13 +182,13 @@ public class PermissionStateCorrectionMigrationTest {
                 .getPermissions()
                 .get(PermissionType.CREATE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId2));
+        .containsExactly(AuthorizationScope.of(authorizationRecord2.getResourceId()));
     assertThat(
             existingPermissionsForOwner
                 .getPermissions()
                 .get(PermissionType.DELETE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId1));
+        .containsExactly(AuthorizationScope.of(authorizationRecord1.getResourceId()));
 
     // verify that after the migration is run, the missing permission is added back
     final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
@@ -221,11 +201,22 @@ public class PermissionStateCorrectionMigrationTest {
             permissionsAfterMigration.getPermissions().get(PermissionType.CREATE_PROCESS_INSTANCE))
         .isNotEmpty()
         .containsExactlyInAnyOrder(
-            AuthorizationScope.of(resourceId1), AuthorizationScope.of(resourceId2));
+            AuthorizationScope.of(authorizationRecord1.getResourceId()),
+            AuthorizationScope.of(authorizationRecord2.getResourceId()));
     assertThat(
             permissionsAfterMigration.getPermissions().get(PermissionType.DELETE_PROCESS_INSTANCE))
         .isNotEmpty()
-        .containsExactly(AuthorizationScope.of(resourceId1));
+        .containsExactly(AuthorizationScope.of(authorizationRecord1.getResourceId()));
+  }
+
+  private AuthorizationRecord createAuthorization(
+      final long authorizationKey,
+      final String resourceId,
+      final Set<PermissionType> permissionTypes) {
+    final var authorizationRecord =
+        generateAuthorizationRecord(authorizationKey, resourceId, permissionTypes);
+    state.create(authorizationKey, authorizationRecord);
+    return authorizationRecord;
   }
 
   private static AuthorizationRecord generateAuthorizationRecord(
