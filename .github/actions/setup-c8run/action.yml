@@ -200,7 +200,7 @@ runs:
         java-version: '22'
 
     - name: Set env
-      if: ${{ inputs.os == 'ubuntu-latest' || inputs.os == 'macos-13' }}
+      if: ${{ inputs.os == 'ubuntu-latest' || inputs.os == 'macos-15-intel' }}
       shell: bash
       run: echo "JAVA_HOME=$(echo $JAVA_HOME_22_X64)" >> $GITHUB_ENV
 
