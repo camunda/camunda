@@ -25,6 +25,8 @@ import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
@@ -75,6 +77,9 @@ public class RdbmsService {
   private final UsageMetricTUDbReader usageMetricTUDbReader;
   private final MessageSubscriptionDbReader messageSubscriptionReader;
   private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader;
+  private final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader;
+  private final ProcessDefinitionInstanceVersionStatisticsDbReader
+      processDefinitionInstanceVersionStatisticsReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -106,7 +111,11 @@ public class RdbmsService {
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
-      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
+      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
+      final ProcessDefinitionInstanceStatisticsDbReader
+          processDefinitionInstanceStatisticsReader,
+      final ProcessDefinitionInstanceVersionStatisticsDbReader
+          processDefinitionInstanceVersionStatisticsReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -137,6 +146,9 @@ public class RdbmsService {
     this.usageMetricTUDbReader = usageMetricTUDbReader;
     this.messageSubscriptionReader = messageSubscriptionReader;
     this.correlatedMessageSubscriptionReader = correlatedMessageSubscriptionReader;
+    this.processDefinitionInstanceStatisticsReader = processDefinitionInstanceStatisticsReader;
+    this.processDefinitionInstanceVersionStatisticsReader =
+        processDefinitionInstanceVersionStatisticsReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -253,6 +265,16 @@ public class RdbmsService {
 
   public CorrelatedMessageSubscriptionDbReader getCorrelatedMessageSubscriptionReader() {
     return correlatedMessageSubscriptionReader;
+  }
+
+  public ProcessDefinitionInstanceStatisticsDbReader
+      getProcessDefinitionInstanceStatisticsReader() {
+    return processDefinitionInstanceStatisticsReader;
+  }
+
+  public ProcessDefinitionInstanceVersionStatisticsDbReader
+      getProcessDefinitionInstanceVersionStatisticsReader() {
+    return processDefinitionInstanceVersionStatisticsReader;
   }
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?
