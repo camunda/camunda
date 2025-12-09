@@ -22,6 +22,7 @@ import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
+import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
@@ -164,14 +165,15 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(7)
+        .hasSize(8)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricTUArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, StandaloneDecisionArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationUpdateTask.class))
-        .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
+        .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class))
+        .anyMatch(task -> isTaskOfType(task, HistoryDeletionJob.class));
   }
 
   @Test
@@ -186,7 +188,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
-        .hasSize(8)
+        .hasSize(9)
         .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -202,7 +204,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(9)
+        .hasSize(10)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 

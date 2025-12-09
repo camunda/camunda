@@ -30,6 +30,10 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.historydeletion.ElasticsearchHistoryDeletionRepository;
+import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
+import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
+import io.camunda.exporter.tasks.historydeletion.OpenSearchHistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
@@ -72,6 +76,7 @@ public final class BackgroundTaskManagerFactory {
   private ArchiverRepository archiverRepository;
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
+  private HistoryDeletionRepository historyDeletionRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
 
   public BackgroundTaskManagerFactory(
@@ -108,6 +113,7 @@ public final class BackgroundTaskManagerFactory {
       archiverRepository = createArchiverRepository(asyncClient, genericClient);
       incidentRepository = createIncidentUpdateRepository(asyncClient);
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
+      historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
     } else {
       final var connector = new ElasticsearchConnector(config.getConnect());
       final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
@@ -115,6 +121,7 @@ public final class BackgroundTaskManagerFactory {
       archiverRepository = createArchiverRepository(asyncClient);
       incidentRepository = createIncidentUpdateRepository(asyncClient);
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
+      historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
     }
 
     final List<RunnableTask> tasks = buildTasks();
@@ -124,6 +131,7 @@ public final class BackgroundTaskManagerFactory {
         archiverRepository,
         incidentRepository,
         batchOperationUpdateRepository,
+        historyDeletionRepository,
         logger,
         executor,
         tasks,
@@ -248,8 +256,22 @@ public final class BackgroundTaskManagerFactory {
       }
     }
 
+    tasks.add(buildHistoryDeletionJob());
+
     executor.setCorePoolSize(tasks.size());
     return tasks;
+  }
+
+  private OpenSearchHistoryDeletionRepository createHistoryDeletionRepository(
+      final OpenSearchAsyncClient asyncClient) {
+    return new OpenSearchHistoryDeletionRepository(
+        resourceProvider, asyncClient, executor, logger, partitionId);
+  }
+
+  private ElasticsearchHistoryDeletionRepository createHistoryDeletionRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    return new ElasticsearchHistoryDeletionRepository(
+        resourceProvider, asyncClient, executor, logger, partitionId);
   }
 
   private ReschedulingTask buildRolloverPeriodJob() {
@@ -371,6 +393,22 @@ public final class BackgroundTaskManagerFactory {
         config.getHistory().getMaxDelayBetweenRuns(),
         executor,
         logger);
+  }
+
+  private ReschedulingTask buildHistoryDeletionJob() {
+    final var dependantTemplates = new ArrayList<ProcessInstanceDependant>();
+    resourceProvider.getIndexTemplateDescriptors().stream()
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
+        .forEach(dependantTemplates::add);
+
+    return buildHistoryDeletionTask(
+        new HistoryDeletionJob(dependantTemplates, executor, historyDeletionRepository, logger));
+  }
+
+  private ReschedulingTask buildHistoryDeletionTask(final BackgroundTask task) {
+    // TODO make hardcoded values configurable
+    return new ReschedulingTask(task, 1, 1000, 60000, executor, logger);
   }
 
   private ScheduledThreadPoolExecutor buildExecutor() {

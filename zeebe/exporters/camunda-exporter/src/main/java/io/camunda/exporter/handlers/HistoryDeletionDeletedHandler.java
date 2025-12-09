@@ -60,6 +60,7 @@ public class HistoryDeletionDeletedHandler
     entity.setBatchOperationKey(record.getBatchOperationReference());
     entity.setResourceKey(value.getResourceKey());
     entity.setResourceType(value.getResourceType());
+    entity.setPartitionId(record.getPartitionId());
   }
 
   @Override
