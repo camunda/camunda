@@ -143,6 +143,8 @@ jobs:
         run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+      - name: Build Benchmark Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P benchmark -P\!include-optimize -D image="gcr.io/zeebe-io/benchmark:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -163,5 +165,6 @@ jobs:
     uses: camunda/camunda/.github/workflows/camunda-benchmark-scenario.yml@feat/camunda-db-benchmarks
     with:
       name: cthiel-benchmark
+      scenario-name: PICreationLatencyBenchmark
       ref: ${{ inputs.ref }}
       image-tag: ${{ needs.calculate-image-tag.outputs.image-tag }}

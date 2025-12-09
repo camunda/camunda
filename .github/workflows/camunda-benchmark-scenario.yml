@@ -18,6 +18,10 @@ on:
         description: 'Specifies the name of the load test'
         type: string
         required: true
+      scenario-name:
+        description: 'Specifies the name of the load test class to execute'
+        type: string
+        required: true
       image-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
@@ -89,6 +93,38 @@ jobs:
       stable-vms: ${{ inputs.stable-vms }}
       realistic: ${{ inputs.realistic }}
 
+  execute-benchmark:
+    name: Execute benchmark
+    needs: deploy-load-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+        service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+    - uses: google-github-actions/get-gke-credentials@v2.3.4
+      with:
+        cluster_name: zeebe-cluster
+        location: ${{inputs.cluster-region}}
+    - name: Launch benchmark image
+      run: |
+        kubectl create job benchmark \
+          --image=ghcr.io/zeebe-io/benchmark:${{inputs.image-tag}} \
+          --env="JDK_JAVA_OPTIONS=-Dconfig.override_with_env_vars=true -Dapp.preferRest=true" \
+          --env="ZEEBE_GRPC_ADDRESS=http://camunda-gateway:26500" \
+          --env="ZEEBE_REST_ADDRESS=http://camunda-gateway:8080" \
+          --env="BENCHMARK_NAME=${{ inputs.scenario-name }}"
+    - name: Collect Benchmark Output
+      id: collect-output
+      run: |
+        RESULT=$(kubectl logs job/benchmark)
+        echo "$RESULT"
+        echo "result=$RESULT" >> $GITHUB_OUTPUT
+    - name: Process benchmark result
+      run: |
+        echo "The benchmark result was:"
+        echo "${{ steps.collect-output.outputs.result }}"
 
   delete-load-test:
     name: Delete load test
