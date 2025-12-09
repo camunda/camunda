@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.micrometer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -16,11 +17,12 @@ import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 final class StatefulGaugeTest {
-  @AutoClose private MeterRegistry wrapped = new SimpleMeterRegistry();
+  @AutoClose private final MeterRegistry wrapped = new SimpleMeterRegistry();
   @AutoClose private final StatefulMeterRegistry registry = new StatefulMeterRegistry(wrapped);
 
   @Test
@@ -193,5 +195,29 @@ final class StatefulGaugeTest {
     // then - measurements are taken from the underlying gauge
     final var registered = registry.get("foo").gauge();
     assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isZero());
+  }
+
+  @Test
+  void shouldReturnDoubleValueWhenExpirySet() {
+    // given
+    final var gauge = StatefulGauge.builder("foo").valueExpires().register(registry);
+
+    // when
+    gauge.set(30.5223);
+
+    // then - measurements are taken from the underlying gauge
+    final var registered = registry.get("foo").gauge();
+    assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isEqualTo(30.5223));
+
+    assertThat(gauge.state()).isInstanceOf(ExpiringGaugeState.class);
+  }
+
+  @Test
+  void shouldNotSupportIncrementWhenExpirySet() {
+    final var gauge = StatefulGauge.builder("foo").valueExpires().register(registry);
+
+    assertThatThrownBy(() -> gauge.increment()).isInstanceOf(NotImplementedException.class);
+
+    assertThat(gauge.state()).isInstanceOf(ExpiringGaugeState.class);
   }
 }
