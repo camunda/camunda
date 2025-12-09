@@ -39,6 +39,9 @@
                 "sourceElementId": {
                   "type": "keyword"
                 },
+                "sourceElementInstanceKey": {
+                  "type": "long"
+                },
                 "targetElementId": {
                   "type": "keyword"
                 },
