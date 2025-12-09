@@ -17,11 +17,15 @@ const fetchProcessDefinitionVersionStatistics = async (
   processDefinitionId: string,
   payload: GetProcessDefinitionInstanceVersionStatisticsRequestBody = {},
 ) => {
-  return requestWithThrow<GetProcessDefinitionInstanceVersionStatisticsResponseBody>({
-    url: getProcessDefinitionInstanceVersionStatistics.getUrl({processDefinitionId}),
-    method: getProcessDefinitionInstanceVersionStatistics.method,
-    body: payload,
-  });
+  return requestWithThrow<GetProcessDefinitionInstanceVersionStatisticsResponseBody>(
+    {
+      url: getProcessDefinitionInstanceVersionStatistics.getUrl({
+        processDefinitionId,
+      }),
+      method: getProcessDefinitionInstanceVersionStatistics.method,
+      body: payload,
+    },
+  );
 };
 
 export {fetchProcessDefinitionVersionStatistics};
