@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +67,6 @@ class ProcessDefinitionInstanceVersionStatisticsDbReaderTest {
 
     assertThat(result.total()).isEqualTo(21L);
     assertThat(result.items()).isEmpty();
-    verify(processDefinitionMapper, times(0)).processInstanceVersionStatistics(any());
+    verify(processDefinitionMapper, never()).processInstanceVersionStatistics(any());
   }
 }
