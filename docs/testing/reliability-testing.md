@@ -242,20 +242,34 @@ In addition to our release tests, we ran weekly load tests in all variants based
 
 **Validation:** The tailored [Zeebe Medic Dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
-As of today (16 Jun 2025) we have the following tests running:
+As an example, we have the following tests running:
 
-* medic-y-2025-cw-22-a60d64da-benchmark
-* medic-y-2025-cw-22-a60d64da-benchmark-latency
-* medic-y-2025-cw-22-a60d64da-benchmark-mixed
-* medic-y-2025-cw-23-a799b041-benchmark
-* medic-y-2025-cw-23-a799b041-benchmark-latency
-* medic-y-2025-cw-23-a799b041-benchmark-mixed
-* medic-y-2025-cw-24-0c3f2664-benchmark
-* medic-y-2025-cw-24-0c3f2664-benchmark-latency
-* medic-y-2025-cw-24-0c3f2664-benchmark-mixed
-* medic-y-2025-cw-25-59a095c4-benchmark
-* medic-y-2025-cw-25-59a095c4-benchmark-latency
-* medic-y-2025-cw-25-59a095c4-benchmark-mixed
+* medic-y-2025-cw-22-a60d64da-test-latency
+* medic-y-2025-cw-22-a60d64da-test-mixed
+* medic-y-2025-cw-22-a60d64da-test-typical
+* medic-y-2025-cw-23-a799b041-test-typical
+* medic-y-2025-cw-23-a799b041-test-latency
+* medic-y-2025-cw-23-a799b041-test-mixed
+* medic-y-2025-cw-24-0c3f2664-test-typical
+* medic-y-2025-cw-24-0c3f2664-test-latency
+* medic-y-2025-cw-24-0c3f2664-test-mixed
+* medic-y-2025-cw-25-59a095c4-test-typical
+* medic-y-2025-cw-25-59a095c4-test-latency
+* medic-y-2025-cw-25-59a095c4-test-mixed
+
+#### Daily load tests
+
+In addition to our weekly load tests, we ran daily stress tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+
+**Goal:** Validating the reliability of our current main (putting it under stress), and detecting earlier issues, allowing us to detect newly introduced instabilities.
+
+**Benefits:**
+
+* We have a better overview of how the system performs over time - detect trends in performance
+* Detect regressions earlier - shorter feedback loop when we break something in our application or configuration
+* Faster integration with our Helm charts - sanity check every day that load tests work with charts and application
+
+**Validation:** TBD - explicit dashboard with KPI's and showing last week tests needs to be created. Part of [#42274](https://github.com/camunda/camunda/issues/42274).
 
 #### Ad-Hoc load tests
 
