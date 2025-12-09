@@ -35,7 +35,6 @@ class OperateProcessesPage {
   readonly cancelProcessInstanceButton: Locator;
   readonly cancelProcessInstanceDialogButton: Locator;
   readonly singleCancellationSpinner: Locator;
-  readonly tableLoadingSpinner: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
   readonly processActiveCheckbox: Locator;
   readonly processCompletedCheckbox: Locator;
@@ -122,7 +121,6 @@ class OperateProcessesPage {
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
     this.singleCancellationSpinner = page.getByTestId('operation-spinner');
-    this.tableLoadingSpinner = page.getByTestId('data-table-loader');
     this.processActiveCheckbox = page
       .locator('label')
       .filter({hasText: 'Active'});
