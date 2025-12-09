@@ -136,7 +136,7 @@ jobs:
     - name: Collect Benchmark Output
       id: collect-output
       run: |
-        RESULT=$(kubectl logs job/benchmark)
+        RESULT=$(kubectl logs job/benchmark -n ${{inputs.name}})
         echo "$RESULT"
         echo "result=$RESULT" >> $GITHUB_OUTPUT
     - name: Process benchmark result
