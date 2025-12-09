@@ -28,5 +28,6 @@ public enum AuditLogEntityTypeEnum {
   USER,
   USER_TASK,
   RESOURCE,
-  VARIABLE
+  VARIABLE,
+  UNKNOWN_ENUM_VALUE
 }

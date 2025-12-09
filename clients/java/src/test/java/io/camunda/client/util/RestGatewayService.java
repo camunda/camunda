@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.protocol.rest.AuditLogResult;
+import io.camunda.client.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
@@ -395,8 +396,12 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getRoleUrl(roleId), response);
   }
 
-  public void onAuditLogRequest(final String auditLogKey, final AuditLogResult response) {
-    registerGet(RestGatewayPaths.getAuditLogUrl(auditLogKey), response);
+  public void onGetAuditLogRequest(final String auditLogKey, final AuditLogResult response) {
+    registerGet(RestGatewayPaths.getAuditLogGetUrl(auditLogKey), response);
+  }
+
+  public void onSearchAuditLogRequest(final AuditLogSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getAuditLogSearchUrl(), response);
   }
 
   public void onStatusRequestHealthy() {

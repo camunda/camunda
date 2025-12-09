@@ -90,7 +90,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
   private static final String URL_VARIABLE = REST_API_PATH + "/variables/%s";
-  private static final String URL_AUDIT_LOG = REST_API_PATH + "/audit-logs/%s";
+  private static final String URL_AUDIT_LOG_GET = REST_API_PATH + "/audit-logs/%s";
+  private static final String URL_AUDIT_LOG_SEARCH = REST_API_PATH + "/audit-logs/search";
 
   /**
    * @return the topology request URL
@@ -350,8 +351,12 @@ public class RestGatewayPaths {
     return URL_CLUSTER_VARIABLES_SEARCH;
   }
 
-  public static String getAuditLogUrl(final String auditLogKey) {
-    return String.format(URL_AUDIT_LOG, auditLogKey);
+  public static String getAuditLogGetUrl(final String auditLogKey) {
+    return String.format(URL_AUDIT_LOG_GET, auditLogKey);
+  }
+
+  public static String getAuditLogSearchUrl() {
+    return String.format(URL_AUDIT_LOG_SEARCH);
   }
 
   @Deprecated
