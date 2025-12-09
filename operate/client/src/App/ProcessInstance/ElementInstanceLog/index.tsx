@@ -20,7 +20,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {Stack, TreeView} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
-import {ElementInstancesTree} from './FlowNodeInstancesTree';
+import {ElementInstancesTree} from './ElementInstancesTree';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
