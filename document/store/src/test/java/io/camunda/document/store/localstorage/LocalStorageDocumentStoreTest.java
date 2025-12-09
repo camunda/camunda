@@ -13,8 +13,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.document.api.*;
-import io.camunda.document.api.DocumentError.*;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.document.api.DocumentCreationRequest;
+import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
+import io.camunda.document.api.DocumentError.DocumentHashMismatch;
+import io.camunda.document.api.DocumentError.DocumentNotFound;
+import io.camunda.document.api.DocumentError.InvalidInput;
+import io.camunda.document.api.DocumentError.OperationNotSupported;
+import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.document.api.DocumentStore;
+import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -22,13 +30,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 
@@ -42,7 +54,9 @@ class LocalStorageDocumentStoreTest {
     storagePath = Files.createTempDirectory(UUID.randomUUID().toString());
     documentStore =
         new LocalStorageDocumentStore(
-            storagePath, new ObjectMapper(), Executors.newSingleThreadExecutor());
+            storagePath,
+            new ObjectMapper().registerModule(new JavaTimeModule()),
+            Executors.newSingleThreadExecutor());
   }
 
   @AfterEach
@@ -66,13 +80,15 @@ class LocalStorageDocumentStoreTest {
     // then
     assertTrue(result.isRight());
     final var documentReference = result.get();
-    assertEquals(documentId, documentReference.documentId());
-    assertEquals(
-        "577bac45ad58fe5ee4e7f50d2d39a955d65baa825a61a970ba790d579f78e40e",
-        documentReference.contentHash());
-    assertTrue(Files.exists(storagePath.resolve(documentId)));
-    assertTrue(
-        Files.exists(storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)));
+    assertThat(documentReference.documentId()).isEqualTo(documentId);
+    assertThat(documentReference.contentHash())
+        .isEqualTo("577bac45ad58fe5ee4e7f50d2d39a955d65baa825a61a970ba790d579f78e40e");
+    assertThat(documentReference.metadata()).isEqualTo(metadata);
+    assertThat(Files.exists(storagePath.resolve(documentId))).isTrue();
+    assertThat(
+            Files.exists(
+                storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)))
+        .isTrue();
   }
 
   @Test
@@ -220,7 +236,61 @@ class LocalStorageDocumentStoreTest {
   }
 
   @Test
-  void verifyContentHashShouldFailIfHashDoesNotMatch() throws IOException {
+  void shouldSerializeOffsetDateTimeWhenCreatedViaProvider() throws IOException {
+    // given
+    final byte[] content = "test content".getBytes();
+    final Path tempPath = Files.createTempDirectory("test");
+    final DocumentStoreConfigurationRecord config =
+        new DocumentStoreConfigurationRecord(
+            "localstorage",
+            LocalStorageDocumentStoreProvider.class,
+            Map.of("PATH", tempPath.toString()));
+
+    final LocalStorageDocumentStoreProvider provider = new LocalStorageDocumentStoreProvider();
+    final DocumentStore store =
+        provider.createDocumentStore(config, Executors.newSingleThreadExecutor());
+
+    final DocumentMetadataModel metadata =
+        new DocumentMetadataModel(
+            "text/plain",
+            "test.txt",
+            OffsetDateTime.now(),
+            (long) content.length,
+            null,
+            null,
+            null);
+
+    // when - store document with OffsetDateTime
+    final DocumentCreationRequest request =
+        new DocumentCreationRequest(
+            UUID.randomUUID().toString(), new ByteArrayInputStream(content), metadata);
+    final var result = store.createDocument(request).join();
+
+    // then - should succeed without serialization errors
+    assertThat(result.isRight()).isTrue();
+  }
+
+  @ParameterizedTest
+  @MethodSource("metadataSingleParamProvider")
+  public void shouldHandleMetadataParamsCorrectly(final DocumentMetadataModel metadata) {
+    // given
+    final String documentId = UUID.randomUUID().toString();
+    final byte[] content = "test content".getBytes();
+    final ByteArrayInputStream inputStream = new ByteArrayInputStream(content);
+    final DocumentCreationRequest request =
+        new DocumentCreationRequest(documentId, inputStream, metadata);
+
+    // when
+    final var result = documentStore.createDocument(request).join();
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    final var documentReference = result.get();
+    assertThat(documentReference.metadata()).isEqualTo(metadata);
+  }
+
+  @Test
+  void verifyContentHashShouldFailIfHashDoesNotMatch() {
     // given
     final String documentId = UUID.randomUUID().toString();
     final byte[] content = "test-content".getBytes();
@@ -294,6 +364,19 @@ class LocalStorageDocumentStoreTest {
   private DocumentMetadataModel givenMetadata(final byte[] content) {
     return new DocumentMetadataModel(
         "text/plain", "test-file.txt", null, (long) content.length, null, null, null);
+  }
+
+  public static Stream<Arguments> metadataSingleParamProvider() {
+    return Stream.of(
+        Arguments.of(new DocumentMetadataModel("text/plain", null, null, null, null, null, null)),
+        Arguments.of(new DocumentMetadataModel(null, "fileName", null, null, null, null, null)),
+        Arguments.of(
+            new DocumentMetadataModel(null, null, OffsetDateTime.now(), null, null, null, null)),
+        Arguments.of(new DocumentMetadataModel(null, null, null, 1L, null, null, null)),
+        Arguments.of(new DocumentMetadataModel(null, null, null, null, "definitionId", null, null)),
+        Arguments.of(new DocumentMetadataModel(null, null, null, null, null, 2L, null)),
+        Arguments.of(
+            new DocumentMetadataModel(null, null, null, null, null, null, Map.of("key", "value"))));
   }
 
   private static List<String> provideInvalidDocumentId() {
