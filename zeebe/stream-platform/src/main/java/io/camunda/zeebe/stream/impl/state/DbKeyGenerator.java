@@ -26,6 +26,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
   private static final long INITIAL_VALUE = 0;
 
   private static final String LATEST_KEY = "latestKey";
+  private static final String MAX_KEY = "maxKeyValue";
 
   private final long keyStartValue;
   private final NextValueManager nextValueManager;
@@ -51,7 +52,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
             keyStartValue, zeebeDb, transactionContext, ZbColumnFamilies.KEY, LATEST_KEY);
 
     maxKeyValueKey = new DbString();
-    maxKeyValueKey.wrapString("maxKeyValue");
+    maxKeyValueKey.wrapString(MAX_KEY);
     // Reuse the column family of next key, but use a different key name.
     maxValueColumnFamily =
         zeebeDb.createColumnFamily(
