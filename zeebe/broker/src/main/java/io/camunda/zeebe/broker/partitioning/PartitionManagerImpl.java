@@ -73,7 +73,6 @@ public final class PartitionManagerImpl
   public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
   private static final double ROCKSDB_OVERHEAD_FACTOR = 0.15;
-  private static final long BYTES_IN_GB = 1024 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
@@ -725,8 +724,8 @@ public final class PartitionManagerImpl
     if (maxNonHeapBytes < 0) {
       maxNonHeapBytes = 512L * 1024 * 1024; // Budget 512MB if no explicit limit is set
       LOGGER.info(
-          "WARNING: Non-Heap limit is not set. Using a default of {} GB for safety.",
-          maxNonHeapBytes / BYTES_IN_GB);
+          "WARNING: Non-Heap limit is not set. Using a default of {} Bytes " + "for " + "safety.",
+          maxNonHeapBytes);
     }
 
     // 3. Estimate Total JVM Memory Usage (Heap + Non-Heap)
@@ -739,10 +738,10 @@ public final class PartitionManagerImpl
     if (availableOffHeapBudget <= 0) {
       throw new IllegalStateException(
           "JVM's Max internal memory ("
-              + (maxJvmInternalBytes / BYTES_IN_GB)
-              + " GB) is greater than or equal to the Container limit ("
-              + (totalMemorySize / BYTES_IN_GB)
-              + " GB). RocksDB cannot be safely allocated memory.");
+              + (maxJvmInternalBytes)
+              + " Bytes) is greater than or equal to the Container limit ("
+              + (totalMemorySize)
+              + " Bytes). RocksDB cannot be safely allocated memory.");
     }
 
     // 5. Calculate RocksDB Cache Capacity (Reserve space for native overheads)
@@ -750,15 +749,12 @@ public final class PartitionManagerImpl
     final long rocksDBMaxCacheCapacity =
         (long) (availableOffHeapBudget * (1.0 - ROCKSDB_OVERHEAD_FACTOR));
 
-    LOGGER.info("Current non-heap memory usage: {} bytes", maxHeapBytes / BYTES_IN_GB);
-    LOGGER.info("Max non-heap memory usage: {} bytes", maxNonHeapBytes / BYTES_IN_GB);
-    LOGGER.info("Total system memory: {} bytes", totalMemorySize / BYTES_IN_GB);
-    LOGGER.info(
-        "Memory reported by JVM (Runtime): {} bytes",
-        Runtime.getRuntime().maxMemory() / BYTES_IN_GB);
-    LOGGER.info("Total JVM internal max memory: {} bytes", maxJvmInternalBytes / BYTES_IN_GB);
-    LOGGER.info(
-        "Available for rocks db memory budget: {} bytes", availableOffHeapBudget / BYTES_IN_GB);
+    LOGGER.info("Current non-heap memory usage: {} bytes", maxHeapBytes);
+    LOGGER.info("Max non-heap memory usage: {} bytes", maxNonHeapBytes);
+    LOGGER.info("Total system memory: {} bytes", totalMemorySize);
+    LOGGER.info("Memory reported by JVM (Runtime): {} bytes", Runtime.getRuntime().maxMemory());
+    LOGGER.info("Total JVM internal max memory: {} bytes", maxJvmInternalBytes);
+    LOGGER.info("Available for rocks db memory budget: {} bytes", availableOffHeapBudget);
 
     return rocksDBMaxCacheCapacity;
   }
