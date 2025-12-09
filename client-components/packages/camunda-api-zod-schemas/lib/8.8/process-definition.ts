@@ -53,18 +53,18 @@ const advancedProcessInstanceStateFilterSchema = z
 	})
 	.partial();
 
+const processDefinitionStatisticsVariableFilterSchema = z.object({
+	name: z.string(),
+	value: advancedStringFilterSchema,
+});
+
 const processDefinitionStatisticsFilterFieldsSchema = z.object({
 	startDate: advancedDateTimeFilterSchema,
 	endDate: advancedDateTimeFilterSchema,
 	state: advancedProcessInstanceStateFilterSchema,
 	hasIncident: z.boolean(),
 	tenantId: advancedStringFilterSchema,
-	variables: z.array(
-		z.object({
-			name: z.string(),
-			value: z.string(),
-		}),
-	),
+	variables: z.array(processDefinitionStatisticsVariableFilterSchema),
 	processInstanceKey: basicStringFilterSchema,
 	parentProcessInstanceKey: basicStringFilterSchema,
 	parentElementInstanceKey: basicStringFilterSchema,
