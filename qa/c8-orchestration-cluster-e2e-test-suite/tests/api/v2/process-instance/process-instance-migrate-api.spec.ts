@@ -737,8 +737,7 @@ test.describe
       );
     });
 
-    await test.step('Deploy version 2 and get process definition key', async () => {
-      await deploy(['./resources/test_migration_adhoc_subprocess_v2.bpmn']);
+    await test.step('Get target process definition key', async () => {
       await createInstances('test_migration_adhoc_subprocess_v2', 1, 1).then(
         (instance) => {
           localState.processDefinitionKey = instance[0].processDefinitionKey;
@@ -915,15 +914,15 @@ test.describe
   test('Process instance migrate - AdHoc subprocess 404 Not Found - non-existent process instance', async ({
     request,
   }) => {
-    const nonExistingProcessInstanceKey = '9999999999999999';
-    const fakeProcessDefinitionKey = '8888888888888888';
+    const nonExistingProcessInstanceKey = 9999999999999999;
+    const fakeProcessDefinitionKey = 8888888888888888;
 
     const res = await request.post(
       buildUrl(`/process-instances/${nonExistingProcessInstanceKey}/migration`),
       {
         headers: jsonHeaders(),
         data: {
-          targetProcessDefinitionKey: fakeProcessDefinitionKey,
+          targetProcessDefinitionKey: fakeProcessDefinitionKey.toString(),
           mappingInstructions: [
             {
               sourceElementId: 'AdHoc_Subprocess_V1',
@@ -935,7 +934,7 @@ test.describe
     );
     await assertNotFoundRequest(
       res,
-      /Expected to migrate process instance but no process instance found/i,
+      `Command 'MIGRATE' rejected with code 'NOT_FOUND': Expected to migrate process instance but no process instance found with key '${nonExistingProcessInstanceKey}'`,
     );
   });
 });
