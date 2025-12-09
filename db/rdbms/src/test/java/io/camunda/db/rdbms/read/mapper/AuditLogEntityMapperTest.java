@@ -87,7 +87,7 @@ public class AuditLogEntityMapperTest {
             .actorId(null)
             .tenantId(null)
             .tenantScope(null)
-            .result(AuditLogOperationResult.FAILURE)
+            .result(AuditLogOperationResult.FAIL)
             .annotation(null)
             .category(AuditLogOperationCategory.USER_TASK)
             .processDefinitionId(null)

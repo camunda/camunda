@@ -88,7 +88,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   }
 
   private void setRejectionData(final AuditLogDbModel.Builder builder, final Record<R> record) {
-    builder.result(AuditLogOperationResult.FAILURE);
+    builder.result(AuditLogOperationResult.FAIL);
     // TODO: set rejection type and reason to AuditLogEntity#details
   }
 

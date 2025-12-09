@@ -131,7 +131,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   private void setRejectionData(final AuditLogEntity entity, final Record<R> record) {
-    entity.setResult(AuditLogOperationResult.FAILURE);
+    entity.setResult(AuditLogOperationResult.FAIL);
     // TODO: set rejection type and reason to AuditLogEntity#details
   }
 
