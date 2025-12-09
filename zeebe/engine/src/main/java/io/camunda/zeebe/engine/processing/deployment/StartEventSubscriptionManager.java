@@ -84,17 +84,6 @@ public class StartEventSubscriptionManager {
     closeConditionalExistingStartEventSubscriptions(processRecord);
   }
 
-  private void closeConditionalExistingStartEventSubscriptions(
-      final ProcessMetadata processRecord) {
-    final DeployedProcess lastConditionalProcess =
-        findLastStartProcess(processRecord, ExecutableCatchEventElement::isConditional);
-    if (lastConditionalProcess == null) {
-      return;
-    }
-
-    closeConditionalStartEventSubscriptions(lastConditionalProcess);
-  }
-
   public void closeStartEventSubscriptions(final DeployedProcess deployedProcess) {
     if (deployedProcess.getProcess().hasMessageStartEvent()) {
       closeMessageStartEventSubscriptions(deployedProcess);
@@ -105,6 +94,17 @@ public class StartEventSubscriptionManager {
     if (deployedProcess.getProcess().hasConditionalStartEvent()) {
       closeConditionalStartEventSubscriptions(deployedProcess);
     }
+  }
+
+  private void closeConditionalExistingStartEventSubscriptions(
+      final ProcessMetadata processRecord) {
+    final DeployedProcess lastConditionalProcess =
+        findLastStartProcess(processRecord, ExecutableCatchEventElement::isConditional);
+    if (lastConditionalProcess == null) {
+      return;
+    }
+
+    closeConditionalStartEventSubscriptions(lastConditionalProcess);
   }
 
   private void closeConditionalStartEventSubscriptions(final DeployedProcess deployedProcess) {

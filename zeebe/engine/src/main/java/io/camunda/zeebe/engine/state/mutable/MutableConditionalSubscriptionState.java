@@ -12,6 +12,12 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscr
 
 public interface MutableConditionalSubscriptionState extends ConditionalSubscriptionState {
 
+  /**
+   * Stores a conditional subscription by its subscription key.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
   void put(final long key, ConditionalSubscriptionRecord subscription);
 
   /**
@@ -29,6 +35,12 @@ public interface MutableConditionalSubscriptionState extends ConditionalSubscrip
    */
   void putStart(final long key, ConditionalSubscriptionRecord subscription);
 
+  /**
+   * Deletes a conditional subscription by its subscription key.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
   void delete(final long key, ConditionalSubscriptionRecord subscription);
 
   /**
@@ -43,7 +55,7 @@ public interface MutableConditionalSubscriptionState extends ConditionalSubscrip
    * management during process redeployment.
    *
    * @param key the key of the subscription
-   * @param record the subscription record
+   * @param subscription the subscription record
    */
-  void deleteStart(long key, ConditionalSubscriptionRecord record);
+  void deleteStart(long key, ConditionalSubscriptionRecord subscription);
 }

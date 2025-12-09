@@ -8,12 +8,15 @@
 package io.camunda.zeebe.engine.processing.conditional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.Rule;
@@ -33,26 +36,23 @@ public class ConditionalStartEventTest {
     builder.startEvent("startEvent1").condition(c -> c.condition("=x > 10")).endEvent("end1");
     builder.startEvent("startEvent2").condition(c -> c.condition("=y < 5")).endEvent("end2");
 
+    // when
     final var deployment = engine.deployment().withXmlResource(builder.done()).deploy();
     final long processDefinitionKey =
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
     // then
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withIntent(ConditionalSubscriptionIntent.CREATED)
                 .withProcessDefinitionKey(processDefinitionKey)
-                .withCatchEventId("startEvent1")
-                .withCondition("=x > 10")
-                .limit(1))
-        .hasSize(1);
-
-    assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
-                .withProcessDefinitionKey(processDefinitionKey)
-                .withCatchEventId("startEvent2")
-                .withCondition("=y < 5")
-                .limit(1))
-        .hasSize(1);
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ConditionalSubscriptionRecordValue::getCatchEventId,
+            ConditionalSubscriptionRecordValue::getCondition)
+        .hasSize(2)
+        .contains(tuple("startEvent1", "=x > 10"), tuple("startEvent2", "=y < 5"));
   }
 
   @Test
@@ -287,7 +287,7 @@ public class ConditionalStartEventTest {
   public void shouldKeepSubscriptionsOfOtherProcessesOnRedeploy() {
     // given P1 and P2 both with conditional start events
     final String processId1 = helper.getBpmnProcessId();
-    final String processId2 = helper.getBpmnProcessId();
+    final String processId2 = helper.getBpmnProcessId() + "2";
     final var deploymentP1V1 =
         engine
             .deployment()
@@ -316,18 +316,18 @@ public class ConditionalStartEventTest {
         deploymentP2V1.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
-                .withProcessDefinitionKey(processDefinitionKeyP1V1)
-                .withCatchEventId("startEvent1")
-                .limit(1))
-        .hasSize(1);
-
-    assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
-                .withProcessDefinitionKey(processDefinitionKeyP2V1)
-                .withCatchEventId("startEvent2")
-                .limit(1))
-        .hasSize(1);
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withIntent(ConditionalSubscriptionIntent.CREATED)
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ConditionalSubscriptionRecordValue::getProcessDefinitionKey,
+            ConditionalSubscriptionRecordValue::getCatchEventId,
+            ConditionalSubscriptionRecordValue::getCondition)
+        .hasSize(2)
+        .contains(
+            tuple(processDefinitionKeyP1V1, "startEvent1", "=x > 1"),
+            tuple(processDefinitionKeyP2V1, "startEvent2", "=y > 2"));
 
     // when P1 is redeployed with a different condition
     final var deploymentP1V2 =
@@ -343,6 +343,8 @@ public class ConditionalStartEventTest {
 
     final long processDefinitionKeyP1V2 =
         deploymentP1V2.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    engine.signal().withSignalName("testSpeedUp").broadcast();
 
     // then
     assertThat(
@@ -361,11 +363,16 @@ public class ConditionalStartEventTest {
         .hasSize(1);
 
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == DeploymentIntent.CREATED,
+                    r -> r.getIntent() == SignalIntent.BROADCASTED)
+                .conditionalSubscriptionRecords()
+                .withIntent(ConditionalSubscriptionIntent.DELETED)
                 .withProcessDefinitionKey(processDefinitionKeyP2V1)
                 .withCatchEventId("startEvent2")
                 .withCondition("=y > 2")
                 .limit(1))
-        .hasSize(1);
+        .isEmpty();
   }
 }

@@ -31,7 +31,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
   private final DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>
       processDefinitionKeyAndTenantAwareSubscriptionKey;
   private final ColumnFamily<DbTenantAwareKey<DbLong>, ConditionalSubscription>
-      conditionalKeyColumnFamily;
+      subscriptionKeyColumnFamily;
   private final DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>
       scopeKeyAndTenantAwareSubscriptionKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>, DbNil>
@@ -47,7 +47,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     tenantIdKey = new DbString();
     tenantAwareSubscriptionKey =
         new DbTenantAwareKey<>(tenantIdKey, subscriptionKey, DbTenantAwareKey.PlacementType.PREFIX);
-    conditionalKeyColumnFamily =
+    subscriptionKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_SUBSCRIPTION_KEY,
             transactionContext,
@@ -80,7 +80,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     tenantIdKey.wrapString(subscription.getTenantId());
     scopeKey.wrapLong(subscription.getScopeKey());
 
-    conditionalKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
+    subscriptionKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
     scopeKeyColumnFamily.insert(scopeKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
   }
 
@@ -91,7 +91,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     tenantIdKey.wrapString(subscription.getTenantId());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
 
-    conditionalKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
+    subscriptionKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
     processDefinitionKeyColumnFamily.insert(
         processDefinitionKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
   }
@@ -102,7 +102,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     tenantIdKey.wrapString(subscription.getTenantId());
     scopeKey.wrapLong(subscription.getScopeKey());
 
-    conditionalKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
+    subscriptionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
     scopeKeyColumnFamily.deleteExisting(scopeKeyAndTenantAwareSubscriptionKey);
   }
 
@@ -112,7 +112,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     tenantIdKey.wrapString(subscription.getTenantId());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
 
-    conditionalKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
+    subscriptionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
     processDefinitionKeyColumnFamily.deleteExisting(
         processDefinitionKeyAndTenantAwareSubscriptionKey);
   }
@@ -122,7 +122,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     this.subscriptionKey.wrapLong(subscriptionKey);
     tenantIdKey.wrapString(tenantId);
 
-    return conditionalKeyColumnFamily.exists(tenantAwareSubscriptionKey);
+    return subscriptionKeyColumnFamily.exists(tenantAwareSubscriptionKey);
   }
 
   @Override
@@ -135,7 +135,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
           subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
           tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           final var subscription =
-              conditionalKeyColumnFamily.get(
+              subscriptionKeyColumnFamily.get(
                   tenantAwareSubscriptionKey, ConditionalSubscription::new);
 
           if (subscription != null) {
@@ -155,7 +155,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
           tenantIdKey.wrapString(key.second().tenantKey().toString());
           subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
           final var subscription =
-              conditionalKeyColumnFamily.get(
+              subscriptionKeyColumnFamily.get(
                   tenantAwareSubscriptionKey, ConditionalSubscription::new);
           if (subscription != null) {
             visitor.visit(subscription);
