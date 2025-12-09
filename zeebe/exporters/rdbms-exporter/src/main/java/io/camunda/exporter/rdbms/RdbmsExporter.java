@@ -272,6 +272,11 @@ public final class RdbmsExporter {
     rdbmsWriter.flush(true);
   }
 
+  @VisibleForTesting("Allows verification of registered handlers in tests")
+  Map<ValueType, List<RdbmsExportHandler>> getRegisteredHandlers() {
+    return registeredHandlers;
+  }
+
   public static final class Builder {
 
     private int partitionId;

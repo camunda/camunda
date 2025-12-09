@@ -7,12 +7,21 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
 
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
 public class AuditLogTransformerConfigs {
   public static final TransformerConfig PROCESS_INSTANCE_MODIFICATION_CONFIG =
       TransformerConfig.with(PROCESS_INSTANCE_MODIFICATION).withIntents(MODIFIED);
+
+  public static final TransformerConfig BATCH_OPERATION_LIFECYCLE_MANAGEMENT_CONFIG =
+      TransformerConfig.with(BATCH_OPERATION_LIFECYCLE_MANAGEMENT)
+          .withIntents(
+              BatchOperationIntent.RESUMED,
+              BatchOperationIntent.SUSPENDED,
+              BatchOperationIntent.CANCELED);
 }
