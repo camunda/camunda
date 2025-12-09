@@ -7,16 +7,13 @@
  */
 
 import React from 'react';
-import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import {type AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {CheckmarkFilled, ErrorFilled} from './styled.ts';
-import type z from 'zod';
 
 const stateIconsMap = {
   FAIL: ErrorFilled,
   SUCCESS: CheckmarkFilled,
-} as const satisfies Record<Props['state'], unknown>;
-
-type AuditLogResult = z.infer<typeof auditLogResultSchema>;
+} as const;
 
 type Props = {
   state: AuditLogResult;
