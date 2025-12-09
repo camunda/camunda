@@ -130,14 +130,11 @@ public final class BpmnStateTransitionBehavior {
             transitionContext.getFlowScopeKey(),
             transitionContext.getRecordValue());
     // We only set the tree path properties on the ACTIVATING event
-    final var rootProcessInstanceKey =
-        getRootProcessInstanceKeyFromContext(transitionContext);
     transitionContext
         .getRecordValue()
         .setElementInstancePath(elementTreePath.elementInstancePath())
         .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
-        .setCallingElementPath(elementTreePath.callingElementPath())
-        .setRootProcessInstanceKey(rootProcessInstanceKey);
+        .setCallingElementPath(elementTreePath.callingElementPath());
 
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
@@ -740,6 +737,7 @@ public final class BpmnStateTransitionBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setParentProcessInstanceKey(context.getProcessInstanceKey())
         .setParentElementInstanceKey(context.getElementInstanceKey())
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType())
         .setTenantId(context.getTenantId());

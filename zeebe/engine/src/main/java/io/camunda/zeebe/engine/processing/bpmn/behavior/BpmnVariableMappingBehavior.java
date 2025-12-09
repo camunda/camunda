@@ -61,6 +61,7 @@ public final class BpmnVariableMappingBehavior {
     final String tenantId = context.getTenantId();
     final long processDefinitionKey = context.getProcessDefinitionKey();
     final long processInstanceKey = context.getProcessInstanceKey();
+    final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
 
@@ -73,6 +74,7 @@ public final class BpmnVariableMappingBehavior {
                     scopeKey,
                     processDefinitionKey,
                     processInstanceKey,
+                    rootProcessInstanceKey,
                     bpmnProcessId,
                     context.getTenantId(),
                     result);
@@ -95,6 +97,7 @@ public final class BpmnVariableMappingBehavior {
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = record.getProcessDefinitionKey();
     final long processInstanceKey = record.getProcessInstanceKey();
+    final long rootProcessInstanceKey = record.getRootProcessInstanceKey();
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final long scopeKey = getVariableScopeKey(context);
     final String tenantId = context.getTenantId();
@@ -124,6 +127,7 @@ public final class BpmnVariableMappingBehavior {
             elementInstanceKey,
             processDefinitionKey,
             processInstanceKey,
+            rootProcessInstanceKey,
             bpmnProcessId,
             context.getTenantId(),
             variables);

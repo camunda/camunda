@@ -1050,6 +1050,7 @@ public final class ProcessInstanceModificationModifyProcessor
                     scopeKey,
                     process.getKey(),
                     processInstance.getKey(),
+                    -1L, // FIXME houssain
                     process.getBpmnProcessId(),
                     process.getTenantId(),
                     variableDocument));
