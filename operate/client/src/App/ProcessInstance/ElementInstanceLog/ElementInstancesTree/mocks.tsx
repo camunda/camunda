@@ -9,7 +9,6 @@
 import {
   type FlowNodeInstance,
   type FlowNodeInstances,
-  flowNodeInstanceStore,
 } from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -25,7 +24,10 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {
+  type ProcessInstance,
+  type QueryElementInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
@@ -113,6 +115,18 @@ const mockAdHocSubProcessesInstance: ProcessInstance = {
   processDefinitionId: 'AdHocProcess',
   tenantId: '<default>',
   processDefinitionName: 'Ad Hoc Process',
+  hasIncident: false,
+};
+
+const mockNestedSubProcessInstance: ProcessInstance = {
+  processInstanceKey: '2251799813686118',
+  state: 'ACTIVE',
+  startDate: '2022-09-23T10:59:43.096+0000',
+  processDefinitionKey: '123456789',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'nested_sub_process',
+  tenantId: '<default>',
+  processDefinitionName: 'nested_sub_process',
   hasIncident: false,
 };
 
@@ -551,190 +565,6 @@ const multipleSubprocessesWithNoRunningScopeMock: {
   },
 };
 
-const multipleSubprocessesWithTwoRunningScopesMock: {
-  firstLevel: FlowNodeInstances;
-  secondLevel1: FlowNodeInstances;
-  secondLevel2: FlowNodeInstances;
-  thirdLevel1: FlowNodeInstances;
-  thirdLevel2: FlowNodeInstances;
-} = {
-  firstLevel: {
-    [processInstanceId]: {
-      children: [
-        {
-          id: '1',
-          type: 'SUB_PROCESS',
-          state: 'ACTIVE',
-          flowNodeId: 'parent_sub_process',
-          startDate: '2022-09-23T10:59:43.096+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/1`,
-          sortValues: ['1664017183097', '6755399441065192'],
-        },
-        {
-          id: '2',
-          type: 'SUB_PROCESS',
-          state: 'ACTIVE',
-          flowNodeId: 'parent_sub_process',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/2`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-      ],
-      running: null,
-    },
-  },
-  secondLevel1: {
-    [`${processInstanceId}/1`]: {
-      children: [
-        {
-          id: '1_1',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'Event_0oi4pw0',
-          startDate: '2022-09-23T10:59:43.096+0000',
-          endDate: '2022-09-23T11:00:42.508+0000',
-          treePath: `${processInstanceId}/1/1_1`,
-          sortValues: ['1664017183097', '6755399441065192'],
-        },
-        {
-          id: '1_2',
-          type: 'SUB_PROCESS',
-          state: 'ACTIVE',
-          flowNodeId: 'inner_sub_process',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/1/1_2`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-        {
-          id: '1_3',
-          type: 'END_EVENT',
-          state: 'ACTIVE',
-          flowNodeId: 'Event_1k2dpf7',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/1/1_3`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-      ],
-      running: null,
-    },
-  },
-  secondLevel2: {
-    [`${processInstanceId}/2`]: {
-      children: [
-        {
-          id: '2_1',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'Event_0oi4pw0',
-          startDate: '2022-09-23T10:59:43.096+0000',
-          endDate: '2022-09-23T11:00:42.508+0000',
-          treePath: `${processInstanceId}/2/2_1`,
-          sortValues: ['1664017183097', '6755399441065192'],
-        },
-        {
-          id: '2_2',
-          type: 'SUB_PROCESS',
-          state: 'ACTIVE',
-          flowNodeId: 'inner_sub_process',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/2/2_2`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-        {
-          id: '2_3',
-          type: 'END_EVENT',
-          state: 'ACTIVE',
-          flowNodeId: 'Event_1k2dpf7',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/2/2_3`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-      ],
-      running: null,
-    },
-  },
-  thirdLevel1: {
-    [`${processInstanceId}/1/1_2`]: {
-      children: [
-        {
-          id: '1_2_1',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'Event_1rw6vny',
-          startDate: '2022-09-23T10:59:43.096+0000',
-          endDate: '2022-09-23T11:00:42.508+0000',
-          treePath: `${processInstanceId}/1/1_2/1_2_1`,
-          sortValues: ['1664017183097', '6755399441065192'],
-        },
-        {
-          id: '1_2_2',
-          type: 'USER_TASK',
-          state: 'ACTIVE',
-          flowNodeId: 'user_task',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/1/1_2/1_2_2`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-        {
-          id: '1_2_3',
-          type: 'END_EVENT',
-          state: 'ACTIVE',
-          flowNodeId: 'Event_0ypvz5p',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/1/1_2/1_2_3`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-      ],
-      running: null,
-    },
-  },
-  thirdLevel2: {
-    [`${processInstanceId}/2/2_2`]: {
-      children: [
-        {
-          id: '2_2_1',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'Event_1rw6vny',
-          startDate: '2022-09-23T10:59:43.096+0000',
-          endDate: '2022-09-23T11:00:42.508+0000',
-          treePath: `${processInstanceId}/2/2_2/2_2_1`,
-          sortValues: ['1664017183097', '6755399441065192'],
-        },
-        {
-          id: '2_2_2',
-          type: 'USER_TASK',
-          state: 'ACTIVE',
-          flowNodeId: 'user_task',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/2/2_2/2_2_2`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-        {
-          id: '2_2_3',
-          type: 'END_EVENT',
-          state: 'ACTIVE',
-          flowNodeId: 'Event_0ypvz5p',
-          startDate: '2022-09-23T10:59:43.822+0000',
-          endDate: null,
-          treePath: `${processInstanceId}/2/2_2/2_2_3`,
-          sortValues: ['1664017183823', '6755399441065673'],
-        },
-      ],
-      running: null,
-    },
-  },
-};
-
 const adHocNodeFlowNodeInstances: {
   level1: FlowNodeInstances;
   level2: FlowNodeInstances;
@@ -795,14 +625,230 @@ const adHocNodeFlowNodeInstances: {
   },
 };
 
+const multipleSubprocessesWithTwoRunningScopesMock: Record<
+  string,
+  QueryElementInstancesResponseBody
+> = {
+  firstLevel: {
+    items: [
+      {
+        elementInstanceKey: '1',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'SUB_PROCESS',
+        elementId: 'parent_sub_process',
+        elementName: 'parent_sub_process',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.096+0000',
+      },
+      {
+        elementInstanceKey: '2',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'SUB_PROCESS',
+        elementId: 'parent_sub_process',
+        elementName: 'parent_sub_process',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+    ],
+    page: {totalItems: 2},
+  },
+  secondLevel1: {
+    items: [
+      {
+        elementInstanceKey: '1_1',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'Event_0oi4pw0',
+        elementName: 'Event_0oi4pw0',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.096+0000',
+        endDate: '2022-09-23T11:00:42.508+0000',
+      },
+      {
+        elementInstanceKey: '1_2',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'SUB_PROCESS',
+        elementId: 'inner_sub_process',
+        elementName: 'inner_sub_process',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+      {
+        elementInstanceKey: '1_3',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'END_EVENT',
+        elementId: 'Event_1k2dpf7',
+        elementName: 'Event_1k2dpf7',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+    ],
+    page: {totalItems: 3},
+  },
+  secondLevel2: {
+    items: [
+      {
+        elementInstanceKey: '2_1',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'Event_0oi4pw0',
+        elementName: 'Event_0oi4pw0',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.096+0000',
+        endDate: '2022-09-23T11:00:42.508+0000',
+      },
+      {
+        elementInstanceKey: '2_2',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'SUB_PROCESS',
+        elementId: 'inner_sub_process',
+        elementName: 'inner_sub_process',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+      {
+        elementInstanceKey: '2_3',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'END_EVENT',
+        elementId: 'Event_1k2dpf7',
+        elementName: 'Event_1k2dpf7',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+    ],
+    page: {totalItems: 3},
+  },
+  thirdLevel1: {
+    items: [
+      {
+        elementInstanceKey: '1_2_1',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'Event_1rw6vny',
+        elementName: 'Event_1rw6vny',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.096+0000',
+        endDate: '2022-09-23T11:00:42.508+0000',
+      },
+      {
+        elementInstanceKey: '1_2_2',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'USER_TASK',
+        elementId: 'user_task',
+        elementName: 'user_task',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+      {
+        elementInstanceKey: '1_2_3',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'END_EVENT',
+        elementId: 'Event_0ypvz5p',
+        elementName: 'Event_0ypvz5p',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+    ],
+    page: {totalItems: 3},
+  },
+  thirdLevel2: {
+    items: [
+      {
+        elementInstanceKey: '2_2_1',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'Event_1rw6vny',
+        elementName: 'Event_1rw6vny',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.096+0000',
+        endDate: '2022-09-23T11:00:42.508+0000',
+      },
+      {
+        elementInstanceKey: '2_2_2',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'USER_TASK',
+        elementId: 'user_task',
+        elementName: 'user_task',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+      {
+        elementInstanceKey: '2_2_3',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '123456789',
+        processDefinitionId: 'nested_sub_process',
+        state: 'ACTIVE',
+        type: 'END_EVENT',
+        elementId: 'Event_0ypvz5p',
+        elementName: 'Event_0ypvz5p',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2022-09-23T10:59:43.822+0000',
+      },
+    ],
+    page: {totalItems: 3},
+  },
+};
+
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
-      flowNodeInstanceStore.reset();
       modificationsStore.reset();
       instanceHistoryModificationStore.reset();
     };
-  }, []);
+  });
 
   return (
     <ProcessDefinitionKeyContext.Provider value="123">
@@ -829,6 +875,7 @@ export {
   multiInstanceProcessInstance,
   nestedSubProcessesInstance,
   mockNestedSubProcessesInstance,
+  mockNestedSubProcessInstance,
   adHocSubProcessesInstance,
   processInstanceId,
   flowNodeInstances,

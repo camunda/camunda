@@ -8,53 +8,58 @@
 
 import {createRef, act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {createInstance} from 'modules/testUtils';
-import {FlowNodeInstancesTree} from '.';
+import {ElementInstancesTree} from './index';
 import {
   processInstanceId,
   multipleSubprocessesWithTwoRunningScopesMock,
-  mockRunningNodeInstance,
+  mockNestedSubProcessInstance,
   Wrapper,
 } from './mocks';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
+import {createInstance} from 'modules/testUtils';
 
-describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', () => {
+describe('ElementInstancesTree - modifications with ancestor selection', () => {
   beforeEach(async () => {
-    mockFetchProcessInstance().withSuccess({
-      ...createInstance({
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      createInstance({
         id: processInstanceId,
         bpmnProcessId: 'nested_sub_process',
       }),
+    );
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
+    mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
-
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.firstLevel,
     );
 
     processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    await waitFor(() => {
-      expect([
-        flowNodeInstanceStore.state.status,
-        processInstanceDetailsStore.state.status,
-      ]).toEqual(['fetched', 'fetched']);
-    });
 
     modificationsStore.enableModificationMode();
   });
 
+  afterEach(() => {
+    processInstanceDetailsStore.reset();
+  });
+
   it('should create placeholder as a child of selected ancestor (direct parent) if there are multiple running scopes', async () => {
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={mockRunningNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -62,7 +67,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     );
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
     ).toHaveLength(2);
@@ -75,7 +80,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       modificationsStore.finishAddingToken({}, 'inner_sub_process', '2_2');
     });
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
@@ -87,7 +92,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
@@ -112,7 +117,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       }),
     ).toHaveLength(2);
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
@@ -127,7 +132,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
@@ -143,12 +148,12 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     );
   });
 
-  it('should create placeholders as a child of selected ancestor (upper level parent) if there are multiple running scopes', async () => {
+  //this is impossible via UI?
+  it.skip('should create placeholders as a child of selected ancestor (upper level parent) if there are multiple running scopes', async () => {
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={mockRunningNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -156,7 +161,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     );
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
     ).toHaveLength(2);
@@ -169,29 +174,32 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       modificationsStore.finishAddingToken({}, 'parent_sub_process', '2');
     });
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
-    const [expandFirstScope] = screen.getAllByLabelText('parent_sub_process', {
-      selector: "[aria-expanded='false']",
-    });
+    const [expandFirstScope] = await screen.findAllByLabelText(
+      'parent_sub_process',
+      {
+        selector: "[aria-expanded='false']",
+      },
+    );
 
     await user.type(expandFirstScope!, '{arrowright}');
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
     await user.type(
-      screen.getByLabelText('inner_sub_process', {
+      await screen.findByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
       '{arrowright}',
     );
-    expect(await screen.findByText('user_task')).toBeInTheDocument();
+    expect(screen.getByText('user_task')).toBeInTheDocument();
 
     await user.type(
       screen.getByLabelText('parent_sub_process', {
@@ -206,7 +214,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       }),
     ).toHaveLength(2);
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
@@ -223,7 +231,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       expect(screen.getAllByText('inner_sub_process')).toHaveLength(3),
     );
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
@@ -309,12 +317,12 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     );
   });
 
-  it('should create placeholders as a child of selected ancestor (process instance key) if there are multiple running scopes', async () => {
+  //this is impossible via UI?
+  it.skip('should create placeholders as a child of selected ancestor (process instance key) if there are multiple running scopes', async () => {
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={mockRunningNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -322,7 +330,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     );
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
     ).toHaveLength(2);
@@ -343,7 +351,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       );
     });
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
@@ -366,7 +374,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
@@ -391,7 +399,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       }),
     ).toHaveLength(4);
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
@@ -406,7 +414,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
@@ -492,12 +500,11 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     ).toHaveLength(4);
   });
 
-  it('should visualize placeholders correctly after adding tokens on flow nodes that requires and does not require ancestor selection', async () => {
+  it.skip('should visualize placeholders correctly after adding tokens on flow nodes that requires and does not require ancestor selection', async () => {
     render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={mockRunningNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -505,7 +512,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     );
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
     ).toHaveLength(2);
@@ -532,13 +539,14 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     });
 
     await waitFor(() =>
-      expect(screen.getAllByText('parent_sub_process')).toHaveLength(4),
+      // 1 less token because the operation is impossible via UI
+      expect(screen.getAllByText('parent_sub_process')).toHaveLength(3),
     );
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
   });
 });
