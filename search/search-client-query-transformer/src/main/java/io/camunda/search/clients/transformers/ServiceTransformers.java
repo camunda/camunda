@@ -90,6 +90,7 @@ import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingRuleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MessageSubscriptionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
+import io.camunda.search.clients.transformers.filter.ProcessDefinitionInstanceVersionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFilterTransformer;
@@ -156,6 +157,7 @@ import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
@@ -548,6 +550,10 @@ public final class ServiceTransformers {
         CorrelatedMessageSubscriptionFilter.class,
         new CorrelatedMessageSubscriptionFilterTransformer(
             indexDescriptors.get(CorrelatedMessageSubscriptionTemplate.class)));
+    mappers.put(
+        ProcessDefinitionInstanceVersionStatisticsFilter.class,
+        new ProcessDefinitionInstanceVersionStatisticsFilterTransformer(
+            indexDescriptors.get(ListViewTemplate.class)));
     // result config -> source config
     mappers.put(
         DecisionInstanceQueryResultConfig.class, new DecisionInstanceResultConfigTransformer());

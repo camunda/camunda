@@ -16,6 +16,7 @@ public record ProcessDefinitionInstanceVersionStatisticsEntity(
     Long processDefinitionKey,
     Integer processDefinitionVersion,
     String processDefinitionName,
+    String tenantId,
     Long activeInstancesWithoutIncidentCount,
     Long activeInstancesWithIncidentCount) {
 
@@ -25,6 +26,7 @@ public record ProcessDefinitionInstanceVersionStatisticsEntity(
     private Long processDefinitionKey;
     private Integer processDefinitionVersion;
     private String processDefinitionName;
+    private String tenantId;
     private Long activeInstancesWithoutIncidentCount;
     private Long activeInstancesWithIncidentCount;
 
@@ -48,6 +50,11 @@ public record ProcessDefinitionInstanceVersionStatisticsEntity(
       return this;
     }
 
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
     public Builder activeInstancesWithoutIncidentCount(final Long count) {
       activeInstancesWithoutIncidentCount = count;
       return this;
@@ -65,6 +72,7 @@ public record ProcessDefinitionInstanceVersionStatisticsEntity(
           processDefinitionKey,
           processDefinitionVersion,
           processDefinitionName,
+          tenantId,
           activeInstancesWithoutIncidentCount,
           activeInstancesWithIncidentCount);
     }

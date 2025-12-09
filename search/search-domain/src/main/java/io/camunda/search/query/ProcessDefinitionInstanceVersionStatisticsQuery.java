@@ -9,7 +9,7 @@ package io.camunda.search.query;
 
 import io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessDefinitionInstanceVersionStatisticsSort;
 import io.camunda.search.sort.SortOptionBuilders;
@@ -18,11 +18,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessDefinitionInstanceVersionStatisticsQuery(
-    ProcessInstanceFilter filter,
+    ProcessDefinitionInstanceVersionStatisticsFilter filter,
     ProcessDefinitionInstanceVersionStatisticsSort sort,
     SearchQueryPage page)
     implements TypedSearchAggregationQuery<
-        ProcessInstanceFilter,
+        ProcessDefinitionInstanceVersionStatisticsFilter,
         ProcessDefinitionInstanceVersionStatisticsSort,
         ProcessDefinitionInstanceVersionStatisticsAggregation> {
 
@@ -63,20 +63,21 @@ public record ProcessDefinitionInstanceVersionStatisticsQuery(
       implements TypedSearchQueryBuilder<
           ProcessDefinitionInstanceVersionStatisticsQuery,
           ProcessDefinitionInstanceVersionStatisticsQuery.Builder,
-          ProcessInstanceFilter,
+          ProcessDefinitionInstanceVersionStatisticsFilter,
           ProcessDefinitionInstanceVersionStatisticsSort> {
 
-    private static final ProcessInstanceFilter DEFAULT_FILTER =
-        io.camunda.search.filter.FilterBuilders.processInstance().build();
+    private static final ProcessDefinitionInstanceVersionStatisticsFilter DEFAULT_FILTER =
+        io.camunda.search.filter.FilterBuilders.processDefinitionInstanceVersionStatistics()
+            .build();
 
     private static final ProcessDefinitionInstanceVersionStatisticsSort DEFAULT_SORT =
         SortOptionBuilders.processDefinitionInstanceVersionStatistics().build();
 
-    private ProcessInstanceFilter filter;
+    private ProcessDefinitionInstanceVersionStatisticsFilter filter;
     private ProcessDefinitionInstanceVersionStatisticsSort sort;
 
     @Override
-    public Builder filter(final ProcessInstanceFilter value) {
+    public Builder filter(final ProcessDefinitionInstanceVersionStatisticsFilter value) {
       filter = value;
       return this;
     }
@@ -88,8 +89,11 @@ public record ProcessDefinitionInstanceVersionStatisticsQuery(
     }
 
     public ProcessDefinitionInstanceVersionStatisticsQuery.Builder filter(
-        final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
-      return filter(FilterBuilders.processInstance(fn));
+        final Function<
+                ProcessDefinitionInstanceVersionStatisticsFilter.Builder,
+                ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsFilter>>
+            fn) {
+      return filter(FilterBuilders.processDefinitionInstanceVersionStatistics(fn));
     }
 
     public ProcessDefinitionInstanceVersionStatisticsQuery.Builder sort(

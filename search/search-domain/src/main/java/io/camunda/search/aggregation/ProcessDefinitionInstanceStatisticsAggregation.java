@@ -31,4 +31,8 @@ public record ProcessDefinitionInstanceStatisticsAggregation(
   public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String AGGREGATION_NAME_PROCESS_DEFINITION_KEY_CARDINALITY =
       "processDefinitionKeyCardinality";
+  public static final String PROCESS_DEFINITION_AND_TENANT_KEY =
+      "doc['bpmnProcessId'].value + '::' + doc['tenantId'].value";
+
+  public static final String SCRIPT_LANGUAGE = "painless";
 }

@@ -67,7 +67,7 @@ public class ProcessDefinitionServiceTest {
     // given
     final var statsEntity =
         new ProcessDefinitionInstanceStatisticsEntity(
-            "complexProcess", "Complex process", true, 5L, 10L);
+            "complexProcess", "<default>", "Complex process", true, 5L, 10L);
     final var statsResult =
         new SearchQueryResult.Builder<ProcessDefinitionInstanceStatisticsEntity>()
             .total(1L)
@@ -91,9 +91,10 @@ public class ProcessDefinitionServiceTest {
   @Test
   public void shouldReturnProcessDefinitionInstanceVersionStatistics() {
     // given
+    final var processDefinitionId = "complexProcess";
     final var statsEntity =
         new ProcessDefinitionInstanceVersionStatisticsEntity(
-            "complexProcess", 1L, 2, "Complex process", 3L, 4L);
+            processDefinitionId, 1L, 2, "Complex process", "<default>", 3L, 4L);
     final var statsResult =
         new SearchQueryResult.Builder<ProcessDefinitionInstanceVersionStatisticsEntity>()
             .total(1L)
@@ -109,7 +110,8 @@ public class ProcessDefinitionServiceTest {
 
     // when
     final var result =
-        services.searchProcessDefinitionInstanceVersionStatistics("complexProcess", originalQuery);
+        services.searchProcessDefinitionInstanceVersionStatistics(
+            processDefinitionId, originalQuery);
 
     // then
     assertThat(result).isEqualTo(statsResult);
@@ -121,8 +123,9 @@ public class ProcessDefinitionServiceTest {
                 q ->
                     q != null
                         && q.filter() != null
-                        && q.filter().processDefinitionIdOperations().stream()
-                            .anyMatch(op -> op.values().contains("complexProcess"))
+                        && q.filter().processDefinitionId() != null
+                        && processDefinitionId.equals(q.filter().processDefinitionId())
+                        && q.filter().tenantId() == null
                         && q.page().equals(originalQuery.page())
                         && q.sort().equals(originalQuery.sort())));
   }

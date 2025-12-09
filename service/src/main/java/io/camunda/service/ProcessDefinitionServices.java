@@ -17,7 +17,6 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
-import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
@@ -118,15 +117,13 @@ public class ProcessDefinitionServices
       searchProcessDefinitionInstanceVersionStatistics(
           final String processDefinitionId,
           final ProcessDefinitionInstanceVersionStatisticsQuery query) {
-
-    final var filter =
-        query.filter().toBuilder()
-            .processDefinitionIds(processDefinitionId)
-            .states(ProcessInstanceState.ACTIVE.name())
-            .build();
     final var updatedQuery =
         ProcessDefinitionInstanceVersionStatisticsQuery.of(
-            b -> b.filter(filter).sort(query.sort()).page(query.page()));
+            b ->
+                b.filter(
+                        query.filter().toBuilder().processDefinitionId(processDefinitionId).build())
+                    .sort(query.sort())
+                    .page(query.page()));
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient

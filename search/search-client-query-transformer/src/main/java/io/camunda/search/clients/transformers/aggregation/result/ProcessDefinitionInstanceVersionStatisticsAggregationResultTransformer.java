@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.transformers.aggregation.result;
 
-import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_BY_VERSION;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_BY_VERSION_TENANT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_PROCESS_DEFINITION_VERSION;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITH_INCIDENT;
@@ -30,7 +30,7 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationResultTransfor
   public ProcessDefinitionInstanceVersionStatisticsAggregationResult apply(
       final Map<String, AggregationResult> value) {
 
-    final AggregationResult byVersionAgg = value.get(AGGREGATION_NAME_BY_VERSION);
+    final AggregationResult byVersionAgg = value.get(AGGREGATION_NAME_BY_VERSION_TENANT);
     final Map<String, AggregationResult> perProcessAggregations = byVersionAgg.aggregations();
 
     final AggregationResult cardinalityAgg = value.get(AGGREGATION_NAME_VERSION_CARDINALITY);
@@ -41,12 +41,9 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationResultTransfor
             : perProcessAggregations.size();
 
     final List<ProcessDefinitionInstanceVersionStatisticsEntity> items =
-        perProcessAggregations.entrySet().stream()
+        perProcessAggregations.values().stream()
             .map(
-                entry -> {
-                  final String version = entry.getKey();
-                  final AggregationResult agg = entry.getValue();
-
+                agg -> {
                   final var processInstanceEntity =
                       agg
                           .aggregations()
@@ -78,6 +75,7 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationResultTransfor
                                   entity.processDefinitionKey(),
                                   entity.processDefinitionVersion(),
                                   entity.processDefinitionName(),
+                                  entity.tenantId(),
                                   activeInstancesWithIncidents,
                                   activeInstancesWithoutIncidents))
                       .orElse(null);
