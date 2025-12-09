@@ -67,9 +67,10 @@ public class RocksDb {
    * Configures the memory allocation strategy by RocksDB. If set to 'PARTITION', the total memory
    * allocated to RocksDB will be the number of partitions times the configured memory limit. If the
    * value is set to 'BROKER', the total memory allocated to RocksDB will be equal to the configured
-   * memory limit.
+   * memory limit. If set to 'AUTO', Zeebe will allocate the remaining memory available to RocksDB
+   * after accounting for other components, such as the JVM heap and other native memory consumers.
    */
-  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
+  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.AUTO;
 
   /**
    * Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
