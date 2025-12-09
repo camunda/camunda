@@ -196,8 +196,10 @@ final class CompactBackupIndex implements BackupIndex, AutoCloseable {
       final var mismatch = Arrays.mismatch(chunk, zeros);
       if (mismatch != -1) {
         throw new PartialIndexCorruption(
-            "Corrupt backup index: non-zero byte %d found at position %d"
-                .formatted(chunk[mismatch], buffer.position() - chunkSize + mismatch),
+            "Corrupt backup index: non-zero byte %s found at position %d"
+                .formatted(
+                    String.format("0x%02X", chunk[mismatch]),
+                    buffer.position() - chunkSize + mismatch),
             lastValidEntry);
       }
     }
