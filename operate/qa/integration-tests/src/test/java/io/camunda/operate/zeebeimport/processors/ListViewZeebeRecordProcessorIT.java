@@ -167,14 +167,35 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
             "parentActivity"),
         String.valueOf(parentProcessInstanceKey));
 
+    final long processInstanceKey = 333L;
+    importProcessInstanceAndVerifyTreePath(
+        processInstanceKey,
+        parentProcessInstanceKey,
+        parentElementInstanceKey,
+        "/parent/tree/path/FN_parentActivity/FNI_222/PI_333");
+  }
+
+  @Test
+  public void shouldGenerateFallbackTreePathIfParentProcessNotFound()
+      throws PersistenceException, IOException {
+
+    final long processInstanceKey = 334L;
+    importProcessInstanceAndVerifyTreePath(processInstanceKey, 0xDEADL, 0xDEADL, "PI_334");
+  }
+
+  private void importProcessInstanceAndVerifyTreePath(
+      final long processInstanceKey,
+      final long parentProcessInstanceKey,
+      final long parentElementInstanceKey,
+      final String expectedTreePath)
+      throws PersistenceException, IOException {
     final String versionTag = "tag-v1";
-    final long instanceKey = 333L;
     final long definitionKey = 123L;
     when(processCache.getProcessNameOrDefaultValue(eq(definitionKey), anyString()))
         .thenReturn(newProcessName);
     when(processCache.getProcessVersionTag(eq(definitionKey))).thenReturn(versionTag);
     final ProcessInstanceForListViewEntity pi =
-        createProcessInstance().setProcessInstanceKey(instanceKey);
+        createProcessInstance().setProcessInstanceKey(processInstanceKey);
 
     final Record<ProcessInstanceRecordValue> zeebeRecord =
         createZeebeRecordFromPi(
@@ -188,12 +209,11 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
                     .withParentElementInstanceKey(parentElementInstanceKey));
 
     importProcessInstanceZeebeRecord(zeebeRecord);
-    final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(instanceKey);
+    final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(processInstanceKey);
 
-    assertThat(actualPI.getProcessInstanceKey()).isEqualTo(instanceKey);
+    assertThat(actualPI.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(actualPI.getKey()).isEqualTo(pi.getKey());
-    assertThat(actualPI.getTreePath())
-        .isEqualTo("/parent/tree/path/FN_parentActivity/FNI_222/PI_333");
+    assertThat(actualPI.getTreePath()).isEqualTo(expectedTreePath);
   }
 
   @NotNull
