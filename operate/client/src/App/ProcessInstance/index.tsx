@@ -21,9 +21,7 @@ import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
-import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
-import {ElementInstanceLog} from './FlowNodeInstanceLog/v2';
-import {IS_ELEMENT_INSTANCE_HISTORY_V2} from 'modules/feature-flags';
+import {ElementInstanceLog} from './FlowNodeInstanceLog';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
@@ -208,11 +206,7 @@ const ProcessInstance: React.FC = observer(() => {
             topPanel={<TopPanel />}
             bottomPanel={
               <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
-                {IS_ELEMENT_INSTANCE_HISTORY_V2 ? (
-                  <ElementInstanceLog />
-                ) : (
-                  <FlowNodeInstanceLog />
-                )}
+                <ElementInstanceLog />
                 <VariablePanel
                   setListenerTabVisibility={setListenerTabVisibility}
                 />
