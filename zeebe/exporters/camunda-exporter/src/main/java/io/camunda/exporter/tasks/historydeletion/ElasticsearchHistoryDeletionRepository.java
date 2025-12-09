@@ -15,9 +15,12 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
-import java.util.List;
+import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -52,14 +55,19 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
     final var searchRequest = createSearchRequest();
 
     return client
-        .search(searchRequest, Object.class)
+        .search(searchRequest, HistoryDeletionEntity.class)
         .thenComposeAsync(
             (response) -> {
               final var hits = response.hits().hits();
               if (hits.isEmpty()) {
-                return CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of()));
+                return CompletableFuture.completedFuture(new HistoryDeletionBatch(Map.of()));
               }
-              final var ids = hits.stream().map(Hit::id).toList();
+              final var ids =
+                  hits.stream()
+                      .collect(
+                          Collectors.toMap(
+                              Hit::id,
+                              hit -> Objects.requireNonNull(hit.source()).getResourceType()));
               return CompletableFuture.completedFuture(new HistoryDeletionBatch(ids));
             },
             executor);
@@ -75,7 +83,6 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
     return new SearchRequest.Builder()
         .index(indexName)
         .requestCache(false)
-        .source(source -> source.fetch(false))
         .size(100) // TODO add configurable values
         .sort(s -> s.field(f -> f.field("id").order(SortOrder.Asc)))
         .query(q -> q.term(t -> t.field(HistoryDeletionIndex.PARTITION_ID).value(partitionId)))

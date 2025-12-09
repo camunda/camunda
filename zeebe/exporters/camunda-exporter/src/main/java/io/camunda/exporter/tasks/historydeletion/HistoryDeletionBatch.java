@@ -7,11 +7,12 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import java.util.Map;
 
 /**
  * Represents a batch of resource IDs to be deleted from the history.
  *
- * @param ids list of resource IDs marked for deletion
+ * @param ids Map of resource IDs marked for deletion and their corresponding deletion type.
  */
-public record HistoryDeletionBatch(List<String> ids) {}
+public record HistoryDeletionBatch(Map<String, HistoryDeletionType> ids) {}

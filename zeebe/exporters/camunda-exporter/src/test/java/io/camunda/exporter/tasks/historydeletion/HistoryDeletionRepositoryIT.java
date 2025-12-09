@@ -18,6 +18,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.UUID;
@@ -81,6 +82,7 @@ abstract class HistoryDeletionRepositoryIT {
     final var entity = new HistoryDeletionEntity();
     entity.setId(id);
     entity.setPartitionId(partitionId);
+    entity.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
     index(entity);
   }
 
@@ -97,7 +99,7 @@ abstract class HistoryDeletionRepositoryIT {
     assertThat(future)
         .succeedsWithin(REQUEST_TIMEOUT)
         .extracting(HistoryDeletionBatch::ids)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
         .isEmpty();
   }
 
@@ -114,8 +116,9 @@ abstract class HistoryDeletionRepositoryIT {
     assertThat(future)
         .succeedsWithin(REQUEST_TIMEOUT)
         .extracting(HistoryDeletionBatch::ids)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
-        .containsExactly(entityId);
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .hasSize(1)
+        .containsEntry(entityId, HistoryDeletionType.PROCESS_INSTANCE);
   }
 
   @Test
@@ -131,7 +134,7 @@ abstract class HistoryDeletionRepositoryIT {
     assertThat(future)
         .succeedsWithin(REQUEST_TIMEOUT)
         .extracting(HistoryDeletionBatch::ids)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
         .isEmpty();
   }
 }

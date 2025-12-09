@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /** Repository for querying and managing history deletion requests. */
@@ -28,7 +28,7 @@ public interface HistoryDeletionRepository extends AutoCloseable {
   class NoopHistoryDeletionRepository implements HistoryDeletionRepository {
     @Override
     public CompletableFuture<HistoryDeletionBatch> getNextBatch() {
-      return CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of()));
+      return CompletableFuture.completedFuture(new HistoryDeletionBatch(Map.of()));
     }
 
     @Override

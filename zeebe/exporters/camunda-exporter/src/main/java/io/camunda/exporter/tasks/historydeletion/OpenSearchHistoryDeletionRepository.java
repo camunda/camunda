@@ -11,11 +11,14 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
+import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -54,14 +57,19 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
   public CompletableFuture<HistoryDeletionBatch> getNextBatch() {
     final var searchRequest = createSearchRequest();
 
-    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+    return sendRequestAsync(() -> client.search(searchRequest, HistoryDeletionEntity.class))
         .thenComposeAsync(
             (response) -> {
               final var hits = response.hits().hits();
               if (hits.isEmpty()) {
-                return CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of()));
+                return CompletableFuture.completedFuture(new HistoryDeletionBatch(Map.of()));
               }
-              final var ids = hits.stream().map(Hit::id).toList();
+              final var ids =
+                  hits.stream()
+                      .collect(
+                          Collectors.toMap(
+                              Hit::id,
+                              hit -> Objects.requireNonNull(hit.source()).getResourceType()));
               return CompletableFuture.completedFuture(new HistoryDeletionBatch(ids));
             },
             executor);
@@ -77,7 +85,6 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
     return new SearchRequest.Builder()
         .index(indexName)
         .requestCache(false)
-        .source(source -> source.fetch(false))
         .size(100) // TODO add configurable values
         .sort(s -> s.field(f -> f.field("id").order(SortOrder.Asc)))
         .query(
