@@ -8,7 +8,6 @@
 package io.camunda.zeebe.exporter.common.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +40,7 @@ public class ProcessCacheUtilTest {
 
     // when
     final Optional<String> result =
-        assertDoesNotThrow(
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(
             () ->
                 ProcessCacheUtil.getCallActivityId(
                     mockProcessCache, fakeProcessDefinitionKey, outOfBoundsIndex));
