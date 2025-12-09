@@ -7,18 +7,18 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
+import {mockProcessDefinitions, mockProcessXML} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 
 import {Wrapper} from './mocks';
 import {Diagrams} from '..';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('Target Diagram', () => {
   it('should set correct targetProcessDefinitionKey', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     // This is mocked twice for source and target process definition xml.
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);

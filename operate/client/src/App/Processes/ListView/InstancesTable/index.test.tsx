@@ -18,8 +18,8 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockProcessDefinitions, mockProcessInstances} from 'modules/testUtils';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/hooks/useCallbackPrompt', () => {
@@ -61,7 +61,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
 describe('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     processesStore.fetchProcesses();
   });

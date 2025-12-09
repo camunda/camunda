@@ -11,12 +11,12 @@ import {MoveAction} from '..';
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {groupedProcessesMock} from 'modules/testUtils';
+import {mockProcessDefinitions} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -56,7 +56,7 @@ describe('<MoveAction /> - permissions', () => {
     });
 
     it('should not render move button when resource based permissions are enabled without permission', async () => {
-      mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+      mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
       await processesStore.fetchProcesses();
 
       render(<MoveAction />, {
@@ -70,7 +70,7 @@ describe('<MoveAction /> - permissions', () => {
     });
 
     it('should render move button when resource based permissions are enabled with permission', async () => {
-      mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+      mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
       await processesStore.fetchProcesses();
 
       render(<MoveAction />, {
