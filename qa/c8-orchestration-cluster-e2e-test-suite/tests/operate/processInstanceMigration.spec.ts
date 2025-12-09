@@ -243,6 +243,23 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for message start event',
           targetValue: 'MessageStartEvent',
         },
+        {
+          label: 'target element for ad hoc sub process',
+          targetValue: 'AdHocSubProcess',
+        },
+        {label: 'target element for task i', targetValue: 'TaskI'},
+        {
+          label:
+            'target element for parallel multi instance ad hoc sub process',
+          targetValue: 'ParallelMultiInstanceAdHocSubProcess',
+        },
+        {label: 'target element for task j', targetValue: 'TaskJ'},
+        {
+          label:
+            'target element for sequential multi instance ad hoc sub process',
+          targetValue: 'SequentialMultiInstanceAdHocSubProcess',
+        },
+        {label: 'target element for task k', targetValue: 'TaskK'},
       ]);
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
@@ -318,6 +335,44 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
+  test('Migrated ad hoc sub processes', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateOperationPanelPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
+    const targetVersion = testProcesses.processV2.version.toString();
+
+    await test.step('Navigate to processes and expand operations panel', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+      });
+
+      await operateOperationPanelPage.expandOperationIdField();
+    });
+
+    const tasksToVerify = ['TaskI', 'TaskJ', 'TaskK'];
+    for (const taskId of tasksToVerify) {
+      await test.step(`Get migration operation ID and verify ${taskId} instances`, async () => {
+        const operationId =
+          await operateOperationPanelPage.getMigrationOperationId();
+
+        await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+        await operateFiltersPanelPage.selectVersion(targetVersion);
+
+        await page.goto(
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=${taskId}`,
+        );
+
+        await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
+      });
+    }
+  });
+
   test('Manual mapping migration', async ({
     page,
     operateFiltersPanelPage,
@@ -369,6 +424,9 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessMigrationModePage.mapFlowNode('Task B', 'Task B2');
       await operateProcessMigrationModePage.mapFlowNode('Task C', 'Task A2');
       await operateProcessMigrationModePage.mapFlowNode('Task D', 'Task D2');
+      await operateProcessMigrationModePage.mapFlowNode('Task I', 'Task I2');
+      await operateProcessMigrationModePage.mapFlowNode('Task J', 'Task J2');
+      await operateProcessMigrationModePage.mapFlowNode('Task K', 'Task K2');
 
       await operateProcessMigrationModePage.mapFlowNode(
         'Message interrupting',
@@ -469,6 +527,18 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessMigrationModePage.mapFlowNode(
         'Multi instance task',
         'Multi instance task 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'Ad hoc sub process',
+        'Ad hoc sub process 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'Parallel multi instance Ad hoc sub process',
+        'Parallel multi instance Ad hoc sub process 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'Sequential multi instance Ad hoc sub process',
+        'Sequential multi instance Ad hoc sub process 2',
       );
     });
 
