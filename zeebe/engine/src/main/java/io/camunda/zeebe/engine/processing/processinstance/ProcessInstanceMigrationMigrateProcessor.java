@@ -389,13 +389,16 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (isUserTaskConversion) {
       final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
           new ProcessInstanceMigrationUserTaskBehavior(
+              processInstanceKey,
               elementInstance,
               sourceProcessDefinition,
               targetProcessDefinition,
+              bpmnBehaviors,
               targetElementId,
+              updatedElementInstanceRecord,
               stateWriter,
               jobState);
-      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask(processInstanceKey); // TODO
+      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
