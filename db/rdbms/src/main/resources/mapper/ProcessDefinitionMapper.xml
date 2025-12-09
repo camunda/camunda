@@ -137,6 +137,29 @@
     </constructor>
   </resultMap>
 
+  <resultMap id="processInstanceStatisticsResultMap" type="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
+    <constructor>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="LATEST_PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
+      <arg column="HAS_MULTIPLE_VERSIONS" javaType="java.lang.Boolean"/>
+      <arg column="ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT" javaType="java.lang.Long"/>
+      <arg column="ACTIVE_INSTANCES_WITH_INCIDENT_COUNT" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <resultMap id="processInstanceVersionStatisticsResultMap" type="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity">
+    <constructor>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT" javaType="java.lang.Long"/>
+      <arg column="ACTIVE_INSTANCES_WITH_INCIDENT_COUNT" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
   <select id="flowNodeStatistics"
     parameterType="io.camunda.search.filter.ProcessDefinitionStatisticsFilter"
     resultMap="io.camunda.db.rdbms.sql.Commons.flowNodeStatisticsResultMap">
@@ -355,7 +378,7 @@
   </select>
 
   <select id="processInstanceStatistics" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
-    resultType="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
+    resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.processInstanceStatisticsResultMap">
     SELECT pi.PROCESS_DEFINITION_ID,
     pi.TENANT_ID,
     (SELECT pd.NAME
@@ -420,7 +443,7 @@
     ) t
   </select>
 
-  <select id="processInstanceVersionStatistics" resultType="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery">
+  <select id="processInstanceVersionStatistics" resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.processInstanceVersionStatisticsResultMap" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery">
     SELECT
     pi.PROCESS_DEFINITION_ID,
     pi.PROCESS_DEFINITION_KEY,
