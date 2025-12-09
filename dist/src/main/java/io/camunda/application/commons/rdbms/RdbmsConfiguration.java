@@ -369,7 +369,11 @@ public class RdbmsConfiguration {
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
-      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
+      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
+      final ProcessDefinitionInstanceStatisticsDbReader
+          processDefinitionInstanceStatisticsReader,
+      final ProcessDefinitionInstanceVersionStatisticsDbReader
+          processDefinitionInstanceVersionStatisticsReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -400,7 +404,9 @@ public class RdbmsConfiguration {
         usageMetricReader,
         usageMetricTUDbReader,
         messageSubscriptionReader,
-        correlatedMessageSubscriptionReader);
+        correlatedMessageSubscriptionReader,
+        processDefinitionInstanceStatisticsReader,
+        processDefinitionInstanceVersionStatisticsReader);
   }
 
   @Bean
