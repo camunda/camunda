@@ -65,8 +65,8 @@
   },
   "devDependencies": {
     "@camunda8/sdk": "8.7.30",
-    "@carbon/elements": "11.72.0",
-    "@carbon/react": "1.88.0",
+    "@carbon/elements": "11.80.0",
+    "@carbon/react": "1.97.0",
     "@eslint/js": "9.38.0",
     "@playwright/test": "1.54.0",
     "@testing-library/dom": "10.4.1",

@@ -328,8 +328,9 @@ describe('Instances', () => {
       },
     });
 
-    vi.runOnlyPendingTimers();
-
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
@@ -346,10 +347,9 @@ describe('Instances', () => {
       },
     });
 
-    act(() => {
+    await act(async () => {
       vi.runOnlyPendingTimers();
     });
-
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
@@ -366,7 +366,9 @@ describe('Instances', () => {
       },
     });
 
-    vi.runOnlyPendingTimers();
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
@@ -384,8 +386,9 @@ describe('Instances', () => {
       },
     });
 
-    vi.runOnlyPendingTimers();
-
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);
     });

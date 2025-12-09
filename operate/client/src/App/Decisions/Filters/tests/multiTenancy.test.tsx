@@ -41,9 +41,11 @@ function getWrapper(initialPath: string = Paths.decisions()) {
 
 const expectVersion = (version: string) => {
   expect(
-    within(screen.getByLabelText('Version', {selector: 'button'})).getByText(
-      version,
-    ),
+    within(
+      screen.getByRole('combobox', {
+        name: /select a decision version/i,
+      }),
+    ).getByText(version),
   ).toBeInTheDocument();
 };
 
@@ -114,7 +116,9 @@ describe('<Filters />', () => {
 
     await selectTenant({user, option: 'All tenants'});
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
     );
@@ -163,16 +167,16 @@ describe('<Filters />', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByLabelText('Name')).toHaveValue(
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
         'Assign Approver Group for tenant A',
       ),
     );
     expectVersion('2');
 
     await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
-        'Tenant A',
-      ),
+      expect(
+        screen.getByRole('combobox', {name: /Select a tenant/i}),
+      ).toHaveTextContent('Tenant A'),
     );
   });
 
@@ -194,7 +198,7 @@ describe('<Filters />', () => {
     vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
     render(<Filters />, {wrapper: getWrapper()});
 
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
   });
 
   it('should clear decision name and version field when tenant filter is changed', async () => {
@@ -207,14 +211,16 @@ describe('<Filters />', () => {
     vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
     const {user} = render(<Filters />, {wrapper: getWrapper()});
 
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
 
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
     );
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     await selectDecision({
       user,
@@ -222,7 +228,7 @@ describe('<Filters />', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByLabelText('Name')).toHaveValue(
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
         'Assign Approver Group',
       ),
     );
@@ -235,7 +241,9 @@ describe('<Filters />', () => {
 
     await selectTenant({user, option: 'Tenant A'});
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(''),
+    );
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a decision version/i);

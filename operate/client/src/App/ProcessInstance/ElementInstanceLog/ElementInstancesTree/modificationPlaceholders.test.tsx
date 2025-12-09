@@ -55,7 +55,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     });
   });
 
-  it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
+  it('should create new parent scopes for a new placeholder if there are no running scopes', async () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
@@ -115,8 +115,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
     await waitFor(() =>
       expect(
-        screen.getAllByLabelText('parent_sub_process', {
-          selector: "[aria-expanded='false']",
+        screen.getAllByRole('treeitem', {
+          name: /parent_sub_process/i,
+          expanded: false,
         }),
       ).toHaveLength(3),
     );
@@ -126,25 +127,37 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     );
 
     const [expandFirstScope, expandSecondScope, expandNewScope] =
-      screen.getAllByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='false']",
+      screen.getAllByRole('treeitem', {
+        name: /parent_sub_process/i,
+        expanded: false,
       });
+
+    expect(expandFirstScope).toBeInTheDocument();
 
     await user.type(expandFirstScope!, '{arrowright}');
 
-    expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(expandFirstScope).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    expect(
+      screen.getByRole('treeitem', {name: 'inner_sub_process'}),
+    ).toBeInTheDocument();
 
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.thirdLevel1,
     );
 
     await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: 'inner_sub_process',
+        expanded: false,
       }),
       '{arrowright}',
     );
-    expect(await screen.findByText('user_task')).toBeInTheDocument();
+    expect(
+      screen.getByRole('treeitem', {name: 'user_task'}),
+    ).toBeInTheDocument();
 
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.secondLevel2,
@@ -153,7 +166,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     await user.type(expandSecondScope!, '{arrowright}');
 
     await waitFor(() =>
-      expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
+      expect(
+        screen.getAllByRole('treeitem', {name: 'inner_sub_process'}),
+      ).toHaveLength(2),
     );
 
     mockSearchElementInstances().withSuccess(
@@ -161,61 +176,66 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     );
 
     await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: 'inner_sub_process',
+        expanded: false,
       }),
       '{arrowright}',
     );
 
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(2),
+      expect(screen.getAllByRole('treeitem', {name: 'user_task'})).toHaveLength(
+        2,
+      ),
     );
 
     await user.type(expandNewScope!, '{arrowright}');
 
-    expect(screen.getAllByText('inner_sub_process')).toHaveLength(3);
+    expect(
+      screen.getAllByRole('treeitem', {name: /inner_sub_process/i}),
+    ).toHaveLength(3);
 
     await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: /inner_sub_process/i,
+        expanded: false,
       }),
       '{arrowright}',
     );
 
-    expect(screen.getAllByText('user_task')).toHaveLength(4);
+    expect(screen.getAllByRole('treeitem', {name: /user_task/i})).toHaveLength(
+      4,
+    );
 
     // fold first (existing) parent scope
-    await user.type(
-      screen.getAllByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
-      })[0]!,
-      '{arrowleft}',
-    );
+    await user.type(expandFirstScope!, '{arrowleft}');
 
-    expect(screen.getAllByText('inner_sub_process')).toHaveLength(2);
-    expect(screen.getAllByText('user_task')).toHaveLength(3);
+    expect(
+      screen.getAllByRole('treeitem', {name: /inner_sub_process/i}),
+    ).toHaveLength(2);
+    expect(screen.getAllByRole('treeitem', {name: /user_task/i})).toHaveLength(
+      3,
+    );
 
     // fold second (existing) parent scope
-    await user.type(
-      screen.getAllByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
-      })[0]!,
-      '{arrowleft}',
-    );
+    await user.type(expandSecondScope!, '{arrowleft}');
 
-    expect(screen.getAllByText('inner_sub_process')).toHaveLength(1);
-    expect(screen.getAllByText('user_task')).toHaveLength(2);
+    expect(
+      screen.getAllByRole('treeitem', {name: /inner_sub_process/i}),
+    ).toHaveLength(1);
+    expect(screen.getAllByRole('treeitem', {name: /user_task/i})).toHaveLength(
+      2,
+    );
 
     // fold new parent scope
-    await user.type(
-      screen.getByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
-      }),
-      '{arrowleft}',
-    );
+    await user.type(expandNewScope!, '{arrowleft}');
 
-    expect(screen.queryByText('inner_sub_process')).not.toBeInTheDocument();
-    expect(screen.queryByText('user_task')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('treeitem', {name: 'inner_sub_process'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('treeitem', {name: 'user_task'}),
+    ).not.toBeInTheDocument();
   });
 
   it('should show and remove two add modification flow nodes', async () => {
@@ -405,7 +425,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
   });
 
-  it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
+  it('should not create new parent scopes for a new placeholder if there is one running scopes', async () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
@@ -466,8 +486,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     });
 
     expect(
-      await screen.findAllByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='false']",
+      screen.getAllByRole('treeitem', {
+        name: /parent_sub_process/i,
+        expanded: false,
       }),
     ).toHaveLength(3);
 
@@ -475,24 +496,32 @@ describe('ElementInstancesTree - Modification placeholders', () => {
       multipleSubprocessesWithOneRunningScopeMock.secondLevel1,
     );
 
-    const [expandFirstScope, expandSecondScope] = screen.getAllByLabelText(
-      'parent_sub_process',
+    const [expandFirstScope, expandSecondScope] = screen.getAllByRole(
+      'treeitem',
       {
-        selector: "[aria-expanded='false']",
+        name: /parent_sub_process/i,
+        expanded: false,
       },
     );
 
     await user.type(expandFirstScope!, '{arrowright}');
 
-    expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(expandFirstScope).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    expect(
+      screen.getByRole('treeitem', {name: 'inner_sub_process'}),
+    ).toBeInTheDocument();
 
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.thirdLevel1,
     );
 
     await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: 'inner_sub_process',
+        expanded: false,
       }),
       '{arrowright}',
     );
@@ -508,7 +537,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     await user.type(expandSecondScope!, '{arrowright}');
 
     await waitFor(() =>
-      expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
+      expect(
+        screen.getAllByRole('treeitem', {name: 'inner_sub_process'}),
+      ).toHaveLength(2),
     );
 
     mockSearchElementInstances().withSuccess(
@@ -516,42 +547,46 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     );
 
     await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
+      screen.getByRole('treeitem', {
+        name: 'inner_sub_process',
+        expanded: false,
       }),
       '{arrowright}',
     );
 
     await waitFor(() =>
-      expect(screen.getAllByText('Event_1rw6vny')).toHaveLength(2),
+      expect(
+        screen.getAllByRole('treeitem', {name: 'Event_1rw6vny'}),
+      ).toHaveLength(2),
     );
-
     expect(screen.getAllByRole('treeitem', {name: 'user_task'})).toHaveLength(
       2,
     );
 
     // fold first parent scope
-    await user.type(
-      screen.getAllByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
-      })[0]!,
-      '{arrowleft}',
-    );
+    await user.type(expandFirstScope!, '{arrowleft}');
 
-    expect(screen.getByText('inner_sub_process')).toBeInTheDocument();
+    expect(
+      screen.getByRole('treeitem', {name: 'inner_sub_process'}),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole('treeitem', {name: 'user_task'})).toHaveLength(
       1,
     );
 
     // fold second parent scope
     await user.type(
-      screen.getByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
+      screen.getByRole('treeitem', {
+        name: /parent_sub_process/i,
+        expanded: true,
       }),
       '{arrowleft}',
     );
 
-    expect(screen.queryByText('inner_sub_process')).not.toBeInTheDocument();
-    expect(screen.queryByText('user_task')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('treeitem', {name: 'inner_sub_process'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('treeitem', {name: 'user_task'}),
+    ).not.toBeInTheDocument();
   });
 });
