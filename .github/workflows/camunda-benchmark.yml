@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     outputs:
-      image-tag: steps.image-tag.outputs.image-tag
+      image-tag: ${{steps.image-tag.outputs.image-tag}}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -165,6 +165,6 @@ jobs:
     uses: camunda/camunda/.github/workflows/camunda-benchmark-scenario.yml@feat/camunda-db-benchmarks
     with:
       name: cthiel-benchmark
-      scenario-name: PICreationLatencyBenchmark
+      scenario-name: 'pi-creation-latency'
       ref: ${{ inputs.ref }}
       image-tag: ${{ needs.calculate-image-tag.outputs.image-tag }}
