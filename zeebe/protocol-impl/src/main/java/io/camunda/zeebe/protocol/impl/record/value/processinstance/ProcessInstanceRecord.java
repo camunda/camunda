@@ -261,6 +261,14 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .collect(Collectors.toSet());
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    if (elementInstancePathProp.isEmpty()) {
+      return -1L;
+    }
+    return elementInstancePathProp.stream().iterator().next().iterator().next().getValue();
+  }
+
   public ProcessInstanceRecord setTags(final Set<String> tags) {
     tagsProp.reset();
     if (tags != null) {
