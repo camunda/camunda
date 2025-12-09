@@ -67,7 +67,7 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Resolve an incident ', async ({page, operateProcessInstancePage}) => {
+  test('Resolve an incident', async ({page, operateProcessInstancePage}) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
@@ -87,11 +87,7 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Edit goUp variable', async () => {
-      await operateProcessInstancePage.variablesList
-        .getByRole('button', {
-          name: /edit variable/i,
-        })
-        .click();
+      await operateProcessInstancePage.editVariableButtonInList.click();
 
       await operateProcessInstancePage.editVariableValueField.clear();
       await operateProcessInstancePage.editVariableValueField.type('20');
@@ -109,20 +105,18 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.retryIncident(/Condition error/i);
 
       await expect(
-        operateProcessInstancePage
-          .getIncidentRow(/Condition error/i)
-          .getByTestId('operation-spinner'),
+        operateProcessInstancePage.getIncidentRowOperationSpinner(
+          /Condition error/i,
+        ),
       ).toBeVisible();
 
       await expect(
-        operateProcessInstancePage.incidentsTable.getByTestId(
-          'operation-spinner',
-        ),
+        operateProcessInstancePage.incidentsTableOperationSpinner,
       ).not.toBeVisible();
 
-      await expect(
-        operateProcessInstancePage.incidentsTable.getByRole('row'),
-      ).toHaveCount(1);
+      await expect(operateProcessInstancePage.incidentsTableRows).toHaveCount(
+        1,
+      );
 
       await expect(
         operateProcessInstancePage.incidentsTable.getByText(/is cool\?/i),
@@ -151,9 +145,9 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.retryIncident(/Extract value error/i);
 
       await expect(
-        operateProcessInstancePage
-          .getIncidentRow(/Extract value error/i)
-          .getByTestId('operation-spinner'),
+        operateProcessInstancePage.getIncidentRowOperationSpinner(
+          /Extract value error/i,
+        ),
       ).toBeVisible();
     });
 
@@ -162,13 +156,11 @@ test.describe('Process Instance', () => {
         operateProcessInstancePage.incidentsBanner,
       ).not.toBeVisible();
       await expect(operateProcessInstancePage.incidentsTable).not.toBeVisible();
-      await expect(
-        operateProcessInstancePage.instanceHeader.getByTestId('COMPLETED-icon'),
-      ).toBeVisible();
+      await expect(operateProcessInstancePage.completedIcon).toBeVisible();
     });
   });
 
-  test('Cancel an instance ', async ({page, operateProcessInstancePage}) => {
+  test('Cancel an instance', async ({page, operateProcessInstancePage}) => {
     const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
     await test.step('Navigate to process instance with incident', async () => {
@@ -198,11 +190,7 @@ test.describe('Process Instance', () => {
         operateProcessInstancePage.incidentBannerButton(3),
       ).not.toBeVisible({timeout: 60000});
 
-      await expect(
-        operateProcessInstancePage.instanceHeader.getByTestId(
-          'TERMINATED-icon',
-        ),
-      ).toBeVisible();
+      await expect(operateProcessInstancePage.terminatedIcon).toBeVisible();
 
       await expect(
         await operateProcessInstancePage.endDateField.innerText(),
@@ -214,8 +202,7 @@ test.describe('Process Instance', () => {
     page,
     operateProcessInstancePage,
   }) => {
-    const {instanceHistory, diagram} = operateProcessInstancePage;
-    const popover = diagram;
+    const {diagram} = operateProcessInstancePage;
 
     await test.step('Navigate to collapsed sub process instance', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
@@ -267,8 +254,7 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Drill down into sub process', async () => {
-      const drilldownButton = await page.$('.bjs-drilldown');
-      await drilldownButton?.click();
+      await operateProcessInstancePage.drilldownButton.click();
 
       await expect(
         diagram.getByText('fill form', {exact: false}),
@@ -279,8 +265,6 @@ test.describe('Process Instance', () => {
   test('Should render execution count badges', async ({
     operateProcessInstancePage,
   }) => {
-    const {diagram} = operateProcessInstancePage;
-
     await test.step('Navigate to execution count process instance', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: executionCountProcessInstance.processInstanceKey,

@@ -12,7 +12,9 @@ import {sleep} from 'utils/sleep';
 class OperateProcessInstancePage {
   private page: Page;
   readonly diagram: Locator;
+  readonly drilldownButton: Locator;
   readonly completedIcon: Locator;
+  readonly terminatedIcon: Locator;
   readonly diagramSpinner: Locator;
   readonly activeIcon: Locator;
   readonly variablesList: Locator;
@@ -21,6 +23,8 @@ class OperateProcessInstancePage {
   readonly instanceHeader: Locator;
   readonly instanceHistory: Locator;
   readonly incidentsTable: Locator;
+  readonly incidentsTableOperationSpinner: Locator;
+  readonly incidentsTableRows: Locator;
   readonly incidentsBanner: Locator;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
@@ -37,6 +41,7 @@ class OperateProcessInstancePage {
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly editVariableButton: Locator;
+  readonly editVariableButtonInList: Locator;
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
   readonly migratedTag: Locator;
@@ -58,9 +63,13 @@ class OperateProcessInstancePage {
   constructor(page: Page) {
     this.page = page;
     this.diagram = page.getByTestId('diagram');
+    this.drilldownButton = page.locator('.bjs-drilldown');
     this.completedIcon = page
       .getByTestId('instance-header')
       .getByTestId('COMPLETED-icon');
+    this.terminatedIcon = page
+      .getByTestId('instance-header')
+      .getByTestId('TERMINATED-icon');
     this.diagramSpinner = page.getByTestId('diagram-spinner');
     this.activeIcon = page
       .getByTestId('instance-header')
@@ -69,10 +78,16 @@ class OperateProcessInstancePage {
     this.messageVariable = page.getByTestId('variable-message');
     this.statusVariable = page.getByTestId('variable-status');
     this.editVariableButton = page.getByTestId('edit-variable-button');
+    this.editVariableButtonInList = this.variablesList.getByRole('button', {
+      name: /edit variable/i,
+    });
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
     this.instanceHistory = page.getByTestId('instance-history');
     this.incidentsTable = page.getByTestId('data-list');
+    this.incidentsTableOperationSpinner =
+      this.incidentsTable.getByTestId('operation-spinner');
+    this.incidentsTableRows = this.incidentsTable.getByRole('row');
     this.incidentsBanner = page.getByTestId('incidents-banner');
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single flow node instance in the instance history',
@@ -355,6 +370,10 @@ class OperateProcessInstancePage {
     return this.incidentsTable.getByRole('row', {name: incidentType});
   }
 
+  getIncidentRowOperationSpinner(incidentType: string | RegExp): Locator {
+    return this.getIncidentRow(incidentType).getByTestId('operation-spinner');
+  }
+
   async retryIncident(incidentType: string | RegExp): Promise<void> {
     await this.getIncidentRow(incidentType)
       .getByRole('button', {name: 'Retry Incident'})
@@ -371,11 +390,8 @@ class OperateProcessInstancePage {
   }
 
   async toggleExecutionCount(): Promise<void> {
-    const toggle = this.page.locator(
-      '[aria-label="show execution count"], [aria-label="hide execution count"]',
-    );
-    if (await toggle.isVisible()) {
-      await toggle.click({force: true});
+    if (await this.executionCountToggle.isVisible()) {
+      await this.executionCountToggle.click({force: true});
     }
   }
 
