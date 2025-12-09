@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ResourceBasedPermissionDto} from 'modules/types/operate';
 import {searchProcessDefinitions} from '../v2/processDefinitions/searchProcessDefinitions';
 import {type QueryProcessDefinitionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {DEFAULT_TENANT} from 'modules/constants';
@@ -23,7 +22,6 @@ type ProcessDto = {
   bpmnProcessId: string;
   name: string | null;
   processes: ProcessVersionDto[];
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 };
 

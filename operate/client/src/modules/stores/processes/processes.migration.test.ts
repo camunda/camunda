@@ -54,48 +54,6 @@ describe('processes.migration store', () => {
     expect(processesStore.selectedTargetProcessId).toEqual('2251799813685894');
   });
 
-  it('should get selectable target processes when resource based permissions are enabled', async () => {
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
-    });
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
-
-    await processesStore.fetchProcesses();
-
-    expect(processesStore.filteredProcesses).toEqual([
-      {
-        bpmnProcessId: 'demoProcess',
-        key: '{demoProcess}-{<default>}',
-        name: 'New demo process',
-        tenantId: '<default>',
-        processes: [
-          {
-            id: 'demoProcess3',
-            name: 'New demo process',
-            version: 3,
-            bpmnProcessId: 'demoProcess',
-            versionTag: null,
-          },
-          {
-            id: 'demoProcess2',
-            name: 'Demo process',
-            version: 2,
-            bpmnProcessId: 'demoProcess',
-            versionTag: null,
-          },
-          {
-            id: 'demoProcess1',
-            name: 'Demo process',
-            version: 1,
-            bpmnProcessId: 'demoProcess',
-            versionTag: null,
-          },
-        ],
-      },
-    ]);
-    window.clientConfig = undefined;
-  });
-
   it('should get selectable target processes when a process with single version is selected', async () => {
     vi.stubGlobal('location', {
       ...window.location,
