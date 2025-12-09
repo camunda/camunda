@@ -7,69 +7,86 @@
  */
 
 import {createRef} from 'react';
-import {render, screen, waitFor, within} from 'modules/testing-library';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {render, screen, within} from 'modules/testing-library';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {multiInstanceProcess} from 'modules/testUtils';
-import {FlowNodeInstancesTree} from '.';
+import {ElementInstancesTree} from './index';
 import {
   multiInstanceProcessInstance,
   flowNodeInstances,
-  mockFlowNodeInstance,
   processInstanceId,
   Wrapper,
   mockMultiInstanceProcessInstance,
 } from './mocks';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
-    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+
+    mockQueryBatchOperationItems().withSuccess({
       items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'PARALLEL_GATEWAY',
+          elementId: 'peterFork',
+          elementName: 'Peter Fork',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+        },
+        {
+          elementInstanceKey: '2251799813686156',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'ACTIVE',
+          type: 'MULTI_INSTANCE_BODY',
+          elementId: 'filterMapSubProcess',
+          elementName: 'Filter-Map Sub Process',
+          hasIncident: true,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:34.205+0000',
+        },
+      ],
+      page: {totalItems: 2},
     });
   });
 
   afterEach(() => {
-    flowNodeInstanceStore.reset();
     processInstanceDetailsStore.reset();
-    flowNodeInstanceStore.reset();
-    processInstanceDetailsStore.reset();
-    flowNodeInstanceStore.reset();
   });
 
   it('should load the instance history', async () => {
-    processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1);
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
     });
 
+    processInstanceDetailsStore.init({id: processInstanceId});
+
     render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={mockFlowNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -86,20 +103,20 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should be able to unfold and fold subprocesses', async () => {
-    processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1);
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
     });
 
+    processInstanceDetailsStore.init({id: processInstanceId});
+
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={mockFlowNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -113,7 +130,24 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level2);
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686166',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'ACTIVE',
+          type: 'SUB_PROCESS',
+          elementId: 'filterMapSubProcess',
+          elementName: 'Filter-Map Sub Process',
+          hasIncident: true,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:34.281+0000',
+        },
+      ],
+      page: {totalItems: 1},
+    });
 
     await user.type(
       await screen.findByLabelText('Filter-Map Sub Process (Multi Instance)', {
@@ -130,7 +164,25 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
 
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level3);
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686204',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'START_EVENT',
+          elementId: 'startFilterMap',
+          elementName: 'Start Filter-Map',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:34.337+0000',
+          endDate: '2020-08-18T12:07:34.445+0000',
+        },
+      ],
+      page: {totalItems: 1},
+    });
 
     await user.type(
       await screen.findByLabelText('Filter-Map Sub Process', {
@@ -162,30 +214,36 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
-    processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1);
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
     });
 
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    processInstanceDetailsStore.init({id: processInstanceId});
+
     render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={mockFlowNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
       },
     );
 
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
+
     const withinMultiInstanceFlowNode = within(
-      screen.getByTestId(
+      await screen.findByTestId(
         `tree-node-${
           flowNodeInstances.level1Poll[processInstanceId]!.children[1]!.id
         }`,
@@ -199,12 +257,44 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       withinMultiInstanceFlowNode.queryByTestId('COMPLETED-icon'),
     ).not.toBeInTheDocument();
 
-    // poll request
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1Poll);
+
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'PARALLEL_GATEWAY',
+          elementId: 'peterFork',
+          elementName: 'Peter Fork',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+        },
+        {
+          elementInstanceKey: '2251799813686156',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'MULTI_INSTANCE_BODY',
+          elementId: 'filterMapSubProcess',
+          elementName: 'Filter-Map Sub Process',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:34.205+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+        },
+      ],
+      page: {totalItems: 2},
+    });
 
     vi.runOnlyPendingTimers();
 

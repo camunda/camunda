@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createContext, useContext, useMemo, useRef} from 'react';
+import {createContext, useContext, useEffect, useMemo, useRef} from 'react';
 import type {
   ElementInstance,
   ProcessInstance,
@@ -798,6 +798,10 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
     elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey, {
       enablePolling,
     });
+
+    useEffect(() => {
+      return elementInstancesTreeStore.reset;
+    }, []);
 
     if (businessObjects === undefined) {
       return null;
