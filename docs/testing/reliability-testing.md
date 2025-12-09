@@ -143,7 +143,7 @@ It contains only a start event, one service task, and an end event. Covering a s
 This type of process is helpful for stress tests, as it gives us a good sense of the maximum load.
 This is one of the smallest processes (including a service task) that we can model.
 
-Reducing the used feature set to a small amount allows easy comparison between tests,  as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
+Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
 
 **The expected load is:**
 
