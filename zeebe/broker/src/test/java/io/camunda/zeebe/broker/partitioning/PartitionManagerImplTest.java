@@ -143,4 +143,30 @@ class PartitionManagerImplTest {
           .doesNotThrowAnyException();
     }
   }
+
+  @Test
+  void shouldAllocateMemoryAuto() {
+    // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
+    brokerCfg.getCluster().setPartitionsCount(2);
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryLimit(DataSize.ofBytes(128L * 1024 * 1024)); // 128MB
+
+    // should still be valid even with 2 partitions since we allocate per broker, we will only
+    // allocate 128mb
+    try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
+      assertThatCode(
+              () -> {
+                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
+                  // ensure resources are closed
+                }
+              })
+          .doesNotThrowAnyException();
+    }
+  }
 }

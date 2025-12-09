@@ -225,6 +225,7 @@ public final class ZeebeRocksDbFactory<
    * centralizes memory calculations to avoid duplication.
    */
   MemoryConfiguration calculateMemoryConfiguration() {
+    // what do we need here in case of AUTO?
     final var totalMemoryBudgetPerPartition =
         rocksDbConfiguration.getMemoryAllocationStrategy() == MemoryAllocationStrategy.PARTITION
             ? rocksDbConfiguration.getMemoryLimit()

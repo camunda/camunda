@@ -49,6 +49,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,6 +72,8 @@ public final class PartitionManagerImpl
   public static final String GROUP_NAME = "raft-partition";
   public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
+  private static final double ROCKSDB_OVERHEAD_FACTOR = 0.15;
+  private static final long BYTES_IN_GB = 1024 * 1024 * 1024;
 
   static {
     RocksDB.loadLibrary();
@@ -681,6 +684,7 @@ public final class PartitionManagerImpl
               brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
                   * brokerCfg.getCluster().getPartitionsCount();
           case BROKER -> brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes();
+          case AUTO -> calculateRocksDBSharedCacheCapacity(totalMemorySize);
           case null ->
               // default to PARTITION strategy for backward compatibility
               brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
@@ -700,6 +704,63 @@ public final class PartitionManagerImpl
     final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
     final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
     return new SharedRocksDbResources(sharedCache, sharedWbm);
+  }
+
+  private static long calculateRocksDBSharedCacheCapacity(final long totalMemorySize) {
+    final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+
+    // 1. Get Maximum Heap Size (Programmatic equivalent of -Xmx)
+    // This is the largest size the JVM Heap is allowed to grow to.
+    final long maxHeapBytes = memoryBean.getHeapMemoryUsage().getMax();
+
+    // 2. Get Maximum Non-Heap Size (Primarily Metaspace and Code Cache)
+    // Note: The 'Max' for Non-Heap is often the hard limit (-XX:MaxMetaspaceSize)
+    // We use the 'Committed' memory as a better estimate if a hard limit isn't set,
+    // but for a true max budget, we should use getMax().
+    long maxNonHeapBytes = memoryBean.getNonHeapMemoryUsage().getMax();
+
+    // --- IMPORTANT: Non-Heap max is often -1 (unlimited) if no flag is set. ---
+    // For a safe calculation, you MUST explicitly set -XX:MaxMetaspaceSize
+    // If it's -1, you must fall back to a reasonable estimate (e.g., 512MB to 1GB)
+    if (maxNonHeapBytes < 0) {
+      maxNonHeapBytes = 512L * 1024 * 1024; // Budget 512MB if no explicit limit is set
+      LOGGER.info(
+          "WARNING: Non-Heap limit is not set. Using a default of {} GB for safety.",
+          maxNonHeapBytes / BYTES_IN_GB);
+    }
+
+    // 3. Estimate Total JVM Memory Usage (Heap + Non-Heap)
+    // This is the maximum memory the JVM itself could consume.
+    final long maxJvmInternalBytes = maxHeapBytes + maxNonHeapBytes;
+
+    // 4. Calculate the Total Off-Heap Budget Available
+    final long availableOffHeapBudget = totalMemorySize - maxJvmInternalBytes;
+
+    if (availableOffHeapBudget <= 0) {
+      throw new IllegalStateException(
+          "JVM's Max internal memory ("
+              + (maxJvmInternalBytes / BYTES_IN_GB)
+              + " GB) is greater than or equal to the Container limit ("
+              + (totalMemorySize / BYTES_IN_GB)
+              + " GB). RocksDB cannot be safely allocated memory.");
+    }
+
+    // 5. Calculate RocksDB Cache Capacity (Reserve space for native overheads)
+    // We set the cache capacity to a percentage of the remaining budget.
+    final long rocksDBMaxCacheCapacity =
+        (long) (availableOffHeapBudget * (1.0 - ROCKSDB_OVERHEAD_FACTOR));
+
+    LOGGER.info("Current non-heap memory usage: {} bytes", maxHeapBytes / BYTES_IN_GB);
+    LOGGER.info("Max non-heap memory usage: {} bytes", maxNonHeapBytes / BYTES_IN_GB);
+    LOGGER.info("Total system memory: {} bytes", totalMemorySize / BYTES_IN_GB);
+    LOGGER.info(
+        "Memory reported by JVM (Runtime): {} bytes",
+        Runtime.getRuntime().maxMemory() / BYTES_IN_GB);
+    LOGGER.info("Total JVM internal max memory: {} bytes", maxJvmInternalBytes / BYTES_IN_GB);
+    LOGGER.info(
+        "Available for rocks db memory budget: {} bytes", availableOffHeapBudget / BYTES_IN_GB);
+
+    return rocksDBMaxCacheCapacity;
   }
 
   private static void validateRocksDbMemory(
