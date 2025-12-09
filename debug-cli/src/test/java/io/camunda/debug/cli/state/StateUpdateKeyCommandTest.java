@@ -47,6 +47,7 @@ class StateUpdateKeyCommandTest {
 
     // when
     final var resetKey = Protocol.encodePartitionId(1, 100L);
+    final var maxKey = resetKey + 1000;
     final int exitCode =
         commandLine.execute(
             "state",
@@ -56,7 +57,7 @@ class StateUpdateKeyCommandTest {
             partitionRoot.toString(),
             "--partition-id=1",
             "--key=" + resetKey,
-            "--max-key=" + (resetKey + 1000),
+            "--max-key=" + maxKey,
             "--snapshot=" + initialSnapshot.getId().toString(),
             "--runtime=" + tempDir.resolve("runtime"));
 
@@ -80,6 +81,7 @@ class StateUpdateKeyCommandTest {
     final var keyGen = new DbKeyGenerator(1, runtimeDb, runtimeDb.createContext());
     final var key = keyGen.nextKey();
     assertThat(key).isEqualTo(resetKey + 1);
+    assertThat(keyGen.getMaxKeyValue()).isEqualTo(maxKey);
   }
 
   private PersistedSnapshot takeInitialSnapshot(final Path partitionRoot) {
