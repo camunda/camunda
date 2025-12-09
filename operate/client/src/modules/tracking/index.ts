@@ -293,6 +293,9 @@ type Events =
     }
   | {
       eventName: 'batch-move-modification-apply-button-clicked';
+    }
+  | {
+      eventName: 'audit-logs-fetch-failed';
     };
 
 const STAGE_ENV = getStage(window.location.host);
