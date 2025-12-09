@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_adhoc_v1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="test_migration_adhoc_subprocess" name="Test Migration of AdHoc Subprocess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_start_to_before</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_start_to_before" sourceRef="StartEvent_1" targetRef="Before_AdHoc" />
+    <bpmn:sequenceFlow id="Flow_before_to_adhoc" sourceRef="Before_AdHoc" targetRef="AdHoc_Subprocess_V1" />
+    <bpmn:adHocSubProcess id="AdHoc_Subprocess_V1" name="Ad Hoc Subprocess V1">
+      <bpmn:incoming>Flow_before_to_adhoc</bpmn:incoming>
+      <bpmn:outgoing>Flow_adhoc_to_end</bpmn:outgoing>
+      <bpmn:task id="Task_A" name="Task A" />
+      <bpmn:task id="Task_B" name="Task B" />
+      <bpmn:userTask id="UserTask_Original" name="Original User Task">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:endEvent id="Event_End">
+      <bpmn:incoming>Flow_adhoc_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_adhoc_to_end" sourceRef="AdHoc_Subprocess_V1" targetRef="Event_End" />
+    <bpmn:task id="Before_AdHoc" name="Before Ad Hoc">
+      <bpmn:incoming>Flow_start_to_before</bpmn:incoming>
+      <bpmn:outgoing>Flow_before_to_adhoc</bpmn:outgoing>
+    </bpmn:task>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="test_migration_adhoc_subprocess">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Before_di" bpmnElement="Before_AdHoc">
+        <dc:Bounds x="240" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_AdHoc_di" bpmnElement="AdHoc_Subprocess_V1" isExpanded="true">
+        <dc:Bounds x="400" y="80" width="400" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_TaskA_di" bpmnElement="Task_A">
+        <dc:Bounds x="430" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_TaskB_di" bpmnElement="Task_B">
+        <dc:Bounds x="560" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UserTask_di" bpmnElement="UserTask_Original">
+        <dc:Bounds x="680" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_End_di" bpmnElement="Event_End">
+        <dc:Bounds x="862" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_to_before_di" bpmnElement="Flow_start_to_before">
+        <di:waypoint x="188" y="170" />
+        <di:waypoint x="240" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_before_to_adhoc_di" bpmnElement="Flow_before_to_adhoc">
+        <di:waypoint x="340" y="170" />
+        <di:waypoint x="400" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_adhoc_to_end_di" bpmnElement="Flow_adhoc_to_end">
+        <di:waypoint x="800" y="170" />
+        <di:waypoint x="862" y="170" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

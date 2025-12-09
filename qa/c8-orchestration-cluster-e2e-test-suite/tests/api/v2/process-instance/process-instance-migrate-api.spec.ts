@@ -259,3 +259,378 @@ test.describe.serial('Test process instance migrate API', () => {
     );
   });
 });
+
+/* eslint-disable playwright/expect-expect */
+test.describe.serial('Test process instance migrate API for AdHoc Subprocess', () => {
+  const instanceKeys: string[] = [];
+
+  test.beforeAll(async () => {
+    await deploy([
+      './resources/test_migration_adhoc_subprocess_v1.bpmn',
+      './resources/test_migration_adhoc_subprocess_v2.bpmn',
+    ]);
+  });
+
+  test.afterAll(async () => {
+    for (const key of instanceKeys) {
+      await cancelProcessInstance(key).catch(() => {
+        // ignore if already completed
+      });
+    }
+  });
+
+  test('Process instance migrate - AdHoc subprocess migration success', async ({
+    request,
+  }) => {
+    const localState: Record<string, string> = {
+      processInstanceKey: '',
+      processDefinitionKey: '',
+      adHocSubProcessInstanceKey: '',
+    };
+
+    await test.step('Create process instance of version 1 with AdHoc subprocess', async () => {
+      await createInstances('test_migration_adhoc_subprocess', 1, 1).then(
+        async (instance) => {
+          localState.processInstanceKey = instance[0].processInstanceKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+
+          // Wait for the AdHoc subprocess to be active
+          await expect(async () => {
+            const res = await request.post(
+              buildUrl('/element-instances/search'),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: localState.processInstanceKey,
+                    elementId: 'AdHoc_Subprocess_V1',
+                    state: 'ACTIVE',
+                  },
+                },
+              },
+            );
+            await assertStatusCode(res, 200);
+            const body = await res.json();
+            expect(body.items.length).toBe(1);
+            localState.adHocSubProcessInstanceKey =
+              body.items[0].elementInstanceKey;
+          }).toPass(defaultAssertionOptions);
+        },
+      );
+    });
+
+    await test.step('Deploy version 2 of the process and create a process', async () => {
+      await deploy(['./resources/test_migration_adhoc_subprocess_v2.bpmn']);
+      await createInstances('test_migration_adhoc_subprocess_v2', 1, 1).then(
+        (instance) => {
+          localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+        },
+      );
+    });
+
+    await test.step('Migrate process instance with AdHoc subprocess to version 2', async () => {
+      const res = await request.post(
+        buildUrl(
+          `/process-instances/${localState.processInstanceKey}/migration`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            mappingInstructions: [
+              {
+                sourceElementId: 'AdHoc_Subprocess_V1',
+                targetElementId: 'AdHoc_Subprocess_V2',
+              },
+            ],
+            targetProcessDefinitionKey: localState.processDefinitionKey,
+          },
+        },
+      );
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Verify AdHoc subprocess was migrated to V2', async () => {
+      await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState.processInstanceKey,
+              elementId: 'AdHoc_Subprocess_V2',
+              state: 'ACTIVE',
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.items.length).toBe(1);
+        expect(body.items[0].elementId).toBe('AdHoc_Subprocess_V2');
+        expect(body.items[0].elementInstanceKey).toBe(
+          localState.adHocSubProcessInstanceKey,
+        );
+      }).toPass(defaultAssertionOptions);
+    });
+  });
+
+  test('Process instance migrate - AdHoc subprocess with nested activity migration', async ({
+    request,
+  }) => {
+    const localState: Record<string, string> = {
+      processInstanceKey: '',
+      processDefinitionKey: '',
+      adHocSubProcessInstanceKey: '',
+    };
+
+    await test.step('Create process instance and activate user task in AdHoc subprocess', async () => {
+      await createInstances('test_migration_adhoc_subprocess', 1, 1).then(
+        async (instance) => {
+          localState.processInstanceKey = instance[0].processInstanceKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+
+          // Wait for the AdHoc subprocess to be active
+          await expect(async () => {
+            const res = await request.post(
+              buildUrl('/element-instances/search'),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: localState.processInstanceKey,
+                    elementId: 'AdHoc_Subprocess_V1',
+                    state: 'ACTIVE',
+                  },
+                },
+              },
+            );
+            await assertStatusCode(res, 200);
+            const body = await res.json();
+            expect(body.items.length).toBe(1);
+            localState.adHocSubProcessInstanceKey =
+              body.items[0].elementInstanceKey;
+          }).toPass(defaultAssertionOptions);
+
+          // Activate user task in AdHoc subprocess
+          const activateRes = await request.post(
+            buildUrl(
+              `/element-instances/ad-hoc-activities/${localState.adHocSubProcessInstanceKey}/activation`,
+            ),
+            {
+              headers: jsonHeaders(),
+              data: {
+                elements: [
+                  {
+                    elementId: 'UserTask_Original',
+                  },
+                ],
+              },
+            },
+          );
+          await assertStatusCode(activateRes, 204);
+
+          // Wait for user task to be active
+          await expect(async () => {
+            const searchRes = await request.post(
+              buildUrl('/user-tasks/search'),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: localState.processInstanceKey,
+                    elementId: 'UserTask_Original',
+                  },
+                },
+              },
+            );
+            await assertStatusCode(searchRes, 200);
+            const body = await searchRes.json();
+            expect(body.items.length).toBe(1);
+          }).toPass(defaultAssertionOptions);
+        },
+      );
+    });
+
+    await test.step('Deploy version 2 and get process definition key', async () => {
+      await deploy(['./resources/test_migration_adhoc_subprocess_v2.bpmn']);
+      await createInstances('test_migration_adhoc_subprocess_v2', 1, 1).then(
+        (instance) => {
+          localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+        },
+      );
+    });
+
+    await test.step('Migrate AdHoc subprocess with nested activity mapping', async () => {
+      const res = await request.post(
+        buildUrl(
+          `/process-instances/${localState.processInstanceKey}/migration`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            mappingInstructions: [
+              {
+                sourceElementId: 'AdHoc_Subprocess_V1',
+                targetElementId: 'AdHoc_Subprocess_V2',
+              },
+              {
+                sourceElementId: 'UserTask_Original',
+                targetElementId: 'UserTask_Migrated',
+              },
+            ],
+            targetProcessDefinitionKey: localState.processDefinitionKey,
+          },
+        },
+      );
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Verify user task was migrated to new task in V2', async () => {
+      await expect(async () => {
+        const res = await request.post(buildUrl('/user-tasks/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState.processInstanceKey,
+              elementId: 'UserTask_Migrated',
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.items.length).toBe(1);
+        expect(body.items[0].elementId).toBe('UserTask_Migrated');
+      }).toPass(defaultAssertionOptions);
+    });
+  });
+
+  test('Process instance migrate - AdHoc subprocess can activate new activities after migration', async ({
+    request,
+  }) => {
+    const localState: Record<string, string> = {
+      processInstanceKey: '',
+      processDefinitionKey: '',
+      adHocSubProcessInstanceKey: '',
+    };
+
+    await test.step('Create process instance with AdHoc subprocess', async () => {
+      await createInstances('test_migration_adhoc_subprocess', 1, 1).then(
+        async (instance) => {
+          localState.processInstanceKey = instance[0].processInstanceKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+
+          // Wait for the AdHoc subprocess to be active
+          await expect(async () => {
+            const res = await request.post(
+              buildUrl('/element-instances/search'),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: localState.processInstanceKey,
+                    elementId: 'AdHoc_Subprocess_V1',
+                    state: 'ACTIVE',
+                  },
+                },
+              },
+            );
+            await assertStatusCode(res, 200);
+            const body = await res.json();
+            expect(body.items.length).toBe(1);
+            localState.adHocSubProcessInstanceKey =
+              body.items[0].elementInstanceKey;
+          }).toPass(defaultAssertionOptions);
+        },
+      );
+    });
+
+    await test.step('Deploy version 2 and get process definition key', async () => {
+      await deploy(['./resources/test_migration_adhoc_subprocess_v2.bpmn']);
+      await createInstances('test_migration_adhoc_subprocess_v2', 1, 1).then(
+        (instance) => {
+          localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+        },
+      );
+    });
+
+    await test.step('Migrate AdHoc subprocess to version 2', async () => {
+      const res = await request.post(
+        buildUrl(
+          `/process-instances/${localState.processInstanceKey}/migration`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            mappingInstructions: [
+              {
+                sourceElementId: 'AdHoc_Subprocess_V1',
+                targetElementId: 'AdHoc_Subprocess_V2',
+              },
+            ],
+            targetProcessDefinitionKey: localState.processDefinitionKey,
+          },
+        },
+      );
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Update AdHoc subprocess key after migration', async () => {
+      await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState.processInstanceKey,
+              elementId: 'AdHoc_Subprocess_V2',
+              state: 'ACTIVE',
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.items.length).toBe(1);
+        localState.adHocSubProcessInstanceKey =
+          body.items[0].elementInstanceKey;
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Activate new activity (Task_D) that only exists in V2', async () => {
+      const res = await request.post(
+        buildUrl(
+          `/element-instances/ad-hoc-activities/${localState.adHocSubProcessInstanceKey}/activation`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            elements: [
+              {
+                elementId: 'Task_D',
+              },
+            ],
+          },
+        },
+      );
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Verify Task_D was activated', async () => {
+      await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState.processInstanceKey,
+              elementId: 'Task_D',
+              state: 'ACTIVE',
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.items.length).toBeGreaterThanOrEqual(1);
+        expect(body.items[0].elementId).toBe('Task_D');
+      }).toPass(defaultAssertionOptions);
+    });
+  });
+});
