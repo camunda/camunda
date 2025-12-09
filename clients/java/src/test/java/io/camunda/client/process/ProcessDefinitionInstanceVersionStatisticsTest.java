@@ -127,12 +127,12 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
         SearchRequestSortMapper.fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
 
-    Assertions.assertThat(sorts).hasSize(3);
+    Assertions.assertThat(sorts).hasSize(6);
     assertSort(sorts.get(0), "processDefinitionId", SortOrderEnum.ASC);
-    assertSort(sorts.get(0), "processDefinitionVersion", SortOrderEnum.DESC);
-    assertSort(sorts.get(1), "processDefinitionKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(1), "processDefinitionName", SortOrderEnum.DESC);
-    assertSort(sorts.get(1), "activeInstancesWithIncidentCount", SortOrderEnum.ASC);
-    assertSort(sorts.get(2), "activeInstancesWithoutIncidentCount", SortOrderEnum.DESC);
+    assertSort(sorts.get(1), "processDefinitionVersion", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "processDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "processDefinitionName", SortOrderEnum.DESC);
+    assertSort(sorts.get(4), "activeInstancesWithIncidentCount", SortOrderEnum.ASC);
+    assertSort(sorts.get(5), "activeInstancesWithoutIncidentCount", SortOrderEnum.DESC);
   }
 }
