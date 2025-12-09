@@ -140,7 +140,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Run tests
+      - name: Run API tests
         shell: bash
         env:
           LOCAL_TEST: "false"
