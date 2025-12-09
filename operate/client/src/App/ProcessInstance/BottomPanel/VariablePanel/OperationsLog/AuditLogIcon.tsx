@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {type AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {CheckmarkFilled, ErrorFilled} from './styled.ts';
+import {CheckmarkFilled, ErrorFilled} from './styled';
 
 const stateIconsMap = {
   FAIL: ErrorFilled,
