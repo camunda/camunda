@@ -66,6 +66,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.Strings;
 
 public final class ProcessInstanceModificationModifyProcessor
@@ -94,6 +95,12 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final String ERROR_MESSAGE_MOVE_MULTIPLE_DEFINITIONS =
       "Expected to modify instance of process '%s' but it contains multiple move instructions"
           + " with identical source element ids: '%s'";
+  private static final String ERROR_MESSAGE_MOVE_SOURCE_ELEMENT_INSTANCE_NOT_FOUND =
+      "Expected to modify instance of process '%s' but it contains one or more move instructions"
+          + " with a source element instance that could not be found: '%s'";
+  private static final String ERROR_MESSAGE_MOVE_SOURCE_ELEMENT_INSTANCE_WRONG_PROCESS =
+      "Expected to modify instance of process '%s' but it contains one or more move instructions"
+          + " with a source element instance that does not belong to the modified process instance: '%s'";
   private static final String ERROR_COMMAND_TOO_LARGE =
       "Unable to modify process instance with key '%d' as the size exceeds the maximum batch size."
           + " Please reduce the size by splitting the modification into multiple commands.";
@@ -265,9 +272,39 @@ public final class ProcessInstanceModificationModifyProcessor
     final var terminateInstructions =
         new ArrayList<ProcessInstanceModificationTerminateInstructionValue>();
 
+    // Handle move instructions by source element instance key directly
+    final var moveInstructionsByInstanceKey =
+        moveInstructions.stream()
+            .filter(instruction -> instruction.getSourceElementInstanceKey() > 0)
+            .toList();
+    final var moveByKeyValidationResult =
+        validateMoveSourceElementInstanceExists(
+            moveInstructionsByInstanceKey,
+            process.getBpmnProcessId(),
+            value.getProcessInstanceKey());
+    if (moveByKeyValidationResult.isLeft()) {
+      final var rejection = moveByKeyValidationResult.getLeft();
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+    mapMoveInstructionsByInstanceKey(
+        moveInstructionsByInstanceKey, activateInstructions, terminateInstructions);
+
+    // collect move instructions by source element id
+    final var moveInstructionsByElementId =
+        moveInstructions.stream()
+            .filter(
+                instruction ->
+                    !instruction.getSourceElementId().isBlank()
+                        && instruction.getSourceElementInstanceKey() <= 0)
+            .collect(
+                Collectors.toMap(
+                    ProcessInstanceModificationMoveInstructionValue::getSourceElementId,
+                    Function.identity()));
     mapIdInstructions(
         value.getProcessInstanceKey(),
-        moveInstructions,
+        moveInstructionsByElementId,
         terminateInstructionsInput,
         activateInstructions,
         terminateInstructions);
@@ -388,20 +425,14 @@ public final class ProcessInstanceModificationModifyProcessor
 
   private void mapIdInstructions(
       final long processInstanceKey,
-      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructionsInput,
+      final Map<String, ProcessInstanceModificationMoveInstructionValue> moveInstructions,
       final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructionsInput,
       final List<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
       final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions) {
-    if (moveInstructionsInput.isEmpty() && terminateInstructionsInput.isEmpty()) {
+    if (moveInstructions.isEmpty() && terminateInstructionsInput.isEmpty()) {
       return;
     }
-    // collect move instructions by source element id
-    final var moveInstructions =
-        moveInstructionsInput.stream()
-            .collect(
-                Collectors.toMap(
-                    ProcessInstanceModificationMoveInstructionValue::getSourceElementId,
-                    Function.identity()));
+
     // collect terminate-by-id instructions, add key instructions to final list
     final var terminateInstructionIds = new HashSet<String>();
     final var terminateInstanceKeys = new HashSet<Long>();
@@ -416,7 +447,7 @@ public final class ProcessInstanceModificationModifyProcessor
         });
 
     // iterate over all active element instances, including child instances
-    // use a queue to iterate over the descendants, recursion might lead to stackoverflow
+    // use a queue to iterate over the descendants, recursion might lead to StackOverflow
     if (!moveInstructions.isEmpty() || !terminateInstructionIds.isEmpty()) {
       final var elementInstances =
           new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
@@ -463,6 +494,36 @@ public final class ProcessInstanceModificationModifyProcessor
           elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
         }
       }
+    }
+  }
+
+  private void mapMoveInstructionsByInstanceKey(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final List<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
+      final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions) {
+    for (final var moveInstruction : moveInstructions) {
+      final var elementInstance =
+          elementInstanceState.getInstance(moveInstruction.getSourceElementInstanceKey());
+
+      final var activateInstruction =
+          new ProcessInstanceModificationActivateInstruction()
+              .setElementId(moveInstruction.getTargetElementId())
+              .setAncestorScopeKey(
+                  moveInstruction.isUseSourceParentKeyAsAncestorScope()
+                      ? elementInstance.getParentKey()
+                      : moveInstruction.getAncestorScopeKey());
+      moveInstruction
+          .getVariableInstructions()
+          .forEach(
+              vi ->
+                  activateInstruction.addVariableInstruction(
+                      (ProcessInstanceModificationVariableInstruction) vi));
+      finalActivateInstructions.add(activateInstruction);
+      // terminate source element instance
+      finalTerminateInstructions.add(
+          new ProcessInstanceModificationTerminateInstruction()
+              .setElementId(elementInstance.getValue().getElementId())
+              .setElementInstanceKey(moveInstruction.getSourceElementInstanceKey()));
     }
   }
 
@@ -556,13 +617,17 @@ public final class ProcessInstanceModificationModifyProcessor
         moveInstructions.stream()
             .filter(
                 moveInstruction ->
-                    moveInstruction.getSourceElementId().isBlank()
+                    (moveInstruction.getSourceElementInstanceKey() <= 0
+                            && moveInstruction.getSourceElementId().isBlank())
                         || moveInstruction.getTargetElementId().isBlank())
             .map(
                 moveInstruction ->
                     "(%s, %s)"
                         .formatted(
-                            moveInstruction.getSourceElementId(),
+                            moveInstruction.getSourceElementId().isBlank()
+                                    && moveInstruction.getSourceElementInstanceKey() > 0
+                                ? moveInstruction.getSourceElementInstanceKey()
+                                : moveInstruction.getSourceElementId(),
                             moveInstruction.getTargetElementId()))
             .toList();
 
@@ -584,6 +649,7 @@ public final class ProcessInstanceModificationModifyProcessor
     final var duplicateSourceIds =
         moveInstructions.stream()
             .map(ProcessInstanceModificationMoveInstructionValue::getSourceElementId)
+            .filter(sourceId -> !sourceId.isBlank())
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
             .entrySet()
             .stream()
@@ -835,6 +901,61 @@ public final class ProcessInstanceModificationModifyProcessor
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             invalidInstructionMessages);
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateMoveSourceElementInstanceExists(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final DirectBuffer bpmnProcessId,
+      final long processInstanceKey) {
+
+    if (moveInstructions.isEmpty()) {
+      return VALID;
+    }
+
+    // Check for source element instances that don't exist
+    final List<Long> notFoundInstanceKeys =
+        moveInstructions.stream()
+            .map(ProcessInstanceModificationMoveInstructionValue::getSourceElementInstanceKey)
+            .distinct()
+            .filter(instanceKey -> elementInstanceState.getInstance(instanceKey) == null)
+            .toList();
+
+    if (!notFoundInstanceKeys.isEmpty()) {
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_MOVE_SOURCE_ELEMENT_INSTANCE_NOT_FOUND,
+              BufferUtil.bufferAsString(bpmnProcessId),
+              notFoundInstanceKeys.stream()
+                  .map(Objects::toString)
+                  .collect(Collectors.joining("', '")));
+      return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+    }
+
+    // Check for source element instances that don't belong to the process instance
+    final List<Long> wrongProcessInstanceKeys =
+        moveInstructions.stream()
+            .map(ProcessInstanceModificationMoveInstructionValue::getSourceElementInstanceKey)
+            .distinct()
+            .filter(
+                instanceKey -> {
+                  final var instance = elementInstanceState.getInstance(instanceKey);
+                  return instance != null
+                      && instance.getValue().getProcessInstanceKey() != processInstanceKey;
+                })
+            .toList();
+
+    if (!wrongProcessInstanceKeys.isEmpty()) {
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_MOVE_SOURCE_ELEMENT_INSTANCE_WRONG_PROCESS,
+              BufferUtil.bufferAsString(bpmnProcessId),
+              wrongProcessInstanceKeys.stream()
+                  .map(Objects::toString)
+                  .collect(Collectors.joining("', '")));
+      return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+    }
+
+    return VALID;
   }
 
   private boolean isAncestorOfElement(

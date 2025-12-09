@@ -2321,6 +2321,212 @@ public class ModifyProcessInstanceTest {
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
+  @Test
+  public void shouldMoveElementInstanceBySourceElementInstanceKey() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent()
+                .moveToLastGateway()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // wait for both user tasks to be activated
+    final var taskAInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst()
+            .getKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B")
+        .getFirst();
+
+    // when: move only the specific task A instance to task B
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementInstance(taskAInstanceKey, "B")
+        .modify();
+
+    // then: only the specified task A instance is terminated and a new task B is activated
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .getFirst()
+                .getKey())
+        .describedAs("Expect only the specified element instance to be terminated")
+        .isEqualTo(taskAInstanceKey);
+
+    // expect 2 task B activations (one from the fork, one from the move)
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(2)
+                .toList())
+        .describedAs("Expect task B to have 2 activations")
+        .hasSize(2);
+  }
+
+  @Test
+  public void shouldMoveElementInstanceBySourceElementInstanceKeyWithSourceParent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .userTask("A")
+                            .zeebeUserTask()
+                            .userTask("B")
+                            .zeebeUserTask()
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // wait for task A to be activated and get its instance key
+    final var taskARecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    final var taskAInstanceKey = taskARecord.getKey();
+    final var subprocessInstanceKey = taskARecord.getValue().getFlowScopeKey();
+
+    // when: move the specific task A instance to task B using source parent as ancestor
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementInstanceWithSourceParent(taskAInstanceKey, "B")
+        .modify();
+
+    // then: task A is terminated and task B is activated in the same subprocess scope
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .getFirst()
+                .getKey())
+        .describedAs("Expect the specified element instance to be terminated")
+        .isEqualTo(taskAInstanceKey);
+
+    final var activatedTaskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .getFirst();
+
+    assertThat(activatedTaskB.getValue().getFlowScopeKey())
+        .describedAs("Expect task B to be activated in the same subprocess scope")
+        .isEqualTo(subprocessInstanceKey);
+  }
+
+  @Test
+  public void shouldMoveElementInstanceBySourceElementInstanceKeyWithAncestorScopeKey() {
+    // given: a process with two parallel event subprocesses
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "eventSubProcess",
+                    sub ->
+                        sub.startEvent()
+                            .signal(m -> m.name("foo"))
+                            .interrupting(false)
+                            .userTask("A")
+                            .zeebeUserTask()
+                            .userTask("B")
+                            .zeebeUserTask()
+                            .endEvent())
+                .startEvent()
+                .userTask("C")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // Trigger two event subprocess instances
+    ENGINE.signal().withSignalName("foo").broadcast();
+    ENGINE.signal().withSignalName("foo").broadcast();
+
+    final List<Long> eventSubProcessKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+    assertThat(eventSubProcessKeys)
+        .describedAs("Expect that there are 2 active instances of the event sub process")
+        .hasSize(2);
+
+    // Get the task C instance key
+    final var taskCInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("C")
+            .getFirst()
+            .getKey();
+
+    // Use the second event subprocess as the target ancestor scope
+    final var targetAncestorScopeKey = eventSubProcessKeys.get(1);
+
+    // when: move task C to task B in the second event subprocess instance
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementInstance(taskCInstanceKey, "B", targetAncestorScopeKey)
+        .modify();
+
+    // then: task C is terminated and task B is activated in the specified event subprocess
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("C")
+                .getFirst()
+                .getKey())
+        .describedAs("Expect task C to be terminated")
+        .isEqualTo(taskCInstanceKey);
+
+    final var activatedTaskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .filter(r -> r.getValue().getFlowScopeKey() == targetAncestorScopeKey)
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(activatedTaskB.getValue().getFlowScopeKey())
+        .describedAs("Expect task B to be activated in the specified event subprocess")
+        .isEqualTo(targetAncestorScopeKey);
+  }
+
   private void verifyThatRootElementIsActivated(
       final long processInstanceKey, final String elementId, final BpmnElementType elementType) {
     verifyThatElementIsActivated(processInstanceKey, elementId, elementType, processInstanceKey);

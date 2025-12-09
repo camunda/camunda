@@ -475,6 +475,58 @@ public final class ProcessInstanceClient {
     }
 
     /**
+     * Add a move element instance instruction by source element instance key.
+     *
+     * @param sourceElementInstanceKey the key of the element instance to move
+     * @param targetElementId the id of the target element to activate
+     * @return this MoveInstruction builder for chaining
+     */
+    public MoveInstructionBuilder moveElementInstance(
+        final long sourceElementInstanceKey, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementInstanceKey(sourceElementInstanceKey)
+              .setTargetElementId(targetElementId));
+    }
+
+    /**
+     * Add a move element instance instruction by source element instance key, using the source
+     * element's parent as the ancestor scope.
+     *
+     * @param sourceElementInstanceKey the key of the element instance to move
+     * @param targetElementId the id of the target element to activate
+     * @return this MoveInstruction builder for chaining
+     */
+    public MoveInstructionBuilder moveElementInstanceWithSourceParent(
+        final long sourceElementInstanceKey, final String targetElementId) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementInstanceKey(sourceElementInstanceKey)
+              .setTargetElementId(targetElementId)
+              .setUseSourceParentKeyAsAncestorScope(true));
+    }
+
+    /**
+     * Add a move element instance instruction by source element instance key with ancestor
+     * selection.
+     *
+     * @param sourceElementInstanceKey the key of the element instance to move
+     * @param targetElementId the id of the target element to activate
+     * @param ancestorElementKey the key of the ancestor scope
+     * @return this MoveInstruction builder for chaining
+     */
+    public MoveInstructionBuilder moveElementInstance(
+        final long sourceElementInstanceKey,
+        final String targetElementId,
+        final long ancestorElementKey) {
+      return moveElements(
+          new ProcessInstanceModificationMoveInstruction()
+              .setSourceElementInstanceKey(sourceElementInstanceKey)
+              .setTargetElementId(targetElementId)
+              .setAncestorScopeKey(ancestorElementKey));
+    }
+
+    /**
      * Add an activate element instruction.
      *
      * @param elementId the id of the element to activate
