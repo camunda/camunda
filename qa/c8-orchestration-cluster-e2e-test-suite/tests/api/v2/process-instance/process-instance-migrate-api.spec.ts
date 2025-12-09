@@ -915,14 +915,13 @@ test.describe
     request,
   }) => {
     const nonExistingProcessInstanceKey = 9999999999999999;
-    const fakeProcessDefinitionKey = 8888888888888888;
 
     const res = await request.post(
       buildUrl(`/process-instances/${nonExistingProcessInstanceKey}/migration`),
       {
         headers: jsonHeaders(),
         data: {
-          targetProcessDefinitionKey: fakeProcessDefinitionKey.toString(),
+          targetProcessDefinitionKey: '8888888888888888',
           mappingInstructions: [
             {
               sourceElementId: 'AdHoc_Subprocess_V1',
