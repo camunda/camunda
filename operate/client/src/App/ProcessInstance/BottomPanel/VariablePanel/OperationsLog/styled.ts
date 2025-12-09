@@ -7,11 +7,11 @@
  */
 
 import styled from 'styled-components';
-
 import {
   CheckmarkFilled as BaseCheckmarkFilled,
   ErrorFilled as BaseErrorFilled,
 } from '@carbon/react/icons';
+import {StructuredListCell, StructuredListRow} from '@carbon/react';
 
 const Container = styled.section`
   height: 100%;
@@ -33,4 +33,21 @@ const ErrorFilled = styled(BaseErrorFilled)`
   fill: var(--cds-support-error);
 `;
 
-export {Container, OperationLogName, CheckmarkFilled, ErrorFilled};
+const FirstColumn = styled(StructuredListCell)`
+  min-width: 200px;
+`;
+
+const VerticallyAlignedRow = styled(StructuredListRow)`
+  .cds--structured-list-td {
+    vertical-align: middle;
+  }
+`;
+
+export {
+  Container,
+  OperationLogName,
+  CheckmarkFilled,
+  ErrorFilled,
+  FirstColumn,
+  VerticallyAlignedRow,
+};
