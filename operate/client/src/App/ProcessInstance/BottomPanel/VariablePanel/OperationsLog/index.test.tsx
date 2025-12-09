@@ -13,8 +13,8 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter} from 'react-router-dom';
 import React from 'react';
-import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs.ts';
-import {notificationsStore} from 'modules/stores/notifications.tsx';
+import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs';
+import {notificationsStore} from 'modules/stores/notifications';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
