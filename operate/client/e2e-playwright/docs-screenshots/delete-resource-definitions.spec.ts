@@ -9,7 +9,6 @@
 import {test} from '../visual-fixtures';
 
 import {
-  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockDeleteProcess,
   mockProcessDefinitions,
@@ -38,7 +37,6 @@ test.describe.skip('delete resource definitions', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
