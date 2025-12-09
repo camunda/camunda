@@ -221,12 +221,12 @@ public final class Gateway implements CloseableSilently {
     // blocked on tasks, and here up to 2 threads per core.
     grpcExecutor =
         new ForkJoinPool(
-            config.getGrpcMinThreads(),
+            gatewayCfg.getThreads().getGrpcMinThreads(),
             new NamedForkJoinPoolThreadFactory(),
             FatalErrorHandler.uncaughtExceptionHandler(LOG),
             true,
             0,
-            config.getGrpcMaxThreads(),
+            gatewayCfg.getThreads().getGrpcMaxThreads(),
             1,
             pool -> false,
             1,
