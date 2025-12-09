@@ -133,19 +133,20 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     ownerId.wrapString(authorizationToDelete.getOwnerId());
     ownerType.wrapString(authorizationToDelete.getOwnerType().name());
 
-    final var overlappingAuthorizationKeys =
-        authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId);
+    final var authorizationKeysForOwnerTypeAndOwnerId =
+        authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId, AuthorizationKeys::new);
+    authorizationKeysForOwnerTypeAndOwnerId.removeAuthorizationKey(authorizationKey);
 
     // For each authorization key get the authorization and check if it matches the persisted
     // Authorization ResourceType and ResourceMatcher, collecting the matching authorization
     // permissions in a set.
     final var sharedPermissionTypes =
-        overlappingAuthorizationKeys.getAuthorizationKeys().stream()
-            .filter(overlappingKey -> overlappingKey != authorizationToDelete.getAuthorizationKey())
+        authorizationKeysForOwnerTypeAndOwnerId.getAuthorizationKeys().stream()
             .map(
                 key -> {
                   this.authorizationKey.wrapLong(key);
-                  return authorizationByAuthorizationKeyColumnFamily.get(this.authorizationKey);
+                  return authorizationByAuthorizationKeyColumnFamily.get(
+                      this.authorizationKey, PersistedAuthorization::new);
                 })
             .filter(Objects::nonNull)
             .filter(
@@ -177,9 +178,8 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     this.authorizationKey.wrapLong(authorizationToDelete.getAuthorizationKey());
     authorizationByAuthorizationKeyColumnFamily.deleteExisting(this.authorizationKey);
 
-    final var keys = authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId);
-    keys.removeAuthorizationKey(authorizationKey);
-    authorizationKeysByOwnerColumnFamily.update(ownerTypeAndOwnerId, keys);
+    authorizationKeysByOwnerColumnFamily.update(
+        ownerTypeAndOwnerId, authorizationKeysForOwnerTypeAndOwnerId);
   }
 
   private boolean filterMatchingAuthorization(
