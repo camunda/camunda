@@ -424,7 +424,7 @@ if [[ "$RESPONSE" == "yes" ]] || [[ "$RESPONSE" == "y" ]]; then
         echo -e "${BLUE}Creating issue $((i+1)) of ${#ISSUE_COMMANDS[@]}...${NC}"
         # Using eval here is safe because all commands are constructed within this script
         # and do not contain any user input or external data
-        # shellcheck disable=SC2294
+        # shellcheck disable=SC2086
         eval "${ISSUE_COMMANDS[$i]}"
         echo -e "${GREEN}✓ Issue $((i+1)) created${NC}"
         echo ""
