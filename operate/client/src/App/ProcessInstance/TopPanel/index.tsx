@@ -130,7 +130,7 @@ const TopPanel: React.FC = observer(() => {
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
   const isRootNodeSelected = useIsRootNodeSelected();
-
+  const {isExecutionCountVisible} = executionCountToggleStore.state;
   const {clearSelection, selectElement} = useProcessInstanceElementSelection();
 
   const {
@@ -184,10 +184,10 @@ const TopPanel: React.FC = observer(() => {
       (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
     );
 
-    return executionCountToggleStore.state.isExecutionCountVisible
+    return isExecutionCountVisible
       ? allFlowNodeStateOverlays
       : notCompletedFlowNodeStateOverlays;
-  }, [statistics, businessObjects]);
+  }, [statistics, businessObjects, isExecutionCountVisible]);
 
   const selectedFlowNode = useMemo(() => {
     return flowNodeSelection?.anchorFlowNodeId
