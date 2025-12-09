@@ -39,6 +39,7 @@ public class Benchmark extends App {
 
     switch (benchmarkCfg.getName()) {
       case "pi-creation-latency" -> executePICreationLatencyBenchmark(camundaClient);
+      case "none" -> {}
       default -> throw new IllegalArgumentException("Unknown benchmark: " + benchmarkCfg.getName());
     }
   }

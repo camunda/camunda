@@ -76,7 +76,7 @@ jobs:
       - name: Print image tag
         run: |
           echo "image-tag=${{inputs.image-tag}}"
-  deploy-load-test:
+  deploy-benchmark-cluster:
     name: Deploy load test
     uses: ./.github/workflows/camunda-load-test.yml
     permissions:
@@ -89,13 +89,13 @@ jobs:
       cluster: ${{ inputs.cluster }}
       cluster-region: ${{ inputs.cluster-region }}
       reuse-tag: ${{ inputs.image-tag }}
-      load-test-load: ${{ inputs.load-test-load }}
+      load-test-load: '--set starter.replicas=0'
       stable-vms: ${{ inputs.stable-vms }}
       realistic: ${{ inputs.realistic }}
 
   execute-benchmark:
     name: Execute benchmark
-    needs: deploy-load-test
+    needs: deploy-benchmark-cluster
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -105,7 +105,7 @@ jobs:
         service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
     - uses: google-github-actions/get-gke-credentials@v2.3.4
       with:
-        cluster_name: zeebe-cluster
+        cluster_name: ${{inputs.cluster}}
         location: ${{inputs.cluster-region}}
     - name: Launch benchmark image
       run: |
@@ -126,10 +126,12 @@ jobs:
         echo "The benchmark result was:"
         echo "${{ steps.collect-output.outputs.result }}"
 
-  delete-load-test:
-    name: Delete load test
+  delete-benchmark:
+    name: Delete benchmark
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    needs: execute-benchmark
+    if: always()
+    timeout-minutes: 5
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -141,7 +143,7 @@ jobs:
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
-          cluster_name: zeebe-cluster
+          cluster_name: ${{inputs.cluster}}
           location: ${{inputs.cluster-region}}
       - name: Delete benchmark namespace
         id: delete-namespaces
