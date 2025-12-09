@@ -20,6 +20,7 @@ import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.operate.util.OpensearchUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +41,8 @@ public class OpensearchListViewStore implements ListViewStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds)
-      throws IOException {
+  public Map<Long, String> getListViewIndicesForProcessInstances(
+      final List<Long> processInstanceIds) throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, RequestDSL.QueryType.ALL)
             .query(
@@ -68,28 +69,27 @@ public class OpensearchListViewStore implements ListViewStore {
   }
 
   @Override
-  public String findProcessInstanceTreePathFor(long processInstanceKey) {
-    record Result(String treePath) {}
+  public String findProcessInstanceTreePathFor(final long processInstanceKey) {
     final RequestDSL.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
             ? RequestDSL.QueryType.ALL
             : RequestDSL.QueryType.ONLY_RUNTIME;
-    final var searchRequestBuilder =
-        searchRequestBuilder(listViewTemplate, queryType)
-            .query(withTenantCheck(term(ListViewTemplate.KEY, processInstanceKey)))
-            .source(sourceInclude(ListViewTemplate.TREE_PATH));
-
-    final List<Hit<Result>> hits =
-        richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
-
-    if (hits.size() > 0) {
-      return hits.get(0).source().treePath();
+    final Map<String, Object> processInstance =
+        OpensearchUtil.getByIdOrSearchArchives(
+            richOpenSearchClient,
+            listViewTemplate,
+            String.valueOf(processInstanceKey),
+            queryType,
+            ListViewTemplate.TREE_PATH);
+    if (processInstance != null) {
+      return (String) processInstance.get(ListViewTemplate.TREE_PATH);
     }
     return null;
   }
 
   @Override
-  public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(Long processDefinitionKey) {
+  public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(
+      final Long processDefinitionKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate.getAlias())
             .query(
