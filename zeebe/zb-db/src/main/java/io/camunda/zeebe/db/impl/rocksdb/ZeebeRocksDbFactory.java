@@ -53,12 +53,11 @@ public final class ZeebeRocksDbFactory<
     RocksDB.loadLibrary();
   }
 
+  private final SharedRocksDbResources sharedRocksDbResources;
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration metrics;
   private final Supplier<MeterRegistry> meterRegistryFactory;
-  private final LRUCache lruCache;
-  private final WriteBufferManager writeBufferManager;
   private final int partitionCount;
 
   public ZeebeRocksDbFactory(
@@ -66,15 +65,13 @@ public final class ZeebeRocksDbFactory<
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration metricsConfiguration,
       final Supplier<MeterRegistry> meterRegistryFactory,
-      final LRUCache lruCache,
-      final WriteBufferManager writeBufferManager,
+      final SharedRocksDbResources sharedRocksDbResources,
       final int partitionCount) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
     this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
-    this.lruCache = Objects.requireNonNull(lruCache);
-    this.writeBufferManager = Objects.requireNonNull(writeBufferManager);
+    this.sharedRocksDbResources = Objects.requireNonNull(sharedRocksDbResources);
     this.partitionCount = partitionCount;
   }
 
@@ -164,7 +161,7 @@ public final class ZeebeRocksDbFactory<
             // a good balance between useful for performance and small for replication
             .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
             .setKeepLogFileNum(2)
-            .setWriteBufferManager(writeBufferManager);
+            .setWriteBufferManager(sharedRocksDbResources.sharedWbm);
 
     // limit I/O writes
     if (rocksDbConfiguration.getIoRateBytesPerSecond() > 0) {
@@ -225,6 +222,10 @@ public final class ZeebeRocksDbFactory<
    * centralizes memory calculations to avoid duplication.
    */
   MemoryConfiguration calculateMemoryConfiguration() {
+    // the total memory budget per PARTITION depends on the allocation strategy, if per partition,
+    // the memory limit is already correct, if the strategy is BROKER, the limit configured is for
+    // all configured partitions.
+    // if AUTO we need to get the limit based on the available memory and partition count.
     final var totalMemoryBudgetPerPartition =
         rocksDbConfiguration.getMemoryAllocationStrategy() == MemoryAllocationStrategy.PARTITION
             ? rocksDbConfiguration.getMemoryLimit()
@@ -336,7 +337,7 @@ public final class ZeebeRocksDbFactory<
     closeables.add(filter);
 
     return new BlockBasedTableConfig()
-        .setBlockCache(lruCache)
+        .setBlockCache(sharedRocksDbResources.sharedCache)
         // increasing block size means reducing memory usage, but increasing read iops
         .setBlockSize(32 * 1024L)
         // full and partitioned filters use a more efficient bloom filter implementation when
@@ -361,6 +362,16 @@ public final class ZeebeRocksDbFactory<
         // keeping the whole keys in the prefixes is still useful for efficient gets. think of
         // it as a two-tiered index
         .setWholeKeyFiltering(true);
+  }
+
+  public record SharedRocksDbResources(
+      LRUCache sharedCache, WriteBufferManager sharedWbm, long reservedMemory)
+      implements AutoCloseable {
+    @Override
+    public void close() {
+      sharedWbm.close();
+      sharedCache.close();
+    }
   }
 
   /** Holds calculated memory configuration values to avoid duplication. */
