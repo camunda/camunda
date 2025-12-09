@@ -497,17 +497,19 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       });
       const isExpanded = elementInstancesTreeStore.isNodeExpanded(scopeKey);
 
-      const virtualChildren = convertToVirtualElementInstance({
-        flowNodeInstances: getVisibleChildPlaceholders(
-          scopeKey,
-          elementId,
-          businessObjects,
-          processInstance.processDefinitionId,
-          processInstance.processInstanceKey,
-          false,
-        ),
-        businessObjects,
-      });
+      const virtualChildren = modificationsStore.isModificationModeEnabled
+        ? convertToVirtualElementInstance({
+            flowNodeInstances: getVisibleChildPlaceholders(
+              scopeKey,
+              elementId,
+              businessObjects,
+              processInstance.processDefinitionId,
+              processInstance.processInstanceKey,
+              false,
+            ),
+            businessObjects,
+          })
+        : [];
 
       const handleSelect = async () => {
         if (isRoot) {
@@ -752,7 +754,6 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
 
 type ElementInstancesTreeProps = {
   processInstance: ProcessInstance;
-
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
 };
 

@@ -144,17 +144,6 @@ const nestedSubProcessFlowNodeInstances: FlowNodeInstances = {
   },
 };
 
-const nestedSubProcessFlowNodeInstance: FlowNodeInstance = {
-  id: nestedSubProcessesInstance.id,
-  type: 'PROCESS',
-  state: 'ACTIVE',
-  flowNodeId: nestedSubProcessesInstance.bpmnProcessId,
-  treePath: nestedSubProcessesInstance.id,
-  startDate: '',
-  endDate: null,
-  sortValues: [],
-};
-
 const processId = 'multiInstanceProcess';
 const processInstanceId = multiInstanceProcessInstance.id;
 
@@ -845,7 +834,6 @@ export {
   flowNodeInstances,
   eventSubProcessFlowNodeInstances,
   nestedSubProcessFlowNodeInstances,
-  nestedSubProcessFlowNodeInstance,
   adHocNodeFlowNodeInstances,
   mockAdHocSubProcessesInstance,
   mockFlowNodeInstance,

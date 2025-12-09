@@ -7,27 +7,25 @@
  */
 
 import {createRef, act} from 'react';
-import {render, screen, waitFor} from 'modules/testing-library';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {render, screen} from 'modules/testing-library';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {open} from 'modules/mocks/diagrams';
 import {
   nestedSubProcessesInstance,
-  nestedSubProcessFlowNodeInstances,
-  nestedSubProcessFlowNodeInstance,
   Wrapper,
   mockNestedSubProcessesInstance,
 } from './mocks';
-import {FlowNodeInstancesTree} from '.';
+import {ElementInstancesTree} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 
-describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
+describe('ElementInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       nestedSubProcessesInstance,
@@ -44,30 +42,56 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       items: [],
     });
 
-    processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});
-    flowNodeInstanceStore.init();
-
-    mockFetchFlowNodeInstances().withSuccess(nestedSubProcessFlowNodeInstances);
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
+
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '227539842356787',
+          processDefinitionKey: '39480256723678',
+          processDefinitionId: 'NestedSubProcesses',
+          state: 'COMPLETED',
+          type: 'START_EVENT',
+          elementId: 'StartEvent_1',
+          elementName: 'Start Event 1',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+        },
+        {
+          elementInstanceKey: '2251799813686156',
+          processInstanceKey: '227539842356787',
+          processDefinitionKey: '39480256723678',
+          processDefinitionId: 'NestedSubProcesses',
+          state: 'ACTIVE',
+          type: 'SERVICE_TASK',
+          elementId: 'ServiceTask',
+          elementName: 'Service Task',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+        },
+      ],
+      page: {totalItems: 2},
+    });
+
+    processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});
   });
 
   afterEach(() => {
-    flowNodeInstanceStore.reset();
     processInstanceDetailsStore.reset();
-    flowNodeInstanceStore.reset();
-    processInstanceDetailsStore.reset();
-    flowNodeInstanceStore.reset();
   });
 
   it('should add parent placeholders (ADD_TOKEN)', async () => {
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={nestedSubProcessFlowNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessesInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -129,10 +153,9 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
 
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={nestedSubProcessFlowNodeInstance}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessesInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
