@@ -160,7 +160,7 @@ public final class SearchResponseMapper {
     return new IncidentImpl(response);
   }
 
-  private static SearchResponsePage toSearchResponsePage(
+  public static SearchResponsePage toSearchResponsePage(
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
         pageResponse.getTotalItems(),

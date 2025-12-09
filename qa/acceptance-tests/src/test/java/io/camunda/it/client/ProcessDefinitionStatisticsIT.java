@@ -994,7 +994,7 @@ public class ProcessDefinitionStatisticsIT {
 
     // then
     assertThat(actual.items()).hasSize(1);
-    final var endCursor = actual.getEndCursor();
+    final var endCursor = actual.page().endCursor();
     assertThat(endCursor).isNotBlank();
     final var stats = actual.items().getFirst();
     assertThat(stats.getProcessDefinitionKey())
@@ -1019,7 +1019,7 @@ public class ProcessDefinitionStatisticsIT {
     assertThat(statsPage2.getProcessDefinitionId())
         .isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
     assertThat(statsPage2.getActiveSubscriptions()).isEqualTo(2L);
-    // But only 2 process instances have subscriptions
+    // But only 1 process instance has subscriptions
     assertThat(statsPage2.getProcessInstancesWithActiveSubscriptions()).isEqualTo(1L);
   }
 

@@ -1407,7 +1407,7 @@ public final class SearchQueryResponseMapper {
                 new ProcessDefinitionMessageSubscriptionStatisticsResult()
                     .processDefinitionId(e.processDefinitionId())
                     .tenantId(e.tenantId())
-                    .processDefinitionKey(String.valueOf(e.processDefinitionKey()))
+                    .processDefinitionKey(KeyUtil.keyToString(e.processDefinitionKey()))
                     .activeSubscriptions(e.activeSubscriptions())
                     .processInstancesWithActiveSubscriptions(
                         e.processInstancesWithActiveSubscriptions()))

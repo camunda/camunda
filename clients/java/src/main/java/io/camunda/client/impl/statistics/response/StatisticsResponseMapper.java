@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.statistics.response;
 
+import static io.camunda.client.impl.search.response.SearchResponseMapper.toSearchResponsePage;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -55,7 +56,7 @@ public class StatisticsResponseMapper {
                         .collect(Collectors.toList()))
             .orElse(Collections.emptyList());
     return new ProcessDefinitionMessageSubscriptionStatisticsImpl(
-        items, response.getPage().getEndCursor());
+        items, toSearchResponsePage(response.getPage()));
   }
 
   public static List<ProcessElementStatistics> toProcessDefinitionStatisticsResponse(

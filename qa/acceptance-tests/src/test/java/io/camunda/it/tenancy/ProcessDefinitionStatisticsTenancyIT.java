@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.client;
+package io.camunda.it.tenancy;
 
 import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
@@ -38,9 +38,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * only see statistics for tenants they have access to.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class ProcessDefinitionStatisticsMultiTenantsTest {
+public class ProcessDefinitionStatisticsTenancyIT {
 
   @MultiDbTestApplication
   private static final TestCamundaApplication TEST_INSTANCE =

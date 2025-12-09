@@ -15,17 +15,7 @@
  */
 package io.camunda.client.api.statistics.response;
 
-import java.util.List;
+import io.camunda.client.api.search.response.SearchResponse;
 
-public interface ProcessDefinitionMessageSubscriptionStatistics {
-
-  /**
-   * @return the list of message subscription process definition statistics items
-   */
-  List<ProcessDefinitionMessageSubscriptionStatisticsItem> items();
-
-  /**
-   * @return the cursor for pagination
-   */
-  String getEndCursor();
-}
+public interface ProcessDefinitionMessageSubscriptionStatistics
+    extends SearchResponse<ProcessDefinitionMessageSubscriptionStatisticsItem> {}

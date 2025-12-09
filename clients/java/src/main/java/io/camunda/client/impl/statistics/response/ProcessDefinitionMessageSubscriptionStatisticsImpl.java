@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.statistics.response;
 
+import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
 import java.util.List;
@@ -23,13 +24,13 @@ import java.util.Objects;
 public class ProcessDefinitionMessageSubscriptionStatisticsImpl
     implements ProcessDefinitionMessageSubscriptionStatistics {
   private final List<ProcessDefinitionMessageSubscriptionStatisticsItem> items;
-  private final String endCursor;
+  private final SearchResponsePage page;
 
   public ProcessDefinitionMessageSubscriptionStatisticsImpl(
       final List<ProcessDefinitionMessageSubscriptionStatisticsItem> items,
-      final String endCursor) {
+      final SearchResponsePage page) {
     this.items = items;
-    this.endCursor = endCursor;
+    this.page = page;
   }
 
   @Override
@@ -38,13 +39,13 @@ public class ProcessDefinitionMessageSubscriptionStatisticsImpl
   }
 
   @Override
-  public String getEndCursor() {
-    return endCursor;
+  public SearchResponsePage page() {
+    return page;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(items, endCursor);
+    return Objects.hash(items, page);
   }
 
   @Override
@@ -54,7 +55,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsImpl
     }
     final ProcessDefinitionMessageSubscriptionStatisticsImpl that =
         (ProcessDefinitionMessageSubscriptionStatisticsImpl) o;
-    return Objects.equals(items, that.items) && Objects.equals(endCursor, that.endCursor);
+    return Objects.equals(items, that.items) && Objects.equals(page, that.page);
   }
 
   @Override
@@ -62,9 +63,8 @@ public class ProcessDefinitionMessageSubscriptionStatisticsImpl
     return "ProcessDefinitionMessageSubscriptionStatisticsImpl{"
         + "items="
         + items
-        + ", endCursor='"
-        + endCursor
-        + '\''
+        + ", page="
+        + page
         + '}';
   }
 }

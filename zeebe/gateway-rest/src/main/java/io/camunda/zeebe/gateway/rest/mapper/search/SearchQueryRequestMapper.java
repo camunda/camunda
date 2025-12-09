@@ -605,7 +605,10 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final Either<List<String>, SearchQueryPage> page =
+        request.getPage() == null
+            ? Either.right(null)
+            : Either.right(toSearchQueryPage(request.getPage()));
     final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter,
