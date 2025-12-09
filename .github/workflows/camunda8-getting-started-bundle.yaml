@@ -616,9 +616,9 @@ jobs:
         run: |
           cd test-bundle
           # Verify required components exist
-          echo "Checking c8run folder..."
-          if [ ! -d "c8run" ]; then
-            echo "ERROR: c8run folder not found"
+          echo "Checking c8run-${C8RUN_VERSION} folder..."
+          if [ ! -d "c8run-${C8RUN_VERSION}" ]; then
+            echo "ERROR: c8run-${C8RUN_VERSION} folder not found"
             exit 1
           fi
           
