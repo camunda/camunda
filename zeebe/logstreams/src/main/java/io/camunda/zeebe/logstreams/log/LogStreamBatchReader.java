@@ -56,7 +56,9 @@ public interface LogStreamBatchReader extends Iterator<Batch>, CloseableSilently
    * </code>
    * </pre>
    */
-  interface Batch extends Iterator<LoggedEvent> {
+  interface Batch extends Iterator<LoggedEvent>, Iterable<LoggedEvent> {
+
+    long sourcePosition();
 
     /**
      * Move to the head of the batch. Reads the first event of the batch next. Can be used to read

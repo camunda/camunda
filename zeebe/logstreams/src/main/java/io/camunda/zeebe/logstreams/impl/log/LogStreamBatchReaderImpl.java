@@ -10,12 +10,14 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.IntArrayList;
+import org.jspecify.annotations.NonNull;
 
 public class LogStreamBatchReaderImpl implements LogStreamBatchReader {
 
@@ -105,6 +107,11 @@ public class LogStreamBatchReaderImpl implements LogStreamBatchReader {
     }
 
     @Override
+    public long sourcePosition() {
+      return event.getSourceEventPosition();
+    }
+
+    @Override
     public void head() {
       currentIndex = 0;
     }
@@ -131,6 +138,11 @@ public class LogStreamBatchReaderImpl implements LogStreamBatchReader {
       currentIndex += 1;
 
       return event;
+    }
+
+    @Override
+    public @NonNull Iterator<LoggedEvent> iterator() {
+      return this;
     }
   }
 }

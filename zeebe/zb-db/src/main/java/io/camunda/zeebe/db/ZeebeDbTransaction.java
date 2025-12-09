@@ -8,7 +8,7 @@
 package io.camunda.zeebe.db;
 
 /** Represents an Zeebe DB transaction, which can be committed or on error it can be rolled back. */
-public interface ZeebeDbTransaction {
+public interface ZeebeDbTransaction extends AutoCloseable {
 
   /**
    * Runs the commands like delete, put etc. in the current transaction. Access of different column
@@ -38,4 +38,7 @@ public interface ZeebeDbTransaction {
    * @throws Exception if the underlying database has a non recoverable exception thrown
    */
   void rollback() throws Exception;
+
+  @Override
+  void close();
 }
