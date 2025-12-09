@@ -249,9 +249,9 @@ jobs:
           
           # Create a batch file launcher with proper variable substitution
           $batchContent = @"
-@echo off
-start "" "%~dp0$expectedFolderName\Camunda Modeler.exe"
-"@
+          @echo off
+          start "" "%~dp0$expectedFolderName\Camunda Modeler.exe"
+          "@
           Set-Content -Path "camunda-modeler.bat" -Value $batchContent
           
           Write-Host "Created launcher: camunda-modeler.bat -> $expectedFolderName\Camunda Modeler.exe"
