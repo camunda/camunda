@@ -170,7 +170,9 @@ describe('Filters', () => {
       ),
     );
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
@@ -183,8 +185,8 @@ describe('Filters', () => {
       option: 'Big variable process - Tenant A',
     });
 
-    await waitFor(() =>
-      expect(screen.getByLabelText('Name')).toHaveValue('Big variable process'),
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Big variable process - Tenant A',
     );
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /tenant a/i,
@@ -210,7 +212,7 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
   });
 
   it('should clear process and version field when tenant filter is changed', async () => {
@@ -229,14 +231,16 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
 
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
     );
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
@@ -254,10 +258,8 @@ describe('Filters', () => {
       option: 'Big variable process - Default Tenant',
     });
 
-    await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
-        'Big variable process',
-      ),
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Big variable process - Default Tenant',
     );
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
@@ -273,7 +275,7 @@ describe('Filters', () => {
     );
     await selectTenant({user, option: 'Tenant B'});
 
-    expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('');
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a process version/i);
