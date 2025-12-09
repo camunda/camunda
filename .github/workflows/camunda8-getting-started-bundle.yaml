@@ -158,19 +158,22 @@ jobs:
         run: |
           cd bundle
           c8run_asset="camunda8-run-${C8RUN_VERSION}-${{ matrix.platform.platform_id }}.${{ matrix.platform.c8run_archive_type }}"
+          c8run_folder="c8run-${C8RUN_VERSION}"
           if [[ "${{ matrix.platform.c8run_archive_type }}" == "zip" ]]; then
             unzip "${c8run_asset}" -d c8run_temp
           else
             mkdir c8run_temp
             tar -xzf "${c8run_asset}" -C c8run_temp
           fi
-          # Move contents to c8run folder, handling nested directory structure
+          # Move contents to versioned c8run folder, handling nested directory structure
           # Use rsync to include hidden files
-          mkdir -p c8run
+          mkdir -p "${c8run_folder}"
           if [ -d "c8run_temp/c8run" ]; then
-            rsync -a c8run_temp/c8run/ c8run/
+            rsync -a "c8run_temp/c8run/" "${c8run_folder}/"
+          elif [ -d "c8run_temp/c8run-${C8RUN_VERSION}" ]; then
+            rsync -a "c8run_temp/c8run-${C8RUN_VERSION}/" "${c8run_folder}/"
           else
-            rsync -a c8run_temp/ c8run/
+            rsync -a c8run_temp/ "${c8run_folder}/"
           fi
           rm -rf c8run_temp "${c8run_asset}"
 
@@ -180,16 +183,21 @@ jobs:
         run: |
           cd bundle
           $c8runAsset = "camunda8-run-${env:C8RUN_VERSION}-${{ matrix.platform.platform_id }}.${{ matrix.platform.c8run_archive_type }}"
+          $c8runFolder = "c8run-${env:C8RUN_VERSION}"
           Expand-Archive -Path $c8runAsset -DestinationPath "c8run_temp"
-          New-Item -ItemType Directory -Force -Path "c8run"
+          New-Item -ItemType Directory -Force -Path $c8runFolder
           if (Test-Path "c8run_temp/c8run") {
             # Copy all items including hidden files
-            Copy-Item -Path "c8run_temp/c8run/*" -Destination "c8run/" -Recurse -Force
-            Get-ChildItem -Path "c8run_temp/c8run" -Hidden | Copy-Item -Destination "c8run/" -Recurse -Force
+            Copy-Item -Path "c8run_temp/c8run/*" -Destination "$c8runFolder/" -Recurse -Force
+            Get-ChildItem -Path "c8run_temp/c8run" -Hidden | Copy-Item -Destination "$c8runFolder/" -Recurse -Force
+          } elseif (Test-Path "c8run_temp/c8run-${env:C8RUN_VERSION}") {
+            # Copy all items including hidden files
+            Copy-Item -Path "c8run_temp/c8run-${env:C8RUN_VERSION}/*" -Destination "$c8runFolder/" -Recurse -Force
+            Get-ChildItem -Path "c8run_temp/c8run-${env:C8RUN_VERSION}" -Hidden | Copy-Item -Destination "$c8runFolder/" -Recurse -Force
           } else {
             # Copy all items including hidden files
-            Copy-Item -Path "c8run_temp/*" -Destination "c8run/" -Recurse -Force
-            Get-ChildItem -Path "c8run_temp" -Hidden | Copy-Item -Destination "c8run/" -Recurse -Force
+            Copy-Item -Path "c8run_temp/*" -Destination "$c8runFolder/" -Recurse -Force
+            Get-ChildItem -Path "c8run_temp" -Hidden | Copy-Item -Destination "$c8runFolder/" -Recurse -Force
           }
           Remove-Item -Recurse -Force "c8run_temp"
           Remove-Item -Force $c8runAsset
@@ -239,11 +247,11 @@ jobs:
           
           Write-Host "Modeler extracted to: $expectedFolderName"
           
-          # Create a batch file launcher instead of shortcut (supports relative paths)
+          # Create a batch file launcher with proper variable substitution
           $batchContent = @"
-          @echo off
-          start "" "%~dp0$expectedFolderName\Camunda Modeler.exe"
-          "@
+@echo off
+start "" "%~dp0$expectedFolderName\Camunda Modeler.exe"
+"@
           Set-Content -Path "camunda-modeler.bat" -Value $batchContent
           
           Write-Host "Created launcher: camunda-modeler.bat -> $expectedFolderName\Camunda Modeler.exe"
@@ -287,10 +295,10 @@ jobs:
       - name: Create starter script (Unix)
         if: matrix.platform.script_extension == 'sh'
         run: |
-          cat > bundle/camunda-start.sh << 'EOF'
+          cat > bundle/camunda-start.sh << EOF
           #!/bin/bash
 
-          cd c8run 
+          cd c8run-${C8RUN_VERSION}
           ./c8run start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success" 
           cd ..
           EOF
@@ -299,10 +307,10 @@ jobs:
       - name: Create stop script (Unix)
         if: matrix.platform.script_extension == 'sh'
         run: |
-          cat > bundle/camunda-stop.sh << 'EOF'
+          cat > bundle/camunda-stop.sh << EOF
           #!/bin/bash
 
-          cd c8run
+          cd c8run-${C8RUN_VERSION}
           ./c8run stop
           cd ..
           EOF
@@ -313,12 +321,12 @@ jobs:
         shell: pwsh
         run: |
           $scriptContent = @"
-          @echo off
+@echo off
 
-          cd c8run
-          .\c8run.exe start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
-          cd ..
-          "@
+cd c8run-${env:C8RUN_VERSION}
+.\c8run.exe start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
+cd ..
+"@
           Set-Content -Path "bundle/camunda-start.bat" -Value $scriptContent
 
       - name: Create stop script (Windows)
@@ -326,12 +334,12 @@ jobs:
         shell: pwsh
         run: |
           $scriptContent = @"
-          @echo off
+@echo off
 
-          cd c8run
-          .\c8run.exe stop
-          cd ..
-          "@
+cd c8run-${env:C8RUN_VERSION}
+.\c8run.exe stop
+cd ..
+"@
           Set-Content -Path "bundle/camunda-stop.bat" -Value $scriptContent
 
       - name: List bundle contents
