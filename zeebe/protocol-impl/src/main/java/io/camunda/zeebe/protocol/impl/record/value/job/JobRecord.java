@@ -75,24 +75,21 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue TAGS = new StringValue("tags");
   private static final StringValue IS_JOB_TO_USERTASK_MIGRATION_KEY =
       new StringValue("isUserTaskMigration");
-
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
-
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
   private final LongProperty timeoutProp = new LongProperty(TIMEOUT_KEY, -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES_KEY, -1);
   private final LongProperty retryBackoffProp = new LongProperty(RETRY_BACKOFF_KEY, 0);
   private final LongProperty recurringTimeProp = new LongProperty(RECURRING_TIME_KEY, -1);
-
   private final PackedProperty customHeadersProp =
       new PackedProperty(CUSTOM_HEADERS_KEY, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES_KEY);
-
   private final StringProperty errorMessageProp =
       new StringProperty(ERROR_MESSAGE_KEY, EMPTY_STRING);
   private final StringProperty errorCodeProp = new StringProperty(ERROR_CODE_KEY, EMPTY_STRING);
-
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final StringProperty bpmnProcessIdProp =
@@ -120,6 +117,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>(TAGS, StringValue::new);
   private final BooleanProperty isJobToUserTaskMigrationProp =
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public JobRecord() {
     super(24);
@@ -146,7 +145,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(changedAttributesProp)
         .declareProperty(resultProp)
         .declareProperty(tagsProp)
-        .declareProperty(isJobToUserTaskMigrationProp);
+        .declareProperty(isJobToUserTaskMigrationProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -175,6 +175,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     isJobToUserTaskMigrationProp.setValue(record.isJobToUserTaskMigration());
 
     setTags(record.getTags());
+    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
   }
 
   public void wrap(final JobRecord record) {
@@ -343,6 +344,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public boolean isJobToUserTaskMigration() {
     return isJobToUserTaskMigrationProp.getValue();
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
   }
 
   public JobRecord setProcessDefinitionVersion(final int version) {

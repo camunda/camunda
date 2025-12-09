@@ -177,7 +177,8 @@ public final class BpmnUserTaskBehavior {
             .setTenantId(context.getTenantId())
             .setPriority(userTaskProperties.getPriority())
             .setCreationTimestamp(clock.millis())
-            .setTags(getTagsFromProcessInstance(context));
+            .setTags(getTagsFromProcessInstance(context))
+            .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;

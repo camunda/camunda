@@ -15,12 +15,15 @@ import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -47,9 +50,11 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
-          .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
+          .addMixIn(DecisionEvaluationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(JobRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
           .addMixIn(ProcessInstanceRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(
@@ -59,6 +64,7 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(
               ProcessInstanceModificationTerminateInstructionValue.class,
               TerminateInstructionsMixin.class)
+          .addMixIn(UserTaskRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.

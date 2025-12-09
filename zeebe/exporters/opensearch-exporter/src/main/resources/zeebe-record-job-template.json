@@ -141,6 +141,9 @@
                   "type": "boolean"
                 }
               }
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
             }
           }
         }
