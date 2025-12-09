@@ -46,7 +46,10 @@ public class RejectLargeDeploymentTest {
     }
 
     // then -- The rejection can be exported
-    assertThat(RecordingExporter.deploymentRecords().withRecordType(RecordType.COMMAND_REJECTION))
-        .isNotEmpty();
+    assertThat(
+            RecordingExporter.deploymentRecords()
+                .withRecordType(RecordType.COMMAND_REJECTION)
+                .exists())
+        .isTrue();
   }
 }
