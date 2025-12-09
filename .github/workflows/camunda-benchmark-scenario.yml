@@ -109,7 +109,7 @@ jobs:
         location: ${{inputs.cluster-region}}
     - name: Launch benchmark image
       run: |
-        cat <<EOF | kubectl apply -f -
+        cat <<EOF | kubectl -n ${{inputs.name}} apply -f -
         apiVersion: batch/v1
         kind: Job
         metadata:
@@ -132,7 +132,7 @@ jobs:
               restartPolicy: Never
         EOF
     - name: Wait for benchmark job
-      run: kubectl wait --for=condition=complete job/benchmark --timeout=600s
+      run: kubectl wait --for=condition=complete job/benchmark -n ${{inputs.name}} --timeout=600s
     - name: Collect Benchmark Output
       id: collect-output
       run: |
