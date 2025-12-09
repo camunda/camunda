@@ -298,43 +298,7 @@ public final class SyncStreamProcessor {
     }
   }
 
-  ProcessingResult processEntry(
-      final ProcessingResultBuilder resultBuilder, final LoggedEvent entry) {
-    entry.readMetadata(recordMetadata);
-    if (recordMetadata.getRecordType() != RecordType.COMMAND) {
-      return resultBuilder.build();
-    }
-
-    final var value = recordValues.readRecordValue(entry, recordMetadata.getValueType());
-    final var record = new TypedRecordImpl(partitionId);
-    record.wrap(entry, recordMetadata, value);
-
-    return processRecord(resultBuilder, record);
-  }
-
-  void processFollowUp(
-      final ProcessingResultBuilder resultBuilder, final ProcessingResult followUp) {
-    for (final var entry : followUp.getRecordBatch().entries()) {
-      final var record =
-          new UnwrittenRecord(
-              entry.key(), partitionId, entry.recordValue(), entry.recordMetadata());
-
-      processRecord(resultBuilder, record);
-    }
-  }
-
-  ProcessingResult processRecord(
-      final ProcessingResultBuilder resultBuilder, final TypedRecord<?> record) {
-    final var processor =
-        processors.stream()
-            .filter(candidate -> candidate.accepts(record.getValueType()))
-            .findFirst()
-            .orElseThrow(() -> NoSuchProcessorException.forRecord(record));
-
-    return processor.process(record, resultBuilder);
-  }
-
-  interface SyncTransactionContext extends TransactionContext, AutoCloseable {
+  private interface SyncTransactionContext extends TransactionContext, AutoCloseable {
     static SyncTransactionContext of(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
       zeebeDb.createContext();
       return null;
@@ -344,4 +308,3 @@ public final class SyncStreamProcessor {
     void close();
   }
 }
-  private interface SyncTransactionContext extends TransactionContext, AutoCloseable {
