@@ -23,6 +23,7 @@ import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscri
 import io.camunda.client.api.search.response.OffsetResponse;
 import io.camunda.client.api.search.response.OffsetResponsePage;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
@@ -32,6 +33,7 @@ import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryRe
 import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
 import java.util.Collections;
@@ -110,6 +112,17 @@ public class StatisticsResponseMapper {
     final List<ProcessDefinitionInstanceStatistics> items =
         toSearchResponseInstances(
             response.getItems(), ProcessDefinitionInstanceStatisticsImpl::new);
+
+    return new OffsetResponseImpl<>(items, page);
+  }
+
+  public static OffsetResponse<ProcessDefinitionInstanceVersionStatistics>
+      toProcessDefinitionInstanceVersionStatisticsResponse(
+          final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
+    final OffsetResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ProcessDefinitionInstanceVersionStatistics> items =
+        toSearchResponseInstances(
+            response.getItems(), ProcessDefinitionInstanceVersionStatisticsImpl::new);
 
     return new OffsetResponseImpl<>(items, page);
   }

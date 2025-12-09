@@ -7,10 +7,11 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.DEFAULT_TENANT_ID;
 import static io.camunda.it.util.TestHelper.cancelInstance;
 import static io.camunda.it.util.TestHelper.completeJob;
 import static io.camunda.it.util.TestHelper.createTenant;
-import static io.camunda.it.util.TestHelper.deployResourceForTenant;
+import static io.camunda.it.util.TestHelper.deployServiceTaskProcess;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
@@ -29,8 +30,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest()
 public class ProcessDefinitionInstanceStatisticsIT {
 
-  private static final String DEFAULT_TENANT_ID = "<default>";
   private static final String TENANT_ID_1 = "tenant1";
   private static final String USERNAME_1 = "user1";
 
@@ -101,24 +99,6 @@ public class ProcessDefinitionInstanceStatisticsIT {
     }
   }
 
-  private static DeploymentEvent deployServiceTaskProcess(
-      final String bpmnProcessId, final String name, final String retries, final String tenantId) {
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .name(name)
-            .startEvent("start")
-            .serviceTask("serviceTask", t -> t.zeebeJobType("type").zeebeJobRetries(retries))
-            .endEvent("end")
-            .done();
-
-    return deployResourceForTenant(camundaClient, model, "service_task_process.bpmn", tenantId);
-  }
-
-  private static DeploymentEvent deployServiceTaskProcess(
-      final String bpmnProcessId, final String name, final String retries) {
-    return deployServiceTaskProcess(bpmnProcessId, name, retries, DEFAULT_TENANT_ID);
-  }
-
   private static ProcessInstanceEvent startInstance(final long processDefinitionKey) {
     return startProcessInstance(camundaClient, processDefinitionKey);
   }
@@ -130,7 +110,7 @@ public class ProcessDefinitionInstanceStatisticsIT {
   @Test
   void shouldReturnEmptyStatisticsWhenNoActiveInstances() {
     // given
-    deployServiceTaskProcess("no_instances_proc", "No Instances", "3");
+    deployServiceTaskProcess(camundaClient, "no_instances_proc", "No Instances", "3");
 
     // when
     final var result = camundaClient.newProcessDefinitionInstanceStatisticsRequest().send().join();
@@ -146,7 +126,8 @@ public class ProcessDefinitionInstanceStatisticsIT {
   @Test
   void shouldReturnSingleProcessDefinitionWithOnlyNonIncidentInstances() {
     // given
-    final var deployment = deployServiceTaskProcess("stats_proc_1", "Stats Proc 1", "3");
+    final var deployment =
+        deployServiceTaskProcess(camundaClient, "stats_proc_1", "Stats Proc 1", "3");
     final var processDefinitionKey = deployment.getProcesses().getFirst().getProcessDefinitionKey();
 
     startInstance(processDefinitionKey);
@@ -187,7 +168,8 @@ public class ProcessDefinitionInstanceStatisticsIT {
   @Test
   void shouldReturnStatisticsIgnoringCompletedAndTerminatedInstances() {
     // given
-    final var deployment = deployServiceTaskProcess("mixed_proc", "Mixed Process", "3");
+    final var deployment =
+        deployServiceTaskProcess(camundaClient, "mixed_proc", "Mixed Process", "3");
     final var processDefinitionKey = deployment.getProcesses().getFirst().getProcessDefinitionKey();
     // 1. Start ACTIVE instances
     startInstance(processDefinitionKey);
@@ -265,7 +247,8 @@ public class ProcessDefinitionInstanceStatisticsIT {
   void shouldReturnStatisticsWithIncidentInstances() {
     // given
     final var deployment =
-        deployServiceTaskProcess("failing_service_proc", "Failing Service Process", "error");
+        deployServiceTaskProcess(
+            camundaClient, "failing_service_proc", "Failing Service Process", "error");
     final var processDefinitionKey = deployment.getProcesses().getFirst().getProcessDefinitionKey();
 
     startInstance(processDefinitionKey);
@@ -309,7 +292,8 @@ public class ProcessDefinitionInstanceStatisticsIT {
   void shouldReturnStatisticsWithIncidentAndNonIncidentInstances() {
     // given
     final var deployment =
-        deployServiceTaskProcess("mixed_incident_proc", "Mixed Incident Process", "error");
+        deployServiceTaskProcess(
+            camundaClient, "mixed_incident_proc", "Mixed Incident Process", "error");
     final var processDefinitionKey = deployment.getProcesses().getFirst().getProcessDefinitionKey();
 
     // Start instances that will fail and have incidents
@@ -318,7 +302,8 @@ public class ProcessDefinitionInstanceStatisticsIT {
 
     // Start instances that will succeed and not have incidents
     final var successfulDeployment =
-        deployServiceTaskProcess("mixed_incident_proc", "Mixed Incident Process", "3");
+        deployServiceTaskProcess(
+            camundaClient, "mixed_incident_proc", "Mixed Incident Process", "3");
     final var successfulProcessDefinitionKey =
         successfulDeployment.getProcesses().getFirst().getProcessDefinitionKey();
 
@@ -374,10 +359,10 @@ public class ProcessDefinitionInstanceStatisticsIT {
     final String processName = "Multi-Tenant Process";
 
     final DeploymentEvent defaultDeployment =
-        deployServiceTaskProcess(bpmnProcessId, processName, "3", DEFAULT_TENANT_ID);
+        deployServiceTaskProcess(camundaClient, bpmnProcessId, processName, "3", DEFAULT_TENANT_ID);
 
     final DeploymentEvent guestDeployment =
-        deployServiceTaskProcess(bpmnProcessId, processName, "3", TENANT_ID_1);
+        deployServiceTaskProcess(camundaClient, bpmnProcessId, processName, "3", TENANT_ID_1);
 
     final long defaultProcDefKey =
         defaultDeployment.getProcesses().getFirst().getProcessDefinitionKey();
@@ -461,12 +446,12 @@ public class ProcessDefinitionInstanceStatisticsIT {
     final String v2Name = "Multi-Version Process v2";
 
     // Deploy V1
-    final var deploymentV1 = deployServiceTaskProcess(bpmnProcessId, v1Name, "3");
+    final var deploymentV1 = deployServiceTaskProcess(camundaClient, bpmnProcessId, v1Name, "3");
     final long processDefinitionKeyV1 =
         deploymentV1.getProcesses().getFirst().getProcessDefinitionKey();
 
     // Deploy V2 (same BPMN process id, different name → higher version)
-    final var deploymentV2 = deployServiceTaskProcess(bpmnProcessId, v2Name, "3");
+    final var deploymentV2 = deployServiceTaskProcess(camundaClient, bpmnProcessId, v2Name, "3");
     final long processDefinitionKeyV2 =
         deploymentV2.getProcesses().getFirst().getProcessDefinitionKey();
 
@@ -525,13 +510,13 @@ public class ProcessDefinitionInstanceStatisticsIT {
     //
     // given: three process definitions with predictable counts of INCIDENT instances
     //
-    final var depA = deployServiceTaskProcess("sort_proc_a", "Sort A", "3");
+    final var depA = deployServiceTaskProcess(camundaClient, "sort_proc_a", "Sort A", "3");
     final var keyA = depA.getProcesses().getFirst().getProcessDefinitionKey();
 
-    final var depB = deployServiceTaskProcess("sort_proc_b", "Sort B", "3");
+    final var depB = deployServiceTaskProcess(camundaClient, "sort_proc_b", "Sort B", "3");
     final var keyB = depB.getProcesses().getFirst().getProcessDefinitionKey();
 
-    final var depC = deployServiceTaskProcess("sort_proc_c", "Sort C", "error");
+    final var depC = deployServiceTaskProcess(camundaClient, "sort_proc_c", "Sort C", "error");
     final var keyC = depC.getProcesses().getFirst().getProcessDefinitionKey();
 
     // A: 3 non-incident
@@ -542,7 +527,7 @@ public class ProcessDefinitionInstanceStatisticsIT {
     // B: 1 non-incident + 2 incident
     startInstance(keyB);
 
-    final var depBFail = deployServiceTaskProcess("sort_proc_b", "Sort B", "error");
+    final var depBFail = deployServiceTaskProcess(camundaClient, "sort_proc_b", "Sort B", "error");
     final var keyBFail = depBFail.getProcesses().getFirst().getProcessDefinitionKey();
     startInstance(keyBFail);
     startInstance(keyBFail);
@@ -610,18 +595,22 @@ public class ProcessDefinitionInstanceStatisticsIT {
 
     // --- Default tenant: deploy V1 and V2 ---
     final var defaultDepV1 =
-        deployServiceTaskProcess(bpmnProcessId, defaultV1Name, "3", DEFAULT_TENANT_ID);
+        deployServiceTaskProcess(
+            camundaClient, bpmnProcessId, defaultV1Name, "3", DEFAULT_TENANT_ID);
     final long defaultKeyV1 = defaultDepV1.getProcesses().getFirst().getProcessDefinitionKey();
 
     final var defaultDepV2 =
-        deployServiceTaskProcess(bpmnProcessId, defaultV2Name, "3", DEFAULT_TENANT_ID);
+        deployServiceTaskProcess(
+            camundaClient, bpmnProcessId, defaultV2Name, "3", DEFAULT_TENANT_ID);
     final long defaultKeyV2 = defaultDepV2.getProcesses().getFirst().getProcessDefinitionKey();
 
     // --- Tenant1: deploy V1 and V2 ---
-    final var tenantDepV1 = deployServiceTaskProcess(bpmnProcessId, tenantV1Name, "3", TENANT_ID_1);
+    final var tenantDepV1 =
+        deployServiceTaskProcess(camundaClient, bpmnProcessId, tenantV1Name, "3", TENANT_ID_1);
     final long tenantKeyV1 = tenantDepV1.getProcesses().getFirst().getProcessDefinitionKey();
 
-    final var tenantDepV2 = deployServiceTaskProcess(bpmnProcessId, tenantV2Name, "3", TENANT_ID_1);
+    final var tenantDepV2 =
+        deployServiceTaskProcess(camundaClient, bpmnProcessId, tenantV2Name, "3", TENANT_ID_1);
     final long tenantKeyV2 = tenantDepV2.getProcesses().getFirst().getProcessDefinitionKey();
 
     // --- Start instances in default tenant (2 total: 1 on each version) ---
@@ -727,15 +716,18 @@ public class ProcessDefinitionInstanceStatisticsIT {
 
     // --- Default tenant: deploy V1 and V2 ---
     final var defaultDepV1 =
-        deployServiceTaskProcess(bpmnProcessId, defaultV1Name, "3", DEFAULT_TENANT_ID);
+        deployServiceTaskProcess(
+            camundaClient, bpmnProcessId, defaultV1Name, "3", DEFAULT_TENANT_ID);
     final long defaultKeyV1 = defaultDepV1.getProcesses().getFirst().getProcessDefinitionKey();
 
     final var defaultDepV2 =
-        deployServiceTaskProcess(bpmnProcessId, defaultV2Name, "3", DEFAULT_TENANT_ID);
+        deployServiceTaskProcess(
+            camundaClient, bpmnProcessId, defaultV2Name, "3", DEFAULT_TENANT_ID);
     final long defaultKeyV2 = defaultDepV2.getProcesses().getFirst().getProcessDefinitionKey();
 
     // --- Tenant1: deploy ONLY V1 ---
-    final var tenantDepV1 = deployServiceTaskProcess(bpmnProcessId, tenantV1Name, "3", TENANT_ID_1);
+    final var tenantDepV1 =
+        deployServiceTaskProcess(camundaClient, bpmnProcessId, tenantV1Name, "3", TENANT_ID_1);
     final long tenantKeyV1 = tenantDepV1.getProcesses().getFirst().getProcessDefinitionKey();
 
     // --- Start instances in default tenant ---

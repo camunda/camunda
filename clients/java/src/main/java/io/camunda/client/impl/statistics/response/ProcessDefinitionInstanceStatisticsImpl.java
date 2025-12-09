@@ -39,21 +39,6 @@ public class ProcessDefinitionInstanceStatisticsImpl
     activeInstancesWithIncidentCount = result.getActiveInstancesWithIncidentCount();
   }
 
-  public ProcessDefinitionInstanceStatisticsImpl(
-      final String processDefinitionId,
-      final String tenantId,
-      final String latestProcessDefinitionName,
-      final Boolean hasMultipleVersions,
-      final Long activeInstancesWithoutIncidentCount,
-      final Long activeInstancesWithIncidentCount) {
-    this.processDefinitionId = processDefinitionId;
-    this.tenantId = tenantId;
-    this.latestProcessDefinitionName = latestProcessDefinitionName;
-    this.hasMultipleVersions = hasMultipleVersions;
-    this.activeInstancesWithoutIncidentCount = activeInstancesWithoutIncidentCount;
-    this.activeInstancesWithIncidentCount = activeInstancesWithIncidentCount;
-  }
-
   @Override
   public String getProcessDefinitionId() {
     return processDefinitionId;

@@ -84,6 +84,7 @@ import org.awaitility.Awaitility;
 public final class TestHelper {
 
   public static final String VAR_TEST_SCOPE_ID = "testScopeId";
+  public static final String DEFAULT_TENANT_ID = "<default>";
 
   public static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
@@ -793,6 +794,31 @@ public final class TestHelper {
         startProcessInstance(camundaClient, bpmnProcessId).getProcessInstanceKey();
     waitForDecisionToBeEvaluated(camundaClient, processInstanceKey, 1);
     return deployment;
+  }
+
+  public static DeploymentEvent deployServiceTaskProcess(
+      final CamundaClient camundaClient,
+      final String bpmnProcessId,
+      final String name,
+      final String retries) {
+    return deployServiceTaskProcess(camundaClient, bpmnProcessId, name, retries, "<default>");
+  }
+
+  public static DeploymentEvent deployServiceTaskProcess(
+      final CamundaClient camundaClient,
+      final String bpmnProcessId,
+      final String name,
+      final String retries,
+      final String tenantId) {
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .name(name)
+            .startEvent("start")
+            .serviceTask("serviceTask", t -> t.zeebeJobType("type").zeebeJobRetries(retries))
+            .endEvent("end")
+            .done();
+
+    return deployResourceForTenant(camundaClient, model, "service_task_process.bpmn", tenantId);
   }
 
   public static void waitForDecisionsToBeDeployed(

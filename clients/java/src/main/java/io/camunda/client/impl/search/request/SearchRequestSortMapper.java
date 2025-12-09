@@ -140,6 +140,14 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<SearchRequestSort>
+      fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(
+          final List<ProcessDefinitionInstanceVersionStatisticsQuerySortRequest> requests) {
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
+  }
+
   public static List<ProcessDefinitionSearchQuerySortRequest>
       toProcessDefinitionSearchQuerySortRequest(final List<SearchRequestSort> requests) {
     return requests.stream()

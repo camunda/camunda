@@ -166,6 +166,7 @@ import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
@@ -3035,7 +3036,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   AuditLogSearchRequest newAuditLogSearchRequest();
 
   /**
-   * Executes a search request to query process definition instance statistics.
+   * Get statistics about process instances, grouped by process definition and tenant.
    *
    * <pre>
    *
@@ -3049,4 +3050,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process definition instance statistics request
    */
   ProcessDefinitionInstanceStatisticsRequest newProcessDefinitionInstanceStatisticsRequest();
+
+  /**
+   * Get statistics about process instances, grouped by version for a given process definition.
+   *
+   * <pre>
+   *    camundaClient
+   *    .newProcessDefinitionVersionInstanceStatisticsRequest(processDefinitionId)
+   *    .filter((f) -> f.tenantId("tenantId"))
+   *    .sort((s) -> s.version.asc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   *  </pre>
+   *
+   * @param processDefinitionId the id of the process definition
+   * @return a builder for the process definition version instance statistics request
+   */
+  ProcessDefinitionInstanceVersionStatisticsRequest
+      newProcessDefinitionInstanceVersionStatisticsRequest(String processDefinitionId);
 }

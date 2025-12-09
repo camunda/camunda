@@ -15,16 +15,38 @@
  */
 package io.camunda.client.api.statistics.request;
 
+import io.camunda.client.api.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceStatisticsSort;
+import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceVersionStatisticsSort;
+import io.camunda.client.impl.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.sort.ProcessDefinitionInstanceStatisticsSortImpl;
+import io.camunda.client.impl.statistics.sort.ProcessDefinitionInstanceVersionStatisticsSortImpl;
 import java.util.function.Consumer;
 
 public final class StatisticsRequestBuilders {
+
+  public static ProcessDefinitionInstanceVersionStatisticsFilter
+      processDefinitionInstanceVersionStatisticsFilter(
+          final Consumer<ProcessDefinitionInstanceVersionStatisticsFilter> fn) {
+    final ProcessDefinitionInstanceVersionStatisticsFilter filter =
+        new ProcessDefinitionInstanceVersionStatisticsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
 
   public static ProcessDefinitionInstanceStatisticsSort processDefinitionInstanceStatisticsSort(
       final Consumer<ProcessDefinitionInstanceStatisticsSort> fn) {
     final ProcessDefinitionInstanceStatisticsSort sort =
         new ProcessDefinitionInstanceStatisticsSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsSort
+      processDefinitionInstanceVersionStatisticsSort(
+          final Consumer<ProcessDefinitionInstanceVersionStatisticsSort> fn) {
+    final ProcessDefinitionInstanceVersionStatisticsSort sort =
+        new ProcessDefinitionInstanceVersionStatisticsSortImpl();
     fn.accept(sort);
     return sort;
   }

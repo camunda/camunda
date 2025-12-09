@@ -90,7 +90,7 @@ public class ProcessDefinitionInstanceStatisticsRequestImpl
   public ProcessDefinitionInstanceStatisticsRequest sort(
       final ProcessDefinitionInstanceStatisticsSort value) {
     request.setSort(
-        StatisticsRequestSortMapper.toProcessDefinitionInstanceVersionStatisticsSortRequests(
+        StatisticsRequestSortMapper.toProcessDefinitionInstanceStatisticsSortRequests(
             provideSearchRequestProperty(value)));
     return this;
   }
