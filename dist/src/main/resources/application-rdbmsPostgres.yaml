@@ -82,7 +82,7 @@ camunda:
       rdbms:
         url: jdbc:postgresql:camunda
         username: camunda
-        password: demo
+        password: camunda
         flushInterval: PT0.5S
         queueSize: 1000
         history:

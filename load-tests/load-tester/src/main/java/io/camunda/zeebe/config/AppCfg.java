@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.config;
 
+import com.typesafe.config.Optional;
+
 public class AppCfg {
 
   private String brokerUrl;
@@ -14,6 +16,7 @@ public class AppCfg {
   private boolean preferRest;
   private int monitoringPort;
   private StarterCfg starter;
+  @Optional private BenchmarkCfg benchmark;
   private WorkerCfg worker;
   private AuthCfg auth;
 
@@ -39,6 +42,14 @@ public class AppCfg {
 
   public void setPreferRest(final boolean preferRest) {
     this.preferRest = preferRest;
+  }
+
+  public BenchmarkCfg getBenchmark() {
+    return benchmark;
+  }
+
+  public void setBenchmark(final BenchmarkCfg benchmark) {
+    this.benchmark = benchmark;
   }
 
   public StarterCfg getStarter() {

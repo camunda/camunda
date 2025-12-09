@@ -127,6 +127,10 @@
       <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -205,6 +209,29 @@
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.Worker</mainClass>
+              </container>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>benchmark</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.google.cloud.tools</groupId>
+            <artifactId>jib-maven-plugin</artifactId>
+            <version>${plugin.version.jib}</version>
+            <configuration>
+              <from>
+                <image>eclipse-temurin:21</image>
+              </from>
+              <to>
+                <image>gcr.io/zeebe-io/benchmark:SNAPSHOT</image>
+              </to>
+              <container>
+                <mainClass>io.camunda.zeebe.Benchmark</mainClass>
               </container>
             </configuration>
           </plugin>

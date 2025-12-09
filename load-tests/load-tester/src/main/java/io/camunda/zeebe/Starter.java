@@ -7,26 +7,32 @@
  */
 package io.camunda.zeebe;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static io.camunda.zeebe.util.ProcessInstanceUtil.deserializeVariables;
+import static io.camunda.zeebe.util.ProcessInstanceUtil.startInstance;
+import static io.camunda.zeebe.util.ProcessInstanceUtil.startInstanceByMessagePublishing;
+
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
+import io.camunda.zeebe.util.ProcessInstanceUtil;
+import io.camunda.zeebe.util.ProcessUtil;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -41,9 +47,6 @@ public class Starter extends App {
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
-  private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
-      new TypeReference<>() {};
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final StarterCfg starterCfg;
 
   Starter(final AppCfg config) {
@@ -93,6 +96,65 @@ public class Starter extends App {
     executorService.shutdown();
   }
 
+  private void runStarter(
+      final StarterCfg starterCfg,
+      final String processId,
+      final BlockingQueue<Future<?>> requestFutures,
+      final CamundaClient client,
+      final String variables,
+      final BooleanSupplier shouldContinue,
+      final CountDownLatch countDownLatch) {
+    if (shouldContinue.getAsBoolean()) {
+      try {
+        if (starterCfg.isStartViaMessage()) {
+          requestFutures.put(
+              client
+                  .newPublishMessageCommand()
+                  .messageName(starterCfg.getMsgName())
+                  .correlationKey(UUID.randomUUID().toString())
+                  .variables(variables)
+                  .timeToLive(Duration.ZERO)
+                  .send());
+        } else {
+          startViaCommand(starterCfg, processId, requestFutures, client, variables);
+        }
+
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.error("Error on creating new process instance", e);
+      }
+    } else {
+      countDownLatch.countDown();
+    }
+  }
+
+  private static void startViaCommand(
+      final StarterCfg starterCfg,
+      final String processId,
+      final BlockingQueue<Future<?>> requestFutures,
+      final CamundaClient client,
+      final String variables)
+      throws InterruptedException {
+    if (starterCfg.isWithResults()) {
+      requestFutures.put(
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .variables(variables)
+              .withResult()
+              .requestTimeout(starterCfg.getWithResultsTimeout())
+              .send());
+    } else {
+      requestFutures.put(
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .variables(variables)
+              .send());
+    }
+  }
+
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
       final ScheduledExecutorService executorService,
       final CountDownLatch countDownLatch,
@@ -122,10 +184,12 @@ public class Starter extends App {
 
             final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
-              requestFuture = startInstanceByMessagePublishing(client, vars);
+              requestFuture =
+                  startInstanceByMessagePublishing(client, vars, starterCfg.getMsgName());
             } else if (starterCfg.isWithResults()) {
               requestFuture =
-                  startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), vars);
+                  ProcessInstanceUtil.startInstanceWithAwaitingResult(
+                      client, starterCfg.getProcessId(), vars, starterCfg.getWithResultsTimeout());
             } else {
               requestFuture = startInstance(client, starterCfg.getProcessId(), vars);
             }
@@ -151,84 +215,19 @@ public class Starter extends App {
         TimeUnit.NANOSECONDS);
   }
 
-  private static CompletionStage<?> startInstance(
-      final CamundaClient client, final String processId, final HashMap<String, Object> variables) {
-    return client
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .variables(variables)
-        .send();
-  }
-
-  private CompletionStage<?> startInstanceWithAwaitingResult(
-      final CamundaClient client, final String processId, final HashMap<String, Object> variables) {
-    return client
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .variables(variables)
-        .withResult()
-        .requestTimeout(starterCfg.getWithResultsTimeout())
-        .send();
-  }
-
-  private CompletionStage<?> startInstanceByMessagePublishing(
-      final CamundaClient client, final Map<String, Object> variables) {
-    return client
-        .newPublishMessageCommand()
-        .messageName(starterCfg.getMsgName())
-        .correlationKey(UUID.randomUUID().toString())
-        .variables(variables)
-        .timeToLive(Duration.ZERO)
-        .send();
-  }
-
-  private static HashMap<String, Object> deserializeVariables(final String variablesString) {
-    final HashMap<String, Object> variables;
-    try {
-      variables = OBJECT_MAPPER.readValue(variablesString, VARIABLES_TYPE_REF);
-    } catch (final JsonProcessingException e) {
-      LOG.error("Failed to parse variables '{}'.", variablesString, e);
-      throw new RuntimeException(e);
-    }
-    return variables;
-  }
-
   private CamundaClient createCamundaClient() {
     return newClientBuilder().numJobWorkerExecutionThreads(0).build();
   }
 
   private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {
-    final var deployCmd = constructDeploymentCommand(client, starterCfg);
+    final List<String> bpmnXmlPaths = new ArrayList<>();
 
-    while (true) {
-      try {
-        deployCmd.send().join();
-        break;
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
-        try {
-          Thread.sleep(200);
-        } catch (final InterruptedException ex) {
-          // ignore
-        }
-      }
+    bpmnXmlPaths.add(starterCfg.getBpmnXmlPath());
+    if (starterCfg.getExtraBpmnModels() != null) {
+      bpmnXmlPaths.addAll(starterCfg.getExtraBpmnModels());
     }
-  }
 
-  private static DeployResourceCommandStep2 constructDeploymentCommand(
-      final CamundaClient client, final StarterCfg starterCfg) {
-    final var deployCmd =
-        client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
-
-    final var extraBpmnModels = starterCfg.getExtraBpmnModels();
-    if (extraBpmnModels != null) {
-      for (final var model : extraBpmnModels) {
-        deployCmd.addResourceFromClasspath(model);
-      }
-    }
-    return deployCmd;
+    ProcessUtil.deployProcess(client, bpmnXmlPaths);
   }
 
   private BooleanSupplier createContinuationCondition(final StarterCfg starterCfg) {
