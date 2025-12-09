@@ -109,12 +109,28 @@ jobs:
         location: ${{inputs.cluster-region}}
     - name: Launch benchmark image
       run: |
-        kubectl create job benchmark \
-          --image=ghcr.io/zeebe-io/benchmark:${{inputs.image-tag}} \
-          --env="JDK_JAVA_OPTIONS=-Dconfig.override_with_env_vars=true -Dapp.preferRest=true" \
-          --env="ZEEBE_GRPC_ADDRESS=http://camunda-gateway:26500" \
-          --env="ZEEBE_REST_ADDRESS=http://camunda-gateway:8080" \
-          --env="BENCHMARK_NAME=${{ inputs.scenario-name }}"
+        cat <<EOF | kubectl apply -f -
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: benchmark
+        spec:
+          template:
+            spec:
+              containers:
+              - name: benchmark
+                image: ghcr.io/zeebe-io/benchmark:${{inputs.image-tag}}
+                env:
+                - name: JDK_JAVA_OPTIONS
+                  value: "-Dconfig.override_with_env_vars=true -Dapp.preferRest=true"
+                - name: ZEEBE_GRPC_ADDRESS
+                  value: "http://camunda-gateway:26500"
+                - name: ZEEBE_REST_ADDRESS
+                  value: "http://camunda-gateway:8080"
+                - name: BENCHMARK_NAME
+                  value: "${{ inputs.scenario-name }}"
+              restartPolicy: Never
+        EOF
     - name: Collect Benchmark Output
       id: collect-output
       run: |
@@ -158,4 +174,3 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
