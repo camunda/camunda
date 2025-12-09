@@ -261,7 +261,8 @@ test.describe.serial('Test process instance migrate API', () => {
 });
 
 /* eslint-disable playwright/expect-expect */
-test.describe.serial('Test process instance migrate API for AdHoc Subprocess', () => {
+test.describe
+  .serial('Test process instance migrate API for AdHoc Subprocess', () => {
   const instanceKeys: string[] = [];
 
   test.beforeAll(async () => {
