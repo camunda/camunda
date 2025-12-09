@@ -25,14 +25,12 @@ import io.camunda.exporter.CamundaExporter;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
-import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -58,19 +56,22 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
     standaloneBroker =
         new TestStandaloneBroker()
-            .withSecurityConfig(
-                cfg -> {
-                  cfg.getAuthentication().setUnprotectedApi(true);
-                  cfg.getAuthorizations().setEnabled(false);
-                  final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
-                  cfg.getInitialization().setUsers(List.of(user));
-                })
             .withAdditionalProperties(
                 Map.of(
-                    "zeebe.log.level", "ERROR",
-                    "atomix.log.level", "ERROR",
-                    "zeebe.clock.controlled", "true",
-                    "zeebe.broker.gateway.enable", "true"));
+                    "zeebe.log.level",
+                    "ERROR",
+                    "atomix.log.level",
+                    "ERROR",
+                    "camunda.system.clock-controlled",
+                    "true",
+                    "zeebe.broker.gateway.enable",
+                    "true"))
+            // Enable basic auth so that consolidated-auth triggers the spring security registration
+            // so that they don't get auto-configured by Spring as it hides the actuator endpoints
+            // behind authentication.
+            .withBasicAuth()
+            .withUnauthenticatedAccess()
+            .withAuthorizationsDisabled();
   }
 
   @Override
@@ -247,7 +248,8 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public void setClock(final Instant pinAt) throws IOException, InterruptedException {
     final ClockActuatorClient clockClient =
-        new ClockActuatorClient(standaloneBroker.address(TestZeebePort.MONITORING));
+        new ClockActuatorClient(
+            "localhost:" + standaloneBroker.mappedPort(TestZeebePort.MONITORING));
     clockClient.pinZeebeTime(pinAt);
   }
 

@@ -50,7 +50,7 @@
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
     <identity.version>8.8.2</identity.version>
     <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
+    <zeebe.docker.version>8.9</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.3</surefire-plugin.version>
