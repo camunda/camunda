@@ -775,7 +775,7 @@ final class CompactBackupIndexTest {
       try (final var channel = Files.newByteChannel(indexFile, StandardOpenOption.WRITE)) {
         channel.position(4); // Skip version field
         final var buffer = ByteBuffer.allocate(4);
-        buffer.putInt(5000); // Claim we have 1000 entries but file is too small
+        buffer.putInt(5000); // Claim we have 5000 entries but file is too small
         buffer.flip();
         channel.write(buffer);
       }
