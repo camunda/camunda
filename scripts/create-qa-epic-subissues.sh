@@ -399,8 +399,15 @@ for i in "${!ISSUE_COMMANDS[@]}"; do
 done
 
 # Optionally execute the commands
-echo -e "${BLUE}Do you want to create these issues now? (yes/no)${NC}"
-read -r RESPONSE
+# Check if running in interactive mode
+if [[ -t 0 ]]; then
+    echo -e "${BLUE}Do you want to create these issues now? (yes/no)${NC}"
+    read -r RESPONSE
+else
+    # Non-interactive mode - default to no
+    RESPONSE="no"
+    echo "Running in non-interactive mode. Skipping issue creation."
+fi
 
 if [[ "$RESPONSE" == "yes" ]] || [[ "$RESPONSE" == "y" ]]; then
     if ! command -v gh &> /dev/null; then
@@ -415,6 +422,9 @@ if [[ "$RESPONSE" == "yes" ]] || [[ "$RESPONSE" == "y" ]]; then
     
     for i in "${!ISSUE_COMMANDS[@]}"; do
         echo -e "${BLUE}Creating issue $((i+1)) of ${#ISSUE_COMMANDS[@]}...${NC}"
+        # Using eval here is safe because all commands are constructed within this script
+        # and do not contain any user input or external data
+        # shellcheck disable=SC2294
         eval "${ISSUE_COMMANDS[$i]}"
         echo -e "${GREEN}✓ Issue $((i+1)) created${NC}"
         echo ""
@@ -431,5 +441,5 @@ else
     echo -e "${YELLOW}Issues not created. You can run the commands above manually.${NC}"
     echo ""
     echo "To save these commands to a file, run:"
-    echo "  $0 > qa-issues-commands.txt 2>&1"
+    echo "  echo \"no\" | $0 > qa-issues-commands.txt 2>&1"
 fi
