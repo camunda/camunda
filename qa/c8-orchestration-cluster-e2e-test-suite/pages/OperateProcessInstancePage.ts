@@ -12,7 +12,9 @@ import {sleep} from 'utils/sleep';
 class OperateProcessInstancePage {
   private page: Page;
   readonly diagram: Locator;
+  readonly drilldownButton: Locator;
   readonly completedIcon: Locator;
+  readonly terminatedIcon: Locator;
   readonly diagramSpinner: Locator;
   readonly activeIcon: Locator;
   readonly variablesList: Locator;
@@ -21,6 +23,8 @@ class OperateProcessInstancePage {
   readonly instanceHeader: Locator;
   readonly instanceHistory: Locator;
   readonly incidentsTable: Locator;
+  readonly incidentsTableOperationSpinner: Locator;
+  readonly incidentsTableRows: Locator;
   readonly incidentsBanner: Locator;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
@@ -37,6 +41,7 @@ class OperateProcessInstancePage {
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly editVariableButton: Locator;
+  readonly editVariableButtonInList: Locator;
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
   readonly migratedTag: Locator;
@@ -49,13 +54,22 @@ class OperateProcessInstancePage {
   readonly taskListenerText: Locator;
   readonly stateOverlayActive: Locator;
   readonly stateOverlayCompletedEndEvents: Locator;
+  readonly cancelInstanceButton: (instanceId: string) => Locator;
+  readonly incidentBannerButton: (count: number) => Locator;
+  readonly incidentTypeFilter: Locator;
+  readonly executionCountToggle: Locator;
+  readonly endDateField: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.diagram = page.getByTestId('diagram');
+    this.drilldownButton = page.locator('.bjs-drilldown');
     this.completedIcon = page
       .getByTestId('instance-header')
       .getByTestId('COMPLETED-icon');
+    this.terminatedIcon = page
+      .getByTestId('instance-header')
+      .getByTestId('TERMINATED-icon');
     this.diagramSpinner = page.getByTestId('diagram-spinner');
     this.activeIcon = page
       .getByTestId('instance-header')
@@ -64,10 +78,16 @@ class OperateProcessInstancePage {
     this.messageVariable = page.getByTestId('variable-message');
     this.statusVariable = page.getByTestId('variable-status');
     this.editVariableButton = page.getByTestId('edit-variable-button');
+    this.editVariableButtonInList = this.variablesList.getByRole('button', {
+      name: /edit variable/i,
+    });
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
     this.instanceHistory = page.getByTestId('instance-history');
     this.incidentsTable = page.getByTestId('data-list');
+    this.incidentsTableOperationSpinner =
+      this.incidentsTable.getByTestId('operation-spinner');
+    this.incidentsTableRows = this.incidentsTable.getByRole('row');
     this.incidentsBanner = page.getByTestId('incidents-banner');
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single flow node instance in the instance history',
@@ -110,6 +130,19 @@ class OperateProcessInstancePage {
     this.stateOverlayCompletedEndEvents = page.getByTestId(
       'state-overlay-completedEndEvents',
     );
+    this.cancelInstanceButton = (instanceId: string) =>
+      page.getByRole('button', {name: `Cancel Instance ${instanceId}`});
+    this.incidentBannerButton = (count: number) =>
+      page.getByRole('button', {
+        name: new RegExp(`view ${count} incidents in instance`, 'i'),
+      });
+    this.incidentTypeFilter = page.getByRole('combobox', {
+      name: /filter by incident type/i,
+    });
+    this.executionCountToggle = this.instanceHistory.locator(
+      '[aria-label="show execution count"], [aria-label="hide execution count"]',
+    );
+    this.endDateField = this.instanceHeader.getByTestId('end-date');
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -323,6 +356,66 @@ class OperateProcessInstancePage {
 
     await this.applyModificationsButton.click();
     await this.applyButton.click();
+  }
+
+  getTreeItem(name: string | RegExp, exact?: boolean): Locator {
+    return this.page.getByRole('treeitem', {name, exact});
+  }
+
+  async clickTreeItem(name: string | RegExp, exact?: boolean): Promise<void> {
+    await this.getTreeItem(name, exact).click();
+  }
+
+  getIncidentRow(incidentType: string | RegExp): Locator {
+    return this.incidentsTable.getByRole('row', {name: incidentType});
+  }
+
+  getIncidentRowOperationSpinner(incidentType: string | RegExp): Locator {
+    return this.getIncidentRow(incidentType).getByTestId('operation-spinner');
+  }
+
+  async retryIncident(incidentType: string | RegExp): Promise<void> {
+    await this.getIncidentRow(incidentType)
+      .getByRole('button', {name: 'Retry Incident'})
+      .click();
+  }
+
+  async cancelInstance(instanceId: string): Promise<void> {
+    await this.cancelInstanceButton(instanceId).click();
+    await this.applyButton.click();
+  }
+
+  async clickIncidentBanner(count: number): Promise<void> {
+    await this.incidentBannerButton(count).click();
+  }
+
+  async toggleExecutionCount(): Promise<void> {
+    if (await this.executionCountToggle.isVisible()) {
+      await this.executionCountToggle.click({force: true});
+    }
+  }
+
+  getDiagramElement(elementId: string): Locator {
+    return this.diagram.locator(`[data-element-id="${elementId}"]`);
+  }
+
+  async getDiagramElementBadge(elementId: string) {
+    return this.page.$(`[data-element-id="${elementId}"] .badge`);
+  }
+
+  async verifyExecutionCountBadgesNotVisible(
+    elementIds: string[],
+  ): Promise<void> {
+    for (const elementId of elementIds) {
+      const badge = await this.getDiagramElementBadge(elementId);
+      expect(badge).toBeNull();
+    }
+  }
+
+  async verifyExecutionCountBadgesVisible(elementIds: string[]): Promise<void> {
+    for (const elementId of elementIds) {
+      await expect(this.getDiagramElement(elementId)).toBeVisible();
+    }
   }
 }
 
