@@ -74,8 +74,8 @@ jobs:
   test_c8run:
     strategy:
       matrix:
-        # macos-latest is ARM, mac os 13 will execute on x86 runner.
-        os: [ubuntu-latest, macos-latest, macos-13]
+        # macos-latest is ARM, macos-15-intel will execute on x86 runner.
+        os: [ubuntu-latest, macos-latest, macos-15-intel]
     name: C8Run Test ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
