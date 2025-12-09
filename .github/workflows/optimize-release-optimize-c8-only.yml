@@ -380,7 +380,7 @@ jobs:
         if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.3.1
+        uses: octokit/request-action@v2.4.0
         with:
           route: POST /repos/camunda/camunda/releases
           draft: false
