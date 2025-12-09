@@ -570,8 +570,9 @@ public final class ProcessInstanceMigrationPreconditions {
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
+   * @return whether the migration is to a different user task implementation
    */
-  public static void requireSupportedUserTaskImplementation(
+  public static boolean requireSupportedUserTaskImplementation(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
@@ -579,14 +580,14 @@ public final class ProcessInstanceMigrationPreconditions {
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
-      return;
+      return false;
     }
 
     final AbstractFlowElement targetElement =
         targetProcessDefinition.getProcess().getElementById(targetElementId);
     final BpmnElementType targetElementType = targetElement.getElementType();
     if (targetElementType != BpmnElementType.USER_TASK) {
-      return;
+      return false;
     }
 
     final ExecutableUserTask targetUserTask =
@@ -620,6 +621,8 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
+    return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
+        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
   }
 
   /**

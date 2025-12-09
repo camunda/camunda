@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -50,7 +49,6 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
-import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -86,6 +84,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final EventScopeInstanceState eventScopeInstanceState;
   private final MessageState messageState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final BpmnBehaviors bpmnBehaviors;
   private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
   private final KeyGenerator keyGenerator;
 
@@ -110,6 +109,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
     this.authCheckBehavior = authCheckBehavior;
+    this.bpmnBehaviors = bpmnBehaviors;
     this.keyGenerator = keyGenerator;
 
     migrationCatchEventBehaviour =
@@ -246,12 +246,13 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    requireSupportedUserTaskImplementation(
-        sourceProcessDefinition,
-        targetProcessDefinition,
-        targetElementId,
-        elementInstance,
-        processInstanceKey);
+    final boolean isUserTaskConversion =
+        requireSupportedUserTaskImplementation(
+            sourceProcessDefinition,
+            targetProcessDefinition,
+            targetElementId,
+            elementInstance,
+            processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
@@ -349,7 +350,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               targetSequenceFlowId);
         });
 
-    if (elementInstance.getJobKey() > 0) {
+    if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
       final var job = jobState.getJob(elementInstance.getJobKey());
       if (job == null) {
         throw new SafetyCheckFailedException(
@@ -360,18 +361,13 @@ public class ProcessInstanceMigrationMigrateProcessor
                 Please report this as a bug""",
                 processInstanceKey, elementInstance.getJobKey()));
       }
-
-      if (requiresJobCancellation(job.getJobKind(), targetProcessDefinition, targetElementId)) {
-        stateWriter.appendFollowUpEvent(elementInstance.getJobKey(), JobIntent.CANCELED, job);
-      } else {
-        stateWriter.appendFollowUpEvent(
-            elementInstance.getJobKey(),
-            JobIntent.MIGRATED,
-            job.setProcessDefinitionKey(targetProcessDefinition.getKey())
-                .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-                .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                .setElementId(targetElementId));
-      }
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getJobKey(),
+          JobIntent.MIGRATED,
+          job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId));
     }
 
     final long processIncidentKey =
@@ -388,6 +384,18 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
           jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
+    }
+
+    if (isUserTaskConversion) {
+      final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
+          new ProcessInstanceMigrationUserTaskBehavior(
+              elementInstance,
+              sourceProcessDefinition,
+              targetProcessDefinition,
+              targetElementId,
+              stateWriter,
+              jobState);
+      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask(processInstanceKey); // TODO
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
@@ -446,22 +454,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
       migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
     }
-  }
-
-  private boolean requiresJobCancellation(
-      final JobKind jobKind,
-      final DeployedProcess targetProcessDefinition,
-      final String targetElementId) {
-    final BpmnElementType targetElementType =
-        targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
-    if (targetElementType != BpmnElementType.USER_TASK) {
-      return false;
-    }
-    final ExecutableUserTask targetUserTask =
-        targetProcessDefinition
-            .getProcess()
-            .getElementById(targetElementId, ExecutableUserTask.class);
-    return jobKind == JobKind.BPMN_ELEMENT && targetUserTask.getUserTaskProperties() != null;
   }
 
   private static DirectBuffer getTargetSequenceFlowId(
