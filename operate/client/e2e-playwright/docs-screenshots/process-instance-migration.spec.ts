@@ -15,8 +15,8 @@ import {
   mockOrderProcessV2Instances,
   mockMigrationOperation,
   mockAhspProcessInstances,
-  mockProcessDefinitions,
   mockAhspProcessDefinitions,
+  mockOrderProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {openFile} from '@/utils/openFile';
 import {expect} from '@playwright/test';
@@ -41,9 +41,7 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockProcessDefinitions.filter(
-          (d) => d.processDefinitionId === 'orderProcess',
-        ),
+        processDefinitions: mockOrderProcessDefinitions,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: mockOrderProcessInstances,
         statisticsV2: {
@@ -127,9 +125,7 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        processDefinitions: mockProcessDefinitions.filter(
-          (d) => d.processDefinitionId === 'orderProcess',
-        ),
+        processDefinitions: mockOrderProcessDefinitions,
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess_v2.bpmn',
         ),
@@ -210,9 +206,7 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockProcessDefinitions.filter(
-          (d) => d.processDefinitionId === 'orderProcess',
-        ),
+        processDefinitions: mockOrderProcessDefinitions,
         batchOperations: {
           items: [
             {
