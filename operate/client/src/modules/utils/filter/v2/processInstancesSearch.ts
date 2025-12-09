@@ -40,6 +40,8 @@ const ProcessInstancesFilterSchema = z
     startDateBefore: z.string().optional(),
     endDateAfter: z.string().optional(),
     endDateBefore: z.string().optional(),
+    variableName: z.string().optional(),
+    variableValues: z.string().optional(),
   })
   .catch({});
 
@@ -194,9 +196,11 @@ function updateProcessInstancesFilterSearchString(
   currentSearch: URLSearchParams,
   newFilters: ProcessInstancesFilter,
 ) {
+  const {variableName, variableValues, ...filtersWithoutVariable} = newFilters;
+
   return updateFiltersSearchString<ProcessInstancesFilter>(
     currentSearch,
-    newFilters,
+    filtersWithoutVariable,
     PROCESS_INSTANCE_FILTER_FIELDS,
     BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
   );

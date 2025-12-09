@@ -148,7 +148,6 @@ describe('Filters', () => {
     });
 
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
-
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.endDateAfter),
     ).toBeInTheDocument();

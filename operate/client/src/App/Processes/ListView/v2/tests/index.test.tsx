@@ -31,6 +31,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -80,6 +81,9 @@ describe('Instances', () => {
       page: {
         totalItems: 0,
       },
+    });
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
     });
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
