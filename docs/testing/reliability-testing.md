@@ -89,21 +89,21 @@ Depending on the test variant, different process models are created and executed
 
 All of this is deployed in a Zeebe-maintained (as of now; 16 Jun 2025) Google Kubernetes Engine (GKE) cluster (zeebe-cluster), in its own zeebe-io Google Cloud Project (GCP). Details of the general infrastructure, which is deployed related to observability (Prometheus), can be found in the [Zeebe infrastructure repository](https://github.com/camunda/zeebe-infra).
 
-For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), before we had the Zeebe Broker and Zeebe Gateways standalone deployed.
+For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Broker and Zeebe Gateways were deployed standalone.
 
 ![setup](assets/setup.png)
 
 ### Endurance test variants
 
-We run our endurance tests in different variants and with different workloads to cover a wider scope, with the general goal to discover instabilities like memory or thread leaks and performance and stability issues over time.
+We conduct our endurance tests in various variants and with different workloads to cover a broader scope, with the primary goal of identifying instabilities such as memory or thread leaks, as well as performance and stability issues over time.
 
 #### Typical load
 
-After discussing with different stakeholders, we defined a so-called "typical" load. Using a typical or common used process model, which is often also called straight-through process model and [data set](../../load-tests/load-tester/src/main/resources/bpmn/typical_payload.json) that is typical as well (~0.5KB). We defined a load that we want to be able to sustain reliably.
+After discussing with different stakeholders, we defined a so-called "typical" load. Using a typical or commonly used process model, which is often also called the straight-through process model, and [data set](../../load-tests/load-tester/src/main/resources/bpmn/typical_payload.json) that is typical as well (~0.5KB). We defined a load that we want to be able to sustain reliably.
 
 ![typical](assets/typical_process.png)
 
-The straight-trough process contains ten tasks, two timers, and one exclusive gateway. Covering a typical use case, where a process instance is started, goes through several automated tasks, waits for some time (timers), and finally ends.
+The straight-trough process contains ten tasks, two timers, and one exclusive gateway. Covering a typical use case, where a process instance is started, undergoes several automated tasks, waits for a specified period (using timers), and then concludes.
 
 **The expected load is:**
 
@@ -116,7 +116,7 @@ _Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
 
 In the past year (2024), we designed a new load test, where we ran a [more complex and more realistic process](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn) and [data set](https://github.com/camunda/camunda/blob/main/zeebe/load-tests/project/src/main/resources/bpmn/realistic/realisticPayload.json).
 
-As part of this test, we cover a wide variety of BPMN elements, like CallActivities, Multi-Instance, Sub-Processes, DMN, etc.
+As part of this test, we cover a wide variety of BPMN elements, including Call Activities, Multi-Instance, Sub-Processes, and DMN.
 
 ![realisticCase](assets/realisticCase.png)
 ![realisticCase-DMN](assets/realisticCase-DMN.png)
@@ -138,10 +138,10 @@ A load test where we run some artificial load, ensuring that the system behaves 
 
 ![normal](assets/normal.png)
 
-It contains only a start event, one service task, and an end event. Covering a straight-through processing use case. Using the same payload as for our typical load test (~0.5KB).
+It contains only a start event, one service task, and an end event. Covering a straight-through processing use case and using the same payload as for our typical load test (~0.5KB).
 
-This type of process is helpful for stress tests, as it gives us a good sense of the maximum load,
-this is one of the smallest processes (including a service task) that we can model.
+This type of process is helpful for stress tests, as it gives us a good sense of the maximum load.
+This is one of the smallest processes (including a service task) that we can model.
 
 Reducing the used feature set to a small amount allows easy comparison between tests,  as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
 
@@ -267,9 +267,9 @@ In addition to our weekly load tests, we ran daily stress tests based on the sta
 
 * We have a better overview of how the system performs over time - detect trends in performance
 * Detect regressions earlier - shorter feedback loop when we break something in our application or configuration
-* Faster integration with our Helm charts - sanity check every day that load tests work with charts and application
+* Faster integration with our Helm charts - sanity check every day that load tests work with charts and the application
 
-**Validation:** TBD - explicit dashboard with KPI's and showing last week tests needs to be created. Part of [#42274](https://github.com/camunda/camunda/issues/42274).
+**Validation:** TBD - explicit dashboard with KPI's and showing last week's tests needs to be created. Part of [#42274](https://github.com/camunda/camunda/issues/42274).
 
 #### Ad-Hoc load tests
 
