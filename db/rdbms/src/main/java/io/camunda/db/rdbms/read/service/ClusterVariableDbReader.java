@@ -51,17 +51,23 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
             // FIXME: change resource type to CLUSTER_VARIABLE once available
             //  (see https://github.com/camunda/camunda/issues/39054)
             .getOrDefault(AuthorizationResourceType.UNSPECIFIED.name(), List.of());
+    final var dbPage = convertPaging(dbSort, query.page());
     dbQueryBuilder
         .filter(query.filter())
         .tenancyEnabled(resourceAccessChecks.tenantCheck().enabled())
         .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
         .authorizedResourceIds(authorizedResourceIds)
         .sort(dbSort)
-        .page(convertPaging(dbSort, query.page()));
+        .page(dbPage);
 
     final var dbQuery = dbQueryBuilder.build();
     LOG.trace("[RDBMS DB] Search for cluster variables with filter {}", query);
     final var totalHits = clusterVariableMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(dbPage, totalHits)) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = clusterVariableMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
