@@ -228,7 +228,7 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
 
-    await test.step('Filter by variable and assert results', async ({}) => {
+    await test.step('Filter by variable and assert results', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
       await operateFiltersPanelPage.fillVariableValueFilter('604');
@@ -256,7 +256,7 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
-    await test.step('Filter by process instance key with one key and assert results', async ({}) => {
+    await test.step('Filter by process instance key with one key and assert results', async () => {
       await operateFiltersPanelPage.clickResetFilters();
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
@@ -281,7 +281,7 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
-    await test.step('Filter by process instance key with multiple keys and assert results', async ({}) => {
+    await test.step('Filter by process instance key with multiple keys and assert results', async () => {
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
       const callActivityProcessInstanceKey =
