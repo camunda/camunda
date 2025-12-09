@@ -119,7 +119,7 @@ jobs:
             spec:
               containers:
               - name: benchmark
-                image: ghcr.io/zeebe-io/benchmark:${{inputs.image-tag}}
+                image: gcr.io/zeebe-io/benchmark:${{inputs.image-tag}}
                 env:
                 - name: JDK_JAVA_OPTIONS
                   value: "-Dconfig.override_with_env_vars=true -Dapp.preferRest=true"
