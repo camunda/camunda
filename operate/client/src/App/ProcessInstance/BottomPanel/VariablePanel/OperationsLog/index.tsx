@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect, useMemo} from 'react';
+import {useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {formatDate} from 'modules/utils/date';
 import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs';
