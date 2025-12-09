@@ -8,7 +8,9 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
@@ -16,13 +18,15 @@ import org.slf4j.Logger;
 public class StandaloneDecisionArchiverJob extends ArchiverJob {
 
   private final DecisionInstanceTemplate decisionInstanceTemplate;
+  private final List<DecisionInstanceDependant> decisionInstanceDependants;
 
   public StandaloneDecisionArchiverJob(
       final ArchiverRepository repository,
       final DecisionInstanceTemplate decisionInstanceTemplate,
       final CamundaExporterMetrics metrics,
       final Logger logger,
-      final Executor executor) {
+      final Executor executor,
+      final List<DecisionInstanceDependant> decisionInstanceDependants) {
     super(
         repository,
         metrics,
@@ -31,6 +35,7 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob {
         metrics::recordStandaloneDecisionsArchiving,
         metrics::recordStandaloneDecisionsArchived);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
+    this.decisionInstanceDependants = decisionInstanceDependants;
   }
 
   @Override
@@ -51,5 +56,20 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob {
   @Override
   String getIdFieldName() {
     return DecisionInstanceTemplate.ID;
+  }
+
+  private CompletableFuture<Void> archiveProcessDependants(
+      final String finishDate, final List<String> decisionInstanceKeys) {
+    final var moveDependentDocuments =
+        decisionInstanceDependants.stream()
+            .map(
+                dependant -> {
+                  final var dependentSourceIdx = dependant.getFullQualifiedName();
+                  final var dependentIdFieldName = dependant.getDrgDependantField();
+                  return super.archive(
+                      dependentSourceIdx, finishDate, dependentIdFieldName, decisionInstanceKeys);
+                })
+            .toArray(CompletableFuture[]::new);
+    return CompletableFuture.allOf(moveDependentDocuments);
   }
 }

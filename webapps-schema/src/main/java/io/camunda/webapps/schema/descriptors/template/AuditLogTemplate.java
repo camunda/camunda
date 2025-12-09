@@ -9,13 +9,14 @@ package io.camunda.webapps.schema.descriptors.template;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
 
 public class AuditLogTemplate extends AbstractTemplateDescriptor
-    implements ProcessInstanceDependant, Prio5Backup {
+    implements ProcessInstanceDependant, DecisionInstanceDependant, Prio5Backup {
 
   public static final String INDEX_NAME = "audit-log";
   public static final String INDEX_VERSION = "8.9.0";
