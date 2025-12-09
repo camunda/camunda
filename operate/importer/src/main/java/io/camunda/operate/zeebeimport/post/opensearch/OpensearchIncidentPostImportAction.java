@@ -246,7 +246,9 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
 
         final List<String> fniIds = incidentTreePath.extractFlowNodeInstanceIds();
         fniIds.removeAll(piIds);
-        updateFlowNodeInstancesState(incident, incidentTreePath, fniIds, data, updateRequests);
+        if (!fniIds.isEmpty()) {
+          updateFlowNodeInstancesState(incident, incidentTreePath, fniIds, data, updateRequests);
+        }
         updateIncidents(
             incident,
             newState,
