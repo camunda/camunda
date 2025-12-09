@@ -10,10 +10,23 @@ const testRailOptions = {
 };
 
 const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
+const isApiTestsOnly = process.env.API_TESTS_ONLY === 'true';
 
 // Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
 const isV2ModeEnabled =
   process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
+
+// Determine the test type for Slack reporting
+function getTestTypeLabel(): string {
+  if (isV2StatelessTestsOnly) {
+    return `Nightly V2 Stateless Test Results for Mono Repo - ${process.env.VERSION}`;
+  }
+  if (isApiTestsOnly) {
+    return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}`;
+  }
+  return `Nightly Test Results for Mono Repo - ${process.env.VERSION}`;
+}
+
 
 // Reporters
 const useReportersWithoutSlack: any[] = [
@@ -32,9 +45,7 @@ const useReportersWithSlack: any[] = [
       showInThread: true,
       meta: [
         {
-          key: isV2StatelessTestsOnly
-            ? `Nightly V2 Stateless Test Results for Mono Repo - ${process.env.VERSION}`
-            : `Nightly Test Results for Mono Repo - ${process.env.VERSION}`,
+          key: getTestTypeLabel(),
           value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}|📊>`,
         },
       ],
