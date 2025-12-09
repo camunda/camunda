@@ -63,6 +63,7 @@ public class StateUpdateKeyCommand extends CommonOptions implements Callable<Int
       if (maxKey != null) {
         err.println("Target max key: " + maxKey);
       }
+      err.println("Root path: " + root);
       err.println("Snapshot ID: " + snapshotId);
       err.println("Runtime path: " + runtimePath);
     }
