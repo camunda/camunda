@@ -30,7 +30,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -89,16 +88,17 @@ public class ElasticsearchListViewStore implements ListViewStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
             : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(ListViewTemplate.KEY, processInstanceKey))
-                    .fetchSource(ListViewTemplate.TREE_PATH, null));
+
     try {
-      final SearchHits hits = tenantAwareClient.search(searchRequest).getHits();
-      if (hits.getTotalHits().value > 0) {
-        return (String) hits.getHits()[0].getSourceAsMap().get(ListViewTemplate.TREE_PATH);
+      final Map<String, Object> processInstance =
+          ElasticsearchUtil.getByIdOrSearchArchives(
+              esClient,
+              listViewTemplate,
+              String.valueOf(processInstanceKey),
+              queryType,
+              ListViewTemplate.TREE_PATH);
+      if (processInstance != null) {
+        return (String) processInstance.get(ListViewTemplate.TREE_PATH);
       }
       return null;
     } catch (final IOException e) {
