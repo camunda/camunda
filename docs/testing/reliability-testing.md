@@ -117,16 +117,18 @@ _Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
 A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
 
 ![normal](assets/normal.png)
-It contains only a start event, one service task, and an end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/big_payload.json).
 
-Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. This test load is historical, as it was one of the first we designed. Likely might be replaced by the more realistic load tests.
+It contains only a start event, one service task, and an end event. Covering a straight-through processing use case. Using the same payload as for our typical load test (~0.5KB).
 
-The idea here is not to overload or stress the system, but to run a more stable and continuous load, to validate the reliability of the system.
+This type of process is helpful for stress tests, as it gives us a good sense of the maximum load,
+this is one of the smallest processes (including a service task) that we can model.
+
+Reducing the used feature set to a small amount allows easy comparison between tests,  as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
 
 **The expected load is:**
 
-* 150 process instances per second (PI/s) completed.
-* 150 task instances per second (TI/s) completed
+* 300 process instances per second (PI/s) completed.
+* 300 task instances per second (TI/s) completed
 
 _Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
 
