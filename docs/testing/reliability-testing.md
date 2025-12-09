@@ -93,9 +93,9 @@ For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Plat
 
 ![setup](assets/setup.png)
 
-### Variants
+### Endurance test variants
 
-We run our load tests in different variants and with different workloads to cover different goals.
+We run our endurance tests in different variants and with different workloads to cover a wider scope, with the general goal to discover instabilities like memory or thread leaks and performance and stability issues over time.
 
 #### Typical load
 
@@ -111,32 +111,6 @@ The straight-trough process contains ten tasks, two timers, and one exclusive ga
 * 500 task instances per second (TI/s) completed
 
 _Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
-
-#### Max / Stress (artificial) load
-
-A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
-
-![normal](assets/normal.png)
-
-It contains only a start event, one service task, and an end event. Covering a straight-through processing use case. Using the same payload as for our typical load test (~0.5KB).
-
-This type of process is helpful for stress tests, as it gives us a good sense of the maximum load,
-this is one of the smallest processes (including a service task) that we can model.
-
-Reducing the used feature set to a small amount allows easy comparison between tests,  as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
-
-**The expected load is:**
-
-* 300 process instances per second (PI/s) completed.
-* 300 task instances per second (TI/s) completed
-
-_Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
-
-#### Latency load
-
-Similar to the normal load test, we ran the artificial (normal) process model to run some latency-related tests. To validate the latency, we reduce the load to one PI/s, to reduce the blast radius, and make sure we have clear values for the latency of process instance completion.
-
-*As of now, there is no clear SLO/SLA defined for such.*
 
 #### Realistic load
 
@@ -157,6 +131,32 @@ The test is based on [a blueprint we provide in our Marketplace](https://marketp
 * **To note here:** We create one process instance per second, but due to the realistic payload, the multi-instance and call activity will create 50 sub-process instances, and further flow elements.
 
 *Intrinsic SLO to always be able to satisfy such a load, and perform reliably.*
+
+### Max / Stress load test
+
+A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
+
+![normal](assets/normal.png)
+
+It contains only a start event, one service task, and an end event. Covering a straight-through processing use case. Using the same payload as for our typical load test (~0.5KB).
+
+This type of process is helpful for stress tests, as it gives us a good sense of the maximum load,
+this is one of the smallest processes (including a service task) that we can model.
+
+Reducing the used feature set to a small amount allows easy comparison between tests,  as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
+
+**The expected load is:**
+
+* 300 process instances per second (PI/s) completed.
+* 300 task instances per second (TI/s) completed
+
+_Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
+
+### Latency load test
+
+Similar to the stress test from above, we ran the artificial (normal) process model to run some latency-related tests. To validate the latency, we reduce the load to **one** PI/s, to reduce the blast radius, and make sure we have clear values for the latency of process instance completion.
+
+*As of now, there is no clear SLO/SLA defined for such.*
 
 ### Observability
 
@@ -236,7 +236,7 @@ In our post-release process, we map our `release_version` variable to the `workf
 
 #### Weekly load tests
 
-In addition to our release tests, we ran weekly load tests in all variants based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
+In addition to our release tests, we ran weekly load tests for all [endurance test variants](#endurance-test-variants) based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
