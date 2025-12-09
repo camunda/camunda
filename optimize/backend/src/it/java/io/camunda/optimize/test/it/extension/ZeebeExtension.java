@@ -54,6 +54,8 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public ZeebeExtension() {
 
+    System.setProperty("management.endpoints.web.exposure.include", "*");
+
     standaloneBroker =
         new TestStandaloneBroker()
             .withAdditionalProperties(
@@ -62,7 +64,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
                     "ERROR",
                     "atomix.log.level",
                     "ERROR",
-                    "camunda.system.clock-controlled",
+                    "zeebe.clock.controlled",
                     "true",
                     "zeebe.broker.gateway.enable",
                     "true"))
@@ -248,8 +250,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public void setClock(final Instant pinAt) throws IOException, InterruptedException {
     final ClockActuatorClient clockClient =
-        new ClockActuatorClient(
-            "localhost:" + standaloneBroker.mappedPort(TestZeebePort.MONITORING));
+        new ClockActuatorClient(standaloneBroker.address(TestZeebePort.MONITORING));
     clockClient.pinZeebeTime(pinAt);
   }
 
