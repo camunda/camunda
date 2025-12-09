@@ -321,12 +321,12 @@ jobs:
         shell: pwsh
         run: |
           $scriptContent = @"
-@echo off
+          @echo off
 
-cd c8run-${env:C8RUN_VERSION}
-.\c8run.exe start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
-cd ..
-"@
+          cd c8run-${env:C8RUN_VERSION}
+          .\c8run.exe start --startup-url="https://developers.camunda.com/quick-start?c8run_start=success"
+          cd ..
+          "@
           Set-Content -Path "bundle/camunda-start.bat" -Value $scriptContent
 
       - name: Create stop script (Windows)
@@ -334,12 +334,12 @@ cd ..
         shell: pwsh
         run: |
           $scriptContent = @"
-@echo off
+          @echo off
 
-cd c8run-${env:C8RUN_VERSION}
-.\c8run.exe stop
-cd ..
-"@
+          cd c8run-${env:C8RUN_VERSION}
+          .\c8run.exe stop
+          cd ..
+          "@
           Set-Content -Path "bundle/camunda-stop.bat" -Value $scriptContent
 
       - name: List bundle contents
