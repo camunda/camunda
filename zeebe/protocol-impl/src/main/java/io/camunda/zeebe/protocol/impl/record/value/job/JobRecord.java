@@ -72,6 +72,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue CHANGED_ATTRIBUTES_KEY = new StringValue("changedAttributes");
   private static final StringValue RESULT_KEY = new StringValue("result");
   private static final StringValue TAGS = new StringValue("tags");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
 
@@ -115,9 +117,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final ObjectProperty<JobResult> resultProp =
       new ObjectProperty<>(RESULT_KEY, new JobResult());
   private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>(TAGS, StringValue::new);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public JobRecord() {
-    super(23);
+    super(24);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -140,7 +144,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(resultProp)
-        .declareProperty(tagsProp);
+        .declareProperty(tagsProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -168,6 +173,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     resultProp.getValue().wrap(record.getResult());
 
     setTags(record.getTags());
+    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
   }
 
   public void wrap(final JobRecord record) {
@@ -506,6 +512,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 }
