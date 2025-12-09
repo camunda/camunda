@@ -56,9 +56,9 @@ public class ProcessDefinitionStatisticsIT {
       "process_with_subscriptions_1";
   private static final String PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2 =
       "process_with_subscriptions_2";
-  private static long PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1;
-  private static long PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2;
-  private static long PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1;
+  private static long processWithSubscriptionsProcessId1Pdk1;
+  private static long processWithSubscriptionsProcessId1Pdk2;
+  private static long processWithSubscriptionsProcessId2Pdk1;
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {
@@ -74,29 +74,29 @@ public class ProcessDefinitionStatisticsIT {
         createBpmnModelVersion("v2", PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
     final var processModel2 = createBpmnModelVersion("v1", PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2);
 
-    PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1 =
+    processWithSubscriptionsProcessId1Pdk1 =
         deployResource(processModel1V1, "multi-sub-process.bpmn")
             .getProcesses()
             .getFirst()
             .getProcessDefinitionKey();
-    PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2 =
+    processWithSubscriptionsProcessId1Pdk2 =
         deployResource(processModel1V2, "multi-sub-process.bpmn")
             .getProcesses()
             .getFirst()
             .getProcessDefinitionKey();
-    PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1 =
+    processWithSubscriptionsProcessId2Pdk1 =
         deployResource(processModel2, "multi-sub-process-v2.bpmn")
             .getProcesses()
             .getFirst()
             .getProcessDefinitionKey();
 
     // 2 instances for process 1 version 1 = 4 subscriptions
-    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1, Map.of("key1", "A", "key2", "B"));
-    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1, Map.of("key1", "A", "key2", "B"));
+    createInstance(processWithSubscriptionsProcessId1Pdk1, Map.of("key1", "A", "key2", "B"));
+    createInstance(processWithSubscriptionsProcessId1Pdk1, Map.of("key1", "A", "key2", "B"));
     // 1 instance for process 1 version 2 = 2 subscriptions
-    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2, Map.of("key1", "A", "key2", "B"));
+    createInstance(processWithSubscriptionsProcessId1Pdk2, Map.of("key1", "A", "key2", "B"));
     // 1 instance for process 2 version 1 = 2 subscriptions
-    createInstance(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1, Map.of("key1", "A", "key2", "B"));
+    createInstance(processWithSubscriptionsProcessId2Pdk1, Map.of("key1", "A", "key2", "B"));
 
     waitForProcessInstances(
         camundaClient,
@@ -104,9 +104,9 @@ public class ProcessDefinitionStatisticsIT {
             f.processDefinitionKey(
                     p ->
                         p.in(
-                            PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1,
-                            PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2,
-                            PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1))
+                            processWithSubscriptionsProcessId1Pdk1,
+                            processWithSubscriptionsProcessId1Pdk2,
+                            processWithSubscriptionsProcessId2Pdk1))
                 .state(ProcessInstanceState.ACTIVE),
         4);
 
@@ -957,7 +957,7 @@ public class ProcessDefinitionStatisticsIT {
     // But only 1 process instance has subscriptions
     assertThat(stats.getProcessInstancesWithActiveSubscriptions()).isEqualTo(1L);
     assertThat(stats.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2_PDK_1));
+        .isEqualTo(String.valueOf(processWithSubscriptionsProcessId2Pdk1));
     assertThat(stats.getProcessDefinitionId()).isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_2);
   }
 
@@ -967,7 +967,7 @@ public class ProcessDefinitionStatisticsIT {
     final var actual =
         camundaClient
             .newProcessDefinitionMessageSubscriptionStatisticsRequest()
-            .filter(f -> f.processDefinitionKey(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1))
+            .filter(f -> f.processDefinitionKey(processWithSubscriptionsProcessId1Pdk1))
             .send()
             .join();
 
@@ -975,7 +975,7 @@ public class ProcessDefinitionStatisticsIT {
     assertThat(actual.items()).hasSize(1);
     final var stats = actual.items().getFirst();
     assertThat(stats.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1));
+        .isEqualTo(String.valueOf(processWithSubscriptionsProcessId1Pdk1));
     assertThat(stats.getProcessDefinitionId()).isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
     assertThat(stats.getActiveSubscriptions()).isEqualTo(4L);
     // But only 2 process instances have subscriptions
@@ -998,7 +998,7 @@ public class ProcessDefinitionStatisticsIT {
     assertThat(endCursor).isNotBlank();
     final var stats = actual.items().getFirst();
     assertThat(stats.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_1));
+        .isEqualTo(String.valueOf(processWithSubscriptionsProcessId1Pdk1));
     assertThat(stats.getProcessDefinitionId()).isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
     assertThat(stats.getActiveSubscriptions()).isEqualTo(4L);
     // But only 2 process instances have subscriptions
@@ -1015,7 +1015,7 @@ public class ProcessDefinitionStatisticsIT {
     assertThat(actualPage2.items()).hasSize(1);
     final var statsPage2 = actualPage2.items().getFirst();
     assertThat(statsPage2.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1_PDK_2));
+        .isEqualTo(String.valueOf(processWithSubscriptionsProcessId1Pdk2));
     assertThat(statsPage2.getProcessDefinitionId())
         .isEqualTo(PROCESS_WITH_SUBSCRIPTIONS_PROCESS_ID_1);
     assertThat(statsPage2.getActiveSubscriptions()).isEqualTo(2L);
