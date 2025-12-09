@@ -634,4 +634,308 @@ test.describe
       }).toPass(defaultAssertionOptions);
     });
   });
+
+  test('Process instance migrate - AdHoc subprocess with multiple active elements', async ({
+    request,
+  }) => {
+    const localState: Record<string, string> = {
+      processInstanceKey: '',
+      processDefinitionKey: '',
+      adHocSubProcessInstanceKey: '',
+    };
+
+    await test.step('Create process instance and activate multiple tasks in AdHoc subprocess', async () => {
+      await createInstances('test_migration_adhoc_subprocess', 1, 1).then(
+        async (instance) => {
+          localState.processInstanceKey = instance[0].processInstanceKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+
+          // Wait for the AdHoc subprocess to be active
+          await expect(async () => {
+            const res = await request.post(
+              buildUrl('/element-instances/search'),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: localState.processInstanceKey,
+                    elementId: 'AdHoc_Subprocess_V1',
+                    state: 'ACTIVE',
+                  },
+                },
+              },
+            );
+            await assertStatusCode(res, 200);
+            const body = await res.json();
+            expect(body.items.length).toBe(1);
+            localState.adHocSubProcessInstanceKey =
+              body.items[0].elementInstanceKey;
+          }).toPass(defaultAssertionOptions);
+
+          // Activate Task_A
+          const activateResA = await request.post(
+            buildUrl(
+              `/element-instances/ad-hoc-activities/${localState.adHocSubProcessInstanceKey}/activation`,
+            ),
+            {
+              headers: jsonHeaders(),
+              data: {
+                elements: [
+                  {
+                    elementId: 'Task_A',
+                  },
+                ],
+              },
+            },
+          );
+          await assertStatusCode(activateResA, 204);
+
+          // Activate Task_B
+          const activateResB = await request.post(
+            buildUrl(
+              `/element-instances/ad-hoc-activities/${localState.adHocSubProcessInstanceKey}/activation`,
+            ),
+            {
+              headers: jsonHeaders(),
+              data: {
+                elements: [
+                  {
+                    elementId: 'Task_B',
+                  },
+                ],
+              },
+            },
+          );
+          await assertStatusCode(activateResB, 204);
+
+          // Wait for both tasks to be active
+          await expect(async () => {
+            const res = await request.post(
+              buildUrl('/element-instances/search'),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: localState.processInstanceKey,
+                    state: 'ACTIVE',
+                  },
+                },
+              },
+            );
+            await assertStatusCode(res, 200);
+            const body = await res.json();
+            const taskAActive = body.items.some(
+              (item: {elementId: string}) => item.elementId === 'Task_A',
+            );
+            const taskBActive = body.items.some(
+              (item: {elementId: string}) => item.elementId === 'Task_B',
+            );
+            expect(taskAActive).toBe(true);
+            expect(taskBActive).toBe(true);
+          }).toPass(defaultAssertionOptions);
+        },
+      );
+    });
+
+    await test.step('Deploy version 2 and get process definition key', async () => {
+      await deploy(['./resources/test_migration_adhoc_subprocess_v2.bpmn']);
+      await createInstances('test_migration_adhoc_subprocess_v2', 1, 1).then(
+        (instance) => {
+          localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+        },
+      );
+    });
+
+    await test.step('Migrate AdHoc subprocess with multiple active elements', async () => {
+      const res = await request.post(
+        buildUrl(
+          `/process-instances/${localState.processInstanceKey}/migration`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            mappingInstructions: [
+              {
+                sourceElementId: 'AdHoc_Subprocess_V1',
+                targetElementId: 'AdHoc_Subprocess_V2',
+              },
+              {
+                sourceElementId: 'Task_A',
+                targetElementId: 'Task_A',
+              },
+              {
+                sourceElementId: 'Task_B',
+                targetElementId: 'Task_C',
+              },
+            ],
+            targetProcessDefinitionKey: localState.processDefinitionKey,
+          },
+        },
+      );
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Verify both tasks were migrated correctly', async () => {
+      await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState.processInstanceKey,
+              state: 'ACTIVE',
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        const taskAActive = body.items.some(
+          (item: {elementId: string}) => item.elementId === 'Task_A',
+        );
+        const taskCActive = body.items.some(
+          (item: {elementId: string}) => item.elementId === 'Task_C',
+        );
+        expect(taskAActive).toBe(true);
+        expect(taskCActive).toBe(true);
+      }).toPass(defaultAssertionOptions);
+    });
+  });
+
+  test('Process instance migrate - AdHoc subprocess 400 Bad Request - empty mapping instructions', async ({
+    request,
+  }) => {
+    const localState: Record<string, string> = {
+      processInstanceKey: '',
+      processDefinitionKey: '',
+    };
+
+    await test.step('Create process instance with AdHoc subprocess', async () => {
+      await createInstances('test_migration_adhoc_subprocess', 1, 1).then(
+        (instance) => {
+          localState.processInstanceKey = instance[0].processInstanceKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+        },
+      );
+    });
+
+    await test.step('Get target process definition key', async () => {
+      await createInstances('test_migration_adhoc_subprocess_v2', 1, 1).then(
+        (instance) => {
+          localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+        },
+      );
+    });
+
+    await test.step('Attempt migration with empty mapping instructions', async () => {
+      const res = await request.post(
+        buildUrl(
+          `/process-instances/${localState.processInstanceKey}/migration`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            targetProcessDefinitionKey: localState.processDefinitionKey,
+            mappingInstructions: [],
+          },
+        },
+      );
+      await assertBadRequest(res, /mapping.*instruction/i, 'INVALID_ARGUMENT');
+    });
+  });
+
+  test('Process instance migrate - AdHoc subprocess 409 Invalid State - non-existent target element', async ({
+    request,
+  }) => {
+    const localState: Record<string, string> = {
+      processInstanceKey: '',
+      processDefinitionKey: '',
+    };
+
+    await test.step('Create process instance with AdHoc subprocess', async () => {
+      await createInstances('test_migration_adhoc_subprocess', 1, 1).then(
+        async (instance) => {
+          localState.processInstanceKey = instance[0].processInstanceKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+
+          // Wait for the AdHoc subprocess to be active
+          await expect(async () => {
+            const res = await request.post(
+              buildUrl('/element-instances/search'),
+              {
+                headers: jsonHeaders(),
+                data: {
+                  filter: {
+                    processInstanceKey: localState.processInstanceKey,
+                    elementId: 'AdHoc_Subprocess_V1',
+                    state: 'ACTIVE',
+                  },
+                },
+              },
+            );
+            await assertStatusCode(res, 200);
+            const body = await res.json();
+            expect(body.items.length).toBe(1);
+          }).toPass(defaultAssertionOptions);
+        },
+      );
+    });
+
+    await test.step('Get target process definition key', async () => {
+      await createInstances('test_migration_adhoc_subprocess_v2', 1, 1).then(
+        (instance) => {
+          localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
+        },
+      );
+    });
+
+    await test.step('Attempt migration to non-existent target element', async () => {
+      const res = await request.post(
+        buildUrl(
+          `/process-instances/${localState.processInstanceKey}/migration`,
+        ),
+        {
+          headers: jsonHeaders(),
+          data: {
+            mappingInstructions: [
+              {
+                sourceElementId: 'AdHoc_Subprocess_V1',
+                targetElementId: 'NonExistentElement',
+              },
+            ],
+            targetProcessDefinitionKey: localState.processDefinitionKey,
+          },
+        },
+      );
+      await assertInvalidState(res, 409);
+    });
+  });
+
+  test('Process instance migrate - AdHoc subprocess 404 Not Found - non-existent process instance', async ({
+    request,
+  }) => {
+    const nonExistingProcessInstanceKey = '9999999999999999';
+    const fakeProcessDefinitionKey = '8888888888888888';
+
+    const res = await request.post(
+      buildUrl(`/process-instances/${nonExistingProcessInstanceKey}/migration`),
+      {
+        headers: jsonHeaders(),
+        data: {
+          targetProcessDefinitionKey: fakeProcessDefinitionKey,
+          mappingInstructions: [
+            {
+              sourceElementId: 'AdHoc_Subprocess_V1',
+              targetElementId: 'AdHoc_Subprocess_V2',
+            },
+          ],
+        },
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      /Expected to migrate process instance but no process instance found/i,
+    );
+  });
 });
