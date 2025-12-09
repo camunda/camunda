@@ -145,7 +145,16 @@ public class AuthorizationChecker {
         Set::of);
   }
 
-  public Map<String, Set<PermissionType>> collectPermissionTypes2(
+  /**
+   * Collects the permission types available for a list of resources, defined by resource id and
+   * resource type. Automatically appends the wildcard permissions to each resource id.
+   *
+   * @param resourceIds the list of resource ids to return permission types for
+   * @param resourceType the resource type to return permission types for
+   * @param authentication the authentication information
+   * @return the permission types found
+   */
+  public Map<String, Set<PermissionType>> collectPermissionTypesByResourceIds(
       final List<String> resourceIds,
       final AuthorizationResourceType resourceType,
       final CamundaAuthentication authentication) {
@@ -179,11 +188,29 @@ public class AuthorizationChecker {
 
   private Map<String, Set<PermissionType>> collectPermissionTypesByResourceId(
       final List<AuthorizationEntity> authorizationEntities, final List<String> resourceIds) {
-    return authorizationEntities.stream()
-        .collect(
-            Collectors.groupingBy(
-                AuthorizationEntity::resourceId,
-                Collectors.flatMapping(a -> a.permissionTypes().stream(), Collectors.toSet())));
+
+    // group permissions by resource ID
+    final var permissionTypesByResourceId =
+        authorizationEntities.stream()
+            .collect(
+                Collectors.groupingBy(
+                    AuthorizationEntity::resourceId,
+                    Collectors.flatMapping(a -> a.permissionTypes().stream(), Collectors.toSet())));
+
+    // remove wildcard entry from map
+    final var wildcards =
+        permissionTypesByResourceId.remove(AuthorizationScope.WILDCARD.getResourceId());
+
+    // ensure every requested resourceId is present and, if wildcards exist, merged into it
+    for (final var resourceId : resourceIds) {
+      final var permissions =
+          permissionTypesByResourceId.computeIfAbsent(resourceId, k -> new HashSet<>());
+      if (wildcards != null && !wildcards.isEmpty()) {
+        permissions.addAll(wildcards);
+      }
+    }
+
+    return permissionTypesByResourceId;
   }
 
   private <T> T getOrElseDefaultResult(

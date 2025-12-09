@@ -14,7 +14,6 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,11 +34,6 @@ public class ProcessGroupDto {
   private List<ProcessDto> processes;
 
   public static List<ProcessGroupDto> createFrom(
-      final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped) {
-    return createFrom(processesGrouped, null);
-  }
-
-  public static List<ProcessGroupDto> createFrom(
       final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped,
       final PermissionsService permissionsService) {
     final List<ProcessGroupDto> groups = new ArrayList<>();
@@ -54,15 +48,11 @@ public class ProcessGroupDto {
         .forEach(
             group -> {
               final ProcessGroupDto groupDto = new ProcessGroupDto();
-              final ProcessEntity process0 = group.get(0);
-              final var permissions =
-                  new HashSet<>(
-                      permissionsByResourceId.getOrDefault(process0.getBpmnProcessId(), Set.of()));
-              permissions.addAll(permissionsByResourceId.getOrDefault("*", Set.of()));
+              final ProcessEntity process0 = group.getFirst();
               groupDto.setBpmnProcessId(process0.getBpmnProcessId());
               groupDto.setTenantId(process0.getTenantId());
               groupDto.setName(process0.getName());
-              groupDto.setPermissions(permissions);
+              groupDto.setPermissions(permissionsByResourceId.get(process0.getBpmnProcessId()));
               groupDto.setProcesses(DtoCreator.create(group, ProcessDto.class));
               groups.add(groupDto);
             });

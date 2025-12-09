@@ -55,7 +55,7 @@ public class PermissionsService {
 
   public Map<String, Set<String>> getProcessDefinitionPermissionsByResourceId(
       final List<String> bpmnProcessIds) {
-    return getResourcePermissionsByResourceId(
+    return getResourcePermissionsByResourceIds(
         bpmnProcessIds, AuthorizationResourceType.PROCESS_DEFINITION);
   }
 
@@ -87,10 +87,17 @@ public class PermissionsService {
     return permissions;
   }
 
-  public Map<String, Set<String>> getResourcePermissionsByResourceId(
+  /**
+   * Returns the permissions for each of the given resource ids.
+   *
+   * @param resourceKeys resourceKeys
+   * @param resourceType resourceType
+   * @return permissions the user has for the given resource
+   */
+  public Map<String, Set<String>> getResourcePermissionsByResourceIds(
       final List<String> resourceKeys, final AuthorizationResourceType resourceType) {
     final Map<String, Set<PermissionType>> permissionTypeSet =
-        authorizationChecker.collectPermissionTypes2(
+        authorizationChecker.collectPermissionTypesByResourceIds(
             resourceKeys, resourceType, getAuthentication());
     return permissionTypeSet.entrySet().stream()
         .collect(
