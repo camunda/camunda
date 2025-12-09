@@ -95,11 +95,26 @@ For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Plat
 
 ### Variants
 
-We run our load tests in different variants to cover different goals.
+We run our load tests in different variants and with different workloads to cover different goals.
 
-#### Normal (artificial) load
+#### Typical load
 
-A load test where we run some artificial load, ensuring that the system behaves reliably.
+After discussing with different stakeholders, we defined a so-called "typical" load. Using a typical or common used process model, which is often also called straight-through process model and [data set](../../load-tests/load-tester/src/main/resources/bpmn/typical_payload.json) that is typical as well (~0.5KB). We defined a load that we want to be able to sustain reliably.
+
+![typical](assets/typical_process.png)
+
+The straight-trough process contains ten tasks, two timers, and one exclusive gateway. Covering a typical use case, where a process instance is started, goes through several automated tasks, waits for some time (timers), and finally ends.
+
+**The expected load is:**
+
+* 50 process instances per second (PI/s) completed.
+* 500 task instances per second (TI/s) completed
+
+_Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
+
+#### Max / Stress (artificial) load
+
+A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
 
 ![normal](assets/normal.png)
 It contains only a start event, one service task, and an end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/big_payload.json).
