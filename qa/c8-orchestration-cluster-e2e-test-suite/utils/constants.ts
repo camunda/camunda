@@ -29,6 +29,9 @@ export const defaultAssertionOptions = {
   timeout: 30_000,
 };
 
+export const DATE_REGEX =
+  /\d{4}-[01]\d-[0-3]\d[T\s][0-2]\d:[0-5]\d:[0-5]\d(\.\d+)?([+-][0-2]\d:[0-5]\d|Z)?/;
+
 // Create unique auth role with optional custom ID
 export const createUniqueAuthRole = (customId?: string) => {
   const id = customId || generateUniqueId();
