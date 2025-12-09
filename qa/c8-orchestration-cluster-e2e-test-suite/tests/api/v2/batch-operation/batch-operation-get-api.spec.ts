@@ -58,22 +58,16 @@ test.describe.parallel('Get Batch Operation Tests', () => {
         expect(json['batchOperationKey']).toBe(localState.batchOperationKey);
         expect(json['state']).toBeDefined();
         expect(json['batchOperationType']).toBe('CANCEL_PROCESS_INSTANCE');
-        expect(
-          json['operationsTotalCount'],
-          'operationsTotalCount is 0',
-        ).toBeGreaterThan(0);
-        expect(
-          json['operationsFailedCount'],
-          'operationsFailedCount is 0',
-        ).toBeGreaterThanOrEqual(0);
-        expect(
-          json['operationsCompletedCount'],
-          'operationsCompletedCount is 0',
-        ).toBeGreaterThanOrEqual(0);
+        expect(json['operationsTotalCount']).toBeGreaterThan(0);
+        expect(json['operationsFailedCount']).toBeGreaterThanOrEqual(0);
+        expect(json['operationsCompletedCount']).toBeGreaterThanOrEqual(0);
         expect(json['errors']).toBeDefined();
         //Skipped due to bug 42165: https://github.com/camunda/camunda/issues/42165
         // expect(json['startDate']).toBeDefined();
-      }).toPass(defaultAssertionOptions);
+      }).toPass({
+        intervals: [5_000, 10_000, 15_000, 25_000],
+        timeout: 60_000,
+      });
     });
   });
 
