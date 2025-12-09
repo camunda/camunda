@@ -9,6 +9,8 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
@@ -22,11 +24,13 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.List;
 import org.agrona.concurrent.BackoffIdleStrategy;
 
@@ -57,7 +61,7 @@ public final class SyncStreamProcessor {
     this.recordValues = recordValues;
   }
 
-  long recover() throws Exception {
+  long recover() {
     final var batchReader = new LogStreamBatchReaderImpl(logStream.newLogStreamReader());
     final var processedPositionState = state.getLastProcessedPositionState();
 
@@ -76,7 +80,7 @@ public final class SyncStreamProcessor {
     }
   }
 
-  void replay(final long replayedPosition) throws Exception {
+  void replay(final long replayedPosition) throws InterruptedException {
     final var batchReader = new LogStreamBatchReaderImpl(logStream.newLogStreamReader());
     batchReader.seekToNextBatch(replayedPosition);
 
@@ -93,39 +97,7 @@ public final class SyncStreamProcessor {
     }
   }
 
-  void replayBatch(final TransactionContext transactionContext, final Batch batch)
-      throws Exception {
-    final var processedPositionState = state.getLastProcessedPositionState();
-
-    try (final var tx = transactionContext.getCurrentTransaction()) {
-      for (final var entry : batch) {
-        replayEntry(entry);
-        processedPositionState.markAsProcessed(batch.sourcePosition());
-      }
-      tx.commit();
-    }
-  }
-
-  void replayEntry(final LoggedEvent entry) {
-    entry.readMetadata(recordMetadata);
-    if (recordMetadata.getRecordType() != RecordType.EVENT) {
-      return;
-    }
-
-    final var value = recordValues.readRecordValue(entry, recordMetadata.getValueType());
-    final var record = new TypedRecordImpl(partitionId);
-    record.wrap(entry, recordMetadata, value);
-
-    final var processor =
-        processors.stream()
-            .filter(candidate -> candidate.accepts(recordMetadata.getValueType()))
-            .findFirst()
-            .orElseThrow(() -> NoSuchProcessorException.forRecord(record));
-
-    processor.replay(record);
-  }
-
-  void process(final long replayedPosition) throws Exception {
+  void process(final long replayedPosition) throws InterruptedException {
     final var entryReader = logStream.newLogStreamReader();
     entryReader.seek(replayedPosition);
     final var processedPositionState = state.getLastProcessedPositionState();
@@ -140,22 +112,58 @@ public final class SyncStreamProcessor {
       //   It needs to store multiple responses
       //   We could also make it easier to iterate through *new* processing results and mark records
       //   as processed.
-      final var resultBuilder = new BufferedProcessingResultBuilder(writer::canWriteEvents);
 
+      ProcessingResult result;
       try (final var tx = transactionContext.getCurrentTransaction()) {
-        final var followUp = processEntry(resultBuilder, initialEntry);
-        processFollowUp(resultBuilder, followUp);
-        processedPositionState.markAsProcessed(initialEntry.getPosition());
+        try {
+          final var resultBuilder = new BufferedProcessingResultBuilder(writer::canWriteEvents);
+          final var followUp = processEntry(resultBuilder, initialEntry);
+          processFollowUp(resultBuilder, followUp);
+          result = resultBuilder.build();
+        } catch (final RuntimeException e) {
+          rollbackTransaction(tx);
+          result = handleProcessingError(writer, initialEntry, e);
+        }
 
-        final var result = resultBuilder.build();
+        processedPositionState.markAsProcessed(initialEntry.getPosition());
         writeProcessingResult(writer, initialEntry, result);
 
-        tx.commit();
+        commitTransaction(tx);
 
-        final var response = Thread.ofVirtual().start(() -> writeProcessingResponse(result));
-        final var sideEffects = Thread.ofVirtual().start(() -> executeSideEffects(result));
-        response.join();
-        sideEffects.join();
+        writeProcessingResponse(result);
+        executeSideEffects(result);
+      }
+    }
+  }
+
+  private void commitTransaction(final ZeebeDbTransaction transaction)
+      throws UnrecoverableException {
+    final var idle = new BackoffIdleStrategy();
+    while (true) {
+      try {
+        transaction.commit();
+        return;
+      } catch (final ZeebeDbException e) {
+        // Recoverable. Idle, then retry.
+        idle.idle();
+      } catch (final Exception e) {
+        throw new UnrecoverableException(e);
+      }
+    }
+  }
+
+  private void rollbackTransaction(final ZeebeDbTransaction transaction)
+      throws UnrecoverableException {
+    final var idle = new BackoffIdleStrategy();
+    while (true) {
+      try {
+        transaction.rollback();
+        return;
+      } catch (final ZeebeDbException e) {
+        // Recoverable. Idle, then retry.
+        idle.idle();
+      } catch (final Exception e) {
+        throw new UnrecoverableException(e);
       }
     }
   }
@@ -301,13 +309,7 @@ public final class SyncStreamProcessor {
     final var record = new TypedRecordImpl(partitionId);
     record.wrap(entry, recordMetadata, value);
 
-    final var processor =
-        processors.stream()
-            .filter(candidate -> candidate.accepts(recordMetadata.getValueType()))
-            .findFirst()
-            .orElseThrow(() -> NoSuchProcessorException.forRecord(record));
-
-    return processor.process(record, resultBuilder);
+    return processRecord(resultBuilder, record);
   }
 
   void processFollowUp(
@@ -317,14 +319,19 @@ public final class SyncStreamProcessor {
           new UnwrittenRecord(
               entry.key(), partitionId, entry.recordValue(), entry.recordMetadata());
 
-      final var processor =
-          processors.stream()
-              .filter(candidate -> candidate.accepts(entry.recordMetadata().getValueType()))
-              .findFirst()
-              .orElseThrow(() -> NoSuchProcessorException.forRecord(record));
-
-      processor.process(record, resultBuilder);
+      processRecord(resultBuilder, record);
     }
+  }
+
+  ProcessingResult processRecord(
+      final ProcessingResultBuilder resultBuilder, final TypedRecord<?> record) {
+    final var processor =
+        processors.stream()
+            .filter(candidate -> candidate.accepts(record.getValueType()))
+            .findFirst()
+            .orElseThrow(() -> NoSuchProcessorException.forRecord(record));
+
+    return processor.process(record, resultBuilder);
   }
 
   interface SyncTransactionContext extends TransactionContext, AutoCloseable {
@@ -337,3 +344,4 @@ public final class SyncStreamProcessor {
     void close();
   }
 }
+  private interface SyncTransactionContext extends TransactionContext, AutoCloseable {
