@@ -89,43 +89,34 @@ Depending on the test variant, different process models are created and executed
 
 All of this is deployed in a Zeebe-maintained (as of now; 16 Jun 2025) Google Kubernetes Engine (GKE) cluster (zeebe-cluster), in its own zeebe-io Google Cloud Project (GCP). Details of the general infrastructure, which is deployed related to observability (Prometheus), can be found in the [Zeebe infrastructure repository](https://github.com/camunda/zeebe-infra).
 
-For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), before we had the Zeebe Broker and Zeebe Gateways standalone deployed.
+For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Broker and Zeebe Gateways were deployed standalone.
 
 ![setup](assets/setup.png)
 
-### Variants
+### Endurance test variants
 
-We run our load tests in different variants to cover different goals.
+We conduct our endurance tests in various variants and with different workloads to cover a broader scope, with the primary goal of identifying instabilities such as memory or thread leaks, as well as performance and stability issues over time.
 
-#### Normal (artificial) load
+#### Typical load
 
-A load test where we run some artificial load, ensuring that the system behaves reliably.
+After discussing with different stakeholders, we defined a so-called "typical" load. Using a typical or commonly used process model, which is often also called the straight-through process model, and [data set](../../load-tests/load-tester/src/main/resources/bpmn/typical_payload.json) that is typical as well (~0.5KB). We defined a load that we want to be able to sustain reliably.
 
-![normal](assets/normal.png)
-It contains only a start event, one service task, and an end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/big_payload.json).
+![typical](assets/typical_process.png)
 
-Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. This test load is historical, as it was one of the first we designed. Likely might be replaced by the more realistic load tests.
-
-The idea here is not to overload or stress the system, but to run a more stable and continuous load, to validate the reliability of the system.
+The straight-trough process contains ten tasks, two timers, and one exclusive gateway. Covering a typical use case, where a process instance is started, undergoes several automated tasks, waits for a specified period (using timers), and then concludes.
 
 **The expected load is:**
 
-* 150 process instances per second (PI/s) completed.
-* 150 task instances per second (TI/s) completed
+* 50 process instances per second (PI/s) completed.
+* 500 task instances per second (TI/s) completed
 
 _Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
-
-#### Latency load
-
-Similar to the normal load test, we ran the artificial (normal) process model to run some latency-related tests. To validate the latency, we reduce the load to one PI/s, to reduce the blast radius, and make sure we have clear values for the latency of process instance completion.
-
-*As of now, there is no clear SLO/SLA defined for such.*
 
 #### Realistic load
 
 In the past year (2024), we designed a new load test, where we ran a [more complex and more realistic process](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn) and [data set](https://github.com/camunda/camunda/blob/main/zeebe/load-tests/project/src/main/resources/bpmn/realistic/realisticPayload.json).
 
-As part of this test, we cover a wide variety of BPMN elements, like CallActivities, Multi-Instance, Sub-Processes, DMN, etc.
+As part of this test, we cover a wide variety of BPMN elements, including Call Activities, Multi-Instance, Sub-Processes, and DMN.
 
 ![realisticCase](assets/realisticCase.png)
 ![realisticCase-DMN](assets/realisticCase-DMN.png)
@@ -140,6 +131,32 @@ The test is based on [a blueprint we provide in our Marketplace](https://marketp
 * **To note here:** We create one process instance per second, but due to the realistic payload, the multi-instance and call activity will create 50 sub-process instances, and further flow elements.
 
 *Intrinsic SLO to always be able to satisfy such a load, and perform reliably.*
+
+### Max / Stress load test
+
+A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
+
+![normal](assets/normal.png)
+
+It contains only a start event, one service task, and an end event. Covering a straight-through processing use case and using the same payload as for our typical load test (~0.5KB).
+
+This type of process is helpful for stress tests, as it gives us a good sense of the maximum load.
+This is one of the smallest processes (including a service task) that we can model.
+
+Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
+
+**The expected load is:**
+
+* 300 process instances per second (PI/s) completed.
+* 300 task instances per second (TI/s) completed
+
+_Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
+
+### Latency load test
+
+Similar to the stress test from above, we ran the artificial (normal) process model to run some latency-related tests. To validate the latency, we reduce the load to **one** PI/s, to reduce the blast radius, and make sure we have clear values for the latency of process instance completion.
+
+*As of now, there is no clear SLO/SLA defined for such.*
 
 ### Observability
 
@@ -219,26 +236,40 @@ In our post-release process, we map our `release_version` variable to the `workf
 
 #### Weekly load tests
 
-In addition to our release tests, we ran weekly load tests in all variants based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
+In addition to our release tests, we ran weekly load tests for all [endurance test variants](#endurance-test-variants) based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
 **Validation:** The tailored [Zeebe Medic Dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
-As of today (16 Jun 2025) we have the following tests running:
+As an example, we have the following tests running:
 
-* medic-y-2025-cw-22-a60d64da-benchmark
-* medic-y-2025-cw-22-a60d64da-benchmark-latency
-* medic-y-2025-cw-22-a60d64da-benchmark-mixed
-* medic-y-2025-cw-23-a799b041-benchmark
-* medic-y-2025-cw-23-a799b041-benchmark-latency
-* medic-y-2025-cw-23-a799b041-benchmark-mixed
-* medic-y-2025-cw-24-0c3f2664-benchmark
-* medic-y-2025-cw-24-0c3f2664-benchmark-latency
-* medic-y-2025-cw-24-0c3f2664-benchmark-mixed
-* medic-y-2025-cw-25-59a095c4-benchmark
-* medic-y-2025-cw-25-59a095c4-benchmark-latency
-* medic-y-2025-cw-25-59a095c4-benchmark-mixed
+* medic-y-2025-cw-22-a60d64da-test-latency
+* medic-y-2025-cw-22-a60d64da-test-mixed
+* medic-y-2025-cw-22-a60d64da-test-typical
+* medic-y-2025-cw-23-a799b041-test-typical
+* medic-y-2025-cw-23-a799b041-test-latency
+* medic-y-2025-cw-23-a799b041-test-mixed
+* medic-y-2025-cw-24-0c3f2664-test-typical
+* medic-y-2025-cw-24-0c3f2664-test-latency
+* medic-y-2025-cw-24-0c3f2664-test-mixed
+* medic-y-2025-cw-25-59a095c4-test-typical
+* medic-y-2025-cw-25-59a095c4-test-latency
+* medic-y-2025-cw-25-59a095c4-test-mixed
+
+#### Daily load tests
+
+In addition to our weekly load tests, we ran daily stress tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+
+**Goal:** Validating the reliability of our current main (putting it under stress), and detecting earlier issues, allowing us to detect newly introduced instabilities.
+
+**Benefits:**
+
+* We have a better overview of how the system performs over time - detect trends in performance
+* Detect regressions earlier - shorter feedback loop when we break something in our application or configuration
+* Faster integration with our Helm charts - sanity check every day that load tests work with charts and the application
+
+**Validation:** TBD - explicit dashboard with KPI's and showing last week's tests needs to be created. Part of [#42274](https://github.com/camunda/camunda/issues/42274).
 
 #### Ad-Hoc load tests
 
