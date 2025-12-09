@@ -6,92 +6,284 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef} from 'react';
-import {observer} from 'mobx-react';
+import {createContext, useContext, useMemo, useRef} from 'react';
+import type {
+  ElementInstance,
+  ProcessInstance,
+} from '@camunda/camunda-api-zod-schemas/8.8';
+import {observer} from 'mobx-react-lite';
+import {elementInstancesTreeStore} from './elementInstancesTreeStore';
+import type {BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';
+import {ElementInstanceIcon, TreeNode} from './styled';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {
-  flowNodeInstanceStore,
-  type FlowNodeInstance,
-  MAX_INSTANCES_STORED,
-} from 'modules/stores/flowNodeInstance';
-import {InfiniteScroller} from 'modules/components/InfiniteScroller';
-import {tracking} from 'modules/tracking';
-import {modificationsStore} from 'modules/stores/modifications';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {TreeNode} from './styled';
-import {FlowNodeIcon} from 'modules/components/FlowNodeIcon';
-import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {Bar} from './Bar';
-import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
+import {notificationsStore} from 'modules/stores/notifications';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import {useLatestMigrationDate} from 'modules/queries/operations/useLatestMigrationDate';
-import {
-  fetchNext,
-  fetchPrevious,
-  fetchSubTree,
-} from 'modules/utils/flowNodeInstance';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {
-  selectFlowNode,
-  selectAdHocSubProcessInnerInstance,
-} from 'modules/utils/flowNodeSelection';
-import {useRootNode} from 'modules/hooks/flowNodeSelection';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {modificationsStore} from 'modules/stores/modifications';
+import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {VirtualBar} from './Bar/VirtualBar';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
+import {tracking} from 'modules/tracking';
 
 const TREE_NODE_HEIGHT = 32;
+const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
+  'PROCESS',
+  'MULTI_INSTANCE_BODY',
+  'SUB_PROCESS',
+  'EVENT_SUB_PROCESS',
+  'AD_HOC_SUB_PROCESS',
+  'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+];
 
-type Props = {
-  flowNodeInstance: FlowNodeInstance;
-  isRoot?: boolean;
-  rowRef?: React.Ref<HTMLDivElement>;
-  scrollableContainerRef: React.RefObject<HTMLElement | null>;
+type VirtualElementInstance = {
+  isVirtual: true;
+  elementId: string;
+  elementName?: string;
+  type: ElementType;
+  elementInstanceKey: string;
 };
 
-const getVisibleChildPlaceholdersFromFlowNodeInstance = ({
-  isModificationModeEnabled,
-  flowNodeInstance,
-  businessObjects,
-  processInstance,
-}: {
-  isModificationModeEnabled: boolean;
-  flowNodeInstance: FlowNodeInstance;
+function convertToVirtualElementInstance(params: {
+  flowNodeInstances: FlowNodeInstance[];
   businessObjects: BusinessObjects;
-  processInstance?: ProcessInstance;
-}) => {
-  const {state, isPlaceholder, flowNodeId, id} = flowNodeInstance;
-  if (
-    !isModificationModeEnabled ||
-    (!isPlaceholder &&
-      (state === undefined || !['ACTIVE', 'INCIDENT'].includes(state)))
-  ) {
-    return [];
-  }
+}): VirtualElementInstance[] {
+  const {flowNodeInstances, businessObjects} = params;
 
-  return getVisibleChildPlaceholders(
-    id,
-    flowNodeId,
-    businessObjects,
-    processInstance?.processDefinitionId,
-    processInstance?.processInstanceKey,
-    isPlaceholder,
-  );
+  return flowNodeInstances.map((flowNodeInstance) => {
+    const businessObject = businessObjects[flowNodeInstance.flowNodeId];
+    return {
+      isVirtual: true,
+      elementId: flowNodeInstance.flowNodeId,
+      elementName: businessObject?.name,
+      type: businessObject?.$type,
+      elementInstanceKey: flowNodeInstance.id,
+    };
+  });
+}
+
+const ElementInstanceHistoryTree = createContext<{
+  processInstance: ProcessInstance;
+  scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
+  businessObjects: BusinessObjects;
+  latestMigrationDate: string | undefined;
+} | null>(null);
+
+const useElementInstanceHistoryTree = () => {
+  const context = useContext(ElementInstanceHistoryTree);
+  if (!context) {
+    throw new Error(
+      'useElementInstanceHistoryTree must be used within a ElementInstanceHistoryTreeProvider',
+    );
+  }
+  return context;
 };
+
+type NonFoldableElementInstancesNodeProps = {
+  scopeKey: string;
+  elementId: string;
+  elementName: string;
+  elementInstanceState: ElementInstance['state'];
+  hasIncident: boolean;
+  endDate: string | undefined;
+  elementType: ElementInstance['type'];
+  renderIcon: () => React.ReactNode | null;
+  scopeKeyHierarchy: string[];
+};
+
+const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeProps> =
+  observer(
+    ({
+      scopeKey,
+      elementId,
+      elementName,
+      elementInstanceState,
+      hasIncident,
+      endDate,
+      elementType,
+      renderIcon,
+      scopeKeyHierarchy,
+      ...rest
+    }) => {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const {latestMigrationDate, businessObjects} =
+        useElementInstanceHistoryTree();
+      const isRoot = elementType === 'PROCESS';
+      const {processInstance} = useElementInstanceHistoryTree();
+
+      const rootNode = useRootNode();
+      const isSelected = flowNodeSelectionStore.isSelected({
+        flowNodeId: isRoot ? undefined : elementId,
+        flowNodeInstanceId: scopeKey,
+        isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+      });
+
+      const handleSelect = () => {
+        if (isRoot) {
+          selectFlowNode(rootNode, {
+            processInstanceId: processInstance.processInstanceKey,
+          });
+          return;
+        }
+
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
+          );
+          return;
+        }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: false,
+        });
+      };
+
+      return (
+        <TreeNode
+          {...rest}
+          key={scopeKey}
+          data-testid={`tree-node-${scopeKey}`}
+          selected={isSelected ? [scopeKey] : []}
+          active={isSelected ? scopeKey : undefined}
+          id={scopeKey}
+          value={scopeKey}
+          aria-label={elementName}
+          renderIcon={renderIcon}
+          isExpanded={false}
+          onSelect={handleSelect}
+          label={
+            <Bar
+              elementInstanceKey={scopeKey}
+              elementId={elementId}
+              elementName={elementName}
+              elementInstanceState={elementInstanceState}
+              hasIncident={hasIncident}
+              endDate={endDate}
+              isTimestampLabelVisible={
+                !modificationsStore.isModificationModeEnabled
+              }
+              isRoot={isRoot}
+              latestMigrationDate={latestMigrationDate}
+              scopeKeyHierarchy={scopeKeyHierarchy}
+              ref={rowRef}
+            />
+          }
+        />
+      );
+    },
+  );
+
+type NonFoldableVirtualElementInstanceNodeProps = {
+  scopeKey: string;
+  elementId: string;
+  elementName: string;
+  elementType: ElementType;
+  renderIcon: () => React.ReactNode | null;
+  scopeKeyHierarchy: string[];
+};
+
+const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementInstanceNodeProps> =
+  observer(
+    ({
+      scopeKey,
+      elementId,
+      elementName,
+      elementType,
+      renderIcon,
+      scopeKeyHierarchy,
+      ...rest
+    }) => {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const isRoot = elementType === 'bpmn:Process';
+      const {businessObjects} = useElementInstanceHistoryTree();
+      const businessObject = businessObjects[elementId];
+
+      const rootNode = useRootNode();
+      const isSelected = flowNodeSelectionStore.isSelected({
+        flowNodeId: isRoot ? undefined : elementId,
+        flowNodeInstanceId: scopeKey,
+        isMultiInstance: isMultiInstance(businessObject),
+      });
+
+      const handleSelect = () => {
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
+          );
+          return;
+        }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: false,
+          isPlaceholder: true,
+        });
+      };
+
+      return (
+        <TreeNode
+          {...rest}
+          key={scopeKey}
+          data-testid={`tree-node-${scopeKey}`}
+          selected={isSelected ? [scopeKey] : []}
+          active={isSelected ? scopeKey : undefined}
+          id={scopeKey}
+          value={scopeKey}
+          aria-label={elementName}
+          renderIcon={renderIcon}
+          isExpanded={false}
+          onSelect={handleSelect}
+          label={
+            <VirtualBar
+              elementInstanceKey={scopeKey}
+              elementName={elementName}
+              scopeKeyHierarchy={scopeKeyHierarchy}
+              elementId={elementId}
+              ref={rowRef}
+            />
+          }
+        />
+      );
+    },
+  );
 
 const ScrollableNodes: React.FC<
   Omit<React.ComponentProps<typeof InfiniteScroller>, 'children'> & {
-    visibleChildren: FlowNodeInstance[];
+    visibleChildren: (ElementInstance | VirtualElementInstance)[];
+    scopeKeyHierarchy: string[];
   }
 > = ({
   onVerticalScrollEndReach,
   onVerticalScrollStartReach,
   visibleChildren,
   scrollableContainerRef,
+  scopeKeyHierarchy,
   ...carbonTreeNodeProps
 }) => {
   return (
@@ -101,12 +293,15 @@ const ScrollableNodes: React.FC<
       scrollableContainerRef={scrollableContainerRef}
     >
       <ul>
-        {visibleChildren.map((childNode: FlowNodeInstance) => {
+        {visibleChildren.map((elementInstance) => {
           return (
-            <FlowNodeInstancesTree
-              flowNodeInstance={childNode}
-              key={childNode.id}
-              scrollableContainerRef={scrollableContainerRef}
+            <ElementInstanceSubTreeRoot
+              key={elementInstance.elementInstanceKey}
+              elementInstance={elementInstance}
+              scopeKeyHierarchy={[
+                ...scopeKeyHierarchy,
+                elementInstance.elementInstanceKey,
+              ]}
               {...carbonTreeNodeProps}
             />
           );
@@ -116,221 +311,514 @@ const ScrollableNodes: React.FC<
   );
 };
 
-const FlowNodeInstancesTree: React.FC<Props> = observer(
-  ({flowNodeInstance, scrollableContainerRef, isRoot = false, ...rest}) => {
-    const {data: latestMigrationDate} = useLatestMigrationDate();
-    const {data: processInstance} = useProcessInstance();
-    const rootNode = useRootNode();
-    const {removeSubTree, getVisibleChildNodes} = flowNodeInstanceStore;
+type FoldableVirtualElementInstanceNodeProps = {
+  scopeKey: string;
+  elementId: string;
+  elementName: string;
+  elementType: ElementType;
+  renderIcon: () => React.ReactNode;
+  scopeKeyHierarchy: string[];
+};
 
-    const isProcessInstance =
-      flowNodeInstance.id === processInstance?.processInstanceKey;
+const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanceNodeProps> =
+  observer(
+    ({
+      scopeKey,
+      elementId,
+      elementName,
+      elementType,
+      renderIcon,
+      scopeKeyHierarchy,
+      ...carbonTreeNodeProps
+    }) => {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const {scrollableContainerRef, businessObjects, processInstance} =
+        useElementInstanceHistoryTree();
+      const businessObject = businessObjects[elementId];
+      const isRoot = elementType === 'bpmn:Process';
 
-    const visibleChildNodes = getVisibleChildNodes(flowNodeInstance);
-    const processDefinitionKey = useProcessDefinitionKeyContext();
-    const {data: processInstanceXmlData} = useProcessInstanceXml({
-      processDefinitionKey,
-    });
-    const visibleChildPlaceholders: FlowNodeInstance[] =
-      getVisibleChildPlaceholdersFromFlowNodeInstance({
-        isModificationModeEnabled: modificationsStore.isModificationModeEnabled,
-        flowNodeInstance,
-        businessObjects: processInstanceXmlData?.businessObjects || {},
+      const rootNode = useRootNode();
+      const isSelected = flowNodeSelectionStore.isSelected({
+        flowNodeId: isRoot ? undefined : elementId,
+        flowNodeInstanceId: scopeKey,
+        isMultiInstance: isMultiInstance(businessObject),
+      });
+      const virtualChildren = convertToVirtualElementInstance({
+        flowNodeInstances: getVisibleChildPlaceholders(
+          scopeKey,
+          elementId,
+          businessObjects,
+          processInstance.processDefinitionId,
+          processInstance.processInstanceKey,
+          elementType === 'bpmn:Process',
+        ),
+        businessObjects,
+      });
+      const isExpanded =
+        instanceHistoryModificationStore.state.expandedFlowNodeInstanceIds.includes(
+          scopeKey,
+        );
+
+      const handleSelect = async () => {
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
+
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
+          );
+          return;
+        }
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: isMultiInstance(businessObject),
+          isPlaceholder: true,
+        });
+      };
+
+      const elementProps = {
+        ...carbonTreeNodeProps,
+        'data-testid': `tree-node-${scopeKey}`,
+        selected: isSelected ? [scopeKey] : [],
+        active: isSelected ? scopeKey : undefined,
+        id: scopeKey,
+        value: scopeKey,
+        'aria-label': elementName,
+        renderIcon,
+        isExpanded,
+        onSelect: handleSelect,
+        label: (
+          <VirtualBar
+            elementInstanceKey={scopeKey}
+            elementName={elementName}
+            scopeKeyHierarchy={scopeKeyHierarchy}
+            elementId={elementId}
+            ref={rowRef}
+          />
+        ),
+      };
+
+      return (
+        <TreeNode
+          {...elementProps}
+          key={scopeKey}
+          onToggle={() => {
+            if (isExpanded) {
+              instanceHistoryModificationStore.removeFromExpandedFlowNodeInstanceIds(
+                scopeKey,
+              );
+            } else {
+              instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
+                scopeKey,
+              );
+            }
+          }}
+        >
+          <ScrollableNodes
+            onVerticalScrollEndReach={async (scrollUp) => {
+              const newPageItemsCount =
+                await elementInstancesTreeStore.fetchNextPage(scopeKey);
+              if (newPageItemsCount > 0) {
+                scrollUp(
+                  newPageItemsCount * (rowRef.current?.offsetHeight ?? 0),
+                );
+              }
+            }}
+            onVerticalScrollStartReach={async (scrollDown) => {
+              const newPageItemsCount =
+                await elementInstancesTreeStore.fetchPreviousPage(scopeKey);
+              if (newPageItemsCount > 0) {
+                scrollDown(newPageItemsCount * TREE_NODE_HEIGHT);
+              }
+            }}
+            scrollableContainerRef={scrollableContainerRef}
+            scopeKeyHierarchy={scopeKeyHierarchy}
+            visibleChildren={virtualChildren}
+          />
+        </TreeNode>
+      );
+    },
+  );
+
+type FoldableElementInstancesNodeProps = {
+  scopeKey: string;
+  elementId: string;
+  elementName: string;
+  elementInstanceState: ElementInstance['state'];
+  hasIncident: boolean;
+  endDate: string | undefined;
+  elementType: ElementInstance['type'];
+  renderIcon: () => React.ReactNode;
+  scopeKeyHierarchy: string[];
+};
+
+const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> =
+  observer(
+    ({
+      scopeKey,
+      elementId,
+      elementName,
+      elementInstanceState,
+      hasIncident,
+      endDate,
+      elementType,
+      renderIcon,
+      scopeKeyHierarchy,
+      ...carbonTreeNodeProps
+    }) => {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const {
+        scrollableContainerRef,
+        businessObjects,
         processInstance,
+        latestMigrationDate,
+      } = useElementInstanceHistoryTree();
+      const {refetch: fetchFirstChild} = useSearchElementInstancesByScope(
+        {
+          elementInstanceScopeKey: scopeKey,
+          page: {limit: 1, from: 0},
+          sort: [{field: 'startDate', order: 'asc'}],
+        },
+        {enabled: false},
+      );
+      const isRoot = elementType === 'PROCESS';
+
+      const rootNode = useRootNode();
+      const isSelected = flowNodeSelectionStore.isSelected({
+        flowNodeId: isRoot ? undefined : elementId,
+        flowNodeInstanceId: scopeKey,
+        isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+      });
+      const isExpanded = elementInstancesTreeStore.isNodeExpanded(scopeKey);
+
+      const virtualChildren = convertToVirtualElementInstance({
+        flowNodeInstances: getVisibleChildPlaceholders(
+          scopeKey,
+          elementId,
+          businessObjects,
+          processInstance.processDefinitionId,
+          processInstance.processInstanceKey,
+          false,
+        ),
+        businessObjects,
       });
 
-    const visibleChildren = [...visibleChildNodes, ...visibleChildPlaceholders];
-
-    const hasVisibleChildPlaceholders = visibleChildPlaceholders.length > 0;
-    const hasVisibleChildNodes = visibleChildNodes.length > 0;
-
-    const bpmnProcessId = processInstance?.processDefinitionId;
-
-    const businessObject = isProcessInstance
-      ? bpmnProcessId
-        ? processInstanceXmlData?.diagramModel.elementsById[bpmnProcessId]
-        : undefined
-      : processInstanceXmlData?.businessObjects[flowNodeInstance.flowNodeId];
-
-    const isMultiInstanceBody = flowNodeInstance.type === 'MULTI_INSTANCE_BODY';
-    const isAdHocSubProcessInnerInstance =
-      flowNodeInstance.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
-
-    const isFoldable =
-      isMultiInstanceBody ||
-      isSubProcess(businessObject) ||
-      isAdHocSubProcess(businessObject) ||
-      isAdHocSubProcessInnerInstance ||
-      isRoot;
-
-    const hasChildren = flowNodeInstance.isPlaceholder
-      ? isFoldable &&
-        processInstanceXmlData?.businessObjects &&
-        hasChildPlaceholders(
-          flowNodeInstance.id,
-          processInstanceXmlData?.businessObjects,
-          processInstance?.processDefinitionId,
-          processInstance?.processInstanceKey,
-        )
-      : isFoldable;
-
-    const isSelected = flowNodeSelectionStore.isSelected({
-      flowNodeInstanceId: flowNodeInstance.id,
-      flowNodeId: flowNodeInstance.flowNodeId,
-      isMultiInstance: isMultiInstanceBody,
-    });
-
-    const rowRef = useRef<HTMLDivElement>(null);
-
-    const expandSubtree = (flowNodeInstance: FlowNodeInstance) => {
-      if (!flowNodeInstance.isPlaceholder) {
-        fetchSubTree({treePath: flowNodeInstance.treePath, processInstance});
-      } else {
-        instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
-          flowNodeInstance.id,
-        );
-      }
-    };
-
-    const collapseSubtree = (flowNodeInstance: FlowNodeInstance) => {
-      if (!flowNodeInstance.isPlaceholder) {
-        removeSubTree({
-          treePath: flowNodeInstance.treePath,
-        });
-      } else {
-        instanceHistoryModificationStore.removeFromExpandedFlowNodeInstanceIds(
-          flowNodeInstance.id,
-        );
-      }
-    };
-
-    const handleEndReach = async (scrollUp: (distance: number) => void) => {
-      if (flowNodeInstance?.treePath === undefined) {
-        return;
-      }
-      if (flowNodeInstance.treePath !== null) {
-        const fetchedInstancesCount = await fetchNext(
-          flowNodeInstance.treePath,
-          processInstance,
-        );
-
-        // This ensures that the container is scrolling up when MAX_INSTANCES_STORED is reached.
-        if (
-          fetchedInstancesCount !== undefined &&
-          flowNodeInstanceStore.state.flowNodeInstances[
-            flowNodeInstance.treePath
-          ]?.children.length === MAX_INSTANCES_STORED
-        ) {
-          scrollUp(fetchedInstancesCount * (rowRef.current?.offsetHeight ?? 0));
+      const handleSelect = async () => {
+        if (isRoot) {
+          selectFlowNode(rootNode, {
+            processInstanceId: processInstance.processInstanceKey,
+          });
+          return;
         }
-      }
-    };
 
-    const nodeName = `${businessObject?.name || flowNodeInstance.flowNodeId}${
-      isMultiInstanceBody ? ` (Multi Instance)` : ''
-    }`;
+        if (modificationsStore.state.status === 'moving-token') {
+          return;
+        }
 
-    const isExpanded = flowNodeInstance.isPlaceholder
-      ? hasVisibleChildPlaceholders
-      : hasVisibleChildNodes;
-    let {rowRef: _, ...carbonTreeNodeProps} = rest;
-    return (
-      <TreeNode
-        {...carbonTreeNodeProps}
-        data-testid={`tree-node-${flowNodeInstance.id}`}
-        selected={isSelected ? [flowNodeInstance.id] : []}
-        active={isSelected ? flowNodeInstance.id : undefined}
-        key={flowNodeInstance.id}
-        id={flowNodeInstance.id}
-        value={flowNodeInstance.id}
-        aria-label={nodeName}
-        renderIcon={() => {
-          return (
-            <FlowNodeIcon
-              flowNodeInstanceType={flowNodeInstance.type}
-              diagramBusinessObject={businessObject}
-              hasLeftMargin={!hasChildren}
-            />
+        if (modificationsStore.state.status === 'adding-token') {
+          modificationsStore.finishAddingToken(
+            businessObjects,
+            elementId,
+            scopeKey,
           );
-        }}
-        onSelect={() => {
-          if (
-            modificationsStore.state.status === 'adding-token' &&
-            processInstanceXmlData?.businessObjects
-          ) {
-            modificationsStore.finishAddingToken(
-              processInstanceXmlData.businessObjects,
-              flowNodeInstance.flowNodeId,
-              flowNodeInstance.id,
-            );
-          } else {
-            tracking.track({eventName: 'instance-history-item-clicked'});
-            if (isAdHocSubProcessInnerInstance) {
-              if (!isExpanded) {
-                expandSubtree(flowNodeInstance);
-              }
-              selectAdHocSubProcessInnerInstance(rootNode, flowNodeInstance);
-            } else {
-              selectFlowNode(rootNode, {
-                flowNodeId: isProcessInstance
-                  ? undefined
-                  : flowNodeInstance.flowNodeId,
-                flowNodeInstanceId: flowNodeInstance.id,
-                isMultiInstance: isMultiInstanceBody,
-                isPlaceholder: flowNodeInstance.isPlaceholder,
-              });
-            }
-          }
-        }}
-        onToggle={
-          isFoldable
-            ? (event) => {
-                event.stopPropagation();
-                return (flowNodeInstance.isPlaceholder &&
-                  hasVisibleChildPlaceholders) ||
-                  (!flowNodeInstance.isPlaceholder && hasVisibleChildNodes)
-                  ? collapseSubtree(flowNodeInstance)
-                  : expandSubtree(flowNodeInstance);
-              }
-            : undefined
+          return;
         }
-        isExpanded={isExpanded}
-        label={
+
+        tracking.track({eventName: 'instance-history-item-clicked'});
+
+        if (elementType !== 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
+          selectFlowNode(rootNode, {
+            flowNodeId: elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+          });
+          return;
+        }
+
+        const childInstances = elementInstancesTreeStore.getItems(scopeKey);
+
+        if (isExpanded && childInstances.length > 0) {
+          selectFlowNode(rootNode, {
+            flowNodeId: elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: false,
+            anchorFlowNodeId: childInstances[0].elementId,
+          });
+          return;
+        }
+
+        const {data} = await fetchFirstChild();
+        const [firstChild] = data?.items ?? [];
+
+        if (firstChild === undefined) {
+          notificationsStore.displayNotification({
+            kind: 'warning',
+            title:
+              'No child instances found for Ad Hoc Sub Process Inner Instance',
+            subtitle:
+              "The element instance has no child instances and we can't select the first child instance",
+            isDismissable: true,
+          });
+          return;
+        }
+
+        selectFlowNode(rootNode, {
+          flowNodeId: elementId,
+          flowNodeInstanceId: scopeKey,
+          isMultiInstance: false,
+          anchorFlowNodeId: firstChild.elementId,
+        });
+      };
+
+      const elementProps = {
+        ...carbonTreeNodeProps,
+        'data-testid': `tree-node-${scopeKey}`,
+        selected: isSelected ? [scopeKey] : [],
+        active: isSelected ? scopeKey : undefined,
+        id: scopeKey,
+        value: scopeKey,
+        'aria-label': elementName,
+        renderIcon,
+        isExpanded,
+        onSelect: handleSelect,
+        label: (
           <Bar
-            nodeName={nodeName}
-            flowNodeInstance={flowNodeInstance}
+            elementInstanceKey={scopeKey}
+            elementId={elementId}
+            elementName={elementName}
+            elementInstanceState={elementInstanceState}
+            hasIncident={hasIncident}
+            endDate={endDate}
             isTimestampLabelVisible={
               !modificationsStore.isModificationModeEnabled
             }
             isRoot={isRoot}
             latestMigrationDate={latestMigrationDate}
+            scopeKeyHierarchy={scopeKeyHierarchy}
             ref={rowRef}
           />
-        }
-      >
-        {hasChildren ? (
-          <ScrollableNodes
-            onVerticalScrollEndReach={handleEndReach}
-            onVerticalScrollStartReach={async (scrollDown) => {
-              if (flowNodeInstance.treePath === null) {
-                return;
-              }
-              const fetchedInstancesCount = await fetchPrevious(
-                flowNodeInstance.treePath,
-                processInstance,
-              );
+        ),
+      };
 
-              if (fetchedInstancesCount !== undefined) {
-                scrollDown(fetchedInstancesCount * TREE_NODE_HEIGHT);
+      return (
+        <TreeNode
+          {...elementProps}
+          key={scopeKey}
+          onToggle={() => {
+            elementInstancesTreeStore.toggleNode(scopeKey);
+          }}
+        >
+          <ScrollableNodes
+            onVerticalScrollEndReach={async (scrollUp) => {
+              const newPageItemsCount =
+                await elementInstancesTreeStore.fetchNextPage(scopeKey);
+              if (newPageItemsCount > 0) {
+                scrollUp(
+                  newPageItemsCount * (rowRef.current?.offsetHeight ?? 0),
+                );
+              }
+            }}
+            onVerticalScrollStartReach={async (scrollDown) => {
+              const newPageItemsCount =
+                await elementInstancesTreeStore.fetchPreviousPage(scopeKey);
+              if (newPageItemsCount > 0) {
+                scrollDown(newPageItemsCount * TREE_NODE_HEIGHT);
               }
             }}
             scrollableContainerRef={scrollableContainerRef}
-            visibleChildren={visibleChildren}
+            scopeKeyHierarchy={scopeKeyHierarchy}
+            visibleChildren={
+              elementInstancesTreeStore.hasNextPage(scopeKey)
+                ? elementInstancesTreeStore.getItems(scopeKey)
+                : [
+                    ...elementInstancesTreeStore.getItems(scopeKey),
+                    ...virtualChildren,
+                  ]
+            }
           />
-        ) : undefined}
-      </TreeNode>
+        </TreeNode>
+      );
+    },
+  );
+
+function isVirtualElementInstance(
+  elementInstance: ElementInstance | VirtualElementInstance,
+): elementInstance is VirtualElementInstance {
+  return 'isVirtual' in elementInstance && elementInstance.isVirtual;
+}
+
+type Props = {
+  elementInstance: ElementInstance | VirtualElementInstance;
+  scopeKeyHierarchy: string[];
+};
+
+const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
+  ({elementInstance, scopeKeyHierarchy, ...rest}) => {
+    const {businessObjects, processInstance} = useElementInstanceHistoryTree();
+
+    if (isVirtualElementInstance(elementInstance)) {
+      const hasChildren = hasChildPlaceholders(
+        elementInstance.elementInstanceKey,
+        businessObjects,
+        processInstance.processDefinitionId,
+        processInstance.processInstanceKey,
+      );
+      const nodeProps = {
+        ...rest,
+        scopeKey: elementInstance.elementInstanceKey,
+        elementId: elementInstance.elementId,
+        elementName: elementInstance.elementName ?? elementInstance.elementId,
+        elementType: elementInstance.type,
+        scopeKeyHierarchy,
+      };
+
+      if (hasChildren) {
+        return (
+          <FoldableVirtualElementInstanceNode
+            {...nodeProps}
+            renderIcon={() => (
+              <ElementInstanceIcon
+                diagramBusinessObject={
+                  businessObjects[elementInstance.elementId]
+                }
+                $hasLeftMargin={false}
+              />
+            )}
+          />
+        );
+      }
+
+      return (
+        <NonFoldableVirtualElementInstanceNode
+          {...nodeProps}
+          renderIcon={() => (
+            <ElementInstanceIcon
+              diagramBusinessObject={businessObjects[elementInstance.elementId]}
+              $hasLeftMargin
+            />
+          )}
+        />
+      );
+    }
+
+    const isMultiInstanceBody = elementInstance.type === 'MULTI_INSTANCE_BODY';
+    const nodeProps = {
+      ...rest,
+      scopeKey: elementInstance.elementInstanceKey,
+      elementId: elementInstance.elementId,
+      elementName: `${elementInstance.elementName ?? elementInstance.elementId}${
+        isMultiInstanceBody ? ' (Multi Instance)' : ''
+      }`,
+      elementType: elementInstance.type,
+      elementInstanceState: elementInstance.state,
+      hasIncident: elementInstance.hasIncident,
+      endDate: elementInstance.endDate,
+      scopeKeyHierarchy,
+    };
+    const isFoldable = FOLDABLE_ELEMENT_TYPES.includes(elementInstance.type);
+    if (isFoldable) {
+      return (
+        <FoldableElementInstancesNode
+          {...nodeProps}
+          renderIcon={() => (
+            <ElementInstanceIcon
+              diagramBusinessObject={businessObjects[elementInstance.elementId]}
+              $hasLeftMargin={false}
+            />
+          )}
+        />
+      );
+    }
+
+    return (
+      <NonFoldableElementInstancesNode
+        {...nodeProps}
+        renderIcon={() => (
+          <ElementInstanceIcon
+            diagramBusinessObject={businessObjects[elementInstance.elementId]}
+            $hasLeftMargin
+          />
+        )}
+      />
     );
   },
 );
 
-export {FlowNodeInstancesTree};
+type ElementInstancesTreeProps = {
+  processInstance: ProcessInstance;
+
+  scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
+};
+
+const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
+  (props) => {
+    const {processInstance, scrollableContainerRef, ...rest} = props;
+    const {data: businessObjects} = useBusinessObjects();
+    const {data: {items: migrationItems} = {items: []}} =
+      useBatchOperationItems({
+        filter: {
+          processInstanceKey: processInstance.processInstanceKey,
+          operationType: 'MIGRATE_PROCESS_INSTANCE',
+          state: 'COMPLETED',
+        },
+        sort: [{field: 'processedDate', order: 'desc'}],
+        page: {limit: 1, from: 0},
+      });
+    const latestMigrationDate =
+      migrationItems.length > 0 ? migrationItems[0].processedDate : undefined;
+    const rootElementInstance = useMemo<ElementInstance>(() => {
+      const {
+        processInstanceKey,
+        processDefinitionId,
+        processDefinitionName,
+        ...rest
+      } = processInstance;
+      return {
+        ...rest,
+        type: 'PROCESS',
+        processInstanceKey,
+        processDefinitionId,
+        elementInstanceKey: processInstanceKey,
+        elementId: processDefinitionId,
+        elementName: processDefinitionName ?? processDefinitionId,
+      };
+    }, [processInstance]);
+
+    const enablePolling =
+      processInstance.state === 'ACTIVE' &&
+      !modificationsStore.isModificationModeEnabled;
+
+    elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey, {
+      enablePolling,
+    });
+
+    if (businessObjects === undefined) {
+      return null;
+    }
+
+    return (
+      <ElementInstanceHistoryTree.Provider
+        value={{
+          processInstance,
+          scrollableContainerRef,
+          businessObjects,
+          latestMigrationDate,
+        }}
+      >
+        <ElementInstanceSubTreeRoot
+          {...rest}
+          elementInstance={rootElementInstance}
+          scopeKeyHierarchy={[processInstance.processInstanceKey]}
+        />
+      </ElementInstanceHistoryTree.Provider>
+    );
+  },
+);
+
+export {ElementInstancesTree};

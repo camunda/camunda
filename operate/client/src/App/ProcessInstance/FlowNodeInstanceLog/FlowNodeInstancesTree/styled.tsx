@@ -9,6 +9,7 @@
 import {INSTANCE_HISTORY_LEFT_PADDING} from 'modules/constants';
 import styled, {css} from 'styled-components';
 import {ElementInstanceIcon as BaseElementInstanceIcon} from 'modules/components/ElementInstanceIcon';
+import {TreeNode as BaseTreeNode} from '@carbon/react';
 
 const ElementInstanceIcon = styled(BaseElementInstanceIcon)<{
   $hasLeftMargin: boolean;
@@ -23,6 +24,19 @@ const ElementInstanceIcon = styled(BaseElementInstanceIcon)<{
     `;
   }}
 `;
+const TreeNode = styled(BaseTreeNode)`
+  .cds--tree-node__label {
+    height: 2rem;
+
+    .cds--tree-parent-node__toggle {
+      margin-left: ${INSTANCE_HISTORY_LEFT_PADDING};
+    }
+  }
+
+  .cds--tree-node__label__details {
+    width: 100%;
+  }
+`;
 
 const NodeContainer = styled.div`
   position: absolute;
@@ -35,4 +49,4 @@ const InstanceHistory = styled.div`
   overflow: auto;
 `;
 
-export {ElementInstanceIcon, NodeContainer, InstanceHistory};
+export {ElementInstanceIcon, NodeContainer, InstanceHistory, TreeNode};

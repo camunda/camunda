@@ -6,51 +6,67 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
-
+import {forwardRef} from 'react';
 import {TimeStampLabel} from './TimeStampLabel';
 import {NodeName, Container, StateIcon} from './styled';
 import {Layer, Stack, Tag} from '@carbon/react';
-import {ModificationIcons as ModificationIconsV2} from './ModificationIcons/v2';
-import {type FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {formatDate} from 'modules/utils/date';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {ModificationIcons} from './ModificationIcons';
 
 type Props = {
-  flowNodeInstance: FlowNodeInstance;
-  nodeName: string;
-  isTimestampLabelVisible?: boolean;
-  isRoot?: boolean;
-  latestMigrationDate?: string;
+  elementInstanceKey: string;
+  elementId: string;
+  elementName: string;
+  elementInstanceState: ElementInstance['state'];
+  hasIncident: boolean;
+  endDate?: string;
+  isTimestampLabelVisible: boolean;
+  isRoot: boolean;
+  latestMigrationDate: string | undefined;
+  scopeKeyHierarchy: string[];
 };
 
-const Bar = React.forwardRef<HTMLDivElement, Props>(
+const Bar = forwardRef<HTMLDivElement, Props>(
   (
     {
-      nodeName,
-      flowNodeInstance,
-      isTimestampLabelVisible = false,
-      isRoot = false,
+      elementInstanceKey,
+      elementId,
+      elementName,
+      elementInstanceState,
+      hasIncident,
+      endDate,
+      isTimestampLabelVisible,
+      isRoot,
       latestMigrationDate,
+      scopeKeyHierarchy,
     },
     ref,
   ) => {
     return (
-      <Container ref={ref} data-testid={`node-details-${flowNodeInstance.id}`}>
+      <Container ref={ref} data-testid={`node-details-${elementInstanceKey}`}>
         <Stack orientation="horizontal" gap={5}>
-          {flowNodeInstance.state !== undefined && (
-            <StateIcon state={flowNodeInstance.state} size={16} />
+          {hasIncident ? (
+            <StateIcon state="INCIDENT" size={16} />
+          ) : (
+            <StateIcon state={elementInstanceState} size={16} />
           )}
-          <NodeName>{nodeName}</NodeName>
+          <NodeName>{elementName}</NodeName>
           {isRoot && latestMigrationDate !== undefined && (
             <Tag type="green">{`Migrated ${formatDate(latestMigrationDate)}`}</Tag>
           )}
-          {isTimestampLabelVisible && (
+          {isTimestampLabelVisible && endDate && (
             <Layer>
-              <TimeStampLabel timeStamp={flowNodeInstance.endDate} />
+              <TimeStampLabel timeStamp={endDate} />
             </Layer>
           )}
         </Stack>
-        <ModificationIconsV2 flowNodeInstance={flowNodeInstance} />
+        <ModificationIcons
+          elementId={elementId}
+          isPlaceholder={false}
+          endDate={endDate}
+          scopeKeyHierarchy={scopeKeyHierarchy}
+        />
       </Container>
     );
   },
