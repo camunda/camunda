@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-library-parent</artifactId>
+    <version>8.7.22-SNAPSHOT</version>
+    <relativePath>../../library-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-process-test-spring-4</artifactId>
+
+  <name>Camunda Process Test Spring Boot 4</name>
+  <description>Camunda's testing library for processes and process applications with Spring Boot 4.x support</description>
+
+  <properties>
+    <version.java>17</version.java>
+    <!-- Override Spring Boot version for 4.x compatibility -->
+    <version.spring-boot>4.0.1</version.spring-boot>
+    <!-- Spring Framework 7.x is required for Spring Boot 4.0 -->
+    <version.spring>7.0.1</version.spring>
+    <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
+    <version.junit>6.0.1</version.junit>
+  </properties>
+
+  <dependencies>
+
+    <!-- Base module - will be shaded -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-spring</artifactId>
+      <exclusions>
+        <!-- Exclude Spring Boot 3.x dependencies - we use 4.x versions -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-test</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-autoconfigure</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-configuration-processor</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-context</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-beans</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-test</artifactId>
+        </exclusion>
+        <!-- Exclude Spring Boot 3.x starter - we use 4.x version -->
+        <exclusion>
+          <groupId>io.camunda</groupId>
+          <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Use Spring Boot 4 starter instead -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-boot-4-starter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Spring Boot 4 dependencies -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <!-- Shade plugin to include and relocate classes from camunda-process-test-spring -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+              <artifactSet>
+                <includes>
+                  <!-- Only include the base module in the shaded jar -->
+                  <include>io.camunda:camunda-process-test-spring</include>
+                </includes>
+              </artifactSet>
+              <transformers>
+                <!-- Merge service files -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
+                <!-- Keep manifest entries -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"></transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!-- These dependencies are used by the shaded camunda-process-test-spring classes -->
+          <usedDependencies>
+            <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
+            <dependency>io.camunda:camunda-spring-boot-4-starter</dependency>
+          </usedDependencies>
+          <!-- These are transitive dependencies from shaded module - used but not directly declared -->
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>org.springframework:spring-beans</dependency>
+            <dependency>org.springframework:spring-core</dependency>
+            <dependency>org.springframework:spring-context</dependency>
+            <dependency>org.springframework.boot:spring-boot</dependency>
+            <dependency>org.springframework.boot:spring-boot-autoconfigure</dependency>
+          </ignoredUsedUndeclaredDependencies>
+        </configuration>
+      </plugin>
+
+      <!--
+        Note: Tests are skipped because test-jar tests from camunda-process-test-spring
+        were compiled with JUnit 5.x which is binary incompatible with JUnit 6.x
+        (required by Spring Boot 4). Test coverage is provided by the base module.
+        This is acceptable as this module is a temporary solution for the 8.8 branch.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

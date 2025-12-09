@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-library-parent</artifactId>
+    <version>8.7.22-SNAPSHOT</version>
+    <relativePath>../../library-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-spring-boot-4-starter</artifactId>
+
+  <name>Camunda Spring Boot 4 Starter</name>
+  <description>Camunda Spring Boot Starter for Spring Boot 4.x</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <version.java>17</version.java>
+    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <!-- Override Spring Boot version for 4.x compatibility -->
+    <version.spring-boot>4.0.1</version.spring-boot>
+    <!-- Spring Framework 7.x is required for Spring Boot 4.0 -->
+    <version.spring>7.0.1</version.spring>
+    <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
+    <version.junit>6.0.1</version.junit>
+    <version.aspectjweaver>1.9.24</version.aspectjweaver>
+  </properties>
+
+  <dependencies>
+    <!-- Base Spring Boot starter - will be shaded -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <!-- New in Spring Boot 4: Jackson module is separate -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson</artifactId>
+    </dependency>
+    <!-- New in Spring Boot 4: Health module is separate -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-parameters</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <!-- Shade plugin to include and relocate classes from camunda-spring-boot-starter -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+              <artifactSet>
+                <includes>
+                  <!-- Only include the base starter module in the shaded jar -->
+                  <include>io.camunda:camunda-spring-boot-starter</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>io.camunda:camunda-spring-boot-starter</artifact>
+                  <excludes>
+                    <!-- Exclude classes that we override with Spring Boot 4 versions -->
+                    <exclude>io/camunda/client/spring/actuator/ZeebeClientHealthIndicator.class</exclude>
+                    <exclude>io/camunda/client/spring/configuration/ZeebeActuatorConfiguration.class</exclude>
+                    <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.class</exclude>
+                    <!-- Exclude META-INF services that we override -->
+                    <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <!-- Merge service files -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
+                <!-- Keep manifest entries -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"></transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!--
+            Ignore all "used but undeclared" dependencies in this module.
+            This starter shades and reuses classes and tests from the base
+            camunda-spring-boot-starter module, which is where the actual
+            dependency declarations live. From the perspective of this POM,
+            many classes therefore appear as used but undeclared, even though
+            they are intentionally provided by the base module and by the
+            shaded artifact.
+            Using a wildcard here avoids having to duplicate and constantly
+            maintain the full dependency list of the base module. The trade-off
+            is that accidental missing dependencies in *this* module will not
+            be reported by maven-dependency-plugin. To mitigate this, dependency
+            analysis should be run primarily on the base module, where the
+            dependencies are actually declared, and changes here should be kept
+            minimal and aligned with that module.
+          -->
+          <ignoredUsedUndeclaredDependencies>*</ignoredUsedUndeclaredDependencies>
+        </configuration>
+      </plugin>
+
+      <!--
+        Note: Tests are skipped because test-jar tests from camunda-spring-boot-starter
+        were compiled with JUnit 5.x which is binary incompatible with JUnit 6.x
+        (required by Spring Boot 4). Test coverage is provided by the base module.
+        This is acceptable as this module is a temporary solution for the 8.8 branch.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
