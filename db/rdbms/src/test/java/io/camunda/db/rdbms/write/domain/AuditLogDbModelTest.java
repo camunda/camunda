@@ -307,10 +307,10 @@ class AuditLogDbModelTest {
             .operationType(AuditLogOperationType.CANCEL)
             .timestamp(OffsetDateTime.now())
             .actorType(AuditLogActorType.USER)
-            .result(AuditLogOperationResult.FAILURE)
+            .result(AuditLogOperationResult.FAIL)
             .build();
 
-    assertThat(auditLog.result()).isEqualTo(AuditLogOperationResult.FAILURE);
+    assertThat(auditLog.result()).isEqualTo(AuditLogOperationResult.FAIL);
   }
 
   @Test

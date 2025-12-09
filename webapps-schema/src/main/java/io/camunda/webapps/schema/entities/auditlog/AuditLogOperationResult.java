@@ -9,5 +9,5 @@ package io.camunda.webapps.schema.entities.auditlog;
 
 public enum AuditLogOperationResult {
   SUCCESS,
-  FAILURE
+  FAIL
 }
