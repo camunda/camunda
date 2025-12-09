@@ -72,7 +72,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   return (
     <TabView
-      onTabChange={(tabId) => setSelectedTab(tabId as TabId)}
+      onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
         {
           id: tabIds.variables,
