@@ -395,7 +395,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
     final AddPolicyRequestBody value = new AddPolicyRequestBody(policyName);
     final var request =
-        Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + indexNamePattern);
+        Requests.builder().method("POST").endpoint("/_plugins/_ism/add/" + indexNamePattern);
     return sendRequestAsync(
             () ->
                 genericClient.executeAsync(
