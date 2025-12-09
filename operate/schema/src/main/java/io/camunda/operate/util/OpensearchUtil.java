@@ -9,15 +9,23 @@ package io.camunda.operate.util;
 
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.query_dsl.IdsQuery;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,5 +93,41 @@ public final class OpensearchUtil {
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
+  }
+
+  public static Map<String, Object> getByIdOrSearchArchives(
+      final RichOpenSearchClient osClient,
+      final TemplateDescriptor template,
+      final String id,
+      final QueryType queryType,
+      final String... fields) {
+
+    // first we'll search using a get request in the runtime index
+    // as that usually should be where the doc is and a get request will avoid
+    // issues with the indexes not being refreshed yet
+    final Optional<Map> maybeDoc =
+        osClient.doc().getWithRetries(template.getFullQualifiedName(), id, Map.class);
+    if (maybeDoc.isPresent()) {
+      return maybeDoc.get();
+    }
+    if (queryType == QueryType.ALL) {
+      // we only do this if we're configured to look at the archive - which is not the default
+      final SourceConfig source =
+          SourceConfig.of(
+              builder -> builder.filter(filter -> filter.includes(Arrays.asList(fields))));
+      final IdsQuery idsQuery = IdsQuery.of(builder -> builder.values(id));
+      final SearchRequest.Builder searchRequestBuilder =
+          new SearchRequest.Builder()
+              .index(template.getAlias())
+              .source(source)
+              .query(q -> q.ids(idsQuery));
+
+      final SearchResponse<Map> searchResponse =
+          osClient.doc().search(searchRequestBuilder, Map.class);
+      if (!searchResponse.documents().isEmpty()) {
+        return searchResponse.documents().getFirst();
+      }
+    }
+    return null;
   }
 }
