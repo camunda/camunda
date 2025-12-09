@@ -63,7 +63,9 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 - one case that provides a value for each property (as far nested as possible)
 - one case that has as few properties as possible (i.e. an empty record)
 
-3. Add the new `Record` to the broker's [CommandApiRequestReader](../broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestReader.java)'s `RECORDS_BY_TYPE` mapping.
+3. Add a mapping to [`UnifiedRecordValue`](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/UnifiedRecordValue.java) making sure that the new `ValueType` is included in the method `fromValueType` and in the map in class `ClassToValueType`
+4. If the valueType can represent a user command that is received by [`CommandApiRequestHandler`](zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestHandler.java):
+   - Include the valueType in [`ValueTypes.USER_COMMANDS](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypes.java).
 
 ### Support a RecordValue in the Elasticsearch exporter
 
