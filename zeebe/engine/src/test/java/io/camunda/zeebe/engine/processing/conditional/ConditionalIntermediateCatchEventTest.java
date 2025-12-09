@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
@@ -619,5 +620,87 @@ public final class ConditionalIntermediateCatchEventTest {
                 .withIntent(ConditionalSubscriptionIntent.TRIGGER)
                 .toList())
         .isEmpty();
+  }
+
+  @Test
+  public void shouldDeleteSubscriptionOnScopeTermination() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String catchEventId = "catchEvent";
+    final String timerStartEventId = "timerStartEvent";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .intermediateCatchEvent(catchEventId)
+                    .condition(
+                        c ->
+                            c.condition("=x > y")
+                                .zeebeVariableNames("x, y")
+                                .zeebeVariableEvents("create, update"))
+                    .endEvent()
+                    .moveToProcess(processId)
+                    .eventSubProcess()
+                    .startEvent(timerStartEventId)
+                    .interrupting(true)
+                    .timerWithDuration(Duration.ofSeconds(1))
+                    .endEvent()
+                    .subProcessDone()
+                    .done())
+            .deploy();
+
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // do not set variables yet to avoid triggering the condition
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(timerStartEventId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(timerStartEventId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final long subscriptionKey =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst()
+            .getKey();
+
+    final long catchEventKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(catchEventId)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withRecordKey(subscriptionKey)
+                .withScopeKey(catchEventKey)
+                .withElementInstanceKey(catchEventKey)
+                .withProcessInstanceKey(processInstanceKey)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withCatchEventId(catchEventId)
+                .withCondition("=x > y")
+                .withVariableNames("x", "y")
+                .withVariableEvents("create", "update")
+                .isInterrupting(true)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED, ConditionalSubscriptionIntent.DELETED);
   }
 }

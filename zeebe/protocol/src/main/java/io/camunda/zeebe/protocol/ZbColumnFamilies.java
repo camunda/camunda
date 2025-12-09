@@ -249,7 +249,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   CLUSTER_VARIABLES(126, GLOBAL),
 
-  CONDITION_SUBSCRIPTION_BY_CONDITION_KEY(127, PARTITION_LOCAL);
+  CONDITIONAL_SUBSCRIPTION_BY_CONDITIONAL_KEY(127, PARTITION_LOCAL),
+
+  CONDITIONAL_SUBSCRIPTION_BY_SCOPE_KEY(128, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
