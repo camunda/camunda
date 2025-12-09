@@ -60,6 +60,8 @@ public final class ProcessInstanceCreationCreateProcessor
       "Expected to find process definition with process ID '%s', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
       "Expected to find process definition with process ID '%s' and version '%d', but none found";
+  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG =
+      "Expected to find process definition with process ID '%s' and version tag '%s', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
@@ -444,9 +446,12 @@ public final class ProcessInstanceCreationCreateProcessor
   private Either<Rejection, DeployedProcess> getProcess(
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
+    final DirectBuffer versionTag = record.getVersionTagBuffer();
 
     if (bpmnProcessId.capacity() > 0) {
-      if (record.getVersion() >= 0) {
+      if (versionTag.capacity() > 0) {
+        return getProcessByVersionTag(bpmnProcessId, bufferAsString(versionTag), record.getTenantId());
+      } else if (record.getVersion() >= 0) {
         return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
       } else {
         return getProcess(bpmnProcessId, record.getTenantId());
@@ -487,6 +492,23 @@ public final class ProcessInstanceCreationCreateProcessor
                   ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
                   bufferAsString(bpmnProcessId),
                   version)));
+    }
+  }
+
+  private Either<Rejection, DeployedProcess> getProcessByVersionTag(
+      final DirectBuffer bpmnProcessId, final String versionTag, final String tenantId) {
+    final DeployedProcess process =
+        processState.getProcessByProcessIdAndVersionTag(bpmnProcessId, versionTag, tenantId);
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(
+                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG,
+                  bufferAsString(bpmnProcessId),
+                  versionTag)));
     }
   }
 
