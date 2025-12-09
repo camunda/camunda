@@ -89,8 +89,9 @@ function mockResponses({
         .request()
         .postDataJSON() as QueryProcessDefinitionsRequestBody;
 
+      let matchingDefinitions = processDefinitions;
       if (query.filter?.processDefinitionId) {
-        processDefinitions = processDefinitions.filter(
+        matchingDefinitions = processDefinitions.filter(
           (d) => d.processDefinitionId === query.filter?.processDefinitionId,
         );
       }
@@ -98,8 +99,8 @@ function mockResponses({
       return route.fulfill({
         status: 200,
         body: JSON.stringify({
-          items: processDefinitions,
-          page: {totalItems: processDefinitions.length},
+          items: matchingDefinitions,
+          page: {totalItems: matchingDefinitions.length},
         }),
         headers: {
           'content-type': 'application/json',
@@ -2791,6 +2792,28 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
   totalCount: 891,
 };
 
+const mockOrderProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] =
+  [
+    {
+      processDefinitionKey: '2251799813686114',
+      name: 'Order process',
+      version: 2,
+      processDefinitionId: 'orderProcess',
+      versionTag: undefined,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      processDefinitionKey: '2251799813686114',
+      name: 'Order process',
+      version: 1,
+      processDefinitionId: 'orderProcess',
+      versionTag: undefined,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+  ];
+
 const mockOrderProcessInstances: ProcessInstancesDto = {
   totalCount: 20,
   processInstances: Array(20)
@@ -3251,6 +3274,7 @@ export {
   mockResponses,
   mockNewDeleteOperation,
   mockDeleteProcess,
+  mockOrderProcessDefinitions,
   mockOrderProcessInstances,
   mockFinishedOrderProcessInstances,
   mockOrderProcessInstancesWithFailedOperations,
