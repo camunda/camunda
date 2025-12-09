@@ -74,6 +74,9 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
   public static final BatchOperationTemplate BATCH_OPERATION_INDEX =
       new BatchOperationTemplate(IDX_BATCH_OPERATION_PREFIX, true);
 
+  public static final String HISTORY_DELETION_ID_PREFIX =
+      "historydeletion" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+
   public static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
       "test.integration.opensearch.aws.url";
 
