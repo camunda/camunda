@@ -29,8 +29,10 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
+import io.camunda.client.protocol.rest.CursorForwardPagination;
 import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -94,7 +96,8 @@ public class ProcessDefinitionMessageSubscriptionStatisticsRequestImpl
 
   @Override
   public ProcessDefinitionMessageSubscriptionStatisticsRequest page(final SearchRequestPage value) {
-    request.setPage(provideSearchRequestProperty(value));
+    final SearchQueryPageRequest page = provideSearchRequestProperty(value);
+    request.setPage(new CursorForwardPagination().limit(page.getLimit()).after(page.getAfter()));
     return this;
   }
 
