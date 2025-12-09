@@ -10,7 +10,6 @@ package io.camunda.operate.store.elasticsearch;
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -30,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHits;
@@ -55,30 +53,23 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
 
   @Override
   public String getFlowNodeIdByFlowNodeInstanceId(final String flowNodeInstanceId) {
-    // TODO Elasticsearch changes
     final ElasticsearchUtil.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
             : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-    final QueryBuilder query =
-        joinWithAnd(
-            termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
-            termQuery(ListViewTemplate.ID, flowNodeInstanceId));
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
-            .source(new SearchSourceBuilder().query(query).fetchSource(ACTIVITY_ID, null));
-    final SearchResponse response;
+
     try {
-      response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value != 1) {
-        throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
-      } else {
-        return String.valueOf(response.getHits().getAt(0).getSourceAsMap().get(ACTIVITY_ID));
+      final Map<String, Object> processInstance =
+          ElasticsearchUtil.getByIdOrSearchArchives(
+              esClient, listViewTemplate, flowNodeInstanceId, queryType, ACTIVITY_ID);
+      if (processInstance != null) {
+        return (String) processInstance.get(ACTIVITY_ID);
       }
     } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Error occurred when searching for flow node instance: " + flowNodeInstanceId, e);
     }
+    throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
   }
 
   @Override
