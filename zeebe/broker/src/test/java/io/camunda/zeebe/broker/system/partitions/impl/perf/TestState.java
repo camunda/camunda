@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -41,8 +42,7 @@ import org.rocksdb.WriteBufferManager;
 final class TestState {
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;
-  private static LRUCache lruCache;
-  private static WriteBufferManager writeBufferManager;
+  private static SharedRocksDbResources sharedRocksDbResources;
 
   static {
     RocksDB.loadLibrary();
@@ -93,16 +93,19 @@ final class TestState {
   }
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
+    sharedRocksDbResources =
+        new SharedRocksDbResources(
+            lruCache,
+            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
+            DEFAULT_CACHE_SIZE);
     final int defaultPartitionCount = 3;
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
         SimpleMeterRegistry::new,
-        lruCache,
-        writeBufferManager,
+        sharedRocksDbResources,
         defaultPartitionCount);
   }
 
@@ -149,7 +152,7 @@ final class TestState {
 
     @Override
     public void close() throws Exception {
-      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, lruCache, writeBufferManager);
+      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, sharedRocksDbResources);
       FileUtil.deleteFolder(temporaryFolder);
     }
 
