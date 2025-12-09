@@ -10,12 +10,10 @@ import {test} from '../visual-fixtures';
 import * as path from 'path';
 
 import {
-  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockOrderProcessInstances,
   mockOrderProcessV2Instances,
   mockMigrationOperation,
-  mockAhspGroupedProcesses,
   mockAhspProcessInstances,
   mockProcessDefinitions,
   mockAhspProcessDefinitions,
@@ -43,9 +41,6 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses.filter((process) => {
-          return process.bpmnProcessId === 'orderProcess';
-        }),
         processDefinitions: mockProcessDefinitions.filter(
           (d) => d.processDefinitionId === 'orderProcess',
         ),
@@ -132,9 +127,6 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        groupedProcesses: mockGroupedProcesses.filter((process) => {
-          return process.bpmnProcessId === 'orderProcess';
-        }),
         processDefinitions: mockProcessDefinitions.filter(
           (d) => d.processDefinitionId === 'orderProcess',
         ),
@@ -218,9 +210,6 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses.filter((process) => {
-          return process.bpmnProcessId === 'orderProcess';
-        }),
         processDefinitions: mockProcessDefinitions.filter(
           (d) => d.processDefinitionId === 'orderProcess',
         ),
@@ -278,7 +267,6 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockAhspGroupedProcesses,
         processDefinitions: mockAhspProcessDefinitions,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: mockAhspProcessInstances,
@@ -353,7 +341,6 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        groupedProcesses: mockAhspGroupedProcesses,
         processDefinitions: mockAhspProcessDefinitions,
         processXml: openFile(
           './e2e-playwright/mocks/resources/migration-ahsp-process_v2.bpmn',
@@ -398,7 +385,6 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockAhspGroupedProcesses,
         processDefinitions: mockAhspProcessDefinitions,
         batchOperations: {
           items: [mockMigrationOperation],
@@ -422,7 +408,6 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockAhspGroupedProcesses,
         processDefinitions: mockAhspProcessDefinitions,
         batchOperations: {
           items: [
