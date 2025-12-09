@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway;
 
-import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
-
 import com.google.rpc.Code;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -68,7 +66,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -222,13 +219,18 @@ public final class Gateway implements CloseableSilently {
 
     // by default will start 1 thread per core; however, fork join pools may start more threads when
     // blocked on tasks, and here up to 2 threads per core.
-    final ThreadFactory factory =
-        Thread.ofVirtual()
-            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOG))
-            .name("grpc-virtual-executor")
-            .factory();
-    grpcExecutor = newThreadPerTaskExecutor(factory);
-
+    grpcExecutor =
+        new ForkJoinPool(
+            config.getGrpcMinThreads(),
+            new NamedForkJoinPoolThreadFactory(),
+            FatalErrorHandler.uncaughtExceptionHandler(LOG),
+            true,
+            0,
+            config.getGrpcMaxThreads(),
+            1,
+            pool -> false,
+            1,
+            TimeUnit.MINUTES);
     builder.executor(grpcExecutor);
   }
 
