@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsPageRequest;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -59,7 +60,7 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
     // when
     client
         .newProcessDefinitionInstanceVersionStatisticsRequest(PROCESS_DEFINITION_ID)
-        .filter(f -> f.tenantId())
+        .filter(f -> f.tenantId("tenant-a"))
         .send()
         .join();
 
@@ -68,8 +69,9 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
         gatewayService.getLastRequest(ProcessDefinitionInstanceVersionStatisticsQuery.class);
 
     assertThat(request.getFilter()).isNotNull();
-    assertThat(request.getFilter().getTenantId()).isNotNull();
-    assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant-a");
+    assertThat(request.getFilter())
+        .extracting(ProcessDefinitionInstanceVersionStatisticsFilter::getTenantId)
+        .isEqualTo("tenant-a");
   }
 
   @Test
