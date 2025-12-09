@@ -21,6 +21,7 @@ import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -36,6 +37,8 @@ import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -55,6 +58,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +115,39 @@ public abstract class ElasticsearchUtil {
         RequestOptions.DEFAULT,
         new DelegatingActionListener<>(deleteFuture, executor));
     return deleteFuture;
+  }
+
+  public static Map<String, Object> getByIdOrSearchArchives(
+      final RestHighLevelClient esClient,
+      final TemplateDescriptor template,
+      final String id,
+      final QueryType queryType,
+      final String... fields)
+      throws IOException {
+    // first we'll search using a get request in the runtime index
+    // as that usually should be where the doc is and a get request will avoid
+    // issues with the indexes not being refreshed yet
+    final GetRequest getRequest =
+        new GetRequest(template.getFullQualifiedName(), id)
+            .fetchSourceContext(new FetchSourceContext(true, fields, null));
+
+    final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
+    if (response.isExists()) {
+      return response.getSourceAsMap();
+    }
+    if (queryType == QueryType.ALL) {
+      // we only do this if we're configured to look at the archive - which is not the default
+      final SearchRequest searchRequest =
+          createSearchRequest(template, QueryType.ALL)
+              .source(
+                  new SearchSourceBuilder().query(idsQuery().addIds(id)).fetchSource(fields, null));
+
+      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      if (hits.getTotalHits().value > 0) {
+        return hits.getHits()[0].getSourceAsMap();
+      }
+    }
+    return null;
   }
 
   public static SearchRequest createSearchRequest(final TemplateDescriptor template) {
