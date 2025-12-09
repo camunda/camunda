@@ -29,6 +29,8 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
     implements ProcessInstanceModificationMoveInstructionValue {
 
   private final StringProperty sourceElementIdProperty = new StringProperty("sourceElementId", "");
+  private final LongProperty sourceElementInstanceKeyProperty =
+      new LongProperty("sourceElementInstanceKey", -1);
   private final StringProperty targetElementIdProperty = new StringProperty("targetElementId", "");
   private final ArrayProperty<ProcessInstanceModificationVariableInstruction>
       variableInstructionsProperty =
@@ -39,8 +41,9 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
       new BooleanProperty("useSourceParentKeyAsAncestorScope", false);
 
   public ProcessInstanceModificationMoveInstruction() {
-    super(5);
+    super(6);
     declareProperty(sourceElementIdProperty)
+        .declareProperty(sourceElementInstanceKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variableInstructionsProperty)
         .declareProperty(ancestorScopeKeyProperty)
@@ -50,6 +53,11 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
   @Override
   public String getSourceElementId() {
     return BufferUtil.bufferAsString(getSourceElementIdBuffer());
+  }
+
+  @Override
+  public long getSourceElementInstanceKey() {
+    return sourceElementInstanceKeyProperty.getValue();
   }
 
   @Override
@@ -103,6 +111,12 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
     return this;
   }
 
+  public ProcessInstanceModificationMoveInstruction setSourceElementInstanceKey(
+      final long sourceElementInstanceKey) {
+    sourceElementInstanceKeyProperty.setValue(sourceElementInstanceKey);
+    return this;
+  }
+
   public ProcessInstanceModificationMoveInstruction setSourceElementId(
       final String sourceElementId) {
     sourceElementIdProperty.setValue(sourceElementId);
@@ -134,6 +148,7 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
   public ProcessInstanceModificationMoveInstruction copy(
       final ProcessInstanceModificationMoveInstructionValue object) {
     setSourceElementId(object.getSourceElementId());
+    setSourceElementInstanceKey(object.getSourceElementInstanceKey());
     setTargetElementId(object.getTargetElementId());
     object.getVariableInstructions().stream()
         .map(ProcessInstanceModificationVariableInstruction.class::cast)

@@ -1746,6 +1746,7 @@ final class JsonSerializableToJsonTest {
                   .addMoveInstruction(
                       new ProcessInstanceModificationMoveInstruction()
                           .setSourceElementId(variableInstructionElementId)
+                          .setSourceElementInstanceKey(elementInstanceKeyToTerminate)
                           .setTargetElementId(elementIdToActivate)
                           .addVariableInstruction(
                               new ProcessInstanceModificationVariableInstruction()
@@ -1772,6 +1773,7 @@ final class JsonSerializableToJsonTest {
                   }],
                   "moveInstructions": [{
                     "sourceElementId": "sub-process",
+                    "sourceElementInstanceKey": 2,
                     "targetElementId": "activity",
                     "variableInstructions": [{
                       "elementId": "sub-process",
@@ -3695,6 +3697,7 @@ final class JsonSerializableToJsonTest {
                    "modificationPlan": {
                      "moveInstructions": [
                        {
+                         "sourceElementInstanceKey": -1,
                          "targetElementId": "targetTask",
                          "sourceElementId": "sourceTask",
                          "variableInstructions": [{
@@ -3708,7 +3711,7 @@ final class JsonSerializableToJsonTest {
                        }
                      ],
                      "empty": false,
-                     "encodedLength": 196
+                     "encodedLength": 222
                    },
                    "authenticationBuffer": {
                      "expandable": false

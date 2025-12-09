@@ -121,6 +121,9 @@ public interface ProcessInstanceModificationRecordValue
     /** Returns the id of the element to terminate element instances at. */
     String getSourceElementId();
 
+    /** Returns the key of element instance to terminate. */
+    long getSourceElementInstanceKey();
+
     /** Returns the id of the element to create a new element instance at. */
     String getTargetElementId();
 
