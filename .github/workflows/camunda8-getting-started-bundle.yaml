@@ -824,7 +824,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [resolve-versions, upload-to-release]
-    if: inputs.dry_run == false && needs.upload-to-release.result == 'success'
+    if: ${{ !inputs.dry_run && needs.upload-to-release.result == 'success' }}
     permissions: {}
     steps:
       - name: Send release announcement to Slack
@@ -833,9 +833,20 @@ jobs:
         run: |
           RELEASE_URL="https://github.com/camunda/camunda/releases/tag/${C8RUN_VERSION}"
           
-          MESSAGE=":announcement: A new Camunda 8 Getting Started Bundle was just published [<${RELEASE_URL}|${C8RUN_VERSION}>]!"
+          BLOCKS=$(cat <<EOF
+          [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": ":announcement: A new Camunda 8 Getting Started Bundle was just published <${RELEASE_URL}|${C8RUN_VERSION}>!"
+              }
+            }
+          ]
+          EOF
+          )
           
-          PAYLOAD=$(jq -n --arg text "$MESSAGE" '{text: $text}')
+          PAYLOAD=$(jq -n --argjson blocks "$BLOCKS" '{blocks: $blocks}')
           
           curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_RELEASE_WEBHOOK }}" \
             -H "Content-Type: application/json" \
@@ -861,9 +872,20 @@ jobs:
     steps:
       - name: Send failure notification to Slack
         run: |
-          MESSAGE=":alarm: Camunda 8: Getting Started Bundle build failed, <@S064J3N99A5> please check and resolve the issue"
+          BLOCKS=$(cat <<EOF
+          [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": ":alarm: Camunda 8: Getting Started Bundle build failed, <@S064J3N99A5> please check and resolve the issue"
+              }
+            }
+          ]
+          EOF
+          )
           
-          PAYLOAD=$(jq -n --arg text "$MESSAGE" '{text: $text}')
+          PAYLOAD=$(jq -n --argjson blocks "$BLOCKS" '{blocks: $blocks}')
           
           curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}" \
             -H "Content-Type: application/json" \
