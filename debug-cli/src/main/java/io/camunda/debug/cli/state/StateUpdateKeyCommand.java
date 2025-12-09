@@ -7,7 +7,6 @@
  */
 package io.camunda.debug.cli.state;
 
-import io.camunda.debug.cli.CommonOptions;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.nio.file.Path;
@@ -19,9 +18,21 @@ import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
 
 @Command(name = "update-key", description = "Overwrite the next key in the state")
-public class StateUpdateKeyCommand extends CommonOptions implements Callable<Integer> {
+public class StateUpdateKeyCommand implements Callable<Integer> {
+
+  @Option(
+      names = {"-v", "--verbose"},
+      description = "Enable verbose output")
+  protected boolean verbose;
 
   @Spec CommandSpec spec;
+
+  @Option(
+      names = {"-r", "--root"},
+      description = "Path of the root of the data folder",
+      required = true)
+  private Path root;
+
   @ParentCommand private StateCommand parentCommand;
 
   @Option(
