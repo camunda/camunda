@@ -43,6 +43,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateConditionalEventResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReference;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateResult;
@@ -74,6 +76,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleReco
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
@@ -565,6 +568,22 @@ public final class ResponseMapper {
         new SignalBroadcastResult()
             .signalKey(KeyUtil.keyToString(brokerResponse.getKey()))
             .tenantId(brokerResponse.getResponse().getTenantId());
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toConditionalEvaluationResponse(
+      final ConditionalEvaluationRecord brokerResponse) {
+    final var processInstances =
+        brokerResponse.getStartedProcessInstances().stream()
+            .map(
+                instance ->
+                    new ProcessInstanceReference()
+                        .processDefinitionKey(
+                            KeyUtil.keyToString(instance.getProcessDefinitionKey()))
+                        .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
+            .toList();
+
+    final var response = new EvaluateConditionalEventResult().processInstances(processInstances);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 

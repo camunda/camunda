@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityReq
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateIdBasedRequest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validatePropertyBasedRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ConditionalEventRequestValidator.validateConditionalEvaluationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
@@ -43,6 +44,7 @@ import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivat
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
+import io.camunda.service.ConditionalEventServices.ConditionalEventCreateRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -74,6 +76,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ConditionalEventEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.CreateClusterVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
@@ -1203,6 +1206,24 @@ public class RequestMapper {
                     .toList(),
                 request.getCancelRemainingInstances() != null
                     && request.getCancelRemainingInstances()));
+  }
+
+  public static Either<ProblemDetail, ConditionalEventCreateRequest> toEvaluateConditionalEvent(
+      final ConditionalEventEvaluationInstruction request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Conditional Event")
+            .flatMap(
+                tenantId ->
+                    validateConditionalEvaluationRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+    return validationResponse.map(
+        tenantId ->
+            new ConditionalEventCreateRequest(
+                tenantId,
+                getKeyOrDefault(
+                    request, ConditionalEventEvaluationInstruction::getProcessDefinitionKey, -1L),
+                request.getVariables()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>
