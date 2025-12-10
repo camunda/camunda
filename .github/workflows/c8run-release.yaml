@@ -155,12 +155,21 @@ jobs:
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
       - name: MacOS - Extract package
+        id: macos-extract
         if: startsWith(matrix.os.name, 'MacOS')
         run: |
-          mkdir tmp
+          mkdir -p tmp
           mv "$C8RUN_NAME_ORIGINAL" tmp
           cd tmp
           unzip "$C8RUN_NAME_ORIGINAL"
+          extracted_dir="$(find . -mindepth 1 -maxdepth 1 -type d ! -name '__MACOSX' -print -quit)"
+          if [ -z "$extracted_dir" ]; then
+            echo "Unable to locate extracted directory"
+            exit 1
+          fi
+          extracted_dir="${extracted_dir#./}"
+          echo "Extracted directory: $extracted_dir"
+          echo "extracted_dir=./c8run/tmp/$extracted_dir" >> "$GITHUB_OUTPUT"
         shell: bash
         working-directory: ./c8run
         env:
@@ -176,7 +185,7 @@ jobs:
           apple-id: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
           app-password: ${{ steps.secrets.outputs.APPLE_DEVELOPER_PASSWORD }}
           team-id: ${{ steps.secrets.outputs.APPLE_TEAM_ID }}
-          path: ./c8run/tmp/c8run
+          path: ${{ steps.macos-extract.outputs.extracted_dir }}
 
       - name: MacOS - Replace old artifact with codesigned artifact
         if: startsWith(matrix.os.name, 'MacOS')
