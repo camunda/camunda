@@ -136,10 +136,9 @@ jobs:
     - name: Collect Benchmark Output
       id: collect-output
       run: |
-        RESULT=$(kubectl logs job/benchmark -n ${{inputs.name}})
-        echo 'result=<<EOF' >> $GITHUB_OUTPUT
-        echo $RESULT >> $GITHUB_OUTPUT
-        echo 'EOF' >> $GITHUB_OUTPUT
+        RESULT=$(kubectl logs job/benchmark -n ${{inputs.name}} | tail -n 1)
+        echo "$RESULT"
+        echo "result=$RESULT" >> $GITHUB_OUTPUT
     - name: Process benchmark result
       run: |
         echo "The benchmark result was:"
