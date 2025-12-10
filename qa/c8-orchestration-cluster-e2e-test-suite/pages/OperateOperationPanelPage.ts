@@ -28,9 +28,9 @@ export class OperateOperationPanelPage {
     this.expandedOperationPanel = page
       .getByLabel('Operations')
       .getByTestId('expanded-panel');
-    this.collapseButton = this.expandedOperationPanel.getByRole('button', {
-      name: 'Collapse Operations',
-    });
+    this.collapseButton = page
+      .getByLabel('Operations')
+      .getByRole('button', {name: 'Collapse Operations'});
     this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
     this.beforeOperationOperationPanelEntries = [];
     this.afterOperationOperationPanelEntries = [];
