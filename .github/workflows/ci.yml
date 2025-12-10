@@ -605,18 +605,16 @@ jobs:
             docker-file: Dockerfile
             owner: "Core Features"
             module: "Zeebe"
-# Disable for now until the issue is fixed.
-# See https://camunda.slack.com/archives/C071KP5BTHB/p1765350880999359?thread_ts=1765347090.334479&cid=C071KP5BTHB
-#          - group: qa-camunda-process-test
-#            name: "Camunda Process"
-#            maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
-#            maven-build-threads: 1
-#            maven-test-fork-count: 3
-#            runs-on: gcp-perf-core-8-default
-#            docker-repository: localhost:5000/camunda/camunda
-#            docker-file: camunda.Dockerfile
-#            owner: "CamundaEx"
-#            module: "Testing"
+          - group: qa-camunda-process-test
+            name: "Camunda Process"
+            maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
+            maven-build-threads: 1
+            maven-test-fork-count: 3
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
+            owner: "CamundaEx"
+            module: "Testing"
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
