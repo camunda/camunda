@@ -764,7 +764,7 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(() -> verify(genericClientSpy, times(1)).executeAsync(captor.capture()));
 
     final var request = captor.getValue();
-    assertThat(request.getEndpoint()).isEqualTo("_plugins/_ism/add/" + indexName2);
+    assertThat(request.getEndpoint()).isEqualTo("/_plugins/_ism/add/" + indexName2);
     reset(genericClientSpy);
 
     // setting policy first time for srcIndexName but second time for indexName2, it
@@ -781,7 +781,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     final Request request2 = captor2.getValue();
 
-    assertThat(request2.getEndpoint()).isEqualTo("_plugins/_ism/add/" + indexName1);
+    assertThat(request2.getEndpoint()).isEqualTo("/_plugins/_ism/add/" + indexName1);
   }
 
   @Test
@@ -818,7 +818,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var requests = captor.getAllValues();
     assertThat(requests)
         .map(Request::getEndpoint)
-        .containsExactly("_plugins/_ism/add/" + indexName1, "_plugins/_ism/add/" + indexName2);
+        .containsExactly("/_plugins/_ism/add/" + indexName1, "/_plugins/_ism/add/" + indexName2);
 
     // we reset the spy to ensure that we only capture the next calls
     reset(genericClientSpy);
@@ -831,7 +831,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var captor2 = ArgumentCaptor.forClass(Request.class);
     verify(genericClientSpy, times(1)).executeAsync(captor2.capture());
     final var request2 = captor2.getValue();
-    assertThat(request2.getEndpoint()).isEqualTo("_plugins/_ism/add/" + indexName1);
+    assertThat(request2.getEndpoint()).isEqualTo("/_plugins/_ism/add/" + indexName1);
   }
 
   @Test
@@ -871,7 +871,7 @@ final class OpenSearchArchiverRepositoryIT {
         .allSatisfy(
             request -> {
               final var indexPattern =
-                  request.getEndpoint().substring("_plugins/_ism/add/".length());
+                  request.getEndpoint().substring("/_plugins/_ism/add/".length());
               final String[] split = indexPattern.split(",");
               assertThat(split)
                   .hasSize(3); // 3 patterns (wildcard + runtime exclusion + alias exclusion)
