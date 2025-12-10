@@ -61,9 +61,9 @@ public class ListViewProcessInstanceDto {
   public static ListViewProcessInstanceDto createFrom(
       final ProcessInstanceForListViewEntity processInstanceEntity,
       final List<OperationEntity> operations,
-      final PermissionsService permissionsService,
+      final Set<String> permissions,
       final ObjectMapper objectMapper) {
-    return createFrom(processInstanceEntity, operations, null, permissionsService, objectMapper);
+    return createFromInternal(processInstanceEntity, operations, null, permissions, objectMapper);
   }
 
   public static ListViewProcessInstanceDto createFrom(
@@ -71,6 +71,21 @@ public class ListViewProcessInstanceDto {
       final List<OperationEntity> operations,
       final List<ProcessInstanceReferenceDto> callHierarchy,
       final PermissionsService permissionsService,
+      final ObjectMapper objectMapper) {
+    return createFromInternal(
+        processInstanceEntity,
+        operations,
+        callHierarchy,
+        permissionsService.getProcessDefinitionPermissions(
+            processInstanceEntity.getBpmnProcessId()),
+        objectMapper);
+  }
+
+  private static ListViewProcessInstanceDto createFromInternal(
+      final ProcessInstanceForListViewEntity processInstanceEntity,
+      final List<OperationEntity> operations,
+      final List<ProcessInstanceReferenceDto> callHierarchy,
+      final Set<String> permissions,
       final ObjectMapper objectMapper) {
     if (processInstanceEntity == null) {
       return null;
@@ -123,9 +138,7 @@ public class ListViewProcessInstanceDto {
       }
     }
     processInstance.setCallHierarchy(callHierarchy);
-    processInstance.setPermissions(
-        permissionsService.getProcessDefinitionPermissions(
-            processInstanceEntity.getBpmnProcessId()));
+    processInstance.setPermissions(permissions);
     return processInstance;
   }
 
@@ -137,14 +150,23 @@ public class ListViewProcessInstanceDto {
     if (processInstanceEntities == null) {
       return new ArrayList<>();
     }
+
+    final List<String> resourceIds =
+        processInstanceEntities.stream()
+            .map(ProcessInstanceForListViewEntity::getBpmnProcessId)
+            .toList();
+
+    final Map<String, Set<String>> permissionsByResourceId =
+        permissionsService.getProcessDefinitionPermissionsByResourceId(resourceIds);
+
     return processInstanceEntities.stream()
-        .filter(item -> item != null)
+        .filter(Objects::nonNull)
         .map(
             item ->
                 createFrom(
                     item,
                     operationsPerProcessInstance.get(item.getProcessInstanceKey()),
-                    permissionsService,
+                    permissionsByResourceId.get(item.getBpmnProcessId()),
                     objectMapper))
         .collect(Collectors.toList());
   }
