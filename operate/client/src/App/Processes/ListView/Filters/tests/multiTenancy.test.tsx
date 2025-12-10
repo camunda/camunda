@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {
   createProcessDefinition,
@@ -87,12 +87,13 @@ describe('Filters', () => {
     ).toHaveValue('Big variable process');
     expect(
       screen.getByRole('combobox', {
-        name: /tenant/i,
+        name: /select a tenant/i,
       }),
     ).toHaveTextContent(/tenant a/i);
-    expect(
-      screen.getByLabelText('Version', {selector: 'button'}),
-    ).toHaveTextContent('1');
+    const version = screen.getByRole('combobox', {
+      name: /select a process version/i,
+    });
+    expect(within(version).getByText('2')).toBeInTheDocument();
   });
 
   it('should hide multi tenancy filter if its not enabled in client config', async () => {

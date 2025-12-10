@@ -75,7 +75,9 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     await selectProcess({user, option: 'Big variable process'});
     await selectFlowNode({user, option: 'Start Event 1'});
