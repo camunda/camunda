@@ -48,6 +48,7 @@ public final class GcsBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
+  private final IndexManager indexManager;
   private final Storage client;
 
   GcsBackupStore(final GcsBackupConfig config) {
@@ -61,6 +62,7 @@ public final class GcsBackupStore implements BackupStore {
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
     fileSetManager = new FileSetManager(client, bucketInfo, basePath);
+    indexManager = new IndexManager(client, bucketInfo, basePath);
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
@@ -155,12 +157,20 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    throw new UnsupportedOperationException();
+    if (!(indexFile instanceof final GcsBackupIndexFile gcsBackupIndexFile)) {
+      throw new IllegalArgumentException(
+          "Expected index file of type %s but got %s: %s"
+              .formatted(
+                  GcsBackupIndexFile.class.getSimpleName(),
+                  indexFile.getClass().getSimpleName(),
+                  indexFile));
+    }
+    return CompletableFuture.runAsync(() -> indexManager.upload(gcsBackupIndexFile), executor);
   }
 
   @Override
   public CompletableFuture<BackupIndexFile> restoreIndex(final BackupIndexIdentifier id) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(() -> indexManager.download(id), executor);
   }
 
   @Override
