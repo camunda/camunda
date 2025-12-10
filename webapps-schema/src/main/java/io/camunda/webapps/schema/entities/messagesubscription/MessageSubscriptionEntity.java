@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.messagesubscription;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -42,6 +43,10 @@ public class MessageSubscriptionEntity
   @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @BeforeVersion880 private Long positionProcessMessageSubscription;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   /**
    * @deprecated since 8.9
@@ -273,7 +278,8 @@ public class MessageSubscriptionEntity
         position,
         positionIncident,
         positionProcessMessageSubscription,
-        positionJob);
+        positionJob,
+        rootProcessInstanceKey);
   }
 
   @Override
@@ -302,6 +308,7 @@ public class MessageSubscriptionEntity
         && Objects.equals(positionIncident, that.positionIncident)
         && Objects.equals(
             positionProcessMessageSubscription, that.positionProcessMessageSubscription)
-        && Objects.equals(positionJob, that.positionJob);
+        && Objects.equals(positionJob, that.positionJob)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 }
