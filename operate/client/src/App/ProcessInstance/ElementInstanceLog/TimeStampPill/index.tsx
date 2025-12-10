@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
@@ -15,7 +14,6 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
 const TimeStampPill: React.FC = observer(() => {
-  const {status: flowNodeInstanceStatus} = flowNodeInstanceStore.state;
   const {
     state: {isTimeStampVisible},
     toggleTimeStampVisibility,
@@ -24,7 +22,6 @@ const TimeStampPill: React.FC = observer(() => {
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isSuccess} = useProcessInstanceXml({processDefinitionKey});
 
-  const isDisabled = flowNodeInstanceStatus !== 'fetched' && !isSuccess;
   return (
     <Toggle
       aria-label="End date"
@@ -35,7 +32,7 @@ const TimeStampPill: React.FC = observer(() => {
         toggleTimeStampVisibility();
         tracking.track({eventName: 'instance-history-end-time-toggled'});
       }}
-      disabled={isDisabled}
+      disabled={!isSuccess}
       size="sm"
       toggled={isTimeStampVisible}
     />

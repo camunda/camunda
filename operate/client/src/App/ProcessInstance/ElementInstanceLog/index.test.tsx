@@ -13,23 +13,16 @@ import {
 } from 'modules/testing-library';
 
 import {ElementInstanceLog} from './index';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {
-  createInstance,
-  createMultiInstanceFlowNodeInstances,
-  createOperation,
-} from 'modules/testUtils';
+import {createInstance, createOperation} from 'modules/testUtils';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {useEffect} from 'react';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {init} from 'modules/utils/flowNodeInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -37,7 +30,6 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 
 vi.mock('modules/utils/bpmn');
 
-const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: '1',
   state: 'ACTIVE',
@@ -67,7 +59,6 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
       processInstanceDetailsStore.reset();
-      flowNodeInstanceStore.reset();
     };
   }, []);
 
@@ -101,9 +92,7 @@ describe.skip('ElementInstanceLog', () => {
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
-    init(mockProcessInstance);
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 
@@ -115,10 +104,7 @@ describe.skip('ElementInstanceLog', () => {
   });
 
   it('should render skeleton when instance diagram is not loaded', async () => {
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
-    init(mockProcessInstance);
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 
@@ -130,9 +116,7 @@ describe.skip('ElementInstanceLog', () => {
   });
 
   it('should display error when instance tree data could not be fetched', async () => {
-    mockFetchFlowNodeInstances().withServerError();
     mockFetchProcessDefinitionXml().withSuccess('');
-    init(mockProcessInstance);
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 
@@ -142,9 +126,7 @@ describe.skip('ElementInstanceLog', () => {
   });
 
   it('should display error when instance diagram could not be fetched', async () => {
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withServerError();
-    init(mockProcessInstance);
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 
@@ -155,9 +137,7 @@ describe.skip('ElementInstanceLog', () => {
 
   //TODO unskip when endpoint migrated
   it.skip('should display permissions error when access to the process definition is forbidden', async () => {
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withServerError(403);
-    init(mockProcessInstance);
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 
@@ -172,7 +152,6 @@ describe.skip('ElementInstanceLog', () => {
   });
 
   it('should continue polling after poll failure', async () => {
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
@@ -181,7 +160,6 @@ describe.skip('ElementInstanceLog', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
 
     vi.useFakeTimers({shouldAdvanceTime: true});
-    init(mockProcessInstance);
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 
@@ -201,7 +179,7 @@ describe.skip('ElementInstanceLog', () => {
         bpmnProcessId: 'processName',
       }),
     );
-    mockFetchFlowNodeInstances().withServerError();
+
     vi.runOnlyPendingTimers();
     expect(
       await screen.findByText(/Instance History could not be fetched/i),
@@ -219,7 +197,7 @@ describe.skip('ElementInstanceLog', () => {
         bpmnProcessId: 'processName',
       }),
     );
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
+
     vi.runOnlyPendingTimers();
     await waitForElementToBeRemoved(
       screen.queryByText(/Instance History could not be fetched/i),
@@ -238,9 +216,8 @@ describe.skip('ElementInstanceLog', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
     );
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+
     mockFetchProcessDefinitionXml().withSuccess('');
-    init(mockProcessInstance);
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 

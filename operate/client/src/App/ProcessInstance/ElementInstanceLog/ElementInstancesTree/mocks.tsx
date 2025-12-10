@@ -6,16 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  type FlowNodeInstance,
-  type FlowNodeInstances,
-} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
-import {
-  createInstance,
-  createMultiInstanceFlowNodeInstances,
-} from 'modules/testUtils';
+import {createInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {TreeView} from '@carbon/react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -129,89 +122,7 @@ const mockNestedSubProcessInstance: ProcessInstance = {
   hasIncident: false,
 };
 
-const nestedSubProcessFlowNodeInstances: FlowNodeInstances = {
-  [nestedSubProcessesInstance.id]: {
-    running: null,
-    children: [
-      {
-        id: '2251799813686130',
-        type: 'START_EVENT',
-        state: 'COMPLETED',
-        flowNodeId: 'StartEvent_1',
-        startDate: '2020-08-18T12:07:33.953+0000',
-        endDate: '2020-08-18T12:07:34.034+0000',
-        treePath: `${nestedSubProcessesInstance.id}/2251799813686130`,
-        sortValues: ['1606300828415', '2251799813686130'],
-      },
-      {
-        id: '2251799813686156',
-        type: 'SERVICE_TASK',
-        state: 'ACTIVE',
-        flowNodeId: 'ServiceTask',
-        startDate: '2020-08-18T12:07:33.953+0000',
-        endDate: null,
-        treePath: `${nestedSubProcessesInstance.id}/2251799813686156`,
-        sortValues: ['1606300828415', '2251799813686156'],
-      },
-    ],
-  },
-};
-
-const processId = 'multiInstanceProcess';
 const processInstanceId = multiInstanceProcessInstance.id;
-
-const flowNodeInstances =
-  createMultiInstanceFlowNodeInstances(processInstanceId);
-
-const multipleFlowNodeInstances: FlowNodeInstances = {
-  [processInstanceId]: {
-    running: null,
-    children: [
-      {
-        id: '2251799813686130',
-        type: 'EXCLUSIVE_GATEWAY',
-        state: 'COMPLETED',
-        flowNodeId: 'peterJoin',
-        startDate: '2020-08-18T12:07:33.953+0000',
-        endDate: '2020-08-18T12:07:34.034+0000',
-        treePath: `${processInstanceId}/2251799813686130`,
-        sortValues: ['1606300828415', '2251799813686130'],
-      },
-      {
-        id: '2251799813686156',
-        type: 'EXCLUSIVE_GATEWAY',
-        state: 'INCIDENT',
-        flowNodeId: 'peterJoin',
-        startDate: '2020-08-18T12:07:33.953+0000',
-        endDate: null,
-        treePath: `${processInstanceId}/2251799813686156`,
-        sortValues: ['1606300828415', '2251799813686156'],
-      },
-    ],
-  },
-};
-
-const mockFlowNodeInstance: FlowNodeInstance = {
-  id: processInstanceId,
-  type: 'PROCESS',
-  state: 'COMPLETED',
-  flowNodeId: processId,
-  treePath: processInstanceId,
-  startDate: '',
-  endDate: null,
-  sortValues: [],
-};
-
-const mockRunningNodeInstance: FlowNodeInstance = {
-  id: processInstanceId,
-  type: 'PROCESS',
-  state: 'ACTIVE',
-  flowNodeId: 'nested_sub_process',
-  treePath: processInstanceId,
-  startDate: '',
-  endDate: null,
-  sortValues: [],
-};
 
 const multipleSubprocessesWithOneRunningScopeMock: Record<
   string,
@@ -1044,17 +955,12 @@ export {
   mockNestedSubProcessInstance,
   adHocSubProcessesInstance,
   processInstanceId,
-  flowNodeInstances,
   eventSubProcessElementInstances,
-  nestedSubProcessFlowNodeInstances,
   adHocNodeElementInstances,
   mockAdHocSubProcessesInstance,
-  mockFlowNodeInstance,
-  multipleFlowNodeInstances,
   multipleSubprocessesWithOneRunningScopeMock,
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithTwoRunningScopesMock,
-  mockRunningNodeInstance,
   eventSubprocessProcessInstance,
   mockEventSubprocessInstance,
   Wrapper,

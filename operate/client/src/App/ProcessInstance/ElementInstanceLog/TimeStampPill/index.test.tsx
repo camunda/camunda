@@ -9,9 +9,7 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {TimeStampPill} from './index';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {useEffect} from 'react';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -20,14 +18,11 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 vi.mock('modules/utils/bpmn');
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  mockFetchFlowNodeInstances().withSuccess({});
   mockFetchProcessDefinitionXml().withSuccess('');
 
   useEffect(() => {
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
     return () => {
       flowNodeTimeStampStore.reset();
-      flowNodeInstanceStore.reset();
     };
   }, []);
 

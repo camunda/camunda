@@ -29,11 +29,11 @@ import {
 } from 'modules/utils/instanceHistoryModification';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
-import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
+import type {FlowNodeInstance} from 'modules/types/operate';
 
 const TREE_NODE_HEIGHT = 32;
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [

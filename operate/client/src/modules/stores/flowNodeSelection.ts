@@ -7,7 +7,7 @@
  */
 
 import {makeAutoObservable, when, reaction, type IReactionDisposer} from 'mobx';
-import type {FlowNodeInstance} from './flowNodeInstance';
+import type {FlowNodeInstance} from 'modules/types/operate';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
