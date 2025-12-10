@@ -15,18 +15,26 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,9 +56,11 @@ import org.springframework.util.unit.DataSize;
     })
 public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
 
+  @Autowired protected OperateProperties operateProperties;
+  @Autowired protected DatabaseInfo databaseInfo;
   @Autowired private UpdateVariableHandler updateVariableHandler;
-
   @MockBean private IncidentNotifier incidentNotifier;
+  @Autowired private Predicate<Object[]> processInstanceExistsCheck;
 
   @Override
   @Before
@@ -126,7 +136,6 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
         .then()
         .waitUntil()
         .incidentIsActive();
-
     // then
     final List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
@@ -336,6 +345,72 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(incidentResponse.getFlowNodes()).hasSize(1);
     assertThat(incidentResponse.getFlowNodes().get(0).getId()).isEqualTo(callActivity1Id);
     assertThat(incidentResponse.getFlowNodes().get(0).getCount()).isEqualTo(2);
+  }
+
+  // Regression https://github.com/camunda/camunda/issues/42059
+  @Test
+  public void testProcessInstanceIncidentImporting() throws IOException {
+
+    final var prefix =
+        databaseInfo.isElasticsearchDb()
+            ? operateProperties.getElasticsearch().getIndexPrefix()
+            : operateProperties.getOpensearch().getIndexPrefix();
+
+    final var listViewIndex = prefix + "-" + ListViewTemplate.INDEX_NAME + "-8.3.0_";
+
+    final var zeebeProcessInstanceIndex = zeebeRule.getPrefix() + "_process-instance_*";
+
+    // start a process instance only to have zeebe record index generated
+    tester
+        .deployProcess("single-task.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .then()
+        .startProcessInstance("process", "{}")
+        .waitUntil()
+        .processInstanceIsStarted();
+
+    // block reads on zeebe process instance index to simulate import delays
+    searchTestRule.blockIndexRead(zeebeProcessInstanceIndex, true);
+
+    // given - a process instance with a start execution listener that fails
+    final var pi =
+        tester
+            .deployProcess("process-listener.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .startProcessInstance("process-listener")
+            .and()
+            .failTask("startListener", "start listener failed")
+            .and()
+            .getProcessInstanceKey();
+
+    // then - wait for incident to be imported
+    searchTestRule.processRecordsWithTypeAndWait(
+        ImportValueType.INCIDENT, false, incidentsArePresentCheck, pi, 1);
+
+    // unblock reads on zeebe process instance index to allow process instance to be parsed
+    searchTestRule.blockIndexRead(zeebeProcessInstanceIndex, false);
+
+    searchTestRule.processRecordsWithTypeAndWait(
+        ImportValueType.PROCESS_INSTANCE, true, processInstanceExistsCheck, List.of(pi));
+
+    Awaitility.await("process instance with incident is imported")
+        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var doc =
+                  searchTestRule.getDocumentById(
+                      listViewIndex, String.valueOf(pi), ProcessInstanceForListViewEntity.class);
+
+              assertThat(doc).isNotNull();
+              assertThat(doc.getProcessDefinitionKey()).isGreaterThan(0L);
+              assertThat(doc.getProcessName()).isNotEmpty();
+              assertThat(doc.getProcessVersion()).isGreaterThan(0);
+              assertThat(doc.getBpmnProcessId()).isNotEmpty();
+              assertThat(doc.getTreePath()).isNotEmpty();
+            });
   }
 
   protected void assertIncident(final IncidentDto anIncident, final ErrorType anErrorType) {

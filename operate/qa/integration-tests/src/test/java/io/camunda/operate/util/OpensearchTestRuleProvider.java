@@ -40,6 +40,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
@@ -59,6 +60,7 @@ import org.junit.runner.Description;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ExpandWildcard;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,14 +99,15 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
+  @Autowired private ClientConfig clientConfig;
 
   @Override
-  public void failed(Throwable e, Description description) {
-    this.failed = true;
+  public void failed(final Throwable e, final Description description) {
+    failed = true;
   }
 
   @Override
-  public void starting(Description description) {
+  public void starting(final Description description) {
     if (indexPrefix == null) {
       indexPrefix = TestUtil.createRandomString(10) + "-operate";
     }
@@ -118,7 +121,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
-  public void finished(Description description) {
+  public void finished(final Description description) {
     TestUtil.removeIlmPolicy(richOpenSearchClient);
     final String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
     TestUtil.removeAllIndices(
@@ -130,6 +133,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     assertMaxOpenScrollContexts(15);
   }
 
+  @Override
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
         .describedAs("There are too many open scroll contexts left.")
@@ -148,7 +152,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       zeebeOsClient
           .indices()
           .refresh(r -> r.index(operateProperties.getZeebeOpensearch().getPrefix() + "*"));
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not refresh Zeebe Opensearch indices", t);
     }
   }
@@ -160,13 +164,16 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
           .index()
           .refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
       Thread.sleep(3000); // TODO: Find a way to wait for refresh completion
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Opensearch indices", t);
     }
   }
 
+  @Override
   public void processAllRecordsAndWait(
-      Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
+      final Integer maxWaitingRounds,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(),
         maxWaitingRounds,
@@ -176,21 +183,27 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
         arguments);
   }
 
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
+  @Override
+  public void processAllRecordsAndWait(
+      final Predicate<Object[]> predicate, final Object... arguments) {
     processAllRecordsAndWait(50, predicate, arguments);
   }
 
+  @Override
   public void processAllRecordsAndWait(
-      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
   }
 
+  @Override
   public void processAllRecordsAndWait(
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Supplier<Object> supplier,
-      Object... arguments) {
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(),
         50,
@@ -200,28 +213,33 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
         arguments);
   }
 
+  @Override
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
+      final ImportValueType importValueType,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
   }
 
+  @Override
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType,
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Object... arguments) {
+      final ImportValueType importValueType,
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
   }
 
+  @Override
   public void processRecordsAndWaitFor(
-      Collection<RecordsReader> readers,
-      Integer maxWaitingRounds,
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Supplier<Object> supplier,
-      Object... arguments) {
+      final Collection<RecordsReader> readers,
+      final Integer maxWaitingRounds,
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     int waitingRound = 0;
     final int maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
@@ -239,7 +257,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
           runPostImportActions();
         }
 
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
       }
       int waitForImports = 0;
@@ -255,7 +273,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
             runPostImportActions();
           }
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
           waitingRound = 0;
           testImportListener.resetCounters();
           LOGGER.error(e.getMessage(), e);
@@ -282,28 +300,30 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     }
   }
 
+  @Override
   public void runPostImportActions() {
     if (zeebePostImporter.getPostImportActions().size() == 0) {
       zeebePostImporter.initPostImporters();
     }
-    for (PostImportAction action : zeebePostImporter.getPostImportActions()) {
+    for (final PostImportAction action : zeebePostImporter.getPostImportActions()) {
       try {
         action.performOneRound();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(e);
       }
     }
   }
 
+  @Override
   public boolean areIndicesCreatedAfterChecks(
-      String indexPrefix, int minCountOfIndices, int maxChecks) {
+      final String indexPrefix, final int minCountOfIndices, final int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
       checks++;
       try {
         areCreated = areIndicesCreated(indexPrefix, minCountOfIndices);
-      } catch (Exception t) {
+      } catch (final Exception t) {
         LOGGER.error(
             "Opensearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
@@ -316,23 +336,26 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     return areCreated;
   }
 
-  public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
+  @Override
+  public List<RecordsReader> getRecordsReaders(final ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType))
         .collect(Collectors.toList());
   }
 
-  public void persistNew(OperateEntity... entitiesToPersist) {
+  @Override
+  public void persistNew(final OperateEntity... entitiesToPersist) {
     try {
       persistOperateEntitiesNew(Arrays.asList(entitiesToPersist));
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       LOGGER.error("Unable to persist entities: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }
     refreshSearchIndices();
   }
 
-  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
+  @Override
+  public void persistOperateEntitiesNew(final List<? extends OperateEntity> operateEntities)
       throws PersistenceException {
     final var batchRequest = richOpenSearchClient.batch().newBatchRequest();
 
@@ -341,10 +364,11 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       if (alias == null) {
         throw new RuntimeException("Index not configured for " + entity.getClass().getName());
       }
-      if (entity instanceof FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity) {
+      if (entity
+          instanceof final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity) {
         batchRequest.addWithRouting(
             alias, entity, flowNodeInstanceForListViewEntity.getProcessInstanceKey().toString());
-      } else if (entity instanceof VariableForListViewEntity variableForListViewEntity) {
+      } else if (entity instanceof final VariableForListViewEntity variableForListViewEntity) {
         batchRequest.addWithRouting(
             alias, entity, variableForListViewEntity.getProcessInstanceKey().toString());
       } else {
@@ -354,6 +378,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     batchRequest.executeWithRefresh();
   }
 
+  @Override
   public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap() {
     if (entityToAliasMap == null) {
       entityToAliasMap = new HashMap<>();
@@ -379,25 +404,43 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     return entityToAliasMap;
   }
 
+  @Override
   public int getOpenScrollcontextSize() {
     try {
       return richOpenSearchClient.cluster().totalOpenContexts();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
       return 0;
     }
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  @Override
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
   @Override
-  public boolean indexExists(String index) {
+  public boolean indexExists(final String index) {
     return richOpenSearchClient.index().indexExists(index);
   }
 
-  private boolean areIndicesCreated(String indexPrefix, int minCountOfIndices) throws IOException {
+  @Override
+  public void blockIndexReads(final String index, final boolean block) throws IOException {
+    final var indexSettingsRequest =
+        new PutIndicesSettingsRequest.Builder()
+            .settings(s -> s.index(i -> i.blocksRead(block)))
+            .index(index)
+            .build();
+    richOpenSearchClient.index().putSettings(indexSettingsRequest);
+  }
+
+  @Override
+  public <T> T getDocument(final String index, final String id, final Class<T> clazz) {
+    return richOpenSearchClient.doc().getWithRetries(index, id, clazz).orElse(null);
+  }
+
+  private boolean areIndicesCreated(final String indexPrefix, final int minCountOfIndices)
+      throws IOException {
     final var indexRequestBuilder =
         getIndexRequestBuilder(indexPrefix + "*")
             .ignoreUnavailable(true)

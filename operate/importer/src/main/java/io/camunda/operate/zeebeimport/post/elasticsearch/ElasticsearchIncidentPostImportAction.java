@@ -286,7 +286,10 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
         incident.setState(newState);
 
         final List<String> fniIds = incidentTreePath.extractFlowNodeInstanceIds();
-        updateFlowNodeInstancesState(incident, incidentTreePath, fniIds, data, updateRequests);
+        fniIds.removeAll(piIds);
+        if (!fniIds.isEmpty()) {
+          updateFlowNodeInstancesState(incident, incidentTreePath, fniIds, data, updateRequests);
+        }
         updateIncidents(
             incident,
             newState,
