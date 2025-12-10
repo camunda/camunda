@@ -18,12 +18,14 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
+import io.camunda.process.test.impl.dsl.CamundaTestScenarioRunner;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -240,6 +242,10 @@ public class CamundaProcessTestExtension
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
       injectField(context, ZeebeClient.class, camundaProcessTestContext::createZeebeClient);
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
+      injectField(
+          context,
+          TestScenarioRunner.class,
+          () -> new CamundaTestScenarioRunner(camundaProcessTestContext));
     } catch (final Exception e) {
       closeCreatedClients();
       runtime.close();
