@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
@@ -52,7 +51,8 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public String getFlowNodeIdByFlowNodeInstanceId(final String flowNodeInstanceId) {
+  public String getFlowNodeIdByFlowNodeInstanceId(
+      final long processInstanceId, final String flowNodeInstanceId) {
     final ElasticsearchUtil.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
