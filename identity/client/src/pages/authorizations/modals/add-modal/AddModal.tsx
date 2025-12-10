@@ -67,6 +67,7 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ_DECISION_INSTANCE,
   ],
   DECISION_REQUIREMENTS_DEFINITION: [PermissionType.READ],
+  EXPRESSION: [PermissionType.EVALUATE],
   RESOURCE: [
     PermissionType.CREATE,
     PermissionType.READ,
