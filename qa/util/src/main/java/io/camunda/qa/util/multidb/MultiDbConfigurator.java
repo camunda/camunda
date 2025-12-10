@@ -8,7 +8,6 @@
 package io.camunda.qa.util.multidb;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
@@ -23,10 +22,6 @@ import java.util.Map;
  */
 public class MultiDbConfigurator {
   public static String zeebePrefix = "zeebe-records";
-
-  private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
-  private static final String DB_TYPE_OPENSEARCH = "opensearch";
-  private static final String DB_TYPE_RDBMS = "rdbms";
 
   private final TestStandaloneApplication<?> testApplication;
   private String indexPrefix;
@@ -64,25 +59,7 @@ public class MultiDbConfigurator {
     /* Tasklist */
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
-    /* Operate */
-    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
-
-    // db type
-    elasticsearchProperties.put("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
-    elasticsearchProperties.put("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
-    // url
-    elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.tasklist.elasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.operate.elasticsearch.url", elasticsearchUrl);
-    elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.url", elasticsearchUrl);
-
     /* Camunda */
-    elasticsearchProperties.put(
-        "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
-    // 0s causes ILM to move data asap - it is normally the default
-    // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-    elasticsearchProperties.put("camunda.database.retention.minimumAge", "0s");
     elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
     testApplication.withAdditionalProperties(elasticsearchProperties);
@@ -91,6 +68,8 @@ public class MultiDbConfigurator {
         .withUnifiedConfig(
             cfg -> {
               cfg.getData().getSecondaryStorage().getRetention().setEnabled(retentionEnabled);
+              // 0s causes ILM to move data asap - it is normally the default
+              // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
               cfg.getData().getSecondaryStorage().getRetention().setMinimumAge("0s");
               cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(elasticsearchUrl);
               cfg.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(indexPrefix);
@@ -184,33 +163,12 @@ public class MultiDbConfigurator {
 
     /* Tasklist */
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
-    opensearchProperties.put("camunda.tasklist.opensearch.username", userName);
-    opensearchProperties.put("camunda.tasklist.opensearch.password", userPassword);
     opensearchProperties.put("camunda.tasklist.opensearch.aws.enabled", isAws);
 
     /* Operate */
-    opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", zeebeIndexPrefix());
-    opensearchProperties.put("camunda.operate.opensearch.username", userName);
-    opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
     opensearchProperties.put("camunda.operate.opensearch.aws.enabled", isAws);
 
-    // db url
-    opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.tasklist.zeebeOpensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.operate.opensearch.url", opensearchUrl);
-    opensearchProperties.put("camunda.operate.zeebeOpensearch.url", opensearchUrl);
-    // db type
-    opensearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_OPENSEARCH);
-    opensearchProperties.put("camunda.operate.database", DB_TYPE_OPENSEARCH);
-    opensearchProperties.put("camunda.tasklist.database", DB_TYPE_OPENSEARCH);
-
     /* Camunda */
-    opensearchProperties.put("camunda.database.username", userName);
-    opensearchProperties.put("camunda.database.password", userPassword);
-    opensearchProperties.put("camunda.database.url", opensearchUrl);
-    opensearchProperties.put(
-        "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
-    opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
     opensearchProperties.put("camunda.database.aws-enabled", isAws);
 
@@ -286,10 +244,7 @@ public class MultiDbConfigurator {
       final String password,
       final String driverClass) {
     // db type
-    testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
     testApplication.withSecondaryStorageType(SecondaryStorageType.rdbms);
-    testApplication.withProperty("camunda.operate.database", DB_TYPE_RDBMS); // compatibility
-    testApplication.withProperty("camunda.tasklist.database", DB_TYPE_RDBMS); // compatibility
 
     testApplication.withProperty(
         "camunda.data.secondary-storage.rdbms.prefix", generateTablePrefix());

@@ -101,7 +101,6 @@ public abstract class TasklistZeebeExtension
             .withAuthorizationsDisabled();
 
     setSecondaryStorageConfig(app.unifiedConfig(), indexPrefix);
-    getLegacyConfiguration(indexPrefix).forEach(app::withProperty);
 
     zeebeBroker = app.start();
     Testcontainers.exposeHostPorts(getDatabasePort());
@@ -120,8 +119,6 @@ public abstract class TasklistZeebeExtension
   protected abstract DatabaseType getDatabaseType();
 
   protected abstract void setSecondaryStorageConfig(Camunda camunda, String indexPrefix);
-
-  protected abstract Map<String, String> getLegacyConfiguration(String indexPrefix);
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {

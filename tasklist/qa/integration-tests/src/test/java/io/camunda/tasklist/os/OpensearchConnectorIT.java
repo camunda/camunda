@@ -118,9 +118,6 @@ public class OpensearchConnectorIT {
     setPluginConfig(registry, TasklistProperties.PREFIX + ".openSearch", plugin);
     // Unified configuration: db url + compatibility
     registry.add("camunda.data.secondary-storage.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.database.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.operate.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.tasklist.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
   }
 
   private static void setPluginConfig(

@@ -35,9 +35,7 @@ public class ResourceAccessControllerConfigurationTest {
             "zeebe.broker.gateway.enable=true",
             "camunda.rest.enabled=true",
             // avoid needing AuthorizationChecker by disabling authorizations
-            "camunda.security.authorizations.enabled=false",
-            // choose a supported secondary storage type for document-based RAC beans
-            "camunda.database.type=elasticsearch");
+            "camunda.security.authorizations.enabled=false");
   }
 
   @Test

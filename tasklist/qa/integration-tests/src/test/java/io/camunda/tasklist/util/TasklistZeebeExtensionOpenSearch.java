@@ -13,7 +13,6 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.qa.util.TestUtil;
-import java.util.Map;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,25 +50,6 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
     camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.opensearch);
     camunda.getData().getSecondaryStorage().getOpensearch().setUrl(dbUrl);
     camunda.getData().getSecondaryStorage().getOpensearch().setIndexPrefix(indexPrefix);
-  }
-
-  @Override
-  protected Map<String, String> getLegacyConfiguration(final String indexPrefix) {
-    final String dbUrl = "http://host.testcontainers.internal:9200";
-
-    return Map.of(
-        "camunda.database.type",
-        getDatabaseType().name(),
-        "camunda.database.url",
-        dbUrl,
-        "camunda.tasklist.database",
-        getDatabaseType().name(),
-        "camunda.operate.database",
-        getDatabaseType().name(),
-        "camunda.tasklist.opensearch.url",
-        dbUrl,
-        "camunda.operate.opensearch.url",
-        dbUrl);
   }
 
   @Override
