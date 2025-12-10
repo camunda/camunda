@@ -155,7 +155,7 @@ public class AuthorizationChecker {
    * @return the permission types found
    */
   public Map<String, Set<PermissionType>> collectPermissionTypesByResourceIds(
-      final List<String> resourceIds,
+      final Set<String> resourceIds,
       final AuthorizationResourceType resourceType,
       final CamundaAuthentication authentication) {
     final var resourceKeys = new ArrayList<>(resourceIds);
@@ -187,7 +187,7 @@ public class AuthorizationChecker {
   }
 
   private Map<String, Set<PermissionType>> collectPermissionTypesByResourceId(
-      final List<AuthorizationEntity> authorizationEntities, final List<String> resourceIds) {
+      final List<AuthorizationEntity> authorizationEntities, final Set<String> resourceIds) {
 
     // group permissions by resource ID
     final var permissionTypesByResourceId =

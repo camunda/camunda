@@ -151,10 +151,10 @@ public class ListViewProcessInstanceDto {
       return new ArrayList<>();
     }
 
-    final List<String> resourceIds =
+    final Set<String> resourceIds =
         processInstanceEntities.stream()
             .map(ProcessInstanceForListViewEntity::getBpmnProcessId)
-            .toList();
+            .collect(Collectors.toSet());
 
     final Map<String, Set<String>> permissionsByResourceId =
         permissionsService.getProcessDefinitionPermissionsByResourceId(resourceIds);

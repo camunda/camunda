@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -54,7 +53,7 @@ public class PermissionsService {
   }
 
   public Map<String, Set<String>> getProcessDefinitionPermissionsByResourceId(
-      final List<String> bpmnProcessIds) {
+      final Set<String> bpmnProcessIds) {
     return getResourcePermissionsByResourceIds(
         bpmnProcessIds, AuthorizationResourceType.PROCESS_DEFINITION);
   }
@@ -95,7 +94,7 @@ public class PermissionsService {
    * @return permissions the user has for the given resource
    */
   public Map<String, Set<String>> getResourcePermissionsByResourceIds(
-      final List<String> resourceKeys, final AuthorizationResourceType resourceType) {
+      final Set<String> resourceKeys, final AuthorizationResourceType resourceType) {
     final Map<String, Set<PermissionType>> permissionTypeSet =
         authorizationChecker.collectPermissionTypesByResourceIds(
             resourceKeys, resourceType, getAuthentication());

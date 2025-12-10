@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Schema(
     name = "Process group object",
@@ -38,13 +39,16 @@ public class ProcessGroupDto {
       final PermissionsService permissionsService) {
     final List<ProcessGroupDto> groups = new ArrayList<>();
 
-    final List<String> resourceIds =
-        processesGrouped.keySet().stream().map(ProcessKey::getBpmnProcessId).toList();
+    final Set<String> resourceIds =
+        processesGrouped.keySet().stream()
+            .map(ProcessKey::getBpmnProcessId)
+            .collect(Collectors.toSet());
 
     final Map<String, Set<String>> permissionsByResourceId =
         permissionsService.getProcessDefinitionPermissionsByResourceId(resourceIds);
 
-    processesGrouped.values().stream()
+    processesGrouped
+        .values()
         .forEach(
             group -> {
               final ProcessGroupDto groupDto = new ProcessGroupDto();
