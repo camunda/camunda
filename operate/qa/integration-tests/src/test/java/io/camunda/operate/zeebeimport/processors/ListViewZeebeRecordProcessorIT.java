@@ -44,7 +44,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(
+    properties = {
+      // force more shards to expose issue with child docs and routing
+      "camunda.operate.elasticsearch.numberOfShards=10",
+      "camunda.operate.opensearch.numberOfShards=10"
+    })
 public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   private static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
   private final String newBpmnProcessId = "newBpmnProcessId";
