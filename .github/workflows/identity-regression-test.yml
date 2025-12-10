@@ -55,6 +55,13 @@ jobs:
       fail-fast: false
       matrix:
         env: [ 'local' ]
+        case:
+          - user-authorizations-tests.http
+          - tenant-tests.http
+          - group-tests.http
+          - mapping-rules.http
+          - role-tests.http
+          - csrf-protection-tests.http
         include:
           - case: user-authorizations-tests.http
             hostPort: 9200
@@ -76,7 +83,7 @@ jobs:
             hostTransportPort: 9350
 
     runs-on: ubuntu-latest
-    environment: '${{ matrix.env }}-http-tests'
+    environment: '${{ matrix.case }}'
     env:
       LC_ALL: C.UTF-8
     services:
