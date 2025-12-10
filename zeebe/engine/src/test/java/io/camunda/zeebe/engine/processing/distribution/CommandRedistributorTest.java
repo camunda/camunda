@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import java.time.Duration;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,7 @@ public class CommandRedistributorTest {
   @Mock private DistributionMetrics mockDistributionMetrics;
   @Mock private InterPartitionCommandSender mockCommandSender;
   @Mock private ReadonlyStreamProcessorContext mockContext;
+  @Mock private ControllableStreamClock clock;
 
   private CommandRedistributor commandRedistributor;
   private long distributionKey;
@@ -138,7 +140,8 @@ public class CommandRedistributorTest {
             1,
             routingInfo,
             mockCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     final var config =
         new EngineConfiguration()

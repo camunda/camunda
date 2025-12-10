@@ -127,6 +127,13 @@ public class DbDistributionState implements MutableDistributionState {
 
   @Override
   public void addRetriableDistribution(final long distributionKey, final int partition) {
+    addRetriableDistribution(distributionKey, partition, -1L);
+  }
+
+  @Override
+  public void addRetriableDistribution(
+      final long distributionKey, final int partition, final long startTime) {
+    // TODO: include start time in the retriableDistributiin CF or another mechanism
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     retriableDistributionColumnFamily.insert(distributionPartitionKey, DbNil.INSTANCE);

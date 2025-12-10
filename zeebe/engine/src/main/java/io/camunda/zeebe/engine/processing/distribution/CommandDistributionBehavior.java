@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Objects;
@@ -66,6 +67,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
   private final DistributionMetrics distributionMetrics;
   private final Writers writers;
+  private final ControllableStreamClock clock;
 
   public CommandDistributionBehavior(
       final DistributionState distributionState,
@@ -73,7 +75,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final int currentPartition,
       final RoutingInfo routingInfo,
       final InterPartitionCommandSender partitionCommandSender,
-      final DistributionMetrics distributionMetrics) {
+      final DistributionMetrics distributionMetrics,
+      final ControllableStreamClock clock) {
     this.distributionState = distributionState;
     this.writers = writers;
     commandWriter = writers.command();
@@ -83,6 +86,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     interPartitionCommandSender = partitionCommandSender;
     currentPartitionId = currentPartition;
     this.distributionMetrics = distributionMetrics;
+    this.clock = clock;
   }
 
   public CommandDistributionBehavior withScheduledState(final DistributionState state) {
@@ -92,7 +96,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
         currentPartitionId,
         routingInfo,
         interPartitionCommandSender,
-        distributionMetrics);
+        distributionMetrics,
+        clock);
   }
 
   @Override
@@ -284,7 +289,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setPartitionId(partition)
             .setValueType(valueType)
             .setQueueId(queueId)
-            .setIntent(intent));
+            .setIntent(intent)
+            .setStartTime(clock.millis()));
 
     getMetrics().addInflightDistribution(partition);
 

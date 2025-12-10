@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -88,7 +89,8 @@ public final class MessageStreamProcessorTest {
                 1,
                 routingInfo,
                 mockInterpartitionCommandSender,
-                mock(DistributionMetrics.class)));
+                mock(DistributionMetrics.class),
+                mock(ControllableStreamClock.class)));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
