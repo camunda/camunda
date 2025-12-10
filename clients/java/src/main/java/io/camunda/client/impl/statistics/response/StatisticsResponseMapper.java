@@ -18,8 +18,8 @@ package io.camunda.client.impl.statistics.response;
 import static io.camunda.client.impl.search.response.SearchResponseMapper.toSearchResponsePage;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.client.api.search.response.IndexPaginationResponse;
-import io.camunda.client.api.search.response.IndexPaginationResponsePage;
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -27,7 +27,7 @@ import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscri
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
-import io.camunda.client.impl.search.response.IndexPaginationResponseImpl;
+import io.camunda.client.impl.search.response.SearchResponseImpl;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
@@ -103,26 +103,26 @@ public class StatisticsResponseMapper {
         ofNullable(response.getAssignees()).orElse(0L));
   }
 
-  public static IndexPaginationResponse<ProcessDefinitionInstanceStatistics>
+  public static SearchResponse<ProcessDefinitionInstanceStatistics>
       toProcessDefinitionInstanceStatisticsResponse(
           final ProcessDefinitionInstanceStatisticsQueryResult response) {
-    final IndexPaginationResponsePage page = toSearchResponsePage(response.getPage());
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessDefinitionInstanceStatistics> items =
         toSearchResponseInstances(
             response.getItems(), ProcessDefinitionInstanceStatisticsImpl::new);
 
-    return new IndexPaginationResponseImpl<>(items, page);
+    return new SearchResponseImpl<>(items, page);
   }
 
-  public static IndexPaginationResponse<ProcessDefinitionInstanceVersionStatistics>
+  public static SearchResponse<ProcessDefinitionInstanceVersionStatistics>
       toProcessDefinitionInstanceVersionStatisticsResponse(
           final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
-    final IndexPaginationResponsePage page = toSearchResponsePage(response.getPage());
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessDefinitionInstanceVersionStatistics> items =
         toSearchResponseInstances(
             response.getItems(), ProcessDefinitionInstanceVersionStatisticsImpl::new);
 
-    return new IndexPaginationResponseImpl<>(items, page);
+    return new SearchResponseImpl<>(items, page);
   }
 
   private static <T, R> List<R> toSearchResponseInstances(

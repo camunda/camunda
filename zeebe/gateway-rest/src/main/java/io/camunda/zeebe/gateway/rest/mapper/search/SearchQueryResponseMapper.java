@@ -104,7 +104,6 @@ import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.IndexPaginationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
@@ -262,7 +261,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionInstanceStatisticsQueryResult
       toProcessInstanceStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
-    final var page = toPageResponse(result);
+    final var page = toSearchQueryPageResponse(result);
     return new ProcessDefinitionInstanceStatisticsQueryResult()
         .page(page)
         .items(
@@ -274,7 +273,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionInstanceVersionStatisticsQueryResult
       toProcessInstanceVersionStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
-    final var page = toPageResponse(result);
+    final var page = toSearchQueryPageResponse(result);
     return new ProcessDefinitionInstanceVersionStatisticsQueryResult()
         .page(page)
         .items(
@@ -602,13 +601,6 @@ public final class SearchQueryResponseMapper {
         .hasMoreTotalItems(result.hasMoreTotalItems())
         .startCursor(result.startCursor())
         .endCursor(result.endCursor());
-  }
-
-  private static IndexPaginationResponse toPageResponse(final SearchQueryResult<?> result) {
-
-    return new IndexPaginationResponse()
-        .totalItems(result.total())
-        .hasMoreTotalItems(result.hasMoreTotalItems());
   }
 
   private static List<ProcessDefinitionResult> toProcessDefinitions(

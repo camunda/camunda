@@ -21,9 +21,9 @@ import static io.camunda.client.api.statistics.request.StatisticsRequestBuilders
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.OffsetRequestPage;
-import io.camunda.client.api.search.response.IndexPaginationResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
@@ -59,16 +59,16 @@ public class ProcessDefinitionInstanceVersionStatisticsRequestImpl
   }
 
   @Override
-  public FinalCommandStep<IndexPaginationResponse<ProcessDefinitionInstanceVersionStatistics>>
-      requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<ProcessDefinitionInstanceVersionStatistics> requestTimeout(
+      final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<IndexPaginationResponse<ProcessDefinitionInstanceVersionStatistics>> send() {
-    final HttpCamundaFuture<IndexPaginationResponse<ProcessDefinitionInstanceVersionStatistics>>
-        result = new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<ProcessDefinitionInstanceVersionStatistics>> send() {
+    final HttpCamundaFuture<SearchResponse<ProcessDefinitionInstanceVersionStatistics>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/process-definitions/%s/statistics/process-instances", processDefinitionId),
         jsonMapper.toJson(request),

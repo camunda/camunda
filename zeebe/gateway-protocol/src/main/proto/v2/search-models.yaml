@@ -128,17 +128,3 @@ components:
       example:
         totalItems: 1
         hasMoreTotalItems: false
-
-    IndexPaginationResponse:
-      description: Pagination information about the search results.
-      type: object
-      properties:
-        totalItems:
-          description: Total items matching the criteria.
-          type: integer
-          format: int64
-        hasMoreTotalItems:
-          description: |
-            Indicates whether there are more items matching the criteria beyond the returned items.
-            This is useful for determining if additional requests are needed to retrieve all results.
-          type: boolean

@@ -523,19 +523,14 @@ components:
 
     ProcessDefinitionInstanceStatisticsQueryResult:
       type: object
-      required:
-        - page
-      description: Process definition instance statistics query response.
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The process definition instance statistics result.
           type: array
           items:
             $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsResult'
-        page:
-          allOf:
-            - $ref: 'search-models.yaml#/components/schemas/IndexPaginationResponse'
-          description: Pagination information about the search results.
 
     ProcessDefinitionInstanceStatisticsResult:
       description: Process definition instance statistics response.
@@ -577,6 +572,8 @@ components:
 
     ProcessDefinitionInstanceVersionStatisticsQuery:
       type: object
+      required:
+        - page
       properties:
         page:
           description: Pagination criteria.
@@ -603,17 +600,14 @@ components:
 
     ProcessDefinitionInstanceVersionStatisticsQueryResult:
       type: object
-      description: Process definition instance version statistics query response.
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The process definition instance version statistics result.
           type: array
           items:
             $ref: '#/components/schemas/ProcessDefinitionInstanceVersionStatisticsResult'
-        page:
-          description: Pagination information about the search results.
-          allOf:
-            - $ref: 'search-models.yaml#/components/schemas/IndexPaginationResponse'
 
     ProcessDefinitionInstanceVersionStatisticsResult:
       description: Process definition instance version statistics response.
