@@ -8,8 +8,6 @@
 
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -23,7 +21,9 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -34,37 +34,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 public class MigrationTransitionStepTest {
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   @TempDir Path tempDir;
   @AutoClose ZeebeDb zeebeDb;
   TestPartitionTransitionContext context;
   DbMigrationState migrationState;
-  private LRUCache lruCache;
-  private WriteBufferManager writeBufferManager;
   private ZeebeRocksDbFactory<?> factory;
+  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
 
   @BeforeEach
   void setup() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final int defaultPartitionCount = 3;
+    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     factory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             defaultPartitionCount);
 
     zeebeDb = factory.createDb(tempDir.toFile());
@@ -76,8 +66,7 @@ public class MigrationTransitionStepTest {
 
   @AfterEach
   void tearDown() {
-    writeBufferManager.close();
-    lruCache.close();
+    sharedRocksDbResources.close();
   }
 
   @Test

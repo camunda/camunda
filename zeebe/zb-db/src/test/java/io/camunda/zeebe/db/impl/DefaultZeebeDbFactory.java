@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.db.impl;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -21,15 +20,9 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.function.Supplier;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
+import org.junit.jupiter.api.AutoClose;
 
 public final class DefaultZeebeDbFactory {
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   public static <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactoryResources<T> getDefaultFactoryResources() {
@@ -40,11 +33,8 @@ public final class DefaultZeebeDbFactory {
       ZeebeDbFactoryResources<T> getDefaultFactoryResources(
           final Supplier<MeterRegistry> meterRegistry) {
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    final WriteBufferManager writeBufferManager =
-        new WriteBufferManager(ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final SharedRocksDbResources sharedRocksDbResources =
-        new SharedRocksDbResources(lruCache, writeBufferManager, DEFAULT_CACHE_SIZE);
+        new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     final ZeebeDbFactory<T> factory =
         new ZeebeRocksDbFactory<>(
@@ -62,7 +52,7 @@ public final class DefaultZeebeDbFactory {
       implements AutoCloseable {
 
     public final ZeebeDbFactory<ColumnFamilyType> factory;
-    private final SharedRocksDbResources sharedRocksDbResources;
+    @AutoClose private final SharedRocksDbResources sharedRocksDbResources;
 
     public ZeebeDbFactoryResources(
         final ZeebeDbFactory<ColumnFamilyType> factory,

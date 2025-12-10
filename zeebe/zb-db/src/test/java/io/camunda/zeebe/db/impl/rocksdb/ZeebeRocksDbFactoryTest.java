@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +33,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -43,28 +42,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionPriority;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 final class ZeebeRocksDbFactoryTest {
 
-  static {
-    RocksDB.loadLibrary();
-  }
-
-  private SharedRocksDbResources sharedRocksDbResources;
+  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
 
   @BeforeEach
   void setUp() {
     dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    sharedRocksDbResources =
-        new SharedRocksDbResources(
-            lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
-            DEFAULT_CACHE_SIZE);
+    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
   }
 
   @AfterEach

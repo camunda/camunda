@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -16,7 +14,9 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
@@ -31,26 +31,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 public class RawTransactionalColumnFamilyTest {
   @TempDir static Path path;
   @AutoClose static ZeebeTransactionDb<ZbColumnFamilies> db;
   static Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies = new HashMap<>();
   private static TransactionContext context;
-  private static LRUCache lruCache;
-  private static WriteBufferManager writeBufferManager;
-
-  static {
-    RocksDB.loadLibrary();
-  }
+  @AutoClose private static SharedRocksDbResources sharedRocksDbResources;
 
   @BeforeAll
   static void setup() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
@@ -58,8 +49,7 @@ public class RawTransactionalColumnFamilyTest {
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             defaultPartitionCount);
     db = factory.createDb(path.toFile());
     context = db.createContext();
@@ -72,8 +62,7 @@ public class RawTransactionalColumnFamilyTest {
 
   @AfterAll
   static void tearDown() {
-    writeBufferManager.close();
-    lruCache.close();
+    sharedRocksDbResources.close();
   }
 
   @ParameterizedTest

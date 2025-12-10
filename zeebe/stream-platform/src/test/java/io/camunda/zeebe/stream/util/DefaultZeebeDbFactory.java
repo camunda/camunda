@@ -7,35 +7,24 @@
  */
 package io.camunda.zeebe.stream.util;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
-
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
+import org.junit.jupiter.api.AutoClose;
 
 public final class DefaultZeebeDbFactory {
 
-  static {
-    RocksDB.loadLibrary();
-  }
-
   public static ZeebeDbFactoryResources getDefaultFactoryResources() {
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    final WriteBufferManager writeBufferManager =
-        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
     final SharedRocksDbResources sharedRocksDbResources =
-        new SharedRocksDbResources(lruCache, writeBufferManager, DEFAULT_CACHE_SIZE);
+        new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     final ZeebeDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
@@ -50,7 +39,7 @@ public final class DefaultZeebeDbFactory {
 
   public static class ZeebeDbFactoryResources implements AutoCloseable {
     public final ZeebeDbFactory<ZbColumnFamilies> factory;
-    private final SharedRocksDbResources sharedRocksDbResources;
+    @AutoClose private final SharedRocksDbResources sharedRocksDbResources;
 
     public ZeebeDbFactoryResources(
         final ZeebeDbFactory<ZbColumnFamilies> factory,

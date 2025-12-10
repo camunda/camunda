@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.backup.processing;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,6 +27,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -50,20 +49,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 final class CheckpointRecordsProcessorTest {
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   @TempDir Path database;
   final BackupManager backupManager = mock(BackupManager.class);
@@ -74,19 +67,14 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private ZeebeDb zeebedb;
-  private SharedRocksDbResources sharedRocksDbResources;
+  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
       new AtomicInteger(3); // Default partition count for tests
 
   @BeforeEach
   void setup() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    sharedRocksDbResources =
-        new SharedRocksDbResources(
-            lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
-            DEFAULT_CACHE_SIZE);
+    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -126,7 +114,6 @@ final class CheckpointRecordsProcessorTest {
   @AfterEach
   void after() throws Exception {
     zeebedb.close();
-    sharedRocksDbResources.close();
   }
 
   @Test

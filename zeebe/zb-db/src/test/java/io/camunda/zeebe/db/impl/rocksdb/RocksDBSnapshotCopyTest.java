@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
@@ -32,18 +31,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 public class RocksDBSnapshotCopyTest {
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   final long rowsPerCF = 100;
   @TempDir Path destinationPath;
@@ -53,13 +46,12 @@ public class RocksDBSnapshotCopyTest {
   private RocksDBSnapshotCopy copy;
   private Random random;
   private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
-  private LRUCache lruCache;
-  private WriteBufferManager writeBufferManager;
+  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
 
   @BeforeEach
   void setup() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
+
+    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     factory =
         new ZeebeRocksDbFactory<>(
@@ -67,8 +59,7 @@ public class RocksDBSnapshotCopyTest {
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
+            sharedRocksDbResources,
             defaultPartitionCount);
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);
@@ -78,8 +69,7 @@ public class RocksDBSnapshotCopyTest {
   @AfterEach
   public void tearDown() {
     sourceSnapshotPath.toFile().delete();
-    writeBufferManager.close();
-    lruCache.close();
+    sharedRocksDbResources.close();
   }
 
   @Test

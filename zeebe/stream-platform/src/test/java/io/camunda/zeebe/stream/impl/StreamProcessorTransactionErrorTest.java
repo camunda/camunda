@@ -40,7 +40,7 @@ final class StreamProcessorTransactionErrorTest {
 
   @RegisterExtension
   private final StreamPlatformExtension streamPlatformExtension =
-      new StreamPlatformExtension(new ZeebeDbFactoryResources(errorProneDbFactory, null, null));
+      new StreamPlatformExtension(new ZeebeDbFactoryResources(errorProneDbFactory, null));
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
