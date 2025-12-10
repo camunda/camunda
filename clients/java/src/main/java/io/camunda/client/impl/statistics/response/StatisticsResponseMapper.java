@@ -18,22 +18,20 @@ package io.camunda.client.impl.statistics.response;
 import static io.camunda.client.impl.search.response.SearchResponseMapper.toSearchResponsePage;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
-import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
 import io.camunda.client.api.search.response.IndexPaginationResponse;
 import io.camunda.client.api.search.response.IndexPaginationResponsePage;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.search.response.IndexPaginationResponseImpl;
-import io.camunda.client.impl.search.response.IndexPaginationResponsePageImpl;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
-import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
 import java.util.Collections;
@@ -125,15 +123,6 @@ public class StatisticsResponseMapper {
             response.getItems(), ProcessDefinitionInstanceVersionStatisticsImpl::new);
 
     return new IndexPaginationResponseImpl<>(items, page);
-  }
-
-  private static IndexPaginationResponsePage toSearchResponsePage(
-      final io.camunda.client.protocol.rest.IndexPaginationResponse pageResponse) {
-    if (pageResponse == null) {
-      return new IndexPaginationResponsePageImpl(0L, false);
-    }
-    return new IndexPaginationResponsePageImpl(
-        pageResponse.getTotalItems(), pageResponse.getHasMoreTotalItems());
   }
 
   private static <T, R> List<R> toSearchResponseInstances(

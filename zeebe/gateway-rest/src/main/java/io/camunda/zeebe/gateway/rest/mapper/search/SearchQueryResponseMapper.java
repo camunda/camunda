@@ -104,6 +104,7 @@ import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
+import io.camunda.zeebe.gateway.protocol.rest.IndexPaginationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
@@ -118,7 +119,6 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
@@ -262,7 +262,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionInstanceStatisticsQueryResult
       toProcessInstanceStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
-    final var page = toProcessDefinitionInstanceStatisticsPageResponse(result);
+    final var page = toPageResponse(result);
     return new ProcessDefinitionInstanceStatisticsQueryResult()
         .page(page)
         .items(
@@ -274,7 +274,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionInstanceVersionStatisticsQueryResult
       toProcessInstanceVersionStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
-    final var page = toProcessDefinitionInstanceStatisticsPageResponse(result);
+    final var page = toPageResponse(result);
     return new ProcessDefinitionInstanceVersionStatisticsQueryResult()
         .page(page)
         .items(
@@ -604,10 +604,9 @@ public final class SearchQueryResponseMapper {
         .endCursor(result.endCursor());
   }
 
-  private static ProcessDefinitionInstanceStatisticsPageResponse
-      toProcessDefinitionInstanceStatisticsPageResponse(final SearchQueryResult<?> result) {
+  private static IndexPaginationResponse toPageResponse(final SearchQueryResult<?> result) {
 
-    return new ProcessDefinitionInstanceStatisticsPageResponse()
+    return new IndexPaginationResponse()
         .totalItems(result.total())
         .hasMoreTotalItems(result.hasMoreTotalItems());
   }

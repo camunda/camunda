@@ -34,6 +34,7 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.IndexPaginationResponsePage;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.MessageSubscription;
@@ -167,6 +168,15 @@ public final class SearchResponseMapper {
         pageResponse.getHasMoreTotalItems(),
         pageResponse.getStartCursor(),
         pageResponse.getEndCursor());
+  }
+
+  public static IndexPaginationResponsePage toSearchResponsePage(
+      final io.camunda.client.protocol.rest.IndexPaginationResponse pageResponse) {
+    if (pageResponse == null) {
+      return new IndexPaginationResponsePageImpl(0L, false);
+    }
+    return new IndexPaginationResponsePageImpl(
+        pageResponse.getTotalItems(), pageResponse.getHasMoreTotalItems());
   }
 
   public static SearchResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
