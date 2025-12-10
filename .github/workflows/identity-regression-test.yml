@@ -185,6 +185,7 @@ jobs:
           dir=$(ls -d camunda-zeebe-*/)
           cd "$dir"
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
+          export CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://localhost:${{ matrix.hostPort }} && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:${{ matrix.hostPort }} && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
@@ -303,6 +304,7 @@ jobs:
         run: |
           cd ./dist/target/camunda-zeebe-8.9.0-SNAPSHOT
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
+          export CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://localhost:${{ matrix.hostPort }} && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:${{ matrix.hostPort }} && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
