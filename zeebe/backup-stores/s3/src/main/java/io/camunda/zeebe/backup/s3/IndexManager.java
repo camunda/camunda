@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.FileTransformerConfiguration;
 import software.amazon.awssdk.core.FileTransformerConfiguration.FailureBehavior;
+import software.amazon.awssdk.core.FileTransformerConfiguration.FileWriteOption;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -60,18 +61,16 @@ final class IndexManager {
             });
   }
 
-  CompletableFuture<BackupIndexFile> download(final BackupIndexIdentifier id) {
-    final Path targetPath;
-    try {
-      targetPath = Files.createTempFile("s3-backup-store", ".index");
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to allocate local index file", e);
+  CompletableFuture<BackupIndexFile> download(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    if (Files.exists(targetPath)) {
+      return CompletableFuture.failedFuture(
+          new IllegalArgumentException("Index file already exists at " + targetPath));
     }
 
     final var request =
         GetObjectRequest.builder().bucket(config.bucketName()).key(objectKey(id)).build();
 
-    LOG.debug("Downloading index {}", id);
     return client
         .getObject(
             request,
@@ -79,6 +78,7 @@ final class IndexManager {
                 targetPath,
                 FileTransformerConfiguration.builder()
                     .failureBehavior(FailureBehavior.LEAVE)
+                    .fileWriteOption(FileWriteOption.CREATE_NEW)
                     .build()))
         .<BackupIndexFile>thenApply(
             response -> {
@@ -92,6 +92,11 @@ final class IndexManager {
             throwable -> {
               if (throwable.getCause() instanceof NoSuchKeyException) {
                 LOG.debug("Index {} not found in S3", id);
+                try {
+                  Files.createFile(targetPath);
+                } catch (final IOException e) {
+                  throw new UncheckedIOException(e);
+                }
                 return new S3BackupIndexFile(
                     targetPath, new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()));
               }

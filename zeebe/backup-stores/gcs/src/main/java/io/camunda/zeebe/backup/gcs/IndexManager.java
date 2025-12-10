@@ -50,15 +50,18 @@ final class IndexManager {
     LOG.debug("Uploaded index {}", indexFile.id());
   }
 
-  GcsBackupIndexFile download(final BackupIndexIdentifier id) {
-    final Path targetPath;
-    try {
-      targetPath = Files.createTempFile("gcs-backup-store", ".index");
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+  GcsBackupIndexFile download(final BackupIndexIdentifier id, final Path targetPath) {
+    if (Files.exists(targetPath)) {
+      throw new IllegalArgumentException("Index file already exists at " + targetPath);
     }
     final var blob = client.get(indexBlobInfo(id).getBlobId());
     if (blob == null) {
+      LOG.debug("Index {} not found in GCS", id);
+      try {
+        Files.createFile(targetPath);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
       return new GcsBackupIndexFile(targetPath, id);
     }
     blob.downloadTo(targetPath);
