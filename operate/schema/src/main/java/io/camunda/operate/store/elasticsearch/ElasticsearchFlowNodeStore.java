@@ -59,9 +59,10 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
             : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 
     try {
+      final String routing = String.valueOf(processInstanceId);
       final Map<String, Object> processInstance =
           ElasticsearchUtil.getByIdOrSearchArchives(
-              esClient, listViewTemplate, flowNodeInstanceId, queryType, ACTIVITY_ID);
+              esClient, listViewTemplate, flowNodeInstanceId, routing, queryType, ACTIVITY_ID);
       if (processInstance != null) {
         return (String) processInstance.get(ACTIVITY_ID);
       }

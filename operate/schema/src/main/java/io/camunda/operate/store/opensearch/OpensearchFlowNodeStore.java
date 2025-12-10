@@ -49,11 +49,13 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? RequestDSL.QueryType.ALL
             : RequestDSL.QueryType.ONLY_RUNTIME;
+    final String routing = String.valueOf(processInstanceId);
     final Map<String, Object> flowNodeInstance =
         OpensearchUtil.getByIdOrSearchArchives(
             richOpenSearchClient,
             listViewTemplate,
             flowNodeInstanceId,
+            routing,
             queryType,
             ListViewTemplate.ACTIVITY_ID);
     if (flowNodeInstance != null) {
