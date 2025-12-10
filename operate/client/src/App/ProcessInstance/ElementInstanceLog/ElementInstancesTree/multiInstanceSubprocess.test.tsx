@@ -13,7 +13,6 @@ import {multiInstanceProcess} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {
   multiInstanceProcessInstance,
-  flowNodeInstances,
   processInstanceId,
   Wrapper,
   mockMultiInstanceProcessInstance,
@@ -242,19 +241,15 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
       await screen.findByText('Multi-Instance Process'),
     ).toBeInTheDocument();
 
-    const withinMultiInstanceFlowNode = within(
-      await screen.findByTestId(
-        `tree-node-${
-          flowNodeInstances.level1Poll[processInstanceId]!.children[1]!.id
-        }`,
-      ),
+    const withinMultiInstanceElementInstance = within(
+      await screen.findByTestId(`tree-node-2251799813686156`),
     );
 
     expect(
-      await withinMultiInstanceFlowNode.findByTestId('INCIDENT-icon'),
+      await withinMultiInstanceElementInstance.findByTestId('INCIDENT-icon'),
     ).toBeInTheDocument();
     expect(
-      withinMultiInstanceFlowNode.queryByTestId('COMPLETED-icon'),
+      withinMultiInstanceElementInstance.queryByTestId('COMPLETED-icon'),
     ).not.toBeInTheDocument();
 
     mockFetchProcessInstanceDeprecated().withSuccess(
@@ -299,10 +294,10 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     vi.runOnlyPendingTimers();
 
     expect(
-      await withinMultiInstanceFlowNode.findByTestId('COMPLETED-icon'),
+      await withinMultiInstanceElementInstance.findByTestId('COMPLETED-icon'),
     ).toBeInTheDocument();
     expect(
-      withinMultiInstanceFlowNode.queryByTestId('INCIDENT-icon'),
+      withinMultiInstanceElementInstance.queryByTestId('INCIDENT-icon'),
     ).not.toBeInTheDocument();
 
     vi.clearAllTimers();
