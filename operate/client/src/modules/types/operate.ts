@@ -102,6 +102,5 @@ export type {
   ResourceBasedPermissionDto,
   ProcessInstanceEntity,
   SortOrder,
-  FlowNodeInstanceDto,
   FlowNodeInstance,
 };
