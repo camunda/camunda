@@ -12,7 +12,50 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscr
 
 public interface MutableConditionalSubscriptionState extends ConditionalSubscriptionState {
 
+  /**
+   * Stores a conditional subscription by its subscription key.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
   void put(final long key, ConditionalSubscriptionRecord subscription);
 
+  /**
+   * Stores a conditional subscription for a root-level conditional start event (where {@code
+   * elementInstanceKey < 0}).
+   *
+   * <p>This method indexes the subscription by process definition key instead of by scope key,
+   * using a different column family than {@link #put(long, ConditionalSubscriptionRecord)}.
+   *
+   * <p>Use this method for conditional start events to ensure proper subscription lifecycle
+   * management during process redeployment.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
+  void putStart(final long key, ConditionalSubscriptionRecord subscription);
+
+  /**
+   * Deletes a conditional subscription by its subscription key.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
   void delete(final long key, ConditionalSubscriptionRecord subscription);
+
+  /**
+   * Deletes a conditional subscription for a root-level conditional start event where {@code *
+   * elementInstanceKey < 0}).
+   *
+   * <p>This method removes the subscription from the column family indexed by process definition
+   * key, which is different from the one used by {@link #delete(long,
+   * ConditionalSubscriptionRecord)}.
+   *
+   * <p>Use this method for conditional start events to ensure proper subscription lifecycle
+   * management during process redeployment.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
+  void deleteStart(long key, ConditionalSubscriptionRecord subscription);
 }

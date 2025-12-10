@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSig
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -43,6 +44,7 @@ public class StartEventSubscriptionManager {
   private final ProcessState processState;
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final SignalSubscriptionState signalSubscriptionState;
+  private final ConditionalSubscriptionState conditionalSubscriptionState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
 
@@ -53,6 +55,7 @@ public class StartEventSubscriptionManager {
     processState = processingState.getProcessState();
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
     signalSubscriptionState = processingState.getSignalSubscriptionState();
+    conditionalSubscriptionState = processingState.getConditionalSubscriptionState();
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
   }
@@ -78,6 +81,7 @@ public class StartEventSubscriptionManager {
   private void closeExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     closeMessageExistingStartEventSubscriptions(processRecord);
     closeSignalExistingStartEventSubscriptions(processRecord);
+    closeConditionalExistingStartEventSubscriptions(processRecord);
   }
 
   public void closeStartEventSubscriptions(final DeployedProcess deployedProcess) {
@@ -87,6 +91,30 @@ public class StartEventSubscriptionManager {
     if (deployedProcess.getProcess().hasSignalStartEvent()) {
       closeSignalStartEventSubscriptions(deployedProcess);
     }
+    if (deployedProcess.getProcess().hasConditionalStartEvent()) {
+      closeConditionalStartEventSubscriptions(deployedProcess);
+    }
+  }
+
+  private void closeConditionalExistingStartEventSubscriptions(
+      final ProcessMetadata processRecord) {
+    final DeployedProcess lastConditionalProcess =
+        findLastStartProcess(processRecord, ExecutableCatchEventElement::isConditional);
+    if (lastConditionalProcess == null) {
+      return;
+    }
+
+    closeConditionalStartEventSubscriptions(lastConditionalProcess);
+  }
+
+  private void closeConditionalStartEventSubscriptions(final DeployedProcess deployedProcess) {
+    conditionalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
+        deployedProcess.getKey(),
+        subscription ->
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(),
+                ConditionalSubscriptionIntent.DELETED,
+                subscription.getRecord()));
   }
 
   private void closeMessageExistingStartEventSubscriptions(final ProcessMetadata processRecord) {

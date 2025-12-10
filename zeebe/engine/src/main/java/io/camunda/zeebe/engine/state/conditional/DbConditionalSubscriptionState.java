@@ -24,26 +24,32 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
   private final ConditionalSubscription conditionalSubscription = new ConditionalSubscription();
   private final DbLong subscriptionKey;
   private final DbLong scopeKey;
+  private final DbLong processDefinitionKey;
   private final DbString tenantIdKey;
 
   private final DbTenantAwareKey<DbLong> tenantAwareSubscriptionKey;
+  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>
+      processDefinitionKeyAndTenantAwareSubscriptionKey;
   private final ColumnFamily<DbTenantAwareKey<DbLong>, ConditionalSubscription>
-      conditionalKeyColumnFamily;
+      subscriptionKeyColumnFamily;
   private final DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>
       scopeKeyAndTenantAwareSubscriptionKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>, DbNil>
       scopeKeyColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>, DbNil>
+      processDefinitionKeyColumnFamily;
 
   public DbConditionalSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     subscriptionKey = new DbLong();
     scopeKey = new DbLong();
+    processDefinitionKey = new DbLong();
     tenantIdKey = new DbString();
     tenantAwareSubscriptionKey =
         new DbTenantAwareKey<>(tenantIdKey, subscriptionKey, DbTenantAwareKey.PlacementType.PREFIX);
-    conditionalKeyColumnFamily =
+    subscriptionKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_CONDITIONAL_KEY,
+            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_SUBSCRIPTION_KEY,
             transactionContext,
             tenantAwareSubscriptionKey,
             conditionalSubscription);
@@ -56,6 +62,15 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
             transactionContext,
             scopeKeyAndTenantAwareSubscriptionKey,
             DbNil.INSTANCE);
+
+    processDefinitionKeyAndTenantAwareSubscriptionKey =
+        new DbCompositeKey<>(processDefinitionKey, tenantAwareSubscriptionKey);
+    processDefinitionKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_PROCESS_DEFINITION_KEY,
+            transactionContext,
+            processDefinitionKeyAndTenantAwareSubscriptionKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -65,8 +80,20 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     tenantIdKey.wrapString(subscription.getTenantId());
     scopeKey.wrapLong(subscription.getScopeKey());
 
-    conditionalKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
+    subscriptionKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
     scopeKeyColumnFamily.insert(scopeKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void putStart(final long key, final ConditionalSubscriptionRecord subscription) {
+    conditionalSubscription.setKey(key).setRecord(subscription);
+    subscriptionKey.wrapLong(key);
+    tenantIdKey.wrapString(subscription.getTenantId());
+    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
+
+    subscriptionKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
+    processDefinitionKeyColumnFamily.insert(
+        processDefinitionKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -75,8 +102,19 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     tenantIdKey.wrapString(subscription.getTenantId());
     scopeKey.wrapLong(subscription.getScopeKey());
 
-    conditionalKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
+    subscriptionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
     scopeKeyColumnFamily.deleteExisting(scopeKeyAndTenantAwareSubscriptionKey);
+  }
+
+  @Override
+  public void deleteStart(final long key, final ConditionalSubscriptionRecord subscription) {
+    subscriptionKey.wrapLong(key);
+    tenantIdKey.wrapString(subscription.getTenantId());
+    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
+
+    subscriptionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
+    processDefinitionKeyColumnFamily.deleteExisting(
+        processDefinitionKeyAndTenantAwareSubscriptionKey);
   }
 
   @Override
@@ -84,7 +122,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     this.subscriptionKey.wrapLong(subscriptionKey);
     tenantIdKey.wrapString(tenantId);
 
-    return conditionalKeyColumnFamily.exists(tenantAwareSubscriptionKey);
+    return subscriptionKeyColumnFamily.exists(tenantAwareSubscriptionKey);
   }
 
   @Override
@@ -97,9 +135,28 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
           subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
           tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           final var subscription =
-              conditionalKeyColumnFamily.get(
+              subscriptionKeyColumnFamily.get(
                   tenantAwareSubscriptionKey, ConditionalSubscription::new);
 
+          if (subscription != null) {
+            visitor.visit(subscription);
+          }
+        });
+  }
+
+  @Override
+  public void visitStartEventSubscriptionsByProcessDefinitionKey(
+      final long processDefinitionKey, final ConditionalSubscriptionVisitor visitor) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    processDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        (key, nil) -> {
+          tenantIdKey.wrapString(key.second().tenantKey().toString());
+          subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
+          final var subscription =
+              subscriptionKeyColumnFamily.get(
+                  tenantAwareSubscriptionKey, ConditionalSubscription::new);
           if (subscription != null) {
             visitor.visit(subscription);
           }
