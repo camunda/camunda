@@ -53,7 +53,7 @@ import org.testcontainers.utility.DockerImageName;
 public class ElasticsearchConnectorIT {
 
   @Container
-  static ElasticsearchContainer elasticsearch =
+  private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
       new ElasticsearchContainer(
               DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
                   .withTag(SUPPORTED_ELASTICSEARCH_VERSION))
@@ -115,16 +115,17 @@ public class ElasticsearchConnectorIT {
     WIRE_MOCK_SERVER.stubFor(
         WireMock.any(WireMock.anyUrl())
             .willReturn(
-                WireMock.aResponse().proxiedFrom("http://" + elasticsearch.getHttpHostAddress())));
+                WireMock.aResponse()
+                    .proxiedFrom("http://" + ELASTICSEARCH_CONTAINER.getHttpHostAddress())));
 
     setPluginConfig(registry, TasklistProperties.PREFIX + ".elasticsearch", plugin);
     // URL
-    registry.add("camunda.data.secondary-storage.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add("camunda.database.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.tasklist.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.tasklist.zeebeElasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.data.secondary-storage.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add("camunda.operate.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.operate.zeebeElasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.tasklist.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add(
+        "zeebe.broker.exporters.camundaexporter.args.connect.url", WIRE_MOCK_SERVER::baseUrl);
   }
 
   private static void setPluginConfig(
