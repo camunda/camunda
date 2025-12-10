@@ -5,12 +5,6 @@
 name: Identity API Regression Tests
 
 on:
-  pull_request:
-    branches:
-      - '**'
-  push:
-    branches:
-      - 'test-configured-authorizations'
   workflow_dispatch:
     inputs:
       branch:
@@ -73,6 +67,18 @@ jobs:
     environment: '${{ matrix.env }}-http-tests'
     env:
       LC_ALL: C.UTF-8
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+        env:
+          discovery.type: single-node
+          cluster.name: docker-cluster
+          bootstrap.memory_lock: true
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - 9200:9200
+          - 9300:9300
 
     steps:
       - name: Checkout repository
@@ -87,9 +93,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: Start Elasticsearch with Docker Compose
-        run: docker compose -f operate/docker-compose.yml up -d elasticsearch
 
       - name: Import Secrets
         id: secrets
