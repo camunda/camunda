@@ -25,7 +25,7 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 
-describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
+describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
 
