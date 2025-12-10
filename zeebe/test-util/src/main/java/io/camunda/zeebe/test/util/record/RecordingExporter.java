@@ -120,6 +120,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionFactory;
+import org.awaitility.core.ThrowingRunnable;
 
 public final class RecordingExporter implements Exporter {
   public static final long DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(5).toMillis();
@@ -131,6 +134,7 @@ public final class RecordingExporter implements Exporter {
 
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
+  private static boolean overrideMaximumWaitTime = false;
 
   private Controller controller;
 
@@ -189,6 +193,7 @@ public final class RecordingExporter implements Exporter {
       maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
       RECORDS.clear();
       autoAcknowledge = true;
+      overrideMaximumWaitTime = false;
     } finally {
       LOCK.unlock();
     }
@@ -687,6 +692,29 @@ public final class RecordingExporter implements Exporter {
     autoAcknowledge = shouldAcknowledgeRecords;
   }
 
+  /**
+   * Creates an Awaitility wrapper that short-circuits the RecordingExporter's wait time during
+   * assertion polling. This prevents the exporter from waiting for records during each poll,
+   * allowing Awaitility to control the polling behavior instead.
+   *
+   * @return an AwaitilityWrapper with the default maximum wait time of 5 seconds
+   */
+  public static AwaitilityWrapper await() {
+    return await(Duration.ofMillis(maximumWaitTime));
+  }
+
+  /**
+   * Creates an Awaitility wrapper that short-circuits the RecordingExporter's wait time during
+   * assertion polling. This prevents the exporter from waiting for records during each poll,
+   * allowing Awaitility to control the polling behavior instead.
+   *
+   * @return an AwaitilityWrapper with the provided maximum wait time
+   */
+  public static AwaitilityWrapper await(final Duration timeout) {
+    final var conditionFactory = Awaitility.await().atMost(timeout);
+    return new AwaitilityWrapper(conditionFactory);
+  }
+
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {
 
     private int nextIndex = 0;
@@ -699,6 +727,10 @@ public final class RecordingExporter implements Exporter {
     public boolean hasNext() {
       LOCK.lock();
       try {
+        if (overrideMaximumWaitTime) {
+          return !isEmpty();
+        }
+
         long now = System.currentTimeMillis();
         final long endTime = now + maximumWaitTime;
         while (isEmpty() && endTime > now) {
@@ -719,6 +751,18 @@ public final class RecordingExporter implements Exporter {
     @Override
     public Record<?> next() {
       return RECORDS.get(nextIndex++);
+    }
+  }
+
+  public record AwaitilityWrapper(ConditionFactory conditionFactory) {
+
+    public void untilAsserted(final ThrowingRunnable throwingRunnable) {
+      try {
+        overrideMaximumWaitTime = true;
+        conditionFactory.untilAsserted(throwingRunnable);
+      } finally {
+        overrideMaximumWaitTime = false;
+      }
     }
   }
 }
