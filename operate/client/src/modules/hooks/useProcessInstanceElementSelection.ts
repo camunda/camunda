@@ -126,6 +126,8 @@ const useProcessInstanceElementSelection = () => {
     clearSelection,
     selectedElementInstance,
     selectedElementId: elementId,
+    selectedElementInstanceKey: elementInstanceKey,
+    isSelectedInstanceMultiInstanceBody: isMultiInstanceBody,
     isFetchingElement:
       isFetchingElementInstanceByKey || isFetchingElementInstancesSearch,
   };

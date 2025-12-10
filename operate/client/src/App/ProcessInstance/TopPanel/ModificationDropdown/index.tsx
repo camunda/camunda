@@ -55,6 +55,8 @@ const ModificationDropdown: React.FC<Props> = observer(
       selectedElementId,
       selectedElementInstanceKey,
       isFetchingElement,
+      isSelectedInstanceMultiInstanceBody,
+      resolvedElementInstance,
       clearSelection,
     } = useProcessInstanceElementSelection();
     const {data: businessObjects} = useBusinessObjects();
@@ -67,11 +69,13 @@ const ModificationDropdown: React.FC<Props> = observer(
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
 
-    const availableModifications = useAvailableModifications(
-      selectedElementRunningInstanceCount ?? 0,
-      selectedElementId ?? undefined,
-      selectedElementInstanceKey ?? undefined,
-    );
+    const availableModifications = useAvailableModifications({
+      runningElementInstanceCount: selectedElementRunningInstanceCount ?? 0,
+      elementId: selectedElementId ?? undefined,
+      elementInstanceKey: selectedElementInstanceKey ?? undefined,
+      isMultiInstanceBody: isSelectedInstanceMultiInstanceBody,
+      isElementInstanceResolved: resolvedElementInstance !== null,
+    });
     const canBeModified = useCanBeModified(selectedElementId ?? undefined);
     const {data: processInstance} = useProcessInstance();
 

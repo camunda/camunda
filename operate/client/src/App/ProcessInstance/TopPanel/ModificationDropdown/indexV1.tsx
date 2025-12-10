@@ -76,10 +76,18 @@ const ModificationDropdown: React.FC<Props> = observer(
       totalRunningInstancesForFlowNode: totalRunningInstances || 0,
       isRootNodeSelected,
     });
-    const availableModifications = useAvailableModifications(
-      selectedRunningInstanceCount,
-    );
-    const canBeModified = useCanBeModified();
+    const availableModifications = useAvailableModifications({
+      runningElementInstanceCount: selectedRunningInstanceCount,
+      elementId: flowNodeId,
+      elementInstanceKey:
+        flowNodeSelectionStore.state.selection?.flowNodeInstanceId,
+      isMultiInstanceBody:
+        flowNodeSelectionStore.state.selection?.isMultiInstance,
+      isElementInstanceResolved: !isNil(
+        flowNodeSelectionStore.selectedFlowNodeInstanceId,
+      ),
+    });
+    const canBeModified = useCanBeModified(flowNodeId);
     const rootNode = useRootNode();
     const {data: processInstance} = useProcessInstance();
 
