@@ -7,19 +7,29 @@
  */
 package io.camunda.tasklist.qa.util;
 
+import java.util.function.Consumer;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TasklistIndexPrefixHolder {
 
   private String indexPrefix;
+  private volatile boolean needsCeandUp;
 
   public String createNewIndexPrefix() {
     indexPrefix = TestUtil.createRandomString(10);
+    needsCeandUp = true;
     return indexPrefix;
   }
 
   public String getIndexPrefix() {
     return indexPrefix;
+  }
+
+  public void cleanupIndicesIfNeeded(final Consumer<String> indexCleanup) {
+    if (needsCeandUp && indexPrefix != null) {
+      indexCleanup.accept(indexPrefix);
+      needsCeandUp = false;
+    }
   }
 }

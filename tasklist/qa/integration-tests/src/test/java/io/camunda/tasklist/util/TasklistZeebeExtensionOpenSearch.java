@@ -34,7 +34,7 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
   public void afterEach(final ExtensionContext extensionContext) {
     super.afterEach(extensionContext);
     if (!failed) {
-      TestUtil.removeAllIndices(osClient, getPrefix());
+      cleanupIndicesIfNeeded(prefix -> TestUtil.removeAllIndices(osClient, prefix));
     }
   }
 
