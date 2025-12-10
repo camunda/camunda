@@ -14,7 +14,7 @@ import type {
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
 import type {BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';
-import {ElementInstanceIcon} from './styled';
+import {ElementInstanceIcon, InstanceHistory, NodeContainer} from './styled';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
@@ -32,9 +32,9 @@ import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryMo
 import {modificationsStore} from 'modules/stores/modifications';
 import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {VirtualBar} from './VirtualBar';
-import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
+import {TreeView} from '@carbon/react';
 
 const TREE_NODE_HEIGHT = 32;
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
@@ -754,13 +754,14 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
 type ElementInstancesTreeProps = {
   processInstance: ProcessInstance;
 
-  scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
+  businessObjects: BusinessObjects;
+  errorMessage?: React.ReactNode;
 };
 
 const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
-    const {processInstance, scrollableContainerRef, ...rest} = props;
-    const {data: businessObjects} = useBusinessObjects();
+    const {processInstance, businessObjects, errorMessage, ...rest} = props;
+    const scrollableContainerRef = useRef<HTMLDivElement>(null);
     const {data: {items: migrationItems} = {items: []}} =
       useBatchOperationItems({
         filter: {
@@ -799,8 +800,12 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       enablePolling,
     });
 
-    if (businessObjects === undefined) {
-      return null;
+    if (
+      elementInstancesTreeStore.state.nodes.get(
+        processInstance.processInstanceKey,
+      )?.status === 'error'
+    ) {
+      return errorMessage;
     }
 
     return (
@@ -812,11 +817,20 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
           latestMigrationDate,
         }}
       >
-        <ElementInstanceSubTreeRoot
-          {...rest}
-          elementInstance={rootElementInstance}
-          scopeKeyHierarchy={[processInstance.processInstanceKey]}
-        />
+        <InstanceHistory ref={scrollableContainerRef}>
+          <NodeContainer>
+            <TreeView
+              label={`${rootElementInstance.elementName} instance history`}
+              hideLabel
+            >
+              <ElementInstanceSubTreeRoot
+                {...rest}
+                elementInstance={rootElementInstance}
+                scopeKeyHierarchy={[processInstance.processInstanceKey]}
+              />
+            </TreeView>
+          </NodeContainer>
+        </InstanceHistory>
       </ElementInstanceHistoryTree.Provider>
     );
   },
