@@ -30,8 +30,10 @@ export async function getProcessDefinitionKey(
 
 export async function createCancellationBatch(
   request: APIRequestContext,
+  numberOfInstances = 3,
 ): Promise<string> {
-  for (let i = 0; i < 3; i++) {
+  const processInstanceKeys: string[] = [];
+  for (let i = 0; i < numberOfInstances; i++) {
     const startRes = await request.post(buildUrl('/process-instances'), {
       headers: jsonHeaders(),
       data: {
@@ -39,6 +41,8 @@ export async function createCancellationBatch(
       },
     });
     await assertStatusCode(startRes, 200);
+    const startJson = await startRes.json();
+    processInstanceKeys.push(String(startJson.processInstanceKey));
   }
 
   const batchRes = await request.post(
@@ -47,7 +51,9 @@ export async function createCancellationBatch(
       headers: jsonHeaders(),
       data: {
         filter: {
-          processDefinitionId: 'batch_cancellation_process',
+          processInstanceKey: {
+            $in: processInstanceKeys,
+          },
         },
       },
     },
