@@ -17,7 +17,6 @@ import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -122,7 +121,7 @@ public abstract class TasklistZeebeExtension
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
-    CompletableFuture.runAsync(() -> zeebeBroker.stop());
+    zeebeBroker.stop();
 
     if (client != null) {
       client.close();
