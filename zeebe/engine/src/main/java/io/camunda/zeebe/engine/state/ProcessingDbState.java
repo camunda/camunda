@@ -28,6 +28,8 @@ import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.deployment.DbResourceState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
+import io.camunda.zeebe.engine.state.globallistener.DbGlobalListenersState;
+import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
@@ -138,6 +140,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMultiInstanceState multiInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
+  private final MutableGlobalListenersState globalListenersState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -198,6 +201,7 @@ public class ProcessingDbState implements MutableProcessingState {
     asyncRequestState = new DbAsyncRequestState(zeebeDb, transactionContext);
     conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
+    globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -391,6 +395,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableConditionalSubscriptionState getConditionalSubscriptionState() {
     return conditionalSubscriptionState;
+  }
+
+  @Override
+  public MutableGlobalListenersState getGlobalListenersState() {
+    return globalListenersState;
   }
 
   @Override
