@@ -28,6 +28,7 @@ import {
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type IncidentsTableProps = {
   processInstanceKey: string;
@@ -94,18 +95,24 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             if (
               isSingleIncidentSelected(incidents, incident.elementInstanceKey)
             ) {
-              clearSelectionV1(rootNode);
-              clearSelection();
+              if (IS_ELEMENT_SELECTION_V2) {
+                clearSelection();
+              } else {
+                clearSelectionV1(rootNode);
+              }
             } else {
-              selectElementInstance(
-                incident.elementId,
-                incident.elementInstanceKey,
-              );
-              selectFlowNode(rootNode, {
-                flowNodeId: incident.elementId,
-                flowNodeInstanceId: incident.elementInstanceKey,
-                isMultiInstance: false,
-              });
+              if (IS_ELEMENT_SELECTION_V2) {
+                selectElementInstance(
+                  incident.elementId,
+                  incident.elementInstanceKey,
+                );
+              } else {
+                selectFlowNode(rootNode, {
+                  flowNodeId: incident.elementId,
+                  flowNodeInstanceId: incident.elementInstanceKey,
+                  isMultiInstance: false,
+                });
+              }
             }
           }}
           checkIsRowSelected={(rowId) => {

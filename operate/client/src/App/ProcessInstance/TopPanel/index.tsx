@@ -73,6 +73,7 @@ import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/usePro
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -368,9 +369,11 @@ const TopPanel: React.FC = observer(() => {
                 selectedFlowNodeIds={selectedFlowNode}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
-                    clearSelectionV1(rootNode);
-                    clearSelection();
-
+                    if (IS_ELEMENT_SELECTION_V2) {
+                      clearSelection();
+                    } else {
+                      clearSelectionV1(rootNode);
+                    }
                     finishMovingToken(
                       affectedTokenCount,
                       visibleAffectedTokenCount,
@@ -380,15 +383,18 @@ const TopPanel: React.FC = observer(() => {
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {
-                      if (flowNodeId !== undefined) {
-                        selectElement(flowNodeId, isMultiInstance);
+                      if (IS_ELEMENT_SELECTION_V2) {
+                        if (flowNodeId !== undefined) {
+                          selectElement(flowNodeId, isMultiInstance);
+                        } else {
+                          clearSelection();
+                        }
                       } else {
-                        clearSelection();
+                        selectFlowNode(rootNode, {
+                          flowNodeId,
+                          isMultiInstance,
+                        });
                       }
-                      selectFlowNode(rootNode, {
-                        flowNodeId,
-                        isMultiInstance,
-                      });
                     }
                   }
                 }}

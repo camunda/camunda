@@ -130,7 +130,6 @@ describe('useProcessInstanceElementSelection', () => {
         },
       );
 
-      // First select element instance with key
       act(() => {
         result.current.selectElementInstance(
           'service-task-1',
@@ -142,7 +141,6 @@ describe('useProcessInstanceElementSelection', () => {
         'elementInstanceKey=2251799813699889',
       );
 
-      // Then select element without key
       act(() => {
         result.current.selectElement('service-task-2');
       });
