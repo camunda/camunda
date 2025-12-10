@@ -616,7 +616,7 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
 
     // They should appear in this order:
     // v2 → 3 incidents
-    // v3 → 2 incident
+    // v3 → 2 incidents
     // v1 → 1 incidents
     assertThat(items).hasSize(3);
 

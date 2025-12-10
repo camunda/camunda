@@ -3042,7 +3042,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *  camundaClient
    *  .newProcessDefinitionInstanceStatisticsRequest()
-   *  .sort((s) -> s.processDefinitionId.asc())
+   *  .sort((s) -> s.processDefinitionId().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
@@ -3056,9 +3056,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    *    camundaClient
-   *    .newProcessDefinitionVersionInstanceStatisticsRequest(processDefinitionId)
+   *    .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
    *    .filter((f) -> f.tenantId("tenantId"))
-   *    .sort((s) -> s.version.asc())
+   *    .sort((s) -> s.processDefinitionVersion().asc())
    *    .page((p) -> p.limit(100))
    *    .send();
    *  </pre>
