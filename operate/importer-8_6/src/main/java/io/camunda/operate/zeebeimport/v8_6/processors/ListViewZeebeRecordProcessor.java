@@ -14,6 +14,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.ERROR_MSG;
 import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT_POSITION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOB_POSITION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_NAME;
 import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_VALUE;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
@@ -123,6 +124,15 @@ public class ListViewZeebeRecordProcessor {
     final String intentStr = record.getIntent().name();
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
+    if (recordValue.getProcessInstanceKey() == recordValue.getElementInstanceKey()) {
+      // incident on process instance level
+      LOGGER.debug(
+          "Process instance {} root incident {}, skipping list view incident record processing",
+          recordValue.getProcessInstanceKey(),
+          record.getKey());
+      return;
+    }
+
     // update activity instance
     final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
     entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
@@ -216,8 +226,7 @@ public class ListViewZeebeRecordProcessor {
     for (final Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry :
         records.entrySet()) {
       ProcessInstanceForListViewEntity piEntity = null;
-      final Map<Long, FlowNodeInstanceForListViewEntity> actEntities =
-          new HashMap<Long, FlowNodeInstanceForListViewEntity>();
+      final Map<Long, FlowNodeInstanceForListViewEntity> actEntities = new HashMap<>();
       final Long processInstanceKey = wiRecordsEntry.getKey();
 
       for (final Record<ProcessInstanceRecordValue> record : wiRecordsEntry.getValue()) {
@@ -263,6 +272,7 @@ public class ListViewZeebeRecordProcessor {
         updateFields.put(ListViewTemplate.PROCESS_KEY, piEntity.getProcessDefinitionKey());
         updateFields.put(ListViewTemplate.BPMN_PROCESS_ID, piEntity.getBpmnProcessId());
         updateFields.put(POSITION, piEntity.getPosition());
+        updateFields.put(TREE_PATH, piEntity.getTreePath());
         if (piEntity.getState() != null) {
           updateFields.put(ListViewTemplate.STATE, piEntity.getState());
         }
