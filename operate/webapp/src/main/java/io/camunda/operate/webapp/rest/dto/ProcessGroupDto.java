@@ -8,11 +8,13 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.store.ProcessStore;
+import io.camunda.operate.store.ProcessStore.ProcessKey;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,16 +43,26 @@ public class ProcessGroupDto {
       final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped,
       final PermissionsService permissionsService) {
     final List<ProcessGroupDto> groups = new ArrayList<>();
+
+    final List<String> resourceIds =
+        processesGrouped.keySet().stream().map(ProcessKey::getBpmnProcessId).toList();
+
+    final Map<String, Set<String>> permissionsByResourceId =
+        permissionsService.getProcessDefinitionPermissionsByResourceId(resourceIds);
+
     processesGrouped.values().stream()
         .forEach(
             group -> {
               final ProcessGroupDto groupDto = new ProcessGroupDto();
               final ProcessEntity process0 = group.get(0);
+              final var permissions =
+                  new HashSet<>(
+                      permissionsByResourceId.getOrDefault(process0.getBpmnProcessId(), Set.of()));
+              permissions.addAll(permissionsByResourceId.getOrDefault("*", Set.of()));
               groupDto.setBpmnProcessId(process0.getBpmnProcessId());
               groupDto.setTenantId(process0.getTenantId());
               groupDto.setName(process0.getName());
-              groupDto.setPermissions(
-                  permissionsService.getProcessDefinitionPermissions(process0.getBpmnProcessId()));
+              groupDto.setPermissions(permissions);
               groupDto.setProcesses(DtoCreator.create(group, ProcessDto.class));
               groups.add(groupDto);
             });
