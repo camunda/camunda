@@ -7,37 +7,49 @@
  */
 package io.camunda.zeebe.gateway.mcp.tool.incident;
 
+import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
+import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapProblemToResult;
 import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.IncidentServices;
+import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentFilter;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.gateway.rest.controller.IncidentController;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.ValidationException;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 @Component
 public class IncidentTools {
-  private final IncidentController incidentController;
+  private final IncidentServices incidentServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public IncidentTools(final IncidentController incidentController) {
-    this.incidentController = incidentController;
+  public IncidentTools(
+      final IncidentServices incidentServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.incidentServices = incidentServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @McpTool(
       description = "Search for incidents based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
-  public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+  public CallToolResult searchIncidents(
       @McpToolParam(required = false) final IncidentFilter filter,
       @McpToolParam(description = "Sort criteria", required = false) @Valid
           final List<@Valid IncidentSearchQuerySortRequest> sort,
@@ -49,26 +61,68 @@ public class IncidentTools {
     query.setSort(sort);
     query.setPage(page);
 
-    return incidentController.searchIncidents(query);
+    return SearchQueryRequestMapper.toIncidentQuery(query)
+        .fold(CallToolResultMapper::mapProblemToResult, this::searchIncidents);
+  }
+
+  private CallToolResult searchIncidents(final IncidentQuery query) {
+    try {
+      final var result =
+          incidentServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
+      return CallToolResultMapper.from(
+          SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
+    } catch (final ValidationException e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Validation failed for Incident Search Query");
+      return mapProblemToResult(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResult(e);
+    }
   }
 
   @McpTool(
       description = "Get incident by key. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
-  public ResponseEntity<IncidentResult> getIncident(
+  public CallToolResult getIncident(
       @McpToolParam(
               description =
                   "The assigned key of the incident, which acts as a unique identifier for this incident.")
           @Positive
           final Long incidentKey) {
-    return incidentController.getByKey(incidentKey);
+    try {
+      return CallToolResultMapper.from(
+          SearchQueryResponseMapper.toIncident(
+              incidentServices
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                  .getByKey(incidentKey)));
+    } catch (final Exception e) {
+      return mapErrorToResult(e);
+    }
   }
 
   @McpTool(description = "Resolve incident")
-  public void resolveIncident(
+  public CallToolResult resolveIncident(
       @McpToolParam(description = "Key of the incident to resolve.") @Positive
           final Long incidentKey,
-      final IncidentResolutionRequest resolutionRequest) {
-    incidentController.incidentResolution(incidentKey, resolutionRequest);
+      final IncidentResolutionRequest incidentResolutionRequest) {
+    final Long operationReference =
+        incidentResolutionRequest == null
+            ? null
+            : incidentResolutionRequest.getOperationReference();
+
+    try {
+      incidentServices
+          .withAuthentication(authenticationProvider.getCamundaAuthentication())
+          .resolveIncident(incidentKey, operationReference);
+
+      return CallToolResult.builder().build();
+    } catch (final Exception e) {
+      return mapErrorToResult(e);
+    }
   }
 }
