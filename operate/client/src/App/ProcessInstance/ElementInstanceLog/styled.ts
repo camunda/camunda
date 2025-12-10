@@ -22,19 +22,8 @@ const PanelHeader = styled(BasePanelHeader)`
   justify-content: flex-start;
 `;
 
-const InstanceHistory = styled.div`
-  position: relative;
-  height: 100%;
-  overflow: auto;
-`;
-
-const NodeContainer = styled.div`
-  position: absolute;
-  width: 100%;
-`;
-
 const ErrorMessage = styled(BaseErrorMessage)`
   margin: auto;
 `;
 
-export {NodeContainer, InstanceHistory, PanelHeader, Container, ErrorMessage};
+export {PanelHeader, Container, ErrorMessage};

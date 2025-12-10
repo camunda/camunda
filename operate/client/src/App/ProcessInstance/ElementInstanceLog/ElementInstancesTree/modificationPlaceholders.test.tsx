@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createRef, act} from 'react';
+import {act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
 import {multiInstanceProcess} from 'modules/testUtils';
@@ -31,6 +31,19 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
+
+const multiInstanceProcessDiagramModel =
+  await parseDiagramXML(multiInstanceProcess);
+const multiInstanceProcessBusinessObjects = businessObjectsParser({
+  diagramModel: multiInstanceProcessDiagramModel,
+});
+
+const mockNestedSubprocessDiagramModel =
+  await parseDiagramXML(mockNestedSubprocess);
+const nestedSubprocessBusinessObjects = businessObjectsParser({
+  diagramModel: mockNestedSubprocessDiagramModel,
+});
 
 describe('ElementInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
@@ -53,7 +66,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={nestedSubprocessBusinessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -243,7 +256,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     render(
       <ElementInstancesTree
         processInstance={mockMultiInstanceProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={multiInstanceProcessBusinessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -354,7 +367,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     render(
       <ElementInstancesTree
         processInstance={mockMultiInstanceProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={multiInstanceProcessBusinessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -403,7 +416,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={nestedSubprocessBusinessObjects}
       />,
       {
         wrapper: Wrapper,

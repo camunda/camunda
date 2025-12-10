@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createRef, act} from 'react';
+import {act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ElementInstancesTree} from './index';
@@ -22,6 +22,11 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
+
+const diagramModel = await parseDiagramXML(mockNestedSubprocess);
+const businessObjects = businessObjectsParser({diagramModel});
 
 describe('ElementInstancesTree - modifications with ancestor selection', () => {
   beforeEach(async () => {
@@ -43,7 +48,7 @@ describe('ElementInstancesTree - modifications with ancestor selection', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -137,7 +142,7 @@ describe('ElementInstancesTree - modifications with ancestor selection', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -306,7 +311,7 @@ describe('ElementInstancesTree - modifications with ancestor selection', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -488,7 +493,7 @@ describe('ElementInstancesTree - modifications with ancestor selection', () => {
     render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,

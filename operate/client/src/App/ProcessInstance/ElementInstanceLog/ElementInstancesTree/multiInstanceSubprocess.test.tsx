@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createRef} from 'react';
 import {render, screen, within} from 'modules/testing-library';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
@@ -16,6 +15,11 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
+
+const diagramModel = await parseDiagramXML(multiInstanceProcess);
+const businessObjects = businessObjectsParser({diagramModel});
 
 describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
@@ -69,7 +73,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     render(
       <ElementInstancesTree
         processInstance={mockMultiInstanceProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -94,7 +98,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockMultiInstanceProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -205,7 +209,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     render(
       <ElementInstancesTree
         processInstance={mockMultiInstanceProcessInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,

@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createRef} from 'react';
 import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
 import {
@@ -20,6 +19,12 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
+
+const adHocProcessXml = open('AdHocProcess.bpmn');
+const diagramModel = await parseDiagramXML(adHocProcessXml);
+const businessObjects = businessObjectsParser({diagramModel});
 
 describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
   beforeEach(async () => {
@@ -37,7 +42,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessesInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,

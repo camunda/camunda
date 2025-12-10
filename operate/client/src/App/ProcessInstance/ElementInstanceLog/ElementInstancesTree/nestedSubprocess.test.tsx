@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createRef, act} from 'react';
+import {act} from 'react';
 import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
 import {Wrapper, mockNestedSubProcessesInstance} from './mocks';
@@ -18,6 +18,12 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
+
+const nestedSubProcessesXml = open('NestedSubProcesses.bpmn');
+const diagramModel = await parseDiagramXML(nestedSubProcessesXml);
+const businessObjects = businessObjectsParser({diagramModel});
 
 describe('ElementInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
@@ -73,7 +79,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessesInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,
@@ -137,7 +143,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessesInstance}
-        scrollableContainerRef={createRef<HTMLDivElement>()}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: Wrapper,
