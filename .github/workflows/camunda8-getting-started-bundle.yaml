@@ -880,13 +880,14 @@ jobs:
     steps:
       - name: Send failure notification to Slack
         run: |
+          WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BLOCKS=$(cat <<EOF
           [
             {
               "type": "section",
               "text": {
                 "type": "mrkdwn",
-                "text": ":alarm: Camunda 8: Getting Started Bundle build failed, <!subteam^S064J3N99A5> please check and resolve the issue"
+                "text": ":alarm: Camunda 8: Getting Started Bundle build failed, <!subteam^S064J3N99A5> please check and resolve the issue\n\n<$WORKFLOW_URL|View failed workflow run>"
               }
             }
           ]
