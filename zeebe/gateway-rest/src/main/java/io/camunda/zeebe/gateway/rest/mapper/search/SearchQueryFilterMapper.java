@@ -808,6 +808,9 @@ public class SearchQueryFilterMapper {
     final var builder = FilterBuilders.messageSubscription();
 
     if (filter != null) {
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getMessageSubscriptionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::messageSubscriptionKeyOperations);

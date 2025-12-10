@@ -32,6 +32,7 @@ import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsReader;
+import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
@@ -115,6 +116,8 @@ public class SearchClientConfiguration {
       final JobReader jobReader,
       final MappingRuleReader mappingRuleReader,
       final MessageSubscriptionReader messageSubscriptionReader,
+      final ProcessDefinitionMessageSubscriptionStatisticsReader
+          processDefinitionMessageSubscriptionStatisticsReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionInstanceVersionStatisticsReader
@@ -150,6 +153,7 @@ public class SearchClientConfiguration {
         jobReader,
         mappingRuleReader,
         messageSubscriptionReader,
+        processDefinitionMessageSubscriptionStatisticsReader,
         processDefinitionReader,
         processDefinitionFlowNodeStatisticsReader,
         processInstanceReader,

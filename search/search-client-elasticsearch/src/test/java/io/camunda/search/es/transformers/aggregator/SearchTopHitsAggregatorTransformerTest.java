@@ -21,19 +21,30 @@ public class SearchTopHitsAggregatorTransformerTest
   private static Stream<Arguments> provideAggregations() {
     return Stream.of(
         Arguments.arguments(
-            SearchAggregatorBuilders.topHits().name("name").field("name").size(10).build(),
-            "{'top_hits':{'size':10,'sort':[{'name':{'order':'desc'}}]}}"),
+            SearchAggregatorBuilders.topHits()
+                .name("name")
+                .field("name")
+                .documentClass(Object.class)
+                .size(10)
+                .build(),
+            "{'top_hits':{'size':10,'_source':{'includes':['name']}}}"),
         Arguments.arguments(
-            SearchAggregatorBuilders.topHits().name("name").field("category").size(5).build(),
-            "{'top_hits':{'size':5,'sort':[{'category':{'order':'desc'}}]}}"),
+            SearchAggregatorBuilders.topHits()
+                .name("name")
+                .field("category")
+                .documentClass(Object.class)
+                .size(5)
+                .build(),
+            "{'top_hits':{'size':5,'_source':{'includes':['category']}}}"),
         Arguments.arguments(
             SearchAggregatorBuilders.topHits()
                 .name("name")
                 .field("status")
+                .documentClass(Object.class)
                 .size(20)
                 .aggregations(SearchAggregatorBuilders.terms("termsAgg", "field"))
                 .build(),
-            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'top_hits':{'size':20,'sort':[{'status':{'order':'desc'}}]}}"));
+            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'top_hits':{'size':20,'_source':{'includes':['status']}}}"));
   }
 
   @Test
@@ -47,12 +58,12 @@ public class SearchTopHitsAggregatorTransformerTest
   }
 
   @Test
-  public void shouldThrowErrorOnNullField() {
+  public void shouldThrowErrorOnNullDocumentClass() {
     // given
 
     // when - throw
-    assertThatThrownBy(() -> SearchAggregatorBuilders.topHits().name("name").size(10).build())
-        .hasMessageContaining("Expected non-null field for field.")
+    assertThatThrownBy(() -> SearchAggregatorBuilders.topHits().name("name").field("name").build())
+        .hasMessageContaining("Expected non-null field for documentClass.")
         .isInstanceOf(NullPointerException.class);
   }
 

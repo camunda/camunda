@@ -38,6 +38,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -122,6 +123,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatistic
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
@@ -1393,6 +1396,36 @@ public final class SearchQueryResponseMapper {
             processInstanceEntity.processDefinitionName().isBlank()
                 ? processInstanceEntity.processDefinitionId()
                 : processInstanceEntity.processDefinitionName());
+  }
+
+  private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>
+      toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
+          final List<ProcessDefinitionMessageSubscriptionStatisticsEntity> entities) {
+    return entities.stream()
+        .map(
+            e ->
+                new ProcessDefinitionMessageSubscriptionStatisticsResult()
+                    .processDefinitionId(e.processDefinitionId())
+                    .tenantId(e.tenantId())
+                    .processDefinitionKey(KeyUtil.keyToString(e.processDefinitionKey()))
+                    .activeSubscriptions(e.activeSubscriptions())
+                    .processInstancesWithActiveSubscriptions(
+                        e.processInstancesWithActiveSubscriptions()))
+        .toList();
+  }
+
+  public static ProcessDefinitionMessageSubscriptionStatisticsQueryResult
+      toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
+          final SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ProcessDefinitionMessageSubscriptionStatisticsQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    SearchQueryResponseMapper
+                        ::toProcessDefinitionMessageSubscriptionStatisticsQueryResponse)
+                .orElseGet(Collections::emptyList));
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

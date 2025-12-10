@@ -7,13 +7,16 @@
  */
 package io.camunda.search.clients.aggregator;
 
+import io.camunda.search.sort.NoSort;
+import io.camunda.search.sort.SortOption;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
 
 public record SearchTopHitsAggregator<T>(
     String name,
-    String field,
+    List<String> fields,
+    SortOption sortOption,
     Integer size,
     List<SearchAggregator> aggregations,
     Class<T> documentClass)
@@ -32,7 +35,8 @@ public record SearchTopHitsAggregator<T>(
   public static final class Builder<T>
       extends SearchAggregator.AbstractBuilder<SearchTopHitsAggregator.Builder<T>>
       implements ObjectBuilder<SearchTopHitsAggregator<T>> {
-    private String field;
+    private List<String> fields;
+    private SortOption sortOption;
     private Integer size = 1; // Default to 1 hits
     private Class<T> documentClass;
 
@@ -42,7 +46,17 @@ public record SearchTopHitsAggregator<T>(
     }
 
     public SearchTopHitsAggregator.Builder<T> field(final String value) {
-      field = value;
+      fields = List.of(value);
+      return this;
+    }
+
+    public SearchTopHitsAggregator.Builder<T> fields(final List<String> values) {
+      fields = values;
+      return this;
+    }
+
+    public SearchTopHitsAggregator.Builder<T> sortOption(final SortOption sortOption) {
+      this.sortOption = sortOption;
       return this;
     }
 
@@ -64,10 +78,11 @@ public record SearchTopHitsAggregator<T>(
     public SearchTopHitsAggregator<T> build() {
       return new SearchTopHitsAggregator<T>(
           Objects.requireNonNull(name, "Expected non-null field for name."),
-          Objects.requireNonNull(field, "Expected non-null field for field."),
+          Objects.requireNonNullElse(fields, List.of()),
+          Objects.requireNonNullElse(sortOption, NoSort.NO_SORT),
           size,
           aggregations,
-          documentClass);
+          Objects.requireNonNull(documentClass, "Expected non-null field for documentClass."));
     }
   }
 }

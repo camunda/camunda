@@ -15,21 +15,49 @@
  */
 package io.camunda.client.impl.statistics.response;
 
+import static io.camunda.client.impl.search.response.SearchResponseMapper.toSearchResponsePage;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class StatisticsResponseMapper {
+
+  public static ProcessDefinitionMessageSubscriptionStatistics
+      toProcessDefinitionMessageSubscriptionStatisticsResponse(
+          final ProcessDefinitionMessageSubscriptionStatisticsQueryResult response) {
+    final List<ProcessDefinitionMessageSubscriptionStatisticsItem> items =
+        Optional.ofNullable(response.getItems())
+            .map(
+                l ->
+                    l.stream()
+                        .map(
+                            r ->
+                                (ProcessDefinitionMessageSubscriptionStatisticsItem)
+                                    new ProcessDefinitionMessageSubscriptionStatisticsItemImpl(
+                                        r.getProcessDefinitionId(),
+                                        r.getProcessDefinitionKey(),
+                                        r.getTenantId(),
+                                        r.getProcessInstancesWithActiveSubscriptions(),
+                                        r.getActiveSubscriptions()))
+                        .collect(Collectors.toList()))
+            .orElse(Collections.emptyList());
+    return new ProcessDefinitionMessageSubscriptionStatisticsImpl(
+        items, toSearchResponsePage(response.getPage()));
+  }
 
   public static List<ProcessElementStatistics> toProcessDefinitionStatisticsResponse(
       final ProcessDefinitionElementStatisticsQueryResult response) {
