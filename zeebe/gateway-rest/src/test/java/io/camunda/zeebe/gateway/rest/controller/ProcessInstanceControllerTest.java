@@ -101,7 +101,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), null))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -129,7 +130,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), null);
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
@@ -145,7 +146,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("<default>");
 
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), null))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -180,7 +182,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), null);
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
@@ -199,7 +201,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), null))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -228,7 +231,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), null);
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
@@ -247,7 +250,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), null))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -275,7 +279,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), null);
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);

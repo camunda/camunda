@@ -53,6 +53,7 @@ import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessInstanceStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -95,6 +96,7 @@ public final class EngineProcessors {
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
+      final ProcessInstanceStreamer processInstanceStreamer,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
 
@@ -210,7 +212,8 @@ public final class EngineProcessors {
             asyncRequestBehavior,
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
-            processEngineMetrics);
+            processEngineMetrics,
+            processInstanceStreamer);
 
     addDecisionProcessors(
         typedRecordProcessors, decisionBehavior, writers, processingState, authCheckBehavior);
@@ -423,7 +426,8 @@ public final class EngineProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final ProcessInstanceStreamer processInstanceStreamer) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -440,7 +444,8 @@ public final class EngineProcessors {
         asyncRequestBehavior,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
-        processEngineMetrics);
+        processEngineMetrics,
+        processInstanceStreamer);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

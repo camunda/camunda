@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessInstanceStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -62,13 +63,15 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final ProcessInstanceStreamer processInstanceStreamer;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
       final Writers writers,
       final ProcessEngineMetrics processEngineMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final ProcessInstanceStreamer processInstanceStreamer) {
     processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
@@ -93,6 +96,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    this.processInstanceStreamer = processInstanceStreamer;
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -229,6 +233,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExecutableFlowElement element,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final BpmnElementContext context) {
+    final var streamer = processInstanceStreamer.streamFor(context.getProcessInstanceKey());
+
+    if (streamer.isPresent()) {
+      final var value = context.getRecordValue();
+
+      final var valueToPush = new ProcessInstanceRecord();
+      valueToPush.wrap(value);
+
+      streamer.get().push(valueToPush);
+    }
+
     return processElementWithListeners(
         element,
         context,

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.service.stream.ProcessInstanceStreamClient;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.Gateway;
@@ -27,6 +28,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   private final Gateway gateway;
   private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
+  private final ProcessInstanceStreamClient processInstanceStreamClient;
   private final ConcurrencyControl concurrencyControl;
 
   public EmbeddedGatewayService(
@@ -40,10 +42,12 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final ProcessInstanceStreamClient processInstanceStreamClient) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
+    this.processInstanceStreamClient = processInstanceStreamClient;
     gateway =
         new Gateway(
             shutdownTimeout,
@@ -80,6 +84,11 @@ public final class EmbeddedGatewayService implements AutoCloseable {
         jobStreamClient.start(),
         (ok, error) -> brokerClient.getTopologyManager().addTopologyListener(jobStreamClient));
 
+    //    concurrencyControl.runOnCompletion(
+    //        processInstanceStreamClient.start(),
+    //        (ok, error) ->
+    //
+    // brokerClient.getTopologyManager().addTopologyListener(processInstanceStreamClient));
     return gateway.start();
   }
 }

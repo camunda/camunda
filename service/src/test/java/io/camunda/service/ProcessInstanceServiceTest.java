@@ -97,7 +97,8 @@ public final class ProcessInstanceServiceTest {
             incidentServices,
             authentication,
             executorProvider,
-            brokerRequestAuthorizationConverter);
+            brokerRequestAuthorizationConverter,
+            null);
   }
 
   @Test

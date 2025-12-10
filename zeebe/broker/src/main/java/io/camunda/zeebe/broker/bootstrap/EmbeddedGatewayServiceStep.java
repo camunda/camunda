@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.service.stream.ProcessInstanceStreamClient;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -34,6 +35,8 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             scheduler,
             clusterServices.getCommunicationService(),
             brokerStartupContext.getMeterRegistry());
+    final var processInstanceStreamClient =
+        new ProcessInstanceStreamClient(scheduler, clusterServices.getCommunicationService());
     final var userService = brokerStartupContext.getUserServices();
     final var passwordEncoder = brokerStartupContext.getPasswordEncoder();
 
@@ -49,7 +52,8 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             userService,
             passwordEncoder,
             brokerStartupContext.getJwtDecoder(),
-            brokerStartupContext.getMeterRegistry());
+            brokerStartupContext.getMeterRegistry(),
+            processInstanceStreamClient);
 
     final var embeddedGatewayServiceFuture = embeddedGatewayService.start();
     concurrencyControl.runOnCompletion(

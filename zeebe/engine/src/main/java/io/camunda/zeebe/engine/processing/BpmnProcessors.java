@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessInstanceStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -78,7 +79,8 @@ public final class BpmnProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final ProcessInstanceStreamer processInstanceStreamer) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -88,7 +90,12 @@ public final class BpmnProcessors {
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
-            bpmnBehaviors, processingState, writers, processEngineMetrics, config);
+            bpmnBehaviors,
+            processingState,
+            writers,
+            processEngineMetrics,
+            config,
+            processInstanceStreamer);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(

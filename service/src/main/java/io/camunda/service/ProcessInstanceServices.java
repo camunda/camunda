@@ -32,6 +32,8 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.service.stream.ProcessInstanceEmitter;
+import io.camunda.service.stream.StreamProcessInstanceHandler;
 import io.camunda.service.util.TreePathParser;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -71,6 +73,7 @@ public final class ProcessInstanceServices
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
   private final IncidentServices incidentServices;
+  private final StreamProcessInstanceHandler streamProcessInstanceHandler;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -80,7 +83,8 @@ public final class ProcessInstanceServices
       final IncidentServices incidentServices,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final StreamProcessInstanceHandler streamProcessInstanceHandler) {
     super(
         brokerClient,
         securityContextProvider,
@@ -90,6 +94,7 @@ public final class ProcessInstanceServices
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
+    this.streamProcessInstanceHandler = streamProcessInstanceHandler;
   }
 
   @Override
@@ -102,7 +107,8 @@ public final class ProcessInstanceServices
         incidentServices,
         authentication,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        streamProcessInstanceHandler);
   }
 
   @Override
@@ -204,6 +210,11 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
       final ProcessInstanceCreateRequest request) {
+    return createProcessInstance(request, null);
+  }
+
+  public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
+      final ProcessInstanceCreateRequest request, final ProcessInstanceEmitter emitter) {
     final var brokerRequest =
         new BrokerCreateProcessInstanceRequest()
             .setBpmnProcessId(request.bpmnProcessId())
@@ -221,7 +232,22 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    final var future = new CompletableFuture<ProcessInstanceCreationRecord>();
+    sendBrokerRequest(brokerRequest)
+        .handleAsync(
+            (t, r) -> {
+              if (t != null) {
+                streamProcessInstanceHandler.handle(t.getProcessInstanceKey(), emitter);
+                future.complete(t);
+              }
+
+              if (r != null) {
+                future.completeExceptionally(r);
+              }
+              return null;
+            });
+
+    return future;
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
@@ -240,7 +266,23 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+
+    final var future = new CompletableFuture<ProcessInstanceResultRecord>();
+    sendBrokerRequest(brokerRequest)
+        .handleAsync(
+            (t, r) -> {
+              if (t != null) {
+                streamProcessInstanceHandler.handle(t.getProcessInstanceKey(), null);
+                future.complete(t);
+              }
+
+              if (r != null) {
+                future.completeExceptionally(r);
+              }
+              return null;
+            });
+
+    return future;
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(

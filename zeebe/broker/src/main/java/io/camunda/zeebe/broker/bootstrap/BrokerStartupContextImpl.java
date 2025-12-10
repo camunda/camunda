@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.jobstream.ProcessInstanceStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -81,6 +82,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private PartitionManagerImpl partitionManager;
   private BrokerAdminServiceImpl brokerAdminService;
   private JobStreamService jobStreamService;
+  private ProcessInstanceStreamService processInstanceStreamService;
   private ClusterConfigurationService clusterConfigurationService;
   private SnapshotApiRequestHandler snapshotApiRequestHandler;
 
@@ -341,6 +343,17 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setJobStreamService(final JobStreamService jobStreamService) {
     this.jobStreamService = jobStreamService;
+  }
+
+  @Override
+  public ProcessInstanceStreamService getProcessInstanceStreamService() {
+    return processInstanceStreamService;
+  }
+
+  @Override
+  public void setProcessInstanceStreamService(
+      final ProcessInstanceStreamService processInstanceStreamService) {
+    this.processInstanceStreamService = processInstanceStreamService;
   }
 
   @Override

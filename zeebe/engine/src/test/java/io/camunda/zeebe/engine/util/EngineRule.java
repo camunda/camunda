@@ -349,6 +349,7 @@ public final class EngineRule extends ExternalResource {
                         interPartitionCommandSender,
                         featureFlags,
                         jobStreamer,
+                        null,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter)
                     .withListener(

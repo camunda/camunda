@@ -13,6 +13,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessInstanceStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.ProcessingExporterTransistor;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite;
@@ -88,6 +89,7 @@ public final class TestEngine {
                             interPartitionCommandSender,
                             featureFlags,
                             JobStreamer.noop(),
+                            ProcessInstanceStreamer.noop(),
                             SearchClientsProxy.noop(),
                             new BrokerRequestAuthorizationConverter(new SecurityConfiguration()))
                         .withListener(

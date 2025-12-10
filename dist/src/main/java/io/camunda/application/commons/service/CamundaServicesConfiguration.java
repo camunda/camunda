@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuditLogSearchClient;
@@ -66,12 +67,15 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.service.stream.ProcessInstanceStreamClient;
+import io.camunda.service.stream.StreamProcessInstanceHandler;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -80,6 +84,27 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
 public class CamundaServicesConfiguration {
+
+  @Bean
+  public ProcessInstanceStreamClient processInstanceStreamClient(
+      final BrokerClient brokerClient,
+      final ActorSchedulingService schedulingService,
+      final AtomixCluster atomixCluster) {
+    final var client =
+        new ProcessInstanceStreamClient(schedulingService, atomixCluster.getCommunicationService());
+    client.start().join();
+    brokerClient.getTopologyManager().addTopologyListener(client);
+    return client;
+  }
+
+  @Bean
+  public StreamProcessInstanceHandler streamProcessInstanceHandler(
+      final ActorSchedulingService schedulingService,
+      final ProcessInstanceStreamClient processInstanceStreamClient) {
+    final var adapter = new StreamProcessInstanceHandler(processInstanceStreamClient.streamer());
+    schedulingService.submitActor(adapter).join();
+    return adapter;
+  }
 
   @Bean
   public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
@@ -181,7 +206,8 @@ public class CamundaServicesConfiguration {
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final StreamProcessInstanceHandler streamProcessInstanceHandler) {
     return new ProcessInstanceServices(
         brokerClient,
         securityContextProvider,
@@ -190,7 +216,8 @@ public class CamundaServicesConfiguration {
         incidentServices,
         null,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        streamProcessInstanceHandler);
   }
 
   @Bean

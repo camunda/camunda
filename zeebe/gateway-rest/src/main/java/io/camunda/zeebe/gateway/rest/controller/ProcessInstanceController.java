@@ -20,6 +20,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOpe
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.service.stream.ProcessInstanceEmitter;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
@@ -42,11 +43,14 @@ import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @CamundaRestController
 @RequestMapping("/v2/process-instances")
@@ -65,11 +69,21 @@ public class ProcessInstanceController {
     this.authenticationProvider = authenticationProvider;
   }
 
+  //  @CamundaPostMapping
+  //  public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
+  //      @RequestBody final ProcessInstanceCreationInstruction request) {
+  //    return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
+  //        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
+  //  }
+
   @CamundaPostMapping
-  public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
+  public SseEmitter createProcessInstance(
       @RequestBody final ProcessInstanceCreationInstruction request) {
-    return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
+    final var emitter = new SseEmitter();
+    RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse, r -> createProcessInstance(r, emitter));
+    return emitter;
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/cancellation")
@@ -321,7 +335,7 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
-      final ProcessInstanceCreateRequest request) {
+      final ProcessInstanceCreateRequest request, final SseEmitter emitter) {
     if (request.awaitCompletion()) {
       return RequestMapper.executeServiceMethod(
           () ->
@@ -334,7 +348,7 @@ public class ProcessInstanceController {
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createProcessInstance(request),
+                .createProcessInstance(request, new ProcessInstanceEmitterImpl(emitter)),
         ResponseMapper::toCreateProcessInstanceResponse);
   }
 
@@ -363,5 +377,19 @@ public class ProcessInstanceController {
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .modifyProcessInstance(request));
+  }
+
+  record ProcessInstanceEmitterImpl(SseEmitter emitter) implements ProcessInstanceEmitter {
+
+    @Override
+    public void send(final ProcessInstanceRecord processInstance) {
+      try {
+        final var event =
+            SseEmitter.event().data(processInstance, MediaType.APPLICATION_JSON).build();
+        emitter.send(event);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 }
