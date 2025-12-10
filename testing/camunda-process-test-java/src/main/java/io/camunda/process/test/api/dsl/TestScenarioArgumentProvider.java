@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,6 +57,13 @@ public class TestScenarioArgumentProvider
 
   @Override
   public void accept(final TestScenarioSource testScenarioSource) {
+    Objects.requireNonNull(
+        testScenarioSource.directory(), "The source directory must not be null.");
+    Objects.requireNonNull(
+        testScenarioSource.fileNames(), "The source file names must not be null.");
+    Objects.requireNonNull(
+        testScenarioSource.fileExtension(), "The source file extension must not be null.");
+
     sourceDirectory = testScenarioSource.directory();
     sourceFileNames = Arrays.asList(testScenarioSource.fileNames());
     sourceFileExtension = testScenarioSource.fileExtension();
