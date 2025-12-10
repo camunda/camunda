@@ -455,6 +455,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
             this.setNodeData(scopeKey, {
               ...currentNodeData,
               items: response.items,
+              status: 'loaded',
               pageMetadata: {
                 ...currentNodeData.pageMetadata,
                 totalItems: response.page.totalItems,
@@ -462,6 +463,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
             });
           } else {
             if (!signal.aborted) {
+              this.setNodeStatus(scopeKey, 'error');
               logger.error('Failed to poll element instances', error);
             }
           }
