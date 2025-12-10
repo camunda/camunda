@@ -7,6 +7,9 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.db.rdbms.LiquibaseSchemaManager;
+import io.camunda.db.rdbms.NoopSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -41,7 +44,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
-import liquibase.integration.spring.MultiTenantSpringLiquibase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -52,6 +54,7 @@ import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -69,7 +72,7 @@ public class MyBatisConfiguration {
       name = "auto-ddl",
       havingValue = "true",
       matchIfMissing = true)
-  public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
+  public RdbmsSchemaManager rdbmsExporterLiquibase(
       final DataSource dataSource,
       final VendorDatabaseProperties vendorDatabaseProperties,
       @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
@@ -77,7 +80,7 @@ public class MyBatisConfiguration {
     LOGGER.info(
         "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
 
-    final var moduleConfig = new MultiTenantSpringLiquibase();
+    final var moduleConfig = new LiquibaseSchemaManager();
     moduleConfig.setDataSource(dataSource);
     moduleConfig.setDatabaseChangeLogTable(trimmedPrefix + "DATABASECHANGELOG");
     moduleConfig.setDatabaseChangeLogLockTable(trimmedPrefix + "DATABASECHANGELOGLOCK");
@@ -91,6 +94,12 @@ public class MyBatisConfiguration {
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
     return moduleConfig;
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(RdbmsSchemaManager.class)
+  public RdbmsSchemaManager rdbmsNoopSchemaManager() {
+    return new NoopSchemaManager();
   }
 
   @Bean
