@@ -86,6 +86,7 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
+  private final IndexManager indexManager;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -95,6 +96,7 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
+    indexManager = new IndexManager(client, config);
     final var basePath = config.basePath();
     backupIdentifierPattern =
         Pattern.compile(
@@ -251,12 +253,20 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    throw new UnsupportedOperationException();
+    if (!(indexFile instanceof final S3BackupIndexFile s3IndexFile)) {
+      throw new IllegalArgumentException(
+          "Expected index file of type %s but got %s: %s"
+              .formatted(
+                  S3BackupIndexFile.class.getSimpleName(),
+                  indexFile.getClass().getSimpleName(),
+                  indexFile));
+    }
+    return indexManager.upload(s3IndexFile);
   }
 
   @Override
   public CompletableFuture<BackupIndexFile> restoreIndex(final BackupIndexIdentifier id) {
-    throw new UnsupportedOperationException();
+    return indexManager.download(id);
   }
 
   @Override

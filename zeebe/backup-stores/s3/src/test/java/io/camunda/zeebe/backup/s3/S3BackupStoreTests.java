@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.manifest.CompletedBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
+import io.camunda.zeebe.backup.testkit.StoringBackupIndex;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
 import java.time.Duration;
@@ -30,7 +31,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-public interface S3BackupStoreTests extends BackupStoreTestKit {
+public interface S3BackupStoreTests extends BackupStoreTestKit, StoringBackupIndex {
 
   S3AsyncClient getClient();
 
