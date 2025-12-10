@@ -33,8 +33,10 @@ import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 public class IncidentTools {
   private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
