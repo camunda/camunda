@@ -10,12 +10,10 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -113,15 +111,6 @@ public class ProcessInstanceCreateAuthorizationTest {
         engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(user.getUsername());
 
     // then
-    final var record =
-        RecordingExporter.processInstanceCreationRecords()
-            .withIntent(ProcessInstanceCreationIntent.CREATED)
-            .withInstanceKey(processInstanceKey)
-            .findFirst();
-    assertThat(record).isPresent();
-    assertThat(record.get().getAuthorizations())
-        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
-
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -149,15 +138,6 @@ public class ProcessInstanceCreateAuthorizationTest {
             .create(user.getUsername());
 
     // then
-    final var record =
-        RecordingExporter.processInstanceCreationRecords()
-            .withIntent(ProcessInstanceCreationIntent.CREATED)
-            .withInstanceKey(processInstanceKey)
-            .findFirst();
-    assertThat(record).isPresent();
-    assertThat(record.get().getAuthorizations())
-        .containsEntry(Authorization.AUTHORIZED_USERNAME, user.getUsername());
-
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)

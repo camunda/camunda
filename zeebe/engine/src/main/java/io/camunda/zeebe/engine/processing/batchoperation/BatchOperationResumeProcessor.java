@@ -35,7 +35,6 @@ import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,8 +120,7 @@ public final class BatchOperationResumeProcessor
       return;
     }
 
-    resumeBatchOperation(
-        resumeKey, batchOperation.get(), command.getValue(), command.getAuthorizations());
+    resumeBatchOperation(resumeKey, batchOperation.get(), command.getValue());
     responseWriter.writeEventOnCommand(
         resumeKey, BatchOperationIntent.RESUMED, command.getValue(), command);
     commandDistributionBehavior
@@ -146,8 +144,7 @@ public final class BatchOperationResumeProcessor
           "Processing distributed command to resume with key '{}': {}",
           batchOperationKey,
           recordValue);
-      resumeBatchOperation(
-          command.getKey(), batchOperation.get(), command.getValue(), command.getAuthorizations());
+      resumeBatchOperation(command.getKey(), batchOperation.get(), recordValue);
     } else {
       LOGGER.debug(
           "Distributed command to resume a batch operation with key '{}' will be ignored: {}",
@@ -161,14 +158,12 @@ public final class BatchOperationResumeProcessor
   void resumeBatchOperation(
       final Long resumeKey,
       final PersistedBatchOperation batchOperation,
-      final BatchOperationLifecycleManagementRecord recordValue,
-      final Map<String, Object> claims) {
+      final BatchOperationLifecycleManagementRecord recordValue) {
     stateWriter.appendFollowUpEvent(
         resumeKey,
         BatchOperationIntent.RESUMED,
         recordValue,
-        FollowUpEventMetadata.of(
-            m -> m.batchOperationReference(batchOperation.getKey()).claims(claims)));
+        FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperation.getKey())));
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());

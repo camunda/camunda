@@ -344,7 +344,8 @@ public final class ProcessingStateMachine {
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents,
             initialCommand.getOperationReference(),
-            initialCommand.getBatchOperationReference());
+            initialCommand.getBatchOperationReference(),
+            initialCommand.getAuthorizations());
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -544,7 +545,8 @@ public final class ProcessingStateMachine {
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents,
             typedCommand.getOperationReference(),
-            typedCommand.getBatchOperationReference());
+            typedCommand.getBatchOperationReference(),
+            typedCommand.getAuthorizations());
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -588,7 +590,8 @@ public final class ProcessingStateMachine {
               new BufferedProcessingResultBuilder(
                   logStreamWriter::canWriteEvents,
                   typedCommand.getOperationReference(),
-                  typedCommand.getBatchOperationReference());
+                  typedCommand.getBatchOperationReference(),
+                  typedCommand.getAuthorizations());
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);

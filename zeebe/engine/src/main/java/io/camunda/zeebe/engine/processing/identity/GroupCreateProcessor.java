@@ -82,7 +82,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     final long key = keyGenerator.nextKey();
     record.setGroupKey(key);
 
-    stateWriter.appendFollowUpEvent(key, GroupIntent.CREATED, record, command.getAuthorizations());
+    stateWriter.appendFollowUpEvent(key, GroupIntent.CREATED, record);
     responseWriter.writeEventOnCommand(key, GroupIntent.CREATED, record, command);
 
     commandDistributionBehavior
@@ -102,9 +102,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
                   GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(persistedGroup.getGroupId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
-            () ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), GroupIntent.CREATED, record, command.getAuthorizations()));
+            () -> stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.CREATED, record));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }

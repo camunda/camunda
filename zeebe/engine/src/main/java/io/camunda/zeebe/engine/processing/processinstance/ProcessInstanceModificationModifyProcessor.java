@@ -306,8 +306,7 @@ public final class ProcessInstanceModificationModifyProcessor
                                   scopeKey,
                                   processInstance,
                                   process,
-                                  instruction,
-                                  command.getAuthorizations()));
+                                  instruction));
 
                   extendedRecord.addActivateInstruction(
                       ((ProcessInstanceModificationActivateInstruction) instruction)
@@ -335,10 +334,7 @@ public final class ProcessInstanceModificationModifyProcessor
         });
 
     stateWriter.appendFollowUpEvent(
-        eventKey,
-        ProcessInstanceModificationIntent.MODIFIED,
-        extendedRecord,
-        command.getAuthorizations());
+        eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord);
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord, command);
@@ -1026,8 +1022,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final Long scopeKey,
       final ElementInstance processInstance,
       final DeployedProcess process,
-      final ProcessInstanceModificationActivateInstructionValue activate,
-      final Map<String, Object> authorizationClaims) {
+      final ProcessInstanceModificationActivateInstructionValue activate) {
     activate.getVariableInstructions().stream()
         .filter(
             instruction ->

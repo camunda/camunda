@@ -30,6 +30,10 @@ public final class ProcessRecordStream extends ExporterRecordStream<Process, Pro
     return valueFilter(v -> v.getBpmnProcessId().equals(bpmnProcessId));
   }
 
+  public ProcessRecordStream withProcessDefinitionKey(final long processDefinitionKey) {
+    return valueFilter(v -> v.getProcessDefinitionKey() == processDefinitionKey);
+  }
+
   public ProcessRecordStream withVersion(final int version) {
     return valueFilter(v -> v.getVersion() == version);
   }

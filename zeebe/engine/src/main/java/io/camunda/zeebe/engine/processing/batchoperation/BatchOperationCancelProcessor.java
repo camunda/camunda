@@ -97,7 +97,7 @@ public final class BatchOperationCancelProcessor
 
     final var batchOperation = batchOperationState.get(batchOperationKey);
     if (batchOperation.isPresent() && batchOperation.get().canCancel()) {
-      cancelBatchOperationEvent(cancelKey, command);
+      cancelBatchOperationEvent(cancelKey, recordValue);
       responseWriter.writeEventOnCommand(
           cancelKey, BatchOperationIntent.CANCELED, command.getValue(), command);
       commandDistributionBehavior
@@ -136,19 +136,17 @@ public final class BatchOperationCancelProcessor
         "Processing distributed command to cancel a batch operation with key '{}': {}",
         batchOperationKey,
         recordValue);
-    cancelBatchOperationEvent(batchOperationKey, command);
+    cancelBatchOperationEvent(batchOperationKey, recordValue);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   private void cancelBatchOperationEvent(
-      final Long cancelKey, final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
-    final var recordValue = command.getValue();
-    final var claims = command.getAuthorizations();
+      final Long cancelKey, final BatchOperationLifecycleManagementRecord recordValue) {
     stateWriter.appendFollowUpEvent(
         cancelKey,
         BatchOperationIntent.CANCELED,
         recordValue,
         FollowUpEventMetadata.of(
-            b -> b.batchOperationReference(recordValue.getBatchOperationKey()).claims(claims)));
+            b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
   }
 }

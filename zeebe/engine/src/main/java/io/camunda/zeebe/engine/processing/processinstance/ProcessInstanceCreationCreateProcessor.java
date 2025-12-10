@@ -46,7 +46,6 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TagUtil;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -118,7 +117,7 @@ public final class ProcessInstanceCreationCreateProcessor
         .flatMap(process -> isAuthorized(command, process))
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(controller, command, process),
+            process -> createProcessInstance(controller, record, process),
             rejection -> controller.reject(rejection.type(), rejection.reason()));
 
     return true;
@@ -169,17 +168,16 @@ public final class ProcessInstanceCreationCreateProcessor
 
   private void createProcessInstance(
       final CommandControl<ProcessInstanceCreationRecord> controller,
-      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final ProcessInstanceCreationRecord record,
       final DeployedProcess process) {
     final long processInstanceKey = keyGenerator.nextKey();
-    final ProcessInstanceCreationRecord record = command.getValue();
+
     setVariablesFromDocument(
         record,
         process.getKey(),
         processInstanceKey,
         process.getBpmnProcessId(),
-        process.getTenantId(),
-        command.getAuthorizations());
+        process.getTenantId());
 
     final var processInstance =
         initProcessInstanceRecord(process, processInstanceKey, record.getTags());
@@ -413,8 +411,7 @@ public final class ProcessInstanceCreationCreateProcessor
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
-      final String tenantId,
-      final Map<String, Object> authorizationClaims) {
+      final String tenantId) {
 
     variableBehavior.mergeLocalDocument(
         processInstanceKey,
@@ -422,8 +419,7 @@ public final class ProcessInstanceCreationCreateProcessor
         processInstanceKey,
         bpmnProcessId,
         tenantId,
-        record.getVariablesBuffer(),
-        authorizationClaims);
+        record.getVariablesBuffer());
   }
 
   private ProcessInstanceRecord initProcessInstanceRecord(

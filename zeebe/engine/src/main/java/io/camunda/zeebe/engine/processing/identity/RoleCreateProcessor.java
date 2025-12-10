@@ -79,7 +79,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     final long key = keyGenerator.nextKey();
     record.setRoleKey(key);
 
-    stateWriter.appendFollowUpEvent(key, RoleIntent.CREATED, record, command.getAuthorizations());
+    stateWriter.appendFollowUpEvent(key, RoleIntent.CREATED, record);
     responseWriter.writeEventOnCommand(key, RoleIntent.CREATED, record, command);
 
     commandDistributionBehavior
@@ -99,9 +99,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
                   ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getRoleId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
-            () ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), RoleIntent.CREATED, record, command.getAuthorizations()));
+            () -> stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.CREATED, record));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }

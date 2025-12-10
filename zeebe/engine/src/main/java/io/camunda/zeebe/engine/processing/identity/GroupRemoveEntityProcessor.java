@@ -110,8 +110,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     }
 
     final var groupKey = persistedRecord.get().getGroupKey();
-    stateWriter.appendFollowUpEvent(
-        groupKey, GroupIntent.ENTITY_REMOVED, record, command.getAuthorizations());
+    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_REMOVED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
@@ -127,10 +126,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
     if (isEntityAssigned(record)) {
       stateWriter.appendFollowUpEvent(
-          command.getKey(),
-          GroupIntent.ENTITY_REMOVED,
-          command.getValue(),
-          command.getAuthorizations());
+          command.getKey(), GroupIntent.ENTITY_REMOVED, command.getValue());
     } else {
       final var errorMessage =
           ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getGroupKey());

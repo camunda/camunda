@@ -118,8 +118,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
-        record.getRoleKey(), RoleIntent.ENTITY_ADDED, record, command.getAuthorizations());
+    stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_ADDED, record, command);
 
@@ -138,8 +137,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
           ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
-      stateWriter.appendFollowUpEvent(
-          command.getKey(), RoleIntent.ENTITY_ADDED, record, command.getAuthorizations());
+      stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record);
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);

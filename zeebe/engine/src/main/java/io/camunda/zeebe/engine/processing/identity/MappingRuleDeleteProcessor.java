@@ -43,7 +43,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Map;
 
 public class MappingRuleDeleteProcessor
     implements DistributedTypedRecordProcessor<MappingRuleRecord> {
@@ -109,7 +108,7 @@ public class MappingRuleDeleteProcessor
       return;
     }
     final long key = keyGenerator.nextKey();
-    deleteMappingRule(persistedMappingRuleOptional.get(), key, command.getAuthorizations());
+    deleteMappingRule(persistedMappingRuleOptional.get(), key);
     responseWriter.writeEventOnCommand(key, MappingRuleIntent.DELETED, record, command);
 
     commandDistributionBehavior
@@ -124,9 +123,7 @@ public class MappingRuleDeleteProcessor
     mappingRuleState
         .get(record.getMappingRuleId())
         .ifPresentOrElse(
-            persistedMappingRule ->
-                deleteMappingRule(
-                    persistedMappingRule, command.getKey(), command.getAuthorizations()),
+            persistedMappingRule -> deleteMappingRule(persistedMappingRule, command.getKey()),
             () -> {
               final var errorMessage =
                   MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingRuleKey());
@@ -136,12 +133,9 @@ public class MappingRuleDeleteProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void deleteMappingRule(
-      final PersistedMappingRule mappingRule,
-      final long key,
-      final Map<String, Object> authorizationClaims) {
+  private void deleteMappingRule(final PersistedMappingRule mappingRule, final long key) {
     final var mappingRuleId = mappingRule.getMappingRuleId();
-    deleteAuthorizations(mappingRuleId, authorizationClaims);
+    deleteAuthorizations(mappingRuleId);
     for (final var tenantId :
         membershipState.getMemberships(
             EntityType.MAPPING_RULE, mappingRule.getMappingRuleId(), RelationType.TENANT)) {
@@ -153,8 +147,7 @@ public class MappingRuleDeleteProcessor
               .setTenantKey(tenant.getTenantKey())
               .setTenantId(tenant.getTenantId())
               .setEntityId(mappingRule.getMappingRuleId())
-              .setEntityType(EntityType.MAPPING_RULE),
-          authorizationClaims);
+              .setEntityType(EntityType.MAPPING_RULE));
     }
     for (final var roleId :
         membershipState.getMemberships(EntityType.MAPPING_RULE, mappingRuleId, RelationType.ROLE)) {
@@ -166,8 +159,7 @@ public class MappingRuleDeleteProcessor
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
               .setEntityId(mappingRuleId)
-              .setEntityType(EntityType.MAPPING_RULE),
-          authorizationClaims);
+              .setEntityType(EntityType.MAPPING_RULE));
     }
     for (final var groupId :
         membershipState.getMemberships(
@@ -180,18 +172,15 @@ public class MappingRuleDeleteProcessor
               .setGroupKey(group.getGroupKey())
               .setGroupId(groupId)
               .setEntityId(mappingRule.getMappingRuleId())
-              .setEntityType(EntityType.MAPPING_RULE),
-          authorizationClaims);
+              .setEntityType(EntityType.MAPPING_RULE));
     }
     stateWriter.appendFollowUpEvent(
         key,
         MappingRuleIntent.DELETED,
-        new MappingRuleRecord().setMappingRuleId(mappingRule.getMappingRuleId()),
-        authorizationClaims);
+        new MappingRuleRecord().setMappingRuleId(mappingRule.getMappingRuleId()));
   }
 
-  private void deleteAuthorizations(
-      final String mappingRuleId, final Map<String, Object> authorizationClaims) {
+  private void deleteAuthorizations(final String mappingRuleId) {
     final var authorizationKeysForMappingRule =
         authorizationState.getAuthorizationKeysForOwner(
             AuthorizationOwnerType.MAPPING_RULE, mappingRuleId);
@@ -203,7 +192,7 @@ public class MappingRuleDeleteProcessor
                   .setAuthorizationKey(authorizationKey)
                   .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
-              authorizationKey, AuthorizationIntent.DELETED, authorization, authorizationClaims);
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
         });
   }
 }

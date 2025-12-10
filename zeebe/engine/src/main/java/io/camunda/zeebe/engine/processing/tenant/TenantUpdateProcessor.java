@@ -80,10 +80,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getValue().getTenantKey(),
-        TenantIntent.UPDATED,
-        command.getValue(),
-        command.getAuthorizations());
+        command.getValue().getTenantKey(), TenantIntent.UPDATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -126,10 +123,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
             .setDescription(persistedTenant.getDescription());
 
     stateWriter.appendFollowUpEvent(
-        persistedTenant.getTenantKey(),
-        TenantIntent.UPDATED,
-        updatedRecord,
-        command.getAuthorizations());
+        persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
     responseWriter.writeEventOnCommand(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
 
