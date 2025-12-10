@@ -919,6 +919,88 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
   },
 };
 
+const adHocSubProcessInnerInstanceProcessInstance = Object.freeze(
+  createInstance({
+    id: '111111111111111',
+    processId: '222222222222222',
+    processName: 'Ad Hoc Inner Subprocess Test',
+    state: 'COMPLETED',
+    bpmnProcessId: 'ad_hoc_inner_subprocess_test',
+  }),
+);
+
+const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
+  processInstanceKey: '111111111111111',
+  state: 'COMPLETED',
+  startDate: '2020-08-18T12:07:33.953+0000',
+  processDefinitionKey: '222222222222222',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'ad_hoc_inner_subprocess_test',
+  tenantId: '<default>',
+  processDefinitionName: 'Ad Hoc Inner Subprocess Test',
+  hasIncident: false,
+};
+
+const adHocSubProcessInnerInstanceElementInstances: Record<
+  string,
+  QueryElementInstancesResponseBody
+> = {
+  level1: {
+    items: [
+      {
+        elementInstanceKey: 'start-1',
+        processInstanceKey: '111111111111111',
+        processDefinitionKey: '222222222222222',
+        processDefinitionId: 'ad_hoc_inner_subprocess_test',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'start_event',
+        elementName: 'Start Event',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:33.953+0000',
+        endDate: '2020-08-18T12:07:34.034+0000',
+      },
+      {
+        elementInstanceKey: 'inner-1',
+        processInstanceKey: '111111111111111',
+        processDefinitionKey: '222222222222222',
+        processDefinitionId: 'ad_hoc_inner_subprocess_test',
+        state: 'ACTIVE',
+        type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+        elementId: 'ad_hoc_subprocess',
+        elementName: 'Ad Hoc Sub Process Inner Instance',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:34.100+0000',
+      },
+    ],
+    page: {totalItems: 2},
+  },
+  level2: {
+    items: [
+      {
+        elementInstanceKey: 'user-task-1',
+        processInstanceKey: '111111111111111',
+        processDefinitionKey: '222222222222222',
+        processDefinitionId: 'ad_hoc_inner_subprocess_test',
+        state: 'ACTIVE',
+        type: 'USER_TASK',
+        elementId: 'user_task_in_ad_hoc_subprocess',
+        elementName: 'User Task',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:34.200+0000',
+      },
+    ],
+    page: {totalItems: 1},
+  },
+  emptyLevel: {
+    items: [],
+    page: {totalItems: 0},
+  },
+};
+
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
@@ -963,5 +1045,8 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   eventSubprocessProcessInstance,
   mockEventSubprocessInstance,
+  adHocSubProcessInnerInstanceProcessInstance,
+  mockAdHocSubProcessInnerInstanceProcessInstance,
+  adHocSubProcessInnerInstanceElementInstances,
   Wrapper,
 };
