@@ -1469,10 +1469,8 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .terminateElement(aTasks.get(0).getKey())
-        .activateElement("B", miInstances.getFirst().getKey())
-        .terminateElement(aTasks.get(2).getKey())
-        .activateElement("B", miInstances.getLast().getKey())
+        .moveElementInstance(aTasks.get(0).getKey(), "B", miInstances.getFirst().getKey())
+        .moveElementInstance(aTasks.get(2).getKey(), "B", miInstances.getLast().getKey())
         .modify();
 
     // then
@@ -1558,8 +1556,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .terminateElement(aTasks.getFirst().getKey())
-        .activateElement("B", taskAFlowScopeKey)
+        .moveElementInstance(aTasks.getFirst().getKey(), "B", taskAFlowScopeKey)
         .modify();
 
     // then
@@ -1732,8 +1729,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .terminateElement(aTask.getKey())
-        .activateElement("B", firstInnerAdhocInstance.getKey())
+        .moveElementInstance(aTask.getKey(), "B", firstInnerAdhocInstance.getKey())
         .modify();
 
     // then
@@ -1928,8 +1924,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .terminateElement(aTasks.getFirst().getKey())
-        .activateElement("B", miInstances.getFirst().getKey())
+        .moveElementInstance(aTasks.getFirst().getKey(), "B", miInstances.getFirst().getKey())
         .modify();
 
     // then
