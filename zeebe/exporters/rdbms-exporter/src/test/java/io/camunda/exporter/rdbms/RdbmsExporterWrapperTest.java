@@ -7,11 +7,17 @@
  */
 package io.camunda.exporter.rdbms;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -34,5 +40,60 @@ class RdbmsExporterWrapperTest {
     // when
     assertThatThrownBy(() -> exporterWrapper.configure(context))
         .hasMessageContaining("flushInterval must be a positive duration");
+  }
+
+  @Test
+  public void shouldRegisterAuditLogHandlers() {
+    // given
+    final var configuration = new ExporterConfiguration();
+    final Context context = Mockito.mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsService rdbmsService = Mockito.mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsWriter rdbmsWriter = Mockito.mock(RdbmsWriter.class, Mockito.RETURNS_DEEP_STUBS);
+
+    Mockito.when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
+        .thenReturn(configuration);
+    Mockito.when(context.getPartitionId()).thenReturn(1);
+    Mockito.when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriter);
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(rdbmsService, Mockito.mock(VendorDatabaseProperties.class));
+
+    // when
+    exporterWrapper.configure(context);
+
+    // then - verify that audit log handlers are registered
+    final var registeredHandlers = exporterWrapper.getExporter().getRegisteredHandlers();
+
+    // Check that BATCH_OPERATION_LIFECYCLE_MANAGEMENT has an AuditLogExportHandler
+    assertThat(registeredHandlers)
+        .containsKey(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT)
+        .extracting(map -> map.get(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT))
+        .satisfies(
+            handlers ->
+                assertThat(handlers)
+                    .isNotEmpty()
+                    .anySatisfy(
+                        handler -> assertThat(handler).isInstanceOf(AuditLogExportHandler.class)));
+
+    // Check that PROCESS_INSTANCE_MODIFICATION has an AuditLogExportHandler
+    assertThat(registeredHandlers)
+        .containsKey(ValueType.PROCESS_INSTANCE_MODIFICATION)
+        .extracting(map -> map.get(ValueType.PROCESS_INSTANCE_MODIFICATION))
+        .satisfies(
+            handlers ->
+                assertThat(handlers)
+                    .isNotEmpty()
+                    .anySatisfy(
+                        handler -> assertThat(handler).isInstanceOf(AuditLogExportHandler.class)));
+
+    // Verify that exactly 2 audit log handlers are registered
+    final long auditLogHandlerCount =
+        registeredHandlers.values().stream()
+            .flatMap(java.util.List::stream)
+            .filter(AuditLogExportHandler.class::isInstance)
+            .count();
+    assertThat(auditLogHandlerCount)
+        .as("Should have exactly 2 audit log handlers registered")
+        .isEqualTo(2);
   }
 }

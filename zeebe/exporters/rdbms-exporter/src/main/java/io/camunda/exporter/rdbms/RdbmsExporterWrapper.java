@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.rdbms;
 
-import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
-
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
@@ -40,6 +38,7 @@ import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
+import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
@@ -59,6 +58,7 @@ import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisio
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
@@ -143,6 +143,11 @@ public class RdbmsExporterWrapper implements Exporter {
   @Override
   public void purge() throws Exception {
     exporter.purge();
+  }
+
+  @VisibleForTesting("Allows verification of handler registration in tests")
+  RdbmsExporter getExporter() {
+    return exporter;
   }
 
   private void createHandlers(
@@ -266,6 +271,17 @@ public class RdbmsExporterWrapper implements Exporter {
             vendorDatabaseProperties,
             new ProcessInstanceModificationAuditLogTransformer(),
             new AuditLogConfiguration()); // TODO figure the correct configuration
-    builder.withHandler(PROCESS_INSTANCE_MODIFICATION, processInstanceModificationAuditLogHandler);
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE_MODIFICATION, processInstanceModificationAuditLogHandler);
+
+    final var batchOperationLifecycleManagementAuditLogHandler =
+        new AuditLogExportHandler<>(
+            rdbmsWriter.getAuditLogWriter(),
+            vendorDatabaseProperties,
+            new BatchOperationLifecycleManagementAuditLogTransformer(),
+            new AuditLogConfiguration()); // TODO figure the correct configuration
+    builder.withHandler(
+        ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+        batchOperationLifecycleManagementAuditLogHandler);
   }
 }
