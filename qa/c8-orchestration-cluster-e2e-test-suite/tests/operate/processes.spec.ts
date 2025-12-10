@@ -256,10 +256,16 @@ test.describe('Processes', () => {
   test('Cancel process instance', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
-    operateDiagramPage,
     page,
   }) => {
     await test.step('Navigate to process to cancel', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      await operateFiltersPanelPage.processInstanceKeysFilter.fill(
+        instanceToCancel.processInstanceKey,
+      );
+
       await operateFiltersPanelPage.selectProcess(
         'Delete Process Definition API Test',
       );
