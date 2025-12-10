@@ -13,6 +13,7 @@ public class AppCfg {
 
   private String brokerUrl;
   private String brokerRestUrl;
+  private String brokerManagementUrl;
   private boolean preferRest;
   private int monitoringPort;
   private StarterCfg starter;
@@ -34,6 +35,14 @@ public class AppCfg {
 
   public void setBrokerRestUrl(final String brokerRestUrl) {
     this.brokerRestUrl = brokerRestUrl;
+  }
+
+  public String getBrokerManagementUrl() {
+    return brokerManagementUrl;
+  }
+
+  public void setBrokerManagementUrl(final String brokerManagementUrl) {
+    this.brokerManagementUrl = brokerManagementUrl;
   }
 
   public boolean isPreferRest() {

@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.benchmark;
 
-public class MetricsReader {
+import java.util.*;
 
-  public int getRecordsNotExported() {
-    // Placeholder implementation
-    return 0;
-  }
-}
+public record PrometheusMetric(String name, Map<String, String> labels, double value) {}

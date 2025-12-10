@@ -127,6 +127,8 @@ jobs:
                   value: "http://camunda-gateway:26500"
                 - name: ZEEBE_REST_ADDRESS
                   value: "http://camunda-gateway:8080"
+                - name: ZEEBE_MANAGEMENT_ADDRESS
+                  value: "http://camunda-gateway:9600"
                 - name: BENCHMARK_NAME
                   value: "${{ inputs.scenario-name }}"
               restartPolicy: Never

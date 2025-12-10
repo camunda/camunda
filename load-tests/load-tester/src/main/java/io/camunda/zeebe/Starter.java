@@ -27,12 +27,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -94,65 +91,6 @@ public class Starter extends App {
 
     scheduledTask.cancel(true);
     executorService.shutdown();
-  }
-
-  private void runStarter(
-      final StarterCfg starterCfg,
-      final String processId,
-      final BlockingQueue<Future<?>> requestFutures,
-      final CamundaClient client,
-      final String variables,
-      final BooleanSupplier shouldContinue,
-      final CountDownLatch countDownLatch) {
-    if (shouldContinue.getAsBoolean()) {
-      try {
-        if (starterCfg.isStartViaMessage()) {
-          requestFutures.put(
-              client
-                  .newPublishMessageCommand()
-                  .messageName(starterCfg.getMsgName())
-                  .correlationKey(UUID.randomUUID().toString())
-                  .variables(variables)
-                  .timeToLive(Duration.ZERO)
-                  .send());
-        } else {
-          startViaCommand(starterCfg, processId, requestFutures, client, variables);
-        }
-
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.error("Error on creating new process instance", e);
-      }
-    } else {
-      countDownLatch.countDown();
-    }
-  }
-
-  private static void startViaCommand(
-      final StarterCfg starterCfg,
-      final String processId,
-      final BlockingQueue<Future<?>> requestFutures,
-      final CamundaClient client,
-      final String variables)
-      throws InterruptedException {
-    if (starterCfg.isWithResults()) {
-      requestFutures.put(
-          client
-              .newCreateInstanceCommand()
-              .bpmnProcessId(processId)
-              .latestVersion()
-              .variables(variables)
-              .withResult()
-              .requestTimeout(starterCfg.getWithResultsTimeout())
-              .send());
-    } else {
-      requestFutures.put(
-          client
-              .newCreateInstanceCommand()
-              .bpmnProcessId(processId)
-              .latestVersion()
-              .variables(variables)
-              .send());
-    }
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(

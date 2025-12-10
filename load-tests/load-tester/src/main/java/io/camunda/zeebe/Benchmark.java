@@ -9,6 +9,8 @@ package io.camunda.zeebe;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.benchmark.PrometheusClient;
+import io.camunda.zeebe.benchmark.PrometheusMetric;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.BenchmarkCfg;
 import io.camunda.zeebe.util.ProcessInstanceUtil;
@@ -39,6 +41,7 @@ public class Benchmark extends App {
 
     switch (benchmarkCfg.getName()) {
       case "pi-creation-latency" -> executePICreationLatencyBenchmark(camundaClient);
+      case "measure-cpu-usage" -> measureCPUUsage();
       case "none" -> {}
       default -> throw new IllegalArgumentException("Unknown benchmark: " + benchmarkCfg.getName());
     }
@@ -65,6 +68,33 @@ public class Benchmark extends App {
         benchmarkResult.iterations,
         benchmarkResult.sumMillis,
         benchmarkResult.averageMillis);
+  }
+
+  public void measureCPUUsage() {
+    final var duration = Duration.ofMinutes(2);
+    final var prometheusClient = createPrometheusClient();
+
+    final List<Double> cpuUsages = new ArrayList<>();
+    final long start = System.currentTimeMillis();
+    while (System.currentTimeMillis() - start < duration.toMillis()) {
+      try {
+        final var cpuUsage =
+            prometheusClient.fetchMetrics().stream()
+                .filter(p -> p.name().equals("process_cpu_usage"))
+                .findFirst()
+                .map(PrometheusMetric::value)
+                .orElse(-1.0);
+        LOG.info("Current CPU usage: {}", cpuUsage);
+        cpuUsages.add(cpuUsage);
+        Thread.sleep(1000);
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.warn("Failed to read CPU usage from Prometheus", e);
+      }
+    }
+
+    final double averageCpuUsage =
+        cpuUsages.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    LOG.info("Average CPU usage over {} seconds: {}", duration.toSeconds(), averageCpuUsage);
   }
 
   public BenchmarkResult executeAndMeasure(
@@ -108,6 +138,10 @@ public class Benchmark extends App {
 
   private CamundaClient createCamundaClient() {
     return newClientBuilder().numJobWorkerExecutionThreads(0).build();
+  }
+
+  private PrometheusClient createPrometheusClient() {
+    return new PrometheusClient(config.getBrokerManagementUrl());
   }
 
   public static void main(final String[] args) {
