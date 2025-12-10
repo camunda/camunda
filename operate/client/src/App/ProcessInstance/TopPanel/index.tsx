@@ -134,9 +134,14 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
-  const isRootNodeSelected = useIsRootNodeSelected();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
   const {clearSelection, selectElement} = useProcessInstanceElementSelection();
+
+  const isRootNodeSelected = useIsRootNodeSelected();
+  const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+    totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+    isRootNodeSelected,
+  });
 
   const {
     data: processDefinitionData,
@@ -344,10 +349,7 @@ const TopPanel: React.FC = observer(() => {
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount({
-          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
-          isRootNodeSelected,
-        }) > 1 && (
+        selectedRunningInstanceCount > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       {modificationsStore.state.status === 'adding-token' &&
@@ -429,6 +431,14 @@ const TopPanel: React.FC = observer(() => {
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
                 highlightedFlowNodeIds={highlightedSequenceFlowIds}
+                nonSelectableNodeTooltipText={
+                  isModificationModeEnabled
+                    ? 'Modification is not supported for this flow node.'
+                    : undefined
+                }
+                hasOuterBorderOnSelection={
+                  !isModificationModeEnabled || selectedRunningInstanceCount > 1
+                }
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
