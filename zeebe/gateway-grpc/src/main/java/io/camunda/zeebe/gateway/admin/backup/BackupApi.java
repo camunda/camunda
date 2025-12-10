@@ -27,14 +27,12 @@ public interface BackupApi {
   CompletionStage<Long> takeBackup(long backupId);
 
   /**
-   * Triggers backup on all partitions based on the current timestamp. Optionally, supply an offset
-   * to maintain backupId consistency if another form of backup identifiers was initially supplied.
-   * Returned future is completed successfully after all partitions have processed the request.
-   * Returned future fails if the request was not processed by at least one partition.
+   * Triggers backup on all partitions using the current timestamp as the backupId. An optional
+   * offset can be added to the timestamp to maintain consistency with existing backup ID schemes
+   * (e.g., if migrating from a different timestamp format).
    *
-   * @param offset the offset that should be applied to the current timestamp in order to maintain
-   *     consistency
-   * @return the backupId
+   * @param offset the offset in milliseconds to add to the current timestamp; use 0 for no offset
+   * @return the generated backupId (current timestamp + offset)
    */
   CompletionStage<Long> takeOffsetBackup(long offset);
 

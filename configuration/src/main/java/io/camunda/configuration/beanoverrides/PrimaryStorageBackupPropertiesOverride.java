@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("broker | gateway")
+@Profile(value = {"broker", "gateway"})
 @DependsOn("unifiedConfigurationHelper")
 public class PrimaryStorageBackupPropertiesOverride {
 
