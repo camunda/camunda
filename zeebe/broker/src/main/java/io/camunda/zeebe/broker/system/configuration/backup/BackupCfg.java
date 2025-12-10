@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backup;
 
+import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import java.time.Duration;
 
 public class BackupCfg implements ConfigurationEntry {
 
@@ -16,9 +18,15 @@ public class BackupCfg implements ConfigurationEntry {
 
   private S3BackupStoreConfig s3 = new S3BackupStoreConfig();
   private GcsBackupStoreConfig gcs = new GcsBackupStoreConfig();
-
   private AzureBackupStoreConfig azure = new AzureBackupStoreConfig();
   private FilesystemBackupStoreConfig filesystem = new FilesystemBackupStoreConfig();
+
+  private BackupSchedulerRetentionCfg retention = new BackupSchedulerRetentionCfg();
+  private boolean continuous = false;
+  private boolean required = false;
+  private String schedule;
+  private Duration checkpointInterval;
+  private long offset = 0L;
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -70,13 +78,77 @@ public class BackupCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-    return switch (store) {
-      case NONE -> "BackupStoreCfg{" + "store=" + store + '}';
-      case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
-      case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + '}';
-      case AZURE -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
-      case FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
-    };
+    final StringBuilder sb = new StringBuilder("BackupStoreCfg{");
+    sb.append("store=").append(store);
+    switch (store) {
+      case S3 -> sb.append(", s3=").append(s3);
+      case GCS -> sb.append(", gcs=").append(gcs);
+      case AZURE -> sb.append(", azure=").append(azure);
+      case FILESYSTEM -> sb.append(", filesystem=").append(filesystem);
+      default -> {}
+    }
+    sb.append(", continuous=")
+        .append(continuous)
+        .append(", required=")
+        .append(required)
+        .append(", schedule=")
+        .append(schedule)
+        .append(", checkpointInterval=")
+        .append(checkpointInterval)
+        .append(", offset=")
+        .append(offset)
+        .append(", retention=")
+        .append(retention)
+        .append('}');
+    return sb.toString();
+  }
+
+  public boolean isContinuous() {
+    return continuous;
+  }
+
+  public void setContinuous(final boolean continuous) {
+    this.continuous = continuous;
+  }
+
+  public Schedule getSchedule() {
+    return Schedule.parseSchedule(schedule);
+  }
+
+  public void setSchedule(final String schedule) {
+    this.schedule = schedule;
+  }
+
+  public Duration getCheckpointInterval() {
+    return checkpointInterval;
+  }
+
+  public void setCheckpointInterval(final Duration checkpointInterval) {
+    this.checkpointInterval = checkpointInterval;
+  }
+
+  public long getOffset() {
+    return offset;
+  }
+
+  public void setOffset(final long offset) {
+    this.offset = offset;
+  }
+
+  public boolean isRequired() {
+    return required;
+  }
+
+  public void setRequired(final boolean required) {
+    this.required = required;
+  }
+
+  public BackupSchedulerRetentionCfg getRetention() {
+    return retention;
+  }
+
+  public void setRetention(final BackupSchedulerRetentionCfg retention) {
+    this.retention = retention;
   }
 
   public enum BackupStoreType {

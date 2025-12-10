@@ -803,6 +803,123 @@ final class SystemContextTest {
             "Initial contact points must be configured when cluster size is greater than 1.");
   }
 
+  @Test
+  void shouldThrowValidationErrorWhenBackupScheduleIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(true);
+    backupCfg.setRequired(true);
+    backupCfg.setSchedule("invalid-schedule");
+
+    // when/then
+    assertThatThrownBy(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Invalid expression for schedule: must be one of CRON, ISO8601, NONE or AUTO. Given: invalid-schedule");
+  }
+
+  @Test
+  void shouldThrowValidationErrorWhenBackupRetentionScheduleIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(true);
+    backupCfg.setRequired(true);
+    backupCfg.setSchedule("PT10M");
+    backupCfg.getRetention().setCleanupSchedule("invalid-schedule");
+
+    // when/then
+    assertThatThrownBy(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Invalid expression for schedule: must be one of CRON, ISO8601, NONE or AUTO. Given: invalid-schedule");
+  }
+
+  @Test
+  void shouldNotThrowValidationErrorWhenRequiredIsFalse() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(true);
+    backupCfg.setRequired(false);
+
+    // when/then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldNotThrowValidationErrorWhenRequiredIsFalseWithNoValues() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(true);
+    backupCfg.setRequired(false);
+    backupCfg.setSchedule("PT10M");
+    backupCfg.getRetention().setCleanupSchedule("invalid-schedule");
+
+    // when/then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldNotThrowValidationErrorWhenContinuousIsFalse() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(false);
+    backupCfg.setRequired(true);
+    backupCfg.setSchedule("PT10M");
+    backupCfg.getRetention().setCleanupSchedule("invalid-schedule");
+
+    // when/then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldNotThrowValidationErrorWhenNoScheduleProvidedAndIsRequired() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(true);
+    backupCfg.setRequired(false);
+    backupCfg.setSchedule(null);
+
+    // when/then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldThrowValidationErrorWhenNoScheduleProvidedAndIsRequired() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(true);
+    backupCfg.setRequired(true);
+    backupCfg.setSchedule(null);
+
+    // when/then
+    assertThatThrownBy(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Backup schedule is mandatory, none provided.");
+  }
+
+  @Test
+  void shouldThrowValidationErrorWhenNoRetentionScheduleProvidedAndIsRequired() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setContinuous(true);
+    backupCfg.setRequired(true);
+    backupCfg.setSchedule("PT10M");
+    backupCfg.getRetention().setCleanupSchedule(null);
+
+    // when/then
+    assertThatThrownBy(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Backup retention schedule is mandatory, none provided.");
+  }
+
   private GlobalListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {
     final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
     listenerCfg.setType(type);

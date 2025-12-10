@@ -644,6 +644,8 @@ public class BrokerBasedPropertiesOverride {
 
     // Migrate RocksDB configuration from new unified config to old broker config structure
     populateFromRocksDb(override, primaryStorage);
+
+    populateBackupScheduler(override, primaryStorage.getBackup());
   }
 
   private void populateFromRocksDb(
@@ -731,6 +733,17 @@ public class BrokerBasedPropertiesOverride {
     filesystemBackupStoreConfig.setBasePath(filesystem.getBasePath());
 
     override.getData().getBackup().setFilesystem(filesystemBackupStoreConfig);
+  }
+
+  private void populateBackupScheduler(
+      final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
+    final BackupCfg backupCfg = override.getData().getBackup();
+    backupCfg.setRequired(primaryStorageBackup.isRequired());
+    backupCfg.setContinuous(primaryStorageBackup.isContinuous());
+    backupCfg.setSchedule(primaryStorageBackup.getSchedule());
+    backupCfg.setCheckpointInterval(primaryStorageBackup.getCheckpointInterval());
+    backupCfg.setOffset(primaryStorageBackup.getOffset());
+    backupCfg.setRetention(primaryStorageBackup.getRetention());
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {

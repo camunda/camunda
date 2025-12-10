@@ -8,6 +8,8 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerRetentionCfg;
+import java.time.Duration;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -16,6 +18,9 @@ public class PrimaryStorageBackup implements Cloneable {
 
   private static final Set<String> LEGACY_BROKER_STORE =
       Set.of("zeebe.broker.data.backup.store", "camunda.data.backup.store");
+
+  private static final Set<String> LEGACY_CONTINUOUS_BACKUPS_PROPERTIES =
+      Set.of("zeebe.broker.experimental.continuousBackups");
 
   /**
    * Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default
@@ -35,6 +40,12 @@ public class PrimaryStorageBackup implements Cloneable {
    */
   private BackupStoreType store = BackupStoreType.NONE;
 
+  private final boolean required = false;
+  private boolean continuous = false;
+  private String schedule;
+  private Duration checkpointInterval;
+  private long offset;
+
   /** Configuration for backup store AWS S3 */
   @NestedConfigurationProperty private S3 s3 = new S3();
 
@@ -46,6 +57,9 @@ public class PrimaryStorageBackup implements Cloneable {
 
   /** Configuration for backup store Azure */
   @NestedConfigurationProperty private Azure azure = new Azure();
+
+  @NestedConfigurationProperty
+  private BackupSchedulerRetentionCfg retention = new BackupSchedulerRetentionCfg();
 
   public S3 getS3() {
     return s3;
@@ -92,6 +106,66 @@ public class PrimaryStorageBackup implements Cloneable {
     this.store = store;
   }
 
+  public boolean isContinuous() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".continuous",
+        continuous,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        LEGACY_CONTINUOUS_BACKUPS_PROPERTIES);
+  }
+
+  public void setContinuous(final boolean continuous) {
+    this.continuous = continuous;
+  }
+
+  public boolean isRequired() {
+    return required;
+  }
+
+  public String getSchedule() {
+    return schedule;
+  }
+
+  public void setSchedule(final String schedule) {
+    this.schedule = schedule;
+  }
+
+  public Duration getCheckpointInterval() {
+    return checkpointInterval;
+  }
+
+  public void setCheckpointInterval(final Duration checkpointInterval) {
+    this.checkpointInterval = checkpointInterval;
+  }
+
+  public long getOffset() {
+    return offset;
+  }
+
+  public void setOffset(final long offset) {
+    this.offset = offset;
+  }
+
+  @Override
+  public PrimaryStorageBackup clone() {
+    try {
+      final PrimaryStorageBackup clone = (PrimaryStorageBackup) super.clone();
+      // TODO: copy mutable state here, so the clone can't change the internals of the original
+      return clone;
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError();
+    }
+  }
+
+  public BackupSchedulerRetentionCfg getRetention() {
+    return retention;
+  }
+
+  public void setRetention(final BackupSchedulerRetentionCfg retention) {
+    this.retention = retention;
+  }
+
   public enum BackupStoreType {
     /**
      * When type = S3, {@link io.camunda.zeebe.backup.s3.S3BackupStore} will be used as the backup
@@ -116,6 +190,6 @@ public class PrimaryStorageBackup implements Cloneable {
     FILESYSTEM,
 
     /** Set type = NONE when no backup store is available. No backup will be taken. */
-    NONE
+    NONE;
   }
 }
