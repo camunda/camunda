@@ -46,9 +46,11 @@ public class ConditionalEventController {
 
   private CompletableFuture<ResponseEntity<Object>> evaluateConditionalEvent(
       final ConditionalEventServices.ConditionalEventCreateRequest createRequest) {
-    return conditionalEventServices
-        .withAuthentication(authenticationProvider.getCamundaAuthentication())
-        .evaluateConditionalEvent(createRequest)
-        .thenApply(ResponseMapper::toConditionalEvaluationResponse);
+    return RequestMapper.executeServiceMethod(
+        () ->
+            conditionalEventServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .evaluateConditionalEvent(createRequest),
+        ResponseMapper::toConditionalEvaluationResponse);
   }
 }

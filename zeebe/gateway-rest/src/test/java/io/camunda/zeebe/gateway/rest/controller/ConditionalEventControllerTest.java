@@ -19,6 +19,7 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalEventServices;
 import io.camunda.service.ConditionalEventServices.ConditionalEventCreateRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.concurrent.CompletableFuture;
@@ -193,7 +194,9 @@ public class ConditionalEventControllerTest extends RestControllerTest {
 
     when(conditionalEventServices.evaluateConditionalEvent(
             any(ConditionalEventCreateRequest.class)))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException(expectedError)));
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(expectedError, ServiceException.Status.INVALID_ARGUMENT)));
 
     final var request =
         """
@@ -208,7 +211,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
             """
         {
             "type":"about:blank",
-            "title":"Bad Request",
+            "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"%s",
             "instance":"/v2/conditionals"
