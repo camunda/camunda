@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
+import io.camunda.zeebe.backup.testkit.StoringBackupIndex;
 import java.nio.file.NoSuchFileException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -26,7 +27,7 @@ public class GcsBackupStoreIT {
   @Container private static final GcsContainer GCS = new GcsContainer();
 
   @Nested
-  final class WithBasePath implements BackupStoreTestKit {
+  final class WithBasePath implements BackupStoreTestKit, StoringBackupIndex {
     private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
     private GcsBackupStore store;
