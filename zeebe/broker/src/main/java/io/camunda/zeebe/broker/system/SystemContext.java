@@ -21,12 +21,14 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -49,6 +51,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -225,6 +228,10 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getBatchOperations)
         .ifPresent(c -> validateBatchOperationsConfig(c));
+
+    Optional.of(experimental)
+        .map(ExperimentalCfg::getRocksdb)
+        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -436,6 +443,10 @@ public final class SystemContext {
         security.getCertificateChainPath(),
         security.getPrivateKeyPath(),
         security.getKeyStore().getFilePath());
+  }
+
+  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
+    RocksDbSharedCache.validateRocksDbMemory(rocksdbCfg, partitionsCount);
   }
 
   public ActorScheduler getScheduler() {

@@ -61,11 +61,9 @@ public final class StateControllerImplTest {
   private final AtomixRecordEntrySupplier emptyEntrySupplier = l -> Optional.empty();
   private final AtomicReference<AtomixRecordEntrySupplier> atomixRecordEntrySupplier =
       new AtomicReference<>(indexedRaftLogEntry);
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources;
 
   @Before
   public void setup() throws IOException {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     final var meterRegistry = new SimpleMeterRegistry();
     store =
         new FileBasedSnapshotStore(
@@ -79,7 +77,7 @@ public final class StateControllerImplTest {
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");
     snapshotController =
         new StateControllerImpl(
-            dbFactoryResources.factory,
+            DefaultZeebeDbFactory.defaultFactory(),
             store,
             runtimeDirectory,
             l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),
@@ -88,7 +86,6 @@ public final class StateControllerImplTest {
             store);
 
     autoCloseableRule.manage(snapshotController);
-    autoCloseableRule.manage(dbFactoryResources);
   }
 
   @Test

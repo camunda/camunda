@@ -105,12 +105,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.rocksdb</groupId>
-      <artifactId>rocksdbjni</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>
       <version>${project.version}</version>

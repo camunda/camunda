@@ -23,8 +23,6 @@ public class RocksDb {
       Set.of("zeebe.broker.experimental.rocksdb.accessMetrics");
   private static final Set<String> LEGACY_MEMORY_LIMIT_PROPERTIES =
       Set.of("zeebe.broker.experimental.rocksdb.memoryLimit");
-  private static final Set<String> LEGACY_MEMORY_ALLOCATION_STRATEGY_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.memoryAllocationStrategy");
   private static final Set<String> LEGACY_MAX_OPEN_FILES_PROPERTIES =
       Set.of("zeebe.broker.experimental.rocksdb.maxOpenFiles");
   private static final Set<String> LEGACY_MAX_WRITE_BUFFER_NUMBER_PROPERTIES =
@@ -174,12 +172,7 @@ public class RocksDb {
   }
 
   public MemoryAllocationStrategy getMemoryAllocationStrategy() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".memory-allocation-strategy",
-        memoryAllocationStrategy,
-        MemoryAllocationStrategy.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MEMORY_ALLOCATION_STRATEGY_PROPERTIES);
+    return memoryAllocationStrategy;
   }
 
   public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {

@@ -8,8 +8,6 @@
 
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -28,56 +26,33 @@ import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 public class MigrationTransitionStepTest {
 
-  static {
-    RocksDB.loadLibrary();
-  }
-
   @TempDir Path tempDir;
+  ZeebeRocksDbFactory<?> factory =
+      new ZeebeRocksDbFactory<ZbColumnFamilies>(
+          new RocksDbConfiguration(),
+          new ConsistencyChecksSettings(),
+          new AccessMetricsConfiguration(Kind.NONE, 1),
+          SimpleMeterRegistry::new);
+
   @AutoClose ZeebeDb zeebeDb;
   TestPartitionTransitionContext context;
   DbMigrationState migrationState;
-  private LRUCache lruCache;
-  private WriteBufferManager writeBufferManager;
-  private ZeebeRocksDbFactory<?> factory;
 
   @BeforeEach
   void setup() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
-    final int defaultPartitionCount = 3;
-    factory =
-        new ZeebeRocksDbFactory<ZbColumnFamilies>(
-            new RocksDbConfiguration(),
-            new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
-            defaultPartitionCount);
-
     zeebeDb = factory.createDb(tempDir.toFile());
     context = new TestPartitionTransitionContext();
     context.setZeebeDb(zeebeDb);
     final var transationContext = zeebeDb.createContext();
     migrationState = new DbMigrationState(zeebeDb, transationContext);
-  }
-
-  @AfterEach
-  void tearDown() {
-    writeBufferManager.close();
-    lruCache.close();
   }
 
   @Test
