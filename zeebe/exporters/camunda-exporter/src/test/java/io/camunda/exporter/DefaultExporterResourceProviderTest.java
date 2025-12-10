@@ -161,7 +161,8 @@ public class DefaultExporterResourceProviderTest {
         Set.of(
             ValueType.BATCH_OPERATION_CREATION,
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            ValueType.PROCESS_INSTANCE_MODIFICATION);
+            ValueType.PROCESS_INSTANCE_MODIFICATION,
+            ValueType.PROCESS_INSTANCE_CREATION);
 
     // Verify that all expected AuditLogHandler value types are present
     assertThat(
