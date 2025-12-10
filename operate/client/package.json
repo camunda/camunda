@@ -78,7 +78,7 @@
     "@types/lodash": "4.17.16",
     "@types/mixpanel-browser": "2.50.2",
     "@types/node": "20.16.15",
-    "@types/react": "18.3.20",
+    "@types/react": "18.3.27",
     "@types/react-dom": "18.3.6",
     "@types/react-transition-group": "4.4.12",
     "cross-env": "^7.0.3",
@@ -123,6 +123,18 @@
   },
   "resolutions": {
     "react-scripts/postcss-preset-env/postcss-custom-properties": "^14.0.0",
-    "@testing-library/dom": "10.4.0"
+    "@testing-library/dom": "10.4.0",
+    "@types/react": "18.3.27",
+    "@carbon/colors": "11.22.0",
+    "@carbon/feature-flags": "0.20.0",
+    "@carbon/grid": "11.27.0",
+    "@carbon/icon-helpers": "10.48.0",
+    "@carbon/icons-react": "11.42.0",
+    "@carbon/icons": "11.49.0",
+    "@carbon/layout": "11.26.0",
+    "@carbon/motion": "11.22.0",
+    "@carbon/styles": "1.58.0",
+    "@carbon/themes": "11.40.0",
+    "@carbon/type": "11.31.0"
   }
 }
