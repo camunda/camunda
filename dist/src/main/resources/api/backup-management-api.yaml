@@ -70,20 +70,39 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
-  /backupRuntime/{backupIdOrPrefixOrCheckpointType}:
+  /backupRuntime/{backupIdOrPrefix}:
     get:
       summary: Get information of a runtime backup
       description: A detailed information of the backup with the give backup id.
       parameters:
-        - $ref: '#/components/parameters/BackupIdOrPrefixOrCheckpointType'
+        - $ref: '#/components/parameters/BackupIdOrPrefix'
       responses:
         '200':
-          $ref: '#/components/responses/BackupStatusOrListOrCheckpointState'
+          $ref: '#/components/responses/BackupStatusOrList'
         '400':
           description: Backup is not enabled or configured on the brokers
           $ref: '#/components/responses/Error'
         '404':
           description: A backup with given backupId does not exist
+          $ref: '#/components/responses/Error'
+        '500':
+          description: Internal Error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
+          $ref: '#/components/responses/Error'
+  /backupRuntime/state:
+    get:
+      summary: Get information about the current checkpoint and backup state of the cluster
+      description: A detailed information of the backup with the give backup id.
+      responses:
+        '200':
+          $ref: '#/components/responses/CheckpointState'
+        '400':
+          description: Backup is not enabled or configured on the brokers
           $ref: '#/components/responses/Error'
         '500':
           description: Internal Error
@@ -218,18 +237,15 @@ components:
       description: Id of the backup
       schema:
         $ref: '#/components/schemas/BackupId'
-    BackupIdOrPrefixOrCheckpointType:
-      name: backupIdOrPrefixOrCheckpointType
+    BackupIdOrPrefix:
+      name: backupIdOrPrefix
       required: true
       in: path
-      description: |
-        A prefix of ids ending with '*', or a full backup id. Defaults to '*', matching all backup ids.
-        Alternatively, the value can be 'backup' or 'checkpoint' to query for the checkpoint state.
+      description: A prefix of ids ending with '*', or a full backup id. Defaults to '*', matching all backup ids.
       schema:
         oneOf:
           - $ref: '#/components/schemas/BackupId'
           - $ref: '#/components/schemas/BackupIdPrefix'
-          - $ref: '#/components/schemas/CheckpointRequestType'
 
   responses:
     Error:
@@ -238,21 +254,18 @@ components:
         application/json:
           schema:
             "$ref": "#/components/schemas/Error"
-    BackupStatusOrListOrCheckpointState:
+    BackupStatusOrList:
       description: |
-        Status of a single backup or list of statuses when querying for multiple backups. When querying
-        for a checkpoint state, the response contains the the earliest checkpoint in the cluster, alongside
-        the checkpoint state per partition.
+        Status of a single backup or list of statuses when querying for multiple backups
       content:
         application/json:
           schema:
             oneOf:
               - $ref: '#/components/schemas/BackupList'
               - $ref: '#/components/schemas/BackupInfo'
-              - $ref: '#/components/schemas/CheckpointState'
     BackupList:
       description: |
-        List of all available backups.
+       List of all available backups.
       content:
         application/json:
           schema:
@@ -369,33 +382,6 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/BackupInfo'
-    CheckpointRequestType:
-      title: Checkpoint Request Type
-      description: The type of checkpoint to query.
-      type: string
-      enum:
-        - backup
-        - checkpoint
-      example: backup
-    CheckpointType:
-      title: Checkpoint Type
-      description: The type of the checkpoint.
-      type: string
-      enum:
-        - MANUAL_BACKUP
-        - SCHEDULED_BACKUP
-        - MARKER
-      example: SCHEDULED_BACKUP
-    CheckpointId:
-      title: Checkpoint ID
-      description: |
-        The ID of the latest checkpoint. The ID of the checkpoint must be a positive numerical value.
-        As checkpoints are logically ordered by their IDs (ascending), each successive checkpoint
-        must use a higher ID than the previous one.
-      type: integer
-      format: int64
-      example: 1
-      minimum: 0
 
     BackupInfo:
       title: Backup Info
@@ -592,11 +578,14 @@ components:
         Information about the checkpoint state for the cluster.
       type: object
       properties:
-          checkpointState:
-            $ref: '#/components/schemas/PartitionCheckpointState'
           checkpointStates:
             type: array
-            description: List of checkpoint states per partition
+            description: List of partition checkpoint states
+            items:
+              $ref: '#/components/schemas/PartitionCheckpointState'
+          backupStates:
+            type: array
+            description: List of partition backup states
             items:
               $ref: '#/components/schemas/PartitionCheckpointState'
 
@@ -623,3 +612,53 @@ components:
           type: integer
           format: int64
           example: 1765208671134
+
+    PartitionBackupState:
+      title: Partition Checkpoint State
+      description: |
+        Detailed information about the Backup state for a given partition.
+      type: object
+      properties:
+        checkpointId:
+          allOf:
+            - $ref: '#/components/schemas/CheckpointId'
+        checkpointType:
+          allOf:
+            - $ref: '#/components/schemas/BackupType'
+        partitionId:
+          allOf:
+            - $ref: '#/components/schemas/PartitionId'
+        checkpointPosition:
+          type: integer
+          format: int64
+          example: 1500
+        checkpointTimestamp:
+          type: integer
+          format: int64
+          example: 1765208671134
+
+    BackupType:
+      title: Backup Type
+      description: The type of the backup.
+      type: string
+      enum:
+        - MANUAL_BACKUP
+        - SCHEDULED_BACKUP
+      example: SCHEDULED_BACKUP
+    CheckpointType:
+      title: Checkpoint Type
+      description: The type of the checkpoint.
+      type: string
+      enum:
+        - MARKER
+      example: MARKER
+    CheckpointId:
+      title: Checkpoint ID
+      description: |
+        The ID of the latest checkpoint. The ID of the checkpoint must be a positive numerical value.
+        As checkpoints are logically ordered by their IDs (ascending), each successive checkpoint
+        must use a higher ID than the previous one.
+      type: integer
+      format: int64
+      example: 1
+      minimum: 0

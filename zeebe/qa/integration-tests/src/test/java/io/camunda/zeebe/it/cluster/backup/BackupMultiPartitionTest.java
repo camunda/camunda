@@ -389,7 +389,7 @@ class BackupMultiPartitionTest {
   private CheckpointStateResponse getCheckpointState()
       throws InterruptedException, ExecutionException, TimeoutException {
     return backupRequestHandler
-        .getCheckpointState(CheckpointType.MANUAL_BACKUP)
+        .getCheckpointState()
         .toCompletableFuture()
         .get(30, TimeUnit.SECONDS);
   }

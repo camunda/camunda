@@ -134,7 +134,7 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   @Override
-  public CompletionStage<CheckpointStateResponse> getCheckpointState(final CheckpointType type) {
+  public CompletionStage<CheckpointStateResponse> getCheckpointState() {
     return checkTopologyComplete()
         .thenCompose(
             topology -> {

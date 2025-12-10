@@ -11,6 +11,7 @@ import io.camunda.zeebe.shared.profiles.ProfileStandaloneBrokerOrGateway;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
+import org.springframework.boot.actuate.endpoint.annotation.Selector.Match;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
@@ -43,8 +44,9 @@ public final class BackupEndpointStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(@Selector final String prefixOrIdOrType) {
-    return backupEndpoint.query(prefixOrIdOrType);
+  public WebEndpointResponse<?> query(
+      @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
+    return backupEndpoint.query(arguments);
   }
 
   @DeleteOperation

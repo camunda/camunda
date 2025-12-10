@@ -24,7 +24,6 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
@@ -36,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
+import org.springframework.boot.actuate.endpoint.annotation.Selector.Match;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
@@ -100,23 +100,27 @@ public final class BackupEndpoint {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(@Selector final String prefixOrIdOrType) {
-    if (BackupApi.CHECKPOINT.equals(prefixOrIdOrType)
-        || BackupApi.BACKUP.equals(prefixOrIdOrType)) {
-      return state(prefixOrIdOrType);
+  public WebEndpointResponse<?> query(
+      @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
+    if (arguments.length != 1) {
+      return listAll();
     }
-    if (prefixOrIdOrType.endsWith(BackupApi.WILDCARD)) {
-      return listPrefix(prefixOrIdOrType);
+    final String argument = arguments[0];
+    if (BackupApi.STATE.equals(argument)) {
+      return state();
+    }
+    if (argument.endsWith(BackupApi.WILDCARD)) {
+      return listPrefix(argument);
     }
     final long id;
     try {
-      id = Long.parseLong(prefixOrIdOrType);
+      id = Long.parseLong(argument);
     } catch (final NumberFormatException e) {
       return new WebEndpointResponse<>(
           new Error()
               .message(
                   "Expected a backup ID or prefix ending with '*', but got '%s'."
-                      .formatted(prefixOrIdOrType)),
+                      .formatted(argument)),
           400);
     }
     return status(id);
@@ -132,11 +136,9 @@ public final class BackupEndpoint {
     }
   }
 
-  private WebEndpointResponse<?> state(final String type) {
+  private WebEndpointResponse<?> state() {
     try {
-      final var cpType =
-          BackupApi.BACKUP.equals(type) ? CheckpointType.SCHEDULED_BACKUP : CheckpointType.MARKER;
-      final var checkpointState = api.getCheckpointState(cpType).toCompletableFuture().join();
+      final var checkpointState = api.getCheckpointState().toCompletableFuture().join();
       return new WebEndpointResponse<>(checkpointState);
     } catch (final Exception e) {
       return mapErrorResponse(e);

@@ -274,7 +274,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getBody())
@@ -294,7 +294,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.completedFuture(backupStatus)).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getStatus()).isEqualTo(404);
@@ -314,7 +314,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
 
       // when
-      final var response = endpoint.query("1");
+      final var response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -369,7 +369,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getBody())
@@ -417,7 +417,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getBody())
@@ -685,11 +685,10 @@ final class BackupEndpointTest {
       stateResponse.setCheckpointStates(
           Set.of(new PartitionCheckpointState(1, 1L, CheckpointType.MARKER, 20L, 10L)));
 
-      when(api.getCheckpointState(CheckpointType.MARKER))
-          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("checkpoint");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
 
       // then
       assertThat(response.getBody())
@@ -707,11 +706,10 @@ final class BackupEndpointTest {
       stateResponse.setBackupStates(
           Set.of(new PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
 
-      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
-          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("backup");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
 
       // then
       assertThat(response.getBody())
@@ -730,11 +728,10 @@ final class BackupEndpointTest {
           Set.of(new PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
       stateResponse.setCheckpointStates(
           Set.of(new PartitionCheckpointState(1, 2L, CheckpointType.MARKER, 30L, 50L)));
-      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
-          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("backup");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
 
       // then
       assertThat(response.getBody())
@@ -750,11 +747,10 @@ final class BackupEndpointTest {
 
       final var stateResponse = new CheckpointStateResponse();
 
-      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
-          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("backup");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
 
       // then
       assertThat(response.getBody())
@@ -787,11 +783,10 @@ final class BackupEndpointTest {
       stateResponse.setCheckpointStates(Set.of(p1State, p2State, p3State));
       stateResponse.setBackupStates(Set.of(p1BackupState, p2BackupState, p3BackupState));
 
-      when(api.getCheckpointState(CheckpointType.SCHEDULED_BACKUP))
-          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("backup");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
 
       // then
       assertThat(response.getBody())
