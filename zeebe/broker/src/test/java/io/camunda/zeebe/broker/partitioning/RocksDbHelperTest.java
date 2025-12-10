@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.PartitionManagerImpl.MINIMUM_PARTITION_MEMORY_LIMIT;
+import static io.camunda.zeebe.broker.partitioning.RocksDbHelper.MINIMUM_PARTITION_MEMORY_LIMIT;
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -19,7 +19,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.util.unit.DataSize;
 
-class PartitionManagerImplTest {
+class RocksDbHelperTest {
   private BrokerCfg brokerCfg;
 
   @BeforeEach
@@ -58,7 +58,7 @@ class PartitionManagerImplTest {
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
+                try (final var ignored = RocksDbHelper.allocateSharedCache(brokerCfg)) {
                   // ensure resources are closed
                 }
               })
@@ -79,7 +79,7 @@ class PartitionManagerImplTest {
       final var throwable =
           catchThrowable(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
+                try (final var ignored = RocksDbHelper.allocateSharedCache(brokerCfg)) {
                   // we expect this to fail, but if it doesn't, the resources are closed
                 }
               });
@@ -105,7 +105,7 @@ class PartitionManagerImplTest {
       final var throwable =
           catchThrowable(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
+                try (final var ignored = RocksDbHelper.allocateSharedCache(brokerCfg)) {
                   // we expect this to fail, but if it doesn't, the resources are closed
                 }
               });
@@ -136,7 +136,7 @@ class PartitionManagerImplTest {
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
+                try (final var ignored = RocksDbHelper.allocateSharedCache(brokerCfg)) {
                   // ensure resources are closed
                 }
               })
