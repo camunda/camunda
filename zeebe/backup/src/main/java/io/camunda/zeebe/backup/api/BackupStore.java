@@ -42,6 +42,27 @@ public interface BackupStore {
    */
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
 
+  /**
+   * Stores a given {@link BackupIndexFile}.
+   *
+   * @param indexFile an opaque holder of the actual {@link BackupIndex}, as retrieved via {@link
+   *     #restoreIndex(BackupIndexIdentifier)}.
+   * @implNote Some implementations may fail the future with {@link
+   *     java.util.ConcurrentModificationException} if they detect that the file has unexpectedly
+   *     changed in the meantime. To allow subsequent modifications, the internal state of the given
+   *     {@link BackupIndexFile} may be modified.
+   */
+  CompletableFuture<Void> storeIndex(BackupIndexFile indexFile);
+
+  /**
+   * Makes the stored {@link BackupIndexFile} available locally, allowing callers to construct the
+   * actual {@link BackupIndex} from it.
+   *
+   * @implNote Some implementations may store metadata in the returned {@link BackupIndexFile} that
+   *     allows them to detect concurrent modifications during {@link #storeIndex(BackupIndexFile)}.
+   */
+  CompletableFuture<BackupIndexFile> restoreIndex(BackupIndexIdentifier id);
+
   CompletableFuture<Void> closeAsync();
 
   default BackupStore logging(final Logger logger, final Level level) {
