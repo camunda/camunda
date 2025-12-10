@@ -112,6 +112,7 @@ public class ElasticsearchExporterConfiguration {
       case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
       case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
       case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
+      case EXPRESSION -> index.expression;
       default -> false;
     };
   }
