@@ -46,9 +46,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.previousVersion>8.8.0</project.previousVersion>
 
-    <zeebe.version>8.8.5</zeebe.version>
-    <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <identity.version>8.8.2</identity.version>
+    <zeebe.version>${project.version}</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 

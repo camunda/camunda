@@ -32,6 +32,10 @@ on:
         description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven Central, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production. This flag acts separately to dryRun flag and should be used with dryRun=false. If both flags are active then dryRun takes precedence.'
         type: boolean
         default: false
+      includeOptimize:
+        description: 'Whether to include Optimize in the release process. When true, Optimize is included in Maven prepare/perform steps. Defaults to false for backward compatibility.'
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       releaseBranch:
@@ -60,6 +64,10 @@ on:
         description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven Central, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production. This flag acts separately to dryRun flag and should be used with dryRun=false. If both flags are active then dryRun takes precedence.'
         type: boolean
         default: false
+      includeOptimize:
+        description: 'Whether to include Optimize in the release process. When true, Optimize is included in Maven prepare/perform steps. Defaults to false for backward compatibility.'
+        type: boolean
+        default: false
 defaults:
   run:
     shell: bash
@@ -69,6 +77,7 @@ env:
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   RELEASE_TAG: ${{ inputs.releaseProcessDryRun && format('dryrun-{0}', inputs.releaseVersion) || inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
+  PLATFORMS: "linux/amd64,linux/arm64"
 jobs:
   # Release job performs Maven prepare and perform release operations, managing release artifacts and repository changes.
   # Flags impact:
@@ -171,6 +180,16 @@ jobs:
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
+          
+          # Conditionally set profile flags based on includeOptimize input
+          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
+            PROFILE_FLAGS=""
+            ARGUMENTS_PROFILE=""
+          else
+            PROFILE_FLAGS="-P\!include-optimize"
+            ARGUMENTS_PROFILE="-P!include-optimize"
+          fi
+          
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -181,8 +200,8 @@ jobs:
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
             -DpreparationGoals="" \
-            -P\!include-optimize \
-            -Darguments='-P!include-optimize'
+            ${PROFILE_FLAGS} \
+            -Darguments="${ARGUMENTS_PROFILE}"
 
       - name: Maven Perform Release
         id: maven-perform-release
@@ -198,6 +217,15 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
+          # Conditionally set profile flags based on includeOptimize input
+          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
+            PROFILE_FLAGS=""
+            ARGUMENTS_PROFILE=""
+          else
+            PROFILE_FLAGS="-P\!include-optimize"
+            ARGUMENTS_PROFILE="-P!include-optimize"
+          fi
+
           # shellcheck disable=SC2016
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -205,8 +233,8 @@ jobs:
             -DlocalCheckout="${{ inputs.dryRun }}" \
             -DskipQaBuild=true \
             -P-autoFormat \
-            -P\!include-optimize \
-            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            ${PROFILE_FLAGS} \
+            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -215,6 +243,19 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+      - name: Debug Optimize Versions
+        if: ${{ inputs.includeOptimize && inputs.dryRun }}
+        run: |
+          echo "=== Optimize Version Information ==="
+          echo "Optimize project.version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout || echo "Failed to get Optimize version"
+          echo ""
+          echo "Zeebe version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=zeebe.version -q -DforceStdout || echo "Failed to get Zeebe version"
+          echo ""
+          echo "Identity version:"
+          ./mvnw help:effective-pom -pl optimize -DforceStdout | grep -oPm1 "(?<=<version.identity>)[^<]+" || echo "Failed to get Identity version"
+          echo ""
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
@@ -222,6 +263,12 @@ jobs:
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
           cp target/checkout/db/rdbms-schema/target/camunda-db-rdbms-schema-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
+          
+          # Include Optimize artifacts if Optimize is included in the release
+          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
+            cp target/checkout/optimize-distro/target/camunda-optimize-"${RELEASE_VERSION}"-production.tar.gz "${ARTIFACT_DIR}/"
+          fi
+          
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
@@ -278,6 +325,7 @@ jobs:
     name: Zeebe docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -287,7 +335,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
@@ -383,6 +430,7 @@ jobs:
     name: Operate Docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -392,7 +440,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
       DOCKER_IMAGE: camunda/operate
     steps:
@@ -491,6 +538,7 @@ jobs:
     name: Tasklist Docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -500,7 +548,6 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       DOCKER_IMAGE: camunda/tasklist
     steps:
@@ -594,11 +641,13 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  camunda-docker:
+  optimize-docker:
     needs: release
-    name: Camunda Docker Image Release
+    name: Optimize Docker Image Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: ${{ inputs.includeOptimize }}
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -608,7 +657,114 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
+      DOCKER_IMAGE: camunda/optimize
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Login to Minimus
+        uses: docker/login-action@v3
+        with:
+          registry: reg.mini.dev
+          username: minimus
+          password: ${{ steps.secrets.outputs.minimus-token }}
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Build Optimize Docker Image
+        uses: ./.github/actions/build-platform-docker
+        id: build-optimize-docker
+        with:
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          # pushes to local registry for verification prior pushing to remote
+          push: true
+          distball: camunda-optimize-${{ inputs.releaseVersion }}-production.tar.gz
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: optimize.Dockerfile
+          # turns on BuildKit debug logging
+          debug: 'true'
+      - name: Verify Optimize Docker image
+        uses: ./.github/actions/verify-platform-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-optimize-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: optimize.Dockerfile
+          goldenfile: optimize-docker-labels.golden.json
+      - name: Sync Optimize Docker Image to DockerHub
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+              ${{ steps.build-optimize-docker.outputs.image }}
+      - name: Sync Latest Optimize Docker Image to DockerHub
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:latest \
+              ${{ steps.build-optimize-docker.outputs.image }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  camunda-docker:
+    needs: release
+    name: Camunda Docker Image Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
@@ -737,7 +893,7 @@ jobs:
   # - Uses RELEASE_TAG for versioning (prefixed with 'dryrun-' when releaseProcessDryRun=true)
   # The job generates changelog, checksums artifacts, and determines pre-release status
   github:
-    needs: [release, zeebe-docker, operate-docker, tasklist-docker, camunda-docker]
+    needs: [release, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
     name: Github Release
     runs-on: ubuntu-latest
     # Minor releases take more time since a lot of issues are included in the changelog
@@ -865,7 +1021,7 @@ jobs:
   fossa-release:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -925,7 +1081,7 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release succeeded
     if: ${{ always() && (
@@ -934,6 +1090,7 @@ jobs:
       needs.zeebe-docker.result == 'success' &&
       needs.operate-docker.result == 'success' &&
       needs.tasklist-docker.result == 'success' &&
+      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
       (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
@@ -975,7 +1132,7 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release failed
     if: ${{ always() && (
@@ -984,6 +1141,7 @@ jobs:
         needs.zeebe-docker.result == 'failure' ||
         needs.operate-docker.result == 'failure' ||
         needs.tasklist-docker.result == 'failure' ||
+        needs.optimize-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
         needs.fossa-release.result == 'failure'
