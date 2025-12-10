@@ -101,12 +101,22 @@ public final class OpensearchUtil {
       final String id,
       final QueryType queryType,
       final String... fields) {
+    return getByIdOrSearchArchives(osClient, template, id, id, queryType, fields);
+  }
+
+  public static Map<String, Object> getByIdOrSearchArchives(
+      final RichOpenSearchClient osClient,
+      final TemplateDescriptor template,
+      final String id,
+      final String routing,
+      final QueryType queryType,
+      final String... fields) {
 
     // first we'll search using a get request in the runtime index
     // as that usually should be where the doc is and a get request will avoid
     // issues with the indexes not being refreshed yet
     final Optional<Map> maybeDoc =
-        osClient.doc().getWithRetries(template.getFullQualifiedName(), id, Map.class);
+        osClient.doc().getWithRetries(template.getFullQualifiedName(), id, routing, Map.class);
     if (maybeDoc.isPresent()) {
       return maybeDoc.get();
     }

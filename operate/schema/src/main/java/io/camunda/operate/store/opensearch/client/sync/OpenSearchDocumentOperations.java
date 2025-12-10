@@ -342,6 +342,16 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         });
   }
 
+  public <R> Optional<R> getWithRetries(
+      final String index, final String id, final String routing, final Class<R> entitiyClass) {
+    return executeWithRetries(
+        () -> {
+          final GetResponse<R> response =
+              openSearchClient.get(getRequest(index, id, routing), entitiyClass);
+          return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+        });
+  }
+
   public DeleteResponse delete(final String index, final String id) {
     final var deleteRequestBuilder = new DeleteRequest.Builder().index(index).id(id);
 
