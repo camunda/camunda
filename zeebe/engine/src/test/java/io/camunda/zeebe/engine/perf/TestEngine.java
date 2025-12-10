@@ -36,6 +36,7 @@ import org.junit.rules.TemporaryFolder;
 /** Helper class which should help to make it easy to create an engine for tests. */
 public final class TestEngine {
 
+  private static final long DEFAULT_DB_CACHE_SIZE = 512L * 1024 * 1024;
   private final StreamProcessingComposite streamProcessingComposite;
   private final TestStreams testStreams;
   private final int partitionCount;
@@ -47,7 +48,8 @@ public final class TestEngine {
       final TestContext testContext,
       final Consumer<StreamProcessorBuilder> processorConfiguration) {
     this.partitionCount = partitionCount;
-    zeebeDbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+    zeebeDbFactoryResources =
+        DefaultZeebeDbFactory.getDefaultFactoryResources(DEFAULT_DB_CACHE_SIZE);
     testStreams =
         new TestStreams(
             testContext.temporaryFolder(),

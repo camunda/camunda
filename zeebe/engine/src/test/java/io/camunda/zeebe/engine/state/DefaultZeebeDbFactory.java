@@ -37,6 +37,22 @@ public final class DefaultZeebeDbFactory {
     return new ZeebeDbFactoryResources(factory, sharedRocksDbResources);
   }
 
+  public static ZeebeDbFactoryResources getDefaultFactoryResources(final long cacheSize) {
+    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    final SharedRocksDbResources sharedRocksDbResources =
+        new SharedResourcesTestHelper().sharedResources(cacheSize);
+    final int defaultPartitionCount = 3;
+    final ZeebeDbFactory<ZbColumnFamilies> factory =
+        new ZeebeRocksDbFactory<>(
+            new RocksDbConfiguration(),
+            consistencyChecks,
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            SimpleMeterRegistry::new,
+            sharedRocksDbResources,
+            defaultPartitionCount);
+    return new ZeebeDbFactoryResources(factory, sharedRocksDbResources);
+  }
+
   public static class ZeebeDbFactoryResources implements AutoCloseable {
     public final ZeebeDbFactory<ZbColumnFamilies> factory;
     @AutoClose private final SharedRocksDbResources sharedRocksDbResources;

@@ -13,7 +13,7 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBufferManager;
 
 public class SharedResourcesTestHelper implements AutoCloseable {
-  public static final long DEFAULT_CACHE_SIZE = 64L * 1024 * 1024;
+  public static final long DEFAULT_CACHE_SIZE = 32L * 1024 * 1024;
   public static final long DEFAULT_WRITE_BUFFER_SIZE = DEFAULT_CACHE_SIZE / 4;
 
   static {
@@ -27,6 +27,13 @@ public class SharedResourcesTestHelper implements AutoCloseable {
     final WriteBufferManager sharedWbm =
         new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, sharedCache);
     sharedRocksDbResources = new SharedRocksDbResources(sharedCache, sharedWbm, DEFAULT_CACHE_SIZE);
+    return sharedRocksDbResources;
+  }
+
+  public SharedRocksDbResources sharedResources(final long cacheSize) {
+    final LRUCache sharedCache = new LRUCache(cacheSize, 8, false, 0.15);
+    final WriteBufferManager sharedWbm = new WriteBufferManager(cacheSize / 4, sharedCache);
+    sharedRocksDbResources = new SharedRocksDbResources(sharedCache, sharedWbm, cacheSize);
     return sharedRocksDbResources;
   }
 
