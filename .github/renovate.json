@@ -161,6 +161,23 @@
       "enabled": false
     },
     {
+      "description": "Skip lucene minor and patch in stable branches to avoid breaking changes.",
+      "matchBaseBranches": [
+        "/^stable\\/8\\.[6-8]/"
+      ],
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.apache.lucene**"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "enabled": false
+    },
+    {
       "matchManagers": [
         "maven"
       ],
