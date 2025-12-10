@@ -11,15 +11,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.record.value.StartedProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ConditionalStartedProcessInstanceValue;
 
 @JsonIgnoreProperties({
   /* These fields are inherited from ObjectValue; they have no purpose in exported JSON records*/
   "encodedLength",
   "empty"
 })
-public final class StartedProcessInstanceRecord extends ObjectValue
-    implements StartedProcessInstanceRecordValue {
+public final class ConditionalStartedProcessInstance extends ObjectValue
+    implements ConditionalStartedProcessInstanceValue {
 
   // Static StringValue keys to avoid memory waste
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
@@ -31,7 +31,7 @@ public final class StartedProcessInstanceRecord extends ObjectValue
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
 
-  public StartedProcessInstanceRecord() {
+  public ConditionalStartedProcessInstance() {
     super(2);
     declareProperty(processDefinitionKeyProp).declareProperty(processInstanceKeyProp);
   }
@@ -41,7 +41,7 @@ public final class StartedProcessInstanceRecord extends ObjectValue
     return processDefinitionKeyProp.getValue();
   }
 
-  public StartedProcessInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
+  public ConditionalStartedProcessInstance setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
@@ -51,17 +51,17 @@ public final class StartedProcessInstanceRecord extends ObjectValue
     return processInstanceKeyProp.getValue();
   }
 
-  public StartedProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
+  public ConditionalStartedProcessInstance setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
   /**
-   * Copies the values from another StartedProcessInstanceRecord.
+   * Copies the values from another ConditionalStartedProcessInstance.
    *
    * @param other the record to copy from
    */
-  public void copy(final StartedProcessInstanceRecord other) {
+  public void copy(final ConditionalStartedProcessInstance other) {
     setProcessDefinitionKey(other.getProcessDefinitionKey());
     setProcessInstanceKey(other.getProcessInstanceKey());
   }

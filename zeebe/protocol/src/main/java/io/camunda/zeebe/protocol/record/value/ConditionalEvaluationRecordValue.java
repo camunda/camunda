@@ -39,5 +39,5 @@ public interface ConditionalEvaluationRecordValue
   /**
    * @return the list of process instances that were started as a result of the evaluation
    */
-  List<StartedProcessInstanceRecordValue> getStartedProcessInstances();
+  List<ConditionalStartedProcessInstanceValue> getStartedProcessInstances();
 }

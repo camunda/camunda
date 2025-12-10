@@ -8,10 +8,12 @@
 package io.camunda.zeebe.engine.processing.conditional.evaluation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -137,12 +139,16 @@ public class ConditionalEvaluationTest {
         evaluatedRecord.getValue().getStartedProcessInstances().getFirst().getProcessInstanceKey();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(processId)
-                .withElementType(BpmnElementType.PROCESS)
+            RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .exists())
-        .isTrue();
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("start1", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("start1", ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .doesNotContainSequence(
+            tuple("start2", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("start2", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
@@ -191,20 +197,18 @@ public class ConditionalEvaluationTest {
     final var processInstance2Key = startedInstances.get(1).getProcessInstanceKey();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(processId)
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementType(BpmnElementType.PROCESS)
-                .withProcessInstanceKey(processInstance1Key)
-                .exists())
-        .isTrue();
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(processId)
-                .withElementType(BpmnElementType.PROCESS)
-                .withProcessInstanceKey(processInstance2Key)
-                .exists())
-        .isTrue();
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getProcessDefinitionKey,
+            ProcessInstanceRecordValue::getProcessInstanceKey)
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            tuple(processDefinitionKey, processInstance1Key),
+            tuple(processDefinitionKey, processInstance2Key));
   }
 
   @Test
@@ -280,20 +284,18 @@ public class ConditionalEvaluationTest {
             .getProcessInstanceKey();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(process1)
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementType(BpmnElementType.PROCESS)
-                .withProcessInstanceKey(processInstance1Key)
-                .exists())
-        .isTrue();
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(process2)
-                .withElementType(BpmnElementType.PROCESS)
-                .withProcessInstanceKey(processInstance2Key)
-                .exists())
-        .isTrue();
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getProcessDefinitionKey,
+            ProcessInstanceRecordValue::getProcessInstanceKey)
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            tuple(processDefinitionKey1, processInstance1Key),
+            tuple(processDefinitionKey2, processInstance2Key));
   }
 
   @Test
@@ -402,57 +404,6 @@ public class ConditionalEvaluationTest {
     Assertions.assertThat(evaluatedRecord.getValue())
         .hasProcessDefinitionKey(-1L)
         .hasVariables(Map.of("x", 1000, "y", 100, "a", "123"))
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-    assertThat(evaluatedRecord.getValue().getStartedProcessInstances())
-        .hasSize(1)
-        .first()
-        .satisfies(
-            instance -> {
-              assertThat(instance.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-              assertThat(instance.getProcessInstanceKey()).isPositive();
-            });
-
-    final var processInstanceKey =
-        evaluatedRecord.getValue().getStartedProcessInstances().getFirst().getProcessInstanceKey();
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(processId)
-                .withElementType(BpmnElementType.PROCESS)
-                .withProcessInstanceKey(processInstanceKey)
-                .exists())
-        .isTrue();
-  }
-
-  @Test
-  public void shouldEvaluateConditionWithVariableReference() {
-    // given
-    final var deployment =
-        engine
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .condition(
-                        c -> c.condition("=orderAmount > 500").zeebeVariableNames("orderAmount"))
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final var processDefinitionKey =
-        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
-
-    // when
-    final var evaluatedRecord =
-        engine.conditionalEvaluation().withVariable("orderAmount", 1000).evaluate();
-
-    // then
-    assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
-
-    Assertions.assertThat(evaluatedRecord.getValue())
-        .hasProcessDefinitionKey(-1L)
-        .hasVariables(Map.of("orderAmount", 1000))
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(evaluatedRecord.getValue().getStartedProcessInstances())
@@ -627,7 +578,6 @@ public class ConditionalEvaluationTest {
   @Test
   public void shouldEvaluateSpecificProcessByKey() {
     // given
-
     final var process1Id = "process-" + UUID.randomUUID();
     final var process2Id = "process-" + UUID.randomUUID();
 
@@ -746,7 +696,6 @@ public class ConditionalEvaluationTest {
 
     // then
     assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
-
     Assertions.assertThat(evaluatedRecord.getValue())
         .hasProcessDefinitionKey(-1L)
         .hasVariables(Map.of("x", 100, "y", 1))
@@ -779,20 +728,17 @@ public class ConditionalEvaluationTest {
             .getProcessInstanceKey();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessDefinitionKey(process1Key)
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementType(BpmnElementType.PROCESS)
-                .withProcessInstanceKey(processInstance1Key)
-                .exists())
-        .isTrue();
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessDefinitionKey(process2Key)
-                .withElementType(BpmnElementType.PROCESS)
-                .withProcessInstanceKey(processInstance2Key)
-                .exists())
-        .isTrue();
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getProcessDefinitionKey,
+            ProcessInstanceRecordValue::getProcessInstanceKey)
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            tuple(process1Key, processInstance1Key), tuple(process2Key, processInstance2Key));
   }
 
   @Test

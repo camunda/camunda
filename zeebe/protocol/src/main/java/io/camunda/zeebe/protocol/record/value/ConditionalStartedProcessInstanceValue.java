@@ -20,8 +20,8 @@ import org.immutables.value.Value;
 
 /** Represents a process instance that was started during conditional evaluation. */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableStartedProcessInstanceRecordValue.Builder.class)
-public interface StartedProcessInstanceRecordValue {
+@ImmutableProtocol(builder = ImmutableConditionalStartedProcessInstanceValue.Builder.class)
+public interface ConditionalStartedProcessInstanceValue {
   /**
    * @return the process definition key of the started instance
    */

@@ -18,7 +18,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
-import io.camunda.zeebe.protocol.record.value.StartedProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ConditionalStartedProcessInstanceValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +41,8 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final ArrayProperty<StartedProcessInstanceRecord> startedProcessInstancesProp =
-      new ArrayProperty<>(STARTED_PROCESS_INSTANCES_KEY, StartedProcessInstanceRecord::new);
+  private final ArrayProperty<ConditionalStartedProcessInstance> startedProcessInstancesProp =
+      new ArrayProperty<>(STARTED_PROCESS_INSTANCES_KEY, ConditionalStartedProcessInstance::new);
 
   public ConditionalEvaluationRecord() {
     super(4);
@@ -58,7 +58,7 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
     tenantIdProp.setValue(other.getTenantId());
 
     startedProcessInstancesProp.reset();
-    for (final StartedProcessInstanceRecord instance : other.startedProcessInstances()) {
+    for (final ConditionalStartedProcessInstance instance : other.startedProcessInstances()) {
       startedProcessInstancesProp.add().copy(instance);
     }
   }
@@ -74,9 +74,9 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<StartedProcessInstanceRecordValue> getStartedProcessInstances() {
+  public List<ConditionalStartedProcessInstanceValue> getStartedProcessInstances() {
     return StreamSupport.stream(startedProcessInstancesProp.spliterator(), false)
-        .map(StartedProcessInstanceRecordValue.class::cast)
+        .map(ConditionalStartedProcessInstanceValue.class::cast)
         .toList();
   }
 
@@ -112,7 +112,7 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
    * @return the array property of started process instances
    */
   @JsonIgnore
-  public ArrayProperty<StartedProcessInstanceRecord> startedProcessInstances() {
+  public ArrayProperty<ConditionalStartedProcessInstance> startedProcessInstances() {
     return startedProcessInstancesProp;
   }
 
