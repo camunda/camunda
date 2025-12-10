@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -31,10 +32,15 @@ import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
+import java.time.Instant;
 import java.util.List;
 import org.agrona.concurrent.BackoffIdleStrategy;
 
-public final class SyncStreamProcessor {
+public final class SyncStreamProcessor implements LogRecordAwaiter, HealthMonitorable {
+  Thread currentThread;
   private final int partitionId;
   private final LogStream logStream;
   private final CommandResponseWriter responseWriter;
@@ -61,7 +67,25 @@ public final class SyncStreamProcessor {
     this.recordValues = recordValues;
   }
 
-  long recover() {
+  public void startReplay() {
+    currentThread =
+        Thread.startVirtualThread(
+            () -> {
+              final var recoveredPosition = recover();
+              replay(recoveredPosition);
+            });
+  }
+
+  public void startProcessing() {
+    currentThread =
+        Thread.startVirtualThread(
+            () -> {
+              final var recoveredPosition = recover();
+              process(recoveredPosition);
+            });
+  }
+
+  private long recover() {
     final var batchReader = new LogStreamBatchReaderImpl(logStream.newLogStreamReader());
     final var processedPositionState = state.getLastProcessedPositionState();
 
@@ -80,7 +104,7 @@ public final class SyncStreamProcessor {
     }
   }
 
-  void replay(final long replayedPosition) throws InterruptedException {
+  private void replay(final long replayedPosition) {
     final var batchReader = new LogStreamBatchReaderImpl(logStream.newLogStreamReader());
     batchReader.seekToNextBatch(replayedPosition);
 
@@ -94,10 +118,11 @@ public final class SyncStreamProcessor {
         final var batch = batchReader.next();
         replayBatch(transactionContext, batch);
       }
+    } catch (final InterruptedException ignored) {
     }
   }
 
-  void process(final long replayedPosition) throws InterruptedException {
+  void process(final long replayedPosition) {
     final var entryReader = logStream.newLogStreamReader();
     entryReader.seek(replayedPosition);
     final var processedPositionState = state.getLastProcessedPositionState();
@@ -133,6 +158,8 @@ public final class SyncStreamProcessor {
         writeProcessingResponse(result);
         executeSideEffects(result);
       }
+    } catch (final InterruptedException ignored) {
+
     }
   }
 
@@ -296,6 +323,37 @@ public final class SyncStreamProcessor {
         idle.idle();
       }
     }
+  }
+
+  @Override
+  public void onRecordAvailable() {
+    notify();
+  }
+
+  @Override
+  public String componentName() {
+    return "StreamProcessor-%d".formatted(partitionId);
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    if (currentThread == null) {
+      return HealthReport.unhealthy(this).withMessage("Not yet started", Instant.now());
+    } else if (currentThread.isAlive()) {
+      return HealthReport.healthy(this);
+    } else {
+      return HealthReport.dead(this).withMessage("Stream processing failed", Instant.now());
+    }
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    throw new UnsupportedOperationException();
   }
 
   private interface SyncTransactionContext extends TransactionContext, AutoCloseable {
