@@ -136,13 +136,16 @@ const TopPanel: React.FC = observer(() => {
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
-  const {clearSelection, selectElement} = useProcessInstanceElementSelection();
+  const {clearSelection, selectElement, resolvedElementInstance} =
+    useProcessInstanceElementSelection();
 
   const isRootNodeSelected = useIsRootNodeSelected();
   const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
     totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
     isRootNodeSelected,
   });
+  const isSelectedElementInstanceRunning =
+    resolvedElementInstance?.state === 'ACTIVE';
 
   const {
     data: processDefinitionData,
@@ -350,9 +353,13 @@ const TopPanel: React.FC = observer(() => {
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        selectedRunningInstanceCount > 1 && (
-          <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
-        )}
+        (IS_ELEMENT_SELECTION_V2
+          ? isSelectedElementInstanceRunning && (
+              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+            )
+          : selectedRunningInstanceCount > 1 && (
+              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+            ))}
       {modificationsStore.state.status === 'adding-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -426,7 +433,7 @@ const TopPanel: React.FC = observer(() => {
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (
                     IS_ELEMENT_SELECTION_V2 ? (
-                    <ModificationDropdown />
+                      <ModificationDropdown />
                     ) : (
                       <ModificationDropdownV1 />
                     )
@@ -442,7 +449,11 @@ const TopPanel: React.FC = observer(() => {
                     : undefined
                 }
                 hasOuterBorderOnSelection={
-                  !isModificationModeEnabled || selectedRunningInstanceCount > 1
+                  IS_ELEMENT_SELECTION_V2
+                    ? !isModificationModeEnabled ||
+                      isSelectedElementInstanceRunning
+                    : !isModificationModeEnabled ||
+                      selectedRunningInstanceCount > 1
                 }
               >
                 {stateOverlays.map((overlay) => {
