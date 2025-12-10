@@ -313,7 +313,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       final String jobRetries,
       final UserTaskProperties userTaskProperties) {
     final TaskListener listener = new TaskListener();
-    listener.setEventType(resolveTaskListenerEventType(eventType));
+    listener.setEventType(eventType.resolve());
 
     final JobWorkerProperties jobProperties = new JobWorkerProperties();
     jobProperties.wrap(userTaskProperties);
@@ -330,18 +330,5 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         zeebeTaskListener.getType(),
         zeebeTaskListener.getRetries(),
         userTaskProperties);
-  }
-
-  @SuppressWarnings("deprecation")
-  private static ZeebeTaskListenerEventType resolveTaskListenerEventType(
-      final ZeebeTaskListenerEventType eventType) {
-    // convert deprecated event types to their non-deprecated counterparts
-    return switch (eventType) {
-      case create, creating -> ZeebeTaskListenerEventType.creating;
-      case assignment, assigning -> ZeebeTaskListenerEventType.assigning;
-      case update, updating -> ZeebeTaskListenerEventType.updating;
-      case complete, completing -> ZeebeTaskListenerEventType.completing;
-      case cancel, canceling -> ZeebeTaskListenerEventType.canceling;
-    };
   }
 }

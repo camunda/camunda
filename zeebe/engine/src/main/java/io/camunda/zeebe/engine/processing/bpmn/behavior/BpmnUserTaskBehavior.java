@@ -11,14 +11,19 @@ import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefiniti
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_UPPER_BOUND;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
+import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -27,6 +32,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -34,10 +40,12 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -63,6 +71,7 @@ public final class BpmnUserTaskBehavior {
   private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
+  private final GlobalListenersState globalListenersState;
   private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
@@ -74,6 +83,7 @@ public final class BpmnUserTaskBehavior {
       final UserTaskState userTaskState,
       final VariableState variableState,
       final AsyncRequestState asyncRequestState,
+      final GlobalListenersState globalListenersState,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -84,6 +94,7 @@ public final class BpmnUserTaskBehavior {
     this.userTaskState = userTaskState;
     this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
+    this.globalListenersState = globalListenersState;
     this.clock = clock;
   }
 
@@ -440,6 +451,86 @@ public final class BpmnUserTaskBehavior {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
     userTaskRecord.setAssignee(assignee);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
+  }
+
+  private List<TaskListener> toTaskListenerModel(
+      final GlobalListenerRecordValue globalTaskListener,
+      final ExecutableUserTask executableUserTask) {
+
+    final Expression jobType = new StaticExpression(globalTaskListener.getType());
+    final Expression jobRetries =
+        new StaticExpression(String.valueOf(globalTaskListener.getRetries()));
+
+    // Extract the list of supported listener event types
+    var eventTypes =
+        globalTaskListener.getEventTypes().contains(GlobalListenerConfiguration.ALL_EVENT_TYPES)
+            ? List.of(ZeebeTaskListenerEventType.values())
+            : globalTaskListener.getEventTypes().stream()
+                .map(ZeebeTaskListenerEventType::valueOf)
+                .toList();
+    // Remove duplicates (considering deprecated event types as equivalent to their non-deprecated
+    // counterparts)
+    eventTypes = eventTypes.stream().map(ZeebeTaskListenerEventType::resolve).distinct().toList();
+
+    // Create a task listener model for each supported event type
+    final List<TaskListener> taskListeners = new ArrayList<>();
+    eventTypes.forEach(
+        eventType -> {
+          final TaskListener listener = new TaskListener();
+          listener.setEventType(eventType);
+
+          final JobWorkerProperties jobProperties = new JobWorkerProperties();
+          jobProperties.wrap(executableUserTask.getUserTaskProperties());
+          jobProperties.setType(jobType);
+          jobProperties.setRetries(jobRetries);
+          listener.setJobWorkerProperties(jobProperties);
+          taskListeners.add(listener);
+        });
+    return taskListeners;
+  }
+
+  public List<TaskListener> getTaskListeners(
+      final ExecutableUserTask element, final long userTaskKey) {
+    // Retrieve pinned global listeners configuration for the user task
+    final var intermediateState = userTaskState.getIntermediateState(userTaskKey);
+    final var listenersConfig =
+        intermediateState != null
+            ? globalListenersState.getVersionedConfig(
+                intermediateState.getRecord().getListenersConfigKey())
+            : null;
+
+    // Convert global listeners to task listener models
+    final List<TaskListener> beforeNonGlobalListeners = new ArrayList<>();
+    final List<TaskListener> afterNonGlobalListeners = new ArrayList<>();
+    if (listenersConfig != null) {
+      listenersConfig
+          .getTaskListeners()
+          .forEach(
+              listener -> {
+                final var listenersList =
+                    listener.isAfterNonGlobal()
+                        ? afterNonGlobalListeners
+                        : beforeNonGlobalListeners;
+                listenersList.addAll(toTaskListenerModel(listener, element));
+              });
+    }
+
+    // Combine global and model-level task listeners
+    final List<TaskListener> taskListeners = new ArrayList<>();
+    taskListeners.addAll(beforeNonGlobalListeners);
+    taskListeners.addAll(element.getTaskListeners());
+    taskListeners.addAll(afterNonGlobalListeners);
+
+    return taskListeners;
+  }
+
+  public List<TaskListener> getTaskListeners(
+      final ExecutableUserTask element,
+      final long userTaskKey,
+      final ZeebeTaskListenerEventType eventType) {
+    return getTaskListeners(element, userTaskKey).stream()
+        .filter(tl -> tl.getEventType() == eventType)
+        .toList();
   }
 
   public static final class UserTaskProperties {
