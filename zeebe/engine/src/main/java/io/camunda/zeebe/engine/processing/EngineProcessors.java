@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
-import io.camunda.zeebe.engine.processing.conditional.evaluation.ConditionalEvaluationProcessor;
+import io.camunda.zeebe.engine.processing.conditional.ConditionalEvaluationProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;

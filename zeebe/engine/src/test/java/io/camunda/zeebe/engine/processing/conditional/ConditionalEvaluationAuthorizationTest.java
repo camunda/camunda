@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.conditional.evaluation;
+package io.camunda.zeebe.engine.processing.conditional;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +78,14 @@ public class ConditionalEvaluationAuthorizationTest {
 
   @Test
   public void shouldBeAuthorizedToEvaluateConditionalWithDefaultUser() {
+    // given
+    final var processDefinitionKey =
+        RecordingExporter.processRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .getFirst()
+            .getValue()
+            .getProcessDefinitionKey();
+
     // when
     final var evaluatedRecord =
         engine
@@ -87,15 +95,28 @@ public class ConditionalEvaluationAuthorizationTest {
 
     // then
     assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
-    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(-1L);
-    assertThat(evaluatedRecord.getValue().getVariables())
-        .containsOnly(Map.entry("x", 100), Map.entry("y", 1));
-    assertThat(evaluatedRecord.getValue().getTenantId())
-        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    Assertions.assertThat(evaluatedRecord.getValue())
+        .hasProcessDefinitionKey(-1L)
+        .hasVariables(Map.of("x", 100, "y", 1))
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    assertThat(evaluatedRecord.getValue().getStartedProcessInstances())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instance -> {
+              assertThat(instance.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+              assertThat(instance.getProcessInstanceKey()).isPositive();
+            });
+
+    final var processInstanceKey =
+        evaluatedRecord.getValue().getStartedProcessInstances().getFirst().getProcessInstanceKey();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(PROCESS_ID)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(1))
         .hasSize(1);
   }
@@ -108,6 +129,13 @@ public class ConditionalEvaluationAuthorizationTest {
     addPermissionsToUser(
         user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE_PROCESS_INSTANCE);
 
+    final var processDefinitionKey =
+        RecordingExporter.processRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .getFirst()
+            .getValue()
+            .getProcessDefinitionKey();
+
     // when
     final var evaluatedRecord =
         engine
@@ -117,15 +145,28 @@ public class ConditionalEvaluationAuthorizationTest {
 
     // then
     assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
-    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(-1L);
-    assertThat(evaluatedRecord.getValue().getVariables())
-        .containsOnly(Map.entry("x", 100), Map.entry("y", 1));
-    assertThat(evaluatedRecord.getValue().getTenantId())
-        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    Assertions.assertThat(evaluatedRecord.getValue())
+        .hasProcessDefinitionKey(-1L)
+        .hasVariables(Map.of("x", 100, "y", 1))
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    assertThat(evaluatedRecord.getValue().getStartedProcessInstances())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instance -> {
+              assertThat(instance.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+              assertThat(instance.getProcessInstanceKey()).isPositive();
+            });
+
+    final var processInstanceKey =
+        evaluatedRecord.getValue().getStartedProcessInstances().getFirst().getProcessInstanceKey();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(PROCESS_ID)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(1))
         .hasSize(1);
   }
@@ -156,6 +197,13 @@ public class ConditionalEvaluationAuthorizationTest {
         .withTenantId(customTenant)
         .deploy(DEFAULT_USER.getUsername());
 
+    final var processDefinitionKey =
+        RecordingExporter.processRecords()
+            .withBpmnProcessId(customProcessId)
+            .getFirst()
+            .getValue()
+            .getProcessDefinitionKey();
+
     // when
     final var evaluatedRecord =
         engine
@@ -166,14 +214,28 @@ public class ConditionalEvaluationAuthorizationTest {
 
     // then
     assertThat(evaluatedRecord.getIntent()).isEqualTo(ConditionalEvaluationIntent.EVALUATED);
-    assertThat(evaluatedRecord.getValue().getProcessDefinitionKey()).isEqualTo(-1L);
-    assertThat(evaluatedRecord.getValue().getVariables())
-        .containsOnly(Map.entry("x", 100), Map.entry("y", 1));
-    assertThat(evaluatedRecord.getValue().getTenantId()).isEqualTo(customTenant);
+
+    Assertions.assertThat(evaluatedRecord.getValue())
+        .hasProcessDefinitionKey(-1L)
+        .hasVariables(Map.of("x", 100, "y", 1))
+        .hasTenantId(customTenant);
+
+    assertThat(evaluatedRecord.getValue().getStartedProcessInstances())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instance -> {
+              assertThat(instance.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+              assertThat(instance.getProcessInstanceKey()).isPositive();
+            });
+
+    final var processInstanceKey =
+        evaluatedRecord.getValue().getStartedProcessInstances().getFirst().getProcessInstanceKey();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(customProcessId)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(1))
         .hasSize(1);
   }
