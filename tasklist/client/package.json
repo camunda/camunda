@@ -122,6 +122,17 @@
   },
   "packageManager": "yarn@1.22.22",
   "resolutions": {
-    "@types/react": "18.3.27"
+    "@types/react": "18.3.27",
+    "@carbon/colors": "11.26.0",
+    "@carbon/feature-flags": "0.22.0",
+    "@carbon/grid": "11.27.0",
+    "@carbon/icon-helpers": "10.52.0",
+    "@carbon/icons-react": "11.49.0",
+    "@carbon/icons": "11.49.0",
+    "@carbon/layout": "11.26.0",
+    "@carbon/motion": "11.22.0",
+    "@carbon/styles": "1.65.0",
+    "@carbon/themes": "11.40.0",
+    "@carbon/type": "11.31.0"
   }
 }
