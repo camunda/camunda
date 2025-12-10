@@ -467,9 +467,8 @@ components:
       type: object
       properties:
         page:
-          description: The pagination information, limited to 'from' and 'limit'. Backward pagination is not supported.
           allOf:
-            - $ref: "search-models.yaml#/components/schemas/SearchQueryPageRequest"
+            - $ref: "search-models.yaml#/components/schemas/CursorForwardPagination"
         filter:
           description: The message subscription filters.
           allOf:
