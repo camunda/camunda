@@ -24,7 +24,6 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
@@ -129,9 +128,7 @@ final class ForeignKeyCheckerTest {
   @Test
   void shouldSucceedOnRealColumnFamily(@TempDir final File tempDir) throws Exception {
     // given
-    final ZeebeDbFactoryResources defaultFactoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources();
-    final var db = defaultFactoryResources.factory.createDb(tempDir);
+    final var db = DefaultZeebeDbFactory.<TestColumnFamilies>getDefaultFactory().createDb(tempDir);
     final var txContext = db.createContext();
 
     final var cf1 =
@@ -156,15 +153,12 @@ final class ForeignKeyCheckerTest {
         .doesNotThrowAnyException();
 
     db.close();
-    defaultFactoryResources.close();
   }
 
   @Test
   void shouldFindByPrefix(@TempDir final File tempDir) throws Exception {
     // given
-    final ZeebeDbFactoryResources defaultFactoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources();
-    final var db = defaultFactoryResources.factory.createDb(tempDir);
+    final var db = DefaultZeebeDbFactory.<TestColumnFamilies>getDefaultFactory().createDb(tempDir);
     final var txContext = db.createContext();
 
     final var cf1Key = new DbCompositeKey<>(new DbLong(), new DbString());
@@ -191,15 +185,12 @@ final class ForeignKeyCheckerTest {
         .doesNotThrowAnyException();
 
     db.close();
-    defaultFactoryResources.close();
   }
 
   @Test
   void shouldThrowWhenPrefixIsNotFound(@TempDir final File tempDir) throws Exception {
     // given
-    final ZeebeDbFactoryResources defaultFactoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources();
-    final var db = defaultFactoryResources.factory.createDb(tempDir);
+    final var db = DefaultZeebeDbFactory.<TestColumnFamilies>getDefaultFactory().createDb(tempDir);
     final var txContext = db.createContext();
 
     final var cf1Key = new DbCompositeKey<>(new DbLong(), new DbString());
@@ -227,7 +218,6 @@ final class ForeignKeyCheckerTest {
         .hasMessageContaining("Foreign key");
 
     db.close();
-    defaultFactoryResources.close();
   }
 
   private enum TestColumnFamilies implements EnumValue, ScopedColumnFamily {

@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -25,42 +23,26 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.collections.MutableReference;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 public class RawTransactionalColumnFamilyTest {
   @TempDir static Path path;
   @AutoClose static ZeebeTransactionDb<ZbColumnFamilies> db;
   static Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies = new HashMap<>();
   private static TransactionContext context;
-  private static LRUCache lruCache;
-  private static WriteBufferManager writeBufferManager;
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   @BeforeAll
   static void setup() {
-    lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    writeBufferManager = new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
-    final int defaultPartitionCount = 3;
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            lruCache,
-            writeBufferManager,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
     db = factory.createDb(path.toFile());
     context = db.createContext();
 
@@ -68,12 +50,6 @@ public class RawTransactionalColumnFamilyTest {
       final var rawCF = new RawTransactionalColumnFamily(db, cf);
       columnFamilies.put(cf, rawCF);
     }
-  }
-
-  @AfterAll
-  static void tearDown() {
-    writeBufferManager.close();
-    lruCache.close();
   }
 
   @ParameterizedTest

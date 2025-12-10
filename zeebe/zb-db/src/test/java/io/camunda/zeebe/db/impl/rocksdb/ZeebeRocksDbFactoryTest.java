@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,7 +24,6 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -34,8 +31,6 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Stream;
 import org.assertj.core.api.ThrowingConsumer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,44 +38,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionPriority;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 final class ZeebeRocksDbFactoryTest {
-
-  static {
-    RocksDB.loadLibrary();
-  }
-
-  private SharedRocksDbResources sharedRocksDbResources;
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
-
-  @BeforeEach
-  void setUp() {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    sharedRocksDbResources =
-        new SharedRocksDbResources(
-            lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
-            DEFAULT_CACHE_SIZE);
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (sharedRocksDbResources != null) {
-      sharedRocksDbResources.close();
-    }
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
-  }
 
   @Test
   void shouldCreateNewDb(final @TempDir File pathName) throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
 
     // when
     final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
@@ -94,7 +58,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldCreateTwoNewDbs(final @TempDir File firstPath, final @TempDir File secondPath)
       throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
 
     // when
     final ZeebeDb<DefaultColumnFamily> firstDb = dbFactory.createDb(firstPath);
@@ -118,17 +82,14 @@ final class ZeebeRocksDbFactoryTest {
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>) dbFactoryResources.factory;
-
-    final int defaultPartitionCount = 3;
+        (ZeebeRocksDbFactory<DefaultColumnFamily>)
+            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -156,7 +117,8 @@ final class ZeebeRocksDbFactoryTest {
   void shouldCreateDbWithExpectedOptions() {
     // given
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>) dbFactoryResources.factory;
+        (ZeebeRocksDbFactory<DefaultColumnFamily>)
+            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
 
     // then - options should match our defaults
     validateDefaultExpectedOptions(
@@ -179,9 +141,7 @@ final class ZeebeRocksDbFactoryTest {
             rocksDbConfiguration,
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
 
     // then - options should match our defaults
     // we expect the same options regardless of the memory allocation strategy
@@ -196,15 +156,12 @@ final class ZeebeRocksDbFactoryTest {
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
-    final int defaultPartitionCount = 3;
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
 
     // expect
     //noinspection resource
@@ -218,7 +175,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldOpenSnapshotOnlyDb(final @TempDir File path, final @TempDir File tempDir)
       throws Exception {
     // given
-    final var factory = dbFactoryResources.factory;
+    final var factory = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var key = new DbString();
     final var value = new DbString();
     key.wrapString("foo");
@@ -252,7 +209,7 @@ final class ZeebeRocksDbFactoryTest {
   @Test
   void shouldFailToOpenNonExistentSnapshotOnlyDb(final @TempDir File path) {
     // given
-    final var factory = dbFactoryResources.factory;
+    final var factory = DefaultZeebeDbFactory.getDefaultFactory();
     assertThat(path.delete()).isTrue();
 
     // when - then
@@ -267,7 +224,7 @@ final class ZeebeRocksDbFactoryTest {
       final ThrowingConsumer<ZeebeDb<DefaultColumnFamily>> assertions, final @TempDir File dbPath)
       throws Exception {
     // given
-    final var factory = dbFactoryResources.factory;
+    final var factory = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var key = new DbString();
     final var value = new DbString();
     key.wrapString("foo");
@@ -301,7 +258,7 @@ final class ZeebeRocksDbFactoryTest {
     assertThat(columnFamilyOptions.level0SlowdownWritesTrigger()).isEqualTo(9);
     assertThat(columnFamilyOptions.level0StopWritesTrigger()).isEqualTo(12);
     assertThat(columnFamilyOptions.numLevels()).isEqualTo(4);
-    assertThat(columnFamilyOptions.maxBytesForLevelBase()).isEqualTo(33_554_432L);
+    assertThat(columnFamilyOptions.maxBytesForLevelBase()).isEqualTo(32L * 1024 * 1024);
     assertThat(columnFamilyOptions.maxBytesForLevelMultiplier()).isEqualTo(10.0);
     assertThat(columnFamilyOptions.compressionPerLevel())
         .containsExactly(
@@ -309,13 +266,13 @@ final class ZeebeRocksDbFactoryTest {
             org.rocksdb.CompressionType.NO_COMPRESSION,
             org.rocksdb.CompressionType.LZ4_COMPRESSION,
             org.rocksdb.CompressionType.LZ4_COMPRESSION);
-    assertThat(columnFamilyOptions.targetFileSizeBase()).isEqualTo(8 * 1_024 * 1_024L);
+    assertThat(columnFamilyOptions.targetFileSizeBase()).isEqualTo(8L * 1024 * 1024);
     assertThat(columnFamilyOptions.targetFileSizeMultiplier()).isEqualTo(2);
 
     // table config matches our defaults
     final var tableConfig =
         (org.rocksdb.BlockBasedTableConfig) columnFamilyOptions.tableFormatConfig();
-    assertThat(tableConfig.blockSize()).isEqualTo(32 * 1_024L);
+    assertThat(tableConfig.blockSize()).isEqualTo(32L * 1024);
     assertThat(tableConfig.formatVersion()).isEqualTo(5);
     assertThat(tableConfig.cacheIndexAndFilterBlocks()).isTrue();
     assertThat(tableConfig.pinL0FilterAndIndexBlocksInCache()).isTrue();

@@ -8,8 +8,6 @@
 package io.camunda.zeebe.backup.processing.state;
 
 import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKPOINT;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -18,7 +16,6 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -27,45 +24,28 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 final class DbCheckpointStateTest {
 
-  static {
-    RocksDB.loadLibrary();
+  @TempDir Path database;
+  private DbCheckpointState state;
+  private ZeebeDb zeebedb;
+
+  @AfterEach
+  void closeDb() throws Exception {
+    zeebedb.close();
   }
 
-  @TempDir Path database;
-  private ZeebeDb zeebedb;
-  private DbCheckpointState state;
-  private SharedRocksDbResources sharedRocksDbResources;
-
   @BeforeEach
-  void setup() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    final WriteBufferManager writeBufferManager =
-        new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache);
-    sharedRocksDbResources =
-        new SharedRocksDbResources(lruCache, writeBufferManager, DEFAULT_CACHE_SIZE);
-    final int defaultPartitionCount = 3;
+  void before() {
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                SimpleMeterRegistry::new,
-                sharedRocksDbResources,
-                defaultPartitionCount)
+                SimpleMeterRegistry::new)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
-  }
-
-  @AfterEach
-  void tearDown() throws Exception {
-    zeebedb.close();
-    sharedRocksDbResources.close();
   }
 
   @Test

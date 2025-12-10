@@ -13,7 +13,6 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -39,8 +38,6 @@ public final class ExportersStateTest {
   @Rule
   public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(autoCloseableRule);
 
-  private final ZeebeDbFactoryResources zeebeDbFactoryResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources();
   private ExportersState state;
   private ZeebeDb<ZbColumnFamilies> db;
 
@@ -48,14 +45,13 @@ public final class ExportersStateTest {
   public void setup() throws Exception {
     final File dbDirectory = temporaryFolder.newFolder();
 
-    db = zeebeDbFactoryResources.factory.createDb(dbDirectory);
+    db = DefaultZeebeDbFactory.defaultFactory().createDb(dbDirectory);
     state = new ExportersState(db, db.createContext());
   }
 
   @After
   public void tearDown() throws Exception {
     db.close();
-    zeebeDbFactoryResources.close();
   }
 
   @Test

@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.perf;
 
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_CACHE_SIZE;
-import static io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.DEFAULT_WRITE_BUFFER_SIZE;
-
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ColumnFamily;
@@ -18,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -35,18 +31,11 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 
 final class TestState {
+
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;
-  private static SharedRocksDbResources sharedRocksDbResources;
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   TestContext generateContext(final long sizeInBytes) throws Exception {
     final var meterRegistry = new SimpleMeterRegistry();
@@ -93,20 +82,11 @@ final class TestState {
   }
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
-    final LRUCache lruCache = new LRUCache(DEFAULT_CACHE_SIZE);
-    sharedRocksDbResources =
-        new SharedRocksDbResources(
-            lruCache,
-            new WriteBufferManager(DEFAULT_WRITE_BUFFER_SIZE, lruCache),
-            DEFAULT_CACHE_SIZE);
-    final int defaultPartitionCount = 3;
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        SimpleMeterRegistry::new,
-        sharedRocksDbResources,
-        defaultPartitionCount);
+        SimpleMeterRegistry::new);
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {
@@ -152,7 +132,7 @@ final class TestState {
 
     @Override
     public void close() throws Exception {
-      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, sharedRocksDbResources);
+      CloseHelper.quietCloseAll(snapshotStore, actorScheduler);
       FileUtil.deleteFolder(temporaryFolder);
     }
 

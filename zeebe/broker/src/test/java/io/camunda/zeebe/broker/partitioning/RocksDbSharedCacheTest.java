@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.PartitionManagerImpl.MINIMUM_PARTITION_MEMORY_LIMIT;
+import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.MINIMUM_PARTITION_MEMORY_LIMIT;
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -19,13 +19,13 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.util.unit.DataSize;
 
-class PartitionManagerImplTest {
+class RocksDbSharedCacheTest {
+  private static final int DEFAULT_PARTITION_COUNT = 1;
   private BrokerCfg brokerCfg;
 
   @BeforeEach
   void setUp() {
     brokerCfg = new BrokerCfg();
-    brokerCfg.getCluster().setPartitionsCount(1);
     brokerCfg.getExperimental().getRocksdb().setMemoryLimit(DataSize.ofBytes(512 * 1024 * 1024L));
     // it's already the default, but to be explicit
     brokerCfg
@@ -46,21 +46,19 @@ class PartitionManagerImplTest {
   @Test
   void shouldNotThrowIfMemoryAllocationBelowOrEqualHalfOfRam() {
     // when
-    brokerCfg.getCluster().setPartitionsCount(2);
     brokerCfg
         .getExperimental()
         .getRocksdb()
         .setMemoryLimit(DataSize.ofBytes(64L * 1024 * 1024)); // 64MB
-
+    final int partitionsCount = 2;
     // then we expect no exception when getting the shared cache since we only allocate 50% of ram
     // memory. 2 * 64MB = 128MB which is 50% of 256MB. The default memory allocation strategy is per
     // partition.
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
-                  // ensure resources are closed
-                }
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), partitionsCount);
               })
           .doesNotThrowAnyException();
     }
@@ -73,21 +71,19 @@ class PartitionManagerImplTest {
         .getExperimental()
         .getRocksdb()
         .setMemoryLimit(DataSize.ofBytes(200L * 1024 * 1024)); // 200MB
-
     // then when we allocate more than half of the memory to rocks db, we expect an exception
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       final var throwable =
           catchThrowable(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
-                  // we expect this to fail, but if it doesn't, the resources are closed
-                }
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
               });
 
       assertThat(throwable)
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Expected the allocated memory for RocksDB to be below or equal half of ram memory, but was 78.13 %");
+              "Expected the allocated memory for RocksDB to be below or equal 50.00 % of ram memory, but was 78.13 %");
     }
   }
 
@@ -105,9 +101,8 @@ class PartitionManagerImplTest {
       final var throwable =
           catchThrowable(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
-                  // we expect this to fail, but if it doesn't, the resources are closed
-                }
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
               });
 
       assertThat(throwable)
@@ -125,7 +120,7 @@ class PartitionManagerImplTest {
         .getExperimental()
         .getRocksdb()
         .setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
-    brokerCfg.getCluster().setPartitionsCount(2);
+    final int partitionsCount = 2;
     brokerCfg
         .getExperimental()
         .getRocksdb()
@@ -136,9 +131,20 @@ class PartitionManagerImplTest {
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                try (final var ignored = PartitionManagerImpl.allocateSharedCache(brokerCfg)) {
-                  // ensure resources are closed
-                }
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), partitionsCount);
+              })
+          .doesNotThrowAnyException();
+    }
+
+    final int morePartitionsCount = 4;
+    // should still be valid even with 4 partitions since we allocate per
+    // broker, we will only allocate 128mb
+    try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
+      assertThatCode(
+              () -> {
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), morePartitionsCount);
               })
           .doesNotThrowAnyException();
     }

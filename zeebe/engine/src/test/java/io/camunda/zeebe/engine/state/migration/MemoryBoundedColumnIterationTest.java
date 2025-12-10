@@ -26,56 +26,52 @@ final class MemoryBoundedColumnIterationTest {
   void shouldDrainAllValues(final @TempDir File tmpDir) {
     // given
     final var iteration = new MemoryBoundedColumnIteration(1024 * 1024L);
-    try (final var dbResources = DefaultZeebeDbFactory.getDefaultFactoryResources()) {
-      final var db = dbResources.factory.createDb(tmpDir);
-      final var key = new DbLong();
-      final var value = new DbLong();
-      final var column =
-          db.createColumnFamily(ZbColumnFamilies.DEFAULT, db.createContext(), key, value);
-      final Map<Long, Long> expected = new HashMap<>();
-      LongStream.range(0, 100)
-          .forEach(
-              i -> {
-                key.wrapLong(i);
-                value.wrapLong(i);
-                column.upsert(key, value);
-                expected.put(i, i);
-              });
-      final Map<Long, Long> drainedValues = new HashMap<>();
+    final var db = DefaultZeebeDbFactory.defaultFactory().createDb(tmpDir);
+    final var key = new DbLong();
+    final var value = new DbLong();
+    final var column =
+        db.createColumnFamily(ZbColumnFamilies.DEFAULT, db.createContext(), key, value);
+    final Map<Long, Long> expected = new HashMap<>();
+    LongStream.range(0, 100)
+        .forEach(
+            i -> {
+              key.wrapLong(i);
+              value.wrapLong(i);
+              column.upsert(key, value);
+              expected.put(i, i);
+            });
+    final Map<Long, Long> drainedValues = new HashMap<>();
 
-      // when
-      iteration.drain(column, (k, v) -> drainedValues.put(k.getValue(), v.getValue()));
+    // when
+    iteration.drain(column, (k, v) -> drainedValues.put(k.getValue(), v.getValue()));
 
-      // then
-      assertThat(drainedValues).isEqualTo(expected);
-      assertThat(column.isEmpty()).isTrue();
-    }
+    // then
+    assertThat(drainedValues).isEqualTo(expected);
+    assertThat(column.isEmpty()).isTrue();
   }
 
   @Test
   void shouldIterateInBoundedChunks(final @TempDir File tmpDir) {
     // given
     final var iteration = new MemoryBoundedColumnIteration(50L * Long.BYTES);
-    try (final var dbResources = DefaultZeebeDbFactory.getDefaultFactoryResources()) {
-      final var db = dbResources.factory.createDb(tmpDir);
-      final var key = new DbLong();
-      final var value = new DbLong();
-      final var column =
-          db.createColumnFamily(ZbColumnFamilies.DEFAULT, db.createContext(), key, value);
-      LongStream.range(0, 100)
-          .forEach(
-              i -> {
-                key.wrapLong(i);
-                value.wrapLong(i);
-                column.upsert(key, value);
-              });
-      final var spiedColumn = Mockito.spy(column);
+    final var db = DefaultZeebeDbFactory.defaultFactory().createDb(tmpDir);
+    final var key = new DbLong();
+    final var value = new DbLong();
+    final var column =
+        db.createColumnFamily(ZbColumnFamilies.DEFAULT, db.createContext(), key, value);
+    LongStream.range(0, 100)
+        .forEach(
+            i -> {
+              key.wrapLong(i);
+              value.wrapLong(i);
+              column.upsert(key, value);
+            });
+    final var spiedColumn = Mockito.spy(column);
 
-      // when
-      iteration.drain(spiedColumn, (k, v) -> {});
+    // when
+    iteration.drain(spiedColumn, (k, v) -> {});
 
-      // then - expect 4 transactions since our limit is 50 longs, and each iteration adds 2 longs
-      Mockito.verify(spiedColumn, Mockito.times(4)).whileTrue(Mockito.any());
-    }
+    // then - expect 4 transactions since our limit is 50 longs, and each iteration adds 2 longs
+    Mockito.verify(spiedColumn, Mockito.times(4)).whileTrue(Mockito.any());
   }
 }

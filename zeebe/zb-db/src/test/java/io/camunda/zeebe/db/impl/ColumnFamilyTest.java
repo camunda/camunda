@@ -17,7 +17,6 @@ import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +25,8 @@ import org.junit.rules.TemporaryFolder;
 public final class ColumnFamilyTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+  private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
+      DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private DbLong key;
@@ -34,8 +34,6 @@ public final class ColumnFamilyTest {
 
   @Before
   public void setup() throws Exception {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     zeebeDb = dbFactory.createDb(pathName);
 
@@ -44,16 +42,6 @@ public final class ColumnFamilyTest {
     columnFamily =
         zeebeDb.createColumnFamily(
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), key, value);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (zeebeDb != null) {
-      zeebeDb.close();
-    }
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
   }
 
   @Test
