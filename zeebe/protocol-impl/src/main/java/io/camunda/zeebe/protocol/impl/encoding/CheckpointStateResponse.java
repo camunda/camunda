@@ -9,7 +9,7 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseDecoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder;
-import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.StateEncoder;
+import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.CheckpointStatesEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -28,76 +28,72 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
   private final CheckpointStateResponseEncoder bodyEncoder = new CheckpointStateResponseEncoder();
   private final CheckpointStateResponseDecoder bodyDecoder = new CheckpointStateResponseDecoder();
 
-  // This holds the earliest checkpoint state amongst partitions. For the inter-broker response,
-  // this will hold the state of the partition.
-  private PartitionCheckpointState checkpointState = new PartitionCheckpointState();
   private Set<PartitionCheckpointState> checkpointStates = new HashSet<>();
+  private Set<PartitionCheckpointState> backupStates = new HashSet<>();
 
   @Override
   public int getLength() {
-    final int latestLength =
-        CheckpointStateResponseEncoder.partitionIdEncodingLength()
-            + CheckpointStateResponseEncoder.checkpointIdEncodingLength()
-            + CheckpointStateResponseEncoder.checkpointTimestampEncodingLength()
-            + CheckpointStateResponseEncoder.checkpointTypeEncodingLength()
-            + CheckpointStateResponseEncoder.checkpointPositionEncodingLength();
 
-    final int stateLength =
-        checkpointStates.stream()
-            .map(
-                state ->
-                    StateEncoder.sbeBlockLength()
-                        + StateEncoder.partitionIdEncodingLength()
-                        + StateEncoder.checkpointIdEncodingLength()
-                        + StateEncoder.checkpointTypeEncodingLength()
-                        + StateEncoder.checkpointTimestampEncodingLength()
-                        + StateEncoder.checkpointPositionEncodingLength())
-            .reduce(Integer::sum)
-            .orElse(0);
+    final int statesItemLength =
+        CheckpointStatesEncoder.sbeBlockLength()
+            + CheckpointStatesEncoder.partitionIdEncodingLength()
+            + CheckpointStatesEncoder.checkpointIdEncodingLength()
+            + CheckpointStatesEncoder.checkpointTypeEncodingLength()
+            + CheckpointStatesEncoder.checkpointTimestampEncodingLength()
+            + CheckpointStatesEncoder.checkpointPositionEncodingLength();
+
+    final int checkpointStatesLength = checkpointStates.size() * statesItemLength;
+    final int backupStatesLength = backupStates.size() * statesItemLength;
 
     return headerEncoder.encodedLength()
         + bodyEncoder.sbeBlockLength()
-        + latestLength
-        + StateEncoder.HEADER_SIZE
-        + stateLength;
+        // plus the length of both state sets
+        + (CheckpointStatesEncoder.HEADER_SIZE * 2)
+        + checkpointStatesLength
+        + backupStatesLength;
   }
 
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
-    bodyEncoder
-        .wrapAndApplyHeader(buffer, offset, headerEncoder)
-        .partitionId(checkpointState.partitionId)
-        .checkpointId(checkpointState.checkpointId)
-        .checkpointType(checkpointState.checkpointType.getValue())
-        .checkpointTimestamp(checkpointState.checkpointTimestamp)
-        .checkpointPosition(checkpointState.checkpointPosition);
+    bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
-    final var stateEncoder = bodyEncoder.stateCount(checkpointStates.size());
-    for (final PartitionCheckpointState checkpointState : checkpointStates) {
-      stateEncoder
-          .next()
-          .partitionId(checkpointState.partitionId)
-          .checkpointId(checkpointState.checkpointId)
-          .checkpointType(checkpointState.checkpointType.getValue())
-          .checkpointTimestamp(checkpointState.checkpointTimestamp)
-          .checkpointPosition(checkpointState.checkpointPosition);
+    if (checkpointStates.isEmpty()) {
+      bodyEncoder.checkpointStatesCount(0);
+    } else {
+      final var checkpointStateEncoder = bodyEncoder.checkpointStatesCount(checkpointStates.size());
+      for (final PartitionCheckpointState partitionState : checkpointStates) {
+        checkpointStateEncoder
+            .next()
+            .partitionId(partitionState.partitionId)
+            .checkpointId(partitionState.checkpointId)
+            .checkpointType(partitionState.checkpointType.getValue())
+            .checkpointTimestamp(partitionState.checkpointTimestamp)
+            .checkpointPosition(partitionState.checkpointPosition);
+      }
+    }
+
+    if (backupStates.isEmpty()) {
+      bodyEncoder.backupStatesCount(0);
+    } else {
+      final var backupStateEncoder = bodyEncoder.backupStatesCount(backupStates.size());
+      for (final PartitionCheckpointState partitionState : backupStates) {
+        backupStateEncoder
+            .next()
+            .partitionId(partitionState.partitionId)
+            .checkpointId(partitionState.checkpointId)
+            .checkpointType(partitionState.checkpointType.getValue())
+            .checkpointTimestamp(partitionState.checkpointTimestamp)
+            .checkpointPosition(partitionState.checkpointPosition);
+      }
     }
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
-    final var partitionId = bodyDecoder.partitionId();
-    final var checkpointId = bodyDecoder.checkpointId();
-    final var checkpointType = CheckpointType.valueOf(bodyDecoder.checkpointType());
-    final var checkpointTimestamp = bodyDecoder.checkpointTimestamp();
-    final var checkpointPosition = bodyDecoder.checkpointPosition();
-    checkpointState =
-        new PartitionCheckpointState(
-            partitionId, checkpointId, checkpointType, checkpointTimestamp, checkpointPosition);
 
     bodyDecoder
-        .state()
+        .checkpointStates()
         .forEach(
             state ->
                 checkpointStates.add(
@@ -107,30 +103,18 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
                         CheckpointType.valueOf(state.checkpointType()),
                         state.checkpointTimestamp(),
                         state.checkpointPosition())));
-  }
 
-  public PartitionCheckpointState getCheckpointState() {
-    return checkpointState;
-  }
-
-  public void setPartitionId(final int partitionId) {
-    checkpointState = checkpointState.withPartitionId(partitionId);
-  }
-
-  public void setCheckpointId(final long checkpointId) {
-    checkpointState = checkpointState.withCheckpointId(checkpointId);
-  }
-
-  public void setCheckpointType(final CheckpointType checkpointType) {
-    checkpointState = checkpointState.withCheckpointType(checkpointType);
-  }
-
-  public void setCheckpointTimestamp(final long checkpointTimestamp) {
-    checkpointState = checkpointState.withCheckpointTimestamp(checkpointTimestamp);
-  }
-
-  public void setCheckpointPosition(final long checkpointPosition) {
-    checkpointState = checkpointState.withCheckpointPosition(checkpointPosition);
+    bodyDecoder
+        .backupStates()
+        .forEach(
+            state ->
+                backupStates.add(
+                    new PartitionCheckpointState(
+                        state.partitionId(),
+                        state.checkpointId(),
+                        CheckpointType.valueOf(state.checkpointType()),
+                        state.checkpointTimestamp(),
+                        state.checkpointPosition())));
   }
 
   public Set<PartitionCheckpointState> getCheckpointStates() {
@@ -141,40 +125,18 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
     this.checkpointStates = checkpointStates;
   }
 
+  public Set<PartitionCheckpointState> getBackupStates() {
+    return backupStates;
+  }
+
+  public void setBackupStates(final Set<PartitionCheckpointState> backupStates) {
+    this.backupStates = backupStates;
+  }
+
   public record PartitionCheckpointState(
       int partitionId,
       long checkpointId,
       CheckpointType checkpointType,
       long checkpointTimestamp,
-      long checkpointPosition) {
-
-    public PartitionCheckpointState() {
-      this(0, 0L, CheckpointType.MARKER, 0L, 0L);
-    }
-
-    public PartitionCheckpointState withPartitionId(final int partitionId) {
-      return new PartitionCheckpointState(
-          partitionId, checkpointId, checkpointType, checkpointTimestamp, checkpointPosition);
-    }
-
-    public PartitionCheckpointState withCheckpointId(final long checkpointId) {
-      return new PartitionCheckpointState(
-          partitionId, checkpointId, checkpointType, checkpointTimestamp, checkpointPosition);
-    }
-
-    public PartitionCheckpointState withCheckpointType(final CheckpointType checkpointType) {
-      return new PartitionCheckpointState(
-          partitionId, checkpointId, checkpointType, checkpointTimestamp, checkpointPosition);
-    }
-
-    public PartitionCheckpointState withCheckpointTimestamp(final long checkpointTimestamp) {
-      return new PartitionCheckpointState(
-          partitionId, checkpointId, checkpointType, checkpointTimestamp, checkpointPosition);
-    }
-
-    public PartitionCheckpointState withCheckpointPosition(final long checkpointPosition) {
-      return new PartitionCheckpointState(
-          partitionId, checkpointId, checkpointType, checkpointTimestamp, checkpointPosition);
-    }
-  }
+      long checkpointPosition) {}
 }

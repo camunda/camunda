@@ -307,30 +307,48 @@ class BackupMultiPartitionTest {
     // then
     waitUntilBackupIsCompleted(backupId);
 
-    final var state = getBackupCheckpointState();
+    final var state = getCheckpointState();
     assertThat(state).isNotNull();
     assertThat(state.getCheckpointStates()).hasSize(2);
+    assertThat(state.getBackupStates()).hasSize(2);
 
-    final var partitionStates =
+    final var checkpointStates =
         state.getCheckpointStates().stream()
             .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
             .toList();
 
-    assertThat(partitionStates.get(0).checkpointId())
-        .isEqualTo(partitionStates.get(1).checkpointId())
+    assertThat(checkpointStates.get(0).checkpointId())
+        .isEqualTo(checkpointStates.get(1).checkpointId())
         .isEqualTo(backupId);
 
-    assertThat(partitionStates.get(0).checkpointType())
-        .isEqualTo(partitionStates.get(1).checkpointType())
+    assertThat(checkpointStates.get(0).checkpointType())
+        .isEqualTo(checkpointStates.get(1).checkpointType())
         .isEqualTo(CheckpointType.MANUAL_BACKUP);
 
-    assertThat(Instant.ofEpochMilli(partitionStates.get(0).checkpointTimestamp()))
-        .isAfter(Instant.ofEpochMilli(partitionStates.get(1).checkpointTimestamp()));
+    assertThat(Instant.ofEpochMilli(checkpointStates.get(0).checkpointTimestamp()))
+        .isAfter(Instant.ofEpochMilli(checkpointStates.get(1).checkpointTimestamp()));
 
-    assertThat(partitionStates.get(0).checkpointPosition()).isGreaterThan(0);
-    assertThat(partitionStates.get(1).checkpointPosition()).isGreaterThan(0);
+    assertThat(checkpointStates.get(0).checkpointPosition()).isGreaterThan(0);
+    assertThat(checkpointStates.get(1).checkpointPosition()).isGreaterThan(0);
 
-    assertThat(state.getCheckpointState().checkpointId()).isEqualTo(backupId);
+    final var backupStates =
+        state.getBackupStates().stream()
+            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
+            .toList();
+
+    assertThat(backupStates.get(0).checkpointId())
+        .isEqualTo(backupStates.get(1).checkpointId())
+        .isEqualTo(backupId);
+
+    assertThat(backupStates.get(0).checkpointType())
+        .isEqualTo(backupStates.get(1).checkpointType())
+        .isEqualTo(CheckpointType.MANUAL_BACKUP);
+
+    assertThat(Instant.ofEpochMilli(backupStates.get(0).checkpointTimestamp()))
+        .isAfter(Instant.ofEpochMilli(backupStates.get(1).checkpointTimestamp()));
+
+    assertThat(backupStates.get(0).checkpointPosition()).isGreaterThan(0);
+    assertThat(backupStates.get(1).checkpointPosition()).isGreaterThan(0);
   }
 
   private Set<Long> createJobsOnAllPartitions() {
@@ -368,7 +386,7 @@ class BackupMultiPartitionTest {
     return backupRequestHandler.getStatus(backupId).toCompletableFuture().get(30, TimeUnit.SECONDS);
   }
 
-  private CheckpointStateResponse getBackupCheckpointState()
+  private CheckpointStateResponse getCheckpointState()
       throws InterruptedException, ExecutionException, TimeoutException {
     return backupRequestHandler
         .getCheckpointState(CheckpointType.MANUAL_BACKUP)

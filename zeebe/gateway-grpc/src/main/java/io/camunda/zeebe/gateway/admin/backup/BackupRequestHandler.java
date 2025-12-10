@@ -17,7 +17,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.InstantSource;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -141,7 +140,7 @@ public final class BackupRequestHandler implements BackupApi {
             topology -> {
               final var statusesReceived =
                   topology.getPartitions().stream()
-                      .map(partitionId -> createCheckpointRequest(partitionId, type))
+                      .map(this::createCheckpointRequest)
                       .map(brokerClient::sendRequestWithRetry)
                       .toList();
 
@@ -366,31 +365,22 @@ public final class BackupRequestHandler implements BackupApi {
       final Set<CheckpointStateResponse> responses) {
     final CheckpointStateResponse response = new CheckpointStateResponse();
 
-    final var partitionStates =
+    final var checkpointStates =
         responses.stream()
-            .map(CheckpointStateResponse::getCheckpointState)
+            .flatMap(r -> r.getCheckpointStates().stream())
             .collect(Collectors.toSet());
 
-    partitionStates.stream()
-        .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
-        .ifPresent(
-            state -> {
-              response.setCheckpointId(state.checkpointId());
-              response.setCheckpointType(state.checkpointType());
-              response.setCheckpointPosition(state.checkpointPosition());
-              response.setCheckpointTimestamp(state.checkpointTimestamp());
-              response.setPartitionId(state.partitionId());
-            });
+    final var backupStates =
+        responses.stream().flatMap(r -> r.getBackupStates().stream()).collect(Collectors.toSet());
 
-    response.setCheckpointStates(partitionStates);
+    response.setCheckpointStates(checkpointStates);
+    response.setBackupStates(backupStates);
     return response;
   }
 
-  private BrokerCheckpointStateRequest createCheckpointRequest(
-      final int partitionId, final CheckpointType type) {
+  private BrokerCheckpointStateRequest createCheckpointRequest(final int partitionId) {
     final var request = new BrokerCheckpointStateRequest();
     request.setPartitionId(partitionId);
-    request.setCheckpointType(type);
     return request;
   }
 }

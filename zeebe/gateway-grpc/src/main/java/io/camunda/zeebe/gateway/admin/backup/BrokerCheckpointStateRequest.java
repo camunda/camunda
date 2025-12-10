@@ -74,7 +74,7 @@ public class BrokerCheckpointStateRequest extends BrokerRequest<CheckpointStateR
 
   @Override
   protected BrokerResponse<CheckpointStateResponse> readResponse() {
-    return new BrokerResponse<>(response, response.getCheckpointState().partitionId(), -1);
+    return new BrokerResponse<>(response);
   }
 
   @Override
