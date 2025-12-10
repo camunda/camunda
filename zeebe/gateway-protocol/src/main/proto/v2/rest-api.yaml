@@ -38,6 +38,7 @@ tags:
   - name: Decision requirements
   - name: Document
   - name: Element instance
+  - name: Expression
   - name: Group
   - name: Incident
   - name: Job
