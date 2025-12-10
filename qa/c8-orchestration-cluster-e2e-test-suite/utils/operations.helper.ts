@@ -24,7 +24,7 @@ export async function createDemoOperations(
   await Promise.all(
     [...new Array(count)].map(async () => {
       const response = await request.post(
-        `http://localhost:8080/api/process-instances/${processInstanceKey}/operation`,
+        `${credentials.baseUrl}/api/process-instances/${processInstanceKey}/operation`,
         {
           ...requestHeaders,
           data: {
@@ -32,6 +32,13 @@ export async function createDemoOperations(
           },
         },
       );
+      if (!response.ok()) {
+        const errorBody = await response.text();
+        console.error(
+          `Failed to create operation: ${response.status()} ${response.statusText()}`,
+        );
+        console.error(`Response body: ${errorBody}`);
+      }
       expect(response.ok()).toBeTruthy();
       return response;
     }),
@@ -41,7 +48,7 @@ export async function createDemoOperations(
     .poll(
       async () => {
         const response = await request.post(
-          `http://localhost:8080/api/batch-operations`,
+          `${credentials.baseUrl}/api/batch-operations`,
           {
             ...requestHeaders,
             data: {

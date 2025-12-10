@@ -45,7 +45,7 @@ test.beforeAll(async ({request}) => {
       bpmnProcessId: 'operationsProcessB',
     })),
   };
-
+  await sleep(1000);
   await createDemoOperations(
     request,
     initialData.singleOperationInstance.processInstanceKey,
@@ -66,7 +66,7 @@ test.describe('Operations', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('infinite scrolling', async ({operateOperationPanelPage}) => {
+  test('Infinite scrolling', async ({operateOperationPanelPage}) => {
     await test.step('Expand operations panel and validate initial count', async () => {
       await operateOperationPanelPage.expandOperationIdField();
       await expect(
@@ -95,8 +95,8 @@ test.describe('Operations', () => {
     });
   });
 
-  // Skipped due to bug 42375:  https://github.com/camunda/camunda/issues/42375
-  test.skip('Retry and Cancel single instance', async ({
+  // Skipped due to bug 42375: https://github.com/camunda/camunda/issues/42375
+  test.skip('Retry and cancel single instance', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
@@ -212,9 +212,11 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.expandOperationsPanel();
 
-      await expect(
-        operateProcessesPage.getScheduledOperationsIcons(),
-      ).toHaveCount(instances.length);
+      await expect
+        .poll(async () => {
+          return operateProcessesPage.scheduledOperationsIcons.count();
+        })
+        .toBe(instances.length);
     });
 
     await test.step('Wait for operation to complete', async () => {
@@ -241,7 +243,7 @@ test.describe('Operations', () => {
       await Promise.all(
         instances.map((instance) =>
           expect(
-            operateProcessesPage.getProcessInstanceLink(
+            operateProcessesPage.processInstanceLinkByKey(
               instance.processInstanceKey,
             ),
           ).toBeVisible(),
@@ -263,9 +265,11 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.expandOperationsPanel();
 
-      await expect(
-        operateProcessesPage.getScheduledOperationsIcons(),
-      ).toHaveCount(instances.length);
+      await expect
+        .poll(async () => {
+          return operateProcessesPage.scheduledOperationsIcons.count();
+        })
+        .toBe(instances.length);
 
       const operationEntry = operateProcessesPage.getCancelOperationEntry(
         instances.length,

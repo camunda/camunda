@@ -10,7 +10,6 @@ import {Page, Locator, expect} from '@playwright/test';
 import {OperateDiagramPage} from './OperateDiagramPage';
 import {sleep} from '../utils/sleep';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
-import {time} from 'console';
 
 class OperateProcessesPage {
   private page: Page;
@@ -62,6 +61,8 @@ class OperateProcessesPage {
   readonly cancelButton: Locator;
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
+  readonly scheduledOperationsIcons: Locator;
+  processInstanceLinkByKey: (processInstanceKey: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -184,6 +185,13 @@ class OperateProcessesPage {
     this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
     this.applyButton = page.getByRole('button', {name: 'Apply'});
     this.resultsCount = page.getByText(/\d+ results/);
+    this.scheduledOperationsIcons = page.getByTitle(
+      /has scheduled operations/i,
+    );
+    this.processInstanceLinkByKey = (processInstanceKey: string) =>
+      page.getByRole('link', {
+        name: processInstanceKey,
+      });
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -278,11 +286,7 @@ class OperateProcessesPage {
   async clickRetryInstanceButton(processInstanceKey: string): Promise<void> {
     const button = this.getRetryInstanceButton(processInstanceKey);
     try {
-      await this.page
-        .getByRole('button', {
-          name: `Retry Instance ${processInstanceKey}`,
-        })
-        .click({timeout: 30000});
+      await button.click({timeout: 30000});
     } catch (error) {
       await button.scrollIntoViewIfNeeded({timeout: 60000});
       await button.click({timeout: 60000});
@@ -293,16 +297,6 @@ class OperateProcessesPage {
     const button = this.getCancelInstanceButton(processInstanceKey);
     await button.scrollIntoViewIfNeeded({timeout: 30000});
     await button.click({timeout: 30000});
-  }
-
-  getScheduledOperationsIcons(): Locator {
-    return this.page.getByTitle(/has scheduled operations/i);
-  }
-
-  getProcessInstanceLink(processInstanceKey: string): Locator {
-    return this.page.getByRole('link', {
-      name: processInstanceKey,
-    });
   }
 
   static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
