@@ -20,12 +20,12 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,8 +42,11 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class ProcessDefinitionStatisticsTenancyIT {
 
   @MultiDbTestApplication
-  private static final TestCamundaApplication TEST_INSTANCE =
-      new TestCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withBasicAuth()
+          .withMultiTenancyEnabled()
+          .withAuthenticatedAccess();
 
   private static final String TENANT_1 = "tenant1";
   private static final String TENANT_2 = "tenant2";
