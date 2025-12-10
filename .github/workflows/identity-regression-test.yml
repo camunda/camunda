@@ -55,13 +55,25 @@ jobs:
       fail-fast: false
       matrix:
         env: [ 'local' ]
-        case:
-          - 'user-authorizations-tests.http'
-          - 'tenant-tests.http'
-          - 'group-tests.http'
-          - 'mapping-rules.http'
-          - 'role-tests.http'
-          - 'csrf-protection-tests.http'
+        include:
+          - case: user-authorizations-tests.http
+            hostPort: 9200
+            hostTransportPort: 9300
+          - case: tenant-tests.http
+            hostPort: 9210
+            hostTransportPort: 9310
+          - case: group-tests.http
+            hostPort: 9220
+            hostTransportPort: 9320
+          - case: mapping-rules.http
+            hostPort: 9230
+            hostTransportPort: 9330
+          - case: role-tests.http
+            hostPort: 9240
+            hostTransportPort: 9340
+          - case: csrf-protection-tests.http
+            hostPort: 9250
+            hostTransportPort: 9350
 
     runs-on: ubuntu-latest
     environment: '${{ matrix.env }}-http-tests'
@@ -76,6 +88,9 @@ jobs:
           bootstrap.memory_lock: true
           xpack.security.enabled: false
           ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - ${{ matrix.hostPort }}:9200
+          - ${{ matrix.hostTransportPort }}:9300
 
     steps:
       - name: Checkout repository
@@ -139,6 +154,23 @@ jobs:
           tarball=$(ls camunda-zeebe-*.tar.gz)
           tar -xvzf "$tarball"
 
+      - name: Wait for Elasticsearch
+        run: |
+          echo "Waiting for Elasticsearch on localhost:${{ matrix.hostPort }}..."
+          for i in {1..30}; do
+            if curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health" | grep -q '"status"'; then
+              echo "✅ Elasticsearch responding"
+              break
+            fi
+            echo "⏳ Still waiting ($i/30)..."
+            sleep 5
+          done
+
+          if ! curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health" | grep -q '"status"'; then
+            echo "❌ Elasticsearch did not start in time" >&2
+            exit 1
+          fi
+
       - name: Start Camunda (default config)
         if: matrix.case != 'mapping-rules.http'
         run: |
@@ -146,7 +178,7 @@ jobs:
           dir=$(ls -d camunda-zeebe-*/)
           cd "$dir"
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://elasticsearch:9200 && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:${{ matrix.hostPort }} && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=${{ inputs.authorizations }} && \
@@ -264,7 +296,7 @@ jobs:
         run: |
           cd ./dist/target/camunda-zeebe-8.9.0-SNAPSHOT
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://elasticsearch:9200 && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:${{ matrix.hostPort }} && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
           export CAMUNDA_SECURITY_AUTHENTICATION_METHOD=OIDC && \
