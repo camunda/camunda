@@ -21,7 +21,6 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.exporter.CamundaExporter;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
@@ -88,7 +87,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       zeebeExporterClassName = ZEEBE_ELASTICSEARCH_EXPORTER;
     }
     Testcontainers.exposeHostPorts(9200);
-    setZeebeRecordPrefixForTest();
+
     standaloneBroker
         .withUnifiedConfig(
             cfg -> {
@@ -112,25 +111,6 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
                     .getElasticsearch()
                     .setIndexPrefix(zeebeRecordPrefix);
               }
-            })
-        .withExporter(
-            CamundaExporter.class.getSimpleName().toLowerCase(),
-            cfg -> {
-              cfg.setClassName(CamundaExporter.class.getName());
-              cfg.setArgs(
-                  Map.of(
-                      "index",
-                      Map.of("prefix", zeebeRecordPrefix),
-                      "bulk",
-                      Map.of("size", 1),
-                      "connect",
-                      Map.of(
-                          "url",
-                          "http://localhost:9200",
-                          "type",
-                          dbType.toString(),
-                          "indexPrefix",
-                          zeebeRecordPrefix)));
             })
         .withExporter(
             dbType.getId() + "exporter",
@@ -355,12 +335,6 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
             .open();
     Awaitility.await().timeout(10, TimeUnit.SECONDS).untilTrue(jobCompleted);
     jobWorker.close();
-  }
-
-  private void setZeebeRecordPrefixForTest() {
-    /*    standaloneBroker =
-    standaloneBroker.withEnv(
-        "ZEEBE_BROKER_EXPORTERS_OPTIMIZE_ARGS_INDEX_PREFIX", zeebeRecordPrefix);*/
   }
 
   private void destroyClient() {
