@@ -9,6 +9,5 @@ package io.camunda.webapps.schema.entities.auditlog;
 
 public enum AuditLogActorType {
   USER,
-  CLIENT,
-  UNKNOWN;
+  CLIENT;
 }

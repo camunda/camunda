@@ -51,6 +51,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModifica
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -263,7 +264,8 @@ public class RdbmsExporterWrapper implements Exporter {
         new AuditLogExportHandler<>(
             rdbmsWriter.getAuditLogWriter(),
             vendorDatabaseProperties,
-            new ProcessInstanceModificationAuditLogTransformer());
+            new ProcessInstanceModificationAuditLogTransformer(),
+            new AuditLogConfiguration()); // TODO figure the correct configuration
     builder.withHandler(PROCESS_INSTANCE_MODIFICATION, processInstanceModificationAuditLogHandler);
   }
 }

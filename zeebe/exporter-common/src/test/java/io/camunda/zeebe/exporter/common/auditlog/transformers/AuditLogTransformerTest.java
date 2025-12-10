@@ -1,0 +1,150 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter.common.auditlog.transformers;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import org.junit.jupiter.api.Test;
+
+class AuditLogTransformerTest {
+
+  private final ProtocolFactory factory = new ProtocolFactory();
+
+  @Test
+  void shouldSupportKnownEventIntent() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.USER_TASK)
+            .withIntents(UserTaskIntent.ASSIGNED);
+
+    final var record =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.ASSIGNED));
+
+    assertThat(config.supports(record)).isTrue();
+  }
+
+  @Test
+  void shouldNotSupportUnknownEventIntent() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.USER_TASK)
+            .withIntents(UserTaskIntent.ASSIGNED);
+
+    final var record =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.CANCELED));
+
+    assertThat(config.supports(record)).isFalse();
+  }
+
+  @Test
+  void shouldSupportMultipleIntents() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.USER_TASK)
+            .withIntents(UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED);
+
+    final var createdRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.CREATED));
+
+    final var assignedRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.ASSIGNED));
+
+    assertThat(config.supports(createdRecord)).isTrue();
+    assertThat(config.supports(assignedRecord)).isTrue();
+  }
+
+  @Test
+  void shouldSupportCommandRejectionWhenIntentAndRejectionTypeMatch() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.USER_TASK)
+            .withRejections(UserTaskIntent.CREATED, RejectionType.INVALID_STATE);
+
+    final var record =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withRecordType(RecordType.COMMAND_REJECTION)
+                    .withIntent(UserTaskIntent.CREATED)
+                    .withRejectionType(RejectionType.INVALID_STATE));
+
+    assertThat(config.supports(record)).isTrue();
+  }
+
+  @Test
+  void shouldNotSupportCommandRejectionWhenIntentDoesNotMatch() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.USER_TASK)
+            .withRejections(UserTaskIntent.CREATED, RejectionType.INVALID_STATE);
+
+    final var record =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withRecordType(RecordType.COMMAND_REJECTION)
+                    .withIntent(UserTaskIntent.ASSIGNED)
+                    .withRejectionType(RejectionType.INVALID_STATE));
+
+    assertThat(config.supports(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotSupportCommandRejectionWhenRejectionTypeDoesNotMatch() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.USER_TASK)
+            .withRejections(UserTaskIntent.CREATED, RejectionType.INVALID_STATE);
+
+    final var record =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withRecordType(RecordType.COMMAND_REJECTION)
+                    .withIntent(UserTaskIntent.CREATED)
+                    .withRejectionType(RejectionType.INVALID_ARGUMENT));
+
+    assertThat(config.supports(record)).isFalse();
+  }
+
+  @Test
+  void shouldSupportMultipleRejectionTypes() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.USER_TASK)
+            .withRejections(
+                UserTaskIntent.CREATED,
+                RejectionType.INVALID_STATE,
+                RejectionType.INVALID_ARGUMENT);
+
+    final var invalidStateRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withRecordType(RecordType.COMMAND_REJECTION)
+                    .withIntent(UserTaskIntent.CREATED)
+                    .withRejectionType(RejectionType.INVALID_STATE));
+
+    final var invalidArgumentRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withRecordType(RecordType.COMMAND_REJECTION)
+                    .withIntent(UserTaskIntent.CREATED)
+                    .withRejectionType(RejectionType.INVALID_ARGUMENT));
+
+    assertThat(config.supports(invalidStateRecord)).isTrue();
+    assertThat(config.supports(invalidArgumentRecord)).isTrue();
+  }
+}
