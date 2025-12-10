@@ -690,6 +690,8 @@ jobs:
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
         shell: bash
+        # temporary override to use alpha2 connectors image for integration tests
+        # see https://camunda.slack.com/archives/C071KP5BTHB/p1765347090334479
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
@@ -699,6 +701,7 @@ jobs:
           -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
           -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
+          -Dio.camunda.process.test.connectorsDockerImageVersion="8.9.0-alpha2"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
