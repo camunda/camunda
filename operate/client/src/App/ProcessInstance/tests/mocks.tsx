@@ -34,6 +34,8 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -120,6 +122,18 @@ const mockRequests = () => {
   });
   mockFetchProcess().withSuccess(mockProcess);
   mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+  mockQueryBatchOperationItems().withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
+  mockQueryBatchOperationItems().withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
+  mockSearchElementInstances().withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
 };
 
 type FlowNodeSelectorProps = {
