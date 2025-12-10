@@ -76,9 +76,6 @@ jobs:
           bootstrap.memory_lock: true
           xpack.security.enabled: false
           ES_JAVA_OPTS: -Xms1024m -Xmx1024m
-        ports:
-          - 9200:9200
-          - 9300:9300
 
     steps:
       - name: Checkout repository
@@ -238,6 +235,11 @@ jobs:
           export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_RESOURCE_TYPE=USER && \
           export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_RESOURCE_ID='*' && \
           export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_PERMISSIONS='CREATE,READ,UPDATE,DELETE' && \
+          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_OWNER_TYPE=USER && \
+          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_OWNER_ID=test && \
+          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_RESOURCE_TYPE=CLUSTER_VARIABLE && \
+          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_RESOURCE_ID='*' && \
+          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_PERMISSIONS='CREATE,READ,DELETE' && \
           export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo && \
           export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth,dev-data && \
           ./bin/camunda &
