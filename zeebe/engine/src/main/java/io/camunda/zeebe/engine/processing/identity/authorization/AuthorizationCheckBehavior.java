@@ -15,6 +15,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.authorization.aggregator.RejectionAggregator;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.AuthorizationScopeResolver;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
@@ -148,7 +149,7 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    return getRejection(aggregatedRejections);
+    return RejectionAggregator.aggregate(aggregatedRejections);
   }
 
   // Helper methods
@@ -301,56 +302,6 @@ public final class AuthorizationCheckBehavior {
         .map(AuthorizationScope::getResourceId)
         .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
         .anyMatch(request.resourceIds()::contains);
-  }
-
-  /**
-   * Returns a rejection based on the collected rejections. It prioritizes permission rejections
-   * first, then tenant rejections, and finally returns the first rejection if no specific type is
-   * found.
-   *
-   * @param rejections the list of collected authorization rejections
-   * @return an {@link Either} containing a {@link Rejection} or {@link Void}
-   */
-  private Either<Rejection, Void> getRejection(final List<AuthorizationRejection> rejections) {
-    // return permission rejection first, if it exists
-    final var permissionRejections =
-        rejections.stream()
-            .filter(AuthorizationRejection::isPermission)
-            .map(AuthorizationRejection::rejection)
-            .toList();
-    if (!permissionRejections.isEmpty()) {
-      final var reason =
-          permissionRejections.stream()
-              .map(Rejection::reason)
-              .distinct()
-              .collect(Collectors.joining("; "));
-      return Either.left(new Rejection(RejectionType.FORBIDDEN, reason));
-    }
-
-    // if there are tenant rejections, return them
-    final var tenantRejections =
-        rejections.stream()
-            .filter(AuthorizationRejection::isTenant)
-            .map(AuthorizationRejection::rejection)
-            .toList();
-    if (!tenantRejections.isEmpty()) {
-      final var reason =
-          tenantRejections.stream()
-              .map(Rejection::reason)
-              .distinct()
-              .collect(Collectors.joining("; "));
-      // Use the first rejection type (should be FORBIDDEN or NOT_FOUND)
-      return Either.left(new Rejection(tenantRejections.getFirst().type(), reason));
-    }
-
-    // Fallback: return the first rejection if present
-    if (!rejections.isEmpty()) {
-      return Either.left(rejections.getFirst().rejection());
-    }
-
-    // Should not happen, but fallback to forbidden
-    return Either.left(
-        new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
   }
 
   /**
