@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -196,20 +198,29 @@ public final class BatchOperationMultiPartitionTest {
 
     // partitions 1 and 2 are completed
     for (int i = 1; i < PARTITION_COUNT; i++) {
+      final int partition = i;
       assertThat(
               RecordingExporter.batchOperationPartitionLifecycleRecords()
                   .withBatchOperationKey(batchOperationKey)
-                  .withPartitionId(i)
+                  .withPartitionId(partition)
                   .limit(
                       record -> record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .contains(BatchOperationIntent.PARTITION_COMPLETED);
-      assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
-          .isEmpty();
+      await()
+          .atMost(5, TimeUnit.SECONDS)
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          engine
+                              .getProcessingState(partition)
+                              .getBatchOperationState()
+                              .get(batchOperationKey))
+                      .isEmpty());
     }
 
-    // partitions 3 is failed
+    // partition 3 is failed
     assertThat(
             RecordingExporter.batchOperationPartitionLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
@@ -218,8 +229,16 @@ public final class BatchOperationMultiPartitionTest {
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .contains(BatchOperationIntent.PARTITION_FAILED);
-    assertThat(engine.getProcessingState(3).getBatchOperationState().get(batchOperationKey))
-        .isEmpty();
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        engine
+                            .getProcessingState(3)
+                            .getBatchOperationState()
+                            .get(batchOperationKey))
+                    .isEmpty());
   }
 
   @Test
