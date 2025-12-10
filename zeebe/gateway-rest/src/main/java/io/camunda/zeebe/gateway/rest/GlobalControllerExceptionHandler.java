@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.databind.JsonMappingException.Reference;
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -40,6 +44,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       "Request property [%s] cannot be parsed";
   private static final String INVALID_ENUM_ERROR_MESSAGE =
       "%s for enum field '%s'. Use any of the following values: %s";
+  private static final String INVALID_TYPE_ERROR_MESSAGE_WITH_OPTIONS =
+      "Cannot map value '%s' for type '%s'. Use any of the following values: %s";
+  private static final String INVALID_TYPE_ERROR_MESSAGE = "Cannot map value '%s' for type '%s'";
 
   @Override
   protected ProblemDetail createProblemDetail(
@@ -57,6 +64,19 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       // with "Required request body is missing"
       // for proper exception tracing
       detail = REQUEST_BODY_MISSING_EXCEPTION_MESSAGE;
+    } else if (isUnknownTypeError(ex)) {
+      final var typeException = (InvalidTypeIdException) ex.getCause();
+      final var invalidValue = typeException.getTypeId();
+      final var typeName = typeException.getPath().getLast().getFieldName();
+
+      final var typeAnnotation =
+          typeException.getBaseType().getRawClass().getDeclaredAnnotation(JsonSubTypes.class);
+      if (typeAnnotation == null) {
+        detail = INVALID_TYPE_ERROR_MESSAGE.formatted(invalidValue, typeName);
+      } else {
+        final var options = Arrays.stream(typeAnnotation.value()).map(Type::name).toList();
+        detail = INVALID_TYPE_ERROR_MESSAGE_WITH_OPTIONS.formatted(invalidValue, typeName, options);
+      }
     } else if (isMismatchedInputError(ex)) {
       final var mismatchedInputException = (MismatchedInputException) ex.getCause();
       final var path =
@@ -74,6 +94,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       detail =
           INVALID_ENUM_ERROR_MESSAGE.formatted(
               ((HttpMessageNotReadableException) ex).getRootCause().getMessage(), field, options);
+    } else if (isArrayTypeDeserializationError(ex)) {
+      detail = ((HttpMessageNotReadableException) ex).getRootCause().getMessage() + ".";
     } else {
       detail = defaultDetail;
     }
@@ -105,6 +127,12 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     return false;
   }
 
+  private boolean isArrayTypeDeserializationError(final Exception ex) {
+    return ex instanceof final HttpMessageNotReadableException exception
+        && exception.getRootCause() != null
+        && exception.getRootCause() instanceof final DeserializationException dEx;
+  }
+
   private boolean isMismatchedInputError(final Exception ex) {
     return ex instanceof HttpMessageNotReadableException
         && ex.getCause() instanceof MismatchedInputException;
@@ -114,6 +142,11 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     return ex instanceof HttpMessageNotReadableException
         && ex.getCause() instanceof final ValueInstantiationException instantiationException
         && instantiationException.getType().isEnumType();
+  }
+
+  private boolean isUnknownTypeError(final Exception ex) {
+    return ex instanceof HttpMessageNotReadableException
+        && ex.getCause() instanceof InvalidTypeIdException;
   }
 
   @ExceptionHandler(Exception.class)
