@@ -18,7 +18,6 @@ import io.camunda.client.api.response.Process;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -170,7 +169,7 @@ public final class CreateDeploymentTest {
     // then
     assertThat(
             RecordingExporter.deploymentRecords()
-                .filter(record -> RecordType.COMMAND_REJECTION.equals(record.getRecordType()))
+                .onlyCommandRejections()
                 .getFirst()
                 .getValue()
                 .getResources())
