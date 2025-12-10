@@ -8,18 +8,15 @@
 
 import {createRef} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {notificationsStore} from 'modules/stores/notifications';
 import {adHocSubProcessInnerInstance} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {
   Wrapper,
-  adHocSubProcessInnerInstanceProcessInstance,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
 } from './mocks';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -28,9 +25,6 @@ import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations
 
 describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      adHocSubProcessInnerInstanceProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(
       mockAdHocSubProcessInnerInstanceProcessInstance,
     );
@@ -43,14 +37,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     mockSearchElementInstances().withSuccess(
       adHocSubProcessInnerInstanceElementInstances.level1,
     );
-
-    processInstanceDetailsStore.init({
-      id: adHocSubProcessInnerInstanceProcessInstance.id,
-    });
   });
 
   afterEach(() => {
-    processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
     notificationsStore.reset();
   });

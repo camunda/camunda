@@ -8,7 +8,6 @@
 
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
-import {createInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {TreeView} from '@carbon/react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -20,17 +19,6 @@ import {
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import type {ProcessInstanceEntity} from 'modules/types/operate';
-
-const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
-  createInstance({
-    id: '2251799813686118',
-    processId: '2251799813686038',
-    processName: 'Multi-Instance Process',
-    state: 'INCIDENT',
-    bpmnProcessId: 'multiInstanceProcess',
-  }),
-);
 
 const mockMultiInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',
@@ -44,16 +32,6 @@ const mockMultiInstanceProcessInstance: ProcessInstance = {
   hasIncident: true,
 };
 
-const eventSubprocessProcessInstance: ProcessInstanceEntity = Object.freeze(
-  createInstance({
-    id: '2251799813686118',
-    processId: '2251799813686038',
-    processName: 'Event subprocess Process',
-    state: 'INCIDENT',
-    bpmnProcessId: 'eventSubprocessProcess',
-  }),
-);
-
 const mockEventSubprocessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',
   state: 'ACTIVE',
@@ -66,16 +44,6 @@ const mockEventSubprocessInstance: ProcessInstance = {
   hasIncident: true,
 };
 
-const nestedSubProcessesInstance = Object.freeze(
-  createInstance({
-    id: '227539842356787',
-    processId: '39480256723678',
-    processName: 'Nested Sub Processes',
-    state: 'ACTIVE',
-    bpmnProcessId: 'NestedSubProcesses',
-  }),
-);
-
 const mockNestedSubProcessesInstance: ProcessInstance = {
   processInstanceKey: '227539842356787',
   state: 'ACTIVE',
@@ -87,16 +55,6 @@ const mockNestedSubProcessesInstance: ProcessInstance = {
   processDefinitionName: 'Nested Sub Processes',
   hasIncident: false,
 };
-
-const adHocSubProcessesInstance = Object.freeze(
-  createInstance({
-    id: '222734982389310',
-    processId: '12517992348923884',
-    processName: 'Ad Hoc Process',
-    state: 'ACTIVE',
-    bpmnProcessId: 'AdHocProcess',
-  }),
-);
 
 const mockAdHocSubProcessesInstance: ProcessInstance = {
   processInstanceKey: '222734982389310',
@@ -121,8 +79,6 @@ const mockNestedSubProcessInstance: ProcessInstance = {
   processDefinitionName: 'nested_sub_process',
   hasIncident: false,
 };
-
-const processInstanceId = multiInstanceProcessInstance.id;
 
 const multipleSubprocessesWithOneRunningScopeMock: Record<
   string,
@@ -919,16 +875,6 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
   },
 };
 
-const adHocSubProcessInnerInstanceProcessInstance = Object.freeze(
-  createInstance({
-    id: '111111111111111',
-    processId: '222222222222222',
-    processName: 'Ad Hoc Inner Subprocess Test',
-    state: 'COMPLETED',
-    bpmnProcessId: 'ad_hoc_inner_subprocess_test',
-  }),
-);
-
 const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '111111111111111',
   state: 'COMPLETED',
@@ -1030,22 +976,16 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 };
 
 export {
+  mockEventSubprocessInstance,
   mockMultiInstanceProcessInstance,
-  multiInstanceProcessInstance,
-  nestedSubProcessesInstance,
   mockNestedSubProcessesInstance,
   mockNestedSubProcessInstance,
-  adHocSubProcessesInstance,
-  processInstanceId,
   eventSubProcessElementInstances,
   adHocNodeElementInstances,
   mockAdHocSubProcessesInstance,
   multipleSubprocessesWithOneRunningScopeMock,
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithTwoRunningScopesMock,
-  eventSubprocessProcessInstance,
-  mockEventSubprocessInstance,
-  adHocSubProcessInnerInstanceProcessInstance,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
   Wrapper,

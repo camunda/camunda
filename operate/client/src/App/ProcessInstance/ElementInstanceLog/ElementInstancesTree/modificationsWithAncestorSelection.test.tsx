@@ -9,15 +9,12 @@
 import {createRef, act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ElementInstancesTree} from './index';
 import {
-  processInstanceId,
   multipleSubprocessesWithTwoRunningScopesMock,
   mockNestedSubProcessInstance,
   Wrapper,
 } from './mocks';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -25,16 +22,9 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {createInstance} from 'modules/testUtils';
 
 describe('ElementInstancesTree - modifications with ancestor selection', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      createInstance({
-        id: processInstanceId,
-        bpmnProcessId: 'nested_sub_process',
-      }),
-    );
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
@@ -46,13 +36,7 @@ describe('ElementInstancesTree - modifications with ancestor selection', () => {
       multipleSubprocessesWithTwoRunningScopesMock.firstLevel,
     );
 
-    processInstanceDetailsStore.init({id: processInstanceId});
-
     modificationsStore.enableModificationMode();
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
   });
 
   it('should create placeholder as a child of selected ancestor (direct parent) if there are multiple running scopes', async () => {
@@ -340,14 +324,14 @@ describe('ElementInstancesTree - modifications with ancestor selection', () => {
       modificationsStore.finishAddingToken(
         {},
         'nested_sub_process',
-        processInstanceId,
+        mockNestedSubProcessInstance.processDefinitionKey,
       );
 
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
         {},
         'nested_sub_process',
-        processInstanceId,
+        mockNestedSubProcessInstance.processDefinitionKey,
       );
     });
 
@@ -522,7 +506,7 @@ describe('ElementInstancesTree - modifications with ancestor selection', () => {
       modificationsStore.finishAddingToken(
         {},
         'nested_sub_process',
-        processInstanceId,
+        mockNestedSubProcessInstance.processDefinitionKey,
       );
 
       modificationsStore.addModification({

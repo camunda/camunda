@@ -369,27 +369,6 @@ const createDiagramNode = (options = {}) => {
   };
 };
 
-const createSequenceFlows = () => {
-  return [
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_0drux68',
-    },
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_0j6tsnn',
-    },
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_1dwqvrt',
-    },
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_1fgekwd',
-    },
-  ];
-};
-
 const mockProcessStatisticsV2 = {
   items: [
     {
@@ -1120,14 +1099,12 @@ const mockSingleProcessInstanceV2 = {
 export {
   createIncident,
   createEnhancedIncident,
-  createOperation,
   groupedProcessesMock,
   createProcess,
   createInstanceByProcess,
   createIncidentByError,
   createIncidentsByError,
   createDiagramNode,
-  createSequenceFlows,
   mockProcessStatisticsV2,
   mockMultipleStatesStatistics,
   mockProcessXML,

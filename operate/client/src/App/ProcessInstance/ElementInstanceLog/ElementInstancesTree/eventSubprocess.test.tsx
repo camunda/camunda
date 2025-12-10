@@ -8,13 +8,10 @@
 
 import {createRef} from 'react';
 import {render, screen} from 'modules/testing-library';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ElementInstancesTree} from './index';
 import {
   eventSubProcessElementInstances,
-  processInstanceId,
   Wrapper,
-  eventSubprocessProcessInstance,
   mockEventSubprocessInstance,
 } from './mocks';
 import {eventSubProcess} from 'modules/testUtils';
@@ -22,14 +19,10 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('ElementInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      eventSubprocessProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockEventSubprocessInstance);
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
@@ -40,12 +33,6 @@ describe('ElementInstancesTree - Event Subprocess', () => {
     mockSearchElementInstances().withSuccess(
       eventSubProcessElementInstances.level1,
     );
-
-    processInstanceDetailsStore.init({id: processInstanceId});
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
   });
 
   it('should be able to unfold and fold event subprocesses', async () => {

@@ -11,22 +11,18 @@ import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
 import {
   Wrapper,
-  adHocSubProcessesInstance,
   adHocNodeElementInstances,
   mockAdHocSubProcessesInstance,
 } from './mocks';
 import {ElementInstancesTree} from './index';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(adHocSubProcessesInstance);
     mockFetchProcessInstance().withSuccess(mockAdHocSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(open('AdHocProcess.bpmn'));
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
@@ -35,12 +31,6 @@ describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
       page: {totalItems: 0},
     });
     mockSearchElementInstances().withSuccess(adHocNodeElementInstances.level1);
-
-    processInstanceDetailsStore.init({id: adHocSubProcessesInstance.id});
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
   });
 
   it('should be able to unfold and fold ad hoc sub processes', async () => {

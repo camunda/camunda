@@ -9,21 +9,17 @@
 import {createRef, act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {ElementInstancesTree} from './index';
 import {
-  multiInstanceProcessInstance,
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
-  processInstanceId,
   Wrapper,
   mockMultiInstanceProcessInstance,
   mockNestedSubProcessInstance,
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {
@@ -46,23 +42,13 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     });
   });
 
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-  });
-
   it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess({
-      ...multiInstanceProcessInstance,
-      bpmnProcessId: 'nested_sub_process',
-    });
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.firstLevel,
     );
-
-    processInstanceDetailsStore.init({id: processInstanceId});
 
     const {user} = render(
       <ElementInstancesTree
@@ -220,9 +206,6 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove two add modification flow nodes', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess({
       items: [
@@ -256,8 +239,6 @@ describe('ElementInstancesTree - Modification placeholders', () => {
       ],
       page: {totalItems: 2},
     });
-
-    processInstanceDetailsStore.init({id: processInstanceId});
 
     render(
       <ElementInstancesTree
@@ -336,9 +317,6 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove one cancel modification flow nodes', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess({
       items: [
@@ -372,8 +350,6 @@ describe('ElementInstancesTree - Modification placeholders', () => {
       ],
       page: {totalItems: 2},
     });
-
-    processInstanceDetailsStore.init({id: processInstanceId});
 
     render(
       <ElementInstancesTree
@@ -417,18 +393,12 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess({
-      ...multiInstanceProcessInstance,
-      bpmnProcessId: 'nested_sub_process',
-    });
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.firstLevel,
     );
-
-    processInstanceDetailsStore.init({id: processInstanceId});
 
     const {user} = render(
       <ElementInstancesTree

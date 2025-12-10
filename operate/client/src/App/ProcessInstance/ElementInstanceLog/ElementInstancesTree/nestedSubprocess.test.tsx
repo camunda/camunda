@@ -8,17 +8,11 @@
 
 import {createRef, act} from 'react';
 import {render, screen} from 'modules/testing-library';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {open} from 'modules/mocks/diagrams';
-import {
-  nestedSubProcessesInstance,
-  Wrapper,
-  mockNestedSubProcessesInstance,
-} from './mocks';
+import {Wrapper, mockNestedSubProcessesInstance} from './mocks';
 import {ElementInstancesTree} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -27,12 +21,6 @@ import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations
 
 describe('ElementInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      nestedSubProcessesInstance,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      nestedSubProcessesInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(
       open('NestedSubProcesses.bpmn'),
@@ -79,12 +67,6 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
       ],
       page: {totalItems: 2},
     });
-
-    processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
   });
 
   it('should add parent placeholders (ADD_TOKEN)', async () => {

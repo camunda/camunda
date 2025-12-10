@@ -14,11 +14,8 @@ import {
 
 import {ElementInstanceLog} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {createInstance, createOperation} from 'modules/testUtils';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {useEffect} from 'react';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -41,19 +38,6 @@ const mockProcessInstance: ProcessInstance = {
   processDefinitionName: 'Multi-Instance Process',
   hasIncident: false,
 };
-const mockDeprecatedProcessInstance = createInstance({
-  id: '1',
-  state: 'ACTIVE',
-  processName: 'processName',
-  bpmnProcessId: 'processName',
-  operations: [
-    createOperation({
-      state: 'COMPLETED',
-      type: 'MIGRATE_PROCESS_INSTANCE',
-      completedDate: MOCK_TIMESTAMP,
-    }),
-  ],
-});
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
@@ -76,14 +60,8 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 };
 
 // TODO unskip with #27330
-describe.skip('ElementInstanceLog', () => {
+describe('ElementInstanceLog', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockDeprecatedProcessInstance,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockDeprecatedProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
@@ -153,9 +131,6 @@ describe.skip('ElementInstanceLog', () => {
 
   it('should continue polling after poll failure', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockDeprecatedProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
 
@@ -170,16 +145,6 @@ describe.skip('ElementInstanceLog', () => {
     expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);
     expect(await screen.findAllByTestId('COMPLETED-icon')).toHaveLength(1);
 
-    // first poll (server error)
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      createInstance({
-        id: '1',
-        state: 'ACTIVE',
-        processName: 'processName',
-        bpmnProcessId: 'processName',
-      }),
-    );
-
     vi.runOnlyPendingTimers();
     expect(
       await screen.findByText(/Instance History could not be fetched/i),
@@ -187,16 +152,6 @@ describe.skip('ElementInstanceLog', () => {
     expect(
       screen.queryByRole('tree', {name: /processName instance history/i}),
     ).not.toBeInTheDocument();
-
-    // second poll (success)
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      createInstance({
-        id: '1',
-        state: 'ACTIVE',
-        processName: 'processName',
-        bpmnProcessId: 'processName',
-      }),
-    );
 
     vi.runOnlyPendingTimers();
     await waitForElementToBeRemoved(
@@ -213,9 +168,6 @@ describe.skip('ElementInstanceLog', () => {
 
   it('should render flow node instances tree', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockDeprecatedProcessInstance,
-    );
 
     mockFetchProcessDefinitionXml().withSuccess('');
 

@@ -8,16 +8,9 @@
 
 import {createRef} from 'react';
 import {render, screen, within} from 'modules/testing-library';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
-import {
-  multiInstanceProcessInstance,
-  processInstanceId,
-  Wrapper,
-  mockMultiInstanceProcessInstance,
-} from './mocks';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {Wrapper, mockMultiInstanceProcessInstance} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -67,20 +60,11 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     });
   });
 
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-  });
-
   it('should load the instance history', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [],
     });
-
-    processInstanceDetailsStore.init({id: processInstanceId});
 
     render(
       <ElementInstancesTree
@@ -102,15 +86,10 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should be able to unfold and fold subprocesses', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [],
     });
-
-    processInstanceDetailsStore.init({id: processInstanceId});
 
     const {user} = render(
       <ElementInstancesTree
@@ -213,9 +192,6 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [],
@@ -225,7 +201,6 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     });
 
     vi.useFakeTimers({shouldAdvanceTime: true});
-    processInstanceDetailsStore.init({id: processInstanceId});
 
     render(
       <ElementInstancesTree
@@ -252,9 +227,6 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
       withinMultiInstanceElementInstance.queryByTestId('COMPLETED-icon'),
     ).not.toBeInTheDocument();
 
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
 
     mockSearchElementInstances().withSuccess({
