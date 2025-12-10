@@ -72,7 +72,8 @@ public sealed interface Schedule {
       } catch (final DateTimeParseException ex) {
         throw new IllegalArgumentException(
             "Invalid expression for schedule: must be one of CRON, ISO8601, NONE or AUTO. Given: "
-                + expression);
+                + expression,
+            ex);
       }
     }
   }
