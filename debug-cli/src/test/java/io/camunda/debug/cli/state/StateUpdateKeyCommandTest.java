@@ -21,21 +21,32 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import picocli.CommandLine;
 
 class StateUpdateKeyCommandTest {
 
   CommandLine commandLine;
   @TempDir Path tempDir;
+  StringWriter err;
+  StringWriter out;
 
   @BeforeEach
   public void setup() {
-    commandLine = new CommandLine(new Main());
+    err = new StringWriter();
+    out = new StringWriter();
+    commandLine =
+        new CommandLine(new Main()).setErr(new PrintWriter(err)).setOut(new PrintWriter(out));
   }
 
   @Test
@@ -99,5 +110,33 @@ class StateUpdateKeyCommandTest {
     assertThat(keyGen.nextKey()).isEqualTo(Protocol.encodePartitionId(1, 1L));
 
     return new SnapshotUtil().takeSnapshot(initialRuntime, partitionRoot, "1-1-1-1-1", 1L);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"root", "partition-id", "key", "snapshot", "runtime"})
+  void shouldFailIfRequiredArgumentIsNotSet(final String optionToSkip) {
+    // given
+    final var options = new ArrayList<>(List.of("state", "update-key", "-v"));
+    final var requiredOptions =
+        List.of(
+            "--root=rootFolder",
+            "--partition-id=1",
+            "--key=" + 100,
+            "--max-key=" + 1000,
+            "--snapshot=" + "exampleId",
+            "--runtime=" + tempDir.resolve("runtime"));
+
+    options.addAll(
+        requiredOptions.stream()
+            // skip the option if matches
+            .filter(o -> !o.split("=")[0].equals("--" + optionToSkip))
+            .toList());
+
+    // when
+    final int exitCode = commandLine.execute(options.toArray(String[]::new));
+
+    // then
+    assertThat(exitCode).isPositive();
+    assertThat(err.toString()).contains("Missing required option: '--%s=".formatted(optionToSkip));
   }
 }
