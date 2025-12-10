@@ -14,6 +14,8 @@ import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -149,6 +151,16 @@ public final class GcsBackupStore implements BackupStore {
           return BackupStatusCode.FAILED;
         },
         executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public CompletableFuture<BackupIndexFile> restoreIndex(final BackupIndexIdentifier id) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
