@@ -37,7 +37,7 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   public void afterEach(final ExtensionContext extensionContext) {
     super.afterEach(extensionContext);
     if (!failed) {
-      TestUtil.removeAllIndices(esClient, getPrefix());
+      cleanupIndicesIfNeeded(prefix -> TestUtil.removeAllIndices(esClient, prefix));
     }
   }
 
