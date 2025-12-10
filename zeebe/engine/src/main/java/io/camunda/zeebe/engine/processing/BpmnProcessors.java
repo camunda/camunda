@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstruc
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.conditional.ConditionalTriggerProcessor;
+import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
@@ -148,7 +148,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_SUBSCRIPTION,
         ConditionalSubscriptionIntent.TRIGGER,
-        new ConditionalTriggerProcessor(processingState, bpmnBehaviors, writers));
+        new ConditionalSubscriptionTriggerProcessor(processingState, bpmnBehaviors, writers));
   }
 
   private static void addProcessInstanceCommandProcessor(

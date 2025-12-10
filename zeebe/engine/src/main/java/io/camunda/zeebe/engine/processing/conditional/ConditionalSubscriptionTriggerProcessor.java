@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 @ExcludeAuthorizationCheck
-public class ConditionalTriggerProcessor
+public class ConditionalSubscriptionTriggerProcessor
     implements TypedRecordProcessor<ConditionalSubscriptionRecord> {
 
   private static final String NO_CONDITIONAL_SUBSCRIPTION_FOUND_MESSAGE =
@@ -49,7 +49,7 @@ public class ConditionalTriggerProcessor
 
   private final EventHandle eventHandle;
 
-  public ConditionalTriggerProcessor(
+  public ConditionalSubscriptionTriggerProcessor(
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
