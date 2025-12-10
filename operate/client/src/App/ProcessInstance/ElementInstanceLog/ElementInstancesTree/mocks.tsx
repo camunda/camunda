@@ -639,63 +639,75 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
   },
 };
 
-const adHocNodeFlowNodeInstances: {
-  level1: FlowNodeInstances;
-  level2: FlowNodeInstances;
-} = {
+const adHocNodeElementInstances: Record<
+  string,
+  QueryElementInstancesResponseBody
+> = {
   level1: {
-    [adHocSubProcessesInstance.id]: {
-      running: null,
-      children: [
-        {
-          id: '2251799813686130',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'StartEvent_1',
-          startDate: '2020-08-18T12:07:33.953+0000',
-          endDate: '2020-08-18T12:07:34.034+0000',
-          treePath: `${adHocSubProcessesInstance.id}/2251799813686130`,
-          sortValues: ['1606300828415', '2251799813686130'],
-        },
-        {
-          id: '1241799813612356',
-          type: 'AD_HOC_SUB_PROCESS',
-          state: 'COMPLETED',
-          flowNodeId: 'AdHocSubProcess',
-          startDate: '2020-08-18T12:07:33.953+0000',
-          endDate: '2020-08-18T12:07:34.034+0000',
-          treePath: `${adHocSubProcessesInstance.id}/1241799813612356`,
-          sortValues: ['1606300828415', '2251799813686156'],
-        },
-        {
-          id: '2251799813686156',
-          type: 'END_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'EndEvent_1',
-          startDate: '2020-08-18T12:07:33.953+0000',
-          endDate: '2020-08-18T12:07:34.034+0000',
-          treePath: `${adHocSubProcessesInstance.id}/2251799813686156`,
-          sortValues: ['1606300828415', '2251799813686156'],
-        },
-      ],
-    },
+    items: [
+      {
+        elementInstanceKey: '2251799813686130',
+        processInstanceKey: '222734982389310',
+        processDefinitionKey: '12517992348923884',
+        processDefinitionId: 'AdHocProcess',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'StartEvent_1',
+        elementName: 'StartEvent_1',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:33.953+0000',
+        endDate: '2020-08-18T12:07:34.034+0000',
+      },
+      {
+        elementInstanceKey: '1241799813612356',
+        processInstanceKey: '222734982389310',
+        processDefinitionKey: '12517992348923884',
+        processDefinitionId: 'AdHocProcess',
+        state: 'COMPLETED',
+        type: 'AD_HOC_SUB_PROCESS',
+        elementId: 'AdHocSubProcess',
+        elementName: 'Ad Hoc Sub Process',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:33.953+0000',
+        endDate: '2020-08-18T12:07:34.034+0000',
+      },
+      {
+        elementInstanceKey: '2251799813686156',
+        processInstanceKey: '222734982389310',
+        processDefinitionKey: '12517992348923884',
+        processDefinitionId: 'AdHocProcess',
+        state: 'COMPLETED',
+        type: 'END_EVENT',
+        elementId: 'EndEvent_1',
+        elementName: 'EndEvent_1',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:33.953+0000',
+        endDate: '2020-08-18T12:07:34.034+0000',
+      },
+    ],
+    page: {totalItems: 3},
   },
   level2: {
-    [`${adHocSubProcessesInstance.id}/1241799813612356`]: {
-      running: null,
-      children: [
-        {
-          id: '22345625376130',
-          type: 'TASK',
-          state: 'COMPLETED',
-          flowNodeId: 'Task_A',
-          startDate: '2020-08-18T12:07:33.953+0000',
-          endDate: '2020-08-18T12:07:34.034+0000',
-          treePath: `${adHocSubProcessesInstance.id}/1241799813612356/22345625376130`,
-          sortValues: ['1606300828415', '2251799813686130'],
-        },
-      ],
-    },
+    items: [
+      {
+        elementInstanceKey: '22345625376130',
+        processInstanceKey: '222734982389310',
+        processDefinitionKey: '12517992348923884',
+        processDefinitionId: 'AdHocProcess',
+        state: 'COMPLETED',
+        type: 'TASK',
+        elementId: 'TaskA',
+        elementName: 'Task A',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2020-08-18T12:07:33.953+0000',
+        endDate: '2020-08-18T12:07:34.034+0000',
+      },
+    ],
+    page: {totalItems: 1},
   },
 };
 
@@ -955,7 +967,7 @@ export {
   flowNodeInstances,
   eventSubProcessFlowNodeInstances,
   nestedSubProcessFlowNodeInstances,
-  adHocNodeFlowNodeInstances,
+  adHocNodeElementInstances,
   mockAdHocSubProcessesInstance,
   mockFlowNodeInstance,
   multipleFlowNodeInstances,
