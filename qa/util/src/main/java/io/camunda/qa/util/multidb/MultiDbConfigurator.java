@@ -11,7 +11,6 @@ import static io.camunda.application.commons.search.SearchEngineDatabaseConfigur
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
-import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
