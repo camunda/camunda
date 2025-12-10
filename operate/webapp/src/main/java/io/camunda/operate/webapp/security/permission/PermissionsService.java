@@ -52,6 +52,12 @@ public class PermissionsService {
     return getResourcePermissions(bpmnProcessId, AuthorizationResourceType.PROCESS_DEFINITION);
   }
 
+  /**
+   * Get permissions for multiple process definitions.
+   *
+   * @param bpmnProcessIds bpmnProcessIds
+   * @return permissions the user has for the given bpmnProcessId
+   */
   public Map<String, Set<String>> getProcessDefinitionPermissionsByResourceId(
       final Set<String> bpmnProcessIds) {
     return getResourcePermissionsByResourceIds(
@@ -66,6 +72,18 @@ public class PermissionsService {
    */
   public Set<String> getDecisionDefinitionPermissions(final String decisionId) {
     return getResourcePermissions(decisionId, AuthorizationResourceType.DECISION_DEFINITION);
+  }
+
+  /**
+   * Get permissions for multiple decision definitions.
+   *
+   * @param decisionIds decisionIds
+   * @return permissions the user has for the given decisionId
+   */
+  public Map<String, Set<String>> getDecisionDefinitionPermissionsByResourceId(
+      final Set<String> decisionIds) {
+    return getResourcePermissionsByResourceIds(
+        decisionIds, AuthorizationResourceType.DECISION_DEFINITION);
   }
 
   /**
