@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-public interface OffsetResponsePage {
+public interface IndexPaginationResponsePage {
 
   /** Total number of items that matches the query */
   Long totalItems();

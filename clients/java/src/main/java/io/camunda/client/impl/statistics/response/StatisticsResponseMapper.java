@@ -20,15 +20,15 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
-import io.camunda.client.api.search.response.OffsetResponse;
-import io.camunda.client.api.search.response.OffsetResponsePage;
+import io.camunda.client.api.search.response.IndexPaginationResponse;
+import io.camunda.client.api.search.response.IndexPaginationResponsePage;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
-import io.camunda.client.impl.search.response.OffsetResponseImpl;
-import io.camunda.client.impl.search.response.OffsetResponsePageImpl;
+import io.camunda.client.impl.search.response.IndexPaginationResponseImpl;
+import io.camunda.client.impl.search.response.IndexPaginationResponsePageImpl;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
@@ -105,34 +105,34 @@ public class StatisticsResponseMapper {
         ofNullable(response.getAssignees()).orElse(0L));
   }
 
-  public static OffsetResponse<ProcessDefinitionInstanceStatistics>
+  public static IndexPaginationResponse<ProcessDefinitionInstanceStatistics>
       toProcessDefinitionInstanceStatisticsResponse(
           final ProcessDefinitionInstanceStatisticsQueryResult response) {
-    final OffsetResponsePage page = toSearchResponsePage(response.getPage());
+    final IndexPaginationResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessDefinitionInstanceStatistics> items =
         toSearchResponseInstances(
             response.getItems(), ProcessDefinitionInstanceStatisticsImpl::new);
 
-    return new OffsetResponseImpl<>(items, page);
+    return new IndexPaginationResponseImpl<>(items, page);
   }
 
-  public static OffsetResponse<ProcessDefinitionInstanceVersionStatistics>
+  public static IndexPaginationResponse<ProcessDefinitionInstanceVersionStatistics>
       toProcessDefinitionInstanceVersionStatisticsResponse(
           final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
-    final OffsetResponsePage page = toSearchResponsePage(response.getPage());
+    final IndexPaginationResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessDefinitionInstanceVersionStatistics> items =
         toSearchResponseInstances(
             response.getItems(), ProcessDefinitionInstanceVersionStatisticsImpl::new);
 
-    return new OffsetResponseImpl<>(items, page);
+    return new IndexPaginationResponseImpl<>(items, page);
   }
 
-  private static OffsetResponsePage toSearchResponsePage(
-      final ProcessDefinitionInstanceStatisticsPageResponse pageResponse) {
+  private static IndexPaginationResponsePage toSearchResponsePage(
+      final io.camunda.client.protocol.rest.IndexPaginationResponse pageResponse) {
     if (pageResponse == null) {
-      return new OffsetResponsePageImpl(0L, false);
+      return new IndexPaginationResponsePageImpl(0L, false);
     }
-    return new OffsetResponsePageImpl(
+    return new IndexPaginationResponsePageImpl(
         pageResponse.getTotalItems(), pageResponse.getHasMoreTotalItems());
   }
 

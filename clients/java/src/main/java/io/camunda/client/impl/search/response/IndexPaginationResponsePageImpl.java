@@ -15,27 +15,25 @@
  */
 package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.response.OffsetResponse;
-import io.camunda.client.api.search.response.OffsetResponsePage;
-import java.util.List;
+import io.camunda.client.api.search.response.IndexPaginationResponsePage;
 
-public class OffsetResponseImpl<T> implements OffsetResponse<T> {
+public class IndexPaginationResponsePageImpl implements IndexPaginationResponsePage {
 
-  private final List<T> items;
-  private final OffsetResponsePage page;
+  private final Long totalItems;
+  private final Boolean hasMoreTotalItems;
 
-  public OffsetResponseImpl(final List<T> items, final OffsetResponsePage page) {
-    this.items = items;
-    this.page = page;
+  public IndexPaginationResponsePageImpl(final Long totalItems, final Boolean hasMoreTotalItems) {
+    this.totalItems = totalItems;
+    this.hasMoreTotalItems = hasMoreTotalItems;
   }
 
   @Override
-  public OffsetResponsePage page() {
-    return page;
+  public Long totalItems() {
+    return totalItems;
   }
 
   @Override
-  public List<T> items() {
-    return items;
+  public Boolean hasMoreTotalItems() {
+    return hasMoreTotalItems;
   }
 }

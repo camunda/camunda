@@ -513,9 +513,8 @@ components:
       type: object
       properties:
         page:
-          description: Pagination criteria.
           allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageRequest'
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array
@@ -535,7 +534,7 @@ components:
             $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsResult'
         page:
           allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageResponse'
+            - $ref: 'search-models.yaml#/components/schemas/IndexPaginationResponse'
           description: Pagination information about the search results.
 
     ProcessDefinitionInstanceStatisticsResult:
@@ -576,37 +575,13 @@ components:
       required:
         - field
 
-    ProcessDefinitionInstanceStatisticsPageRequest:
-      type: object
-      properties:
-        from:
-          description: The index of items to start searching from.
-          type: integer
-          format: int32
-        limit:
-          description: The maximum number of items to return in one request.
-          type: integer
-          default: 100
-
-    ProcessDefinitionInstanceStatisticsPageResponse:
-      description: Pagination information about the search results.
-      type: object
-      properties:
-        totalItems:
-          description: Total items matching the criteria.
-          type: integer
-          format: int64
-        hasMoreTotalItems:
-          description: Indicates whether there are more items matching the criteria.
-          type: boolean
-
     ProcessDefinitionInstanceVersionStatisticsQuery:
       type: object
       properties:
         page:
           description: Pagination criteria.
           allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageRequest'
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array
@@ -638,7 +613,7 @@ components:
         page:
           description: Pagination information about the search results.
           allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageResponse'
+            - $ref: 'search-models.yaml#/components/schemas/IndexPaginationResponse'
 
     ProcessDefinitionInstanceVersionStatisticsResult:
       description: Process definition instance version statistics response.

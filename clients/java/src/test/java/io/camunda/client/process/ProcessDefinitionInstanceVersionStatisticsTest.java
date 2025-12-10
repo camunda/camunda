@@ -22,7 +22,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
-import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsPageRequest;
+import io.camunda.client.protocol.rest.OffsetPagination;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.client.protocol.rest.SortOrderEnum;
@@ -87,14 +87,10 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
     final ProcessDefinitionInstanceVersionStatisticsQuery request =
         gatewayService.getLastRequest(ProcessDefinitionInstanceVersionStatisticsQuery.class);
 
-    final ProcessDefinitionInstanceStatisticsPageRequest page = request.getPage();
+    final OffsetPagination page = request.getPage();
     assertThat(page).isNotNull();
-    assertThat(page)
-        .extracting(ProcessDefinitionInstanceStatisticsPageRequest::getFrom)
-        .isEqualTo(5);
-    assertThat(page)
-        .extracting(ProcessDefinitionInstanceStatisticsPageRequest::getLimit)
-        .isEqualTo(10);
+    assertThat(page).extracting(OffsetPagination::getFrom).isEqualTo(5);
+    assertThat(page).extracting(OffsetPagination::getLimit).isEqualTo(10);
   }
 
   @Test

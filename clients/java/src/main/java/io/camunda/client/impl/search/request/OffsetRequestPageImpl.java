@@ -16,14 +16,12 @@
 package io.camunda.client.impl.search.request;
 
 import io.camunda.client.api.search.request.OffsetRequestPage;
-import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsPageRequest;
+import io.camunda.client.protocol.rest.OffsetPagination;
 
-public class OffsetRequestPageImpl
-    extends TypedSearchRequestPropertyProvider<ProcessDefinitionInstanceStatisticsPageRequest>
+public class OffsetRequestPageImpl extends TypedSearchRequestPropertyProvider<OffsetPagination>
     implements OffsetRequestPage {
 
-  private final ProcessDefinitionInstanceStatisticsPageRequest page =
-      new ProcessDefinitionInstanceStatisticsPageRequest();
+  private final OffsetPagination page = new OffsetPagination();
 
   @Override
   public OffsetRequestPage from(final Integer value) {
@@ -38,7 +36,7 @@ public class OffsetRequestPageImpl
   }
 
   @Override
-  protected ProcessDefinitionInstanceStatisticsPageRequest getSearchRequestProperty() {
+  protected OffsetPagination getSearchRequestProperty() {
     return page;
   }
 }
