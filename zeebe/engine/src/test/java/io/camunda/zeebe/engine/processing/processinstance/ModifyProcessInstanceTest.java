@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -669,7 +668,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(RecordingExporter.variableRecords().onlyEvents().limit(7))
+    assertThat(RecordingExporter.variableRecords().onlyEvents().limit(7))
         .extracting(Record::getValue)
         .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
         .containsExactlyInAnyOrder(
@@ -716,7 +715,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
@@ -802,14 +801,14 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("C")
                 .exists())
         .isTrue();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("subprocess")
@@ -1141,7 +1140,7 @@ public class ModifyProcessInstanceTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
@@ -1156,7 +1155,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(4))
@@ -1184,7 +1183,7 @@ public class ModifyProcessInstanceTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
@@ -1199,7 +1198,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(4))
@@ -1228,7 +1227,7 @@ public class ModifyProcessInstanceTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
@@ -1258,7 +1257,7 @@ public class ModifyProcessInstanceTest {
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.records()
                 .limitToProcessInstance(processInstanceKey)
                 .processInstanceRecords()
@@ -1308,7 +1307,7 @@ public class ModifyProcessInstanceTest {
 
     verifyThatRootElementIsActivated(processInstanceKey, "task", BpmnElementType.MANUAL_TASK);
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(callActivityElement.getValue().getElementId())
@@ -1349,7 +1348,7 @@ public class ModifyProcessInstanceTest {
             .modify();
 
     // then
-    io.camunda.zeebe.protocol.record.Assertions.assertThat(rejection)
+    assertThat(rejection)
         .describedAs(
             "Expect that activation is rejected when flow scope (e.g process instance) is terminated")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
@@ -1389,7 +1388,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
@@ -2023,7 +2022,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementIdIn("A", "B")
@@ -2081,7 +2080,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
@@ -2152,7 +2151,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
@@ -2203,7 +2202,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then only the multi-instance parent creates a new token at the target
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
@@ -2271,7 +2270,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then both multi-instance parents create a new token at the target
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
@@ -2548,18 +2547,18 @@ public class ModifyProcessInstanceTest {
             .limit(elementId, ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .toList();
 
-    Assertions.assertThat(elementInstanceEvents)
+    assertThat(elementInstanceEvents)
         .extracting(Record::getIntent)
         .describedAs("Expect the element instance to have been activated")
         .containsExactly(
             ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    Assertions.assertThat(elementInstanceEvents)
+    assertThat(elementInstanceEvents)
         .extracting(Record::getKey)
         .describedAs("Expect each element instance event to refer to the same entity")
         .containsOnly(elementInstanceEvents.getFirst().getKey());
 
-    Assertions.assertThat(elementInstanceEvents)
+    assertThat(elementInstanceEvents)
         .extracting(Record::getValue)
         .describedAs("Expect each element instance event to contain the complete record value")
         .extracting(
@@ -2573,7 +2572,7 @@ public class ModifyProcessInstanceTest {
             ProcessInstanceRecordValue::getParentProcessInstanceKey,
             ProcessInstanceRecordValue::getParentElementInstanceKey)
         .containsOnly(
-            Tuple.tuple(
+            tuple(
                 processActivatedEvent.getProcessDefinitionKey(),
                 processActivatedEvent.getBpmnProcessId(),
                 processActivatedEvent.getVersion(),
@@ -2587,7 +2586,7 @@ public class ModifyProcessInstanceTest {
 
   private void verifyThatElementIsCompleted(final long processInstanceKey, final String elementId) {
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withElementId(elementId)
@@ -2601,7 +2600,7 @@ public class ModifyProcessInstanceTest {
 
   private void verifyThatProcessInstanceIsCompleted(final long processInstanceKey) {
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.PROCESS)
