@@ -43,7 +43,8 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public String getFlowNodeIdByFlowNodeInstanceId(final String flowNodeInstanceId) {
+  public String getFlowNodeIdByFlowNodeInstanceId(
+      final long processInstanceId, final String flowNodeInstanceId) {
     final RequestDSL.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
             ? RequestDSL.QueryType.ALL
