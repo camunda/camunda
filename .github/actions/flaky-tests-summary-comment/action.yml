@@ -46,6 +46,17 @@ runs:
             return;
           }
 
+          // Validate data structure
+          const isValidData = flakyTestsData.every(item => 
+            typeof item === 'object' && 
+            typeof item.job === 'string' && 
+            typeof item.flaky_tests === 'string'
+          );
+          if (!isValidData) {
+            console.error('[flaky-tests] Invalid data structure - expected array of {job, flaky_tests} objects');
+            return;
+          }
+
           // Step 1: Process and structure the flaky test data
           const { processFlakyTestsData } = require('./.github/actions/flaky-tests-summary-comment/src/flaky-tests-data-processor');
           const processedData = processFlakyTestsData(flakyTestsData);
