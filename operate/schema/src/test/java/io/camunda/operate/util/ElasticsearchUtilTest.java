@@ -71,6 +71,17 @@ class ElasticsearchUtilTest {
   }
 
   @Test
+  void shouldUseCorrectRoutingWhenCallingGetById() throws IOException {
+    assertThat(
+            ElasticsearchUtil.getByIdOrSearchArchives(
+                esClient, templateDescr, DOC_ID, "routing", QueryType.ONLY_RUNTIME, "treePath"))
+        .isNull();
+
+    verifyGetRequest("routing");
+    verifyNoMoreInteractions(esClient);
+  }
+
+  @Test
   void shouldReturnNullWhenCallingGetByIdAndGetResultDoesNotExists() throws IOException {
     assertThat(
             ElasticsearchUtil.getByIdOrSearchArchives(
@@ -111,11 +122,16 @@ class ElasticsearchUtilTest {
   }
 
   private void verifyGetRequest() throws IOException {
+    verifyGetRequest(DOC_ID);
+  }
+
+  private void verifyGetRequest(final String routing) throws IOException {
     verify(esClient).get(getRequestCaptor.capture(), any());
 
     final GetRequest getRequest = getRequestCaptor.getValue();
     assertThat(getRequest.index()).isEqualTo(INDEX_NAME);
     assertThat(getRequest.id()).isEqualTo(DOC_ID);
+    assertThat(getRequest.routing()).isEqualTo(routing);
   }
 
   private void verifySearchRequest() throws IOException {
