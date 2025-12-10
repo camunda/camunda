@@ -32,6 +32,7 @@ import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
+import {ModificationDropdown as ModificationDropdownV1} from './ModificationDropdown/indexV1';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
@@ -424,7 +425,11 @@ const TopPanel: React.FC = observer(() => {
                 }
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (
+                    IS_ELEMENT_SELECTION_V2 ? (
                     <ModificationDropdown />
+                    ) : (
+                      <ModificationDropdownV1 />
+                    )
                   ) : (
                     !isIncidentBarOpen && <MetadataPopover />
                   )
