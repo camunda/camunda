@@ -13,7 +13,6 @@ import {
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
 import {
-  createEventSubProcessFlowNodeInstances,
   createInstance,
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
@@ -163,9 +162,6 @@ const processInstanceId = multiInstanceProcessInstance.id;
 
 const flowNodeInstances =
   createMultiInstanceFlowNodeInstances(processInstanceId);
-
-const eventSubProcessFlowNodeInstances =
-  createEventSubProcessFlowNodeInstances(processInstanceId);
 
 const multipleFlowNodeInstances: FlowNodeInstances = {
   [processInstanceId]: {
@@ -711,6 +707,90 @@ const adHocNodeElementInstances: Record<
   },
 };
 
+const eventSubProcessElementInstances: Record<
+  string,
+  QueryElementInstancesResponseBody
+> = {
+  level1: {
+    items: [
+      {
+        elementInstanceKey: '6755399441057427',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '2251799813686038',
+        processDefinitionId: 'eventSubprocessProcess',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'StartEvent_1vnazga',
+        elementName: 'StartEvent_1vnazga',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2021-06-22T13:43:59.698+0000',
+        endDate: '2021-06-22T13:43:59.701+0000',
+      },
+      {
+        elementInstanceKey: '6755399441057429',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '2251799813686038',
+        processDefinitionId: 'eventSubprocessProcess',
+        state: 'TERMINATED',
+        type: 'SERVICE_TASK',
+        elementId: 'ServiceTask_1daop2o',
+        elementName: 'Parent process task',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2021-06-22T13:43:59.707+0000',
+        endDate: '2021-06-22T13:46:59.705+0000',
+      },
+      {
+        elementInstanceKey: '6755399441063916',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '2251799813686038',
+        processDefinitionId: 'eventSubprocessProcess',
+        state: 'ACTIVE',
+        type: 'EVENT_SUB_PROCESS',
+        elementId: 'SubProcess_1ip6c6s',
+        elementName: 'Event Subprocess',
+        hasIncident: true,
+        tenantId: '<default>',
+        startDate: '2021-06-22T13:46:59.705+0000',
+      },
+    ],
+    page: {totalItems: 3},
+  },
+  level2: {
+    items: [
+      {
+        elementInstanceKey: '6755399441063918',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '2251799813686038',
+        processDefinitionId: 'eventSubprocessProcess',
+        state: 'COMPLETED',
+        type: 'START_EVENT',
+        elementId: 'StartEvent_1u9mwoj',
+        elementName: 'Interrupting timer',
+        hasIncident: false,
+        tenantId: '<default>',
+        startDate: '2021-06-22T13:46:59.714+0000',
+        endDate: '2021-06-22T13:46:59.719+0000',
+      },
+      {
+        elementInstanceKey: '6755399441063920',
+        processInstanceKey: '2251799813686118',
+        processDefinitionKey: '2251799813686038',
+        processDefinitionId: 'eventSubprocessProcess',
+        state: 'ACTIVE',
+        type: 'SERVICE_TASK',
+        elementId: 'ServiceTask_0h8cwwl',
+        elementName: 'Event Subprocess task',
+        hasIncident: true,
+        tenantId: '<default>',
+        startDate: '2021-06-22T13:46:59.722+0000',
+      },
+    ],
+    page: {totalItems: 2},
+  },
+};
+
 const multipleSubprocessesWithTwoRunningScopesMock: Record<
   string,
   QueryElementInstancesResponseBody
@@ -965,7 +1045,7 @@ export {
   adHocSubProcessesInstance,
   processInstanceId,
   flowNodeInstances,
-  eventSubProcessFlowNodeInstances,
+  eventSubProcessElementInstances,
   nestedSubProcessFlowNodeInstances,
   adHocNodeElementInstances,
   mockAdHocSubProcessesInstance,

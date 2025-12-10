@@ -6,59 +6,53 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {createRef} from 'react';
+import {render, screen} from 'modules/testing-library';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {FlowNodeInstancesTree} from '.';
-
+import {ElementInstancesTree} from './index';
 import {
-  eventSubProcessFlowNodeInstances,
-  mockFlowNodeInstance,
+  eventSubProcessElementInstances,
   processInstanceId,
   Wrapper,
   eventSubprocessProcessInstance,
   mockEventSubprocessInstance,
 } from './mocks';
 import {eventSubProcess} from 'modules/testUtils';
-import {createRef} from 'react';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
-import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
-describe('FlowNodeInstancesTree - Event Subprocess', () => {
+describe('ElementInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      eventSubprocessProcessInstance,
+    );
     mockFetchProcessInstance().withSuccess(mockEventSubprocessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      eventSubprocessProcessInstance,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      eventSubprocessProcessInstance,
-    );
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockQueryBatchOperationItems().withSuccess({
       items: [],
+      page: {totalItems: 0},
     });
+    mockSearchElementInstances().withSuccess(
+      eventSubProcessElementInstances.level1,
+    );
 
     processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
+  });
+
+  afterEach(() => {
+    processInstanceDetailsStore.reset();
   });
 
   it('should be able to unfold and fold event subprocesses', async () => {
-    mockFetchFlowNodeInstances().withSuccess(
-      eventSubProcessFlowNodeInstances.level1,
-    );
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-    });
-
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={{...mockFlowNodeInstance, state: 'ACTIVE'}}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockEventSubprocessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -72,8 +66,8 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Interrupting timer')).not.toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
-      eventSubProcessFlowNodeInstances.level2,
+    mockSearchElementInstances().withSuccess(
+      eventSubProcessElementInstances.level2,
     );
 
     await user.type(
