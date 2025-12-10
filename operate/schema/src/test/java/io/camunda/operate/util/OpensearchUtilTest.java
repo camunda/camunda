@@ -60,7 +60,7 @@ class OpensearchUtilTest {
 
   @Test
   void shouldReturnSourceWhenCallingGetByIdAndGetResultExists() {
-    when(docOperations.getWithRetries(any(), any(), any()))
+    when(docOperations.getWithRetries(any(), any(), any(), any()))
         .thenReturn(Optional.of(Map.of("treePath", "/a/b/c")));
 
     assertThat(
@@ -69,6 +69,17 @@ class OpensearchUtilTest {
         .isEqualTo(Map.of("treePath", "/a/b/c"));
 
     verifyGetRequest();
+    verifyNoMoreInteractions(docOperations);
+  }
+
+  @Test
+  void shouldUseCorrectRoutingWhenCallingGetById() {
+    assertThat(
+            OpensearchUtil.getByIdOrSearchArchives(
+                osClient, templateDescr, DOC_ID, "routing", QueryType.ONLY_RUNTIME, "treePath"))
+        .isNull();
+
+    verifyGetRequest("routing");
     verifyNoMoreInteractions(docOperations);
   }
 
@@ -111,7 +122,11 @@ class OpensearchUtilTest {
   }
 
   private void verifyGetRequest() {
-    verify(docOperations).getWithRetries(INDEX_NAME, DOC_ID, Map.class);
+    verifyGetRequest(DOC_ID);
+  }
+
+  private void verifyGetRequest(final String routing) {
+    verify(docOperations).getWithRetries(INDEX_NAME, DOC_ID, routing, Map.class);
   }
 
   private void verifySearchRequest() {
