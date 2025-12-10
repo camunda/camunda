@@ -495,11 +495,13 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
-      await expect(operateProcessesPage.operationSuccessMessage).toBeVisible({
+      const operationEntry = operateProcessesPage.getMigrationOperationEntry(3);
+
+      await expect(operationEntry).toBeVisible({
         timeout: 120000,
       });
 
-      await operateProcessesPage.clickLatestOperationLink();
+      await operateProcessesPage.clickOperationLink(operationEntry);
 
       await validateURL(page, /operationId=/);
 
