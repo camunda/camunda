@@ -53,6 +53,7 @@ public final class AzureBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
+  private final IndexManager indexManager;
 
   AzureBackupStore(final AzureBackupConfig config) {
     this(config, buildClient(config));
@@ -64,6 +65,7 @@ public final class AzureBackupStore implements BackupStore {
 
     fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
     manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
+    indexManager = new IndexManager(blobContainerClient, isCreateContainer(config));
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -213,12 +215,20 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    throw new UnsupportedOperationException();
+    if (!(indexFile instanceof final AzureBackupIndexFile azureIndexFile)) {
+      throw new IllegalArgumentException(
+          "Expected index file of type %s but got %s: %s"
+              .formatted(
+                  AzureBackupIndexFile.class.getSimpleName(),
+                  indexFile.getClass().getSimpleName(),
+                  indexFile));
+    }
+    return CompletableFuture.runAsync(() -> indexManager.upload(azureIndexFile), executor);
   }
 
   @Override
   public CompletableFuture<BackupIndexFile> restoreIndex(final BackupIndexIdentifier id) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(() -> indexManager.download(id), executor);
   }
 
   @Override
