@@ -162,6 +162,10 @@ paths:
   /element-instances/{elementInstanceKey}/variables:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
 
+  # Expression endpoints
+  /expression/evaluation:
+    $ref: 'expression.yaml#/paths/~1expression~1evaluation'
+
   # Group endpoints
   /groups:
     $ref: 'groups.yaml#/paths/~1groups'

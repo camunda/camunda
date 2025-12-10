@@ -232,6 +232,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean clusterVariable = true;
     public boolean conditionalSubscription = false;
     public boolean conditionalEvaluation = false;
+    public boolean expression = false;
 
     public boolean globalListenerBatch = false;
 

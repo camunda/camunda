@@ -14,6 +14,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClo
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ExpressionValidator.validateExpressionEvaluationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -46,6 +47,7 @@ import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
+import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.JobServices.ActivateJobsRequest;
@@ -736,6 +738,13 @@ public class RequestMapper {
         ClusterVariableRequestValidator.validateTenantClusterVariableRequest(
             name, tenantId, identifierPattern),
         () -> new ClusterVariableRequest(name, null, tenantId));
+  }
+
+  public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
+      final String expression, final String tenantId) {
+    return getResult(
+        validateExpressionEvaluationRequest(expression),
+        () -> new ExpressionEvaluationRequest(expression, tenantId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
