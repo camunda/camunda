@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -166,6 +168,32 @@ public final class BatchOperationMultiPartitionTest {
     }
 
     // then
+    // Wait for partitions 1 and 2 to be cleaned up
+    for (int i = 1; i < PARTITION_COUNT; i++) {
+      final int partitionId = i;
+      await()
+          .atMost(5, TimeUnit.SECONDS)
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          engine
+                              .getProcessingState(partitionId)
+                              .getBatchOperationState()
+                              .get(batchOperationKey))
+                      .isEmpty());
+    }
+    // Wait for partition 3 to be cleaned up
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        engine
+                            .getProcessingState(PARTITION_COUNT)
+                            .getBatchOperationState()
+                            .get(batchOperationKey))
+                    .isEmpty());
+
     assertThat(
             RecordingExporter.batchOperationPartitionLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
