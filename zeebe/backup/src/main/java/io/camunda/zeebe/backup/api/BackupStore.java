@@ -46,7 +46,7 @@ public interface BackupStore {
    * Stores a given {@link BackupIndexFile}.
    *
    * @param indexFile an opaque holder of the actual {@link BackupIndex}, as retrieved via {@link
-   *     #restoreIndex(BackupIndexIdentifier)}.
+   *     #restoreIndex(BackupIndexIdentifier, Path)}.
    * @implNote Some implementations may fail the future with {@link
    *     java.util.ConcurrentModificationException} if they detect that the file has unexpectedly
    *     changed in the meantime. To allow subsequent modifications, the internal state of the given
@@ -58,10 +58,12 @@ public interface BackupStore {
    * Makes the stored {@link BackupIndexFile} available locally, allowing callers to construct the
    * actual {@link BackupIndex} from it.
    *
+   * @param id the identifier of the index to restore
+   * @param targetPath the local path where the index file should be downloaded
    * @implNote Some implementations may store metadata in the returned {@link BackupIndexFile} that
    *     allows them to detect concurrent modifications during {@link #storeIndex(BackupIndexFile)}.
    */
-  CompletableFuture<BackupIndexFile> restoreIndex(BackupIndexIdentifier id);
+  CompletableFuture<BackupIndexFile> restoreIndex(BackupIndexIdentifier id, Path targetPath);
 
   CompletableFuture<Void> closeAsync();
 

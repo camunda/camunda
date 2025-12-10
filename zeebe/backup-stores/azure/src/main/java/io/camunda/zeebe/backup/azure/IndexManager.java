@@ -67,26 +67,27 @@ final class IndexManager {
     }
   }
 
-  BackupIndexFile download(final BackupIndexIdentifier id) {
-    final Path targetPath;
-    try {
-      targetPath = Files.createTempFile("azure-backup-store", ".index");
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to allocate local index file", e);
+  BackupIndexFile download(final BackupIndexIdentifier id, final Path targetPath) {
+    if (Files.exists(targetPath)) {
+      throw new IllegalArgumentException("Index file already exists at " + targetPath);
     }
-
     final BlobClient blobClient = containerClient.getBlobClient(objectKey(id));
 
     try {
       if (!blobClient.exists()) {
         LOG.debug("Index {} not found in Azure", id);
+        try {
+          Files.createFile(targetPath);
+        } catch (final IOException e) {
+          throw new UncheckedIOException(e);
+        }
         return new AzureBackupIndexFile(
             targetPath, new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()));
       }
 
-      blobClient.downloadToFile(targetPath.toString(), true);
+      blobClient.downloadToFile(targetPath.toString(), false);
       final var properties = blobClient.getProperties();
-      LOG.debug("Downloaded index {}", id);
+      LOG.debug("Downloaded index {} to {}", id, targetPath);
 
       return new AzureBackupIndexFile(
           targetPath,

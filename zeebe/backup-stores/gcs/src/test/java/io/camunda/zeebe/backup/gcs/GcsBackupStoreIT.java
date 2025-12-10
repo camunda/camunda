@@ -81,7 +81,7 @@ public class GcsBackupStoreIT {
   }
 
   @Nested
-  final class WithoutBasePath implements BackupStoreTestKit {
+  final class WithoutBasePath implements BackupStoreTestKit, StoringBackupIndex {
 
     private GcsBackupStore store;
 

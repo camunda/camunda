@@ -77,9 +77,10 @@ public class LoggingBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(final BackupIndexIdentifier id) {
-    logger.atLevel(level).log("Restoring index {}", id);
-    return store.restoreIndex(id);
+  public CompletableFuture<BackupIndexFile> restoreIndex(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    logger.atLevel(level).log("Restoring index {} to {}", id, targetPath);
+    return store.restoreIndex(id, targetPath);
   }
 
   @Override

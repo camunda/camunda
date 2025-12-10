@@ -265,8 +265,9 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(final BackupIndexIdentifier id) {
-    return indexManager.download(id);
+  public CompletableFuture<BackupIndexFile> restoreIndex(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    return indexManager.download(id, targetPath);
   }
 
   @Override

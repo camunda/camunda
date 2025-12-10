@@ -169,8 +169,9 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(final BackupIndexIdentifier id) {
-    return CompletableFuture.supplyAsync(() -> indexManager.download(id), executor);
+  public CompletableFuture<BackupIndexFile> restoreIndex(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
   }
 
   @Override
