@@ -8,27 +8,23 @@
 
 import {createRef, act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {FlowNodeInstancesTree} from '.';
+import {ElementInstancesTree} from './index';
 import {
   multiInstanceProcessInstance,
-  flowNodeInstances,
-  mockFlowNodeInstance,
-  multipleFlowNodeInstances,
-  processInstanceId,
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
+  processInstanceId,
   Wrapper,
   mockMultiInstanceProcessInstance,
+  mockNestedSubProcessInstance,
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {
   cancelAllTokens,
@@ -36,20 +32,22 @@ import {
 } from 'modules/utils/modifications';
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {parseDiagramXML} from 'modules/utils/bpmn';
 
-describe('FlowNodeInstancesTree - Modification placeholders', () => {
+describe('ElementInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      multiInstanceProcessInstance,
-    );
-    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockQueryBatchOperationItems().withSuccess({
       items: [],
+      page: {totalItems: 0},
     });
+  });
+
+  afterEach(() => {
+    processInstanceDetailsStore.reset();
   });
 
   it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
@@ -57,32 +55,19 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',
     });
-
-    mockFetchFlowNodeInstances().withSuccess(
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
+    mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.firstLevel,
     );
 
-    mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-
     processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    await waitFor(() => {
-      expect([
-        flowNodeInstanceStore.state.status,
-        processInstanceDetailsStore.state.status,
-      ]).toEqual(['fetched', 'fetched']);
-    });
 
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={{
-          ...mockFlowNodeInstance,
-          state: 'INCIDENT',
-          flowNodeId: 'nested_sub_process',
-        }}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -137,7 +122,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       ).toHaveLength(3),
     );
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.secondLevel1,
     );
 
@@ -150,7 +135,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.thirdLevel1,
     );
 
@@ -162,7 +147,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.secondLevel2,
     );
 
@@ -172,7 +157,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
     );
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.thirdLevel2,
     );
 
@@ -235,25 +220,58 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove two add modification flow nodes', async () => {
-    processInstanceDetailsStore.init({id: processInstanceId});
-
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1!);
-    flowNodeInstanceStore.init();
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'PARALLEL_GATEWAY',
+          elementId: 'peterFork',
+          elementName: 'Peter Fork',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+        },
+        {
+          elementInstanceKey: '2251799813686156',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'ACTIVE',
+          type: 'MULTI_INSTANCE_BODY',
+          elementId: 'filterMapSubProcess',
+          elementName: 'Filter-Map Sub Process',
+          hasIncident: true,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:34.205+0000',
+        },
+      ],
+      page: {totalItems: 2},
     });
 
+    processInstanceDetailsStore.init({id: processInstanceId});
+
     render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={{...mockFlowNodeInstance, state: 'ACTIVE'}}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
       },
     );
+
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
 
     expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
 
@@ -321,25 +339,55 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
-    mockFetchFlowNodeInstances().withSuccess(multipleFlowNodeInstances);
-
-    processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '2251799813686130',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'COMPLETED',
+          type: 'EXCLUSIVE_GATEWAY',
+          elementId: 'peterJoin',
+          elementName: 'Peter Join',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+        },
+        {
+          elementInstanceKey: '2251799813686156',
+          processInstanceKey: '2251799813686118',
+          processDefinitionKey: '2251799813686038',
+          processDefinitionId: 'multiInstanceProcess',
+          state: 'ACTIVE',
+          type: 'EXCLUSIVE_GATEWAY',
+          elementId: 'peterJoin',
+          elementName: 'Peter Join',
+          hasIncident: true,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+        },
+      ],
+      page: {totalItems: 2},
     });
 
+    processInstanceDetailsStore.init({id: processInstanceId});
+
     render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={{...mockFlowNodeInstance, state: 'ACTIVE'}}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockMultiInstanceProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
       },
     );
+
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
 
     // modification icons
     expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
@@ -351,9 +399,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       cancelAllTokens('peterJoin', 0, 0, {});
     });
 
-    expect(
-      await screen.findByText('Multi-Instance Process'),
-    ).toBeInTheDocument();
     expect(screen.getAllByText('Peter Join')).toHaveLength(2);
 
     // modification icons
@@ -371,38 +416,24 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
   });
 
-  // Skipped due to flakiness, needs to be investigated further #40498
-  it.skip('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
+  it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
     mockFetchProcessInstanceDeprecated().withSuccess({
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',
     });
-
-    mockFetchFlowNodeInstances().withSuccess(
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
+    mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.firstLevel,
     );
 
-    mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-
     processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    await waitFor(() => {
-      expect([
-        flowNodeInstanceStore.state.status,
-        processInstanceDetailsStore.state.status,
-      ]).toEqual(['fetched', 'fetched']);
-    });
 
     const {user} = render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={{
-          ...mockFlowNodeInstance,
-          state: 'ACTIVE',
-          flowNodeId: 'nested_sub_process',
-        }}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
+      <ElementInstancesTree
+        processInstance={mockNestedSubProcessInstance}
+        scrollableContainerRef={createRef<HTMLDivElement>()}
       />,
       {
         wrapper: Wrapper,
@@ -415,6 +446,8 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       }),
     ).toHaveLength(2);
 
+    const businessObjects = await parseDiagramXML(mockNestedSubprocess);
+
     act(() => {
       modificationsStore.enableModificationMode();
       modificationsStore.addModification({
@@ -425,7 +458,11 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds: generateParentScopeIds({}, 'user_task'),
+          parentScopeIds: generateParentScopeIds(
+            businessObjects.elementsById,
+            'user_task',
+            'nested_sub_process',
+          ),
         },
       });
       modificationsStore.addModification({
@@ -436,18 +473,22 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds: generateParentScopeIds({}, 'user_task'),
+          parentScopeIds: generateParentScopeIds(
+            businessObjects.elementsById,
+            'user_task',
+            'nested_sub_process',
+          ),
         },
       });
     });
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.secondLevel1,
     );
 
@@ -462,7 +503,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.thirdLevel1,
     );
 
@@ -473,9 +514,11 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       '{arrowright}',
     );
 
-    expect(await screen.findByText('user_task')).toBeInTheDocument();
+    expect(screen.getAllByRole('treeitem', {name: 'user_task'})).toHaveLength(
+      1,
+    );
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.secondLevel2,
     );
 
@@ -485,7 +528,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
     );
 
-    mockFetchFlowNodeInstances().withSuccess(
+    mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.thirdLevel2,
     );
 
@@ -500,7 +543,9 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(screen.getAllByText('Event_1rw6vny')).toHaveLength(2),
     );
 
-    expect(screen.getAllByText('user_task')).toHaveLength(4);
+    expect(screen.getAllByRole('treeitem', {name: 'user_task'})).toHaveLength(
+      2,
+    );
 
     // fold first parent scope
     await user.type(
@@ -511,7 +556,9 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     );
 
     expect(screen.getByText('inner_sub_process')).toBeInTheDocument();
-    expect(screen.getAllByText('user_task')).toHaveLength(3);
+    expect(screen.getAllByRole('treeitem', {name: 'user_task'})).toHaveLength(
+      1,
+    );
 
     // fold second parent scope
     await user.type(
