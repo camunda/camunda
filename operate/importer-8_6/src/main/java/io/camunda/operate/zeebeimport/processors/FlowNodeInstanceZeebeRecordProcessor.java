@@ -108,6 +108,15 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     final String intentStr = record.getIntent().name();
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
+    if (recordValue.getProcessInstanceKey() == recordValue.getElementInstanceKey()) {
+      // Incident is on process instance level, so no need to update FNI
+      LOGGER.debug(
+          "Process instance {} root incident {}, skipping FNI update",
+          recordValue.getProcessInstanceKey(),
+          record.getKey());
+      return;
+    }
+
     // update activity instance
     final FlowNodeInstanceEntity entity =
         new FlowNodeInstanceEntity()

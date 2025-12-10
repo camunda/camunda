@@ -46,7 +46,6 @@ public class ProcessInstanceForListViewEntity
       new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
 
   private Long position;
-
   @JsonIgnore private Object[] sortValues;
 
   public Long getProcessInstanceKey() {
