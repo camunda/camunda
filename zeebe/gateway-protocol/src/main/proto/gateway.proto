@@ -867,6 +867,28 @@ message BroadcastSignalResponse {
   string tenantId = 2;
 }
 
+message EvaluateConditionalRequest {
+  // the id of the tenant that owns the process definition
+  string tenantId = 1;
+  // the key of the process definition; if not provided, evaluates all process definitions with conditional start events
+  optional int64 processDefinitionKey = 2;
+  // the variables as a JSON document; to be valid, the root of the document must be an
+  // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
+  string variables = 3;
+}
+
+message ProcessInstanceReference {
+  // the key of the process definition
+  int64 processDefinitionKey = 1;
+  // the key of the created process instance
+  int64 processInstanceKey = 2;
+}
+
+message EvaluateConditionalResponse {
+  // list of process instances that were created
+  repeated ProcessInstanceReference processInstances = 1;
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -1186,6 +1208,24 @@ service Gateway {
     Broadcasts a signal.
    */
   rpc BroadcastSignal (BroadcastSignalRequest) returns (BroadcastSignalResponse) {
+
+  }
+
+  /*
+    Evaluates conditional start events for process definitions.
+    
+    Errors:
+     INVALID_ARGUMENT:
+      - the given variables argument is not a valid JSON document; it is expected to be a valid
+        JSON document where the root node is an object.
+      - multi-tenancy is enabled and tenantId is blank (empty string, null)
+      - multi-tenancy is disabled and tenantId is not default tenant
+     NOT_FOUND:
+      - no process with the given key exists (if processDefinitionKey was given)
+     PERMISSION_DENIED:
+      - when the caller lacks permission to start process instances
+   */
+  rpc EvaluateConditional (EvaluateConditionalRequest) returns (EvaluateConditionalResponse) {
 
   }
 }

@@ -29,6 +29,7 @@
         {"service": "gateway_protocol.Gateway", "method": "CreateProcessInstanceWithResult"},
         {"service": "gateway_protocol.Gateway", "method": "DeployProcess"},
         {"service": "gateway_protocol.Gateway", "method": "DeployResource"},
+        {"service": "gateway_protocol.Gateway", "method": "EvaluateConditional"},
         {"service": "gateway_protocol.Gateway", "method": "ModifyProcessInstance"},
         {"service": "gateway_protocol.Gateway", "method": "PublishMessage"},
         {"service": "gateway_protocol.Gateway", "method": "SetVariables"},
