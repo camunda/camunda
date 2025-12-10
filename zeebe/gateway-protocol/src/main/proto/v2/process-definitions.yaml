@@ -572,8 +572,6 @@ components:
 
     ProcessDefinitionInstanceVersionStatisticsQuery:
       type: object
-      required:
-        - page
       properties:
         page:
           description: Pagination criteria.
