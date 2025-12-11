@@ -40,6 +40,7 @@ const PAGE_TITLE = {
   DECISION_INSTANCE: (id: string, name: string) =>
     `Operate: Decision Instance ${id} of ${name}`,
   BATCH_OPERATIONS: 'Operate: Batch Operations',
+  AUDIT_LOG: 'Operate: Operations Log',
 };
 
 const PAGE_TOP_PADDING = 48;

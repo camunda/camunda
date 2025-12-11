@@ -9,15 +9,12 @@
 import styled from 'styled-components';
 
 const Container = styled.section`
+  display: grid;
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  overflow: auto;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr;
 `;
 
-const OperationLogName = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-02);
-`;
-
-export {Container, OperationLogName};
+export {Container};

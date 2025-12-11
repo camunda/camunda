@@ -19,9 +19,9 @@ type Props = {
   state: AuditLogResult;
 };
 
-const AuditLogIcon: React.FC<Props> = ({state}) => {
+const OperationsLogStateIcon: React.FC<Props> = ({state}) => {
   const TargetComponent = stateIconsMap[state];
   return <TargetComponent data-testid={`${state}-icon`} size={20} />;
 };
 
-export {AuditLogIcon};
+export {OperationsLogStateIcon};

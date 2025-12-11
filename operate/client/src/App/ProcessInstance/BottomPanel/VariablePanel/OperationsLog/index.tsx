@@ -25,8 +25,11 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
-import {DetailsModal} from './DetailsModal.tsx';
-import {AuditLogIcon} from './AuditLogIcon';
+import {
+  DetailsModal,
+  type DetailsModalState,
+} from 'modules/components/OperationsLogDetailsModal';
+import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 
 type Props = {
   isRootNodeSelected: boolean;
@@ -36,11 +39,6 @@ type Props = {
 
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
-
-type DetailsModalState = {
-  isOpen: boolean;
-  auditLog?: AuditLog;
-};
 
 const OperationsLog: React.FC<Props> = observer(
   ({isRootNodeSelected, flowNodeInstanceId, isVisible}: Props) => {
@@ -124,7 +122,7 @@ const OperationsLog: React.FC<Props> = observer(
           )}`,
           result: (
             <OperationLogName>
-              <AuditLogIcon
+              <OperationsLogStateIcon
                 state={item.result}
                 data-testid={`${item.auditLogKey}-icon`}
               />
