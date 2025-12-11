@@ -70,6 +70,7 @@ import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
@@ -454,6 +455,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           .addHandler(new BatchOperationCreationAuditLogTransformer())
           .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
           .addHandler(new DecisionEvaluationAuditLogTransformer())
+          .addHandler(new ProcessInstanceCancelAuditLogTransformer())
           .addHandler(new ProcessInstanceCreationAuditLogTransformer())
           .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
           .addHandler(new ProcessInstanceModificationAuditLogTransformer())

@@ -9,15 +9,20 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ProcessInstanceModifiedAuditLogHandlerTest {
 
@@ -25,8 +30,15 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
   private final ProcessInstanceModificationAuditLogTransformer transformer =
       new ProcessInstanceModificationAuditLogTransformer();
 
-  @Test
-  void shouldTransformProcessInstanceModificationRecord() {
+  public static Stream<Arguments> getIntentMappings() {
+    return Stream.of(
+        Arguments.of(ProcessInstanceModificationIntent.MODIFIED, AuditLogOperationType.MODIFY));
+  }
+
+  @MethodSource("getIntentMappings")
+  @ParameterizedTest
+  void shouldTransformProcessInstanceModificationRecord(
+      final ProcessInstanceModificationIntent intent, final AuditLogOperationType operationType) {
     // given
     final ProcessInstanceModificationRecordValue recordValue =
         ImmutableProcessInstanceModificationRecordValue.builder()
@@ -38,7 +50,7 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
     final Record<ProcessInstanceModificationRecordValue> record =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE_MODIFICATION,
-            r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED).withValue(recordValue));
+            r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final AuditLogEntity entity = new AuditLogEntity();
@@ -48,5 +60,8 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
     assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
     assertThat(entity.getTenantId()).isEqualTo("tenant-1");
     assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+
+    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
+    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
   }
 }

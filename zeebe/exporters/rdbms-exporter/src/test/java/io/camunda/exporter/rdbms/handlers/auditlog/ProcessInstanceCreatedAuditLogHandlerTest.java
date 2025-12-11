@@ -11,13 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ProcessInstanceCreatedAuditLogHandlerTest {
 
@@ -25,8 +30,15 @@ class ProcessInstanceCreatedAuditLogHandlerTest {
   private final ProcessInstanceCreationAuditLogTransformer transformer =
       new ProcessInstanceCreationAuditLogTransformer();
 
-  @Test
-  void shouldTransformProcessInstanceCreationRecord() {
+  public static Stream<Arguments> getIntentMappings() {
+    return Stream.of(
+        Arguments.of(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE));
+  }
+
+  @MethodSource("getIntentMappings")
+  @ParameterizedTest
+  void shouldTransformProcessInstanceCreationRecord(
+      final ProcessInstanceCreationIntent intent, final AuditLogOperationType operationType) {
     // given
     final ProcessInstanceCreationRecordValue recordValue =
         ImmutableProcessInstanceCreationRecordValue.builder()
@@ -39,8 +51,7 @@ class ProcessInstanceCreatedAuditLogHandlerTest {
 
     final Record<ProcessInstanceCreationRecordValue> record =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_CREATION,
-            r -> r.withIntent(ProcessInstanceCreationIntent.CREATED).withValue(recordValue));
+            ValueType.PROCESS_INSTANCE_CREATION, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final AuditLogDbModel.Builder builder = new AuditLogDbModel.Builder();
@@ -53,5 +64,8 @@ class ProcessInstanceCreatedAuditLogHandlerTest {
     assertThat(model.processDefinitionId()).isEqualTo("test-process");
     assertThat(model.processInstanceKey()).isEqualTo(123L);
     assertThat(model.tenantScope()).isEqualTo(AuditLogEntity.AuditLogTenantScope.TENANT);
+
+    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
+    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
   }
 }

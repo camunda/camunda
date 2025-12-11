@@ -10,14 +10,19 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ProcessInstanceModifiedAuditLogHandlerTest {
 
@@ -25,8 +30,15 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
   private final ProcessInstanceModificationAuditLogTransformer transformer =
       new ProcessInstanceModificationAuditLogTransformer();
 
-  @Test
-  void shouldTransformProcessInstanceModificationRecord() {
+  public static Stream<Arguments> getIntentMappings() {
+    return Stream.of(
+        Arguments.of(ProcessInstanceModificationIntent.MODIFIED, AuditLogOperationType.MODIFY));
+  }
+
+  @MethodSource("getIntentMappings")
+  @ParameterizedTest
+  void shouldTransformProcessInstanceModificationRecord(
+      final ProcessInstanceModificationIntent intent, final AuditLogOperationType operationType) {
     // given
     final ProcessInstanceModificationRecordValue recordValue =
         ImmutableProcessInstanceModificationRecordValue.builder()
@@ -49,5 +61,8 @@ class ProcessInstanceModifiedAuditLogHandlerTest {
     assertThat(entity.processInstanceKey()).isEqualTo(123L);
     assertThat(entity.tenantId()).isEqualTo("tenant-1");
     assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+
+    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
+    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
   }
 }
