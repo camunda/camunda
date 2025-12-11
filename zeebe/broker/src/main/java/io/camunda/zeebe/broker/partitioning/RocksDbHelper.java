@@ -72,8 +72,9 @@ public class RocksDbHelper {
       throw new IllegalArgumentException(
           String.format(
               "Expected the allocated memory for RocksDB to be below or "
-                  + "equal half of ram memory, but was %.2f %%.",
-              ((double) blockCacheBytes / (2 * maxRocksDbMem) * 100)));
+                  + "equal %.2f %% of ram memory, but was %.2f %%.",
+              MAX_ROCKSDB_MEMORY_FRACTION * 100,
+              ((double) blockCacheBytes / totalMemorySize * 100)));
     }
 
     if (blockCacheBytes / partitionsCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
