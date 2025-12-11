@@ -109,9 +109,9 @@ paths:
   /cluster-variables/tenants/{tenantId}/{name}:
     $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1tenants~1{tenantId}~1{name}'
 
-  # Conditionals endpoints
-  /conditionals:
-    $ref: 'conditionals.yaml#/paths/~1conditionals'
+  # Conditional endpoints
+  /conditionals/evaluation:
+    $ref: 'conditionals.yaml#/paths/~1conditionals~1evaluation'
 
   # Message endpoints
   /correlated-message-subscriptions/search:

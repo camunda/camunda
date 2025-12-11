@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.service.ConditionalEventServices;
-import io.camunda.zeebe.gateway.protocol.rest.ConditionalEventEvaluationInstruction;
+import io.camunda.service.ConditionalServices;
+import io.camunda.zeebe.gateway.protocol.rest.ConditionalEvaluationInstruction;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
@@ -22,33 +22,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/conditionals")
-public class ConditionalEventController {
+public class ConditionalController {
 
-  private final ConditionalEventServices conditionalEventServices;
+  private final ConditionalServices conditionalServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
-  public ConditionalEventController(
-      final ConditionalEventServices conditionalEventServices,
+  public ConditionalController(
+      final ConditionalServices conditionalServices,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.conditionalEventServices = conditionalEventServices;
+    this.conditionalServices = conditionalServices;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
 
-  @CamundaPostMapping
+  @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluate(
-      @RequestBody final ConditionalEventEvaluationInstruction request) {
+      @RequestBody final ConditionalEvaluationInstruction request) {
     return RequestMapper.toEvaluateConditionalEvent(request, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateConditionalEvent);
   }
 
   private CompletableFuture<ResponseEntity<Object>> evaluateConditionalEvent(
-      final ConditionalEventServices.ConditionalEventCreateRequest createRequest) {
+      final ConditionalServices.ConditionalEventCreateRequest createRequest) {
     return RequestMapper.executeServiceMethod(
         () ->
-            conditionalEventServices
+            conditionalServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .evaluateConditionalEvent(createRequest),
         ResponseMapper::toConditionalEvaluationResponse);

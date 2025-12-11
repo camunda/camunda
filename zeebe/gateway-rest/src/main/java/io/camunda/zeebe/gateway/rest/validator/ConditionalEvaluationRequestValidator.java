@@ -10,14 +10,14 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.ConditionalEventEvaluationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ConditionalEvaluationInstruction;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
-public class ConditionalEventRequestValidator {
+public class ConditionalEvaluationRequestValidator {
 
   public static Optional<ProblemDetail> validateConditionalEvaluationRequest(
-      final ConditionalEventEvaluationInstruction request) {
+      final ConditionalEvaluationInstruction request) {
     return validate(
         violations -> {
           if (request.getVariables() == null || request.getVariables().isEmpty()) {

@@ -16,9 +16,9 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvalua
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class ConditionalEventServices extends ApiServices<ConditionalEventServices> {
+public class ConditionalServices extends ApiServices<ConditionalServices> {
 
-  public ConditionalEventServices(
+  public ConditionalServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final CamundaAuthentication authentication,
@@ -33,8 +33,8 @@ public class ConditionalEventServices extends ApiServices<ConditionalEventServic
   }
 
   @Override
-  public ConditionalEventServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ConditionalEventServices(
+  public ConditionalServices withAuthentication(final CamundaAuthentication authentication) {
+    return new ConditionalServices(
         brokerClient,
         securityContextProvider,
         authentication,

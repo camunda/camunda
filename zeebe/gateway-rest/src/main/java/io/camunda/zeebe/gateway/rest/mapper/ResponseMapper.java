@@ -43,7 +43,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluateConditionalEventResult;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateConditionalResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
@@ -583,7 +583,7 @@ public final class ResponseMapper {
                         .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
             .toList();
 
-    final var response = new EvaluateConditionalEventResult().processInstances(processInstances);
+    final var response = new EvaluateConditionalResult().processInstances(processInstances);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 

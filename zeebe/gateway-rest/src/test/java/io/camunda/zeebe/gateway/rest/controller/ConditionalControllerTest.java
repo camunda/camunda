@@ -16,16 +16,19 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.service.ConditionalEventServices;
-import io.camunda.service.ConditionalEventServices.ConditionalEventCreateRequest;
+import io.camunda.service.ConditionalServices;
+import io.camunda.service.ConditionalServices.ConditionalEventCreateRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -34,12 +37,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = ConditionalEventController.class)
-public class ConditionalEventControllerTest extends RestControllerTest {
+@WebMvcTest(value = ConditionalController.class)
+public class ConditionalControllerTest extends RestControllerTest {
 
-  static final String CONDITIONAL_EVENT_URL = "/v2/conditionals";
+  static final String CONDITIONAL_EVENT_URL = "/v2/conditionals/evaluation";
 
-  @MockitoBean ConditionalEventServices conditionalEventServices;
+  @MockitoBean ConditionalServices conditionalServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
@@ -49,22 +52,19 @@ public class ConditionalEventControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(conditionalEventServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(conditionalEventServices);
+    when(conditionalServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(conditionalServices);
   }
 
-  @Test
-  void shouldEvaluateConditionalStartEvents() {
+  @ParameterizedTest
+  @MethodSource("provideConditionalEvaluationScenarios")
+  void shouldEvaluateConditionalStartEvents(
+      final ConditionalEvaluationRecord mockResponseRecord, final String expectedApiResponse) {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    final var mockResponse = new ConditionalEvaluationRecord();
-    mockResponse.addStartedProcessInstance(2251799813685249L, 2251799813685250L);
-    mockResponse.addStartedProcessInstance(2251799813685251L, 2251799813685252L);
-
-    when(conditionalEventServices.evaluateConditionalEvent(
-            any(ConditionalEventCreateRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+    when(conditionalServices.evaluateConditionalEvent(any(ConditionalEventCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponseRecord));
 
     final var request =
         """
@@ -73,21 +73,6 @@ public class ConditionalEventControllerTest extends RestControllerTest {
                 "x": 100,
                 "y": 50
             }
-        }""";
-
-    final var expectedResponse =
-        """
-        {
-            "processInstances": [
-                {
-                    "processDefinitionKey": "2251799813685249",
-                    "processInstanceKey": "2251799813685250"
-                },
-                {
-                    "processDefinitionKey": "2251799813685251",
-                    "processInstanceKey": "2251799813685252"
-                }
-            ]
         }""";
 
     // when / then
@@ -103,11 +88,13 @@ public class ConditionalEventControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .json(expectedApiResponse, JsonCompareMode.STRICT);
 
-    verify(conditionalEventServices).evaluateConditionalEvent(requestCaptor.capture());
+    verify(conditionalServices).evaluateConditionalEvent(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.variables()).containsEntry("x", 100).containsEntry("y", 50);
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1);
+    assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
   }
 
   @Test
@@ -129,7 +116,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
             "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"Expected to handle request Evaluate Conditional Event with tenant identifier 'tenantId', but multi-tenancy is disabled",
-            "instance":"/v2/conditionals"
+            "instance":"/v2/conditionals/evaluation"
          }""";
 
     // when / then
@@ -166,7 +153,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
             "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"Expected to handle request Evaluate Conditional Event with tenant identifiers [], but no tenant identifier was provided.",
-            "instance":"/v2/conditionals"
+            "instance":"/v2/conditionals/evaluation"
          }""";
 
     // when / then
@@ -192,8 +179,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
 
     final var expectedError = "This is an expected error";
 
-    when(conditionalEventServices.evaluateConditionalEvent(
-            any(ConditionalEventCreateRequest.class)))
+    when(conditionalServices.evaluateConditionalEvent(any(ConditionalEventCreateRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException(expectedError, ServiceException.Status.INVALID_ARGUMENT)));
@@ -214,7 +200,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
             "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"%s",
-            "instance":"/v2/conditionals"
+            "instance":"/v2/conditionals/evaluation"
          }""",
             expectedError);
 
@@ -252,7 +238,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
             "title":"Bad Request",
             "status":400,
             "detail":"Request property [unexpectedField] cannot be parsed",
-            "instance":"/v2/conditionals"
+            "instance":"/v2/conditionals/evaluation"
          }""";
 
     // when / then
@@ -276,8 +262,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    when(conditionalEventServices.evaluateConditionalEvent(
-            any(ConditionalEventCreateRequest.class)))
+    when(conditionalServices.evaluateConditionalEvent(any(ConditionalEventCreateRequest.class)))
         .thenThrow(
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.processDefinition().createProcessInstance())));
@@ -297,7 +282,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
             "title":"FORBIDDEN",
             "status":403,
             "detail":"Unauthorized to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'",
-            "instance":"/v2/conditionals"
+            "instance":"/v2/conditionals/evaluation"
          }""";
 
     // when / then
@@ -337,7 +322,7 @@ public class ConditionalEventControllerTest extends RestControllerTest {
             "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"No variables provided.",
-            "instance":"/v2/conditionals"
+            "instance":"/v2/conditionals/evaluation"
          }""";
 
     // when / then
@@ -354,5 +339,32 @@ public class ConditionalEventControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  private static Stream<Arguments> provideConditionalEvaluationScenarios() {
+    return Stream.of(
+        Arguments.of(
+            new ConditionalEvaluationRecord()
+                .addStartedProcessInstance(2251799813685249L, 2251799813685250L)
+                .addStartedProcessInstance(2251799813685251L, 2251799813685252L),
+            """
+            {
+                "processInstances": [
+                    {
+                        "processDefinitionKey": "2251799813685249",
+                        "processInstanceKey": "2251799813685250"
+                    },
+                    {
+                        "processDefinitionKey": "2251799813685251",
+                        "processInstanceKey": "2251799813685252"
+                    }
+                ]
+            }"""),
+        Arguments.of(
+            new ConditionalEvaluationRecord(),
+            """
+            {
+                "processInstances": []
+            }"""));
   }
 }
