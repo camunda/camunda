@@ -7,12 +7,11 @@
  */
 package io.camunda.application.commons.mcp;
 
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import io.camunda.zeebe.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.zeebe.gateway.mcp"})
-@ConditionalOnRestGatewayEnabled
-// TODO conditional on MCP enabled
+@ConditionalOnMcpGatewayEnabled
 public class McpServerConfiguration {}

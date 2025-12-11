@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "camunda.mcp.server.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable the orchestration API MCP server gateway.",
+      "defaultValue": "false"
+    }
+  ]
+}
