@@ -123,12 +123,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-scheduler</artifactId>
-      <classifier>tests</classifier>
-      <type>test-jar</type>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-stream-platform</artifactId>
     </dependency>
 
