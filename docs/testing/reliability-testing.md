@@ -81,7 +81,7 @@ The setup for all of our load tests is equal for better comparability, and consi
 
 We always ran load tests with a three-node cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8) or (with 8.8+) the single Camunda application (with an embedded gateway).
 
-An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster.
+A secondary storage cluster (either Elasticsearch or OpenSearch) with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster. The choice of secondary storage can be specified via the `secondary-storage` parameter when setting up load tests.
 
 Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) deploys different load test applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
 
@@ -218,19 +218,21 @@ An example payload looks like this:
       "name": benchmark_name,
       "ref": zeebe_ref_name,
       "cluster": "zeebe-cluster",
-      "stable-vms": stable_vms
+      "stable-vms": stable_vms,
+      "secondary-storage": "elasticsearch"
     }
 }
 ```
 
 When we look at an example release process instance from the past, we can find the following example values:
 
-|      Variable       |  Example Value  |              Description               |
-|---------------------|-----------------|----------------------------------------|
-| `workflow_ref_name` | `8.7.17`        | The tag to trigger the workflow on     |
-| `zeebe_ref_name`    | `8.7.17`        | The tag to build the Docker image from |
-| `benchmark_name`    | `release-8-7-x` | The name of the load test              |
-| `stable_vms`        | `true`          | Whether to use stable VM types or not  |
+|      Variable       | Example Value   | Description                                                                |
+|---------------------|-----------------|----------------------------------------------------------------------------|
+| `workflow_ref_name` | `8.7.17`        | The tag to trigger the workflow on                                         |
+| `zeebe_ref_name`    | `8.7.17`        | The tag to build the Docker image from                                     |
+| `benchmark_name`    | `release-8-7-x` | The name of the load test                                                  |
+| `stable_vms`        | `true`          | Whether to use stable VM types or not                                      |
+| `secondary-storage` | `elasticsearch` | Which secondary-storage to use (`elasticsearch` or `opensearch`)           |
 
 In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to update our existing load test.
 
@@ -297,6 +299,7 @@ It allows high customization:
 * Specification of the branch to test against (default: main) - will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
 * Specification of the time to live (TTL) for the load test - making sure that the load test is automatically cleaned up after the specified time.
 * Specification of an existing Docker image to use - making it possible to reuse existing images.
+* Specification of the secondary storage type (`elasticsearch` or `opensearch`) - allows choosing which secondary storage system to deploy for exporter validation.
 * Specification of arbitrary Helm arguments - making it possible to customize the load test set up.
 
 ![load-test-gha](assets/load-test-gha.png)

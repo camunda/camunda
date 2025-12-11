@@ -140,6 +140,7 @@ orchestration:
       # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
       camunda.data.secondary-storage.retention.minimum-age: "70m"
       camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
+      camunda.data.secondary-storage.opensearch.history.policy-name: "camunda-retention-policy"
       camunda.database.retention.policyName: "camunda-retention-policy"
       zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
       #Metrics:
@@ -193,6 +194,8 @@ prometheusServiceMonitor:
 ################################################### Elasticsearch cluster configuration
 ########################################################################################
 elasticsearch:
+  enabled: true
+  clusterName: "elasticsearch"
   master:
     fullnameOverride: elastic
     nameOverride: elastic
@@ -216,3 +219,57 @@ elasticsearch:
         memory: 6Gi
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"
+
+########################################################################################
+################################################### OpenSearch cluster configuration
+########################################################################################
+opensearch:
+  enabled: false
+  clusterName: "opensearch"
+  nameOverride: "opensearch"
+  master:
+    replicaCount: 3
+    masterOnly: false
+    extraRoles:
+      - data
+      - ingest
+      - coordinating
+      - remote_cluster_client
+    persistence:
+      size: 128Gi
+      storageClass: "ssd"
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 3
+        memory: 3Gi
+      limits:
+        cpu: 3
+        memory: 6Gi
+  # turn off dedicated data nodes for load test setup
+  data:
+    replicaCount: 0
+    persistence:
+      enabled: false
+    networkPolicy:
+      enabled: false
+  # turn off dedicated coordinating nodes for load test setup
+  coordinating:
+    replicaCount: 0
+    persistence:
+      enabled: false
+    networkPolicy:
+      enabled: false
+  # turn off ingest nodes for load test setup
+  ingest:
+    enabled: false
+    networkPolicy:
+      enabled: false
+  # turn off dashboards for load test setup
+  dashboards:
+    enabled: false
+    networkPolicy:
+      enabled: false
+  # disable volume permissions for load test setup
+  volumePermissions:
+    enabled: false

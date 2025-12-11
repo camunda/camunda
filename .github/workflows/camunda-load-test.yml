@@ -48,6 +48,11 @@ on:
         type: boolean
         required: false
         default: false
+      secondary-storage:
+        description: 'Specify which secondary storage to use'
+        type: string
+        default: 'elasticsearch'
+        required: false
   workflow_call:
     inputs:
       ref:
@@ -98,6 +103,11 @@ on:
         type: boolean
         required: false
         default: false
+      secondary-storage:
+        description: 'Specify which secondary storage to use'
+        type: string
+        default: 'elasticsearch'
+        required: false
 
 env:
   HELM_CHART: camunda-platform-8.9
@@ -109,8 +119,36 @@ defaults:
     shell: bash
 
 jobs:
+  determine-secondary-storage:
+    name: Determine the secondary-storage option
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }
+    outputs:
+      enable-secondary-storage-flag: ${{ steps.validate-secondary-storage.outputs.enable-secondary-storage-flag }}
+    steps:
+      - name: Validate secondary-storage input
+        id: validate-secondary-storage
+        run: |
+          SECONDARY_STORAGE="${{ inputs.secondary-storage }}"
+          case "$SECONDARY_STORAGE" in
+            elasticsearch)
+              echo "enable-secondary-storage-flag=--set elasticsearch.enabled=true --set global.elasticsearch.enabled=true" >> "$GITHUB_OUTPUT"
+              echo "✓ Secondary storage set to: elasticsearch"
+              ;;
+            opensearch)
+              echo "enable-secondary-storage-flag=--set elasticsearch.enabled=false --set global.elasticsearch.enabled=false --set opensearch.enabled=true --set global.opensearch.enabled=true" >> "$GITHUB_OUTPUT"
+              echo "✓ Secondary storage set to: opensearch"
+              ;;
+            *)
+              echo "::error::Invalid secondary-storage value: '$SECONDARY_STORAGE'. Must be 'elasticsearch' or 'opensearch'"
+              exit 1
+              ;;
+          esac
+
   calculate-image-tag:
     name: Calculate Image Tag
+    needs: determine-secondary-storage
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { }
@@ -250,6 +288,7 @@ jobs:
     name: Deploy cluster under test
     needs:
       - calculate-image-tag
+      - determine-secondary-storage
       - build-camunda-image
       - build-load-test-images
     # To have the possibility to re-deploy the tests without rebuilding the images,
@@ -267,7 +306,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: 'camunda/camunda-platform-helm'
-          ref: 'main'
+          ref: 'yf-40612-setup-opensearch-benchmark' # TEMPORARY: pin to a specific commit until Helm charts are versioned
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
@@ -316,6 +355,7 @@ jobs:
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/load-tests/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/setup/default/values-stable.yaml', github.ref) || '' }}
+          ${{ needs.determine-secondary-storage.outputs.enable-secondary-storage-flag }}
       - name: Summarize deployment
         if: success()
         run: |
