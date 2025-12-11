@@ -42,6 +42,7 @@ import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -137,10 +138,15 @@ public class ProcessInstanceController {
   @CamundaPostMapping(path = "/{processInstanceKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
-      @RequestBody(required = false) final DeleteProcessInstanceRequest deleteRequest) {
-    // NOOP: The actual implementation will be added in a later issue.
-    // This endpoint is for deleting completed/terminated process instances.
-    return CompletableFuture.completedFuture(ResponseEntity.noContent().build());
+      @RequestBody(required = false) final DeleteProcessInstanceRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .deleteProcessInstance(
+                    processInstanceKey,
+                    Objects.nonNull(request) ? request.getOperationReference() : null),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
 
   @RequiresSecondaryStorage

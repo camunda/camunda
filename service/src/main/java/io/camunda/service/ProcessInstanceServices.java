@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
@@ -371,6 +372,38 @@ public final class ProcessInstanceServices
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
             .setAuthentication(authentication);
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord> deleteProcessInstance(
+      final Long processInstanceKey, final Long operationReference) {
+
+    // make sure process instance exists before deletion, otherwise return not found
+    final ProcessInstanceEntity processInstance =
+        getByKey(
+            processInstanceKey,
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                Authorization.withAuthorization(
+                    PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION,
+                    ProcessInstanceEntity::processDefinitionId)));
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(
+                new ProcessInstanceFilter.Builder().processInstanceKeys(processInstanceKey).build())
+            .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
+            .setAuthentication(authentication)
+            // the user only needs single instance delete permission, not batch
+            .setAuthorizationCheck(
+                Authorization.withAuthorization(
+                    PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION,
+                    processInstance.processDefinitionId()));
+
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+
     return sendBrokerRequest(brokerRequest);
   }
 
