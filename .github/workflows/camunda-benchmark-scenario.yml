@@ -89,7 +89,7 @@ jobs:
       cluster: ${{ inputs.cluster }}
       cluster-region: ${{ inputs.cluster-region }}
       reuse-tag: ${{ inputs.image-tag }}
-      load-test-load: '--set starter.replicas=0'
+      load-test-load: ${{ inputs.load-test-load }}
       stable-vms: ${{ inputs.stable-vms }}
       realistic: ${{ inputs.realistic }}
 
