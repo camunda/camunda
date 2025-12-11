@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -31,6 +32,7 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class MessagePublishAuthorizationTest {
+
   public static final String INTERMEDIATE_MSG_NAME = "intermediateMsg";
   public static final String START_MSG_NAME = "startMsg";
   public static final String CORRELATION_KEY_VARIABLE = "correlationKey";
@@ -106,7 +108,41 @@ public class MessagePublishAuthorizationTest {
     final var correlationKey = UUID.randomUUID().toString();
     createProcessInstance(correlationKey);
     final var user = createUser();
-    addPermissionsToUser(user, AuthorizationResourceType.MESSAGE, PermissionType.CREATE);
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.MESSAGE,
+        PermissionType.CREATE,
+        WILDCARD.getMatcher(),
+        WILDCARD.getResourceId());
+
+    // when
+    engine
+        .message()
+        .withName(INTERMEDIATE_MSG_NAME)
+        .withCorrelationKey(correlationKey)
+        .publish(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
+                .withName(INTERMEDIATE_MSG_NAME)
+                .withCorrelationKey(correlationKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToPublishMessageWithUserWithSpecificPermission() {
+    // given
+    final var correlationKey = UUID.randomUUID().toString();
+    createProcessInstance(correlationKey);
+    final var user = createUser();
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.MESSAGE,
+        PermissionType.CREATE,
+        AuthorizationResourceMatcher.ID,
+        INTERMEDIATE_MSG_NAME);
 
     // when
     engine
@@ -143,7 +179,7 @@ public class MessagePublishAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE'");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE', required resource identifiers are one of '[*, intermediateMsg]'");
   }
 
   private UserRecordValue createUser() {
@@ -160,7 +196,9 @@ public class MessagePublishAuthorizationTest {
   private void addPermissionsToUser(
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
-      final PermissionType permissionType) {
+      final PermissionType permissionType,
+      final AuthorizationResourceMatcher resourceMatcher,
+      final String resourceId) {
     engine
         .authorization()
         .newAuthorization()
@@ -168,8 +206,8 @@ public class MessagePublishAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withResourceMatcher(WILDCARD.getMatcher())
-        .withResourceId(WILDCARD.getResourceId())
+        .withResourceMatcher(resourceMatcher)
+        .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }
 
