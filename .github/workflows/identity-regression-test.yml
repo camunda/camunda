@@ -82,7 +82,7 @@ jobs:
             hostPort: 9250
             hostTransportPort: 9350
 
-    runs-on: [ubuntu-latest, gcp-core-32-longrunning-big-ssd]
+    runs-on: ["ubuntu-latest", "gcp-core-32-longrunning-big-ssd"]
     environment: '${{ matrix.case }}'
     env:
       LC_ALL: C.UTF-8
@@ -91,7 +91,7 @@ jobs:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
         env:
           discovery.type: single-node
-          cluster.name: "ci-${{ github.case }}"
+          cluster.name: "ci-${{ matrix.case }}"
           bootstrap.memory_lock: true
           xpack.security.enabled: false
           ES_JAVA_OPTS: -Xms1024m -Xmx1024m
