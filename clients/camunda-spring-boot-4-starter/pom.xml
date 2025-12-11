@@ -29,7 +29,7 @@
     <version.spring>7.0.1</version.spring>
     <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
     <version.junit>6.0.1</version.junit>
-    <version.aspectjweaver>1.9.24</version.aspectjweaver>
+    <camunda-spring-boot-starter.sourcedir>${project.basedir}/../spring-boot-starter-camunda-sdk/src</camunda-spring-boot-starter.sourcedir>
   </properties>
 
   <dependencies>
@@ -74,6 +74,77 @@
       <artifactId>spring-boot-health</artifactId>
     </dependency>
 
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -156,19 +227,40 @@
         </configuration>
       </plugin>
 
-      <!--
-        Note: Tests are skipped because test-jar tests from camunda-spring-boot-starter
-        were compiled with JUnit 5.x which is binary incompatible with JUnit 6.x
-        (required by Spring Boot 4). Test coverage is provided by the base module.
-        This is acceptable as this module is a temporary solution for the 8.8 branch.
-      -->
+      <!-- Add test re-/sources from the base module -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skipTests>true</skipTests>
-        </configuration>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-source</id>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <sources>
+                <source>${camunda-spring-boot-starter.sourcedir}/test/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resources</id>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>${camunda-spring-boot-starter.sourcedir}/test/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
+
     </plugins>
   </build>
 </project>

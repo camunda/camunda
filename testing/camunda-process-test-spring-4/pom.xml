@@ -37,39 +37,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-process-test-spring</artifactId>
       <exclusions>
-        <!-- Exclude Spring Boot 3.x dependencies - we use 4.x versions -->
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-test</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-autoconfigure</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-configuration-processor</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.springframework</groupId>
-          <artifactId>spring-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.springframework</groupId>
-          <artifactId>spring-context</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.springframework</groupId>
-          <artifactId>spring-beans</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.springframework</groupId>
-          <artifactId>spring-test</artifactId>
-        </exclusion>
         <!-- Exclude Spring Boot 3.x starter - we use 4.x version -->
         <exclusion>
           <groupId>io.camunda</groupId>
@@ -85,46 +52,122 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- Spring Boot 4 dependencies -->
+    <!-- Test dependencies -->
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
+      <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-configuration-processor</artifactId>
-      <optional>true</optional>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>
@@ -164,11 +207,6 @@
       </plugin>
 
       <plugin>
-        <groupId>org.revapi</groupId>
-        <artifactId>revapi-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
@@ -177,34 +215,52 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <!-- These dependencies are used by the shaded camunda-process-test-spring classes -->
-          <usedDependencies>
-            <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
+          <!-- Base module compile dependencies -->
+          <ignoredNonTestScopedDependencies>
+            <dependency>io.camunda:camunda-process-test-spring</dependency>
             <dependency>io.camunda:camunda-spring-boot-4-starter</dependency>
-          </usedDependencies>
-          <!-- These are transitive dependencies from shaded module - used but not directly declared -->
-          <ignoredUsedUndeclaredDependencies>
-            <dependency>org.springframework:spring-beans</dependency>
-            <dependency>org.springframework:spring-core</dependency>
-            <dependency>org.springframework:spring-context</dependency>
-            <dependency>org.springframework.boot:spring-boot</dependency>
-            <dependency>org.springframework.boot:spring-boot-autoconfigure</dependency>
-          </ignoredUsedUndeclaredDependencies>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
 
-      <!--
-        Note: Tests are skipped because test-jar tests from camunda-process-test-spring
-        were compiled with JUnit 5.x which is binary incompatible with JUnit 6.x
-        (required by Spring Boot 4). Test coverage is provided by the base module.
-        This is acceptable as this module is a temporary solution for the 8.8 branch.
-      -->
+      <!-- Add test re-/sources from the base module -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-source</id>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/../camunda-process-test-spring/src/test/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resource</id>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/../camunda-process-test-spring/src/test/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Run tests compiled from base module sources -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skipTests>true</skipTests>
-        </configuration>
       </plugin>
 
     </plugins>
