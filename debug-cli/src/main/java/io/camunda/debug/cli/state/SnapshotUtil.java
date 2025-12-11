@@ -7,6 +7,7 @@
  */
 package io.camunda.debug.cli.state;
 
+import io.camunda.debug.cli.concurrency.CurrentThreadConcurrencyControl;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -14,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
@@ -58,7 +58,7 @@ public class SnapshotUtil {
             0,
             rootDirectory,
             new ChecksumProviderRocksDBImpl(),
-            new TestConcurrencyControl(),
+            new CurrentThreadConcurrencyControl(),
             new SnapshotMetrics(new SimpleMeterRegistry()));
 
     final var snapshotId = FileBasedSnapshotId.ofFileName(stringSnapshotId).getOrThrow();
