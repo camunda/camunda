@@ -19,7 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 class LiquibaseSchemaManagerTest {
@@ -69,8 +68,8 @@ class LiquibaseSchemaManagerTest {
     final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
     final CountDownLatch startLatch = new CountDownLatch(1);
     final CountDownLatch initializationStartedLatch = new CountDownLatch(1);
+    final CountDownLatch initializationCompletedLatch = new CountDownLatch(1);
     final List<Future<Boolean>> futures = new ArrayList<>();
-    final AtomicBoolean initializationStarted = new AtomicBoolean(false);
 
     try {
       // Start initialization in a separate thread
@@ -79,21 +78,29 @@ class LiquibaseSchemaManagerTest {
             try {
               initializationStartedLatch.countDown();
               schemaManager.afterPropertiesSet();
+              initializationCompletedLatch.countDown();
             } catch (final Exception e) {
               throw new RuntimeException(e);
             }
           });
 
       // Wait for initialization to start
-      initializationStartedLatch.await(1, TimeUnit.SECONDS);
+      assertThat(initializationStartedLatch.await(1, TimeUnit.SECONDS))
+          .as("Initialization should start within timeout")
+          .isTrue();
 
       // when - submit multiple concurrent reads
       for (int i = 0; i < numberOfThreads; i++) {
         futures.add(
             executorService.submit(
                 () -> {
-                  startLatch.await();
-                  return schemaManager.isInitialized();
+                  try {
+                    startLatch.await(1, TimeUnit.SECONDS);
+                    return schemaManager.isInitialized();
+                  } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                  }
                 }));
       }
 
@@ -111,8 +118,10 @@ class LiquibaseSchemaManagerTest {
       assertThat(results).hasSize(numberOfThreads);
       assertThat(results).allMatch(result -> result != null);
 
-      // After all threads complete, initialization should be done
-      Thread.sleep(100); // Give initialization time to complete
+      // Wait for initialization to complete
+      assertThat(initializationCompletedLatch.await(2, TimeUnit.SECONDS))
+          .as("Initialization should complete within timeout")
+          .isTrue();
       assertThat(schemaManager.isInitialized()).isTrue();
 
     } finally {
