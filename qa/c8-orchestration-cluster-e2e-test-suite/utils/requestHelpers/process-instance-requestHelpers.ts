@@ -11,6 +11,7 @@ import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
+import {sleep} from '../sleep';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -45,32 +46,31 @@ export async function createCancellationBatch(
     processInstanceKeys.push(String(startJson.processInstanceKey));
   }
 
-  const batchRes = await request.post(
-    buildUrl('/process-instances/cancellation'),
-    {
-      headers: jsonHeaders(),
-      data: {
-        filter: {
-          processInstanceKey: {
-            $in: processInstanceKeys,
+  await sleep(2_000);
+
+  const result: Record<string, string> = {};
+  await expect(async () => {
+    const batchRes = await request.post(
+      buildUrl('/process-instances/cancellation'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {
+              $in: processInstanceKeys,
+            },
           },
         },
       },
-    },
-  );
-  await assertStatusCode(batchRes, 200);
-
-  const json = await batchRes.json();
-  const key = (json.batchOperationKey ?? json.key) as
-    | string
-    | number
-    | undefined;
-  if (!key) {
-    throw new Error(
-      'batchOperationKey missing from batch cancellation response',
     );
-  }
-  return String(key);
+    await sleep(2_000);
+    await assertStatusCode(batchRes, 200);
+    const json = await batchRes.json();
+    expect(json).toHaveProperty('batchOperationKey');
+    result.batchKey = json.batchOperationKey;
+  }).toPass(defaultAssertionOptions);
+
+  return result.batchKey;
 }
 
 export async function searchJobKeysForProcessInstance(
