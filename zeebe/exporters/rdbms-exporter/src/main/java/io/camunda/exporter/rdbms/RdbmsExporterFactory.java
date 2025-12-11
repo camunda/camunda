@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms;
 
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.zeebe.broker.exporter.repo.ExporterFactory;
@@ -17,11 +18,15 @@ public class RdbmsExporterFactory implements ExporterFactory {
 
   private final RdbmsService rdbmsService;
   private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final RdbmsSchemaManager rdbmsSchemaManager;
 
   public RdbmsExporterFactory(
-      final RdbmsService rdbmsService, final VendorDatabaseProperties vendorDatabaseProperties) {
+      final RdbmsService rdbmsService,
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final RdbmsSchemaManager rdbmsSchemaManager) {
     this.rdbmsService = rdbmsService;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
+    this.rdbmsSchemaManager = rdbmsSchemaManager;
   }
 
   @Override
@@ -31,7 +36,7 @@ public class RdbmsExporterFactory implements ExporterFactory {
 
   @Override
   public Exporter newInstance() throws ExporterInstantiationException {
-    return new RdbmsExporterWrapper(rdbmsService, vendorDatabaseProperties);
+    return new RdbmsExporterWrapper(rdbmsService, rdbmsSchemaManager, vendorDatabaseProperties);
   }
 
   @Override

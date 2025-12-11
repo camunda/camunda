@@ -7,8 +7,10 @@
  */
 package io.camunda.exporter.rdbms;
 
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.Protocol;
@@ -35,6 +37,7 @@ public final class RdbmsExporter {
 
   private final int partitionId;
   private final RdbmsWriter rdbmsWriter;
+  private final RdbmsSchemaManager rdbmsSchemaManager;
 
   // configuration
   private final Duration flushInterval;
@@ -55,13 +58,15 @@ public final class RdbmsExporter {
       final Duration flushInterval,
       final int queueSize,
       final RdbmsWriter rdbmsWriter,
-      final Map<ValueType, List<RdbmsExportHandler>> handlers) {
+      final Map<ValueType, List<RdbmsExportHandler>> handlers,
+      final RdbmsSchemaManager rdbmsSchemaManager) {
     this.rdbmsWriter = rdbmsWriter;
     registeredHandlers = handlers;
 
     this.partitionId = partitionId;
     this.flushInterval = flushInterval;
     this.queueSize = queueSize;
+    this.rdbmsSchemaManager = rdbmsSchemaManager;
 
     LOG.info(
         "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
@@ -71,6 +76,11 @@ public final class RdbmsExporter {
 
   public void open(final Controller controller) {
     this.controller = controller;
+
+    if (!rdbmsSchemaManager.isInitialized()) {
+      LOG.warn("[RDBMS Exporter] Schema is not yet ready for use");
+      throw new ExporterException("Schema is not ready for use");
+    }
 
     if (!flushAfterEachRecord()) {
       currentFlushTask =
@@ -283,6 +293,7 @@ public final class RdbmsExporter {
     private Duration flushInterval;
     private int queueSize;
     private RdbmsWriter rdbmsWriter;
+    private RdbmsSchemaManager rdbmsSchemaManager;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
 
     public Builder partitionId(final int value) {
@@ -310,6 +321,11 @@ public final class RdbmsExporter {
       return this;
     }
 
+    public Builder rdbmsSchemaManager(final RdbmsSchemaManager value) {
+      rdbmsSchemaManager = value;
+      return this;
+    }
+
     public Builder withHandler(final ValueType valueType, final RdbmsExportHandler handler) {
       if (!handlers.containsKey(valueType)) {
         handlers.put(valueType, new ArrayList<>());
@@ -320,7 +336,8 @@ public final class RdbmsExporter {
     }
 
     public RdbmsExporter build() {
-      return new RdbmsExporter(partitionId, flushInterval, queueSize, rdbmsWriter, handlers);
+      return new RdbmsExporter(
+          partitionId, flushInterval, queueSize, rdbmsWriter, handlers, rdbmsSchemaManager);
     }
   }
 }
