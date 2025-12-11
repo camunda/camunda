@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstruc
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.conditional.ConditionalTriggerProcessor;
+import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchAc
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -148,7 +148,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_SUBSCRIPTION,
         ConditionalSubscriptionIntent.TRIGGER,
-        new ConditionalTriggerProcessor(processingState, bpmnBehaviors, writers));
+        new ConditionalSubscriptionTriggerProcessor(processingState, bpmnBehaviors, writers));
   }
 
   private static void addProcessInstanceCommandProcessor(
@@ -283,7 +283,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-        new ProcessInstanceCreationCreateWithResultProcessor(
+        new ProcessInstanceCreationCreateWithAwaitingResultProcessor(
             createProcessor, elementInstanceState));
   }
 

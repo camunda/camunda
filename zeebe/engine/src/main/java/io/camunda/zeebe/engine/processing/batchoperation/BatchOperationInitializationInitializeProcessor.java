@@ -11,35 +11,32 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Processes commands to create batch operation chunks. */
 @ExcludeAuthorizationCheck
-public final class BatchOperationCreateChunkProcessor
-    implements TypedRecordProcessor<BatchOperationChunkRecord> {
+public final class BatchOperationInitializationInitializeProcessor
+    implements TypedRecordProcessor<BatchOperationInitializationRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationCreateChunkProcessor.class);
+      LoggerFactory.getLogger(BatchOperationInitializationInitializeProcessor.class);
 
   private final StateWriter stateWriter;
 
-  public BatchOperationCreateChunkProcessor(final Writers writers) {
+  public BatchOperationInitializationInitializeProcessor(final Writers writers) {
     stateWriter = writers.state();
   }
 
   @Override
-  public void processRecord(final TypedRecord<BatchOperationChunkRecord> command) {
+  public void processRecord(final TypedRecord<BatchOperationInitializationRecord> command) {
     final var recordValue = command.getValue();
     LOGGER.debug(
-        "Creating a new chunk with {} items for batch operation {}",
-        recordValue.getItems().size(),
-        recordValue.getBatchOperationKey());
+        "Marking batch operation {} as initializing", command.getValue().getBatchOperationKey());
 
     stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationChunkIntent.CREATED, recordValue);
+        command.getKey(), BatchOperationIntent.INITIALIZING, recordValue);
   }
 }

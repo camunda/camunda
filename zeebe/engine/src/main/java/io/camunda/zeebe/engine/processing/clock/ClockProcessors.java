@@ -26,10 +26,15 @@ public final class ClockProcessors {
       final ControllableStreamClock clock,
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    final var clockProcessor =
-        new ClockProcessor(
-            writers, keyGenerator, clock, commandDistributionBehavior, authCheckBehavior);
-    typedRecordProcessors.onCommand(ValueType.CLOCK, ClockIntent.PIN, clockProcessor);
-    typedRecordProcessors.onCommand(ValueType.CLOCK, ClockIntent.RESET, clockProcessor);
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.PIN,
+        new ClockPinProcessor(
+            writers, keyGenerator, clock, commandDistributionBehavior, authCheckBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.RESET,
+        new ClockResetProcessor(
+            writers, keyGenerator, clock, commandDistributionBehavior, authCheckBehavior));
   }
 }

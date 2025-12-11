@@ -33,33 +33,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Processes commands to suspend batch operations. It validates the command and checks for
- * authorization. The SUSPEND command is then distributed to all other partitions.
+ * Processes commands to cancel batch operations. It validates the command and checks for
+ * authorization. The CANCEL command is then distributed to all other partitions.
  */
 @ExcludeAuthorizationCheck
-public final class BatchOperationSuspendProcessor
+public final class BatchOperationLifecycleManagementCancelProcessor
     implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationSuspendProcessor.class);
+      LoggerFactory.getLogger(BatchOperationLifecycleManagementCancelProcessor.class);
 
   private static final String MESSAGE_PREFIX =
-      "Expected to suspend a batch operation with key '%d', but ";
+      "Expected to cancel a batch operation with key '%d', but ";
   private static final String BATCH_OPERATION_NOT_FOUND_MESSAGE =
-      MESSAGE_PREFIX + "no such batch operation was found.";
-  private static final String BATCH_OPERATION_INVALID_STATE_MESSAGE =
-      MESSAGE_PREFIX + "it has an invalid state '%s'.";
+      MESSAGE_PREFIX + "no such batch operation was found";
 
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final KeyGenerator keyGenerator;
   private final BatchOperationState batchOperationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final KeyGenerator keyGenerator;
   private final BatchOperationMetrics metrics;
 
-  public BatchOperationSuspendProcessor(
+  public BatchOperationLifecycleManagementCancelProcessor(
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ProcessingState processingState,
@@ -94,34 +92,31 @@ public final class BatchOperationSuspendProcessor
     }
 
     final var recordValue = command.getValue();
-    final var batchOperationKey = command.getValue().getBatchOperationKey();
-    final var suspendKey = keyGenerator.nextKey();
-    LOGGER.debug(
-        "Suspending batch operation with key {}", command.getValue().getBatchOperationKey());
+    final var batchOperationKey = recordValue.getBatchOperationKey();
+    final var cancelKey = keyGenerator.nextKey();
+    LOGGER.debug("Cancelling batch operation with key {}", batchOperationKey);
 
-    // validation
     final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isEmpty()) {
-      rejectNotFound(command, batchOperationKey, recordValue);
-      return;
+    if (batchOperation.isPresent() && batchOperation.get().canCancel()) {
+      cancelBatchOperationEvent(cancelKey, recordValue);
+      responseWriter.writeEventOnCommand(
+          cancelKey, BatchOperationIntent.CANCELED, command.getValue(), command);
+      commandDistributionBehavior
+          .withKey(cancelKey)
+          .inQueue(DistributionQueue.BATCH_OPERATION)
+          .distribute(command);
+
+      metrics.recordCancelled(batchOperation.get().getBatchOperationType());
+    } else {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.NOT_FOUND,
+          String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
+      responseWriter.writeRejectionOnCommand(
+          command,
+          RejectionType.NOT_FOUND,
+          String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
     }
-
-    // check if the batch operation can be suspended
-    if (!batchOperation.get().canSuspend()) {
-      final var batchOperationStatus = batchOperation.get().getStatus().name();
-      rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
-      return;
-    }
-
-    suspendBatchOperation(suspendKey, recordValue);
-    responseWriter.writeEventOnCommand(
-        suspendKey, BatchOperationIntent.SUSPENDED, command.getValue(), command);
-    commandDistributionBehavior
-        .withKey(suspendKey)
-        .inQueue(DistributionQueue.BATCH_OPERATION)
-        .distribute(command);
-
-    metrics.recordSuspended(batchOperation.get().getBatchOperationType());
   }
 
   @Override
@@ -130,71 +125,29 @@ public final class BatchOperationSuspendProcessor
     final var recordValue = command.getValue();
     final var batchOperationKey = recordValue.getBatchOperationKey();
 
-    // Validation
     final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isPresent() && batchOperation.get().canSuspend()) {
-      LOGGER.debug(
-          "Processing distributed command to suspend with key '{}': {}",
-          batchOperationKey,
-          recordValue);
-      suspendBatchOperation(batchOperationKey, recordValue);
-    } else {
-      LOGGER.debug(
-          "Distributed command to suspend batch operation with key '{}' will be ignored: {}",
-          batchOperationKey,
-          recordValue);
+    if (batchOperation.isEmpty()) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.NOT_FOUND, "Batch operation does not exist!");
+      commandDistributionBehavior.acknowledgeCommand(command);
+      return;
     }
 
+    LOGGER.debug(
+        "Processing distributed command to cancel a batch operation with key '{}': {}",
+        batchOperationKey,
+        recordValue);
+    cancelBatchOperationEvent(batchOperationKey, recordValue);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void suspendBatchOperation(
-      final Long suspendKey, final BatchOperationLifecycleManagementRecord recordValue) {
+  private void cancelBatchOperationEvent(
+      final Long cancelKey, final BatchOperationLifecycleManagementRecord recordValue) {
     stateWriter.appendFollowUpEvent(
-        suspendKey,
-        BatchOperationIntent.SUSPENDED,
+        cancelKey,
+        BatchOperationIntent.CANCELED,
         recordValue,
         FollowUpEventMetadata.of(
             b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
-  }
-
-  private void rejectInvalidState(
-      final TypedRecord<BatchOperationLifecycleManagementRecord> command,
-      final long batchOperationKey,
-      final String batchOperationStatus,
-      final BatchOperationLifecycleManagementRecord recordValue) {
-    LOGGER.info(
-        "Batch operation with key '{}' cannot be suspended because of invalid status '{}', rejecting command: {}",
-        batchOperationKey,
-        batchOperationStatus,
-        recordValue);
-    rejectionWriter.appendRejection(
-        command,
-        RejectionType.INVALID_STATE,
-        String.format(
-            BATCH_OPERATION_INVALID_STATE_MESSAGE, batchOperationKey, batchOperationStatus));
-    responseWriter.writeRejectionOnCommand(
-        command,
-        RejectionType.INVALID_STATE,
-        String.format(
-            BATCH_OPERATION_INVALID_STATE_MESSAGE, batchOperationKey, batchOperationStatus));
-  }
-
-  private void rejectNotFound(
-      final TypedRecord<BatchOperationLifecycleManagementRecord> command,
-      final long batchOperationKey,
-      final BatchOperationLifecycleManagementRecord recordValue) {
-    LOGGER.info(
-        "Batch operation with key '{}' not found, rejecting command: {}",
-        batchOperationKey,
-        recordValue);
-    rejectionWriter.appendRejection(
-        command,
-        RejectionType.NOT_FOUND,
-        String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
-    responseWriter.writeRejectionOnCommand(
-        command,
-        RejectionType.NOT_FOUND,
-        String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
   }
 }

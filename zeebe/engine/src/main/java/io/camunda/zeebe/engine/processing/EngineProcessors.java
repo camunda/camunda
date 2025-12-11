@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
-import io.camunda.zeebe.engine.processing.conditional.ConditionalEvaluationProcessor;
+import io.camunda.zeebe.engine.processing.conditional.ConditionalEvaluationEvaluateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
@@ -35,7 +35,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContinueProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
-import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluateProcessor;
 import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionProcessors;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
@@ -553,13 +553,13 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior) {
 
-    final DecisionEvaluationEvaluteProcessor decisionEvaluationEvaluteProcessor =
-        new DecisionEvaluationEvaluteProcessor(
+    final DecisionEvaluationEvaluateProcessor decisionEvaluationEvaluateProcessor =
+        new DecisionEvaluationEvaluateProcessor(
             decisionBehavior, processingState.getKeyGenerator(), writers, authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
-        decisionEvaluationEvaluteProcessor);
+        decisionEvaluationEvaluateProcessor);
   }
 
   private static void addResourceDeletionProcessors(
@@ -619,7 +619,7 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior) {
     final var conditionalEvaluationProcessor =
-        new ConditionalEvaluationProcessor(
+        new ConditionalEvaluationEvaluateProcessor(
             writers,
             processingState.getKeyGenerator(),
             processingState,

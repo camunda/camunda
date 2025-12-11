@@ -20,14 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
-public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(ScaleUpStatusProcessor.class);
+public class ScaleStatusProcessor implements TypedRecordProcessor<ScaleRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(ScaleStatusProcessor.class);
 
   private final Writers writers;
   private final KeyGenerator keyGenerator;
   private final RoutingState routingState;
 
-  public ScaleUpStatusProcessor(
+  public ScaleStatusProcessor(
       final KeyGenerator keyGenerator, final Writers writers, final RoutingState routingState) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;

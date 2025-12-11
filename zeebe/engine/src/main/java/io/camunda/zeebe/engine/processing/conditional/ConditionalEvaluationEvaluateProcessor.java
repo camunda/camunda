@@ -40,10 +40,11 @@ import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConditionalEvaluationProcessor
+public class ConditionalEvaluationEvaluateProcessor
     implements TypedRecordProcessor<ConditionalEvaluationRecord> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ConditionalEvaluationProcessor.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ConditionalEvaluationEvaluateProcessor.class);
 
   private static final String NO_PROCESS_DEFINITION_FOUND_MESSAGE =
       "Expected to evaluate conditional with command key '%d' for process definition key '%d', but no such process was found.";
@@ -59,7 +60,7 @@ public class ConditionalEvaluationProcessor
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ExpressionProcessor expressionProcessor;
 
-  public ConditionalEvaluationProcessor(
+  public ConditionalEvaluationEvaluateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
