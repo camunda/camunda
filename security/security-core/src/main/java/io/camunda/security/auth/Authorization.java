@@ -23,6 +23,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.T
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.DELETE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
@@ -172,6 +173,10 @@ public record Authorization<T>(
 
     public Builder<T> readUsageMetric() {
       return permissionType(READ_USAGE_METRIC);
+    }
+
+    public Builder<T> deleteProcessInstance() {
+      return permissionType(DELETE_PROCESS_INSTANCE);
     }
 
     public Builder<T> batchOperation() {
