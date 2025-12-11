@@ -187,16 +187,19 @@ public class Member extends Node {
 
   @Override
   public String toString() {
-    return toStringHelper(Member.class)
-        .add("id", id())
-        .add("nodeVersion", nodeVersion)
+    final var result = toStringHelper(Member.class).add("id", id());
+
+    if (nodeVersion > 0L) {
+      result.add("nodeVersion", nodeVersion);
+    }
+
+    result
         .add("address", address())
         .add("zone", zone())
         .add("rack", rack())
         .add("host", host())
-        .add("properties", properties())
-        .omitNullValues()
-        .toString();
+        .add("properties", properties());
+    return result.omitNullValues().toString();
   }
 
   public Long nodeVersion() {
