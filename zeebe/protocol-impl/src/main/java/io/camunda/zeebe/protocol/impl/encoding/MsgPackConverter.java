@@ -249,4 +249,13 @@ public final class MsgPackConverter {
       throw new RuntimeException("Failed to deserialize MessagePack to Map", e);
     }
   }
+
+  public static Object fromDirectBuffer(final DirectBuffer buf) {
+    try {
+      return MESSSAGE_PACK_OBJECT_MAPPER.readValue(
+          buf.byteArray(), buf.wrapAdjustment(), buf.capacity(), Object.class);
+    } catch (final IOException e) {
+      throw new RuntimeException("Failed to deserialize MsgPack from DirectBuffer", e);
+    }
+  }
 }

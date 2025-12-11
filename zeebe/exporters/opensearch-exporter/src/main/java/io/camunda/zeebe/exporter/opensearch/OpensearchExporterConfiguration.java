@@ -225,6 +225,7 @@ public class OpensearchExporterConfiguration {
     public boolean conditionalEvaluation = false;
 
     public boolean globalListenerBatch = false;
+    public boolean expression = false;
 
     // index settings
     private Integer numberOfShards = null;
