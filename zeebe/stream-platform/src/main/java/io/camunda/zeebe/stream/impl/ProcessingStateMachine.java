@@ -500,8 +500,6 @@ public final class ProcessingStateMachine {
           currentRecord,
           metadata,
           e);
-      pendingResponses.clear();
-      pendingWrites.clear();
     }
     return false;
   }
