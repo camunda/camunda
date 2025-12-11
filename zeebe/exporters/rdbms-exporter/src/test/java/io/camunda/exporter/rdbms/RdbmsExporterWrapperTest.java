@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 
+import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
@@ -38,7 +39,9 @@ class RdbmsExporterWrapperTest {
 
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
-            Mockito.mock(RdbmsService.class), Mockito.mock(VendorDatabaseProperties.class));
+            Mockito.mock(RdbmsService.class),
+            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(VendorDatabaseProperties.class));
 
     // when
     assertThatThrownBy(() -> exporterWrapper.configure(context))
@@ -59,7 +62,10 @@ class RdbmsExporterWrapperTest {
     Mockito.when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriter);
 
     final RdbmsExporterWrapper exporterWrapper =
-        new RdbmsExporterWrapper(rdbmsService, Mockito.mock(VendorDatabaseProperties.class));
+        new RdbmsExporterWrapper(
+            rdbmsService,
+            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(VendorDatabaseProperties.class));
 
     // when
     exporterWrapper.configure(context);

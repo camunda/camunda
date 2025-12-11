@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms;
 
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
@@ -72,6 +73,7 @@ public class RdbmsExporterWrapper implements Exporter {
   public static final String NAMESPACE = "camunda.rdbms.exporter.cache";
 
   private final RdbmsService rdbmsService;
+  private final RdbmsSchemaManager rdbmsSchemaManager;
   private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private RdbmsExporter exporter;
@@ -81,9 +83,12 @@ public class RdbmsExporterWrapper implements Exporter {
   private ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
   public RdbmsExporterWrapper(
-      final RdbmsService rdbmsService, final VendorDatabaseProperties vendorDatabaseProperties) {
-    this.vendorDatabaseProperties = vendorDatabaseProperties;
+      final RdbmsService rdbmsService,
+      final RdbmsSchemaManager rdbmsSchemaManager,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     this.rdbmsService = rdbmsService;
+    this.rdbmsSchemaManager = rdbmsSchemaManager;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   @Override
@@ -124,7 +129,7 @@ public class RdbmsExporterWrapper implements Exporter {
     createHandlers(partitionId, rdbmsWriter, builder);
     createBatchOperationHandlers(rdbmsWriter, builder);
 
-    exporter = builder.build();
+    exporter = builder.rdbmsSchemaManager(rdbmsSchemaManager).build();
   }
 
   @Override

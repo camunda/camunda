@@ -29,6 +29,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
@@ -114,13 +115,15 @@ class RdbmsExporterIT {
             }
           });
 
+  @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
   @Autowired private RdbmsService rdbmsService;
 
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
   void setUp() {
-    exporter = new RdbmsExporterWrapper(rdbmsService, vendorDatabaseProperties);
+    exporter =
+        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
     exporter.configure(
         new ExporterContext(
             null,
