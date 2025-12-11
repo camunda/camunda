@@ -17,7 +17,7 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
-import {setupIncidentTest, setupMultipleIncidentsTest, setupMultipleTypeIncidentsTest} from '../../../../utils/requestHelpers/incident-requestHelpers';
+import {createTwoIncidentsInOneProcess, createIncidentsInTwoProcesses, createTwoDifferentIncidentsInOneProcess} from '../../../../utils/requestHelpers/incident-requestHelpers';
 
 const INCIDENT_SEARCH_ENDPOINT = '/incidents/search';
 
@@ -40,7 +40,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
     test('Search Incidents Success', async ({request}) => {
         const localState: Record<string, unknown> = {};
-        await setupIncidentTest(localState, request);
+        await createTwoIncidentsInOneProcess(localState, request);
         processInstanceKeys.push(localState['processInstanceKey'] as string);
 
          await expect(async () => {
@@ -68,7 +68,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
     test('Search Incidents within multiple process instances Success', async ({request}) => {
         const localState: Record<string, unknown> = {};
-        await setupMultipleIncidentsTest(localState, request);
+        await createIncidentsInTwoProcesses(localState, request);
         for (const element of localState['processInstanceKey'] as string[]) {
             processInstanceKeys.push(element);
         }
@@ -98,7 +98,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
     test('Search Incidents With IncidentKey Filter Success', async ({request}) => {
         const localState: Record<string, unknown> = {};
-        await setupIncidentTest(localState, request);
+        await createTwoIncidentsInOneProcess(localState, request);
         processInstanceKeys.push(localState['processInstanceKey'] as string);
         const incidentKeys = localState['incidentKeys'] as string[];
 
@@ -133,7 +133,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
     test('Search Incidents With Error Type Filter Success', async ({request}) => {
         const localState: Record<string, unknown> = {};
-        await setupIncidentTest(localState, request);
+        await createTwoIncidentsInOneProcess(localState, request);
         processInstanceKeys.push(localState['processInstanceKey'] as string);
 
         await expect(async () => {
@@ -193,9 +193,9 @@ test.describe.parallel('Search Incidents API Tests', () => {
         }).toPass(defaultAssertionOptions);
     });
 
-    test('Search Incidents With Error Type Filter and PIK Success', async ({request}) => {
+    test('Search Incidents With Error Type Filter and Process Instance Key Success', async ({request}) => {
         const localState: Record<string, unknown> = {};
-        await setupMultipleTypeIncidentsTest(localState, request);
+        await createTwoDifferentIncidentsInOneProcess(localState, request);
         processInstanceKeys.push(localState['processInstanceKey'] as string);
 
         await test.step('Search for EXTRACT_VALUE_ERROR incidents', async () => {
@@ -294,7 +294,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
     test('Search Incidents Empty Result success', async ({request}) => {
         const localState: Record<string, unknown> = {};
-        await setupIncidentTest(localState, request);
+        await createTwoIncidentsInOneProcess(localState, request);
         processInstanceKeys.push(localState['processInstanceKey'] as string);
 
         await expect(async () => {
@@ -302,7 +302,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
                 headers: jsonHeaders(),
                 data: {
                 filter: {
-                    errorType: 'JOB_NO_RETRIES',
+                    processInstanceKey: '225179981', // non-existing
                 },
                 },
             });
