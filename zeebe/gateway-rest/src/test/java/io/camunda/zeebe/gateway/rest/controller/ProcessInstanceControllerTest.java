@@ -1490,8 +1490,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "title":"Bad Request",
                 "status":400,
                 "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
-            Use any of the following values: [direct, sourceParent, DirectAncestorKeyInstruction, \
-            SourceParentAncestorKeyInstruction]",
+            Use any of the following values: [direct, sourceParent]", \
                 "instance":"/v2/process-instances/1/modification"
              }""";
 

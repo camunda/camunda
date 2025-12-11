@@ -82,6 +82,7 @@ import org.springframework.http.ResponseEntity;
 final class ClusterApiUtils {
   private static final OffsetDateTime MIN_PARSER_COMPLIANT_DATE =
       OffsetDateTime.parse("0000-01-01T00:00:00Z");
+  private static final String MESSAGE_CORRELATION_STRATEGY_HASH_MOD = "HashMod";
 
   private ClusterApiUtils() {
     throw new IllegalStateException("Utility class");
@@ -365,7 +366,9 @@ final class ClusterApiUtils {
       final RoutingState.MessageCorrelation messageCorrelation) {
     return switch (messageCorrelation) {
       case HashMod(final var partitionCount) ->
-          new MessageCorrelationHashMod().partitionCount(partitionCount);
+          new MessageCorrelationHashMod()
+              .strategy(MESSAGE_CORRELATION_STRATEGY_HASH_MOD)
+              .partitionCount(partitionCount);
     };
   }
 
