@@ -17,6 +17,7 @@ import {
   mockProcessInstances,
   mockFinishedOrderProcessInstances,
   mockStatisticsV2,
+  mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {
   mockResponses as mockProcessDetailResponses,
@@ -41,6 +42,7 @@ test.describe('delete finished instances', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -104,6 +106,7 @@ test.describe('delete finished instances', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: {
           ...mockBatchOperations,
           items: [mockNewDeleteOperation, ...mockBatchOperations.items],
@@ -250,6 +253,16 @@ test.describe('delete finished instances', () => {
         return route.fulfill({
           status: 200,
           body: JSON.stringify(mockGroupedProcesses),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
+      if (route.request().url().includes('/v2/process-definitions/search')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify(mockProcessDefinitions),
           headers: {
             'content-type': 'application/json',
           },

@@ -18,6 +18,7 @@ import {
   mockBatchOperations,
   mockGroupedProcesses,
   mockOrderProcessInstances,
+  mockProcessDefinitions,
   mockResponses as mockProcessesResponses,
   mockStatisticsV2,
 } from '../mocks/processes.mocks';
@@ -62,6 +63,7 @@ test.describe('get familiar with operate', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
