@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -155,7 +156,7 @@ public class AuthorizationChecker {
    * @return the permission types found
    */
   public Map<String, Set<PermissionType>> collectPermissionTypesByResourceIds(
-      final Set<String> resourceIds,
+      final Collection<String> resourceIds,
       final AuthorizationResourceType resourceType,
       final CamundaAuthentication authentication) {
     final var resourceKeys = new ArrayList<>(resourceIds);
@@ -187,7 +188,7 @@ public class AuthorizationChecker {
   }
 
   private Map<String, Set<PermissionType>> collectPermissionTypesByResourceId(
-      final List<AuthorizationEntity> authorizationEntities, final Set<String> resourceIds) {
+      final List<AuthorizationEntity> authorizationEntities, final Collection<String> resourceIds) {
 
     // group permissions by resource ID
     final var permissionTypesByResourceId =

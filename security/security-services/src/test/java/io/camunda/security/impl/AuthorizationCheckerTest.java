@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -465,13 +467,38 @@ public class AuthorizationCheckerTest {
       }
     }
 
+    @ParameterizedTest(name = "{index} {0}")
+    @MethodSource("collectPermissionTypesScenarios")
+    void collectPermissionTypesByResourceIdsScenariosTest(
+        final CollectPermissionScenario scenario) {
+      try (final var reader = new FakeAuthorizationReader()) {
+        // given
+        for (final var authorizationEntity : scenario.given()) {
+          reader.create(authorizationEntity);
+        }
+        final var checker = new AuthorizationChecker(reader);
+
+        // when
+        final var actual =
+            checker.collectPermissionTypesByResourceIds(
+                scenario.resourceIds(), scenario.resourceType(), scenario.authentication());
+
+        // then
+        Assertions.assertThat(actual)
+            .describedAs(scenario.displayName())
+            .containsExactlyInAnyOrderEntriesOf(scenario.expectedById);
+      }
+    }
+
     Stream<CollectPermissionScenario> collectPermissionTypesScenarios() {
       return Stream.of(
           CollectPermissionScenario.displayName(
                   "anonymous PROCESS_DEFINITION no authorizations -> empty")
               .whenAnonymous()
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
-              .thenResultContains()
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID),
+                  AuthorizationResourceType.PROCESS_DEFINITION)
               .build(),
           CollectPermissionScenario.displayName(
                   "anonymous PROCESS_DEFINITION unspecified authorization -> empty")
@@ -485,7 +512,9 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.READ)))
               .whenAnonymous()
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
-              .thenResultContains()
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID),
+                  AuthorizationResourceType.PROCESS_DEFINITION)
               .build(),
           CollectPermissionScenario.displayName("user alice wildcard AUTHORIZATION READ -> {READ}")
               .given(
@@ -498,7 +527,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.READ)))
               .whenUser("alice")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.AUTHORIZATION)
               .thenResultContains(PermissionType.READ)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
               .build(),
           CollectPermissionScenario.displayName("user bob DOCUMENT specific READ -> {READ}")
               .given(
@@ -511,7 +548,11 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.READ)))
               .whenUser("bob")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.DOCUMENT)
               .thenResultContains(PermissionType.READ)
+              .thenResultByIdContains(
+                  Map.of(RESOURCE_ID, Set.of(PermissionType.READ), OTHER_RESOURCE_ID, Set.of()))
               .build(),
           CollectPermissionScenario.displayName(
                   "user alice PROCESS_DEFINITION wildcard READ_PROCESS_DEFINITION + specific CANCEL -> union")
@@ -532,8 +573,19 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.CANCEL_PROCESS_INSTANCE)))
               .whenUser("alice")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID),
+                  AuthorizationResourceType.PROCESS_DEFINITION)
               .thenResultContains(
                   PermissionType.READ_PROCESS_DEFINITION, PermissionType.CANCEL_PROCESS_INSTANCE)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(
+                          PermissionType.READ_PROCESS_DEFINITION,
+                          PermissionType.CANCEL_PROCESS_INSTANCE),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ_PROCESS_DEFINITION)))
               .build(),
           CollectPermissionScenario.displayName("user alice SYSTEM duplicate READ -> {READ}")
               .given(
@@ -553,7 +605,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.READ)))
               .whenUser("alice")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.SYSTEM)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.SYSTEM)
               .thenResultContains(PermissionType.READ)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
               .build(),
           CollectPermissionScenario.displayName("user carol AUTHORIZATION mismatch -> empty")
               .given(
@@ -566,6 +626,10 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.READ)))
               .whenUser("carol")
               .accessesResource(OTHER_RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.AUTHORIZATION)
+              .thenResultByIdContains(
+                  Map.of(RESOURCE_ID, Set.of(PermissionType.READ), OTHER_RESOURCE_ID, Set.of()))
               .build(),
           CollectPermissionScenario.displayName(
                   "user dave DOCUMENT wildcard applies to other id -> {CREATE,READ,DELETE}")
@@ -579,7 +643,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)))
               .whenUser("dave")
               .accessesResource(OTHER_RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.DOCUMENT)
               .thenResultContains(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)))
               .build(),
           CollectPermissionScenario.displayName(
                   "alice + groupA PROCESS_DEFINITION wildcard -> {READ_PROCESS_DEFINITION}")
@@ -594,7 +666,16 @@ public class AuthorizationCheckerTest {
               .whenUser("alice")
               .withGroups("groupA")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID),
+                  AuthorizationResourceType.PROCESS_DEFINITION)
               .thenResultContains(PermissionType.READ_PROCESS_DEFINITION)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ_PROCESS_DEFINITION),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ_PROCESS_DEFINITION)))
               .build(),
           CollectPermissionScenario.displayName(
                   "alice + groupA AUTHORIZATION union wildcard READ + specific UPDATE -> {READ,UPDATE}")
@@ -616,7 +697,15 @@ public class AuthorizationCheckerTest {
               .whenUser("alice")
               .withGroups("groupA")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.AUTHORIZATION)
               .thenResultContains(PermissionType.READ, PermissionType.UPDATE)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ, PermissionType.UPDATE),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
               .build(),
           CollectPermissionScenario.displayName(
                   "alice AUTHORIZATION union READ+UPDATE + wildcard DELETE -> {READ,UPDATE,DELETE}")
@@ -637,7 +726,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.DELETE)))
               .whenUser("alice")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUTHORIZATION)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.AUTHORIZATION)
               .thenResultContains(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.DELETE)))
               .build(),
           CollectPermissionScenario.displayName("erin COMPONENT wildcard ACCESS -> {ACCESS}")
               .given(
@@ -650,7 +747,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.ACCESS)))
               .whenUser("erin")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.COMPONENT)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.COMPONENT)
               .thenResultContains(PermissionType.ACCESS)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.ACCESS),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.ACCESS)))
               .build(),
           CollectPermissionScenario.displayName(
                   "frank SYSTEM wildcard READ + specific READ_USAGE_METRIC+UPDATE -> union")
@@ -671,8 +776,19 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)))
               .whenUser("frank")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.SYSTEM)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.SYSTEM)
               .thenResultContains(
                   PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(
+                          PermissionType.READ,
+                          PermissionType.READ_USAGE_METRIC,
+                          PermissionType.UPDATE),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
               .build(),
           CollectPermissionScenario.displayName("gina PROCESS_DEFINITION mismatch -> empty")
               .given(
@@ -685,6 +801,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.UPDATE_PROCESS_INSTANCE)))
               .whenUser("gina")
               .accessesResource(OTHER_RESOURCE_ID, AuthorizationResourceType.PROCESS_DEFINITION)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID),
+                  AuthorizationResourceType.PROCESS_DEFINITION)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.UPDATE_PROCESS_INSTANCE),
+                      OTHER_RESOURCE_ID,
+                      Set.of()))
               .build(),
           CollectPermissionScenario.displayName("hank DOCUMENT wildcard -> {CREATE,READ,DELETE}")
               .given(
@@ -697,7 +822,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)))
               .whenUser("hank")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.DOCUMENT)
               .thenResultContains(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)))
               .build(),
           CollectPermissionScenario.displayName(
                   "ivy BATCH wildcard CREATE + specific DELETE_PROCESS_DEFINITION -> union")
@@ -718,9 +851,19 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION)))
               .whenUser("ivy")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.BATCH)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.BATCH)
               .thenResultContains(
                   PermissionType.CREATE,
                   PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(
+                          PermissionType.CREATE,
+                          PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.CREATE)))
               .build(),
           CollectPermissionScenario.displayName("client clientA DOCUMENT wildcard READ -> {READ}")
               .given(
@@ -733,7 +876,15 @@ public class AuthorizationCheckerTest {
                       Set.of(PermissionType.READ)))
               .whenClient("clientA")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.DOCUMENT)
               .thenResultContains(PermissionType.READ)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ)))
               .build(),
           CollectPermissionScenario.displayName(
                   "combo client+role+mappingRule DOCUMENT union READ+CREATE+DELETE -> {READ,CREATE,DELETE}")
@@ -763,7 +914,15 @@ public class AuthorizationCheckerTest {
               .withRoles("roleX")
               .withMappingRules("mrCombo")
               .accessesResource(RESOURCE_ID, AuthorizationResourceType.DOCUMENT)
+              .accessesResources(
+                  List.of(RESOURCE_ID, OTHER_RESOURCE_ID), AuthorizationResourceType.DOCUMENT)
               .thenResultContains(PermissionType.READ, PermissionType.CREATE, PermissionType.DELETE)
+              .thenResultByIdContains(
+                  Map.of(
+                      RESOURCE_ID,
+                      Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.DELETE),
+                      OTHER_RESOURCE_ID,
+                      Set.of(PermissionType.READ, PermissionType.DELETE)))
               .build());
     }
 
@@ -788,9 +947,11 @@ public class AuthorizationCheckerTest {
         String displayName,
         CamundaAuthentication authentication,
         String resourceId,
+        Collection<String> resourceIds,
         AuthorizationResourceType resourceType,
         List<AuthorizationEntity> given,
-        Set<PermissionType> expected) {
+        Set<PermissionType> expected,
+        Map<String, Set<PermissionType>> expectedById) {
 
       @Override
       public String toString() {
@@ -809,9 +970,11 @@ public class AuthorizationCheckerTest {
         private final List<String> mappingRuleIds = new ArrayList<>();
         private final List<String> roleIds = new ArrayList<>();
         private String requestedResourceId;
+        private Collection<String> requestedResourceIds;
         private AuthorizationResourceType resourceType;
         private final List<AuthorizationEntity> givenAuthorizationEntities = new ArrayList<>();
         private final Set<PermissionType> expected = new LinkedHashSet<>();
+        private final Map<String, Set<PermissionType>> expectedById = new LinkedHashMap<>();
 
         Builder(final String displayName) {
           this.displayName = displayName;
@@ -871,9 +1034,23 @@ public class AuthorizationCheckerTest {
           return this;
         }
 
+        Builder accessesResources(
+            final Collection<String> resourceIds, final AuthorizationResourceType resourceType) {
+          requestedResourceIds = resourceIds;
+          this.resourceType = resourceType;
+          return this;
+        }
+
         Builder thenResultContains(final PermissionType... permissionTypes) {
           if (permissionTypes != null) {
             expected.addAll(Arrays.asList(permissionTypes));
+          }
+          return this;
+        }
+
+        Builder thenResultByIdContains(final Map<String, Set<PermissionType>> expectedById) {
+          if (expectedById != null) {
+            this.expectedById.putAll(expectedById);
           }
           return this;
         }
@@ -912,9 +1089,11 @@ public class AuthorizationCheckerTest {
               displayName,
               authentication,
               requestedResourceId,
+              requestedResourceIds,
               resourceType,
               List.copyOf(givenAuthorizationEntities),
-              Set.copyOf(expected));
+              Set.copyOf(expected),
+              Map.copyOf(expectedById));
         }
       }
     }
