@@ -26,12 +26,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 
 public final class DbTransactionTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<ColumnFamilies> dbFactoryResources;
+
   private TransactionContext transactionContext;
   private ZeebeDb<ColumnFamilies> zeebeDb;
   private ColumnFamily<DbLong, DbLong> oneColumnFamily;

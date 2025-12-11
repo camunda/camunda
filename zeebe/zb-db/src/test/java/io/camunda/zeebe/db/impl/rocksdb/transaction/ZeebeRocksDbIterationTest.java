@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 import org.rocksdb.ReadOptions;
@@ -28,7 +29,10 @@ import org.rocksdb.RocksIterator;
 public final class ZeebeRocksDbIterationTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+
   private ZeebeTransactionDb<DefaultColumnFamily> zeebeDb;
   private TransactionalColumnFamily<DefaultColumnFamily, DbCompositeKey<DbLong, DbLong>, DbNil>
       columnFamily;

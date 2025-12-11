@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
@@ -33,7 +34,10 @@ import org.rocksdb.Status.SubCode;
 public final class ZeebeRocksDbTransactionTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+
   private TransactionContext transactionContext;
 
   @Before

@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.agrona.CloseHelper;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -30,7 +31,7 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
 public class StreamPlatformExtension implements BeforeEachCallback {
 
   private static final String FIELD_STATE = "state";
-  final DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources;
+  @AutoClose final DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources;
 
   public StreamPlatformExtension() {
     this(DefaultZeebeDbFactory.getDefaultFactoryResources());

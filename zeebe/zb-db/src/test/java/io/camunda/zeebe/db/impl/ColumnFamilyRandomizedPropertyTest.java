@@ -26,12 +26,15 @@ import net.jqwik.api.lifecycle.AfterProperty;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeProperty;
 import org.assertj.core.util.Files;
+import org.junit.jupiter.api.AutoClose;
 
 public class ColumnFamilyRandomizedPropertyTest {
 
   private Map<Long, Long> map;
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
+
+  @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
 
   @BeforeProperty

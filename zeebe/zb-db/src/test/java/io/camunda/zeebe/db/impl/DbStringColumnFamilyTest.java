@@ -20,12 +20,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 
 public final class DbStringColumnFamilyTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbString, DbString> columnFamily;
   private DbString key;

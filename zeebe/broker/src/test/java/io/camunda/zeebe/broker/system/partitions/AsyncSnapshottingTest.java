@@ -42,6 +42,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
@@ -60,7 +61,7 @@ public final class AsyncSnapshottingTest {
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
   private FileBasedSnapshotStore persistedSnapshotStore;
-  private ZeebeDbFactoryResources dbFactoryResources;
+  @AutoClose private ZeebeDbFactoryResources dbFactoryResources;
 
   @Before
   public void setup() throws IOException {

@@ -32,6 +32,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.InstantSource;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -150,7 +151,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private TransactionContext transactionContext;
     private MutableProcessingState processingState;
-    private final ZeebeDbFactoryResources factoryResources;
+    @AutoClose private final ZeebeDbFactoryResources factoryResources;
 
     private ProcessingStateExtensionState() {
 

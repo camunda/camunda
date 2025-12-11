@@ -25,12 +25,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.assertj.core.api.PathAssert;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class ZeebeRocksDbTest {
 
+  @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
 
   @BeforeEach

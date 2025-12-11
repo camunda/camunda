@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
@@ -39,8 +40,10 @@ public final class ExportersStateTest {
   @Rule
   public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(autoCloseableRule);
 
+  @AutoClose
   private final ZeebeDbFactoryResources zeebeDbFactoryResources =
       DefaultZeebeDbFactory.getDefaultFactoryResources();
+
   private ExportersState state;
   private ZeebeDb<ZbColumnFamilies> db;
 

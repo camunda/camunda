@@ -29,10 +29,15 @@ import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.io.File;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class ForeignKeyCheckerTest {
+
+  @AutoClose
+  final ZeebeDbFactoryResources defaultFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Test
   void shouldFailOnMissingForeignKey() throws Exception {
@@ -129,8 +134,6 @@ final class ForeignKeyCheckerTest {
   @Test
   void shouldSucceedOnRealColumnFamily(@TempDir final File tempDir) throws Exception {
     // given
-    final ZeebeDbFactoryResources defaultFactoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources();
     final var db = defaultFactoryResources.factory.createDb(tempDir);
     final var txContext = db.createContext();
 
@@ -162,8 +165,6 @@ final class ForeignKeyCheckerTest {
   @Test
   void shouldFindByPrefix(@TempDir final File tempDir) throws Exception {
     // given
-    final ZeebeDbFactoryResources defaultFactoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources();
     final var db = defaultFactoryResources.factory.createDb(tempDir);
     final var txContext = db.createContext();
 
@@ -197,8 +198,6 @@ final class ForeignKeyCheckerTest {
   @Test
   void shouldThrowWhenPrefixIsNotFound(@TempDir final File tempDir) throws Exception {
     // given
-    final ZeebeDbFactoryResources defaultFactoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources();
     final var db = defaultFactoryResources.factory.createDb(tempDir);
     final var txContext = db.createContext();
 

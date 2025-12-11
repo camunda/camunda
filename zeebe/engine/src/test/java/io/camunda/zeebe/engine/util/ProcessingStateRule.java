@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.time.InstantSource;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
@@ -27,7 +28,7 @@ public final class ProcessingStateRule extends ExternalResource {
   private final int partition;
   private ZeebeDb<ZbColumnFamilies> db;
   private MutableProcessingState processingState;
-  private ZeebeDbFactoryResources zeebeDbFactoryResources;
+  @AutoClose private ZeebeDbFactoryResources zeebeDbFactoryResources;
 
   public ProcessingStateRule() {
     this(Protocol.DEPLOYMENT_PARTITION);

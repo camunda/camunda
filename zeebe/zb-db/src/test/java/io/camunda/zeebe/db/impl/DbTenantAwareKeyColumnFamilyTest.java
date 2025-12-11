@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import java.io.File;
 import java.util.ArrayList;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -23,7 +24,10 @@ import org.junit.jupiter.api.io.TempDir;
 public final class DbTenantAwareKeyColumnFamilyTest {
 
   @TempDir public File temporaryFolder;
+
+  @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbTenantAwareKey<DbLong>, DbString> columnFamily;
   private ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>>, DbString>

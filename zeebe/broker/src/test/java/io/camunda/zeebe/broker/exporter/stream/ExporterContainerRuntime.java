@@ -26,6 +26,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.time.InstantSource;
 import org.agrona.CloseHelper;
+import org.junit.jupiter.api.AutoClose;
 
 /**
  * A small utility class which provides all the required runtime components to unit test exporter
@@ -39,7 +40,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   private final ExportersState state;
   private final ExporterMetrics metrics;
   private final MeterRegistry meterRegistry;
-  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources zeebeDbFactoryResources;
+  @AutoClose private final DefaultZeebeDbFactory.ZeebeDbFactoryResources zeebeDbFactoryResources;
 
   public ExporterContainerRuntime(final Path storagePath) {
     scheduler = ActorScheduler.newActorScheduler().build();

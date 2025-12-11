@@ -30,6 +30,7 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.After;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -100,8 +101,10 @@ final class StreamProcessorTransactionErrorTest {
   private static final class ErrorProneDbFactory
       implements ZeebeDbFactory<ZbColumnFamilies>, AutoCloseable {
 
+    @AutoClose
     final ZeebeDbFactoryResources dbFactoryResources =
         DefaultZeebeDbFactory.getDefaultFactoryResources();
+
     final ZeebeDbFactory<ZbColumnFamilies> delegate = dbFactoryResources.factory;
     final Exception commitException;
 
