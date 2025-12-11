@@ -29,7 +29,10 @@
     <version.spring>7.0.1</version.spring>
     <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
     <version.junit>6.0.1</version.junit>
+    <version.roaster>2.30.3.Final</version.roaster>
     <version.aspectjweaver>1.9.24</version.aspectjweaver>
+    <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
+    <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>
   </properties>
 
   <dependencies>
@@ -48,6 +51,13 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
       <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.forge.roaster</groupId>
+      <artifactId>roaster-api</artifactId>
+      <version>${version.roaster}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -74,6 +84,88 @@
       <artifactId>spring-boot-health</artifactId>
     </dependency>
 
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjweaver</artifactId>
+      <version>${version.aspectjweaver}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -156,17 +248,106 @@
         </configuration>
       </plugin>
 
-      <!--
-        Note: Tests are skipped because test-jar tests from camunda-spring-boot-starter
-        were compiled with JUnit 5.x which is binary incompatible with JUnit 6.x
-        (required by Spring Boot 4). Test coverage is provided by the base module.
-        This is acceptable as this module is a temporary solution for the 8.8 branch.
-      -->
+      <!-- Add test re-/sources from the base module -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-generator-source</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <!-- Include test generator utility classes (compiled as main sources in base module) -->
+                <source>${camunda-spring-boot-starter.sourcedir}/test/test-source-generator</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-source</id>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <sources>
+                <source>${camunda-spring-boot-starter.sourcedir}/test/java</source>
+                <source>${generated.test.sources.path}</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resources</id>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>${camunda-spring-boot-starter.sourcedir}/test/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <dependencies>
+          <!-- Needed for the roaster generator used -->
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <!-- This executed the test generator classes -->
+          <execution>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <mainClass>io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator</mainClass>
+              <arguments>
+                <argument>${generated.test.sources.path}</argument>
+              </arguments>
+              <classpathScope>provided</classpathScope>
+              <includePluginDependencies>true</includePluginDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <!-- As the test generator classes end up among main classes, they have to be excluded again -->
+          <excludes>
+            <exclude>**/test/**</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- Run tests compiled from base module sources -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <skipTests>true</skipTests>
+          <!-- Exclude tests that require file system access to configuration metadata in JAR -->
+          <!-- Low risk on those, given they are not tightly coupled to spring classes -->
+          <excludes>
+            <exclude>**/configurationMetadata/AlignmentTest.java</exclude>
+            <exclude>**/configurationMetadata/FormattingTest.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
