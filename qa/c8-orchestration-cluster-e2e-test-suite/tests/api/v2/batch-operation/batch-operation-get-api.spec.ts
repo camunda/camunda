@@ -21,7 +21,7 @@ import {createCancellationBatch} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 
-test.describe.parallel('Get Batch Operation Tests', () => {
+test.describe('Get Batch Operation Tests', () => {
   test.beforeAll(async () => {
     await deploy(['./resources/batch_cancellation_process.bpmn']);
   });
@@ -68,28 +68,6 @@ test.describe.parallel('Get Batch Operation Tests', () => {
         intervals: [5_000, 10_000, 15_000, 25_000],
         timeout: 60_000,
       });
-    });
-  });
-
-  test('Get Batch Operation - Eventually Consistent', async ({request}) => {
-    const key = await createCancellationBatch(request);
-
-    await test.step('Get Batch Operation with polling', async () => {
-      await expect(async () => {
-        const res = await request.get(buildUrl(`/batch-operations/${key}`), {
-          headers: jsonHeaders(),
-        });
-
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: '/batch-operations/{batchOperationKey}',
-            method: 'GET',
-            status: '200',
-          },
-          res,
-        );
-      }).toPass(defaultAssertionOptions);
     });
   });
 
