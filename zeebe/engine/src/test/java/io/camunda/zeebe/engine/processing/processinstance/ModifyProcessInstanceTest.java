@@ -2521,6 +2521,153 @@ public class ModifyProcessInstanceTest {
         .isEqualTo(targetAncestorScopeKey);
   }
 
+  @Test
+  public void shouldMoveFromNestedSubprocessToOuterSubprocessByElementId() {
+    // given a process with nested subprocesses and user tasks in each subprocess
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocessA",
+                    subprocessA ->
+                        subprocessA
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .subProcess(
+                                "subprocessB",
+                                subprocessB ->
+                                    subprocessB
+                                        .embeddedSubProcess()
+                                        .startEvent()
+                                        .userTask("task1")
+                                        .zeebeUserTask()
+                                        .endEvent())
+                            .userTask("task2")
+                            .zeebeUserTask()
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // Wait for task1 to be activated
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task1")
+        .await();
+
+    final var subprocessAKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("subprocessA")
+            .getFirst()
+            .getKey();
+
+    // when moving task1 to task2 using element id with source parent as ancestor scope
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementsWithSourceParent("task1", "task2")
+        .modify();
+
+    // then task2 should be activated in subprocess A (not in subprocess B)
+    final var task2Activated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task2")
+            .getFirst();
+
+    assertThat(task2Activated.getValue().getFlowScopeKey())
+        .describedAs("Expect task2 to be activated in subprocess A, not in subprocess B")
+        .isEqualTo(subprocessAKey);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("task1")
+                .exists())
+        .isTrue();
+
+    // Verify subprocess B was terminated (since task1 was its only active element)
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("subprocessB")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldMoveFromNestedSubprocessToOuterSubprocessByInstanceKey() {
+    // Same scenario as above, but using source element instance key instead of element id
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocessA",
+                    subprocessA ->
+                        subprocessA
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .subProcess(
+                                "subprocessB",
+                                subprocessB ->
+                                    subprocessB
+                                        .embeddedSubProcess()
+                                        .startEvent()
+                                        .userTask("task1")
+                                        .zeebeUserTask()
+                                        .endEvent())
+                            .userTask("task2")
+                            .zeebeUserTask()
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // Wait for task1 to be activated
+    final var task1Record =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task1")
+            .getFirst();
+    final long task1InstanceKey = task1Record.getKey();
+
+    final var subprocessAKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("subprocessA")
+            .getFirst()
+            .getKey();
+
+    // when moving task1 to task2 using instance key with source parent as ancestor scope
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementInstanceWithSourceParent(task1InstanceKey, "task2")
+        .modify();
+
+    // then task2 should be activated in subprocess A (not in subprocess B)
+    final var task2Activated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task2")
+            .getFirst();
+
+    assertThat(task2Activated.getValue().getFlowScopeKey())
+        .describedAs("Expect task2 to be activated in subprocess A, not in subprocess B")
+        .isEqualTo(subprocessAKey);
+  }
+
   private void verifyThatRootElementIsActivated(
       final long processInstanceKey, final String elementId, final BpmnElementType elementType) {
     verifyThatElementIsActivated(processInstanceKey, elementId, elementType, processInstanceKey);

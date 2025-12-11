@@ -289,7 +289,7 @@ public final class ProcessInstanceModificationModifyProcessor
       return;
     }
     mapMoveInstructionsByInstanceKey(
-        moveInstructionsByInstanceKey, activateInstructions, terminateInstructions);
+        moveInstructionsByInstanceKey, activateInstructions, terminateInstructions, process);
 
     // collect move instructions by source element id
     final var moveInstructionsByElementId =
@@ -307,7 +307,8 @@ public final class ProcessInstanceModificationModifyProcessor
         moveInstructionsByElementId,
         terminateInstructionsInput,
         activateInstructions,
-        terminateInstructions);
+        terminateInstructions,
+        process);
 
     final var instructionsValidationResult =
         validateInstructions(
@@ -428,7 +429,8 @@ public final class ProcessInstanceModificationModifyProcessor
       final Map<String, ProcessInstanceModificationMoveInstructionValue> moveInstructions,
       final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructionsInput,
       final List<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
-      final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions) {
+      final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions,
+      final DeployedProcess process) {
     if (moveInstructions.isEmpty() && terminateInstructionsInput.isEmpty()) {
       return;
     }
@@ -458,13 +460,15 @@ public final class ProcessInstanceModificationModifyProcessor
         // move element instance
         if (moveInstructions.containsKey(elementId)) {
           final var moveInstruction = moveInstructions.get(elementId);
+          final var ancestorScopeKey =
+              moveInstruction.isUseSourceParentKeyAsAncestorScope()
+                  ? findProperAncestorScopeKeyForTarget(
+                      elementInstance.getParentKey(), moveInstruction.getTargetElementId(), process)
+                  : moveInstruction.getAncestorScopeKey();
           final var activateInstruction =
               new ProcessInstanceModificationActivateInstruction()
                   .setElementId(moveInstruction.getTargetElementId())
-                  .setAncestorScopeKey(
-                      moveInstruction.isUseSourceParentKeyAsAncestorScope()
-                          ? elementInstance.getParentKey()
-                          : moveInstruction.getAncestorScopeKey());
+                  .setAncestorScopeKey(ancestorScopeKey);
           moveInstruction
               .getVariableInstructions()
               .forEach(
@@ -500,18 +504,22 @@ public final class ProcessInstanceModificationModifyProcessor
   private void mapMoveInstructionsByInstanceKey(
       final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
       final List<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
-      final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions) {
+      final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions,
+      final DeployedProcess process) {
     for (final var moveInstruction : moveInstructions) {
       final var elementInstance =
           elementInstanceState.getInstance(moveInstruction.getSourceElementInstanceKey());
 
+      final var ancestorScopeKey =
+          moveInstruction.isUseSourceParentKeyAsAncestorScope()
+              ? findProperAncestorScopeKeyForTarget(
+                  elementInstance.getParentKey(), moveInstruction.getTargetElementId(), process)
+              : moveInstruction.getAncestorScopeKey();
+
       final var activateInstruction =
           new ProcessInstanceModificationActivateInstruction()
               .setElementId(moveInstruction.getTargetElementId())
-              .setAncestorScopeKey(
-                  moveInstruction.isUseSourceParentKeyAsAncestorScope()
-                      ? elementInstance.getParentKey()
-                      : moveInstruction.getAncestorScopeKey());
+              .setAncestorScopeKey(ancestorScopeKey);
       moveInstruction
           .getVariableInstructions()
           .forEach(
@@ -525,6 +533,84 @@ public final class ProcessInstanceModificationModifyProcessor
               .setElementId(elementInstance.getValue().getElementId())
               .setElementInstanceKey(moveInstruction.getSourceElementInstanceKey()));
     }
+  }
+
+  /**
+   * Finds the proper ancestor scope key for activating the target element when moving from a source
+   * element instance.
+   *
+   * <p>When moving from a deeply nested element (e.g., task1 inside subprocess C which is inside
+   * subprocess B) to a less nested element (e.g., task2 directly inside subprocess B), we cannot
+   * simply use the source's parent key as the ancestor scope. The source's parent would be
+   * subprocess C's instance, but the target element's flow scope is subprocess B.
+   *
+   * <p>This method traverses up the source element instance's ancestry to find an instance whose
+   * element ID matches one of the target element's ancestor flow scopes (or the target's direct
+   * flow scope).
+   *
+   * @param sourceParentKey the parent key of the source element instance
+   * @param targetElementId the ID of the target element to activate
+   * @param process the deployed process containing both elements
+   * @return the proper ancestor scope key, or -1 if no matching ancestor is found (will be handled
+   *     by the activation logic)
+   */
+  private long findProperAncestorScopeKeyForTarget(
+      final long sourceParentKey, final String targetElementId, final DeployedProcess process) {
+
+    final var targetElement = process.getProcess().getElementById(targetElementId);
+    if (targetElement == null) {
+      // Target element not found - let validation handle this
+      return sourceParentKey;
+    }
+
+    final var targetDirectFlowScope = targetElement.getFlowScope();
+    if (targetDirectFlowScope == null) {
+      // Target is at root level (process) - no ancestor scope needed
+      return ElementActivationBehavior.NO_ANCESTOR_SCOPE_KEY;
+    }
+
+    // Fast path: check if source parent is already the target's direct flow scope
+    // This is the common case when moving between sibling elements
+    final var sourceParentInstance = elementInstanceState.getInstance(sourceParentKey);
+    if (sourceParentInstance != null) {
+      final var sourceParentElementId = sourceParentInstance.getValue().getElementId();
+      final var targetDirectFlowScopeId = BufferUtil.bufferAsString(targetDirectFlowScope.getId());
+      if (sourceParentElementId.equals(targetDirectFlowScopeId)) {
+        return sourceParentKey;
+      }
+    }
+
+    // Slow path: collect all flow scope element IDs for the target element
+    final var targetFlowScopeIds = new HashSet<String>();
+    var currentFlowScope = targetDirectFlowScope;
+    while (currentFlowScope != null) {
+      targetFlowScopeIds.add(BufferUtil.bufferAsString(currentFlowScope.getId()));
+      currentFlowScope = currentFlowScope.getFlowScope();
+    }
+
+    // Traverse up the source element instance's ancestry to find a matching scope
+    // Start from the parent of sourceParent since we already checked sourceParent above
+    var currentAncestorKey =
+        sourceParentInstance != null ? sourceParentInstance.getParentKey() : sourceParentKey;
+    while (currentAncestorKey > 0) {
+      final var ancestorInstance = elementInstanceState.getInstance(currentAncestorKey);
+      if (ancestorInstance == null) {
+        break;
+      }
+
+      final var ancestorElementId = ancestorInstance.getValue().getElementId();
+      if (targetFlowScopeIds.contains(ancestorElementId)) {
+        // Found an ancestor instance whose element is in the target's flow scope hierarchy
+        return currentAncestorKey;
+      }
+
+      // Move up to the next ancestor
+      currentAncestorKey = ancestorInstance.getParentKey();
+    }
+
+    // No matching ancestor found - return -1 to let the activation logic handle it
+    // (it will create new flow scope instances as needed)
+    return ElementActivationBehavior.NO_ANCESTOR_SCOPE_KEY;
   }
 
   private Either<Rejection, ?> validateCommand(
