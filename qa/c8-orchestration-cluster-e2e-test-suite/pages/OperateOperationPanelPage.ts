@@ -28,9 +28,9 @@ export class OperateOperationPanelPage {
     this.expandedOperationPanel = page
       .getByLabel('Operations')
       .getByTestId('expanded-panel');
-    this.collapseButton = this.expandedOperationPanel.getByRole('button', {
-      name: 'Collapse Operations',
-    });
+    this.collapseButton = page
+      .getByLabel('Operations')
+      .getByRole('button', {name: 'Collapse Operations'});
     this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
     this.beforeOperationOperationPanelEntries = [];
     this.afterOperationOperationPanelEntries = [];
@@ -131,5 +131,33 @@ export class OperateOperationPanelPage {
       .getByTestId('operation-id')
       .filter({hasText: operationId});
     await operationEntryById.click();
+  }
+
+  getMigrationOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Migrate'})
+      .filter({hasText: `${successCount} operations succeeded`});
+  }
+
+  getRetryOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Retry'})
+      .filter({hasText: `${successCount} retries succeeded`})
+      .first();
+  }
+
+  getCancelOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Cancel'})
+      .filter({hasText: `${successCount} operations succeeded`});
+  }
+
+  async clickOperationLink(operationEntry: Locator): Promise<void> {
+    await operationEntry
+      .locator('[data-testid="operation-id"]')
+      .click({timeout: 30000});
   }
 }
