@@ -376,6 +376,7 @@ components:
         - DELETE_PROCESS
         - DELETE_PROCESS_INSTANCE
         - DELETE_RESOURCE
+        - EVALUATE
         - MODIFY_PROCESS_INSTANCE
         - READ
         - READ_DECISION_DEFINITION
@@ -400,6 +401,7 @@ components:
         - DECISION_DEFINITION
         - DECISION_REQUIREMENTS_DEFINITION
         - DOCUMENT
+        - EXPRESSION
         - GROUP
         - MAPPING_RULE
         - MESSAGE
