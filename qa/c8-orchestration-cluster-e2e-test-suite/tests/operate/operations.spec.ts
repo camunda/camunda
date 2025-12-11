@@ -145,14 +145,15 @@ test.describe('Operations', () => {
 
       await expect(operateOperationPanelPage.operationList).toBeVisible();
 
-      const operationEntry = operateProcessesPage.getCancelOperationEntry(1);
+      const operationEntry =
+        operateOperationPanelPage.getCancelOperationEntry(1);
 
       await expect(operationEntry).toBeVisible();
       await expect(operationEntry.getByText(DATE_REGEX)).toBeVisible();
 
       const operationId = await operationEntry.getByRole('link').innerText();
 
-      await operateProcessesPage.clickOperationLink(operationEntry);
+      await operateOperationPanelPage.clickOperationLink(operationEntry);
       await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
         operationId,
       );
@@ -218,13 +219,13 @@ test.describe('Operations', () => {
     });
 
     await test.step('Wait for operation to complete', async () => {
-      const operationEntry = operateProcessesPage.getRetryOperationEntry(
+      const operationEntry = operateOperationPanelPage.getRetryOperationEntry(
         instances.length,
       );
 
       await expect(operationEntry).toBeVisible({timeout: 120000});
 
-      await operateProcessesPage.clickOperationLink(operationEntry);
+      await operateOperationPanelPage.clickOperationLink(operationEntry);
 
       await validateURL(page, /operationId=/);
 
@@ -263,7 +264,7 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.expandOperationsPanel();
 
-      const operationEntry = operateProcessesPage.getCancelOperationEntry(
+      const operationEntry = operateOperationPanelPage.getCancelOperationEntry(
         instances.length,
       );
 

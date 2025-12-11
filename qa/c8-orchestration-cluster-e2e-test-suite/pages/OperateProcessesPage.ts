@@ -62,6 +62,8 @@ class OperateProcessesPage {
   readonly cancelButton: Locator;
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
+  readonly scheduledOperationsIcons: Locator;
+  readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -185,7 +187,6 @@ class OperateProcessesPage {
     this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
     this.applyButton = page.getByRole('button', {name: 'Apply'});
     this.resultsCount = page.getByText(/\d+ results/);
-
     this.scheduledOperationsIcons = page.getByTitle(
       /has scheduled operations/i,
     );
@@ -468,34 +469,6 @@ class OperateProcessesPage {
         'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
       );
     }
-  }
-
-  getMigrationOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Migrate'})
-      .filter({hasText: `${successCount} operations succeeded`});
-  }
-
-  getRetryOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Retry'})
-      .filter({hasText: `${successCount} retries succeeded`})
-      .first();
-  }
-
-  getCancelOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Cancel'})
-      .filter({hasText: `${successCount} operations succeeded`});
-  }
-
-  async clickOperationLink(operationEntry: Locator): Promise<void> {
-    await operationEntry
-      .locator('[data-testid="operation-id"]')
-      .click({timeout: 30000});
   }
 }
 
