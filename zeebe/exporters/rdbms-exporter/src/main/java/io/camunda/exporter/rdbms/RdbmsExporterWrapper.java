@@ -38,6 +38,7 @@ import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
+import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import java.util.Set;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporterWrapper implements Exporter {
@@ -265,23 +267,18 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private void registerAuditLogHandlers(
       final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
-    final var processInstanceModificationAuditLogHandler =
-        new AuditLogExportHandler<>(
-            rdbmsWriter.getAuditLogWriter(),
-            vendorDatabaseProperties,
+    Set.of(
+            new BatchOperationCreationAuditLogTransformer(),
             new ProcessInstanceModificationAuditLogTransformer(),
-            new AuditLogConfiguration()); // TODO figure the correct configuration
-    builder.withHandler(
-        ValueType.PROCESS_INSTANCE_MODIFICATION, processInstanceModificationAuditLogHandler);
-
-    final var batchOperationLifecycleManagementAuditLogHandler =
-        new AuditLogExportHandler<>(
-            rdbmsWriter.getAuditLogWriter(),
-            vendorDatabaseProperties,
-            new BatchOperationLifecycleManagementAuditLogTransformer(),
-            new AuditLogConfiguration()); // TODO figure the correct configuration
-    builder.withHandler(
-        ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-        batchOperationLifecycleManagementAuditLogHandler);
+            new BatchOperationLifecycleManagementAuditLogTransformer())
+        .forEach(
+            transformer ->
+                builder.withHandler(
+                    transformer.config().valueType(),
+                    new AuditLogExportHandler<>(
+                        rdbmsWriter.getAuditLogWriter(),
+                        vendorDatabaseProperties,
+                        transformer,
+                        new AuditLogConfiguration()))); // TODO figure the correct configuration
   }
 }

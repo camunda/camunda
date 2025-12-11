@@ -19,6 +19,9 @@ import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -64,7 +67,30 @@ class RdbmsExporterWrapperTest {
     // then - verify that audit log handlers are registered
     final var registeredHandlers = exporterWrapper.getExporter().getRegisteredHandlers();
 
-    // Check that BATCH_OPERATION_LIFECYCLE_MANAGEMENT has an AuditLogExportHandler
+    final Set<ValueType> expectedRegisteredTransformers =
+        Set.of(
+            ValueType.BATCH_OPERATION_CREATION,
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            ValueType.PROCESS_INSTANCE_MODIFICATION);
+
+    // Check that all expected AuditLogExportHandlers are registered
+    assertAuditLogExportPresent(registeredHandlers, expectedRegisteredTransformers);
+
+    // Verify that exactly 2 audit log handlers are registered
+    final long auditLogHandlerCount =
+        registeredHandlers.values().stream()
+            .flatMap(java.util.List::stream)
+            .filter(AuditLogExportHandler.class::isInstance)
+            .count();
+
+    assertThat(auditLogHandlerCount)
+        .as("Should have exactly 3 audit log handlers registered")
+        .isEqualTo(expectedRegisteredTransformers.size());
+  }
+
+  private void assertAuditLogExportPresent(
+      final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers,
+      final Set<?> batchOperationCreation) {
     assertThat(registeredHandlers)
         .containsKey(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT)
         .extracting(map -> map.get(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT))
@@ -74,26 +100,5 @@ class RdbmsExporterWrapperTest {
                     .isNotEmpty()
                     .anySatisfy(
                         handler -> assertThat(handler).isInstanceOf(AuditLogExportHandler.class)));
-
-    // Check that PROCESS_INSTANCE_MODIFICATION has an AuditLogExportHandler
-    assertThat(registeredHandlers)
-        .containsKey(ValueType.PROCESS_INSTANCE_MODIFICATION)
-        .extracting(map -> map.get(ValueType.PROCESS_INSTANCE_MODIFICATION))
-        .satisfies(
-            handlers ->
-                assertThat(handlers)
-                    .isNotEmpty()
-                    .anySatisfy(
-                        handler -> assertThat(handler).isInstanceOf(AuditLogExportHandler.class)));
-
-    // Verify that exactly 2 audit log handlers are registered
-    final long auditLogHandlerCount =
-        registeredHandlers.values().stream()
-            .flatMap(java.util.List::stream)
-            .filter(AuditLogExportHandler.class::isInstance)
-            .count();
-    assertThat(auditLogHandlerCount)
-        .as("Should have exactly 2 audit log handlers registered")
-        .isEqualTo(2);
   }
 }
