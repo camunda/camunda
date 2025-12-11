@@ -84,7 +84,7 @@ public class Starter extends App {
     deployProcess(client, starterCfg);
 
     // setup to start instances on given rate
-    piCheckExecutorService = Executors.newScheduledThreadPool(3);
+    piCheckExecutorService = Executors.newScheduledThreadPool(20);
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
