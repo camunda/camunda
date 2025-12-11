@@ -69,8 +69,25 @@ public class GatewayBasedPropertiesOverride {
     populateFromGrpc(override);
     populateFromLongPolling(override);
     populateFromRestFilters(override);
+    populateFromSecurity(override);
 
     return override;
+  }
+
+  private void populateFromSecurity(final GatewayBasedProperties override) {
+    final var tlsCluster =
+        unifiedConfiguration.getCamunda().getSecurity().getTransportLayerSecurity().getCluster();
+    override.getSecurity().setEnabled(tlsCluster.isEnabled());
+    override.getSecurity().setCertificateChainPath(tlsCluster.getCertificateChainPath());
+    override.getSecurity().setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
+    override
+        .getSecurity()
+        .getKeyStore()
+        .setFilePath(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getFilePath());
+    override
+        .getSecurity()
+        .getKeyStore()
+        .setPassword(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getPassword());
   }
 
   private void populateFromGrpc(final GatewayBasedProperties override) {

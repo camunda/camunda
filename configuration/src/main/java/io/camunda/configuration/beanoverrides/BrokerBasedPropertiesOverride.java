@@ -112,22 +112,18 @@ public class BrokerBasedPropertiesOverride {
     final BrokerBasedProperties override = new BrokerBasedProperties();
     BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
 
-    // from camunda.cluster.* sections
     populateFromCluster(override);
 
     populateFromLongPolling(override);
 
     populateFromRestFilters(override);
 
-    // from camunda.system.* sections in relation
-    // with zeebe.broker.*
     populateFromSystem(override);
 
     populateFromPrimaryStorage(override);
 
     populateFromGrpc(override);
 
-    // from camunda.data.* sections
     populateFromData(override);
 
     if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
@@ -141,13 +137,37 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromMonitoring(override);
 
-    // TODO: Populate the rest of the bean using unifiedConfiguration
-    //  override.setSampleField(unifiedConfiguration.getSampleField());
     populateFromProcessing(override);
 
     populateFromFlowControl(override);
 
+    populateFromSecurity(override);
+
     return override;
+  }
+
+  private void populateFromSecurity(final BrokerBasedProperties override) {
+    final var tlsCluster =
+        unifiedConfiguration.getCamunda().getSecurity().getTransportLayerSecurity().getCluster();
+    override.getNetwork().getSecurity().setEnabled(tlsCluster.isEnabled());
+    override
+        .getNetwork()
+        .getSecurity()
+        .setCertificateChainPath(tlsCluster.getCertificateChainPath());
+    override
+        .getNetwork()
+        .getSecurity()
+        .setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
+    override
+        .getNetwork()
+        .getSecurity()
+        .getKeyStore()
+        .setFilePath(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getFilePath());
+    override
+        .getNetwork()
+        .getSecurity()
+        .getKeyStore()
+        .setPassword(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getPassword());
   }
 
   private void populateFromProcessing(final BrokerBasedProperties override) {
