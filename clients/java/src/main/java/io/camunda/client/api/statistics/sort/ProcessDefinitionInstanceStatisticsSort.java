@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.statistics.sort;
 
-public interface SearchResponse<T> extends BaseResponse<T> {
+import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
 
-  /** Returns information about the returned page of items */
-  SearchResponsePage page();
+public interface ProcessDefinitionInstanceStatisticsSort
+    extends SearchRequestSort<ProcessDefinitionInstanceStatisticsSort> {
+
+  ProcessDefinitionInstanceStatisticsSort processDefinitionId();
+
+  ProcessDefinitionInstanceStatisticsSort activeInstancesWithIncidentCount();
+
+  ProcessDefinitionInstanceStatisticsSort activeInstancesWithoutIncidentCount();
 }

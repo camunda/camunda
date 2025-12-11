@@ -13,10 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.statistics.response;
 
-public interface SearchResponse<T> extends BaseResponse<T> {
+public interface ProcessDefinitionInstanceStatistics {
 
-  /** Returns information about the returned page of items */
-  SearchResponsePage page();
+  String getProcessDefinitionId();
+
+  String getTenantId();
+
+  String getLatestProcessDefinitionName();
+
+  Boolean getHasMultipleVersions();
+
+  Long getActiveInstancesWithoutIncidentCount();
+
+  Long getActiveInstancesWithIncidentCount();
 }

@@ -92,6 +92,10 @@ public class RestGatewayPaths {
   private static final String URL_VARIABLE = REST_API_PATH + "/variables/%s";
   private static final String URL_AUDIT_LOG_GET = REST_API_PATH + "/audit-logs/%s";
   private static final String URL_AUDIT_LOG_SEARCH = REST_API_PATH + "/audit-logs/search";
+  private static final String URL_PROCESS_DEFINITION_INSTANCE_STATISTICS =
+      REST_API_PATH + "/process-definitions/statistics/process-instances";
+  private static final String URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS =
+      REST_API_PATH + "/process-definitions/%s/statistics/process-instances";
 
   /**
    * @return the topology request URL
@@ -357,6 +361,15 @@ public class RestGatewayPaths {
 
   public static String getAuditLogSearchUrl() {
     return String.format(URL_AUDIT_LOG_SEARCH);
+  }
+
+  public static String getProcessDefinitionInstanceStatisticsUrl() {
+    return URL_PROCESS_DEFINITION_INSTANCE_STATISTICS;
+  }
+
+  public static String getProcessDefinitionInstanceVersionStatisticsUrl(
+      final String processDefinitionId) {
+    return String.format(URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS, processDefinitionId);
   }
 
   @Deprecated

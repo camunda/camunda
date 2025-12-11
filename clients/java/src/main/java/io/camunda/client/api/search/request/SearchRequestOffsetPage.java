@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.search.request;
 
-public interface SearchResponse<T> extends BaseResponse<T> {
+public interface SearchRequestOffsetPage {
 
-  /** Returns information about the returned page of items */
-  SearchResponsePage page();
+  /** Start the page from. */
+  SearchRequestOffsetPage from(final Integer value);
+
+  /** Limit the number of returned entities. */
+  SearchRequestOffsetPage limit(final Integer value);
 }

@@ -20,7 +20,10 @@ import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filt
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.topHits;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_NAME;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION;
 
 import io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation;
@@ -29,6 +32,7 @@ import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.sort.SortOption.FieldSorting;
+import io.camunda.search.sort.SortOrder;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
@@ -45,7 +49,8 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
     final SearchTopHitsAggregator<ProcessInstanceForListViewEntity> latestProcessDefinitionAgg =
         topHits
             .name(AGGREGATION_NAME_LATEST_PROCESS_DEFINITION)
-            .field(PROCESS_VERSION)
+            .fields(List.of(PROCESS_VERSION, BPMN_PROCESS_ID, PROCESS_NAME, TENANT_ID))
+            .sortOption(() -> List.of(new FieldSorting(PROCESS_VERSION, SortOrder.DESC)))
             .size(1)
             .documentClass(ProcessInstanceForListViewEntity.class)
             .build();
