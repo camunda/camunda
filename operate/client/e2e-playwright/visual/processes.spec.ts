@@ -10,7 +10,6 @@ import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
   mockProcessDefinitions,
   mockProcessInstances,
   mockProcessInstancesWithOperationError,
@@ -48,7 +47,6 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         batchOperations: {items: [], page: {totalItems: 0}},
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         statisticsV2: {
           items: [],
@@ -85,7 +83,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
       }),
     );
@@ -114,7 +111,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
@@ -155,7 +151,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
@@ -195,7 +190,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
@@ -238,7 +232,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
@@ -266,7 +259,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
@@ -295,7 +287,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstancesWithOperationError,
@@ -330,7 +321,6 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstancesWithOperationError,

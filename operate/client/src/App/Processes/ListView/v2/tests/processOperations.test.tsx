@@ -10,12 +10,11 @@ import {render, screen} from 'modules/testing-library';
 import {ListView} from '..';
 import {createWrapper} from './mocks';
 import {
-  groupedProcessesMock,
+  mockProcessDefinitions,
   mockProcessXML,
   createUser,
   searchResult,
 } from 'modules/testUtils';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -26,8 +25,9 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
-    mockSearchProcessDefinitions().withSuccess(searchResult([]));
-    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockSearchProcessInstances().withSuccess(searchResult([]));
     mockSearchProcessInstances().withSuccess(searchResult([]));
     mockFetchProcessInstances().withSuccess({
@@ -38,7 +38,6 @@ describe('<ListView /> - operations', () => {
       processInstances: [],
       totalCount: 0,
     });
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
       items: [],

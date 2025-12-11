@@ -10,7 +10,6 @@ import {test} from '../visual-fixtures';
 
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockOrderProcessInstances,
   mockStatisticsV2,
@@ -34,7 +33,6 @@ test.describe('selections and operations', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
@@ -85,7 +83,6 @@ test.describe('selections and operations', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,

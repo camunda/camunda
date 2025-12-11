@@ -16,7 +16,6 @@ import {
 
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
   mockOrderProcessInstances,
   mockProcessDefinitions,
   mockResponses as mockProcessesResponses,
@@ -62,7 +61,6 @@ test.describe('get familiar with operate', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,

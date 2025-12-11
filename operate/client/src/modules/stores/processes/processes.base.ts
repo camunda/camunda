@@ -17,7 +17,7 @@ import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstance
 import {getSearchString} from 'modules/utils/getSearchString';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
-import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
+import {DEFAULT_TENANT} from 'modules/constants';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 import type {Location} from 'react-router-dom';
 
@@ -211,18 +211,6 @@ class ProcessesBase extends NetworkReconnectionHandler {
         process.bpmnProcessId === bpmnProcessId &&
         process.tenantId === (tenantId ?? DEFAULT_TENANT),
     );
-  };
-
-  getPermissions = (processId?: string, tenantId?: string) => {
-    if (!window.clientConfig?.resourcePermissionsEnabled) {
-      return PERMISSIONS;
-    }
-
-    if (processId === undefined) {
-      return [];
-    }
-
-    return this.getProcess({bpmnProcessId: processId, tenantId})?.permissions;
   };
 
   // This can't be a computed value, because it depends on window.location

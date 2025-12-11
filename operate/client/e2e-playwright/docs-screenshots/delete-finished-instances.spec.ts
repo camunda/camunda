@@ -11,7 +11,6 @@ import {expect} from '@playwright/test';
 
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockNewDeleteOperation,
   mockProcessInstances,
@@ -41,7 +40,6 @@ test.describe('delete finished instances', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
@@ -105,7 +103,6 @@ test.describe('delete finished instances', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
         processDefinitions: mockProcessDefinitions,
         batchOperations: {
           ...mockBatchOperations,
@@ -243,16 +240,6 @@ test.describe('delete finished instances', () => {
         return route.fulfill({
           status: 200,
           body: JSON.stringify([]),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
-      if (route.request().url().includes('/api/processes/grouped')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify(mockGroupedProcesses),
           headers: {
             'content-type': 'application/json',
           },

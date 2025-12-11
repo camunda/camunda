@@ -13,8 +13,8 @@ import {act, useEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 
 import {MigrationDetails} from '.';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock} from 'modules/testUtils';
+import {mockProcessDefinitions} from 'modules/testUtils';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -44,7 +44,7 @@ describe('MigrationDetails', () => {
 
     processInstanceMigrationStore.setSelectedInstancesCount(7);
     processInstanceMigrationStore.setCurrentStep('summary');
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     render(<MigrationDetails />, {wrapper: createWrapper()});
 
