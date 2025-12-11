@@ -105,8 +105,11 @@ public class Starter extends App {
               .filter(
                   (f) -> {
                     f.startDate(
-                        OffsetDateTime.from(
-                            Instant.ofEpochMilli(results.getFirst().startTimeNanos / 1_000_000)));
+                        date ->
+                            date.gt(
+                                OffsetDateTime.from(
+                                    Instant.ofEpochMilli(
+                                        results.getFirst().startTimeNanos / 1_000_000))));
                   })
               .sort(ProcessInstanceSort::processInstanceKey)
               .send()
@@ -117,6 +120,7 @@ public class Starter extends App {
                             pi -> {
                               for (final PiCreationResult waitingPI :
                                   Collections.unmodifiableList(results)) {
+
                                 // TODO do more efficient search
                                 final long processInstanceKey = waitingPI.processInstanceKey;
                                 if (processInstanceKey == pi.getProcessInstanceKey()) {
