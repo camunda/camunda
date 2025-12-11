@@ -1512,6 +1512,53 @@ public class ModifyProcessInstanceRejectionTest {
   }
 
   @Test
+  public void shouldRejectMoveWithBothSourceElementIdAndInstanceKeyDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElements(
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("A")
+                    .setSourceElementInstanceKey(12345L)
+                    .setTargetElementId("B"))
+            .moveElements(
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("B")
+                    .setSourceElementInstanceKey(67890L)
+                    .setTargetElementId("A"))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that move is rejected when both source element id and instance key are provided")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move instructions "
+                    + "with both source element instance key and source element id, but only one of them is allowed: '(A/12345, B)', '(B/67890, A)'")
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
   public void shouldRejectMoveWithSourceElementInstanceKeyNotFound() {
     // given
     ENGINE

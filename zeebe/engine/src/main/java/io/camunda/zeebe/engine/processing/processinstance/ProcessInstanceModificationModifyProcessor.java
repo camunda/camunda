@@ -92,9 +92,12 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final String ERROR_MESSAGE_MOVE_NO_DEFINITIONS =
       "Expected to modify instance of process '%s' but it contains one or more move instructions"
           + " with either or both the source or target element id missing: '%s'";
-  private static final String ERROR_MESSAGE_MOVE_MULTIPLE_DEFINITIONS =
+  private static final String ERROR_MESSAGE_MOVE_DUPLICATE_DEFINITIONS =
       "Expected to modify instance of process '%s' but it contains multiple move instructions"
           + " with identical source element ids: '%s'";
+  private static final String ERROR_MESSAGE_MOVE_MULTIPLE_DEFINITIONS =
+      "Expected to modify instance of process '%s' but it contains one or more move instructions"
+          + " with both source element instance key and source element id, but only one of them is allowed: '%s'";
   private static final String ERROR_MESSAGE_MOVE_SOURCE_ELEMENT_INSTANCE_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more move instructions"
           + " with a source element instance that could not be found: '%s'";
@@ -294,10 +297,7 @@ public final class ProcessInstanceModificationModifyProcessor
     // collect move instructions by source element id
     final var moveInstructionsByElementId =
         moveInstructions.stream()
-            .filter(
-                instruction ->
-                    !instruction.getSourceElementId().isBlank()
-                        && instruction.getSourceElementInstanceKey() <= 0)
+            .filter(instruction -> !instruction.getSourceElementId().isBlank())
             .collect(
                 Collectors.toMap(
                     ProcessInstanceModificationMoveInstructionValue::getSourceElementId,
@@ -693,6 +693,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final DeployedProcess process) {
     return validateHasMoveInstructions(moveInstructions, process)
         .flatMap(valid -> validateNoDuplicatedMoveInstructions(moveInstructions, process))
+        .flatMap(valid -> validateNoMoveSourceWithBothIdAndInstanceKey(moveInstructions, process))
         .map(valid -> VALID);
   }
 
@@ -749,9 +750,39 @@ public final class ProcessInstanceModificationModifyProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_MOVE_MULTIPLE_DEFINITIONS,
+            ERROR_MESSAGE_MOVE_DUPLICATE_DEFINITIONS,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", duplicateSourceIds));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, Object> validateNoMoveSourceWithBothIdAndInstanceKey(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final DeployedProcess process) {
+    final var duplicateDefinitions =
+        moveInstructions.stream()
+            .filter(
+                moveInstruction ->
+                    moveInstruction.getSourceElementInstanceKey() > 0
+                        && !moveInstruction.getSourceElementId().isBlank())
+            .map(
+                moveInstruction ->
+                    "(%s/%d, %s)"
+                        .formatted(
+                            moveInstruction.getSourceElementId(),
+                            moveInstruction.getSourceElementInstanceKey(),
+                            moveInstruction.getTargetElementId()))
+            .toList();
+
+    if (duplicateDefinitions.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_MOVE_MULTIPLE_DEFINITIONS,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", duplicateDefinitions));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
