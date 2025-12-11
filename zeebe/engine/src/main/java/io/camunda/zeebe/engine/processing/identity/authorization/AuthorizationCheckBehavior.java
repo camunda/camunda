@@ -120,11 +120,76 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  /**
+   * Checks if a user is authorized through ANY of the provided authorization requests. Returns
+   * success if at least one request is authorized (OR/disjunctive logic).
+   *
+   * <p>Note: This method does NOT skip internal commands. Use {@link
+   * #isAnyAuthorizedOrInternalCommand(AuthorizationRequest...)} if you need to skip authorization
+   * for internal commands.
+   *
+   * @param requests the authorization requests to check (at least one must pass)
+   * @return Either containing a rejection if ALL requests failed, or Void if any succeeded
+   */
+  public Either<Rejection, Void> isAnyAuthorized(final AuthorizationRequest... requests) {
+    if (requests == null || requests.length == 0) {
+      return Either.left(
+          new Rejection(RejectionType.FORBIDDEN, "No authorization requests provided"));
+    }
+
+    final List<Rejection> rejections = new ArrayList<>();
+
+    for (final var request : requests) {
+      final var result = isAuthorized(request);
+      if (result.isRight()) {
+        // At least one authorization passed, no need to check further
+        return Either.right(null);
+      }
+      rejections.add(result.getLeft());
+    }
+
+    return Either.left(RejectionAggregator.aggregateComposite(rejections));
+  }
+
+  /**
+   * Checks if a user is authorized to perform an action on a resource, or if the request is
+   * triggered by an internal command (in which case authorization is bypassed).
+   *
+   * @param request the authorization request to check authorization for
+   * @return a {@link Either} containing a {@link Rejection} if the user is not authorized or {@link
+   *     Void} if the user is authorized or if triggered by an internal command
+   */
   public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
     if (request.isTriggeredByInternalCommand()) {
       return Either.right(null);
     }
     return isAuthorized(request);
+  }
+
+  /**
+   * Checks if a user is authorized through ANY of the provided authorization requests, or if the
+   * request is triggered by an internal command (in which case authorization is bypassed). Returns
+   * success if at least one request is authorized (OR/disjunctive logic).
+   *
+   * @param requests the authorization requests to check (at least one must pass)
+   * @return Either containing a rejection if ALL requests failed, or Void if any succeeded or if
+   *     triggered by an internal command
+   */
+  public Either<Rejection, Void> isAnyAuthorizedOrInternalCommand(
+      final AuthorizationRequest... requests) {
+    if (requests == null || requests.length == 0) {
+      return Either.left(
+          new Rejection(RejectionType.FORBIDDEN, "No authorization requests provided"));
+    }
+
+    // bypass authorization if any request is from an internal command
+    for (final var request : requests) {
+      if (request.isTriggeredByInternalCommand()) {
+        return Either.right(null);
+      }
+    }
+
+    return isAnyAuthorized(requests);
   }
 
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
