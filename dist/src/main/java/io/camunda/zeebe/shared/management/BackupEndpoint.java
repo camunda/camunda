@@ -15,6 +15,7 @@ import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
@@ -44,32 +45,49 @@ import org.springframework.stereotype.Component;
 @WebEndpoint(id = "backupRuntime")
 public final class BackupEndpoint {
   private final BackupApi api;
+  private final BackupCfg backupCfg;
 
   @SuppressWarnings("unused") // used by Spring
   @Autowired
-  public BackupEndpoint(final BrokerClient client) {
-    this(new BackupRequestHandler(client));
+  public BackupEndpoint(final BrokerClient client, final BackupCfg backupCfg) {
+    this(new BackupRequestHandler(client, backupCfg.getOffset()), backupCfg);
   }
 
-  BackupEndpoint(final BackupApi api) {
+  BackupEndpoint(final BackupApi api, final BackupCfg backupCfg) {
     this.api = api;
+    this.backupCfg = backupCfg;
   }
 
   @WriteOperation
   public WebEndpointResponse<?> take(final long backupId) {
     try {
-      if (backupId <= 0) {
+      if (backupCfg.isContinuous()) {
         return new WebEndpointResponse<>(
-            new Error().message("A backupId must be provided and it must be > 0"),
+            new Error()
+                .message(
+                    "Cannot take backup with predetermined backupId when continuous backups are enabled."
+                        + " Use POST actuator/backupRuntime without specifying a backupId."),
             WebEndpointResponse.STATUS_BAD_REQUEST);
       }
+      if (backupId <= 0) {
+        return incorrectBackupIdErrorResponse();
+      }
       api.takeBackup(backupId).toCompletableFuture().join();
-      return new WebEndpointResponse<>(
-          new TakeBackupRuntimeResponse()
-              .message(
-                  "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
-                      .formatted(backupId, backupId)),
-          202);
+      return successfullyScheduledBackupResponse(backupId);
+    } catch (final Exception e) {
+      return mapErrorResponse(e);
+    }
+  }
+
+  @WriteOperation
+  public WebEndpointResponse<?> take() {
+    if (!backupCfg.isContinuous()) {
+      return incorrectBackupIdErrorResponse();
+    }
+
+    try {
+      final var backupId = api.takeBackup().toCompletableFuture().join();
+      return successfullyScheduledBackupResponse(backupId);
     } catch (final Exception e) {
       return mapErrorResponse(e);
     }
@@ -235,5 +253,21 @@ public final class BackupEndpoint {
     }
 
     return new WebEndpointResponse<>(new Error().message(message), errorCode);
+  }
+
+  private WebEndpointResponse<TakeBackupRuntimeResponse> successfullyScheduledBackupResponse(
+      final long backupId) {
+    return new WebEndpointResponse<>(
+        new TakeBackupRuntimeResponse()
+            .message(
+                "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
+                    .formatted(backupId, backupId)),
+        202);
+  }
+
+  private WebEndpointResponse<?> incorrectBackupIdErrorResponse() {
+    return new WebEndpointResponse<>(
+        new Error().message("A backupId must be provided and it must be > 0"),
+        WebEndpointResponse.STATUS_BAD_REQUEST);
   }
 }
