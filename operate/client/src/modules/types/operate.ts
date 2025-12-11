@@ -80,6 +80,19 @@ interface ProcessInstanceEntity {
 
 type SortOrder = 'asc' | 'desc';
 
+type FlowNodeInstanceDto = {
+  id: string;
+  type: string;
+  state?: InstanceEntityState;
+  flowNodeId: string;
+  startDate: string;
+  endDate: null | string;
+  treePath: string;
+  sortValues: [string, string] | [];
+};
+
+type FlowNodeInstance = FlowNodeInstanceDto & {isPlaceholder?: boolean};
+
 export type {
   OperationEntityType,
   FlowNodeState,
@@ -89,4 +102,5 @@ export type {
   ResourceBasedPermissionDto,
   ProcessInstanceEntity,
   SortOrder,
+  FlowNodeInstance,
 };
