@@ -67,14 +67,17 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private ZeebeDb zeebedb;
-  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
+
+  @AutoClose
+  private SharedRocksDbResources sharedRocksDbResources =
+      new SharedResourcesTestHelper().sharedResources();
+
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
       new AtomicInteger(3); // Default partition count for tests
 
   @BeforeEach
   void setup() {
-    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(

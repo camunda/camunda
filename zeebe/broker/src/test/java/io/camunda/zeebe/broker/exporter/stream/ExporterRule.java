@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -55,8 +54,9 @@ public final class ExporterRule implements TestRule {
   private final ControlledActorClock clock = new ControlledActorClock();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
   private final RuleChain chain;
-  @AutoClose private final ZeebeDbFactoryResources zeebeDbFactoryResources;
-  private final ZeebeDbFactory zeebeDbFactory;
+  private final ZeebeDbFactoryResources zeebeDbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
+  private final ZeebeDbFactory zeebeDbFactory = zeebeDbFactoryResources.factory;
   private final ExporterMode exporterMode;
   private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
 
@@ -70,8 +70,6 @@ public final class ExporterRule implements TestRule {
     this.exporterMode = exporterMode;
     final SetupRule rule = new SetupRule(PARTITION_ID);
 
-    zeebeDbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
-    zeebeDbFactory = zeebeDbFactoryResources.factory;
     closeables.manage(zeebeDbFactoryResources);
     chain =
         RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables).around(rule);

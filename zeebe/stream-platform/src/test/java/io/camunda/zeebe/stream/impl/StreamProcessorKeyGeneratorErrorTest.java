@@ -17,7 +17,6 @@ import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -59,10 +58,5 @@ final class StreamProcessorKeyGeneratorErrorTest {
         .until(() -> streamProcessor.getHealthReport().isUnhealthy());
 
     Assertions.assertThat(streamProcessor.isFailed()).isTrue();
-  }
-
-  @AfterEach
-  void cleanup() {
-    streamPlatformExtension.afterEach();
   }
 }

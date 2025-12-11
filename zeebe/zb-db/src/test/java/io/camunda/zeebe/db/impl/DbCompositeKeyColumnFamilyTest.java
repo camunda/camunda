@@ -24,7 +24,8 @@ import org.junit.rules.TemporaryFolder;
 public final class DbCompositeKeyColumnFamilyTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily>
+      dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbCompositeKey<DbString, DbLong>, DbString> columnFamily;
   private DbString firstKey;
@@ -34,7 +35,6 @@ public final class DbCompositeKeyColumnFamilyTest {
 
   @Before
   public void setup() throws Exception {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     zeebeDb = dbFactory.createDb(pathName);
@@ -53,9 +53,7 @@ public final class DbCompositeKeyColumnFamilyTest {
     if (zeebeDb != null) {
       zeebeDb.close();
     }
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
+    dbFactoryResources.close();
   }
 
   @Test

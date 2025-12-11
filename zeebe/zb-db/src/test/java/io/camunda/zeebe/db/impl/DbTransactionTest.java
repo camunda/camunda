@@ -26,15 +26,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 
 public final class DbTransactionTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @AutoClose
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<ColumnFamilies> dbFactoryResources;
+  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources<ColumnFamilies> dbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   private TransactionContext transactionContext;
   private ZeebeDb<ColumnFamilies> zeebeDb;
@@ -50,7 +49,6 @@ public final class DbTransactionTest {
 
   @Before
   public void setup() throws Exception {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     final ZeebeDbFactory<ColumnFamilies> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     zeebeDb = dbFactory.createDb(pathName);
@@ -77,9 +75,7 @@ public final class DbTransactionTest {
     if (zeebeDb != null) {
       zeebeDb.close();
     }
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
+    dbFactoryResources.close();
   }
 
   @Test

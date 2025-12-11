@@ -32,9 +32,7 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Stream;
 import org.assertj.core.api.ThrowingConsumer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,24 +43,13 @@ import org.rocksdb.CompactionPriority;
 
 final class ZeebeRocksDbFactoryTest {
 
-  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+  @AutoClose
+  private SharedRocksDbResources sharedRocksDbResources =
+      new SharedResourcesTestHelper().sharedResources();
 
-  @BeforeEach
-  void setUp() {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
-    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (sharedRocksDbResources != null) {
-      sharedRocksDbResources.close();
-    }
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
-  }
+  @AutoClose
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Test
   void shouldCreateNewDb(final @TempDir File pathName) throws Exception {

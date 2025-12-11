@@ -20,7 +20,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 import org.rocksdb.ReadOptions;
@@ -30,9 +29,8 @@ public final class ZeebeRocksDbIterationTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @AutoClose
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
-
+  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily>
+      dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
   private ZeebeTransactionDb<DefaultColumnFamily> zeebeDb;
   private TransactionalColumnFamily<DefaultColumnFamily, DbCompositeKey<DbLong, DbLong>, DbNil>
       columnFamily;
@@ -42,7 +40,6 @@ public final class ZeebeRocksDbIterationTest {
 
   @Before
   public void setup() throws Exception {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     zeebeDb = Mockito.spy(((ZeebeTransactionDb<DefaultColumnFamily>) dbFactory.createDb(pathName)));
@@ -61,10 +58,8 @@ public final class ZeebeRocksDbIterationTest {
   }
 
   @After
-  public void tearDown() throws Exception {
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
+  public void tearDown() {
+    dbFactoryResources.close();
   }
 
   @Test

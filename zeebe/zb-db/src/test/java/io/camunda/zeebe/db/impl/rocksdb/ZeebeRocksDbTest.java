@@ -24,28 +24,15 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.assertj.core.api.PathAssert;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class ZeebeRocksDbTest {
 
   @AutoClose
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
-
-  @BeforeEach
-  void setUp() {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
-  }
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Test
   void shouldCreateSnapshot(final @TempDir Path tempDir) throws Exception {

@@ -43,7 +43,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -73,7 +72,8 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   private ListLogStorage sharedStorage = null;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
-  @AutoClose private final ZeebeDbFactoryResources dbFactoryResources;
+  private final ZeebeDbFactoryResources dbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -99,7 +99,6 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   public StreamProcessorRule(
       final int startPartitionId, final int partitionCount, final TemporaryFolder temporaryFolder) {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     this.startPartitionId = startPartitionId;
     this.partitionCount = partitionCount;
     actorSchedulerRule = new ActorSchedulerRule(partitionCount, clock);

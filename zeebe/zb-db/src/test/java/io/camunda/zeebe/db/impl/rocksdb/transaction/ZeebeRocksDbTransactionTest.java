@@ -24,7 +24,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
@@ -35,14 +34,13 @@ public final class ZeebeRocksDbTransactionTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @AutoClose
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily>
+      dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   private TransactionContext transactionContext;
 
   @Before
   public void setup() throws Exception {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     final ZeebeDb<DefaultColumnFamily> zeebeDb = dbFactory.createDb(pathName);
@@ -51,9 +49,7 @@ public final class ZeebeRocksDbTransactionTest {
 
   @After
   public void tearDown() throws Exception {
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
+    dbFactoryResources.close();
   }
 
   @Test(expected = ZeebeDbException.class)

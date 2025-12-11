@@ -26,7 +26,6 @@ import net.jqwik.api.lifecycle.AfterProperty;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeProperty;
 import org.assertj.core.util.Files;
-import org.junit.jupiter.api.AutoClose;
 
 public class ColumnFamilyRandomizedPropertyTest {
 
@@ -34,13 +33,12 @@ public class ColumnFamilyRandomizedPropertyTest {
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
 
-  @AutoClose
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily>
+      dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @BeforeProperty
   private void setup() {
     final var pathName = Files.newTemporaryFolder();
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     zeebeDb = dbFactory.createDb(pathName);
 
@@ -67,9 +65,7 @@ public class ColumnFamilyRandomizedPropertyTest {
   @AfterProperty
   private void teardown() throws Exception {
     zeebeDb.close();
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
+    dbFactoryResources.close();
   }
 
   @Provide

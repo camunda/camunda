@@ -39,7 +39,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 
 public final class StateControllerImplTest {
@@ -62,11 +61,11 @@ public final class StateControllerImplTest {
   private final AtomixRecordEntrySupplier emptyEntrySupplier = l -> Optional.empty();
   private final AtomicReference<AtomixRecordEntrySupplier> atomixRecordEntrySupplier =
       new AtomicReference<>(indexedRaftLogEntry);
-  @AutoClose private DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources;
+  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Before
   public void setup() throws IOException {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     final var meterRegistry = new SimpleMeterRegistry();
     store =
         new FileBasedSnapshotStore(

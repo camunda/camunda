@@ -42,7 +42,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
@@ -61,7 +60,8 @@ public final class AsyncSnapshottingTest {
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
   private FileBasedSnapshotStore persistedSnapshotStore;
-  @AutoClose private ZeebeDbFactoryResources dbFactoryResources;
+  private final ZeebeDbFactoryResources dbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Before
   public void setup() throws IOException {
@@ -72,7 +72,6 @@ public final class AsyncSnapshottingTest {
         new FileBasedSnapshotStore(
             0, partitionId, rootDirectory, snapshotPath -> Map.of(), meterRegistry);
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
     snapshotController =
         new StateControllerImpl(
             dbFactoryResources.factory,
@@ -95,9 +94,7 @@ public final class AsyncSnapshottingTest {
 
   @After
   public void tearDown() {
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
+    dbFactoryResources.close();
   }
 
   private void setCommitPosition(final long commitPosition) {

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.RocksDbHelper.allocateSharedCache;
+import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.allocateSharedCache;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;

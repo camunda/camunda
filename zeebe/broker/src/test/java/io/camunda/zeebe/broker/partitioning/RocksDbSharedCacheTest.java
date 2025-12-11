@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.RocksDbHelper.MINIMUM_PARTITION_MEMORY_LIMIT;
+import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.MINIMUM_PARTITION_MEMORY_LIMIT;
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -19,7 +19,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.util.unit.DataSize;
 
-class RocksDbHelperTest {
+class RocksDbSharedCacheTest {
   private static final int DEFAULT_PARTITION_COUNT = 1;
   private BrokerCfg brokerCfg;
 
@@ -57,7 +57,7 @@ class RocksDbHelperTest {
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                RocksDbHelper.validateRocksDbMemory(
+                RocksDbSharedCache.validateRocksDbMemory(
                     brokerCfg.getExperimental().getRocksdb(), partitionsCount);
               })
           .doesNotThrowAnyException();
@@ -76,7 +76,7 @@ class RocksDbHelperTest {
       final var throwable =
           catchThrowable(
               () -> {
-                RocksDbHelper.validateRocksDbMemory(
+                RocksDbSharedCache.validateRocksDbMemory(
                     brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
               });
 
@@ -101,7 +101,7 @@ class RocksDbHelperTest {
       final var throwable =
           catchThrowable(
               () -> {
-                RocksDbHelper.validateRocksDbMemory(
+                RocksDbSharedCache.validateRocksDbMemory(
                     brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
               });
 
@@ -131,7 +131,7 @@ class RocksDbHelperTest {
     try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
       assertThatCode(
               () -> {
-                RocksDbHelper.validateRocksDbMemory(
+                RocksDbSharedCache.validateRocksDbMemory(
                     brokerCfg.getExperimental().getRocksdb(), partitionsCount);
               })
           .doesNotThrowAnyException();

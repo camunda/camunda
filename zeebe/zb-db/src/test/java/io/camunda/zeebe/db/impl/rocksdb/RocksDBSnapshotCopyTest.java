@@ -46,12 +46,13 @@ public class RocksDBSnapshotCopyTest {
   private RocksDBSnapshotCopy copy;
   private Random random;
   private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
-  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
+
+  @AutoClose
+  private SharedRocksDbResources sharedRocksDbResources =
+      new SharedResourcesTestHelper().sharedResources();
 
   @BeforeEach
   void setup() {
-
-    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     factory =
         new ZeebeRocksDbFactory<>(
@@ -69,7 +70,6 @@ public class RocksDBSnapshotCopyTest {
   @AfterEach
   public void tearDown() {
     sourceSnapshotPath.toFile().delete();
-    sharedRocksDbResources.close();
   }
 
   @Test

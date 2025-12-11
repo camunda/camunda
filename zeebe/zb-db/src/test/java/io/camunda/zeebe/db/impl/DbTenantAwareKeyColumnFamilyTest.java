@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import java.io.File;
 import java.util.ArrayList;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,8 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   @TempDir public File temporaryFolder;
 
   @AutoClose
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources;
+  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbTenantAwareKey<DbLong>, DbString> columnFamily;
@@ -41,8 +41,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   private DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>> compositeTenantAwareKey;
 
   @BeforeEach
-  void beforeEach() throws Exception {
-    dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+  void beforeEach() {
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     zeebeDb = dbFactory.createDb(temporaryFolder);
 
@@ -61,16 +60,6 @@ public final class DbTenantAwareKeyColumnFamilyTest {
     compositeColumnFamily =
         zeebeDb.createColumnFamily(
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), compositeTenantAwareKey, value);
-  }
-
-  @AfterEach
-  void afterEach() throws Exception {
-    if (zeebeDb != null) {
-      zeebeDb.close();
-    }
-    if (dbFactoryResources != null) {
-      dbFactoryResources.close();
-    }
   }
 
   @Test

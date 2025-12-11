@@ -18,11 +18,11 @@ import org.rocksdb.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RocksDbHelper {
+public class RocksDbSharedCache {
   public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
   private static final double MAX_ROCKSDB_MEMORY_FRACTION = 0.5;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(RocksDbHelper.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RocksDbSharedCache.class);
 
   static {
     RocksDB.loadLibrary();
@@ -49,12 +49,11 @@ public class RocksDbHelper {
   }
 
   public static long getBlockCacheBytes(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
+
     return switch (rocksdbCfg.getMemoryAllocationStrategy()) {
-      case PARTITION -> rocksdbCfg.getMemoryLimit().toBytes() * partitionsCount;
       case BROKER -> rocksdbCfg.getMemoryLimit().toBytes();
-      case null ->
-          // default to PARTITION strategy for backward compatibility
-          rocksdbCfg.getMemoryLimit().toBytes() * partitionsCount;
+      // in case of PARTITION or null, we allocate per partition
+      default -> rocksdbCfg.getMemoryLimit().toBytes() * partitionsCount;
     };
   }
 

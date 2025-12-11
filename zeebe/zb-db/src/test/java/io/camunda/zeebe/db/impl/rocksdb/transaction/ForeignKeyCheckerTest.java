@@ -159,7 +159,6 @@ final class ForeignKeyCheckerTest {
         .doesNotThrowAnyException();
 
     db.close();
-    defaultFactoryResources.close();
   }
 
   @Test
@@ -192,7 +191,6 @@ final class ForeignKeyCheckerTest {
         .doesNotThrowAnyException();
 
     db.close();
-    defaultFactoryResources.close();
   }
 
   @Test
@@ -226,7 +224,6 @@ final class ForeignKeyCheckerTest {
         .hasMessageContaining("Foreign key");
 
     db.close();
-    defaultFactoryResources.close();
   }
 
   private enum TestColumnFamilies implements EnumValue, ScopedColumnFamily {

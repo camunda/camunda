@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.collections.MutableReference;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,11 +36,13 @@ public class RawTransactionalColumnFamilyTest {
   @AutoClose static ZeebeTransactionDb<ZbColumnFamilies> db;
   static Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies = new HashMap<>();
   private static TransactionContext context;
-  @AutoClose private static SharedRocksDbResources sharedRocksDbResources;
+
+  @AutoClose
+  private static SharedRocksDbResources sharedRocksDbResources =
+      new SharedResourcesTestHelper().sharedResources();
 
   @BeforeAll
   static void setup() {
-    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
@@ -58,11 +59,6 @@ public class RawTransactionalColumnFamilyTest {
       final var rawCF = new RawTransactionalColumnFamily(db, cf);
       columnFamilies.put(cf, rawCF);
     }
-  }
-
-  @AfterAll
-  static void tearDown() {
-    sharedRocksDbResources.close();
   }
 
   @ParameterizedTest

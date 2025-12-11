@@ -28,7 +28,6 @@ import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,12 +41,14 @@ public class MigrationTransitionStepTest {
   TestPartitionTransitionContext context;
   DbMigrationState migrationState;
   private ZeebeRocksDbFactory<?> factory;
-  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
+
+  @AutoClose
+  private SharedRocksDbResources sharedRocksDbResources =
+      new SharedResourcesTestHelper().sharedResources();
 
   @BeforeEach
   void setup() {
     final int defaultPartitionCount = 3;
-    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     factory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             new RocksDbConfiguration(),
@@ -62,11 +63,6 @@ public class MigrationTransitionStepTest {
     context.setZeebeDb(zeebeDb);
     final var transationContext = zeebeDb.createContext();
     migrationState = new DbMigrationState(zeebeDb, transationContext);
-  }
-
-  @AfterEach
-  void tearDown() {
-    sharedRocksDbResources.close();
   }
 
   @Test

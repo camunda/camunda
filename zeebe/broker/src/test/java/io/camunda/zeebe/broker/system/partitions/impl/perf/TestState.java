@@ -33,12 +33,13 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.AutoClose;
 
 final class TestState {
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;
-  @AutoClose private static SharedRocksDbResources sharedRocksDbResources;
+
+  private static final SharedRocksDbResources SHARED_ROCKS_DB_RESOURCES =
+      new SharedResourcesTestHelper().sharedResources();
 
   TestContext generateContext(final long sizeInBytes) throws Exception {
     final var meterRegistry = new SimpleMeterRegistry();
@@ -85,14 +86,13 @@ final class TestState {
   }
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
-    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
         SimpleMeterRegistry::new,
-        sharedRocksDbResources,
+        SHARED_ROCKS_DB_RESOURCES,
         defaultPartitionCount);
   }
 
@@ -139,7 +139,7 @@ final class TestState {
 
     @Override
     public void close() throws Exception {
-      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, sharedRocksDbResources);
+      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, SHARED_ROCKS_DB_RESOURCES);
       FileUtil.deleteFolder(temporaryFolder);
     }
 

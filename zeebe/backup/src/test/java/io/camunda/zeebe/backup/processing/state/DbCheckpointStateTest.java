@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,11 +32,13 @@ final class DbCheckpointStateTest {
   @TempDir Path database;
   private ZeebeDb zeebedb;
   private DbCheckpointState state;
-  @AutoClose private SharedRocksDbResources sharedRocksDbResources;
+
+  @AutoClose
+  private SharedRocksDbResources sharedRocksDbResources =
+      new SharedResourcesTestHelper().sharedResources();
 
   @BeforeEach
   void setup() {
-    sharedRocksDbResources = new SharedResourcesTestHelper().sharedResources();
     final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
@@ -49,12 +50,6 @@ final class DbCheckpointStateTest {
                 defaultPartitionCount)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
-  }
-
-  @AfterEach
-  void tearDown() throws Exception {
-    zeebedb.close();
-    sharedRocksDbResources.close();
   }
 
   @Test

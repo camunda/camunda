@@ -151,11 +151,13 @@ public class ProcessingStateExtension implements BeforeEachCallback {
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private TransactionContext transactionContext;
     private MutableProcessingState processingState;
-    @AutoClose private final ZeebeDbFactoryResources factoryResources;
+
+    @AutoClose
+    private final ZeebeDbFactoryResources factoryResources =
+        DefaultZeebeDbFactory.getDefaultFactoryResources();
 
     private ProcessingStateExtensionState() {
 
-      factoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
       try {
         tempFolder = Files.createTempDirectory(null);
         zeebeDb = factoryResources.factory.createDb(tempFolder.toFile());

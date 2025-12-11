@@ -97,10 +97,6 @@ public class StreamPlatformExtension implements BeforeEachCallback {
             });
   }
 
-  public void afterEach() {
-    dbFactoryResources.close();
-  }
-
   private static final class StreamProcessorTestContext implements AutoCloseable {
     private final ControlledActorClock clock = new ControlledActorClock();
     private StreamPlatform streamPlatform;

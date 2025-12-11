@@ -31,7 +31,6 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 
 /** Helper class which should help to make it easy to create an engine for tests. */
@@ -41,7 +40,8 @@ public final class TestEngine {
   private final StreamProcessingComposite streamProcessingComposite;
   private final TestStreams testStreams;
   private final int partitionCount;
-  @AutoClose private final ZeebeDbFactoryResources zeebeDbFactoryResources;
+  private final ZeebeDbFactoryResources zeebeDbFactoryResources =
+      DefaultZeebeDbFactory.getDefaultFactoryResources(DEFAULT_DB_CACHE_SIZE);
 
   private TestEngine(
       final int partitionId,
@@ -49,8 +49,6 @@ public final class TestEngine {
       final TestContext testContext,
       final Consumer<StreamProcessorBuilder> processorConfiguration) {
     this.partitionCount = partitionCount;
-    zeebeDbFactoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources(DEFAULT_DB_CACHE_SIZE);
     testStreams =
         new TestStreams(
             testContext.temporaryFolder(),
