@@ -948,8 +948,6 @@
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
 
-            <dependency>io.camunda:zeebe-gateway-mcp</dependency>
-
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
