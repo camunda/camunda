@@ -106,15 +106,14 @@ public class SwimMembershipProtocol
   private NodeDiscoveryService discoveryService;
   private BootstrapService bootstrapService;
   private SwimMember localMember;
-  private final BiFunction<Address, byte[], CompletableFuture<byte[]>> probeRequestHandler =
-      (address, payload) ->
-          handleProbeRequest(SERIALIZER.decode(payload)).thenApply(SERIALIZER::encode);
-  private final NodeDiscoveryEventListener discoveryEventListener = this::handleDiscoveryEvent;
   private volatile Properties localProperties = new Properties();
   private ScheduledFuture<?> gossipFuture;
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
-  private final long nodeVersion;
+  private final BiFunction<Address, byte[], CompletableFuture<byte[]>> probeRequestHandler =
+      (address, payload) ->
+          handleProbeRequest(SERIALIZER.decode(payload)).thenApply(SERIALIZER::encode);
+  private final NodeDiscoveryEventListener discoveryEventListener = this::handleDiscoveryEvent;
   private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics;
   private final BiFunction<Address, byte[], byte[]> syncHandler =
       (address, payload) -> SERIALIZER.encode(handleSync(SERIALIZER.decode(payload)));
@@ -125,11 +124,9 @@ public class SwimMembershipProtocol
 
   SwimMembershipProtocol(
       final SwimMembershipProtocolConfig config,
-      final long nodeVersion,
       final String actorSchedulerName,
       final MeterRegistry registry) {
     this.config = config;
-    this.nodeVersion = nodeVersion;
     swimMembershipProtocolMetrics = new SwimMembershipProtocolMetrics(registry);
 
     swimScheduler =
@@ -173,7 +170,7 @@ public class SwimMembershipProtocol
       localMember =
           new SwimMember(
               member.id(),
-              nodeVersion,
+              member.nodeVersion(),
               member.address(),
               member.zone(),
               member.rack(),
@@ -504,7 +501,7 @@ public class SwimMembershipProtocol
     // provider.
     final List<SwimMember> probeMembers =
         discoveryService.getNodes().stream()
-            .map(node -> new SwimMember(MemberId.from(node.id().id()), 0, node.address()))
+            .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
             .filter(member -> !members.containsKey(member.id()))
             .filter(member -> !member.id().equals(localMember.id()))
             .filter(member -> !member.address().equals(localMember.address()))
@@ -824,7 +821,7 @@ public class SwimMembershipProtocol
   /** Handles a node join event. */
   private void handleJoinEvent(final Node node) {
     // just joined, there's no version yet: it will be sent afterward
-    final SwimMember member = new SwimMember(MemberId.from(node.id().id()), 0, node.address());
+    final SwimMember member = new SwimMember(MemberId.from(node.id().id()), node.address());
     if (!members.containsKey(member.id())) {
       probe(member.copy());
     }
@@ -898,10 +895,9 @@ public class SwimMembershipProtocol
     @Override
     public GroupMembershipProtocol newProtocol(
         final SwimMembershipProtocolConfig config,
-        final long nodeVersion,
         final String actorSchedulerName,
         final MeterRegistry registry) {
-      return new SwimMembershipProtocol(config, nodeVersion, actorSchedulerName, registry);
+      return new SwimMembershipProtocol(config, actorSchedulerName, registry);
     }
   }
 
@@ -925,7 +921,6 @@ public class SwimMembershipProtocol
     private final long timestamp;
     private final State state;
     private final long incarnationNumber;
-    private final long nodeVersion;
 
     ImmutableMember(
         final MemberId id,
@@ -939,9 +934,8 @@ public class SwimMembershipProtocol
         final long timestamp,
         final State state,
         final long incarnationNumber) {
-      super(id, address, zone, rack, host, properties);
+      super(id, nodeVersion, address, zone, rack, host, properties);
       this.version = version;
-      this.nodeVersion = nodeVersion;
       this.timestamp = timestamp;
       this.state = state;
       this.incarnationNumber = incarnationNumber;
@@ -951,8 +945,8 @@ public class SwimMembershipProtocol
     public String toString() {
       final var helper = toStringHelper(Member.class);
       helper.add("id", id());
-      if (nodeVersion > 0) {
-        helper.add("nodeVersion", nodeVersion);
+      if (nodeVersion() > 0) {
+        helper.add("nodeVersion", nodeVersion());
       }
       helper
           .add("address", address())
@@ -991,10 +985,6 @@ public class SwimMembershipProtocol
     long incarnationNumber() {
       return incarnationNumber;
     }
-
-    public long nodeVersion() {
-      return nodeVersion;
-    }
   }
 
   /**
@@ -1018,11 +1008,9 @@ public class SwimMembershipProtocol
     private volatile State state;
     private volatile long incarnationNumber;
     private volatile long updated;
-    private final long nodeVersion;
 
-    SwimMember(final MemberId id, final long nodeVersion, final Address address) {
+    SwimMember(final MemberId id, final Address address) {
       super(id, address);
-      this.nodeVersion = nodeVersion;
       version = null;
       timestamp = 0;
     }
@@ -1037,9 +1025,8 @@ public class SwimMembershipProtocol
         final Properties properties,
         final Version version,
         final long timestamp) {
-      super(id, address, zone, rack, host, properties);
+      super(id, nodeVersion, address, zone, rack, host, properties);
       this.version = version;
-      this.nodeVersion = nodeVersion;
       this.timestamp = timestamp;
       incarnationNumber = System.currentTimeMillis();
     }
@@ -1047,13 +1034,13 @@ public class SwimMembershipProtocol
     SwimMember(final ImmutableMember member) {
       super(
           member.id(),
+          member.nodeVersion(),
           member.address(),
           member.zone(),
           member.rack(),
           member.host(),
           member.properties());
       version = member.version;
-      nodeVersion = member.nodeVersion();
       timestamp = member.timestamp;
       state = member.state;
       incarnationNumber = member.incarnationNumber;
@@ -1078,26 +1065,6 @@ public class SwimMembershipProtocol
         this.state = state;
         setUpdated(System.currentTimeMillis());
       }
-    }
-
-    @Override
-    public boolean isActive() {
-      return state.isActive();
-    }
-
-    @Override
-    public boolean isReachable() {
-      return state.isReachable();
-    }
-
-    @Override
-    public Version version() {
-      return version;
-    }
-
-    @Override
-    public long timestamp() {
-      return timestamp;
     }
 
     /**
@@ -1144,7 +1111,7 @@ public class SwimMembershipProtocol
     ImmutableMember copy() {
       return new ImmutableMember(
           id(),
-          nodeVersion,
+          nodeVersion(),
           address(),
           zone(),
           rack(),
@@ -1156,8 +1123,24 @@ public class SwimMembershipProtocol
           incarnationNumber);
     }
 
-    public long nodeVersion() {
-      return nodeVersion;
+    @Override
+    public boolean isActive() {
+      return state.isActive();
+    }
+
+    @Override
+    public boolean isReachable() {
+      return state.isReachable();
+    }
+
+    @Override
+    public Version version() {
+      return version;
+    }
+
+    @Override
+    public long timestamp() {
+      return timestamp;
     }
   }
 

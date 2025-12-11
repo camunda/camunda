@@ -31,7 +31,7 @@ public class MemberConfig extends NodeConfig {
   /**
    * The version of this node when it's deployed in an environment without static node id assignment
    */
-  private long nodeVersion = 0L;
+  private Long nodeVersion = 0L;
 
   /**
    * Returns the member identifier.
@@ -181,11 +181,12 @@ public class MemberConfig extends NodeConfig {
     return this;
   }
 
-  public long getNodeVersion() {
+  public Long getNodeVersion() {
     return nodeVersion;
   }
 
-  public void setNodeVersion(final long nodeVersion) {
+  public MemberConfig setNodeVersion(final Long nodeVersion) {
     this.nodeVersion = nodeVersion;
+    return this;
   }
 }

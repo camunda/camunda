@@ -417,9 +417,6 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                     .setProbeTimeout(PROBE_TIMEOUT)
                     .setFailureTimeout(FAILURE_INTERVAL)
                     .setSyncInterval(SYNC_INTERVAL)),
-            member.nodeVersion() > 0
-                ? member.nodeVersion()
-                : (withVersions ? versions.get(member.id().id()) : 0L),
             "testingActorSchedulerName",
             meterRegistry);
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
