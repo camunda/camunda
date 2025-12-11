@@ -87,6 +87,7 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
+    operateOperationPanelPage,
     operateProcessMigrationModePage,
   }) => {
     test.slow();
@@ -275,11 +276,12 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Verify 6 instances migrated to target version', async () => {
       await operateProcessesPage.expandOperationsPanel();
 
-      const operationEntry = operateProcessesPage.getMigrationOperationEntry(6);
+      const operationEntry =
+        operateOperationPanelPage.getMigrationOperationEntry(6);
 
       await expect(operationEntry).toBeVisible({timeout: 120000});
 
-      await operateProcessesPage.clickOperationLink(operationEntry);
+      await operateOperationPanelPage.clickOperationLink(operationEntry);
 
       await validateURL(page, /operationId=/);
 
@@ -377,6 +379,7 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
+    operateOperationPanelPage,
     operateProcessMigrationModePage,
   }) => {
     test.slow();
@@ -565,13 +568,14 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
-      const operationEntry = operateProcessesPage.getMigrationOperationEntry(3);
+      const operationEntry =
+        operateOperationPanelPage.getMigrationOperationEntry(3);
 
       await expect(operationEntry).toBeVisible({
         timeout: 120000,
       });
 
-      await operateProcessesPage.clickOperationLink(operationEntry);
+      await operateOperationPanelPage.clickOperationLink(operationEntry);
 
       await validateURL(page, /operationId=/);
 
@@ -626,7 +630,7 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Verify Business rule task incident migration', async () => {
       await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-      await operateDiagramPage.showMetaData();
+      await operateDiagramPage.clickShowMetaData();
 
       await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
 

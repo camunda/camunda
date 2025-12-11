@@ -19,6 +19,8 @@ export class OperateDiagramPage {
   readonly metadataModal: Locator;
   readonly metadataModalCloseButton: Locator;
   readonly monacoScrollableElement: Locator;
+  readonly showIncidentButton: Locator;
+  readonly showMetadataButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -36,6 +38,12 @@ export class OperateDiagramPage {
     this.monacoScrollableElement = this.metadataModal.locator(
       '.monaco-scrollable-element',
     );
+    this.showIncidentButton = this.popover.getByRole('button', {
+      name: /show incident/i,
+    });
+    this.showMetadataButton = this.popover.getByRole('button', {
+      name: 'show more metadata',
+    });
   }
 
   async moveCanvasHorizontally(dx: number) {
@@ -93,10 +101,32 @@ export class OperateDiagramPage {
     return this.diagram.locator(`[data-element-id="${eventId}"]`);
   }
 
-  showMetaData() {
-    return this.popover
-      .getByRole('button', {name: 'show more metadata'})
-      .click();
+  async clickShowMetaData() {
+    await this.showMetadataButton.click();
+  }
+
+  async clickShowIncident() {
+    await this.showIncidentButton.click();
+  }
+
+  getPopoverButton(name: string | RegExp) {
+    return this.popover.getByRole('button', {name});
+  }
+
+  getPopoverText(text: string | RegExp): Locator {
+    return this.popover.getByText(text);
+  }
+
+  getIncidentsOverlay(elementId: string): Locator {
+    return this.diagram.locator(
+      `[data-container-id="${elementId}"] [data-testid="state-overlay-incidents"] span`,
+    );
+  }
+
+  getExecutionCountOverlay(elementId: string): Locator {
+    return this.diagram.locator(
+      `[data-container-id="${elementId}"] [data-testid="state-overlay-completed"][title="Execution Count"] span`,
+    );
   }
 
   getExecutionCount(elementId: string) {
@@ -131,7 +161,7 @@ export class OperateDiagramPage {
     } else {
       await this.clickFlowNode(flowNodeId);
     }
-    await this.showMetaData();
+    await this.clickShowMetaData();
 
     await this.monacoAriaContainer.waitFor({state: 'visible'});
 

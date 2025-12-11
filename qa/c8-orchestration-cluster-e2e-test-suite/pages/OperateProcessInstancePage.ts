@@ -59,6 +59,7 @@ class OperateProcessInstancePage {
   readonly incidentTypeFilter: Locator;
   readonly executionCountToggle: Locator;
   readonly endDateField: Locator;
+  readonly incidentsViewHeader: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -143,6 +144,7 @@ class OperateProcessInstancePage {
       '[aria-label="show execution count"], [aria-label="hide execution count"]',
     );
     this.endDateField = this.instanceHeader.getByTestId('end-date');
+    this.incidentsViewHeader = page.getByText(/incidents\s+-\s+/i);
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -153,44 +155,35 @@ class OperateProcessInstancePage {
     return this.page.getByTestId(variableName).locator('td').last();
   }
 
-  async completedIconAssertion(): Promise<void> {
+  private async waitForIconWithRetry(
+    icon: Locator,
+    iconName: string,
+    timeout = 90000,
+  ): Promise<void> {
     let retryCount = 0;
     const maxRetries = 3;
     while (retryCount < maxRetries) {
       try {
-        await expect(this.completedIcon).toBeVisible({
-          timeout: 120000,
-        });
-        return; // Exit the function if the expectation is met
+        await expect(icon).toBeVisible({timeout});
+        return;
       } catch {
-        // If the completed icon isn't found, reload the page and try again
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
         await this.page.reload();
         await sleep(10000);
       }
     }
-    throw new Error(`Completed icon not visible after ${maxRetries} attempts.`);
+    throw new Error(
+      `${iconName} icon not visible after ${maxRetries} attempts.`,
+    );
+  }
+
+  async completedIconAssertion(): Promise<void> {
+    await this.waitForIconWithRetry(this.completedIcon, 'Completed', 120000);
   }
 
   async activeIconAssertion(): Promise<void> {
-    let retryCount = 0;
-    const maxRetries = 3;
-    while (retryCount < maxRetries) {
-      try {
-        await expect(this.activeIcon).toBeVisible({
-          timeout: 90000,
-        });
-        return; // Exit the function if the expectation is met
-      } catch {
-        // If the active icon isn't found, reload the page and try again
-        retryCount++;
-        console.log(`Attempt ${retryCount} failed. Retrying...`);
-        await this.page.reload();
-        await sleep(10000);
-      }
-    }
-    throw new Error(`Active icon not visible after ${maxRetries} attempts.`);
+    await this.waitForIconWithRetry(this.activeIcon, 'Active', 90000);
   }
   getEditVariableFieldSelector(variableName: string) {
     return this.page
@@ -320,14 +313,6 @@ class OperateProcessInstancePage {
     return this.page.getByRole('row').filter({hasText: /listener/i});
   }
 
-  getExecutionListenerText(exact = false): Locator {
-    return this.page.getByText('Execution listener', {exact});
-  }
-
-  getTaskListenerText(exact = false): Locator {
-    return this.page.getByText('Task listener', {exact});
-  }
-
   getInstanceHistoryElement(elementText: string | RegExp): Locator {
     return this.instanceHistory.getByText(elementText);
   }
@@ -362,12 +347,50 @@ class OperateProcessInstancePage {
     return this.page.getByRole('treeitem', {name, exact});
   }
 
+  getSelectedTreeItem(name: string | RegExp, exact?: boolean): Locator {
+    return this.page.getByRole('treeitem', {name, exact, selected: true});
+  }
+
+  findTreeItemInHistory(name: string | RegExp, exact?: boolean): Locator {
+    return this.instanceHistory.getByRole('treeitem', {name, exact});
+  }
+
+  getSelectedTreeItemsInHistory(
+    name: string | RegExp,
+    exact?: boolean,
+  ): Locator {
+    return this.instanceHistory.getByRole('treeitem', {
+      name,
+      exact,
+      selected: true,
+    });
+  }
+
   async clickTreeItem(name: string | RegExp, exact?: boolean): Promise<void> {
     await this.getTreeItem(name, exact).click();
   }
 
-  getIncidentRow(incidentType: string | RegExp): Locator {
-    return this.incidentsTable.getByRole('row', {name: incidentType});
+  async expandTreeItemInHistory(
+    name: string | RegExp,
+    exact?: boolean,
+  ): Promise<void> {
+    const treeItem = this.findTreeItemInHistory(name, exact).first();
+    const isExpanded = await treeItem.getAttribute('aria-expanded');
+
+    if (isExpanded === 'false') {
+      await treeItem.locator('.cds--tree-parent-node__toggle').click();
+    }
+  }
+
+  getIncidentRow(incidentType: string | RegExp, selected?: boolean): Locator {
+    return this.incidentsTable.getByRole('row', {
+      name: incidentType,
+      ...(selected !== undefined && {selected}),
+    });
+  }
+
+  getSelectedIncidentRow(incidentType: string | RegExp): Locator {
+    return this.getIncidentRow(incidentType, true);
   }
 
   getIncidentRowOperationSpinner(incidentType: string | RegExp): Locator {
@@ -390,8 +413,18 @@ class OperateProcessInstancePage {
   }
 
   async toggleExecutionCount(): Promise<void> {
-    if (await this.executionCountToggle.isVisible()) {
-      await this.executionCountToggle.click({force: true});
+    const toggleButton = this.instanceHistory.locator(
+      'button[aria-label="Execution count"][role="switch"]',
+    );
+
+    await toggleButton.waitFor({state: 'visible'});
+    const isChecked = await toggleButton.getAttribute('aria-checked');
+
+    if (isChecked === 'false') {
+      await toggleButton.click({force: true});
+      await expect(toggleButton).toHaveAttribute('aria-checked', 'true', {
+        timeout: 5000,
+      });
     }
   }
 
