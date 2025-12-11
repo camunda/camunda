@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.config;
 
+import java.time.Duration;
+
 public class BenchmarkCfg {
 
   private String name;
+  private Duration duration = Duration.ofMinutes(5);
 
   public String getName() {
     return name;
@@ -17,5 +20,13 @@ public class BenchmarkCfg {
 
   public void setName(final String name) {
     this.name = name;
+  }
+
+  public Duration getDuration() {
+    return duration;
+  }
+
+  public void setDuration(final Duration duration) {
+    this.duration = duration;
   }
 }

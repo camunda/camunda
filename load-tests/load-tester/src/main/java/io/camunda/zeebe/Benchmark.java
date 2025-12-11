@@ -49,9 +49,10 @@ public class Benchmark extends App {
   public void executePICreationLatencyBenchmark(final CamundaClient camundaClient) {
     ProcessUtil.deployProcess(camundaClient, List.of("bpmn/simpleProcess.bpmn"));
 
+    final var duration = benchmarkCfg.getDuration();
     final var benchmarkResult =
-        executeAndMeasure(
-            10,
+        executeAndMeasureForDuration(
+            duration,
             () -> {
               final var result =
                   ProcessInstanceUtil.startInstance(
@@ -63,14 +64,15 @@ public class Benchmark extends App {
             });
 
     LOG.info(
-        "Benchmark result: {} iterations, total {} ms, average {} ms",
+        "Benchmark result over {} seconds: {} iterations, total {} ms, average {} ms",
+        duration.toSeconds(),
         benchmarkResult.iterations,
         benchmarkResult.sumMillis,
         benchmarkResult.averageMillis);
   }
 
   public void measureCPUUsage() {
-    final var duration = Duration.ofMinutes(2);
+    final var duration = benchmarkCfg.getDuration();
     final var metricsReader = createMetricsReader();
 
     final List<Double> cpuUsages = new ArrayList<>();
@@ -92,7 +94,7 @@ public class Benchmark extends App {
   }
 
   public void maximizeLoad() {
-    final var duration = Duration.ofMinutes(2);
+    final var duration = benchmarkCfg.getDuration();
     final var metricsReader = createMetricsReader();
 
     final var createdProcessInstancesBefore = metricsReader.getTotalCreatedProcessInstances();
@@ -132,7 +134,27 @@ public class Benchmark extends App {
         resultTimings.stream().mapToLong(Long::longValue).sum() / 1_000_000,
         resultTimings.stream().mapToLong(Long::longValue).average().orElse(0.0) / 1_000_000);
   }
-  ;
+
+  public BenchmarkResult executeAndMeasureForDuration(
+      final Duration duration, final Runnable benchmarkRunnable) {
+    final var resultTimings = new ArrayList<Long>();
+    final long startTime = System.currentTimeMillis();
+    long iterations = 0;
+
+    while (System.currentTimeMillis() - startTime < duration.toMillis()) {
+      final long iterationStartTime = System.nanoTime();
+      benchmarkRunnable.run();
+      final long iterationEndTime = System.nanoTime();
+      final long durationNanos = iterationEndTime - iterationStartTime;
+      resultTimings.add(durationNanos);
+      iterations++;
+    }
+
+    return new BenchmarkResult(
+        iterations,
+        resultTimings.stream().mapToLong(Long::longValue).sum() / 1_000_000,
+        resultTimings.stream().mapToLong(Long::longValue).average().orElse(0.0) / 1_000_000);
+  }
 
   public static ProcessInstance getProcessInstance(
       final CamundaClient client, final long processInstanceKey, final Duration timeout) {
