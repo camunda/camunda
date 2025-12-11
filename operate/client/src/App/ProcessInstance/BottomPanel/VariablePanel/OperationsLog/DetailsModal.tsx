@@ -11,11 +11,17 @@ import {
   StructuredListWrapper,
   StructuredListCell,
   StructuredListBody,
+  Link,
 } from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import {CheckmarkOutline} from '@carbon/react/icons';
-import {EventSchedule, UserAvatar} from '@carbon/icons-react';
-import {FirstColumn, OperationLogName, VerticallyAlignedRow} from './styled';
+import {BatchJob, EventSchedule, UserAvatar} from '@carbon/icons-react';
+import {
+  FirstColumn,
+  OperationLogName,
+  ParagraphWithIcon,
+  VerticallyAlignedRow,
+} from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import React from 'react';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -43,6 +49,18 @@ const DetailsModal: React.FC<Props> = ({open, onClose, auditLog}) => {
       primaryButtonDisabled
       secondaryButtonText="Close"
     >
+      {auditLog.entityType !== 'BATCH' && auditLog.batchOperationKey ? (
+        <ParagraphWithIcon>
+          <BatchJob />
+          This operation is part of a batch.
+          <Link
+            href={`/batch-operations/${auditLog.batchOperationKey}`}
+            target="_self"
+          >
+            View batch operation details.
+          </Link>
+        </ParagraphWithIcon>
+      ) : undefined}
       <StructuredListWrapper isCondensed isFlush>
         <StructuredListBody>
           <VerticallyAlignedRow>
