@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableE
 import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.feelexpressionresolution.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -58,6 +59,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+  private final ExpressionBehavior feelResolverBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -101,11 +103,16 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     final var processVariableContext =
         new VariableEvaluationContext(processingState.getVariableState());
 
+    final var expressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock));
+
     expressionBehavior =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
+            expressionLanguage,
             CombinedEvaluationContext.withContexts(
                 processVariableContext, namespaceFullClusterContext));
+
+    feelResolverBehavior = new ExpressionBehavior(namespaceFullClusterContext, expressionLanguage);
 
     variableBehavior =
         new VariableBehavior(
@@ -363,5 +370,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
     return adHocSubProcessBehavior;
+  }
+
+  public ExpressionBehavior feelResolverBehavior() {
+    return feelResolverBehavior;
   }
 }

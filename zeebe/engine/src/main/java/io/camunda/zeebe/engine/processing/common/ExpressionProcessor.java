@@ -260,6 +260,11 @@ public final class ExpressionProcessor {
     return evaluationResult.map(EvaluationResult::toBuffer);
   }
 
+  public Either<Failure, EvaluationResult> evaluateRawExpression(
+      final Expression expression, final long scopeKey, final String tenantId) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId);
+  }
+
   /**
    * Evaluates the given expression and returns the result as a list. The entries of the list are
    * encoded in MessagePack and can have any type.
@@ -430,7 +435,7 @@ public final class ExpressionProcessor {
 
     final EvaluationContext context;
     if (variableScopeKey < 0) {
-      context = EMPTY_EVALUATION_CONTEXT;
+      context = scopedEvaluationContext.tenantScoped(tenantId);
     } else {
       context = scopedEvaluationContext.processScoped(variableScopeKey).tenantScoped(tenantId);
     }
