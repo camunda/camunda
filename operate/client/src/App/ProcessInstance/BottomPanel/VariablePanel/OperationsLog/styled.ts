@@ -22,7 +22,7 @@ const Container = styled.section`
 const OperationLogName = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--cds-spacing-04);
+  gap: var(--cds-spacing-02);
 `;
 
 const CheckmarkFilled = styled(BaseCheckmarkFilled)`
@@ -43,6 +43,12 @@ const VerticallyAlignedRow = styled(StructuredListRow)`
   }
 `;
 
+const ParagraphWithIcon = styled.p`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+`;
+
 export {
   Container,
   OperationLogName,
@@ -50,4 +56,5 @@ export {
   ErrorFilled,
   FirstColumn,
   VerticallyAlignedRow,
+  ParagraphWithIcon,
 };
