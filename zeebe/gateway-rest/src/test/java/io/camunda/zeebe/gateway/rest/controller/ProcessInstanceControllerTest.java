@@ -952,7 +952,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                     .setSourceElementId("sourceElementId")
                     .setTargetElementId("targetElementId")
                     .setAncestorScopeKey(123456L)
-                    .setUseSourceParentKeyAsAncestorScope(false)
+                    .setInferAncestorScopeFromSourceHierarchy(false)
                     .addVariableInstruction(
                         new ProcessInstanceModificationVariableInstruction()
                             .setVariables(variables)
@@ -964,27 +964,27 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                     .setSourceElementId("sourceElementId2")
                     .setTargetElementId("targetElementId2")
                     .setAncestorScopeKey(654321L)
-                    .setUseSourceParentKeyAsAncestorScope(false),
+                    .setInferAncestorScopeFromSourceHierarchy(false),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId3")
                     .setTargetElementId("targetElementId3")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(false),
+                    .setInferAncestorScopeFromSourceHierarchy(false),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId4")
                     .setTargetElementId("targetElementId4")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(true),
+                    .setInferAncestorScopeFromSourceHierarchy(true),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId5")
                     .setTargetElementId("targetElementId5")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(false),
+                    .setInferAncestorScopeFromSourceHierarchy(false),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId6")
                     .setTargetElementId("targetElementId6")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(false)
+                    .setInferAncestorScopeFromSourceHierarchy(false)
                     .addVariableInstruction(
                         new ProcessInstanceModificationVariableInstruction()
                             .setVariables(variables)
@@ -1084,7 +1084,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   "sourceElementId": "sourceElementId4",
                   "targetElementId": "targetElementId4",
                   "ancestorScopeInstruction": {
-                    "ancestorScopeType": "sourceParent"
+                    "ancestorScopeType": "inferred"
                   }
                 },
                 {
@@ -1490,7 +1490,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "title":"Bad Request",
                 "status":400,
                 "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
-            Use any of the following values: [direct, sourceParent]", \
+            Use any of the following values: [direct, inferred]",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 

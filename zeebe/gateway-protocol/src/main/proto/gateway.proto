@@ -803,9 +803,9 @@ message ModifyProcessInstanceRequest {
     // set to -1 to create the new element instance within an existing element
     // instance of the flow scope
     int64 ancestorElementInstanceKey = 5;
-    // whether to use the source element's parent key as the ancestor element
+    // whether to use the source element hierarchy to infer the ancestor element
     // instance key
-    bool useSourceParentKeyAsAncestorScopeKey = 6;
+    bool inferAncestorScopeFromSourceHierarchy = 6;
   }
 }
 

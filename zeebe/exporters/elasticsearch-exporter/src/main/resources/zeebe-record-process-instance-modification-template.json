@@ -58,7 +58,7 @@
                 "ancestorScopeKey": {
                   "type": "long"
                 },
-                "useSourceParentKeyAsAncestorScope": {
+                "inferAncestorScopeFromSourceHierarchy": {
                   "type": "boolean"
                 }
               }

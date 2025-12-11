@@ -462,7 +462,7 @@ public final class ProcessInstanceClient {
           new ProcessInstanceModificationMoveInstruction()
               .setSourceElementId(sourceElementId)
               .setTargetElementId(targetElementId)
-              .setUseSourceParentKeyAsAncestorScope(true));
+              .setInferAncestorScopeFromSourceHierarchy(true));
     }
 
     public MoveInstructionBuilder moveElements(
@@ -503,7 +503,7 @@ public final class ProcessInstanceClient {
           new ProcessInstanceModificationMoveInstruction()
               .setSourceElementInstanceKey(sourceElementInstanceKey)
               .setTargetElementId(targetElementId)
-              .setUseSourceParentKeyAsAncestorScope(true));
+              .setInferAncestorScopeFromSourceHierarchy(true));
     }
 
     /**

@@ -455,7 +455,7 @@ public class ModifyProcessInstanceTest extends ClientTest {
     // when
     client
         .newModifyProcessInstanceCommand(PI_KEY)
-        .moveElementsWithSourceParentAsAncestor(ELEMENT_ID_A, ELEMENT_ID_B)
+        .moveElementsWithInferredAncestor(ELEMENT_ID_A, ELEMENT_ID_B)
         .send()
         .join();
 
@@ -594,7 +594,7 @@ public class ModifyProcessInstanceTest extends ClientTest {
     assertThat(moveInstruction.getSourceElementId()).isEqualTo(expectedSourceElementId);
     assertThat(moveInstruction.getTargetElementId()).isEqualTo(expectedTargetElementId);
     assertThat(moveInstruction.getAncestorElementInstanceKey()).isEqualTo(expectedAncestorKey);
-    assertThat(moveInstruction.getUseSourceParentKeyAsAncestorScopeKey())
+    assertThat(moveInstruction.getInferAncestorScopeFromSourceHierarchy())
         .isEqualTo(expectedUseParentScope);
     assertThat(moveInstruction.getVariableInstructionsCount())
         .isEqualTo(expectedVariableInstructions);

@@ -1753,7 +1753,7 @@ final class JsonSerializableToJsonTest {
                                   .setVariables(VARIABLES_MSGPACK)
                                   .setElementId(variableInstructionElementId))
                           .setAncestorScopeKey(ancestorScopeKey)
-                          .setUseSourceParentKeyAsAncestorScope(true))
+                          .setInferAncestorScopeFromSourceHierarchy(true))
                   .addActivateInstruction(
                       new ProcessInstanceModificationActivateInstruction()
                           .setElementId(elementIdToActivate)
@@ -1782,7 +1782,7 @@ final class JsonSerializableToJsonTest {
                       }
                     }],
                     "ancestorScopeKey": 3,
-                    "useSourceParentKeyAsAncestorScope": true
+                    "inferAncestorScopeFromSourceHierarchy": true
                   }],
                   "activateInstructions": [{
                     "ancestorScopeKey": 3,
@@ -3648,7 +3648,7 @@ final class JsonSerializableToJsonTest {
                                             .setVariables(VARIABLES_MSGPACK)
                                             .setElementId("sub-process"))
                                     .setAncestorScopeKey(55555L)
-                                    .setUseSourceParentKeyAsAncestorScope(true)))
+                                    .setInferAncestorScopeFromSourceHierarchy(true)))
                     .setAuthentication(
                         toMessagePack(
                             """
@@ -3707,11 +3707,11 @@ final class JsonSerializableToJsonTest {
                            }
                          }],
                          "ancestorScopeKey": 55555,
-                         "useSourceParentKeyAsAncestorScope": true
+                         "inferAncestorScopeFromSourceHierarchy": true
                        }
                      ],
                      "empty": false,
-                     "encodedLength": 222
+                     "encodedLength": 226
                    },
                    "authenticationBuffer": {
                      "expandable": false

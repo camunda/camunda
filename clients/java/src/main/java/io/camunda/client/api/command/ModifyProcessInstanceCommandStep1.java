@@ -73,7 +73,7 @@ public interface ModifyProcessInstanceCommandStep1
    * <p>The elements will be created within an existing element instance of the flow scope. When
    * activating elements inside a multi-instance element, the element instance key of the ancestor
    * must be defined. For this, use {@link #moveElements(String, String, long)} or {@link
-   * #moveElementsWithSourceParentAsAncestor(String, String)}.
+   * #moveElementsWithInferredAncestor(String, String)}.
    *
    * @param sourceElementId the id of the elements to move
    * @param targetElementId the id of target element to move to
@@ -115,7 +115,7 @@ public interface ModifyProcessInstanceCommandStep1
    * @param targetElementId the id of target element to move to
    * @return the builder for this command
    */
-  ModifyProcessInstanceCommandStep3 moveElementsWithSourceParentAsAncestor(
+  ModifyProcessInstanceCommandStep3 moveElementsWithInferredAncestor(
       final String sourceElementId, final String targetElementId);
 
   /**
@@ -126,7 +126,7 @@ public interface ModifyProcessInstanceCommandStep1
    * <p>The target element will be created within an existing element instance of the flow scope.
    * When activating elements inside a multi-instance element, the element instance key of the
    * ancestor must be defined. For this, use {@link #moveElement(long, String, long)} or {@link
-   * #moveElementWithSourceParentAsAncestor(long, String)}.
+   * #moveElementWithInferredAncestor(long, String)}.
    *
    * @param sourceElementInstanceKey the key of the element to move
    * @param targetElementId the id of target element to move to
@@ -166,7 +166,7 @@ public interface ModifyProcessInstanceCommandStep1
    * @param targetElementId the id of target element to move to
    * @return the builder for this command
    */
-  ModifyProcessInstanceCommandStep3 moveElementWithSourceParentAsAncestor(
+  ModifyProcessInstanceCommandStep3 moveElementWithInferredAncestor(
       final long sourceElementInstanceKey, final String targetElementId);
 
   interface ModifyProcessInstanceCommandStep2
