@@ -695,6 +695,7 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
                   businessObjects[elementInstance.elementId]
                 }
                 $hasLeftMargin={false}
+                isRootProcess={elementInstance.type === 'bpmn:Process'}
               />
             )}
           />
@@ -708,6 +709,7 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
             <ElementInstanceIcon
               diagramBusinessObject={businessObjects[elementInstance.elementId]}
               $hasLeftMargin
+              isRootProcess={elementInstance.type === 'bpmn:Process'}
             />
           )}
         />
@@ -737,6 +739,7 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
             <ElementInstanceIcon
               diagramBusinessObject={businessObjects[elementInstance.elementId]}
               $hasLeftMargin={false}
+              isRootProcess={elementInstance.type === 'PROCESS'}
             />
           )}
         />
@@ -750,6 +753,7 @@ const ElementInstanceSubTreeRoot: React.FC<Props> = observer(
           <ElementInstanceIcon
             diagramBusinessObject={businessObjects[elementInstance.elementId]}
             $hasLeftMargin
+            isRootProcess={elementInstance.type === 'PROCESS'}
           />
         )}
       />
