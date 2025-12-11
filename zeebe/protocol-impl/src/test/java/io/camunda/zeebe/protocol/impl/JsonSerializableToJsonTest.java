@@ -2816,6 +2816,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>)
             () ->
                 new ProcessInstanceMigrationRecord()
+                    .setTenantId("tenantId")
                     .setProcessInstanceKey(123L)
                     .setTargetProcessDefinitionKey(456L)
                     .addMappingInstruction(
@@ -2830,6 +2831,7 @@ final class JsonSerializableToJsonTest {
                             .setTargetElementId("targetId3")),
         """
                 {
+                  "tenantId": "tenantId",
                   "processInstanceKey": 123,
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": [{
@@ -2860,6 +2862,7 @@ final class JsonSerializableToJsonTest {
                     .setTargetProcessDefinitionKey(456L),
         """
                 {
+                  "tenantId": "<default>",
                   "processInstanceKey": 123,
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": []

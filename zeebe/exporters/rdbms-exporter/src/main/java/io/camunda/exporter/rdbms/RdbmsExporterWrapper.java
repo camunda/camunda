@@ -42,6 +42,7 @@ import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
@@ -275,9 +276,10 @@ public class RdbmsExporterWrapper implements Exporter {
       final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
     Set.of(
             new BatchOperationCreationAuditLogTransformer(),
-            new ProcessInstanceModificationAuditLogTransformer(),
             new BatchOperationLifecycleManagementAuditLogTransformer(),
-            new ProcessInstanceCreationAuditLogTransformer())
+            new ProcessInstanceCreationAuditLogTransformer(),
+            new ProcessInstanceMigrationAuditLogTransformer(),
+            new ProcessInstanceModificationAuditLogTransformer())
         .forEach(
             transformer ->
                 builder.withHandler(
