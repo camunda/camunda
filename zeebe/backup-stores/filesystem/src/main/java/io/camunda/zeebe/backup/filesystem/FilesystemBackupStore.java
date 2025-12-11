@@ -54,6 +54,7 @@ public final class FilesystemBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
+  private final IndexManager indexManager;
 
   FilesystemBackupStore(final FilesystemBackupConfig config) {
     this(config, Executors.newVirtualThreadPerTaskExecutor());
@@ -66,9 +67,11 @@ public final class FilesystemBackupStore implements BackupStore {
 
     final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
     final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
+    final var indexDir = Path.of(config.basePath()).resolve("index");
     try {
       FileUtil.ensureDirectoryExists(contentsDir);
       FileUtil.ensureDirectoryExists(manifestsDir);
+      FileUtil.ensureDirectoryExists(indexDir);
     } catch (final IOException e) {
       throw new UncheckedIOException(
           "Unable to create backup directory structure; do you have the right permissions or configuration?",
@@ -77,6 +80,7 @@ public final class FilesystemBackupStore implements BackupStore {
 
     fileSetManager = new FileSetManager(contentsDir);
     manifestManager = new ManifestManager(manifestsDir);
+    indexManager = new IndexManager(indexDir);
   }
 
   @Override
@@ -167,13 +171,21 @@ public final class FilesystemBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    throw new UnsupportedOperationException();
+    if (!(indexFile instanceof final FilesystemBackupIndexFile filesystemIndexFile)) {
+      throw new IllegalArgumentException(
+          "Expected index file of type %s but got %s: %s"
+              .formatted(
+                  FilesystemBackupIndexFile.class.getSimpleName(),
+                  indexFile.getClass().getSimpleName(),
+                  indexFile));
+    }
+    return CompletableFuture.runAsync(() -> indexManager.upload(filesystemIndexFile), executor);
   }
 
   @Override
   public CompletableFuture<BackupIndexFile> restoreIndex(
       final BackupIndexIdentifier id, final Path targetPath) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
   }
 
   @Override
