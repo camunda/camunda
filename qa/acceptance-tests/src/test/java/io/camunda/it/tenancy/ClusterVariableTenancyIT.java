@@ -96,6 +96,9 @@ public class ClusterVariableTenancyIT {
   @Test
   public void shouldReturnAllClusterVariablesWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given - ensure baseline variables are present
+    waitForClusterVariablesBeingExported(camundaClient);
+
     // when
     final var result = camundaClient.newClusterVariableSearchRequest().send().join();
     // then
@@ -114,6 +117,9 @@ public class ClusterVariableTenancyIT {
   @Test
   public void shouldReturnOnlyTenantAClusterVariables(
       @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given - ensure baseline variables are present
+    waitForBaselineClusterVariablesForUser1(camundaClient);
+
     // when
     final var result = camundaClient.newClusterVariableSearchRequest().send().join();
     // then - USER1 should see TENANT_A variable and global variable (2 total)
@@ -206,25 +212,35 @@ public class ClusterVariableTenancyIT {
     final String newVarName = "newTenantScopedVar";
     final String newVarValue = "newValue";
 
-    // when
-    camundaClient
-        .newTenantScopedClusterVariableCreateRequest(TENANT_A)
-        .create(newVarName, newVarValue)
-        .send()
-        .join();
+    try {
+      // when
+      camundaClient
+          .newTenantScopedClusterVariableCreateRequest(TENANT_A)
+          .create(newVarName, newVarValue)
+          .send()
+          .join();
 
-    // then
-    final var result =
-        camundaClient
-            .newTenantScopedClusterVariableGetRequest(TENANT_A)
-            .withName(newVarName)
-            .send()
-            .join();
+      // then
+      final var result =
+          camundaClient
+              .newTenantScopedClusterVariableGetRequest(TENANT_A)
+              .withName(newVarName)
+              .send()
+              .join();
 
-    assertThat(result).isNotNull();
-    assertThat(result.getName()).isEqualTo(newVarName);
-    assertThat(result.getValue()).isEqualTo(VALUE_RESULT.formatted(newVarValue));
-    assertThat(result.getTenantId()).isEqualTo(TENANT_A);
+      assertThat(result).isNotNull();
+      assertThat(result.getName()).isEqualTo(newVarName);
+      assertThat(result.getValue()).isEqualTo(VALUE_RESULT.formatted(newVarValue));
+      assertThat(result.getTenantId()).isEqualTo(TENANT_A);
+    } finally {
+      // cleanup
+      camundaClient
+          .newTenantScopedClusterVariableDeleteRequest(TENANT_A)
+          .delete(newVarName)
+          .send()
+          .join();
+      waitForClusterVariableToBeDeleted(camundaClient, newVarName, TENANT_A);
+    }
   }
 
   @Test
@@ -248,6 +264,7 @@ public class ClusterVariableTenancyIT {
         .join();
 
     // then
+    waitForClusterVariableToBeDeleted(camundaClient, varToDeleteName, TENANT_A);
     final var exception =
         assertThatExceptionOfType(ProblemException.class)
             .isThrownBy(
@@ -394,6 +411,9 @@ public class ClusterVariableTenancyIT {
   @Test
   void shouldReturnTenantAndGlobalVariablesForUserWithTenantAccess(
       @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given - ensure baseline variables are present
+    waitForBaselineClusterVariablesForUser1(camundaClient);
+
     // when
     final var result = camundaClient.newClusterVariableSearchRequest().send().join();
 
@@ -439,5 +459,42 @@ public class ClusterVariableTenancyIT {
             () ->
                 assertThat(camundaClient.newClusterVariableSearchRequest().send().join().items())
                     .hasSize(3));
+  }
+
+  private static void waitForBaselineClusterVariablesForUser1(final CamundaClient camundaClient) {
+    Awaitility.await("should receive baseline cluster variables for USER1")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newClusterVariableSearchRequest().send().join();
+              assertThat(result.items()).hasSize(2);
+              final var names =
+                  result.items().stream().map(ClusterVariable::getName).collect(Collectors.toSet());
+              assertThat(names).containsExactlyInAnyOrder(TENANT_A_VAR_NAME, GLOBAL_VAR_NAME);
+            });
+  }
+
+  private static void waitForClusterVariableToBeDeleted(
+      final CamundaClient camundaClient, final String variableName, final String tenantId) {
+    Awaitility.await("should have cluster variable deleted")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newClusterVariableSearchRequest()
+                      .filter(
+                          f -> {
+                            if (tenantId != null) {
+                              f.tenantId(tenantId);
+                            }
+                            f.name(variableName);
+                          })
+                      .send()
+                      .join();
+              assertThat(result.items()).isEmpty();
+            });
   }
 }
