@@ -70,7 +70,7 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord setEventTypes(final List<String> eventTypes) {
     eventTypesProp.reset();
-    eventTypes.forEach(eventType -> eventTypesProp.add().wrap(BufferUtil.wrapString(eventType)));
+    eventTypes.forEach(this::addEventType);
     return this;
   }
 
@@ -81,6 +81,11 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord setAfterNonGlobal(final boolean afterNonGlobal) {
     afterNonGlobalProp.setValue(afterNonGlobal);
+    return this;
+  }
+
+  public GlobalListenerRecord addEventType(final String eventType) {
+    eventTypesProp.add().wrap(BufferUtil.wrapString(eventType));
     return this;
   }
 }
