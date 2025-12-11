@@ -16,7 +16,11 @@
 package io.camunda.process.test.api.dsl.instructions;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.camunda.process.test.api.dsl.ProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceStartInstruction;
+import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 
@@ -26,9 +30,30 @@ import org.immutables.value.Value;
 public interface CreateProcessInstanceInstruction extends TestCaseInstruction {
 
   /**
+   * The selector to identify the process definition to create the instance for.
+   *
+   * @return the process definition selector
+   */
+  ProcessDefinitionSelector getProcessDefinitionSelector();
+
+  /**
    * The variables to create the process instance with. Optional.
    *
    * @return the variables or an empty map if no variables are set
    */
   Map<String, Object> getVariables();
+
+  /**
+   * The instructions to execute when starting the process instance. Optional.
+   *
+   * @return the start instructions or an empty list if no instructions are set
+   */
+  List<CreateProcessInstanceStartInstruction> getStartInstructions();
+
+  /**
+   * The instructions to affect the runtime behavior of the process instance. Optional.
+   *
+   * @return the runtime instructions or an empty list if no instructions are set
+   */
+  List<CreateProcessInstanceRuntimeInstruction> getRuntimeInstructions();
 }
