@@ -164,6 +164,49 @@ public final class ModifyProcessInstanceCommandImpl
                 new AncestorScopeInstruction().ancestorScopeType("sourceParent")));
   }
 
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey, final String targetElementId) {
+    return moveElement(sourceElementInstanceKey, targetElementId, EMPTY_ANCESTOR_KEY);
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey,
+      final String targetElementId,
+      final long ancestorElementInstanceKey) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementInstanceKey(sourceElementInstanceKey)
+            .setTargetElementId(targetElementId)
+            .setAncestorElementInstanceKey(ancestorElementInstanceKey)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction()
+                    .ancestorScopeType("direct")
+                    .ancestorElementInstanceKey(
+                        ParseUtil.keyToString(ancestorElementInstanceKey))));
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElementWithSourceParentAsAncestor(
+      final long sourceElementInstanceKey, final String targetElementId) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementInstanceKey(sourceElementInstanceKey)
+            .setTargetElementId(targetElementId)
+            .setUseSourceParentKeyAsAncestorScopeKey(true)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction().ancestorScopeType("sourceParent")));
+  }
+
   private ModifyProcessInstanceCommandStep3 addActivateInstruction(
       final String elementId, final long ancestorElementInstanceKey) {
     final ActivateInstruction activateInstruction =
