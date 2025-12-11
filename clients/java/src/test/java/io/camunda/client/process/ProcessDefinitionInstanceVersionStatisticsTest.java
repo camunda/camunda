@@ -18,6 +18,9 @@ package io.camunda.client.process;
 import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
@@ -25,20 +28,33 @@ import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.OffsetPagination;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuery;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsResult;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.assertj.core.api.Assertions;
+import org.instancio.Instancio;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTest {
 
   private static final String PROCESS_DEFINITION_ID = "order_process";
 
+  @BeforeEach
+  void setup() {
+    gatewayService.onProcessDefinitionInstanceVersionStatisticsRequest(
+        PROCESS_DEFINITION_ID,
+        Instancio.create(ProcessDefinitionInstanceVersionStatisticsQueryResult.class)
+            .items(getProcessDefinitionInstanceVersionStatisticsResults()));
+  }
+
   @Test
-  void shouldRetrieveProcessDefinitionInstanceVersionStatistics() {
+  void shouldRetrieveProcessDefinitionInstanceVersionStatistics() throws JsonProcessingException {
     // when
     client
         .newProcessDefinitionInstanceVersionStatisticsRequest(PROCESS_DEFINITION_ID)
@@ -51,8 +67,13 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
         .isEqualTo(
             "/v2/process-definitions/" + PROCESS_DEFINITION_ID + "/statistics/process-instances");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
-    // no filter/page/sort explicitly set -> default body
-    Assertions.assertThat(request.getBodyAsString()).isEqualTo("{\"sort\":[]}");
+
+    final ObjectMapper mapper = new ObjectMapper();
+    final JsonNode json = mapper.readTree(request.getBodyAsString());
+
+    assertThat(json.get("page").isNull()).isTrue();
+    assertThat(json.get("sort").isArray()).isTrue();
+    Assertions.assertThat(json.get("sort")).isEmpty();
   }
 
   @Test
@@ -130,5 +151,15 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
     assertSort(sorts.get(3), "processDefinitionName", SortOrderEnum.DESC);
     assertSort(sorts.get(4), "activeInstancesWithIncidentCount", SortOrderEnum.ASC);
     assertSort(sorts.get(5), "activeInstancesWithoutIncidentCount", SortOrderEnum.DESC);
+  }
+
+  private static List<ProcessDefinitionInstanceVersionStatisticsResult>
+      getProcessDefinitionInstanceVersionStatisticsResults() {
+    final ProcessDefinitionInstanceVersionStatisticsResult item =
+        Instancio.create(ProcessDefinitionInstanceVersionStatisticsResult.class);
+    item.setProcessDefinitionKey("12345");
+    final List<ProcessDefinitionInstanceVersionStatisticsResult> resultList = new ArrayList<>();
+    resultList.add(item);
+    return resultList;
   }
 }
