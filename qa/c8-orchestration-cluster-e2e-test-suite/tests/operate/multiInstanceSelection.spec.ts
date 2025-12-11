@@ -19,6 +19,9 @@ type ProcessInstance = {
 
 let multiInstanceProcessInstance: ProcessInstance;
 
+const LOOP_CARDINALITY = 5;
+const EXPANSIONS_COUNT = 2;
+
 test.beforeAll(async ({request}) => {
   await deploy(['./resources/multiInstanceProcess.bpmn']);
 
@@ -41,6 +44,7 @@ test.beforeAll(async ({request}) => {
   await waitForIncidents(
     request,
     multiInstanceProcessInstance.processInstanceKey,
+    'taskB',
     25,
   );
 });
@@ -86,7 +90,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
     await test.step('Verify 10x Task B visible', async () => {
       await expect(
         operateProcessInstancePage.findTreeItemInHistory('Task B'),
-      ).toHaveCount(2 * 5);
+      ).toHaveCount(EXPANSIONS_COUNT * LOOP_CARDINALITY);
     });
   });
 

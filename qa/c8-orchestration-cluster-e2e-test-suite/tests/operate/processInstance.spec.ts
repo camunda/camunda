@@ -110,9 +110,12 @@ test.describe('Process Instance', () => {
         ),
       ).toBeVisible();
 
-      await expect(
-        operateProcessInstancePage.incidentsTableOperationSpinner,
-      ).not.toBeVisible();
+      await expect
+        .poll(
+          async () =>
+            await operateProcessInstancePage.incidentsTableOperationSpinner.isVisible(),
+        )
+        .toBe(false);
 
       await expect(operateProcessInstancePage.incidentsTableRows).toHaveCount(
         1,

@@ -6,16 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect} from '@playwright/test';
+import {expect, type APIRequestContext} from '@playwright/test';
 import {sleep} from './sleep';
 
 export async function waitForIncidents(
-  request: any,
+  request: APIRequestContext,
   processInstanceKey: string,
+  flowNodeId: string,
   expectedCount: number,
   timeout = 120000,
 ): Promise<void> {
-  const auth = Buffer.from(`demo:demo`).toString('base64');
+  const username = process.env.TEST_USERNAME || 'demo';
+  const password = process.env.TEST_PASSWORD || 'demo';
+  const auth = Buffer.from(`${username}:${password}`).toString('base64');
   const requestHeaders = {
     headers: {
       'Content-Type': 'application/json',
@@ -31,7 +34,7 @@ export async function waitForIncidents(
           data: {
             filter: {
               processInstanceKey,
-              flowNodeId: 'taskB',
+              flowNodeId,
               type: 'SERVICE_TASK',
               incident: true,
             },

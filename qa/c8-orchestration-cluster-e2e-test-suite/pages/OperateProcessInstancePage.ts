@@ -58,6 +58,7 @@ class OperateProcessInstancePage {
   readonly incidentBannerButton: (count: number) => Locator;
   readonly incidentTypeFilter: Locator;
   readonly executionCountToggle: Locator;
+  readonly executionCountToggleButton: Locator;
   readonly endDateField: Locator;
   readonly incidentsViewHeader: Locator;
 
@@ -143,6 +144,9 @@ class OperateProcessInstancePage {
     this.executionCountToggle = this.instanceHistory.locator(
       '[aria-label="show execution count"], [aria-label="hide execution count"]',
     );
+    this.executionCountToggleButton = this.instanceHistory.locator(
+      'button[aria-label="Execution count"][role="switch"]',
+    );
     this.endDateField = this.instanceHeader.getByTestId('end-date');
     this.incidentsViewHeader = page.getByText(/incidents\s+-\s+/i);
   }
@@ -210,6 +214,14 @@ class OperateProcessInstancePage {
   ) => {
     return this.listenerTypeFilter.getByText(option, {exact: true});
   };
+
+  getExecutionListenerText(exact = false): Locator {
+    return this.page.getByText('Execution listener', {exact});
+  }
+
+  getTaskListenerText(exact = false): Locator {
+    return this.page.getByText('Task listener', {exact});
+  }
 
   async undoModification() {
     await this.page
@@ -413,18 +425,19 @@ class OperateProcessInstancePage {
   }
 
   async toggleExecutionCount(): Promise<void> {
-    const toggleButton = this.instanceHistory.locator(
-      'button[aria-label="Execution count"][role="switch"]',
-    );
-
-    await toggleButton.waitFor({state: 'visible'});
-    const isChecked = await toggleButton.getAttribute('aria-checked');
+    await this.executionCountToggleButton.waitFor({state: 'visible'});
+    const isChecked =
+      await this.executionCountToggleButton.getAttribute('aria-checked');
 
     if (isChecked === 'false') {
-      await toggleButton.click({force: true});
-      await expect(toggleButton).toHaveAttribute('aria-checked', 'true', {
-        timeout: 5000,
-      });
+      await this.executionCountToggleButton.click({force: true});
+      await expect(this.executionCountToggleButton).toHaveAttribute(
+        'aria-checked',
+        'true',
+        {
+          timeout: 5000,
+        },
+      );
     }
   }
 

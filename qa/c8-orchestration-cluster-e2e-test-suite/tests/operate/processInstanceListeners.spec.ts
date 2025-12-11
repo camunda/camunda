@@ -238,9 +238,11 @@ test.describe('Process Instance Listeners', () => {
         .getListenerTypeFilterOption('Execution listeners')
         .click();
       await expect(
-        operateProcessInstancePage.executionListenerText,
+        operateProcessInstancePage.getExecutionListenerText(true),
       ).toBeVisible();
-      await expect(operateProcessInstancePage.taskListenerText).toBeHidden();
+      await expect(
+        operateProcessInstancePage.getTaskListenerText(true),
+      ).toBeHidden();
     });
 
     await test.step('Filter to show only user task listeners', async () => {
@@ -248,9 +250,11 @@ test.describe('Process Instance Listeners', () => {
       await operateProcessInstancePage
         .getListenerTypeFilterOption('User task listeners')
         .click();
-      await expect(operateProcessInstancePage.taskListenerText).toBeVisible();
       await expect(
-        operateProcessInstancePage.executionListenerText,
+        operateProcessInstancePage.getTaskListenerText(true),
+      ).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getExecutionListenerText(true),
       ).toBeHidden();
     });
 
@@ -260,9 +264,11 @@ test.describe('Process Instance Listeners', () => {
         .getListenerTypeFilterOption('All listeners')
         .click();
       await expect(
-        operateProcessInstancePage.executionListenerText,
+        operateProcessInstancePage.getExecutionListenerText(true),
       ).toBeVisible();
-      await expect(operateProcessInstancePage.taskListenerText).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getTaskListenerText(true),
+      ).toBeVisible();
     });
   });
 
