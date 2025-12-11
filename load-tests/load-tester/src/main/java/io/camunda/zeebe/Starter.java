@@ -222,7 +222,8 @@ public class Starter extends App {
                 final int partitionId = Protocol.decodePartitionId(processInstanceKey);
                 partitionToTimerMap.get(partitionId).record(durationNanos, TimeUnit.NANOSECONDS);
               }
-            });
+            },
+            piCheckExecutorService);
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
