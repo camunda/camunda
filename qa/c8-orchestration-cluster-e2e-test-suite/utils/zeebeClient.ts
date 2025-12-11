@@ -20,7 +20,10 @@ const c8 = new Camunda8({
   CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
-  ZEEBE_GRPC_ADDRESS: process.env.ZEEBE_GRPC_ADDRESS,
+  ZEEBE_GRPC_ADDRESS: process.env.ZEEBE_GRPC_ADDRESS || 'localhost:26500',
+  zeebeGrpcSettings: {
+    ZEEBE_INSECURE_CONNECTION: true,
+  },
 });
 
 function generateManyVariables(): Record<string, string> {
@@ -79,7 +82,6 @@ const createInstances = async (
   for (let i = 0; i < numberOfInstances; i++) {
     const instance = await zeebe.createProcessInstance({
       processDefinitionId,
-      processDefinitionVersion,
       variables: variables ?? {},
     });
     instances.push(instance);
@@ -94,7 +96,6 @@ const createSingleInstance = async (
 ) => {
   return zeebe.createProcessInstance({
     processDefinitionId,
-    processDefinitionVersion,
     variables: {...(variables ?? {})},
   });
 };
@@ -104,7 +105,10 @@ const cancelProcessInstance = async (processInstanceKey: string) => {
 };
 
 async function searchByProcessInstanceKey(processInstanceKey: string) {
-  return zeebe.searchProcessInstances({filter: {processInstanceKey}});
+  return zeebe.searchProcessInstances({
+    filter: {processInstanceKey},
+    sort: [],
+  });
 }
 async function checkUpdateOnVersion(
   targetVersion: string,
@@ -112,6 +116,7 @@ async function checkUpdateOnVersion(
 ) {
   const res = await zeebe.searchProcessInstances({
     filter: {processInstanceKey},
+    sort: [],
   });
   const item = res?.items?.[0];
   return !!item && item.processDefinitionVersion == targetVersion;

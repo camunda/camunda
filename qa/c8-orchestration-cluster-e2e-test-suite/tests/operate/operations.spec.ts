@@ -264,6 +264,12 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.expandOperationsPanel();
 
+      await expect
+        .poll(async () => {
+          return operateProcessesPage.scheduledOperationsIcons.count();
+        })
+        .toBe(instances.length);
+
       const operationEntry = operateOperationPanelPage.getCancelOperationEntry(
         instances.length,
       );
