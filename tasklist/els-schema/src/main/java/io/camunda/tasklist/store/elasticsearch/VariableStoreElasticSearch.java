@@ -320,15 +320,10 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   private SearchRequest buildSearchFNIByProcessInstanceKeysRequest(
       final List<Long> processInstanceKeys) {
-    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
-
     final TermsQueryBuilder processInstanceKeyQuery =
         termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys);
     final var flowNodeInstanceStateQuery =
         termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
-
-    queryBuilder.must(flowNodeInstanceStateQuery);
-    queryBuilder.must(processInstanceKeyQuery);
 
     final TermsQueryBuilder typeQuery =
         QueryBuilders.termsQuery(
@@ -340,7 +335,6 @@ public class VariableStoreElasticSearch implements VariableStore {
             FlowNodeType.EVENT_SUB_PROCESS.toString(),
             FlowNodeType.MULTI_INSTANCE_BODY.toString(),
             FlowNodeType.PROCESS.toString());
-    queryBuilder.must(typeQuery);
 
     final var query =
         ElasticsearchUtil.joinWithAnd(
