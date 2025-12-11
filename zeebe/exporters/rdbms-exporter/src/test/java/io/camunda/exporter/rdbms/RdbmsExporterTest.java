@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -29,6 +31,7 @@ import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
@@ -50,6 +53,7 @@ class RdbmsExporterTest {
   private ExporterPositionService positionService;
   private HistoryCleanupService historyCleanupService;
   private RdbmsWriterMetrics metrics;
+  private RdbmsSchemaManager schemaManager;
 
   private ScheduledTask flushTask;
   private ScheduledTask cleanupTask;
@@ -364,6 +368,61 @@ class RdbmsExporterTest {
     verify(metrics).recordExportingLatency(Mockito.anyLong());
   }
 
+  @Test
+  void shouldOpenSuccessfullyWhenSchemaIsInitialized() {
+    // given - schema manager returns true for isInitialized
+    createExporter(b -> b, true);
+
+    // then - exporter should have opened successfully
+    verify(controller, times(3))
+        .scheduleCancellableTask(any(Duration.class), any()); // flush + 2 cleanup tasks
+  }
+
+  @Test
+  void shouldThrowExceptionWhenSchemaIsNotInitialized() {
+    // given - schema manager returns false for isInitialized
+    flushTask = mock(ScheduledTask.class);
+    cleanupTask = mock(ScheduledTask.class);
+    usageMetricsCleanupTask = mock(ScheduledTask.class);
+
+    controller = mock(Controller.class);
+    when(controller.getLastExportedRecordPosition()).thenReturn(-1L);
+
+    rdbmsWriter = mock(RdbmsWriter.class);
+    executionQueue = new StubExecutionQueue();
+    positionService = mock(ExporterPositionService.class);
+    when(positionService.findOne(anyInt())).thenReturn(null);
+
+    historyCleanupService = mock(HistoryCleanupService.class);
+    when(rdbmsWriter.getHistoryCleanupService()).thenReturn(historyCleanupService);
+    when(rdbmsWriter.getExporterPositionService()).thenReturn(positionService);
+    when(rdbmsWriter.getExecutionQueue()).thenReturn(executionQueue);
+
+    metrics = mock(RdbmsWriterMetrics.class);
+    when(rdbmsWriter.getMetrics()).thenReturn(metrics);
+
+    schemaManager = mock(RdbmsSchemaManager.class);
+    when(schemaManager.isInitialized()).thenReturn(false);
+
+    final var builder =
+        new RdbmsExporter.Builder()
+            .rdbmsWriter(rdbmsWriter)
+            .partitionId(0)
+            .flushInterval(Duration.ofMillis(500))
+            .queueSize(100)
+            .rdbmsSchemaManager(schemaManager);
+
+    exporter = builder.build();
+
+    // when + then
+    assertThatThrownBy(() -> exporter.open(controller))
+        .isInstanceOf(ExporterException.class)
+        .hasMessage("Schema is not ready for use");
+
+    // verify schema manager was checked
+    verify(schemaManager).isInitialized();
+  }
+
   // ------------------------------------------------
   // mocks and stubs
   // ------------------------------------------------
@@ -390,6 +449,12 @@ class RdbmsExporterTest {
 
   private void createExporter(
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction) {
+    createExporter(builderFunction, true);
+  }
+
+  private void createExporter(
+      final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction,
+      final boolean schemaInitialized) {
     flushTask = mock(ScheduledTask.class);
     cleanupTask = mock(ScheduledTask.class);
     usageMetricsCleanupTask = mock(ScheduledTask.class);
@@ -422,6 +487,10 @@ class RdbmsExporterTest {
     metrics = mock(RdbmsWriterMetrics.class);
     when(rdbmsWriter.getMetrics()).thenReturn(metrics);
 
+    // Mock schema manager
+    schemaManager = mock(RdbmsSchemaManager.class);
+    when(schemaManager.isInitialized()).thenReturn(schemaInitialized);
+
     doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriter).flush(true);
     doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriter).flush(false);
 
@@ -430,7 +499,8 @@ class RdbmsExporterTest {
             .rdbmsWriter(rdbmsWriter)
             .partitionId(0)
             .flushInterval(Duration.ofMillis(500))
-            .queueSize(100);
+            .queueSize(100)
+            .rdbmsSchemaManager(schemaManager);
 
     exporter = builderFunction.apply(builder).build();
     exporter.open(controller);
