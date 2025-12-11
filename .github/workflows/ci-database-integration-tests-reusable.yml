@@ -1,0 +1,157 @@
+# description: This is a reusable workflow used to run Database tests for the secondary database layer
+# test location: qa/acceptance-tests
+# type: CI
+# owner: @camunda/data-layer
+---
+name: Database integration tests reusable
+
+on:
+  workflow_call:
+    inputs:
+      it-database-type:
+        required: true
+        type: string
+        description: The database type to be used during the integration tests. This is the enum value of DatabaseType in the MultiDbTest extension
+      database-type:
+        required: true
+        type: string
+        description: The name/type of the database. Should have a corresponding entry in the db/docker-compose.yml. Will be used in output descriptions.
+      database-image-version:
+        required: false
+        type: string
+        description: The database docker image version to be used during the tests. Will be set as env variable IMAGE_VERSION. If not set, the default value from the docker-compose file will be used.
+      notify-slack-on-failure:
+        required: false
+        type: boolean
+        default: false
+        description: Whether to send a Slack notification on failure.
+    outputs:
+      flakyTests:
+        description: "Flaky tests detected during database integration tests"
+        value: ${{ jobs.integration-tests.outputs.flakyTests }}
+defaults:
+  run:
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  integration-tests:
+    name: "${{inputs.database-type}}"
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 15
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      IMAGE_VERSION: ${{inputs.database-image-version}}
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-database-${{inputs.database-type}}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # start the required database service
+      - name: Start Database service
+        if: ${{ inputs.database-type != 'h2' }}
+        run: docker-compose -f db/docker-compose.yml up -d ${{inputs.database-type}}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # To communicate to the IT what database to expect and run against:
+      # -Dcamunda.it.database.type=rdbms
+      #
+      - name: Run database integration test with ${{inputs.database-type}}
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=6
+          -D maven.javadoc.skip=true
+          -D skipUTs
+          -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3
+          -D flaky.test.reportDir=failsafe-reports
+          -D test.integration.camunda.database.type=${{inputs.it-database-type}}
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Stop Database service
+        if: always()
+        run: docker-compose -f db/docker-compose.yml down
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] Database - ${{inputs.database-type}}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "database-integration-tests/${{ inputs.database-type }}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  send-slack-notification:
+    name: "Send slack notification on fail"
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && inputs.notify-slack-on-failure
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+      - name: Send notification
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          # For posting a rich message using Block Kit
+          payload: |
+            text: "Scheduled Database Integration Tests for ${{inputs.database-type}} failed"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Scheduled Database Integration Tests for **${{inputs.database-type}}** FAILED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # Send metrics about CI health
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "send-slack-notification/${{ inputs.database-type }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
