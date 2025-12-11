@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -125,6 +126,9 @@ public record AuditLogInfo(
       case BatchOperationIntent.CANCELED:
       case BatchOperationIntent.CANCEL:
         return AuditLogOperationType.CANCEL;
+      case DecisionEvaluationIntent.EVALUATED:
+      case DecisionEvaluationIntent.FAILED:
+        return AuditLogOperationType.EVALUATE;
       case ProcessInstanceCreationIntent.CREATED:
         return AuditLogOperationType.CREATE;
       case ProcessInstanceModificationIntent.MODIFIED:
