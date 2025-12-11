@@ -62,6 +62,18 @@ public class ModifyProcessInstanceTest {
                             .setVariables(VALID_MOVE_VARIABLES)
                             .build())
                     .build())
+            .addMoveInstructions(
+                MoveInstruction.newBuilder()
+                    .setSourceElementInstanceKey(123L)
+                    .setTargetElementId("toElementId")
+                    .setAncestorElementInstanceKey(3L)
+                    .setUseSourceParentKeyAsAncestorScopeKey(true)
+                    .addVariableInstructions(
+                        VariableInstruction.newBuilder()
+                            .setScopeId("scopeIdMove")
+                            .setVariables(VALID_MOVE_VARIABLES)
+                            .build())
+                    .build())
             .build();
 
     // when
@@ -86,17 +98,29 @@ public class ModifyProcessInstanceTest {
     assertThat(terminateInstruction.getElementInstanceKey()).isEqualTo(3L);
     assertThat(terminateInstruction.getElementId()).isEqualTo("elementId");
     final var moveInstructions = record.getMoveInstructions();
-    assertThat(moveInstructions).hasSize(1);
-    final var moveInstruction = moveInstructions.get(0);
-    assertThat(moveInstruction.getSourceElementId()).isEqualTo("fromElementId");
-    assertThat(moveInstruction.getTargetElementId()).isEqualTo("toElementId");
-    assertThat(moveInstruction.getAncestorScopeKey()).isEqualTo(3L);
-    assertThat(moveInstruction.isUseSourceParentKeyAsAncestorScope()).isTrue();
-    final var moveVariableInstructions = moveInstruction.getVariableInstructions();
-    assertThat(moveVariableInstructions).hasSize(1);
-    final var moveVariableInstruction = moveVariableInstructions.get(0);
-    assertThat(moveVariableInstruction.getElementId()).isEqualTo("scopeIdMove");
-    assertThat(moveVariableInstruction.getVariables()).containsOnly(entry("testMove", "valueMove"));
+    assertThat(moveInstructions).hasSize(2);
+    final var moveInstruction1 = moveInstructions.get(0);
+    assertThat(moveInstruction1.getSourceElementId()).isEqualTo("fromElementId");
+    assertThat(moveInstruction1.getTargetElementId()).isEqualTo("toElementId");
+    assertThat(moveInstruction1.getAncestorScopeKey()).isEqualTo(3L);
+    assertThat(moveInstruction1.isUseSourceParentKeyAsAncestorScope()).isTrue();
+    final var moveVariableInstructions1 = moveInstruction1.getVariableInstructions();
+    assertThat(moveVariableInstructions1).hasSize(1);
+    final var moveVariableInstruction1 = moveVariableInstructions1.get(0);
+    assertThat(moveVariableInstruction1.getElementId()).isEqualTo("scopeIdMove");
+    assertThat(moveVariableInstruction1.getVariables())
+        .containsOnly(entry("testMove", "valueMove"));
+    final var moveInstruction2 = moveInstructions.get(1);
+    assertThat(moveInstruction2.getSourceElementInstanceKey()).isEqualTo(123L);
+    assertThat(moveInstruction2.getTargetElementId()).isEqualTo("toElementId");
+    assertThat(moveInstruction2.getAncestorScopeKey()).isEqualTo(3L);
+    assertThat(moveInstruction2.isUseSourceParentKeyAsAncestorScope()).isTrue();
+    final var moveVariableInstructions2 = moveInstruction2.getVariableInstructions();
+    assertThat(moveVariableInstructions2).hasSize(1);
+    final var moveVariableInstruction2 = moveVariableInstructions2.get(0);
+    assertThat(moveVariableInstruction2.getElementId()).isEqualTo("scopeIdMove");
+    assertThat(moveVariableInstruction2.getVariables())
+        .containsOnly(entry("testMove", "valueMove"));
   }
 
   @Test
