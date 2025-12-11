@@ -200,6 +200,12 @@ public class Starter extends App {
 
   private void checkForProcessInstanceExistence(
       final CamundaClient client, final long startTime, final long processInstanceKey) {
+
+    LOG.warn(
+        "Process instance {} started at {} (delay {} ms) try to get from API",
+        processInstanceKey,
+        startTime,
+        Duration.ofNanos(System.nanoTime() - startTime).toMillis());
     client
         .newProcessInstanceGetRequest(processInstanceKey)
         .send()
@@ -214,7 +220,7 @@ public class Starter extends App {
                 LOG.trace("Failed to get process instance {}", processInstanceKey, err);
               } else {
                 final long durationNanos = System.nanoTime() - startTime;
-                LOG.debug(
+                LOG.warn(
                     "Process instance {} retrieved in {} ms",
                     processInstanceKey,
                     durationNanos / 1_000_000);
