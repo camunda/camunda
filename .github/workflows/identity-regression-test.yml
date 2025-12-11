@@ -82,7 +82,7 @@ jobs:
             hostPort: 9250
             hostTransportPort: 9350
 
-    runs-on: ["ubuntu-latest", "gcp-core-32-longrunning-big-ssd"]
+    runs-on: [ubuntu-latest, gcp-core-8-default]
     environment: '${{ matrix.case }}'
     env:
       LC_ALL: C.UTF-8
