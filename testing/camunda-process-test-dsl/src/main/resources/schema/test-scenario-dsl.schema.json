@@ -61,15 +61,83 @@
           "type": "string",
           "const": "CREATE_PROCESS_INSTANCE"
         },
+        "processDefinitionSelector": {
+          "description": "The selector to identify the process definition to create the process instance for.",
+          "$ref": "#/definitions/ProcessDefinitionSelector"
+        },
         "variables": {
           "description": "The variables to create the process instance with.",
           "type": "object"
+        },
+        "startInstructions": {
+          "description": "The instructions to execute when starting the process instance.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "elementId": {
+                "description": "The ID of the element to start the process instance at.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "elementId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "runtimeInstructions": {
+          "description": "The instructions to affect the runtime behavior of the process instance.",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "description": "An instruction to terminate the process instance at a specific element.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "description": "The type of the runtime instruction.",
+                    "type": "string",
+                    "const": "TERMINATE_PROCESS_INSTANCE"
+                  },
+                  "afterElementId": {
+                    "description": "The ID of the element after which to terminate the process instance.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "afterElementId"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
         }
       },
       "required": [
-        "type"
+        "type",
+        "processDefinitionSelector"
       ],
-      "additionalProperties": true
+      "additionalProperties": false
+    },
+    "ProcessDefinitionSelector": {
+      "description": "A selector to identify a process definition.",
+      "type": "object",
+      "anyOf": [
+        {
+          "properties": {
+            "processDefinitionId": {
+              "description": "The ID of the process definition.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "processDefinitionId"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }
