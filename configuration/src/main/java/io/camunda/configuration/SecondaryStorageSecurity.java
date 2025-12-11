@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
 
-public class Security {
+public class SecondaryStorageSecurity {
 
   private final String databaseName;
 
@@ -26,7 +26,7 @@ public class Security {
   /** Certificate was self-signed */
   private boolean selfSigned = false;
 
-  public Security(final String databaseName) {
+  public SecondaryStorageSecurity(final String databaseName) {
     this.databaseName = databaseName.toLowerCase();
   }
 
