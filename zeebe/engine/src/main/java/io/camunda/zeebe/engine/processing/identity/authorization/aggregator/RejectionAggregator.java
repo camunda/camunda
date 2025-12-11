@@ -70,4 +70,27 @@ public final class RejectionAggregator {
     return Either.left(
         new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
   }
+
+  /**
+   * Aggregates rejections from multiple authorization paths (ANY/OR logic). All paths failed, so
+   * combines messages to indicate what was tried.
+   *
+   * @param rejections the list of collected authorization rejections
+   * @return a combined rejection with messages from all failed paths
+   */
+  public static Rejection aggregateComposite(final List<Rejection> rejections) {
+    if (rejections.isEmpty()) {
+      return new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason");
+    }
+
+    // Combine all rejection messages
+    final var reason =
+        rejections.stream().map(Rejection::reason).distinct().collect(Collectors.joining("; and "));
+
+    // Use FORBIDDEN if any rejection is FORBIDDEN, otherwise use first rejection type
+    final var hasForbidden = rejections.stream().anyMatch(r -> r.type() == RejectionType.FORBIDDEN);
+    final var type = hasForbidden ? RejectionType.FORBIDDEN : rejections.getFirst().type();
+
+    return new Rejection(type, reason);
+  }
 }

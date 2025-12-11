@@ -140,4 +140,89 @@ class RejectionAggregatorTest {
     assertThat(result.getLeft().type()).isEqualTo(RejectionType.FORBIDDEN);
     assertThat(result.getLeft().reason()).isEqualTo("Authorization failed for unknown reason");
   }
+
+  @Test
+  void aggregateCompositeShouldHandleSingleRejection() {
+    // given
+    final var rejection = new Rejection(RejectionType.FORBIDDEN, "permission denied");
+
+    // when
+    final var result = RejectionAggregator.aggregateComposite(List.of(rejection));
+
+    // then
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason()).isEqualTo("permission denied");
+  }
+
+  @Test
+  void aggregateCompositeShouldCombineMultipleRejectionMessages() {
+    // given
+    final var rejection1 =
+        new Rejection(
+            RejectionType.FORBIDDEN,
+            "no 'READ_USER_TASK' permission on resource 'PROCESS_DEFINITION'");
+    final var rejection2 =
+        new Rejection(RejectionType.FORBIDDEN, "no 'READ' permission on resource 'USER_TASK'");
+
+    // when
+    final var result = RejectionAggregator.aggregateComposite(List.of(rejection1, rejection2));
+
+    // then
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason())
+        .isEqualTo(
+            "no 'READ_USER_TASK' permission on resource 'PROCESS_DEFINITION'; and no 'READ' permission on resource 'USER_TASK'");
+  }
+
+  @Test
+  void aggregateCompositeShouldDeduplicateIdenticalReasons() {
+    // given
+    final var rejection1 = new Rejection(RejectionType.FORBIDDEN, "permission denied");
+    final var rejection2 = new Rejection(RejectionType.FORBIDDEN, "permission denied");
+
+    // when
+    final var result = RejectionAggregator.aggregateComposite(List.of(rejection1, rejection2));
+
+    // then
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason()).isEqualTo("permission denied");
+  }
+
+  @Test
+  void aggregateCompositeShouldUseForbiddenTypeWhenAnyIsForbidden() {
+    // given
+    final var rejection1 = new Rejection(RejectionType.NOT_FOUND, "resource not found");
+    final var rejection2 = new Rejection(RejectionType.FORBIDDEN, "permission denied");
+
+    // when
+    final var result = RejectionAggregator.aggregateComposite(List.of(rejection1, rejection2));
+
+    // then
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason()).isEqualTo("resource not found; and permission denied");
+  }
+
+  @Test
+  void aggregateCompositeShouldUseFirstRejectionTypeWhenNoForbidden() {
+    // given
+    final var rejection1 = new Rejection(RejectionType.NOT_FOUND, "resource A not found");
+    final var rejection2 = new Rejection(RejectionType.NOT_FOUND, "resource B not found");
+
+    // when
+    final var result = RejectionAggregator.aggregateComposite(List.of(rejection1, rejection2));
+
+    // then
+    assertThat(result.type()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(result.reason()).isEqualTo("resource A not found; and resource B not found");
+  }
+
+  @Test
+  void aggregateCompositeShouldReturnFallbackForEmptyList() {
+    // when
+    final var result = RejectionAggregator.aggregateComposite(List.of());
+
+    // then
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason()).isEqualTo("Authorization failed for unknown reason");
+  }
 }
