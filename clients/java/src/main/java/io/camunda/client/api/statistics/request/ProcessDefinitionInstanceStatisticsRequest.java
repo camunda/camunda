@@ -16,7 +16,7 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.OffsetRequestPage;
+import io.camunda.client.api.search.request.SearchRequestOffsetPage;
 import io.camunda.client.api.search.request.TypedSortableRequest;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceStatisticsSort;
@@ -27,7 +27,7 @@ public interface ProcessDefinitionInstanceStatisticsRequest
             ProcessDefinitionInstanceStatisticsSort, ProcessDefinitionInstanceStatisticsRequest>,
         FinalSearchRequestStep<ProcessDefinitionInstanceStatistics> {
 
-  ProcessDefinitionInstanceStatisticsRequest page(OffsetRequestPage value);
+  ProcessDefinitionInstanceStatisticsRequest page(SearchRequestOffsetPage value);
 
-  ProcessDefinitionInstanceStatisticsRequest page(Consumer<OffsetRequestPage> fn);
+  ProcessDefinitionInstanceStatisticsRequest page(Consumer<SearchRequestOffsetPage> fn);
 }

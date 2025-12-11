@@ -15,22 +15,23 @@
  */
 package io.camunda.client.impl.search.request;
 
-import io.camunda.client.api.search.request.OffsetRequestPage;
+import io.camunda.client.api.search.request.SearchRequestOffsetPage;
 import io.camunda.client.protocol.rest.OffsetPagination;
 
-public class OffsetRequestPageImpl extends TypedSearchRequestPropertyProvider<OffsetPagination>
-    implements OffsetRequestPage {
+public class SearchRequestOffsetPageImpl
+    extends TypedSearchRequestPropertyProvider<OffsetPagination>
+    implements SearchRequestOffsetPage {
 
   private final OffsetPagination page = new OffsetPagination();
 
   @Override
-  public OffsetRequestPage from(final Integer value) {
+  public SearchRequestOffsetPage from(final Integer value) {
     page.setFrom(value);
     return this;
   }
 
   @Override
-  public OffsetRequestPage limit(final Integer value) {
+  public SearchRequestOffsetPage limit(final Integer value) {
     page.setLimit(value);
     return this;
   }

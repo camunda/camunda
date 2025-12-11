@@ -15,11 +15,11 @@
  */
 package io.camunda.client.api.search.request;
 
-public interface OffsetRequestPage {
+public interface SearchRequestOffsetPage {
 
   /** Start the page from. */
-  OffsetRequestPage from(final Integer value);
+  SearchRequestOffsetPage from(final Integer value);
 
   /** Limit the number of returned entities. */
-  OffsetRequestPage limit(final Integer value);
+  SearchRequestOffsetPage limit(final Integer value);
 }

@@ -91,7 +91,7 @@ import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
-import io.camunda.client.impl.search.request.OffsetRequestPageImpl;
+import io.camunda.client.impl.search.request.SearchRequestOffsetPageImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
 import io.camunda.client.impl.search.sort.AuditLogSortImpl;
 import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
@@ -471,8 +471,8 @@ public final class SearchRequestBuilders {
     return sort;
   }
 
-  public static OffsetRequestPage offsetPage(final Consumer<OffsetRequestPage> fn) {
-    final OffsetRequestPage page = new OffsetRequestPageImpl();
+  public static SearchRequestOffsetPage offsetPage(final Consumer<SearchRequestOffsetPage> fn) {
+    final SearchRequestOffsetPage page = new SearchRequestOffsetPageImpl();
     fn.accept(page);
     return page;
   }

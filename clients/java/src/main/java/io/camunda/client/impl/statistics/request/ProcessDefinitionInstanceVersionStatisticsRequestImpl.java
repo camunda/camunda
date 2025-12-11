@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.statistics.request;
 
+// import static io.camunda.client.api.search.request.SearchRequestBuilders.offsetPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.offsetPage;
 import static io.camunda.client.api.statistics.request.StatisticsRequestBuilders.processDefinitionInstanceVersionStatisticsFilter;
 import static io.camunda.client.api.statistics.request.StatisticsRequestBuilders.processDefinitionInstanceVersionStatisticsSort;
@@ -22,7 +23,7 @@ import static io.camunda.client.api.statistics.request.StatisticsRequestBuilders
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.OffsetRequestPage;
+import io.camunda.client.api.search.request.SearchRequestOffsetPage;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -80,14 +81,15 @@ public class ProcessDefinitionInstanceVersionStatisticsRequestImpl
   }
 
   @Override
-  public ProcessDefinitionInstanceVersionStatisticsRequest page(final OffsetRequestPage value) {
+  public ProcessDefinitionInstanceVersionStatisticsRequest page(
+      final SearchRequestOffsetPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
   public ProcessDefinitionInstanceVersionStatisticsRequest page(
-      final Consumer<OffsetRequestPage> fn) {
+      final Consumer<SearchRequestOffsetPage> fn) {
     return page(offsetPage(fn));
   }
 
