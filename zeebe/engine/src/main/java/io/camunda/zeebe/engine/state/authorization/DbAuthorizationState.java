@@ -130,6 +130,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         authorizationByAuthorizationKeyColumnFamily.get(
             this.authorizationKey, PersistedAuthorization::new);
 
+    if (authorizationToDelete == null) {
+      return;
+    }
+
     ownerId.wrapString(authorizationToDelete.getOwnerId());
     ownerType.wrapString(authorizationToDelete.getOwnerType().name());
 
