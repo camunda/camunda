@@ -76,6 +76,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
       // exhaust the entire key space and provide more options for recovery.
       maxKeyValue = Protocol.encodePartitionId(partitionId, 1L << (Protocol.KEY_BITS - 1));
     }
+    LOGGER.debug("DBKeyGenerator set key={} and maxKey={}", getCurrentKey(), maxKeyValue);
   }
 
   @Override
