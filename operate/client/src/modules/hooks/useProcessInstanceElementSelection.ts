@@ -14,6 +14,46 @@ import {useElementInstancesSearch} from 'modules/queries/elementInstances/useEle
 
 const ELEMENT_ID = 'elementId';
 const ELEMENT_INSTANCE_KEY = 'elementInstanceKey';
+const IS_MULTI_INSTANCE_BODY = 'isMultiInstanceBody';
+
+type SelectionSearchParams = {
+  [ELEMENT_ID]?: string;
+  [ELEMENT_INSTANCE_KEY]?: string;
+  [IS_MULTI_INSTANCE_BODY]?: boolean;
+};
+
+const deleteSelectionSearchParams = (params: URLSearchParams) => {
+  params.delete(ELEMENT_ID);
+  params.delete(ELEMENT_INSTANCE_KEY);
+  params.delete(IS_MULTI_INSTANCE_BODY);
+  return params;
+};
+
+const setSelectionSearchParams = (
+  params: URLSearchParams,
+  newParams: SelectionSearchParams,
+) => {
+  if (newParams[ELEMENT_ID]) {
+    params.set(ELEMENT_ID, newParams[ELEMENT_ID]);
+  }
+  if (newParams[ELEMENT_INSTANCE_KEY]) {
+    params.set(ELEMENT_INSTANCE_KEY, newParams[ELEMENT_INSTANCE_KEY]);
+  }
+  if (newParams[IS_MULTI_INSTANCE_BODY] === true) {
+    params.set(IS_MULTI_INSTANCE_BODY, 'true');
+  }
+  return params;
+};
+
+const updateSelectionSearchParams = (
+  params: URLSearchParams,
+  newParams: SelectionSearchParams,
+) => {
+  return setSelectionSearchParams(
+    deleteSelectionSearchParams(params),
+    newParams,
+  );
+};
 
 const useProcessInstanceElementSelection = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,23 +61,33 @@ const useProcessInstanceElementSelection = () => {
     useProcessInstancePageParams();
   const elementInstanceKey = searchParams.get(ELEMENT_INSTANCE_KEY);
   const elementId = searchParams.get(ELEMENT_ID);
+  const isMultiInstanceBody =
+    searchParams.get(IS_MULTI_INSTANCE_BODY) === 'true';
 
   const selectElement = useCallback(
-    (elementId: string) => {
+    (elementId: string, isMultiInstanceBody: boolean = false) => {
       setSearchParams((params) => {
-        params.set(ELEMENT_ID, elementId);
-        return params;
+        return updateSelectionSearchParams(params, {
+          elementId,
+          isMultiInstanceBody,
+        });
       });
     },
     [setSearchParams],
   );
 
   const selectElementInstance = useCallback(
-    (elementId: string, elementInstanceKey: string) => {
+    (
+      elementId: string,
+      elementInstanceKey: string,
+      isMultiInstanceBody: boolean = false,
+    ) => {
       setSearchParams((params) => {
-        params.set(ELEMENT_ID, elementId);
-        params.set(ELEMENT_INSTANCE_KEY, elementInstanceKey);
-        return params;
+        return updateSelectionSearchParams(params, {
+          elementId,
+          elementInstanceKey,
+          isMultiInstanceBody,
+        });
       });
     },
     [setSearchParams],
@@ -45,9 +95,7 @@ const useProcessInstanceElementSelection = () => {
 
   const clearSelection = useCallback(() => {
     setSearchParams((params) => {
-      params.delete(ELEMENT_ID);
-      params.delete(ELEMENT_INSTANCE_KEY);
-      return params;
+      return deleteSelectionSearchParams(params);
     });
   }, [setSearchParams]);
 
@@ -64,7 +112,7 @@ const useProcessInstanceElementSelection = () => {
     useElementInstancesSearch({
       elementId: elementId ?? '',
       processInstanceKey: processInstanceKey ?? '',
-      elementType: undefined,
+      elementType: isMultiInstanceBody ? 'MULTI_INSTANCE_BODY' : undefined,
       enabled: !!elementId && !elementInstanceKey && !!processInstanceKey,
     });
 
