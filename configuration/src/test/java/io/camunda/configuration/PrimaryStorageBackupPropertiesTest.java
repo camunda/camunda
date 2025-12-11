@@ -110,6 +110,11 @@ public class PrimaryStorageBackupPropertiesTest {
       assertThat(backupSchedulerCfg.isRequired()).isTrue();
       assertThat(backupSchedulerCfg.getOffset()).isEqualTo(100);
     }
+
+    @Test
+    void huhu() {
+      assertThat(1).isEqualTo(1);
+    }
   }
 
   @Nested
