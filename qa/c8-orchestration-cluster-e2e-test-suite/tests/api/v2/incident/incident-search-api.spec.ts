@@ -96,6 +96,41 @@ test.describe.parallel('Search Incidents API Tests', () => {
         }).toPass(defaultAssertionOptions);
     });
 
+    test('Search Incidents With IncidentKey Filter Success', async ({request}) => {
+        const localState: Record<string, unknown> = {};
+        await setupIncidentTest(localState, request);
+        processInstanceKeys.push(localState['processInstanceKey'] as string);
+        const incidentKeys = localState['incidentKeys'] as string[];
+
+        await expect(async () => {
+            const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
+                headers: jsonHeaders(),
+                data: {
+                filter: {
+                    incidentKey: incidentKeys[0],
+                },
+                },
+            });
+
+            await assertStatusCode(res, 200);
+            await validateResponse(
+                {
+                path: INCIDENT_SEARCH_ENDPOINT,
+                method: 'POST',
+                status: '200',
+                },
+                res,
+            );
+
+            const body = await res.json();
+            expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+            expect(body.items.length).toBeGreaterThan(0);
+            body.items.forEach((item: Record<string, unknown>) => {
+                expect(item.incidentKey).toEqual(incidentKeys[0]);
+            });
+        }).toPass(defaultAssertionOptions);
+    });
+
     test('Search Incidents With Error Type Filter Success', async ({request}) => {
         const localState: Record<string, unknown> = {};
         await setupIncidentTest(localState, request);
