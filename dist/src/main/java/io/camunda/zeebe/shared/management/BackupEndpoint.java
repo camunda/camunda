@@ -50,7 +50,7 @@ public final class BackupEndpoint {
   @SuppressWarnings("unused") // used by Spring
   @Autowired
   public BackupEndpoint(final BrokerClient client, final BackupCfg backupCfg) {
-    this(new BackupRequestHandler(client), backupCfg);
+    this(new BackupRequestHandler(client, backupCfg.getOffset()), backupCfg);
   }
 
   BackupEndpoint(final BackupApi api, final BackupCfg backupCfg) {
@@ -86,7 +86,7 @@ public final class BackupEndpoint {
     }
 
     try {
-      final var backupId = api.takeOffsetBackup(backupCfg.getOffset()).toCompletableFuture().join();
+      final var backupId = api.takeBackup().toCompletableFuture().join();
       return successfullyScheduledBackupResponse(backupId);
     } catch (final Exception e) {
       return mapErrorResponse(e);

@@ -161,7 +161,6 @@ final class ContinuousBackupIT {
   void restoreFailsOnGapsBetweenBackups() throws IOException {
     // given - three backups spanning over multiple segments with snapshots in between
     final long firstBackup;
-    final long secondBackup;
     final long thirdBackup;
     try (final var client = broker.newClientBuilder().build()) {
       final var process = deployTestProcess(client);
@@ -171,7 +170,7 @@ final class ContinuousBackupIT {
 
       partitionsActuator.takeSnapshot();
       createManyInstances(client, process);
-      secondBackup = takeAndAwaitBackup();
+      takeAndAwaitBackup();
 
       partitionsActuator.takeSnapshot();
       createManyInstances(client, process);

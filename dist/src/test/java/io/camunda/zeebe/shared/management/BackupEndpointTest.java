@@ -17,6 +17,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -189,7 +191,7 @@ final class BackupEndpointTest {
               })
           .when(requestHandler)
           .takeBackup(anyLong());
-      when(requestHandler.takeOffsetBackup(anyLong())).thenCallRealMethod();
+      when(requestHandler.takeBackup()).thenCallRealMethod();
 
       // when
       final var now = Instant.now();
@@ -198,7 +200,7 @@ final class BackupEndpointTest {
       final WebEndpointResponse<?> secondBackup = endpoint.take();
 
       // then
-      verify(requestHandler, times(2)).takeOffsetBackup(0L);
+      verify(requestHandler, times(2)).takeBackup();
       assertThat(firstBackup.getStatus()).isEqualTo(202);
       var msg = ((TakeBackupRuntimeResponse) firstBackup.getBody()).getMessage();
       final var backupId1 = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));
@@ -220,16 +222,19 @@ final class BackupEndpointTest {
 
       // given
       final long offset = 20251104131520L;
-      final var requestHandler = mock(BackupRequestHandler.class);
+      final var requestHandler =
+          mock(
+              BackupRequestHandler.class,
+              withSettings().useConstructor(mock(BrokerClient.class), offset));
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(true);
       when(config.getOffset()).thenReturn(offset);
       final var endpoint = new BackupEndpoint(requestHandler, config);
 
-      when(requestHandler.takeOffsetBackup(anyLong())).thenCallRealMethod();
+      when(requestHandler.takeBackup()).thenCallRealMethod();
       doAnswer(
               invocation -> {
-                final Long backupId = invocation.getArgument(0);
+                final var backupId = invocation.getArgument(0);
                 return CompletableFuture.completedFuture(backupId);
               })
           .when(requestHandler)
@@ -240,12 +245,12 @@ final class BackupEndpointTest {
       final WebEndpointResponse<?> response = endpoint.take();
 
       // then
-      verify(requestHandler, times(1)).takeOffsetBackup(20251104131520L);
+      verify(requestHandler, times(1)).takeBackup(anyLong());
       assertThat(response.getStatus()).isEqualTo(202);
       final var msg = ((TakeBackupRuntimeResponse) response.getBody()).getMessage();
-      final var backupId1 = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));
+      final var backupId = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));
 
-      final var actualTimestamp = backupId1 - offset;
+      final var actualTimestamp = backupId - offset;
 
       assertThat(Instant.ofEpochMilli(actualTimestamp))
           .isCloseTo(now, within(2, ChronoUnit.SECONDS));
