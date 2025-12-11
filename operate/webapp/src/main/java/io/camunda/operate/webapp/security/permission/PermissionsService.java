@@ -19,7 +19,10 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class PermissionsService {
 
@@ -50,6 +53,18 @@ public class PermissionsService {
   }
 
   /**
+   * Get permissions for multiple process definitions.
+   *
+   * @param bpmnProcessIds bpmnProcessIds
+   * @return permissions the user has for the given bpmnProcessId
+   */
+  public Map<String, Set<String>> getProcessDefinitionPermissionsByResourceId(
+      final Set<String> bpmnProcessIds) {
+    return getResourcePermissionsByResourceIds(
+        bpmnProcessIds, AuthorizationResourceType.PROCESS_DEFINITION);
+  }
+
+  /**
    * getDecisionDefinitionPermissions
    *
    * @param decisionId decisionId
@@ -57,6 +72,18 @@ public class PermissionsService {
    */
   public Set<String> getDecisionDefinitionPermissions(final String decisionId) {
     return getResourcePermissions(decisionId, AuthorizationResourceType.DECISION_DEFINITION);
+  }
+
+  /**
+   * Get permissions for multiple decision definitions.
+   *
+   * @param decisionIds decisionIds
+   * @return permissions the user has for the given decisionId
+   */
+  public Map<String, Set<String>> getDecisionDefinitionPermissionsByResourceId(
+      final Set<String> decisionIds) {
+    return getResourcePermissionsByResourceIds(
+        decisionIds, AuthorizationResourceType.DECISION_DEFINITION);
   }
 
   /**
@@ -75,6 +102,25 @@ public class PermissionsService {
     permissionTypeSet.forEach(p -> permissions.add(p.name()));
 
     return permissions;
+  }
+
+  /**
+   * Returns the permissions for each of the given resource ids.
+   *
+   * @param resourceKeys resourceKeys
+   * @param resourceType resourceType
+   * @return permissions the user has for the given resource
+   */
+  public Map<String, Set<String>> getResourcePermissionsByResourceIds(
+      final Set<String> resourceKeys, final AuthorizationResourceType resourceType) {
+    final Map<String, Set<PermissionType>> permissionTypeSet =
+        authorizationChecker.collectPermissionTypesByResourceIds(
+            resourceKeys, resourceType, getAuthentication());
+    return permissionTypeSet.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Entry::getKey,
+                p -> p.getValue().stream().map(PermissionType::name).collect(Collectors.toSet())));
   }
 
   /**

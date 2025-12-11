@@ -12,6 +12,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Schema(
     name = "Decision group object",
@@ -29,24 +30,28 @@ public class DecisionGroupDto {
   private List<DecisionDto> decisions;
 
   public static List<DecisionGroupDto> createFrom(
-      final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
-    return createFrom(decisionsGrouped, null);
-  }
-
-  public static List<DecisionGroupDto> createFrom(
       final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped,
       final PermissionsService permissionsService) {
     final List<DecisionGroupDto> groups = new ArrayList<>();
-    decisionsGrouped.values().stream()
+
+    final Set<String> resourceIds =
+        decisionsGrouped.values().stream()
+            .map(d -> d.getFirst().getDecisionId())
+            .collect(Collectors.toSet());
+
+    final Map<String, Set<String>> permissionsByResourceId =
+        permissionsService.getDecisionDefinitionPermissionsByResourceId(resourceIds);
+
+    decisionsGrouped
+        .values()
         .forEach(
             group -> {
               final DecisionGroupDto groupDto = new DecisionGroupDto();
-              final DecisionDefinitionEntity decision0 = group.get(0);
+              final DecisionDefinitionEntity decision0 = group.getFirst();
               groupDto.setDecisionId(decision0.getDecisionId());
               groupDto.setTenantId(decision0.getTenantId());
               groupDto.setName(decision0.getName());
-              groupDto.setPermissions(
-                  permissionsService.getDecisionDefinitionPermissions(decision0.getDecisionId()));
+              groupDto.setPermissions(permissionsByResourceId.get(decision0.getDecisionId()));
               groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
               groups.add(groupDto);
             });

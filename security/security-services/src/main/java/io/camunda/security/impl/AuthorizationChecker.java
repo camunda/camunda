@@ -17,6 +17,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -144,11 +146,72 @@ public class AuthorizationChecker {
         Set::of);
   }
 
+  /**
+   * Collects the permission types available for a list of resources, defined by resource id and
+   * resource type. Automatically appends the wildcard permissions to each resource id.
+   *
+   * @param resourceIds the list of resource ids to return permission types for
+   * @param resourceType the resource type to return permission types for
+   * @param authentication the authentication information
+   * @return the permission types found
+   */
+  public Map<String, Set<PermissionType>> collectPermissionTypesByResourceIds(
+      final Collection<String> resourceIds,
+      final AuthorizationResourceType resourceType,
+      final CamundaAuthentication authentication) {
+    final var resourceKeys = new ArrayList<>(resourceIds);
+    resourceKeys.add(AuthorizationScope.WILDCARD.getResourceId());
+    return getOrElseDefaultResult(
+        authentication,
+        (ownerIds) -> {
+          final var query =
+              AuthorizationQuery.of(
+                  q ->
+                      q.filter(
+                              f ->
+                                  f.ownerTypeToOwnerIds(ownerIds)
+                                      .resourceType(resourceType.name())
+                                      .resourceIds(resourceKeys))
+                          .unlimited());
+          final var authorizationEntities =
+              authorizationReader.search(query, ResourceAccessChecks.disabled()).items();
+          return collectPermissionTypesByResourceId(authorizationEntities, resourceIds);
+        },
+        Map::of);
+  }
+
   private Set<PermissionType> collectPermissionTypes(
       final List<AuthorizationEntity> authorizationEntities) {
     return authorizationEntities.stream()
         .flatMap(a -> a.permissionTypes().stream())
         .collect(Collectors.toSet());
+  }
+
+  private Map<String, Set<PermissionType>> collectPermissionTypesByResourceId(
+      final List<AuthorizationEntity> authorizationEntities, final Collection<String> resourceIds) {
+
+    // group permissions by resource ID
+    final var permissionTypesByResourceId =
+        authorizationEntities.stream()
+            .collect(
+                Collectors.groupingBy(
+                    AuthorizationEntity::resourceId,
+                    Collectors.flatMapping(a -> a.permissionTypes().stream(), Collectors.toSet())));
+
+    // remove wildcard entry from map
+    final var wildcards =
+        permissionTypesByResourceId.remove(AuthorizationScope.WILDCARD.getResourceId());
+
+    // ensure every requested resourceId is present and, if wildcards exist, merged into it
+    for (final var resourceId : resourceIds) {
+      final var permissions =
+          permissionTypesByResourceId.computeIfAbsent(resourceId, k -> new HashSet<>());
+      if (wildcards != null && !wildcards.isEmpty()) {
+        permissions.addAll(wildcards);
+      }
+    }
+
+    return permissionTypesByResourceId;
   }
 
   private <T> T getOrElseDefaultResult(
