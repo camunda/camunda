@@ -26,9 +26,8 @@ import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml'
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
-import {processInstancesStore} from 'modules/stores/processInstances';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
@@ -86,11 +85,6 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
           });
         },
         onError: (error) => {
-          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-            instanceIds: ids,
-            operationType: 'MODIFY_PROCESS_INSTANCE',
-            shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
-          });
           handleOperationError(error.response?.status);
         },
       });
@@ -130,19 +124,6 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
           });
           setOpen(false);
           batchModificationStore.reset();
-
-          if (selectedProcessInstanceIds.length > 0) {
-            processInstancesStore.markProcessInstancesWithActiveOperations({
-              ids: selectedProcessInstanceIds,
-              operationType: 'MODIFY_PROCESS_INSTANCE',
-            });
-          } else {
-            processInstancesStore.markProcessInstancesWithActiveOperations({
-              ids: excludedProcessInstanceIds,
-              operationType: 'MODIFY_PROCESS_INSTANCE',
-              shouldPollAllVisibleIds: true,
-            });
-          }
 
           const keyCriterion = buildProcessInstanceKeyCriterion(
             ids,

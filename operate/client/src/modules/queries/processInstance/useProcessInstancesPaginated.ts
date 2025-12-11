@@ -13,16 +13,12 @@ import type {
 import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
 import {queryKeys} from '../queryKeys';
-import {buildProcessInstanceFilter} from 'modules/utils/filter/v2/processInstanceFilterBuilder';
-import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 const PAGE_LIMIT = 50;
 const PAGES_LIMIT = 5;
 
 type QueryOptions<T> = {
-  filters: ProcessInstanceFilters;
-  processDefinitionKeys?: string[];
-  sort?: QueryProcessInstancesRequestBody['sort'];
+  payload: QueryProcessInstancesRequestBody;
   enabled?: boolean;
   enablePeriodicRefetch?: boolean;
   select?: (data: InfiniteData<QueryProcessInstancesResponseBody>) => T;
@@ -33,25 +29,17 @@ const useProcessInstancesPaginated = <
 >(
   options: QueryOptions<T>,
 ) => {
-  const filter = buildProcessInstanceFilter(options.filters, {
-    processDefinitionKeys: options.processDefinitionKeys,
-  });
-
-  const payload: QueryProcessInstancesRequestBody = {
-    filter,
-    sort: options.sort,
-  };
-
   return useInfiniteQuery({
-    queryKey: queryKeys.processInstances.searchPaginated(payload),
+    queryKey: queryKeys.processInstances.searchPaginated(options.payload),
     refetchInterval: () => (options?.enablePeriodicRefetch ? 5000 : false),
     staleTime: 5000,
     enabled: options?.enabled ?? true,
     select: options?.select,
-    placeholderData: (previousData) => previousData,
+    placeholderData:
+      (options?.enabled ?? true) ? (previousData) => previousData : undefined,
     queryFn: async ({pageParam}) => {
       const {response, error} = await searchProcessInstances({
-        ...payload,
+        ...options?.payload,
         page: {from: pageParam, limit: PAGE_LIMIT},
       });
       if (response !== null) {

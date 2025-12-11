@@ -42,9 +42,6 @@ const DecisionsFilterSchema = z
 
 /** Parses a {@linkcode DecisionsFilter} from URL search params. */
 function parseDecisionsFilter(search: URLSearchParams) {
-  if (typeof search === 'string') {
-    search = new URLSearchParams(search);
-  }
   return DecisionsFilterSchema.parse(Object.fromEntries(search));
 }
 

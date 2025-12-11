@@ -301,15 +301,15 @@ describe('Filters', () => {
       endDateBefore: endDate.toDate,
     } as const;
 
-    await waitFor(() => {
+    await waitFor(() =>
       expect(
         Object.fromEntries(
           new URLSearchParams(
             screen.getByTestId('search').textContent ?? '',
           ).entries(),
         ),
-      ).toEqual(expect.objectContaining(MOCK_VALUES));
-    });
+      ).toEqual(expect.objectContaining(MOCK_VALUES)),
+    );
   });
 
   it('should have JSON editor for variable value filter', async () => {
@@ -442,7 +442,7 @@ describe('Filters', () => {
     );
   });
 
-  it('should order optional filters', async () => {
+  it('Should order optional filters', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
