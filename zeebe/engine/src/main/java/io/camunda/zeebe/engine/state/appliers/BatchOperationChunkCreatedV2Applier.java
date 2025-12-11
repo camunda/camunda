@@ -14,18 +14,19 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.stream.Collectors;
 
-public class BatchOperationChunkCreatedV1Applier
+public class BatchOperationChunkCreatedV2Applier
     implements TypedEventApplier<BatchOperationChunkIntent, BatchOperationChunkRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
-  public BatchOperationChunkCreatedV1Applier(final MutableBatchOperationState batchOperationState) {
+  public BatchOperationChunkCreatedV2Applier(final MutableBatchOperationState batchOperationState) {
     this.batchOperationState = batchOperationState;
   }
 
   @Override
   public void applyState(final long chunkKey, final BatchOperationChunkRecord value) {
-    batchOperationState.appendItemKeys(
+    batchOperationState.addChunk(
+        chunkKey,
         value.getBatchOperationKey(),
         value.getItems().stream()
             .map(BatchOperationItemValue::getItemKey)

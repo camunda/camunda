@@ -88,8 +88,20 @@ public interface MutableBatchOperationState extends BatchOperationState {
    *
    * @param batchOperationKey the key of the batch operation to which the itemKeys should be added
    * @param itemKeys the set of itemKeys to add to the batch operation
+   * @deprecated Use {@link #addChunk(long, long, Set)}
    */
+  @Deprecated
   void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys);
+
+  /**
+   * Adds a chunk of itemKeys to the given batch operation. The itemKeys are added to the end of the
+   * pending itemKeys.
+   *
+   * @param chunkKey the key of the chunk being added
+   * @param batchOperationKey the key of the batch operation to which the itemKeys should be added
+   * @param itemKeys the set of itemKeys to add to the batch operation
+   */
+  void addChunk(long chunkKey, long batchOperationKey, Set<Long> itemKeys);
 
   /**
    * Removes the given itemKeys from the given batch operation. The itemKeys are removed from the
