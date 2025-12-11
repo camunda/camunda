@@ -35,9 +35,8 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContinueProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
-import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
-import io.camunda.zeebe.engine.processing.feelexpressionresolution.ExpressionProcessors;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluateProcessor;
+import io.camunda.zeebe.engine.processing.feelexpressionresolution.ExpressionProcessors;
 import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionProcessors;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
