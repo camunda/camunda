@@ -40,7 +40,7 @@ public class PrimaryStorageBackup implements Cloneable {
    */
   private BackupStoreType store = BackupStoreType.NONE;
 
-  private final boolean required = false;
+  private boolean required = false;
   private boolean continuous = false;
   private String schedule;
   private Duration checkpointInterval;
@@ -121,6 +121,10 @@ public class PrimaryStorageBackup implements Cloneable {
 
   public boolean isRequired() {
     return required;
+  }
+
+  public void setRequired(final boolean required) {
+    this.required = required;
   }
 
   public String getSchedule() {
