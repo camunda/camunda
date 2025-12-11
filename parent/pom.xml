@@ -1877,8 +1877,9 @@
           </exclusion>
         </exclusions>
       </dependency>
-      <!-- override the transitive dependency from org.elasticsearch:elasticsearch,
-      once org.elasticsearch:elasticsearch minor or major is bumped up lz4-java direct dependency can be removed -->
+      <!-- Override the transitive dependency from org.elasticsearch:elasticsearch,
+      replacing the discontinued org.lz4:lz4-java with the maintained fork at.yawk.lz4:lz4-java.
+      This override will remain necessary unless Elasticsearch itself adopts the maintained fork. -->
       <dependency>
         <groupId>at.yawk.lz4</groupId>
         <artifactId>lz4-java</artifactId>
