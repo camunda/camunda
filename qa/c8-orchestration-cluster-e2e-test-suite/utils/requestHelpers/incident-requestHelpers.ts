@@ -65,10 +65,8 @@ export async function searchIncidentByPIK(
 
 /**
  * Create Instance of one process with two incidents of the same type
- * @param localState 
- * @param request 
  */
-export async function setupIncidentTest (
+export async function createTwoIncidentsInOneProcess (
   localState: Record<string, unknown>,
   request: APIRequestContext,
 ) {
@@ -88,7 +86,7 @@ export async function setupIncidentTest (
 /**
  * Create two process instances with incidents of different type
  */
-export async function setupMultipleIncidentsTest(
+export async function createIncidentsInTwoProcesses(
   localState: Record<string, unknown>,
   request: APIRequestContext,
 ) {
@@ -116,7 +114,7 @@ export async function setupMultipleIncidentsTest(
 /**
  * Create one process instance with two incidents of different type
  */
-export async function setupMultipleTypeIncidentsTest(
+export async function createTwoDifferentIncidentsInOneProcess(
   localState: Record<string, unknown>,
   request: APIRequestContext,
 ) {
