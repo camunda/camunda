@@ -381,38 +381,7 @@ class RdbmsExporterTest {
   @Test
   void shouldThrowExceptionWhenSchemaIsNotInitialized() {
     // given - schema manager returns false for isInitialized
-    flushTask = mock(ScheduledTask.class);
-    cleanupTask = mock(ScheduledTask.class);
-    usageMetricsCleanupTask = mock(ScheduledTask.class);
-
-    controller = mock(Controller.class);
-    when(controller.getLastExportedRecordPosition()).thenReturn(-1L);
-
-    rdbmsWriter = mock(RdbmsWriter.class);
-    executionQueue = new StubExecutionQueue();
-    positionService = mock(ExporterPositionService.class);
-    when(positionService.findOne(anyInt())).thenReturn(null);
-
-    historyCleanupService = mock(HistoryCleanupService.class);
-    when(rdbmsWriter.getHistoryCleanupService()).thenReturn(historyCleanupService);
-    when(rdbmsWriter.getExporterPositionService()).thenReturn(positionService);
-    when(rdbmsWriter.getExecutionQueue()).thenReturn(executionQueue);
-
-    metrics = mock(RdbmsWriterMetrics.class);
-    when(rdbmsWriter.getMetrics()).thenReturn(metrics);
-
-    schemaManager = mock(RdbmsSchemaManager.class);
-    when(schemaManager.isInitialized()).thenReturn(false);
-
-    final var builder =
-        new RdbmsExporter.Builder()
-            .rdbmsWriter(rdbmsWriter)
-            .partitionId(0)
-            .flushInterval(Duration.ofMillis(500))
-            .queueSize(100)
-            .rdbmsSchemaManager(schemaManager);
-
-    exporter = builder.build();
+    createExporter(b -> b, false, false);
 
     // when + then
     assertThatThrownBy(() -> exporter.open(controller))
@@ -449,12 +418,19 @@ class RdbmsExporterTest {
 
   private void createExporter(
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction) {
-    createExporter(builderFunction, true);
+    createExporter(builderFunction, true, true);
   }
 
   private void createExporter(
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction,
       final boolean schemaInitialized) {
+    createExporter(builderFunction, schemaInitialized, true);
+  }
+
+  private void createExporter(
+      final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction,
+      final boolean schemaInitialized,
+      final boolean openExporter) {
     flushTask = mock(ScheduledTask.class);
     cleanupTask = mock(ScheduledTask.class);
     usageMetricsCleanupTask = mock(ScheduledTask.class);
@@ -503,7 +479,9 @@ class RdbmsExporterTest {
             .rdbmsSchemaManager(schemaManager);
 
     exporter = builderFunction.apply(builder).build();
-    exporter.open(controller);
+    if (openExporter) {
+      exporter.open(controller);
+    }
   }
 
   private static final class StubExecutionQueue implements ExecutionQueue {
