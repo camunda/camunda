@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.feelexpression.ExpressionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
@@ -201,6 +202,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.HISTORY_DELETION -> new HistoryDeletionRecord();
       case ValueType.CONDITIONAL_SUBSCRIPTION -> new ConditionalSubscriptionRecord();
       case ValueType.CONDITIONAL_EVALUATION -> new ConditionalEvaluationRecord();
+      case ValueType.EXPRESSION -> new ExpressionRecord();
       case ValueType.MULTI_INSTANCE -> new MultiInstanceRecord();
       case ValueType.RUNTIME_INSTRUCTION -> new RuntimeInstructionRecord();
       case ValueType.BATCH_OPERATION_INITIALIZATION -> new BatchOperationInitializationRecord();
