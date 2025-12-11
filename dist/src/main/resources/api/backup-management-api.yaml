@@ -94,6 +94,23 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
+    delete:
+      summary: Delete a runtime backup
+      description: Delete a backup with the given id
+      parameters:
+        - $ref: '#/components/parameters/BackupId'
+      responses:
+        '204':
+          description: Backup is deleted
+        '500':
+          description: Internal error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
+          $ref: '#/components/responses/Error'
   /backupRuntime/state:
     get:
       summary: Get information about the current checkpoint and backup state of the cluster
@@ -113,23 +130,7 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
-    delete:
-      summary: Delete a runtime backup
-      description: Delete a backup with the given id
-      parameters:
-        - $ref: '#/components/parameters/BackupId'
-      responses:
-        '204':
-          description: Backup is deleted
-        '500':
-          description: Internal error
-          $ref: '#/components/responses/Error'
-        '502':
-          description: Gateway failed to send request to the broker.
-          $ref: '#/components/responses/Error'
-        '504':
-          description: Request from gateway to broker timed out
-          $ref: '#/components/responses/Error'
+
 
   # Section on historic backups
   /backupHistory:
