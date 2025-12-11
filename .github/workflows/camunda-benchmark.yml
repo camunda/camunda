@@ -164,10 +164,15 @@ jobs:
       id-token: 'write'
     strategy:
       max-parallel: 1
+      fail-fast: false
       matrix:
-        scenario-name:
-          - 'pi-creation-latency'
-          - 'measure-cpu-usage'
+        include:
+          - scenario-name: 'maximize-load'
+            load-test-load: '--set starter.rate=0'
+          - scenario-name: 'pi-creation-latency'
+            load-test-load: '--set starter.replicas=0'
+          - scenario-name: 'measure-cpu-usage'
+            load-test-load: '--set starter.replicas=0'
     uses: camunda/camunda/.github/workflows/camunda-benchmark-scenario.yml@feat/camunda-db-benchmarks
     with:
       name: cthiel-benchmark

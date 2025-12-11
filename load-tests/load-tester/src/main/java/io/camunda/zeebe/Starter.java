@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.ProcessInstanceUtil.startInstance;
 import static io.camunda.zeebe.util.ProcessInstanceUtil.startInstanceByMessagePublishing;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.benchmark.MetricsReader;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.ProcessInstanceUtil;
@@ -44,6 +45,7 @@ public class Starter extends App {
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
+  private static final int DYNAMIC_RATE_INITIAL = 200;
   private final StarterCfg starterCfg;
 
   Starter(final AppCfg config) {
@@ -63,8 +65,18 @@ public class Starter extends App {
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     final ScheduledExecutorService executorService =
         Executors.newScheduledThreadPool(starterCfg.getThreads());
-    final ScheduledFuture<?> scheduledTask =
-        scheduleProcessInstanceCreation(executorService, countDownLatch, client);
+    final ScheduledFuture<?> scheduledTask;
+
+    if (starterCfg.getRate() > 0) {
+      // Fixed rate mode
+      scheduledTask = scheduleProcessInstanceCreation(executorService, countDownLatch, client);
+    } else {
+      // Dynamic rate mode
+      final MetricsReader metricsReader = createMetricsReader();
+      scheduledTask =
+          scheduleProcessInstanceCreationWithDynamicRate(
+              executorService, countDownLatch, client, metricsReader);
+    }
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -116,45 +128,144 @@ public class Starter extends App {
             return;
           }
 
-          try {
-            final var vars = new HashMap<>(baseVariables);
-            vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-
-            final CompletionStage<?> requestFuture;
-            if (starterCfg.isStartViaMessage()) {
-              requestFuture =
-                  startInstanceByMessagePublishing(client, vars, starterCfg.getMsgName());
-            } else if (starterCfg.isWithResults()) {
-              requestFuture =
-                  ProcessInstanceUtil.startInstanceWithAwaitingResult(
-                      client, starterCfg.getProcessId(), vars, starterCfg.getWithResultsTimeout());
-            } else {
-              requestFuture = startInstance(client, starterCfg.getProcessId(), vars);
-            }
-            requestFuture.exceptionally(
-                (error) -> {
-                  if (error instanceof final StatusRuntimeException statusRuntimeException) {
-                    if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-                      // we don't want to flood the log
-                      THROTTLED_LOGGER.warn(
-                          "Error on creating new process instance with business key {}",
-                          businessKey.get(),
-                          error);
-                    }
-                  }
-                  return null;
-                });
-          } catch (final Exception e) {
-            THROTTLED_LOGGER.error("Error on creating new process instance", e);
-          }
+          createProcessInstance(client, baseVariables, businessKey);
         },
         0,
         intervalNanos,
         TimeUnit.NANOSECONDS);
   }
 
+  private ScheduledFuture<?> scheduleProcessInstanceCreationWithDynamicRate(
+      final ScheduledExecutorService executorService,
+      final CountDownLatch countDownLatch,
+      final CamundaClient client,
+      final MetricsReader metricsReader) {
+
+    final AtomicLong currentRate = new AtomicLong(DYNAMIC_RATE_INITIAL);
+    LOG.info("Starting with dynamic rate of {} instances/second", currentRate.get());
+
+    final String variablesString = readVariables(starterCfg.getPayloadPath());
+    final Map<String, Object> baseVariables =
+        Collections.unmodifiableMap(deserializeVariables(variablesString));
+
+    final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
+    final AtomicLong businessKey = new AtomicLong(0);
+    final AtomicLong instancesCreatedInCurrentSecond = new AtomicLong(0);
+    final AtomicLong lastAdjustmentTimeMillis = new AtomicLong(System.currentTimeMillis());
+    final AtomicLong ticksInCurrentSecond = new AtomicLong(0);
+
+    return executorService.scheduleAtFixedRate(
+        () -> {
+          if (!shouldContinue.getAsBoolean()) {
+            // signal completion of starter
+            countDownLatch.countDown();
+            return;
+          }
+
+          // Adjust rate based on exporter load at configured interval
+          final long currentTimeMillis = System.currentTimeMillis();
+          if (currentTimeMillis - lastAdjustmentTimeMillis.get()
+              >= starterCfg.getRateAdjustmentIntervalMs()) {
+            final long newRate = adjustRateBasedOnLoad(metricsReader, currentRate.get());
+            currentRate.set(newRate);
+            instancesCreatedInCurrentSecond.set(0);
+            ticksInCurrentSecond.set(0);
+            lastAdjustmentTimeMillis.set(currentTimeMillis);
+          }
+
+          // Calculate how many instances should have been created by now in this second
+          // based on the current tick number (each tick is 10ms, 100 ticks per second)
+          final long currentTick = ticksInCurrentSecond.incrementAndGet();
+          final long instancesToCreateNow =
+              calculateInstancesToCreate(
+                  currentRate.get(), currentTick, instancesCreatedInCurrentSecond.get());
+
+          // Create the calculated number of instances
+          for (long i = 0; i < instancesToCreateNow; i++) {
+            instancesCreatedInCurrentSecond.incrementAndGet();
+            createProcessInstance(client, baseVariables, businessKey);
+          }
+        },
+        0,
+        10,
+        TimeUnit.MILLISECONDS);
+  }
+
+  private void createProcessInstance(
+      final CamundaClient client,
+      final Map<String, Object> baseVariables,
+      final AtomicLong businessKey) {
+    try {
+      final var vars = new HashMap<>(baseVariables);
+      vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+
+      final CompletionStage<?> requestFuture;
+      if (starterCfg.isStartViaMessage()) {
+        requestFuture = startInstanceByMessagePublishing(client, vars, starterCfg.getMsgName());
+      } else if (starterCfg.isWithResults()) {
+        requestFuture =
+            ProcessInstanceUtil.startInstanceWithAwaitingResult(
+                client, starterCfg.getProcessId(), vars, starterCfg.getWithResultsTimeout());
+      } else {
+        requestFuture = startInstance(client, starterCfg.getProcessId(), vars);
+      }
+      requestFuture.exceptionally(
+          (error) -> {
+            if (error instanceof final StatusRuntimeException statusRuntimeException) {
+              if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+                // we don't want to flood the log
+                THROTTLED_LOGGER.warn(
+                    "Error on creating new process instance with business key {}",
+                    businessKey.get(),
+                    error);
+              }
+            }
+            return null;
+          });
+    } catch (final Exception e) {
+      THROTTLED_LOGGER.error("Error on creating new process instance", e);
+    }
+  }
+
   private CamundaClient createCamundaClient() {
     return newClientBuilder().numJobWorkerExecutionThreads(0).build();
+  }
+
+  private boolean isExporterOverloaded(final MetricsReader metricsReader) {
+    final var recordsNotExported = metricsReader.getRecordsNotExported();
+    LOG.info("Current number of records not exported: {}", recordsNotExported);
+    return recordsNotExported > 10000;
+  }
+
+  private long adjustRateBasedOnLoad(final MetricsReader metricsReader, final long oldRate) {
+    final boolean overloaded = isExporterOverloaded(metricsReader);
+    final double adjustmentFactor = starterCfg.getRateAdjustmentFactor();
+
+    final long newRate;
+    if (overloaded) {
+      // Decrease rate by configured factor
+      newRate = Math.max(1, (long) (oldRate * (1 - adjustmentFactor)));
+      LOG.info(
+          "Exporter overloaded, decreasing rate from {} to {} instances/second (factor: {})",
+          oldRate,
+          newRate,
+          adjustmentFactor);
+    } else {
+      // Increase rate by configured factor
+      newRate = (long) (oldRate * (1 + adjustmentFactor));
+      LOG.info(
+          "Exporter not overloaded, increasing rate from {} to {} instances/second (factor: {})",
+          oldRate,
+          newRate,
+          adjustmentFactor);
+    }
+    return newRate;
+  }
+
+  private long calculateInstancesToCreate(
+      final long currentRate, final long currentTick, final long instancesCreatedSoFar) {
+    final long instancesShouldHaveCreated = (currentRate * currentTick) / 100;
+    return instancesShouldHaveCreated - instancesCreatedSoFar;
   }
 
   private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {

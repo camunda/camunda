@@ -13,7 +13,7 @@ public class PrometheusParser {
 
   private static final java.util.regex.Pattern METRIC_LINE =
       java.util.regex.Pattern.compile(
-          "^(?<name>[a-zA-Z_:][a-zA-Z0-9_:]*)(\\{(?<labels>[^}]*)})?\\s+(?<value>[-+]?[0-9]*\\.?[0-9]+)");
+          "^(?<name>[a-zA-Z_:][a-zA-Z0-9_:]*)(\\{(?<labels>[^}]*)})?\\s+(?<value>[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)");
 
   public static List<PrometheusMetric> parse(final String prometheusText) {
     final List<PrometheusMetric> metrics = new ArrayList<>();
