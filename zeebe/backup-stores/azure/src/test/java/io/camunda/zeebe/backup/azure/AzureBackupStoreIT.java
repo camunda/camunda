@@ -26,7 +26,6 @@ import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
-import io.camunda.zeebe.backup.testkit.StoringBackupIndex;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
@@ -41,7 +40,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class AzureBackupStoreIT implements BackupStoreTestKit, StoringBackupIndex {
+public class AzureBackupStoreIT implements BackupStoreTestKit {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   private static final ObjectMapper MAPPER =
