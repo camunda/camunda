@@ -63,6 +63,8 @@ public class Starter extends App {
   @Override
   public void run() {
     partitionToTimerMap = new ConcurrentHashMap<>();
+    responseLatencyTimer =
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
     partitionToTimerMap.put(
         1,
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
