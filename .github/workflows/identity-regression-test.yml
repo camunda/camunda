@@ -163,18 +163,26 @@ jobs:
 
       - name: Wait for Elasticsearch
         run: |
+          echo "🏃 Runner info:"
+          uname -a
+          lscpu | grep 'Model name'
+          df -h /
+          free -h
+
           echo "Waiting for Elasticsearch on localhost:${{ matrix.hostPort }}..."
-          for i in {1..30}; do
-            if curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health" | grep -q '"status"'; then
-              echo "✅ Elasticsearch responding"
+          for i in {1..60}; do
+            status=$(curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health?wait_for_status=yellow&timeout=5s" | jq -r '.status // empty')
+            if [[ "$status" == "yellow" || "$status" == "green" ]]; then
+              echo "✅ Elasticsearch is ready (status: $status)"
               break
             fi
-            echo "⏳ Still waiting ($i/30)..."
+            echo "⏳ Still waiting for cluster health ($i/60)... current status: ${status:-unknown}"
             sleep 5
           done
 
-          if ! curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health" | grep -q '"status"'; then
-            echo "❌ Elasticsearch did not start in time" >&2
+          if [[ "$status" != "yellow" && "$status" != "green" ]]; then
+            echo "❌ Elasticsearch did not reach yellow or green state in time" >&2
+            curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health?pretty" || true
             exit 1
           fi
 
