@@ -71,7 +71,8 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
     final ObjectMapper mapper = new ObjectMapper();
     final JsonNode json = mapper.readTree(request.getBodyAsString());
 
-    assertThat(json.get("page").isNull()).isTrue();
+    assertThat(json.get("page")).isNull();
+    assertThat(json.get("sort")).isNotNull();
     assertThat(json.get("sort").isArray()).isTrue();
     Assertions.assertThat(json.get("sort")).isEmpty();
   }
