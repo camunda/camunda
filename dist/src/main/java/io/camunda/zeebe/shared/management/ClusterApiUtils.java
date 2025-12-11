@@ -52,7 +52,6 @@ import io.camunda.zeebe.management.cluster.ExporterStateCode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExportingConfig;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
-import io.camunda.zeebe.management.cluster.MessageCorrelation;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
@@ -362,7 +361,7 @@ final class ClusterApiUtils {
     };
   }
 
-  private static MessageCorrelation mapMessageCorrelation(
+  private static MessageCorrelationHashMod mapMessageCorrelation(
       final RoutingState.MessageCorrelation messageCorrelation) {
     return switch (messageCorrelation) {
       case HashMod(final var partitionCount) ->
