@@ -49,4 +49,16 @@ const SummaryDataValue = styled.dd<Props>`
   `}
 `;
 
-export {Popover, Content, Divider, SummaryDataKey, SummaryDataValue};
+const SummaryText = styled.p`
+  ${styles.label02};
+  margin: 0;
+`;
+
+export {
+  Popover,
+  Content,
+  Divider,
+  SummaryDataKey,
+  SummaryDataValue,
+  SummaryText,
+};
