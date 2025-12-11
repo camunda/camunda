@@ -461,7 +461,7 @@ public final class ProcessInstanceModificationModifyProcessor
         if (moveInstructions.containsKey(elementId)) {
           final var moveInstruction = moveInstructions.get(elementId);
           final var ancestorScopeKey =
-              moveInstruction.isUseSourceParentKeyAsAncestorScope()
+              moveInstruction.isInferAncestorScopeFromSourceHierarchy()
                   ? findProperAncestorScopeKeyForTarget(
                       elementInstance.getParentKey(), moveInstruction.getTargetElementId(), process)
                   : moveInstruction.getAncestorScopeKey();
@@ -511,7 +511,7 @@ public final class ProcessInstanceModificationModifyProcessor
           elementInstanceState.getInstance(moveInstruction.getSourceElementInstanceKey());
 
       final var ancestorScopeKey =
-          moveInstruction.isUseSourceParentKeyAsAncestorScope()
+          moveInstruction.isInferAncestorScopeFromSourceHierarchy()
               ? findProperAncestorScopeKeyForTarget(
                   elementInstance.getParentKey(), moveInstruction.getTargetElementId(), process)
               : moveInstruction.getAncestorScopeKey();

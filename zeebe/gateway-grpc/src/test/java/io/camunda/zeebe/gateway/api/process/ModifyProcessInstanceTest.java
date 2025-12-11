@@ -55,7 +55,7 @@ public class ModifyProcessInstanceTest {
                     .setSourceElementId("fromElementId")
                     .setTargetElementId("toElementId")
                     .setAncestorElementInstanceKey(3L)
-                    .setUseSourceParentKeyAsAncestorScopeKey(true)
+                    .setInferAncestorScopeFromSourceHierarchy(true)
                     .addVariableInstructions(
                         VariableInstruction.newBuilder()
                             .setScopeId("scopeIdMove")
@@ -67,7 +67,7 @@ public class ModifyProcessInstanceTest {
                     .setSourceElementInstanceKey(123L)
                     .setTargetElementId("toElementId")
                     .setAncestorElementInstanceKey(3L)
-                    .setUseSourceParentKeyAsAncestorScopeKey(true)
+                    .setInferAncestorScopeFromSourceHierarchy(true)
                     .addVariableInstructions(
                         VariableInstruction.newBuilder()
                             .setScopeId("scopeIdMove")
@@ -103,7 +103,7 @@ public class ModifyProcessInstanceTest {
     assertThat(moveInstruction1.getSourceElementId()).isEqualTo("fromElementId");
     assertThat(moveInstruction1.getTargetElementId()).isEqualTo("toElementId");
     assertThat(moveInstruction1.getAncestorScopeKey()).isEqualTo(3L);
-    assertThat(moveInstruction1.isUseSourceParentKeyAsAncestorScope()).isTrue();
+    assertThat(moveInstruction1.isInferAncestorScopeFromSourceHierarchy()).isTrue();
     final var moveVariableInstructions1 = moveInstruction1.getVariableInstructions();
     assertThat(moveVariableInstructions1).hasSize(1);
     final var moveVariableInstruction1 = moveVariableInstructions1.get(0);
@@ -114,7 +114,7 @@ public class ModifyProcessInstanceTest {
     assertThat(moveInstruction2.getSourceElementInstanceKey()).isEqualTo(123L);
     assertThat(moveInstruction2.getTargetElementId()).isEqualTo("toElementId");
     assertThat(moveInstruction2.getAncestorScopeKey()).isEqualTo(3L);
-    assertThat(moveInstruction2.isUseSourceParentKeyAsAncestorScope()).isTrue();
+    assertThat(moveInstruction2.isInferAncestorScopeFromSourceHierarchy()).isTrue();
     final var moveVariableInstructions2 = moveInstruction2.getVariableInstructions();
     assertThat(moveVariableInstructions2).hasSize(1);
     final var moveVariableInstruction2 = moveVariableInstructions2.get(0);

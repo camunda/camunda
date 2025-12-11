@@ -37,8 +37,8 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
           new ArrayProperty<>(
               "variableInstructions", ProcessInstanceModificationVariableInstruction::new);
   private final LongProperty ancestorScopeKeyProperty = new LongProperty("ancestorScopeKey", -1);
-  private final BooleanProperty useSourceParentKeyAsAncestorScopeProperty =
-      new BooleanProperty("useSourceParentKeyAsAncestorScope", false);
+  private final BooleanProperty inferAncestorScopeFromSourceHierarchy =
+      new BooleanProperty("inferAncestorScopeFromSourceHierarchy", false);
 
   public ProcessInstanceModificationMoveInstruction() {
     super(6);
@@ -47,7 +47,7 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
         .declareProperty(targetElementIdProperty)
         .declareProperty(variableInstructionsProperty)
         .declareProperty(ancestorScopeKeyProperty)
-        .declareProperty(useSourceParentKeyAsAncestorScopeProperty);
+        .declareProperty(inferAncestorScopeFromSourceHierarchy);
   }
 
   @Override
@@ -95,13 +95,13 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
   }
 
   @Override
-  public boolean isUseSourceParentKeyAsAncestorScope() {
-    return useSourceParentKeyAsAncestorScopeProperty.getValue();
+  public boolean isInferAncestorScopeFromSourceHierarchy() {
+    return inferAncestorScopeFromSourceHierarchy.getValue();
   }
 
-  public ProcessInstanceModificationMoveInstruction setUseSourceParentKeyAsAncestorScope(
-      final boolean useSourceParentKeyAsAncestorScope) {
-    useSourceParentKeyAsAncestorScopeProperty.setValue(useSourceParentKeyAsAncestorScope);
+  public ProcessInstanceModificationMoveInstruction setInferAncestorScopeFromSourceHierarchy(
+      final boolean inferAncestorScopeFromSource) {
+    inferAncestorScopeFromSourceHierarchy.setValue(inferAncestorScopeFromSource);
     return this;
   }
 
@@ -154,7 +154,7 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
         .map(ProcessInstanceModificationVariableInstruction.class::cast)
         .forEach(this::addVariableInstruction);
     setAncestorScopeKey(object.getAncestorScopeKey());
-    setUseSourceParentKeyAsAncestorScope(object.isUseSourceParentKeyAsAncestorScope());
+    setInferAncestorScopeFromSourceHierarchy(object.isInferAncestorScopeFromSourceHierarchy());
     return this;
   }
 

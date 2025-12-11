@@ -1481,10 +1481,10 @@ components:
         propertyName: ancestorScopeType
         mapping:
           direct: '#/components/schemas/DirectAncestorKeyInstruction'
-          sourceParent: '#/components/schemas/SourceParentAncestorKeyInstruction'
+          inferred: '#/components/schemas/InferredAncestorKeyInstruction'
       oneOf:
         - $ref: "#/components/schemas/DirectAncestorKeyInstruction"
-        - $ref: "#/components/schemas/SourceParentAncestorKeyInstruction"
+        - $ref: "#/components/schemas/InferredAncestorKeyInstruction"
 
     DirectAncestorKeyInstruction:
       type: object
@@ -1508,16 +1508,15 @@ components:
         - ancestorElementInstanceKey
         - ancestorScopeType
 
-    SourceParentAncestorKeyInstruction:
+    InferredAncestorKeyInstruction:
       type: object
       description: |
-        Instructs the engine to use the source element's parent key as ancestor key for the created
-        element instance.
+        Instructs the engine to derive the ancestor scope key from the source element's hierarchy. The engine traverses the source element's ancestry to find an instance that matches one of the target element's flow scopes, ensuring the target is activated in the correct scope.
       properties:
         ancestorScopeType:
           description: The type of ancestor scope instruction.
           type: string
-          example: sourceParent
+          example: inferred
       required:
         - ancestorScopeType
 

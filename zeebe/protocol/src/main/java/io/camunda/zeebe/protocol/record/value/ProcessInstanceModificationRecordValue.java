@@ -134,8 +134,9 @@ public interface ProcessInstanceModificationRecordValue
     long getAncestorScopeKey();
 
     /**
-     * Indicates whether the source element's parent key should be used as the target ancestor scope
+     * Indicates whether the ancestor scope key should be inferred from the source element's
+     * hierarchy.
      */
-    boolean isUseSourceParentKeyAsAncestorScope();
+    boolean isInferAncestorScopeFromSourceHierarchy();
   }
 }

@@ -1276,7 +1276,7 @@ public class RequestMapper {
                 case final DirectAncestorKeyInstruction direct ->
                     mappedInstruction.setAncestorScopeKey(
                         getAncestorKey(direct.getAncestorElementInstanceKey()));
-                default -> mappedInstruction.setUseSourceParentKeyAsAncestorScope(true);
+                default -> mappedInstruction.setInferAncestorScopeFromSourceHierarchy(true);
               }
               instruction.getVariableInstructions().stream()
                   .map(RequestMapper::mapVariableInstruction)
@@ -1303,7 +1303,7 @@ public class RequestMapper {
                 case final DirectAncestorKeyInstruction direct ->
                     mappedInstruction.setAncestorScopeKey(
                         getAncestorKey(direct.getAncestorElementInstanceKey()));
-                default -> mappedInstruction.setUseSourceParentKeyAsAncestorScope(true);
+                default -> mappedInstruction.setInferAncestorScopeFromSourceHierarchy(true);
               }
               instruction.getVariableInstructions().stream()
                   .map(RequestMapper::mapVariableInstruction)
@@ -1322,7 +1322,7 @@ public class RequestMapper {
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId(instruction.getSourceElementId())
                     .setTargetElementId(instruction.getTargetElementId())
-                    .setUseSourceParentKeyAsAncestorScope(true))
+                    .setInferAncestorScopeFromSourceHierarchy(true))
         .toList();
   }
 

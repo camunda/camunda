@@ -462,7 +462,7 @@ public final class ProcessInstanceClient {
           new ProcessInstanceModificationMoveInstruction()
               .setSourceElementId(sourceElementId)
               .setTargetElementId(targetElementId)
-              .setUseSourceParentKeyAsAncestorScope(true));
+              .setInferAncestorScopeFromSourceHierarchy(true));
     }
 
     public MoveInstructionBuilder moveElements(
@@ -490,8 +490,8 @@ public final class ProcessInstanceClient {
     }
 
     /**
-     * Add a move element instance instruction by source element instance key, using the source
-     * element's parent as the ancestor scope.
+     * Add a move element instance instruction by source element instance key, inferring the
+     * ancestor scope from the source hierarchy.
      *
      * @param sourceElementInstanceKey the key of the element instance to move
      * @param targetElementId the id of the target element to activate
@@ -503,7 +503,7 @@ public final class ProcessInstanceClient {
           new ProcessInstanceModificationMoveInstruction()
               .setSourceElementInstanceKey(sourceElementInstanceKey)
               .setTargetElementId(targetElementId)
-              .setUseSourceParentKeyAsAncestorScope(true));
+              .setInferAncestorScopeFromSourceHierarchy(true));
     }
 
     /**
