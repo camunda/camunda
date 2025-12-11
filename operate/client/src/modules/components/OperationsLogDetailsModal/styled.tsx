@@ -7,17 +7,28 @@
  */
 
 import styled from 'styled-components';
+import {StructuredListCell, StructuredListRow} from '@carbon/react';
 
-const Container = styled.section`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`;
-
-const OperationLogName = styled.div`
+const IconText = styled.div`
   display: flex;
   align-items: center;
   gap: var(--cds-spacing-02);
 `;
 
-export {Container, OperationLogName};
+const FirstColumn = styled(StructuredListCell)`
+  min-width: 200px;
+`;
+
+const VerticallyAlignedRow = styled(StructuredListRow)`
+  .cds--structured-list-td {
+    vertical-align: middle;
+  }
+`;
+
+const ParagraphWithIcon = styled.p`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+`;
+
+export {IconText, FirstColumn, VerticallyAlignedRow, ParagraphWithIcon};

@@ -7,28 +7,31 @@
  */
 
 import {
-  Modal,
-  StructuredListWrapper,
-  StructuredListCell,
-  StructuredListBody,
+  CodeSnippet,
   Link,
+  Modal,
+  StructuredListBody,
+  StructuredListCell,
+  StructuredListWrapper,
 } from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import {
-  CheckmarkOutline,
+  ArrowRight,
   BatchJob,
+  CheckmarkOutline,
   EventSchedule,
   UserAvatar,
-} from '@carbon/react/icons';
+} from '@carbon/icons-react';
 import {
   FirstColumn,
-  OperationLogName,
+  IconText,
   ParagraphWithIcon,
   VerticallyAlignedRow,
 } from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
-import {AuditLogIcon} from './AuditLogIcon';
+import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
+import {formatBatchTitle} from 'modules/utils/operationsLog';
 
 type Props = {
   isOpen: boolean;
@@ -36,15 +39,24 @@ type Props = {
   auditLog: AuditLog;
 };
 
+export type DetailsModalState = {
+  isOpen: boolean;
+  auditLog?: AuditLog;
+};
+
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
+  const formatModalHeading = () => {
+    return `${spaceAndCapitalize(
+      auditLog.operationType.toString(),
+    )} ${spaceAndCapitalize(auditLog.entityType.toString())}`;
+  };
+
   return (
     <Modal
       size="md"
       open={isOpen}
       onRequestClose={onClose}
-      modalHeading={`${spaceAndCapitalize(auditLog.operationType.toString())} ${spaceAndCapitalize(
-        auditLog.entityType.toString(),
-      )}`}
+      modalHeading={formatModalHeading()}
       primaryButtonDisabled
       secondaryButtonText="Close"
     >
@@ -64,41 +76,76 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
         <StructuredListBody>
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
-              <OperationLogName>
+              <IconText>
                 <CheckmarkOutline />
                 Status
-              </OperationLogName>
+              </IconText>
             </FirstColumn>
             <StructuredListCell>
-              <OperationLogName>
-                <AuditLogIcon
+              <IconText>
+                <OperationsLogStateIcon
                   state={auditLog.result}
                   data-testid={`${auditLog.auditLogKey}-icon`}
                 />
                 {spaceAndCapitalize(auditLog.result.toString())}
-              </OperationLogName>
+              </IconText>
             </StructuredListCell>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn>
-              <OperationLogName>
+              <IconText>
                 <UserAvatar />
                 Actor
-              </OperationLogName>
+              </IconText>
             </FirstColumn>
             <StructuredListCell>{auditLog.actorId}</StructuredListCell>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
-              <OperationLogName>
+              <IconText>
                 <EventSchedule />
                 Time
-              </OperationLogName>
+              </IconText>
             </FirstColumn>
             <StructuredListCell>
               {formatDate(auditLog.timestamp)}
             </StructuredListCell>
           </VerticallyAlignedRow>
+          {auditLog.entityType === 'BATCH' && (
+            <>
+              <VerticallyAlignedRow>
+                <div
+                  style={{
+                    padding: '15px 0',
+                  }}
+                >
+                  <h5>Applied to:</h5>
+                </div>
+              </VerticallyAlignedRow>
+              <VerticallyAlignedRow>
+                <FirstColumn noWrap>
+                  <IconText>
+                    <BatchJob />
+                    Multiple {formatBatchTitle(auditLog.batchOperationType)}
+                    <CodeSnippet type="inline">
+                      {auditLog.batchOperationKey}
+                    </CodeSnippet>
+                  </IconText>
+                </FirstColumn>
+                <StructuredListCell>
+                  <IconText>
+                    <Link
+                      href={`/batch-operations/${auditLog.batchOperationKey}`}
+                      target="_self"
+                    >
+                      View batch operation details&nbsp;
+                      <ArrowRight />
+                    </Link>
+                  </IconText>
+                </StructuredListCell>
+              </VerticallyAlignedRow>
+            </>
+          )}
         </StructuredListBody>
       </StructuredListWrapper>
     </Modal>

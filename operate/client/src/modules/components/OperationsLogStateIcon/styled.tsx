@@ -7,17 +7,17 @@
  */
 
 import styled from 'styled-components';
+import {
+  CheckmarkFilled as BaseCheckmarkFilled,
+  ErrorFilled as BaseErrorFilled,
+} from '@carbon/react/icons';
 
-const Container = styled.section`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+const CheckmarkFilled = styled(BaseCheckmarkFilled)`
+  fill: var(--cds-support-success);
 `;
 
-const OperationLogName = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-02);
+const ErrorFilled = styled(BaseErrorFilled)`
+  fill: var(--cds-support-error);
 `;
 
-export {Container, OperationLogName};
+export {CheckmarkFilled, ErrorFilled};
