@@ -69,7 +69,8 @@ public class GatewayBasedPropertiesOverride {
     populateFromGrpc(override);
     populateFromLongPolling(override);
     populateFromRestFilters(override);
-    populateFromSecurity(override);
+    // TODO KPO remove
+    // populateFromSecurity(override);
 
     return override;
   }
