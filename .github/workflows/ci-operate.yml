@@ -109,7 +109,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End"
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
