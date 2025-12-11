@@ -13,7 +13,6 @@ import type {
   QueryProcessInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
-import {useFilters} from 'modules/hooks/useFilters';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {InstancesTable} from './index';
 import {
@@ -47,7 +46,6 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const variable = variableFilterStore.variable;
   const filter = useProcessInstancesSearchFilter(variable);
   const sort = useProcessInstancesSearchSort();
-  const {areProcessInstanceStatesApplied} = useFilters();
 
   const enablePeriodicRefetch =
     (hasActiveFilter || hasIncidentsFilter) &&
@@ -56,7 +54,7 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const result = useProcessInstancesPaginated({
     payload: {filter, sort},
     enablePeriodicRefetch,
-    enabled: filter !== undefined && !!areProcessInstanceStatesApplied(),
+    enabled: filter !== undefined,
   });
 
   const handle = mapQueryResultToProcessInstancesHandle(result);
