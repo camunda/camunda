@@ -6,22 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef} from 'react';
+import React from 'react';
 import {observer} from 'mobx-react';
-import {
-  Container,
-  NodeContainer,
-  InstanceHistory,
-  PanelHeader,
-  ErrorMessage,
-} from '../styled';
+import {Container, PanelHeader, ErrorMessage} from '../styled';
 import {TimeStampPill} from '../TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
-import {Stack, TreeView} from '@carbon/react';
+import {Stack} from '@carbon/react';
 import {Skeleton} from '../Skeleton';
 import {ExecutionCountToggle} from '../ExecutionCountToggle';
 import {ElementInstancesTree} from '../FlowNodeInstancesTree/v2/index.new';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
   return (
@@ -40,10 +35,12 @@ const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
 });
 
 const ElementInstanceLog: React.FC = observer(() => {
-  const {data: processInstance, status} = useProcessInstance();
-  const instanceHistoryRef = useRef<HTMLDivElement>(null);
+  const {data: processInstance, status: processInstanceStatus} =
+    useProcessInstance();
+  const {data: businessObjects, status: businessObjectsStatus} =
+    useBusinessObjects();
 
-  if (status === 'pending') {
+  if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
     return (
       <Layout>
         <Skeleton />
@@ -51,7 +48,7 @@ const ElementInstanceLog: React.FC = observer(() => {
     );
   }
 
-  if (status === 'error') {
+  if ([processInstanceStatus, businessObjectsStatus].includes('error')) {
     return (
       <Layout>
         {/* TODO update the message with 403 related error during v2 endpoint integration #33542 */}
@@ -60,21 +57,15 @@ const ElementInstanceLog: React.FC = observer(() => {
     );
   }
 
-  const {processDefinitionId, processDefinitionName} = processInstance;
-  const name = processDefinitionName ?? processDefinitionId;
-
   return (
     <Layout>
-      <InstanceHistory ref={instanceHistoryRef}>
-        <NodeContainer>
-          <TreeView label={`${name} instance history`} hideLabel>
-            <ElementInstancesTree
-              processInstance={processInstance}
-              scrollableContainerRef={instanceHistoryRef}
-            />
-          </TreeView>
-        </NodeContainer>
-      </InstanceHistory>
+      <ElementInstancesTree
+        processInstance={processInstance!}
+        businessObjects={businessObjects!}
+        errorMessage={
+          <ErrorMessage message="Instance History could not be fetched" />
+        }
+      />
     </Layout>
   );
 });

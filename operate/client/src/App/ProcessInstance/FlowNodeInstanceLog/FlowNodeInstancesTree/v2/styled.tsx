@@ -24,4 +24,15 @@ const ElementInstanceIcon = styled(BaseElementInstanceIcon)<{
   }}
 `;
 
-export {ElementInstanceIcon};
+const NodeContainer = styled.div`
+  position: absolute;
+  width: 100%;
+`;
+
+const InstanceHistory = styled.div`
+  position: relative;
+  height: 100%;
+  overflow: auto;
+`;
+
+export {ElementInstanceIcon, NodeContainer, InstanceHistory};
