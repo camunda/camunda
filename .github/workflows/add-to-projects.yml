@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: get_project_count
-        uses: octokit/graphql-action@v2.3.2
+        uses: octokit/graphql-action@v2.3.3
         with:
           # API https://docs.github.com/en/graphql/reference/objects#issue
           query: |
