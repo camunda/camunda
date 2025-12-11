@@ -1413,6 +1413,13 @@ components:
         - variables
 
     ProcessInstanceModificationMoveInstruction:
+      x-polymorphic-schema: true
+      description: Instruction describing a move operation.
+      oneOf:
+        - $ref: "#/components/schemas/ProcessInstanceModificationMoveByIdInstruction"
+        - $ref: "#/components/schemas/ProcessInstanceModificationMoveByKeyInstruction"
+
+    ProcessInstanceModificationMoveByIdInstruction:
       type: object
       description: |
         Instruction describing a move operation. This instruction will terminate all active element
@@ -1437,6 +1444,32 @@ components:
             $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
       required:
         - sourceElementId
+        - targetElementId
+
+    ProcessInstanceModificationMoveByKeyInstruction:
+      type: object
+      description: |
+        Instruction describing a move operation. This instruction will terminate one active element
+        instance with the sourceElementInstanceKey and activate a new element instance for at targetElementId. Note that, for multi-instance activities, only the multi-instance
+        body instance will activate new element instance at the target id.
+      properties:
+        sourceElementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The source element id.
+        targetElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The target element id.
+        ancestorScopeInstruction:
+          $ref: '#/components/schemas/AncestorScopeInstruction'
+        variableInstructions:
+          description: Instructions describing which variables to create or update.
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
+      required:
+        - sourceElementInstanceKey
         - targetElementId
 
     AncestorScopeInstruction:
