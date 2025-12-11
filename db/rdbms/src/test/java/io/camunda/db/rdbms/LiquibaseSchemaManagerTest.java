@@ -55,7 +55,7 @@ class LiquibaseSchemaManagerTest {
    * Test implementation that overrides the parent's afterPropertiesSet to avoid actual Liquibase
    * initialization.
    */
-  private static class TestLiquibaseSchemaManager extends LiquibaseSchemaManager {
+  private static final class TestLiquibaseSchemaManager extends LiquibaseSchemaManager {
     @Override
     public void afterPropertiesSet() throws Exception {
       // Skip the actual Liquibase initialization (super.afterPropertiesSet())
