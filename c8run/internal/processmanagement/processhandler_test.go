@@ -11,11 +11,11 @@ import (
 )
 
 type mockC8 struct {
-	ProcessTreeFunc func(pid int) []*os.Process
+	ProcessTreeFunc func(pid int) []int
 }
 
 func (m *mockC8) OpenBrowser(ctx context.Context, url string) error { return nil }
-func (m *mockC8) ProcessTree(pid int) []*os.Process {
+func (m *mockC8) ProcessTree(pid int) []int {
 	if m.ProcessTreeFunc != nil {
 		return m.ProcessTreeFunc(pid)
 	}
@@ -89,7 +89,7 @@ func TestAttemptToStartProcess_StartsWhenNoPIDFile(t *testing.T) {
 	pidPath := filepath.Join(dir, "no.pid")
 	started := false
 	h := &testHandler{
-		ProcessHandler: ProcessHandler{C8: &mockC8{ProcessTreeFunc: func(pid int) []*os.Process { return nil }}},
+		ProcessHandler: ProcessHandler{C8: &mockC8{ProcessTreeFunc: func(pid int) []int { return nil }}},
 	}
 
 	startProcess := func() { started = true }
@@ -114,7 +114,7 @@ func TestAttemptToStartProcess_CleansUpStalePIDAndStarts(t *testing.T) {
 	stopped := false
 
 	h := &testHandler{
-		ProcessHandler: ProcessHandler{C8: &mockC8{ProcessTreeFunc: func(pid int) []*os.Process { return []*os.Process{{Pid: 123}} }}},
+		ProcessHandler: ProcessHandler{C8: &mockC8{ProcessTreeFunc: func(pid int) []int { return []int{123} }}},
 	}
 
 	startProcess := func() { started = true }
@@ -152,7 +152,7 @@ func TestAttemptToStartProcess_KillsUnhealthyProcess(t *testing.T) {
 	stopped := false
 
 	h := &testHandler{
-		ProcessHandler: ProcessHandler{C8: &mockC8{ProcessTreeFunc: func(pid int) []*os.Process { return []*os.Process{proc} }}},
+		ProcessHandler: ProcessHandler{C8: &mockC8{ProcessTreeFunc: func(pid int) []int { return []int{proc.Pid} }}},
 	}
 
 	startProcess := func() { started = true }

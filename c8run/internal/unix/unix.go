@@ -31,12 +31,10 @@ func (w *UnixC8Run) OpenBrowser(ctx context.Context, url string) error {
 	return nil
 }
 
-func (w *UnixC8Run) ProcessTree(commandPid int) []*os.Process {
+func (w *UnixC8Run) ProcessTree(commandPid int) []int {
 	// For unix systems we can kill all processes within a process group by setting a pgid
-	// therefore, only the main process needs put in here.
-	process := os.Process{Pid: commandPid}
-	processes := []*os.Process{&process}
-	return processes
+	// therefore, only the main process pid is required.
+	return []int{commandPid}
 }
 
 func (w *UnixC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd {
