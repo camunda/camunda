@@ -21,6 +21,7 @@ import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -204,7 +205,7 @@ public class Starter extends App {
     LOG.warn(
         "Process instance {} started at {} (delay {} ms) try to get from API",
         processInstanceKey,
-        startTime,
+        Instant.ofEpochMilli(startTime / 1_000_000),
         Duration.ofNanos(System.nanoTime() - startTime).toMillis());
     client
         .newProcessInstanceGetRequest(processInstanceKey)
