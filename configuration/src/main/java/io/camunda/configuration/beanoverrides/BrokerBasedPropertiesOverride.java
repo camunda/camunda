@@ -42,6 +42,7 @@ import io.camunda.configuration.Write;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
@@ -890,6 +891,14 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "bulk.delay", database.getBulk().getDelay().getSeconds());
     setArg(args, "bulk.size", database.getBulk().getSize());
     setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
+
+    final var auditLog = unifiedConfiguration.getCamunda().getData().getExport().getAuditLog();
+    final var camundaExporterConfiguration =
+        ExporterConfiguration.fromArgs(
+            io.camunda.exporter.config.ExporterConfiguration.class, args);
+    camundaExporterConfiguration.setAuditLog(auditLog.toConfiguration());
+
+    exporter.setArgs(ExporterConfiguration.asArgs(camundaExporterConfiguration));
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
@@ -968,7 +977,13 @@ public class BrokerBasedPropertiesOverride {
     setArgIfNotNull(
         args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
 
-    exporter.setArgs(args);
+    final var auditLog = unifiedConfiguration.getCamunda().getData().getExport().getAuditLog();
+    final var rdbmsExporterConfiguration =
+        ExporterConfiguration.fromArgs(io.camunda.exporter.rdbms.ExporterConfiguration.class, args);
+    rdbmsExporterConfiguration.setAuditLog(auditLog.toConfiguration());
+
+    final var newArgs = ExporterConfiguration.asArgs(rdbmsExporterConfiguration);
+    exporter.setArgs(newArgs);
   }
 
   private void populateFromMonitoring(final BrokerBasedProperties override) {

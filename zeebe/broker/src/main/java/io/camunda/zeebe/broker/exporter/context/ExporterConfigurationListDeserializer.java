@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.exporter.context;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.std.StdDelegatingDeserializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.StdConverter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +43,35 @@ final class ExporterConfigurationListDeserializer<E> extends StdDelegatingDeseri
   @Override
   public JsonDeserializer<?> createContextual(
       final DeserializationContext ctxt, final BeanProperty property) throws JsonMappingException {
-    return new StdDelegatingDeserializer<List<E>>(
-            new MapListConverter<>(property.getType().getContentType()))
+    // Only apply our custom deserializer when we have proper property context
+    // When property is null (e.g., during convertValue operations), let Jackson use default
+    if (property == null) {
+      return null; // Return null to use default deserializer
+    }
+
+    final JavaType contentType = property.getType().getContentType();
+    return new StdDelegatingDeserializer<List<E>>(new MapListConverter<>(contentType))
         .createContextual(ctxt, property);
+  }
+
+  @Override
+  public List<E> deserialize(final JsonParser p, final DeserializationContext ctxt)
+      throws IOException {
+    // Check if the current token is START_ARRAY (actual list)
+    if (p.currentToken() == JsonToken.START_ARRAY) {
+      // It's already a proper array/list, deserialize it normally without our converter
+      // We can't use super.deserialize because that expects a Map
+      // Instead, deserialize directly as a list
+      final List<E> result = new ArrayList<>();
+      while (p.nextToken() != JsonToken.END_ARRAY) {
+        @SuppressWarnings("unchecked")
+        final E value = (E) ctxt.readValue(p, Object.class);
+        result.add(value);
+      }
+      return result;
+    }
+    // It's an object (Map with numeric keys), use our custom converter
+    return super.deserialize(p, ctxt);
   }
 
   private static final class MapListConverter<E> extends StdConverter<Map<String, E>, List<E>> {
@@ -59,6 +88,14 @@ final class ExporterConfigurationListDeserializer<E> extends StdDelegatingDeseri
 
     @Override
     public List<E> convert(final Map<String, E> value) {
+      // Check if this map actually represents a Spring Boot indexed list (all keys are numeric)
+      // If not, this isn't the right converter to use
+      if (!isNumericKeyedMap(value)) {
+        // Return the values as-is if it's not a numeric-keyed map
+        // This shouldn't happen in normal flow, but handles edge cases
+        return new ArrayList<>(value.values());
+      }
+
       final ArrayList<E> list = new ArrayList<>(value.size());
 
       // sort the keys so we can access them in ascending order, avoiding index out of bounds due to
@@ -76,9 +113,27 @@ final class ExporterConfigurationListDeserializer<E> extends StdDelegatingDeseri
       return super.getInputType(typeFactory).withContentType(contentType);
     }
 
+    // ...existing code...
+
     @Override
     public JavaType getOutputType(final TypeFactory typeFactory) {
       return super.getOutputType(typeFactory).withContentType(contentType);
+    }
+
+    private boolean isNumericKeyedMap(final Map<String, E> value) {
+      if (value.isEmpty()) {
+        return true;
+      }
+
+      // Check if all keys are numeric
+      for (final var key : value.keySet()) {
+        try {
+          Integer.parseInt(key);
+        } catch (final NumberFormatException e) {
+          return false;
+        }
+      }
+      return true;
     }
 
     private void setListValue(

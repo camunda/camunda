@@ -23,6 +23,21 @@ import org.junit.jupiter.api.Test;
 class AuditLogConfigurationTest {
 
   @Test
+  void shouldBeEnabledByDefault() {
+    final var config = new AuditLogConfiguration();
+
+    assertThat(config.isEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldBeDisabled() {
+    final var config = new AuditLogConfiguration();
+    config.setEnabled(false);
+
+    assertThat(config.isEnabled()).isFalse();
+  }
+
+  @Test
   void shouldHaveDefaultUserAndClientConfigurations() {
     final var config = new AuditLogConfiguration();
 
@@ -184,10 +199,10 @@ class AuditLogConfigurationTest {
     }
 
     @Test
-    void shouldHaveDefaultExcludes() {
+    void shouldNotHaveDefaultExcludes() {
       final var config = new ActorAuditLogConfiguration();
 
-      assertThat(config.getExcludes()).containsExactly(AuditLogEntityType.VARIABLE);
+      assertThat(config.getExcludes()).isEmpty();
     }
   }
 }

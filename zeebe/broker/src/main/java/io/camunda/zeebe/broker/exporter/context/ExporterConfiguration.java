@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.exporter.context;
 
 import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,10 +51,20 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
 
   @Override
   public <T> T instantiate(final Class<T> configClass) {
-    if (arguments != null) {
-      return MAPPER.convertValue(arguments, configClass);
+    return fromArgs(configClass, arguments);
+  }
+
+  public static <T> T fromArgs(final Class<T> configClass, final Map<String, Object> values) {
+    if (values != null) {
+      // Use MAPPER (with custom list deserializer) to properly handle Spring Boot indexed
+      // properties like myList[0]=value which are stored as Maps with numeric string keys
+      return MAPPER.convertValue(values, configClass);
     } else {
       return ReflectUtil.newInstance(configClass);
     }
+  }
+
+  public static <T> Map<String, Object> asArgs(final T config) {
+    return MAPPER.convertValue(config, new TypeReference<>() {});
   }
 }
