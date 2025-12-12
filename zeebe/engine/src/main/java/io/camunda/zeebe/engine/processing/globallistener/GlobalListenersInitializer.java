@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import java.util.Objects;
 import org.slf4j.Logger;
 
 public final class GlobalListenersInitializer implements StreamProcessorLifecycleAware {
@@ -48,17 +49,17 @@ public final class GlobalListenersInitializer implements StreamProcessorLifecycl
 
     final GlobalListenerBatchRecord configuredListeners =
         convertListenersConfig(engineConfiguration.getGlobalListeners());
-    final GlobalListenerBatchRecord storedListeners = globalListenersState.getCurrentConfig();
+    final GlobalListenerBatchRecord storedListeners =
+        Objects.requireNonNullElse(
+            globalListenersState.getCurrentConfig(), new GlobalListenerBatchRecord());
 
-    if (storedListeners != null) {
-      final GlobalListenerBatchRecord oldRecord = new GlobalListenerBatchRecord();
-      oldRecord.copyFrom(storedListeners);
-      // Ignore key for equality check
-      oldRecord.setGlobalListenerBatchKey(-1L);
+    final GlobalListenerBatchRecord oldRecord = new GlobalListenerBatchRecord();
+    oldRecord.copyFrom(storedListeners);
+    // Ignore key for equality check
+    oldRecord.setGlobalListenerBatchKey(-1L);
 
-      if (oldRecord.equals(configuredListeners)) {
-        return;
-      }
+    if (oldRecord.equals(configuredListeners)) {
+      return;
     }
 
     // We use a timestamp of 0L to ensure this is runs immediately once the stream processor is
