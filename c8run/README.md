@@ -24,13 +24,10 @@ Elasticsearch remains available, but it is no longer started automatically. The 
    ```
 
 2. Start Camunda 8 Run and instruct it to manage Elasticsearch:
-
    ```bash
    ./c8run start --disable-elasticsearch=false
    ```
-
 3. When stopping a stack that was started with Elasticsearch, pass the same flag to ensure the Elasticsearch processes are terminated:
-
    ```bash
    ./c8run stop --disable-elasticsearch=false
    ```
