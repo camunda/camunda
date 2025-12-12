@@ -155,6 +155,6 @@ public final class EngineCfg implements ConfigurationEntry {
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth())
-        .setListeners(globalListeners.createGlobalListenersConfiguration());
+        .setGlobalListeners(globalListeners.createGlobalListenersConfiguration());
   }
 }

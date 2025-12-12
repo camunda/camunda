@@ -57,7 +57,8 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.AUTHORIZATION_KEYS_BY_OWNER,
           ZbColumnFamilies.ROUTING,
           ZbColumnFamilies.SCALING_STARTED_AT,
-          ZbColumnFamilies.USAGE_METRICS);
+          ZbColumnFamilies.USAGE_METRICS,
+          ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 

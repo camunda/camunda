@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.clock.ClockResetProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
+import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerBatchConfigureProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationUpdateProcessor;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -71,6 +73,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -729,6 +732,19 @@ public class CommandDistributionIdempotencyTest {
                 MessageSubscriptionIntent.MIGRATE,
                 CommandDistributionIdempotencyTest::migrateMessageSubscription),
             MessageSubscriptionMigrateProcessor.class
+          },
+          {
+            "GlobalListenerBatch.CONFIGURE is idempotent",
+            new Scenario(
+                ValueType.GLOBAL_LISTENER_BATCH,
+                GlobalListenerBatchIntent.CONFIGURE,
+                () ->
+                    ENGINE
+                        .globalListenerBatch()
+                        .withTaskListener(
+                            new GlobalListenerRecord().setType("global1").addEventType("all"))
+                        .configure()),
+            GlobalListenerBatchConfigureProcessor.class
           },
           {
             "Scale.SCALE_UP is idempotent",
