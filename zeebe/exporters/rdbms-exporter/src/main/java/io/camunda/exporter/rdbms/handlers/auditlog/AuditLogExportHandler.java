@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.DateUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,11 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.transformer = transformer;
     this.configuration = configuration;
+  }
+
+  @VisibleForTesting
+  public AuditLogTransformer<R, AuditLogDbModel.Builder> getTransformer() {
+    return transformer;
   }
 
   @Override

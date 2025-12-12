@@ -14,6 +14,10 @@ import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
@@ -24,7 +28,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -157,25 +161,36 @@ public class DefaultExporterResourceProviderTest {
     final var auditLogHandlers =
         provider.getExportHandlers().stream().filter(AuditLogHandler.class::isInstance).toList();
 
-    final Set<ValueType> expectedValueTypes =
-        Set.of(
-            ValueType.BATCH_OPERATION_CREATION,
-            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            ValueType.PROCESS_INSTANCE_MODIFICATION);
+    final Map<Class<?>, ValueType> expectedTransformers =
+        Map.ofEntries(
+            Map.entry(
+                BatchOperationCreationAuditLogTransformer.class,
+                ValueType.BATCH_OPERATION_CREATION),
+            Map.entry(
+                BatchOperationLifecycleManagementAuditLogTransformer.class,
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
+            Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
+            Map.entry(
+                ProcessInstanceModificationAuditLogTransformer.class,
+                ValueType.PROCESS_INSTANCE_MODIFICATION));
 
-    // Verify that all expected AuditLogHandler value types are present
+    // Verify that all expected AuditLogHandler transformers are present
     assertThat(
             auditLogHandlers.stream()
-                .map(ExportHandler::getHandledValueType)
-                .collect(Collectors.toSet()))
-        .isEqualTo(expectedValueTypes);
+                .collect(
+                    Collectors.toMap(
+                        exportHandler ->
+                            (Class)
+                                ((AuditLogHandler<?>) exportHandler).getTransformer().getClass(),
+                        ExportHandler::getHandledValueType)))
+        .containsExactlyInAnyOrderEntriesOf(expectedTransformers);
 
     assertThat(auditLogHandlers)
         .as(
             "Should have exactly "
-                + expectedValueTypes.size()
+                + expectedTransformers.size()
                 + " AuditLogHandler instances added by addAuditLogHandlers method")
-        .hasSize(expectedValueTypes.size());
+        .hasSize(expectedTransformers.size());
   }
 
   static Stream<ExporterConfiguration> configProvider() {
