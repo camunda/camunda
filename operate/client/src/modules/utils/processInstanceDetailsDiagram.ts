@@ -10,6 +10,8 @@ import type {
   BusinessObject,
   BusinessObjects,
 } from 'bpmn-js/lib/NavigatedViewer';
+import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
+import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 
 const checkScope = (
   parentFlowNode: BusinessObject | undefined,
@@ -26,7 +28,10 @@ const checkScope = (
     return true;
   }
 
-  if (parentFlowNode.$parent?.$type !== 'bpmn:SubProcess') {
+  if (
+    !isSubProcess(parentFlowNode.$parent) &&
+    !isAdHocSubProcess(parentFlowNode.$parent)
+  ) {
     return false;
   }
 
