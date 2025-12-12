@@ -2,7 +2,16 @@
 ARG BASE_IMAGE="alpine:3.20.3"
 ARG BASE_DIGEST="sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d"
 
+<<<<<<< HEAD
 # Prepare tasklist Distribution
+=======
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="alpine:3.23.0"
+#ARG BASE_DIGEST="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+
+# Prepare Tasklist Distribution
+>>>>>>> 68e14e4b (deps: update alpine base image to 3.23.0)
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
 
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"

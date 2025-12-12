@@ -1,6 +1,16 @@
 # hadolint global ignore=DL3006
+<<<<<<< HEAD
 ARG BASE_IMAGE="alpine:3.20.3"
 ARG BASE_DIGEST="sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d"
+=======
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:027bcb32b9435055b31412a5ad29868a53b2f3b6637d9fed0e3bc6f757847151"
+
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="alpine:3.23.0"
+#ARG BASE_DIGEST="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+>>>>>>> 68e14e4b (deps: update alpine base image to 3.23.0)
 
 # Prepare Operate Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
