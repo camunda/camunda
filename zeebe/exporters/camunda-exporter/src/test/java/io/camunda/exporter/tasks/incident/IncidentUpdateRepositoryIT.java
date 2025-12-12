@@ -227,12 +227,6 @@ abstract class IncidentUpdateRepositoryIT {
       indexIncident(incident);
       return incident;
     }
-
-    private void indexIncident(final IncidentEntity incident) throws PersistenceException {
-      final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(incidentTemplate.getFullQualifiedName(), incident);
-      batchRequest.executeWithRefresh();
-    }
   }
 
   @DisabledIfSystemProperty(
