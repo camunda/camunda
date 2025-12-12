@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -34,11 +33,9 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 
 final class TestState {
+
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;
-
-  private static final SharedRocksDbResources SHARED_ROCKS_DB_RESOURCES =
-      SharedRocksDbResources.allocate();
 
   TestContext generateContext(final long sizeInBytes) throws Exception {
     final var meterRegistry = new SimpleMeterRegistry();
@@ -85,14 +82,11 @@ final class TestState {
   }
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
-    final int defaultPartitionCount = 3;
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        SimpleMeterRegistry::new,
-        SHARED_ROCKS_DB_RESOURCES,
-        defaultPartitionCount);
+        SimpleMeterRegistry::new);
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {
@@ -138,7 +132,7 @@ final class TestState {
 
     @Override
     public void close() throws Exception {
-      CloseHelper.quietCloseAll(snapshotStore, actorScheduler, SHARED_ROCKS_DB_RESOURCES);
+      CloseHelper.quietCloseAll(snapshotStore, actorScheduler);
       FileUtil.deleteFolder(temporaryFolder);
     }
 

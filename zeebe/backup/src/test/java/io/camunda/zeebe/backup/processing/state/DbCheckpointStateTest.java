@@ -16,12 +16,11 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
-import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -29,23 +28,22 @@ import org.junit.jupiter.api.io.TempDir;
 final class DbCheckpointStateTest {
 
   @TempDir Path database;
-  private ZeebeDb zeebedb;
   private DbCheckpointState state;
+  private ZeebeDb zeebedb;
 
-  @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
+  @AfterEach
+  void closeDb() throws Exception {
+    zeebedb.close();
+  }
 
   @BeforeEach
-  void setup() {
-    final int defaultPartitionCount = 3;
+  void before() {
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                SimpleMeterRegistry::new,
-                sharedRocksDbResources,
-                defaultPartitionCount)
+                SimpleMeterRegistry::new)
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
   }

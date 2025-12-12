@@ -24,20 +24,14 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.io.File;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class ForeignKeyCheckerTest {
-
-  @AutoClose
-  final ZeebeDbFactoryResources defaultFactoryResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Test
   void shouldFailOnMissingForeignKey() throws Exception {
@@ -134,7 +128,7 @@ final class ForeignKeyCheckerTest {
   @Test
   void shouldSucceedOnRealColumnFamily(@TempDir final File tempDir) throws Exception {
     // given
-    final var db = defaultFactoryResources.factory.createDb(tempDir);
+    final var db = DefaultZeebeDbFactory.<TestColumnFamilies>getDefaultFactory().createDb(tempDir);
     final var txContext = db.createContext();
 
     final var cf1 =
@@ -164,7 +158,7 @@ final class ForeignKeyCheckerTest {
   @Test
   void shouldFindByPrefix(@TempDir final File tempDir) throws Exception {
     // given
-    final var db = defaultFactoryResources.factory.createDb(tempDir);
+    final var db = DefaultZeebeDbFactory.<TestColumnFamilies>getDefaultFactory().createDb(tempDir);
     final var txContext = db.createContext();
 
     final var cf1Key = new DbCompositeKey<>(new DbLong(), new DbString());
@@ -196,7 +190,7 @@ final class ForeignKeyCheckerTest {
   @Test
   void shouldThrowWhenPrefixIsNotFound(@TempDir final File tempDir) throws Exception {
     // given
-    final var db = defaultFactoryResources.factory.createDb(tempDir);
+    final var db = DefaultZeebeDbFactory.<TestColumnFamilies>getDefaultFactory().createDb(tempDir);
     final var txContext = db.createContext();
 
     final var cf1Key = new DbCompositeKey<>(new DbLong(), new DbString());

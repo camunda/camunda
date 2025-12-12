@@ -22,7 +22,6 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -36,26 +35,19 @@ import org.mockito.Answers;
 public class MigrationTransitionStepTest {
 
   @TempDir Path tempDir;
+  ZeebeRocksDbFactory<?> factory =
+      new ZeebeRocksDbFactory<ZbColumnFamilies>(
+          new RocksDbConfiguration(),
+          new ConsistencyChecksSettings(),
+          new AccessMetricsConfiguration(Kind.NONE, 1),
+          SimpleMeterRegistry::new);
+
   @AutoClose ZeebeDb zeebeDb;
   TestPartitionTransitionContext context;
   DbMigrationState migrationState;
-  private ZeebeRocksDbFactory<?> factory;
-
-  @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
 
   @BeforeEach
   void setup() {
-    final int defaultPartitionCount = 3;
-    factory =
-        new ZeebeRocksDbFactory<ZbColumnFamilies>(
-            new RocksDbConfiguration(),
-            new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
-
     zeebeDb = factory.createDb(tempDir.toFile());
     context = new TestPartitionTransitionContext();
     context.setZeebeDb(zeebeDb);

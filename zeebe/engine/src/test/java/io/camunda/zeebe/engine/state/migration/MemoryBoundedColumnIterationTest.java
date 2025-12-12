@@ -11,28 +11,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.LongStream;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 final class MemoryBoundedColumnIterationTest {
 
-  @AutoClose
-  private final ZeebeDbFactoryResources dbResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources();
-
   @Test
   void shouldDrainAllValues(final @TempDir File tmpDir) {
     // given
     final var iteration = new MemoryBoundedColumnIteration(1024 * 1024L);
-    final var db = dbResources.factory.createDb(tmpDir);
+    final var db = DefaultZeebeDbFactory.defaultFactory().createDb(tmpDir);
     final var key = new DbLong();
     final var value = new DbLong();
     final var column =
@@ -60,7 +54,7 @@ final class MemoryBoundedColumnIterationTest {
   void shouldIterateInBoundedChunks(final @TempDir File tmpDir) {
     // given
     final var iteration = new MemoryBoundedColumnIteration(50L * Long.BYTES);
-    final var db = dbResources.factory.createDb(tmpDir);
+    final var db = DefaultZeebeDbFactory.defaultFactory().createDb(tmpDir);
     final var key = new DbLong();
     final var value = new DbLong();
     final var column =

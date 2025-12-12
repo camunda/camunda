@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.agrona.CloseHelper;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -31,15 +30,14 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
 public class StreamPlatformExtension implements BeforeEachCallback {
 
   private static final String FIELD_STATE = "state";
-  @AutoClose final DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources;
+  final ZeebeDbFactory<ZbColumnFamilies> dbFactory;
 
   public StreamPlatformExtension() {
-    this(DefaultZeebeDbFactory.getDefaultFactoryResources());
+    this(DefaultZeebeDbFactory.defaultFactory());
   }
 
-  public StreamPlatformExtension(
-      final DefaultZeebeDbFactory.ZeebeDbFactoryResources dbFactoryResources) {
-    this.dbFactoryResources = dbFactoryResources;
+  public StreamPlatformExtension(final ZeebeDbFactory<ZbColumnFamilies> dbFactory) {
+    this.dbFactory = dbFactory;
   }
 
   @Override
@@ -58,8 +56,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     final var store = getStore(extensionContext);
 
     return (StreamProcessorTestContext)
-        store.getOrComputeIfAbsent(
-            FIELD_STATE, (key) -> new StreamProcessorTestContext(dbFactoryResources.factory));
+        store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new StreamProcessorTestContext(dbFactory));
   }
 
   private void injectFields(

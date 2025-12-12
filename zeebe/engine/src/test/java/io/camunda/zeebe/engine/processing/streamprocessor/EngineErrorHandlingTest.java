@@ -19,7 +19,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
@@ -63,7 +62,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,8 +84,6 @@ public final class EngineErrorHandlingTest {
   private KeyGenerator keyGenerator;
   private CommandResponseWriter mockCommandResponseWriter;
   private MutableProcessingState processingState;
-  private final ZeebeDbFactoryResources dbResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Before
   public void setUp() {
@@ -100,17 +96,12 @@ public final class EngineErrorHandlingTest {
     keyGenerator = () -> key.getAndIncrement();
   }
 
-  @After
-  public void tearDown() {
-    dbResources.close();
-  }
-
   @Test
   public void shouldAutoRejectCommandOnProcessingFailure() {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        dbResources.factory,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) ->
             TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
                 .onCommand(
@@ -189,9 +180,10 @@ public final class EngineErrorHandlingTest {
   public void shouldWriteErrorEvent() {
     // given
     final ErrorProneProcessor errorProneProcessor = new ErrorProneProcessor();
+
     streams.startStreamProcessor(
         STREAM_NAME,
-        dbResources.factory,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
@@ -231,7 +223,7 @@ public final class EngineErrorHandlingTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        dbResources.factory,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
@@ -277,7 +269,7 @@ public final class EngineErrorHandlingTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        dbResources.factory,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
           processingState = processingContext.getProcessingState();
@@ -358,7 +350,7 @@ public final class EngineErrorHandlingTest {
     final CountDownLatch latch = new CountDownLatch(1);
     streams.startStreamProcessor(
         STREAM_NAME,
-        dbResources.factory,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
@@ -402,7 +394,7 @@ public final class EngineErrorHandlingTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        dbResources.factory,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
 
@@ -498,7 +490,7 @@ public final class EngineErrorHandlingTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        dbResources.factory,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(

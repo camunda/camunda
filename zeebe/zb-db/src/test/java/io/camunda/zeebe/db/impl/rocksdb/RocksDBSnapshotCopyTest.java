@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
@@ -31,13 +30,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class RocksDBSnapshotCopyTest {
-
   final long rowsPerCF = 100;
   @TempDir Path destinationPath;
   @TempDir Path sourceDBPath;
@@ -47,20 +44,14 @@ public class RocksDBSnapshotCopyTest {
   private Random random;
   private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
 
-  @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
-
   @BeforeEach
   void setup() {
-    final int defaultPartitionCount = 3;
     factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);
     sourceSnapshotPath = sourcePath.resolve("snapshot");

@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
@@ -29,19 +28,14 @@ import java.nio.file.Path;
 public class SnapshotUtil {
 
   private final ZeebeRocksDbFactory zeebeDbFactory;
-  private final ZeebeRocksDbFactory.SharedRocksDbResources sharedRocksDbResources =
-      SharedRocksDbResources.allocate();
 
   public SnapshotUtil() {
-    final int defaultPartitionCount = 3;
     zeebeDbFactory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setWalDisabled(false),
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
   }
 
   public ZeebeDb openSnapshot(final Path snapshotPath, final Path runtimePath) {

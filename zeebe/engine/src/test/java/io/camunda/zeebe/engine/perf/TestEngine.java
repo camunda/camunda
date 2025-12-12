@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.engine.util.ProcessingExporterTransistor;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender;
@@ -36,12 +35,9 @@ import org.junit.rules.TemporaryFolder;
 /** Helper class which should help to make it easy to create an engine for tests. */
 public final class TestEngine {
 
-  private static final long DEFAULT_DB_CACHE_SIZE = 512L * 1024 * 1024;
   private final StreamProcessingComposite streamProcessingComposite;
   private final TestStreams testStreams;
   private final int partitionCount;
-  private final ZeebeDbFactoryResources zeebeDbFactoryResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources(DEFAULT_DB_CACHE_SIZE);
 
   private TestEngine(
       final int partitionId,
@@ -49,6 +45,7 @@ public final class TestEngine {
       final TestContext testContext,
       final Consumer<StreamProcessorBuilder> processorConfiguration) {
     this.partitionCount = partitionCount;
+
     testStreams =
         new TestStreams(
             testContext.temporaryFolder(),
@@ -69,8 +66,9 @@ public final class TestEngine {
         new StreamProcessingComposite(
             testStreams,
             partitionId,
-            zeebeDbFactoryResources.factory,
+            DefaultZeebeDbFactory.defaultFactory(),
             testContext.actorScheduler());
+
     final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
     final var featureFlags = FeatureFlags.createDefaultForTests();
 
@@ -99,7 +97,6 @@ public final class TestEngine {
                 Optional.empty(),
                 processorConfiguration,
                 true));
-    testContext.autoCloseableRule.manage(zeebeDbFactoryResources);
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 

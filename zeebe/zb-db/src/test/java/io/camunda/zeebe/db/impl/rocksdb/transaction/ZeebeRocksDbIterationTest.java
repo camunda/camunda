@@ -16,7 +16,6 @@ import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,9 +27,8 @@ import org.rocksdb.RocksIterator;
 public final class ZeebeRocksDbIterationTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily>
-      dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
+  private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
+      DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeTransactionDb<DefaultColumnFamily> zeebeDb;
   private TransactionalColumnFamily<DefaultColumnFamily, DbCompositeKey<DbLong, DbLong>, DbNil>
       columnFamily;
@@ -40,7 +38,6 @@ public final class ZeebeRocksDbIterationTest {
 
   @Before
   public void setup() throws Exception {
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
     final File pathName = temporaryFolder.newFolder();
     zeebeDb = Mockito.spy(((ZeebeTransactionDb<DefaultColumnFamily>) dbFactory.createDb(pathName)));
 
@@ -55,11 +52,6 @@ public final class ZeebeRocksDbIterationTest {
                     zeebeDb.createContext(),
                     compositeKey,
                     DbNil.INSTANCE));
-  }
-
-  @After
-  public void tearDown() {
-    dbFactoryResources.close();
   }
 
   @Test

@@ -14,7 +14,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -32,7 +31,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.InstantSource;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -152,15 +150,12 @@ public class ProcessingStateExtension implements BeforeEachCallback {
     private TransactionContext transactionContext;
     private MutableProcessingState processingState;
 
-    @AutoClose
-    private final ZeebeDbFactoryResources factoryResources =
-        DefaultZeebeDbFactory.getDefaultFactoryResources();
-
     private ProcessingStateExtensionState() {
 
+      final var factory = DefaultZeebeDbFactory.defaultFactory();
       try {
         tempFolder = Files.createTempDirectory(null);
-        zeebeDb = factoryResources.factory.createDb(tempFolder.toFile());
+        zeebeDb = factory.createDb(tempFolder.toFile());
         transactionContext = zeebeDb.createContext();
         final var keyGenerator =
             new DbKeyGenerator(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
@@ -183,7 +178,6 @@ public class ProcessingStateExtension implements BeforeEachCallback {
     public void close() throws Exception {
       transactionContext.getCurrentTransaction().rollback();
       zeebeDb.close();
-      factoryResources.close();
 
       final SortedMap<Path, IOException> failures = clearFolder();
 

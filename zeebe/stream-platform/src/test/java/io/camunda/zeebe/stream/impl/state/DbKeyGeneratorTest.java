@@ -14,10 +14,8 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.util.DefaultZeebeDbFactory;
-import io.camunda.zeebe.stream.util.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import java.io.File;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,13 +26,9 @@ class DbKeyGeneratorTest {
   private ZeebeDb<ZbColumnFamilies> db;
   private DbKeyGenerator dbKeyGenerator;
 
-  @AutoClose
-  private final ZeebeDbFactoryResources dbFactoryResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources();
-
   @BeforeEach
   void createDb() {
-    db = dbFactoryResources.factory.createDb(tempFolder);
+    db = DefaultZeebeDbFactory.defaultFactory().createDb(tempFolder);
     dbKeyGenerator = new DbKeyGenerator(PARTITION_ID, db, db.createContext());
   }
 

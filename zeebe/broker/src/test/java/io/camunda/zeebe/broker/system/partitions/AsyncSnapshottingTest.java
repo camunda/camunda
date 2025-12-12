@@ -20,7 +20,6 @@ import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.ZeebeDbFactoryResources;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -38,7 +37,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,8 +58,6 @@ public final class AsyncSnapshottingTest {
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
   private FileBasedSnapshotStore persistedSnapshotStore;
-  private final ZeebeDbFactoryResources dbFactoryResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources();
 
   @Before
   public void setup() throws IOException {
@@ -72,9 +68,10 @@ public final class AsyncSnapshottingTest {
         new FileBasedSnapshotStore(
             0, partitionId, rootDirectory, snapshotPath -> Map.of(), meterRegistry);
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
+
     snapshotController =
         new StateControllerImpl(
-            dbFactoryResources.factory,
+            DefaultZeebeDbFactory.defaultFactory(),
             persistedSnapshotStore,
             rootDirectory.resolve("runtime"),
             l ->
@@ -90,11 +87,6 @@ public final class AsyncSnapshottingTest {
     snapshotController = spy(snapshotController);
 
     createStreamProcessorControllerMock();
-  }
-
-  @After
-  public void tearDown() {
-    dbFactoryResources.close();
   }
 
   private void setCommitPosition(final long commitPosition) {

@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import picocli.CommandLine.Command;
 
@@ -24,19 +23,14 @@ import picocli.CommandLine.Command;
 public class StateCommand {
 
   private final ZeebeDbFactory zeebeDbFactory;
-  private final ZeebeRocksDbFactory.SharedRocksDbResources sharedRocksDbResources =
-      SharedRocksDbResources.allocate();
 
   public StateCommand() {
-    final int defaultPartitionCount = 3;
     zeebeDbFactory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setWalDisabled(false),
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
   }
 
   public ZeebeDbFactory getZeebeDbFactory() {

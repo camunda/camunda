@@ -54,6 +54,21 @@ public final class ZeebeRocksDbFactory<
   private final Supplier<MeterRegistry> meterRegistryFactory;
   private final int partitionCount;
 
+  @VisibleForTesting
+  public ZeebeRocksDbFactory(
+      final RocksDbConfiguration rocksDbConfiguration,
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final AccessMetricsConfiguration metricsConfiguration,
+      final Supplier<MeterRegistry> meterRegistryFactory) {
+    this(
+        rocksDbConfiguration,
+        consistencyChecksSettings,
+        metricsConfiguration,
+        meterRegistryFactory,
+        SharedRocksDbResources.allocate(rocksDbConfiguration.getMemoryLimit()),
+        3);
+  }
+
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
@@ -362,18 +377,10 @@ public final class ZeebeRocksDbFactory<
       LRUCache sharedCache, WriteBufferManager sharedWbm, long reservedMemory)
       implements AutoCloseable {
 
-    public static final long DEFAULT_CACHE_SIZE = 32L * 1024 * 1024;
-
     static {
       RocksDB.loadLibrary();
     }
 
-    @VisibleForTesting
-    public static SharedRocksDbResources allocate() {
-      return allocate(DEFAULT_CACHE_SIZE);
-    }
-
-    @VisibleForTesting
     public static SharedRocksDbResources allocate(final long cacheSize) {
       // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM
       // limit,

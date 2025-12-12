@@ -33,13 +33,10 @@ public class ColumnFamilyRandomizedPropertyTest {
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
 
-  private final DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily>
-      dbFactoryResources = DefaultZeebeDbFactory.getDefaultFactoryResources();
-
   @BeforeProperty
   private void setup() {
     final var pathName = Files.newTemporaryFolder();
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
     zeebeDb = dbFactory.createDb(pathName);
 
     columnFamily =
@@ -65,7 +62,6 @@ public class ColumnFamilyRandomizedPropertyTest {
   @AfterProperty
   private void teardown() throws Exception {
     zeebeDb.close();
-    dbFactoryResources.close();
   }
 
   @Provide

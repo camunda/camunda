@@ -28,7 +28,6 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -48,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -66,25 +64,18 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private ZeebeDb zeebedb;
-
-  @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
-
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
       new AtomicInteger(3); // Default partition count for tests
 
   @BeforeEach
   void setup() {
-    final int defaultPartitionCount = 3;
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                SimpleMeterRegistry::new,
-                sharedRocksDbResources,
-                defaultPartitionCount)
+                SimpleMeterRegistry::new)
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
@@ -141,7 +132,7 @@ final class CheckpointRecordsProcessorTest {
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
-    final Event followupEvent = result.records().getFirst();
+    final Event followupEvent = result.records().get(0);
     assertThat(followupEvent.intent()).isEqualTo(CheckpointIntent.CREATED);
     assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
     assertThat(followupEvent.value()).isNotNull();

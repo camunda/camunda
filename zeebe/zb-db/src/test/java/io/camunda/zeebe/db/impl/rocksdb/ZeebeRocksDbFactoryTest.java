@@ -24,7 +24,6 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -32,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Stream;
 import org.assertj.core.api.ThrowingConsumer;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,17 +41,10 @@ import org.rocksdb.CompactionPriority;
 
 final class ZeebeRocksDbFactoryTest {
 
-  @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
-
-  @AutoClose
-  private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources =
-      DefaultZeebeDbFactory.getDefaultFactoryResources();
-
   @Test
   void shouldCreateNewDb(final @TempDir File pathName) throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
 
     // when
     final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
@@ -67,7 +58,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldCreateTwoNewDbs(final @TempDir File firstPath, final @TempDir File secondPath)
       throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = dbFactoryResources.factory;
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
 
     // when
     final ZeebeDb<DefaultColumnFamily> firstDb = dbFactory.createDb(firstPath);
@@ -91,17 +82,14 @@ final class ZeebeRocksDbFactoryTest {
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>) dbFactoryResources.factory;
-
-    final int defaultPartitionCount = 3;
+        (ZeebeRocksDbFactory<DefaultColumnFamily>)
+            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -129,7 +117,8 @@ final class ZeebeRocksDbFactoryTest {
   void shouldCreateDbWithExpectedOptions() {
     // given
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>) dbFactoryResources.factory;
+        (ZeebeRocksDbFactory<DefaultColumnFamily>)
+            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
 
     // then - options should match our defaults
     validateDefaultExpectedOptions(
@@ -152,9 +141,7 @@ final class ZeebeRocksDbFactoryTest {
             rocksDbConfiguration,
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
 
     // then - options should match our defaults
     // we expect the same options regardless of the memory allocation strategy
@@ -169,15 +156,12 @@ final class ZeebeRocksDbFactoryTest {
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
-    final int defaultPartitionCount = 3;
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new,
-            sharedRocksDbResources,
-            defaultPartitionCount);
+            SimpleMeterRegistry::new);
 
     // expect
     //noinspection resource
@@ -191,7 +175,7 @@ final class ZeebeRocksDbFactoryTest {
   void shouldOpenSnapshotOnlyDb(final @TempDir File path, final @TempDir File tempDir)
       throws Exception {
     // given
-    final var factory = dbFactoryResources.factory;
+    final var factory = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var key = new DbString();
     final var value = new DbString();
     key.wrapString("foo");
@@ -225,7 +209,7 @@ final class ZeebeRocksDbFactoryTest {
   @Test
   void shouldFailToOpenNonExistentSnapshotOnlyDb(final @TempDir File path) {
     // given
-    final var factory = dbFactoryResources.factory;
+    final var factory = DefaultZeebeDbFactory.getDefaultFactory();
     assertThat(path.delete()).isTrue();
 
     // when - then
@@ -240,7 +224,7 @@ final class ZeebeRocksDbFactoryTest {
       final ThrowingConsumer<ZeebeDb<DefaultColumnFamily>> assertions, final @TempDir File dbPath)
       throws Exception {
     // given
-    final var factory = dbFactoryResources.factory;
+    final var factory = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var key = new DbString();
     final var value = new DbString();
     key.wrapString("foo");
