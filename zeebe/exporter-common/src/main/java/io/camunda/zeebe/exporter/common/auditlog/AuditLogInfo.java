@@ -15,7 +15,9 @@ import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import java.util.Map;
 import java.util.Optional;
@@ -124,6 +126,20 @@ public record AuditLogInfo(
     }
 
     switch (intent) {
+      case BatchOperationIntent.CREATED:
+      case BatchOperationIntent.CREATE:
+        return AuditLogOperationType.CREATE;
+      case BatchOperationIntent.RESUMED:
+      case BatchOperationIntent.RESUME:
+        return AuditLogOperationType.RESUME;
+      case BatchOperationIntent.SUSPENDED:
+      case BatchOperationIntent.SUSPEND:
+        return AuditLogOperationType.SUSPEND;
+      case BatchOperationIntent.CANCELED:
+      case BatchOperationIntent.CANCEL:
+        return AuditLogOperationType.CANCEL;
+      case ProcessInstanceCreationIntent.CREATED:
+        return AuditLogOperationType.CREATE;
       case ProcessInstanceModificationIntent.MODIFIED:
         return AuditLogOperationType.MODIFY;
       // TODO: map additional intents to operations here

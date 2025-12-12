@@ -320,6 +320,7 @@ components:
         - SUSPEND
         - UNASSIGN
         - UPDATE
+        - UNKNOWN
 
     AuditLogActorTypeEnum:
       type: string
