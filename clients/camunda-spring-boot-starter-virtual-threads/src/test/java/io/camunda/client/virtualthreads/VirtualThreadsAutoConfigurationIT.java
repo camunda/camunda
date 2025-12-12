@@ -28,7 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
     classes = {VirtualThreadsAutoConfiguration.class, CamundaAutoConfiguration.class},
-    properties = {"camunda.client.mode=selfManaged", "camunda.client.zeebe.enabled=false"})
+    properties = {"camunda.client.mode=selfManaged", "camunda.client.enabled=false"})
 class VirtualThreadsAutoConfigurationIT {
 
   @Autowired private CamundaClientExecutorService executorService;
