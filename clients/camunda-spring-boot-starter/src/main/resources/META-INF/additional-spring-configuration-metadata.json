@@ -127,7 +127,9 @@
     },
     {
       "name": "camunda.client.worker.defaults.tenant-ids",
-      "defaultValue": ["<default>"]
+      "defaultValue": [
+        "<default>"
+      ]
     },
     {
       "name": "camunda.client.worker.defaults.timeout",
@@ -410,7 +412,7 @@
       "type": "java.lang.Integer",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties$Cloud",
       "deprecation": {
-        "reason": "The Zeebe client URL is now configured as HTTP\/HTTPS URL."
+        "reason": "The Zeebe client URL is now configured as HTTP/HTTPS URL."
       }
     },
     {

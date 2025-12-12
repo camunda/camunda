@@ -2,7 +2,10 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
-    "types": ["vitest/globals", "@vitest/browser/matchers"]
+    "types": [
+      "vitest/globals",
+      "@vitest/browser/matchers"
+    ]
   },
   "include": [
     "src/**/*",

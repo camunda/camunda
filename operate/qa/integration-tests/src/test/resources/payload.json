@@ -5,12 +5,20 @@
     "longFieldL1": 2147483648,
     "doubleFieldL1": 0.555,
     "booleanFieldL1": true,
-    "arrayFieldL1": [1, 2, 3],
+    "arrayFieldL1": [
+      1,
+      2,
+      3
+    ],
     "objectLevel2": {
       "stringFieldL2": "stringValue2",
       "intFieldL2": 222,
       "booleanFieldL2": false,
-      "arrayFieldL2": ["1", "2", "3"]
+      "arrayFieldL2": [
+        "1",
+        "2",
+        "3"
+      ]
     },
     "arrayOfObjects": [
       {

@@ -51,7 +51,6 @@
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::changeset(io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset)",
           "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
-
         },
         {
           "ignore": true,

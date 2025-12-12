@@ -1,30 +1,32 @@
 {
   "settings": {
-      "analysis": {
-        "normalizer": {
-          "case_insensitive": {
-            "type": "custom",
-            "char_filter": [],
-            "filter": ["lowercase"]
-          }
-        },
-        "analyzer": {
-          "ca_path_tree": {
-            "type": "custom",
-            "tokenizer": "ca_hierarchy"
-          }
-        },
-        "tokenizer": {
-          "ca_hierarchy": {
-            "type": "path_hierarchy",
-            "buffer_size": 1024,
-            "replacement": "/",
-            "delimiter": "/",
-            "reverse":false,
-            "skip": 0
-          }
+    "analysis": {
+      "normalizer": {
+        "case_insensitive": {
+          "type": "custom",
+          "char_filter": [],
+          "filter": [
+            "lowercase"
+          ]
+        }
+      },
+      "analyzer": {
+        "ca_path_tree": {
+          "type": "custom",
+          "tokenizer": "ca_hierarchy"
+        }
+      },
+      "tokenizer": {
+        "ca_hierarchy": {
+          "type": "path_hierarchy",
+          "buffer_size": 1024,
+          "replacement": "/",
+          "delimiter": "/",
+          "reverse": false,
+          "skip": 0
         }
       }
+    }
   },
   "mappings": {
     "dynamic": "strict",
@@ -43,7 +45,7 @@
         "type": "text"
       },
       "processName": {
-                "normalizer": "case_insensitive",
+        "normalizer": "case_insensitive",
         "type": "keyword"
       },
       "joinRelation": {

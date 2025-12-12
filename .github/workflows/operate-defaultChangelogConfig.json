@@ -2,29 +2,48 @@
   "typeLabels": [
     {
       "title": "⚡️ Breaking Changes",
-      "types": ["breaking"]
+      "types": [
+        "breaking"
+      ]
     },
     {
       "title": "🚀 New Features",
-      "types": ["feat"]
+      "types": [
+        "feat"
+      ]
     },
     {
       "title": "💊 Bugfixes",
-      "types": ["fix", "revert"]
+      "types": [
+        "fix",
+        "revert"
+      ]
     },
     {
       "title": "🧹 Chore",
-      "types": ["chore", "ci", "build", "test", "refactor", "style", "docs"]
+      "types": [
+        "chore",
+        "ci",
+        "build",
+        "test",
+        "refactor",
+        "style",
+        "docs"
+      ]
     }
   ],
   "bumpLabels": [
     {
       "title": "major",
-      "types": ["breaking"]
+      "types": [
+        "breaking"
+      ]
     },
     {
       "title": "minor",
-      "types": ["feat"]
+      "types": [
+        "feat"
+      ]
     },
     {
       "title": "patch",

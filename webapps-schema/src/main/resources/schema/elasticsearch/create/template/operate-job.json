@@ -46,14 +46,14 @@
       "errorMessage": {
         "type": "keyword"
       },
-      "errorCode" : {
+      "errorCode": {
         "type": "keyword"
       },
-      "deadline" : {
+      "deadline": {
         "format": "date_time || epoch_millis",
         "type": "date"
       },
-      "endTime" : {
+      "endTime": {
         "format": "date_time || epoch_millis",
         "type": "date"
       },
@@ -67,20 +67,20 @@
       "listenerEventType": {
         "type": "keyword"
       },
-      "key" : {
-        "type" : "long"
-      },
-      "partitionId" : {
-        "type": "integer"
-      },
-      "jobFailedWithRetriesLeft" : {
-        "type" : "boolean"
-      },
-      "position" : {
+      "key": {
         "type": "long"
       },
-      "denied" : {
-        "type" : "boolean"
+      "partitionId": {
+        "type": "integer"
+      },
+      "jobFailedWithRetriesLeft": {
+        "type": "boolean"
+      },
+      "position": {
+        "type": "long"
+      },
+      "denied": {
+        "type": "boolean"
       },
       "deniedReason": {
         "type": "keyword"

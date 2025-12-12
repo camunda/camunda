@@ -149,21 +149,18 @@
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue.Builder::withUserType(io.camunda.zeebe.protocol.record.value.UserType)",
           "justification": "Property was released in 8.6, but there was no way to write the record. We don't need it anymore and can safely remove it without breaking backwards compatibility"
-
         },
         {
           "ignore": true,
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.UserType io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue::getUserType()",
           "justification": "Property was released in 8.6, but there was no way to write the record. We don't need it anymore and can safely remove it without breaking backwards compatibility"
-
         },
         {
           "ignore": true,
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue::withUserType(io.camunda.zeebe.protocol.record.value.UserType)",
           "justification": "Property was released in 8.6, but there was no way to write the record. We don't need it anymore and can safely remove it without breaking backwards compatibility"
-
         },
         {
           "ignore": true,

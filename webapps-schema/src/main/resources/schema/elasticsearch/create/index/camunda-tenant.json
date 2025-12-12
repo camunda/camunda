@@ -27,7 +27,9 @@
         "type": "join",
         "eager_global_ordinals": true,
         "relations": {
-          "tenant": ["member"]
+          "tenant": [
+            "member"
+          ]
         }
       }
     }

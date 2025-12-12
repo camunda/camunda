@@ -26,7 +26,9 @@
       "join": {
         "type": "join",
         "relations": {
-          "tenant": ["member"]
+          "tenant": [
+            "member"
+          ]
         }
       }
     }

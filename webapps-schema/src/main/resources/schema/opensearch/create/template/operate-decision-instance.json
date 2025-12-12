@@ -35,7 +35,7 @@
         "type": "long"
       },
       "decisionRequirementsId": {
-        "type":"keyword"
+        "type": "keyword"
       },
       "processDefinitionKey": {
         "type": "long"

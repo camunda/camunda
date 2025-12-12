@@ -11,10 +11,8 @@
     "numberOfPartitions": 3,
     "brokerVersion": "8.1.0-SNAPSHOT"
   },
-  "snapshotFileNames": [
-  ],
-  "segmentFileNames": [
-  ],
+  "snapshotFileNames": [],
+  "segmentFileNames": [],
   "createdAt": 1668519689.290560717,
   "modifiedAt": 1668519690.961439595
 }

@@ -27,7 +27,9 @@
         "type": "join",
         "eager_global_ordinals": true,
         "relations": {
-          "role": ["member"]
+          "role": [
+            "member"
+          ]
         }
       }
     }

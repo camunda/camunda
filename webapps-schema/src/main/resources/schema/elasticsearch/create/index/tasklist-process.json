@@ -55,8 +55,8 @@
       "tenantId": {
         "type": "keyword"
       },
-      "bpmnXml" : {
-        "type" : "text"
+      "bpmnXml": {
+        "type": "text"
       }
     }
   }

@@ -37,7 +37,7 @@
         "type": "text"
       },
       "errorMessageHash": {
-        "type":"integer"
+        "type": "integer"
       },
       "processDefinitionKey": {
         "type": "long"
