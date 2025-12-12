@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public interface BackupApi {
   String WILDCARD = "*";
+  String STATE = "state";
 
   /**
    * Triggers backup on all partitions. Returned future is completed successfully after all
@@ -45,6 +47,11 @@ public interface BackupApi {
    * @return the status of the backup
    */
   CompletionStage<BackupStatus> getStatus(long backupId);
+
+  /**
+   * @return the latest checkpoint and state for all partitions
+   */
+  CompletionStage<CheckpointStateResponse> getCheckpointState();
 
   /**
    * @return a list of available backups

@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
+import org.springframework.boot.actuate.endpoint.annotation.Selector.Match;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
@@ -99,19 +100,29 @@ public final class BackupEndpoint {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
-    if (prefixOrId.endsWith(BackupApi.WILDCARD)) {
-      return listPrefix(prefixOrId);
+  public WebEndpointResponse<?> query(
+      @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
+    if (arguments.length > 1) {
+      return new WebEndpointResponse<>(
+          new Error().message("Invalid arguments provided."),
+          WebEndpointResponse.STATUS_BAD_REQUEST);
+    }
+    final String argument = arguments[0];
+    if (BackupApi.STATE.equals(argument)) {
+      return state();
+    }
+    if (argument.endsWith(BackupApi.WILDCARD)) {
+      return listPrefix(argument);
     }
     final long id;
     try {
-      id = Long.parseLong(prefixOrId);
+      id = Long.parseLong(argument);
     } catch (final NumberFormatException e) {
       return new WebEndpointResponse<>(
           new Error()
               .message(
                   "Expected a backup ID or prefix ending with '*', but got '%s'."
-                      .formatted(prefixOrId)),
+                      .formatted(argument)),
           400);
     }
     return status(id);
@@ -122,6 +133,15 @@ public final class BackupEndpoint {
     try {
       api.deleteBackup(id).toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
+    } catch (final Exception e) {
+      return mapErrorResponse(e);
+    }
+  }
+
+  private WebEndpointResponse<?> state() {
+    try {
+      final var checkpointState = api.getCheckpointState().toCompletableFuture().join();
+      return new WebEndpointResponse<>(checkpointState);
     } catch (final Exception e) {
       return mapErrorResponse(e);
     }

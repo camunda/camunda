@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKPOINT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -20,12 +21,15 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
@@ -69,6 +73,7 @@ final class BackupApiRequestHandlerTest {
   LogStreamWriter logStreamWriter;
 
   @Mock BackupManager backupManager;
+  @Mock CheckpointState checkpointState;
 
   BackupApiRequestHandler handler;
   private ResponseReader serverOutput;
@@ -76,7 +81,9 @@ final class BackupApiRequestHandlerTest {
 
   @BeforeEach
   void setup() {
-    handler = new BackupApiRequestHandler(transport, logStreamWriter, backupManager, 1, true);
+    handler =
+        new BackupApiRequestHandler(
+            transport, logStreamWriter, backupManager, checkpointState, 1, true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
@@ -415,6 +422,116 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .returns(ErrorCode.INTERNAL_ERROR, ErrorResponse::getErrorCode)
         .returns("Expected failure", error -> BufferUtil.bufferAsString(error.getErrorData()));
+  }
+
+  @Test
+  void shouldReturnCheckpointState() {
+    when(checkpointState.getLatestCheckpointId()).thenReturn(10L);
+    when(checkpointState.getLatestCheckpointType()).thenReturn(CheckpointType.SCHEDULED_BACKUP);
+    when(checkpointState.getLatestCheckpointTimestamp()).thenReturn(100L);
+    when(checkpointState.getLatestCheckpointPosition()).thenReturn(20L);
+    when(checkpointState.getLatestBackupId()).thenReturn(NO_CHECKPOINT);
+
+    final var request =
+        new BackupRequest().setType(BackupRequestType.QUERY_STATE).setPartitionId(1);
+
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+    handleRequest(request);
+
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(stateResponse.getCheckpointStates())
+        .hasSize(1)
+        .singleElement()
+        .returns(10L, PartitionCheckpointState::checkpointId)
+        .returns(1, PartitionCheckpointState::partitionId)
+        .returns(CheckpointType.SCHEDULED_BACKUP, PartitionCheckpointState::checkpointType)
+        .returns(100L, PartitionCheckpointState::checkpointTimestamp)
+        .returns(20L, PartitionCheckpointState::checkpointPosition);
+    assertThat(stateResponse.getBackupStates()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnBackupState() {
+    when(checkpointState.getLatestBackupId()).thenReturn(10L);
+    when(checkpointState.getLatestBackupType()).thenReturn(CheckpointType.SCHEDULED_BACKUP);
+    when(checkpointState.getLatestBackupTimestamp()).thenReturn(100L);
+    when(checkpointState.getLatestBackupPosition()).thenReturn(20L);
+    when(checkpointState.getLatestCheckpointId()).thenReturn(NO_CHECKPOINT);
+
+    final var request =
+        new BackupRequest().setType(BackupRequestType.QUERY_STATE).setPartitionId(1);
+
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+    handleRequest(request);
+
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(stateResponse.getBackupStates())
+        .hasSize(1)
+        .singleElement()
+        .returns(10L, PartitionCheckpointState::checkpointId)
+        .returns(1, PartitionCheckpointState::partitionId)
+        .returns(CheckpointType.SCHEDULED_BACKUP, PartitionCheckpointState::checkpointType)
+        .returns(100L, PartitionCheckpointState::checkpointTimestamp)
+        .returns(20L, PartitionCheckpointState::checkpointPosition);
+    assertThat(stateResponse.getCheckpointStates()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnBothBackupAndCheckpointState() {
+    when(checkpointState.getLatestBackupId()).thenReturn(10L);
+    when(checkpointState.getLatestBackupType()).thenReturn(CheckpointType.SCHEDULED_BACKUP);
+    when(checkpointState.getLatestBackupTimestamp()).thenReturn(100L);
+    when(checkpointState.getLatestBackupPosition()).thenReturn(20L);
+    when(checkpointState.getLatestCheckpointId()).thenReturn(15L);
+    when(checkpointState.getLatestCheckpointType()).thenReturn(CheckpointType.MANUAL_BACKUP);
+    when(checkpointState.getLatestCheckpointTimestamp()).thenReturn(150L);
+    when(checkpointState.getLatestCheckpointPosition()).thenReturn(25L);
+
+    final var request =
+        new BackupRequest().setType(BackupRequestType.QUERY_STATE).setPartitionId(1);
+
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+    handleRequest(request);
+
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(stateResponse.getBackupStates())
+        .hasSize(1)
+        .singleElement()
+        .returns(10L, PartitionCheckpointState::checkpointId)
+        .returns(1, PartitionCheckpointState::partitionId)
+        .returns(CheckpointType.SCHEDULED_BACKUP, PartitionCheckpointState::checkpointType)
+        .returns(100L, PartitionCheckpointState::checkpointTimestamp)
+        .returns(20L, PartitionCheckpointState::checkpointPosition);
+    assertThat(stateResponse.getCheckpointStates())
+        .hasSize(1)
+        .singleElement()
+        .returns(15L, PartitionCheckpointState::checkpointId)
+        .returns(1, PartitionCheckpointState::partitionId)
+        .returns(CheckpointType.MANUAL_BACKUP, PartitionCheckpointState::checkpointType)
+        .returns(150L, PartitionCheckpointState::checkpointTimestamp)
+        .returns(25L, PartitionCheckpointState::checkpointPosition);
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNoCheckpointAndBackupArePresent() {
+    // given
+    when(checkpointState.getLatestCheckpointId()).thenReturn(-1L);
+    when(checkpointState.getLatestBackupId()).thenReturn(-1L);
+
+    final var request =
+        new BackupRequest().setType(BackupRequestType.QUERY_STATE).setPartitionId(1);
+
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+    assertThat(stateResponse.getCheckpointStates()).isEmpty();
+    assertThat(stateResponse.getBackupStates()).isEmpty();
   }
 
   private void handleRequest(final BackupRequest request) {

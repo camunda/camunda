@@ -245,5 +245,10 @@
       <artifactId>opensearch-java</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+
   </dependencies>
 </project>

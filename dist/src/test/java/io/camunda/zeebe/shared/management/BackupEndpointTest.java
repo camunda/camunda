@@ -36,8 +36,11 @@ import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
@@ -46,6 +49,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -270,7 +274,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getBody())
@@ -290,7 +294,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.completedFuture(backupStatus)).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getStatus()).isEqualTo(404);
@@ -310,7 +314,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
 
       // when
-      final var response = endpoint.query("1");
+      final var response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -365,7 +369,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getBody())
@@ -413,7 +417,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
 
       // then
       assertThat(response.getBody())
@@ -666,6 +670,133 @@ final class BackupEndpointTest {
 
       // then
       assertThat(response.getStatus()).isEqualTo(204);
+    }
+  }
+
+  @Nested
+  final class StateTest {
+    @Test
+    void shouldReturnCheckpointState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setCheckpointStates(
+          Set.of(new PartitionCheckpointState(1, 1L, CheckpointType.MARKER, 20L, 10L)));
+
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnBackupOnDifferentTypeState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setBackupStates(
+          Set.of(new PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
+
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnBothCheckpointAndBackupState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setBackupStates(
+          Set.of(new PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
+      stateResponse.setCheckpointStates(
+          Set.of(new PartitionCheckpointState(1, 2L, CheckpointType.MARKER, 30L, 50L)));
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnEmptyState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+
+      final var stateResponse = new CheckpointStateResponse();
+
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
+    }
+
+    @Test
+    void shouldReturnAllPartitionsState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+
+      final var stateResponse = new CheckpointStateResponse();
+
+      final PartitionCheckpointState p1State =
+          new PartitionCheckpointState(1, 1L, CheckpointType.MARKER, 20L, 10L);
+      final PartitionCheckpointState p2State =
+          new PartitionCheckpointState(2, 1L, CheckpointType.MARKER, 20L, 20L);
+      final PartitionCheckpointState p3State =
+          new PartitionCheckpointState(3, 1L, CheckpointType.MARKER, 30L, 40L);
+
+      final PartitionCheckpointState p1BackupState =
+          new PartitionCheckpointState(1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L);
+      final PartitionCheckpointState p2BackupState =
+          new PartitionCheckpointState(2, 1L, CheckpointType.MANUAL_BACKUP, 20L, 20L);
+      final PartitionCheckpointState p3BackupState =
+          new PartitionCheckpointState(3, 1L, CheckpointType.MANUAL_BACKUP, 30L, 40L);
+
+      stateResponse.setCheckpointStates(Set.of(p1State, p2State, p3State));
+      stateResponse.setBackupStates(Set.of(p1BackupState, p2BackupState, p3BackupState));
+
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointStateResponse.class)
+          .isEqualTo(stateResponse);
     }
   }
 }
