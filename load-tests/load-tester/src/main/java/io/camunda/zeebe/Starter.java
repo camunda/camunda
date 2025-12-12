@@ -29,6 +29,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -157,10 +158,11 @@ public class Starter extends App {
     LOG.info("Instant {} ", temporal);
     final OffsetDateTime from = OffsetDateTime.from(temporal.atZone(ZoneId.of("UTC")));
     LOG.info("OffsetDateTime {} ", from);
+    final List<Long> list = results.stream().map(k -> k.processInstanceKey).toList();
 
     client
         .newProcessInstanceSearchRequest()
-        .filter((f) -> f.startDate(date -> date.gt(from)))
+        .filter((f) -> f.processInstanceKey(key -> key.in(list)))
         .sort(ProcessInstanceSort::startDate)
         .send()
         .whenCompleteAsync(
