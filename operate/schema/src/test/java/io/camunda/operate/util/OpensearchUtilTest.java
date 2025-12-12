@@ -48,7 +48,6 @@ class OpensearchUtilTest {
   @Mock private OpenSearchDocumentOperations docOperations;
 
   @Mock private SearchResponse searchResponse;
-  // @Mock private SearchHit searchHit;
   @Captor private ArgumentCaptor<SearchRequest.Builder> searchRequestCaptor;
 
   @BeforeEach
