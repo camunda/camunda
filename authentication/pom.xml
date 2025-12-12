@@ -32,6 +32,27 @@
       <artifactId>spring-security-web</artifactId>
     </dependency>
     <dependency>
+<<<<<<< HEAD
+=======
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <version>1.15.3</version>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-observation</artifactId>
+      <version>1.15.3</version>
+    </dependency>
+    <dependency>
+>>>>>>> 3358052b (feat: provide Spring authentication classes for token and refresh token paths with an instrumented restClient)
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
     </dependency>
