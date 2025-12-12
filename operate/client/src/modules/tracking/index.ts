@@ -28,6 +28,7 @@ type Events =
         | 'header-dashboard'
         | 'header-processes'
         | 'header-decisions'
+        | 'header-audit-log'
         | 'dashboard-running-processes'
         | 'dashboard-processes-with-incidents'
         | 'dashboard-active-processes'
@@ -49,6 +50,7 @@ type Events =
         | 'dashboard'
         | 'processes'
         | 'decisions'
+        | 'auditLog'
         | 'process-details'
         | 'decision-details'
         | 'login';
