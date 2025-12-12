@@ -15,6 +15,8 @@ public interface TestCheck extends Predicate<Object[]> {
   String PROCESS_IS_DEPLOYED_CHECK = "processIsDeployedCheck";
   String PROCESS_IS_DELETED_CHECK = "processIsDeletedCheck";
 
+  String FORM_EXISTS_CHECK = "formExistsCheck";
+
   String TASK_IS_CREATED_CHECK = "taskIsCreatedCheck";
   String TASK_IS_ASSIGNED_CHECK = "taskIsAssignedCheck";
 
