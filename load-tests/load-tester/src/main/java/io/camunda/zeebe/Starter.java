@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
@@ -100,24 +101,41 @@ public class Starter extends App {
           LOG.info("Started {} process instances so far", results.size());
           // request results for started instances
 
+          final PiCreationResult first = results.getFirst();
+          LOG.info("First result {} ", results.getFirst());
+          final long startTimeNanos = first.startTimeNanos;
+          LOG.info("StartTimeNanos {} ", startTimeNanos);
+          final long millis = TimeUnit.NANOSECONDS.toMillis(startTimeNanos);
+          LOG.info("millis {} ", millis);
+          final long startTimeEpochMillis = first.startTimeEpochMillis;
+          LOG.info("EpochMillis {} ", startTimeEpochMillis);
+          final Instant temporal = Instant.ofEpochMilli(startTimeEpochMillis);
+          LOG.info("Instant {} ", temporal);
+          final OffsetDateTime from = OffsetDateTime.from(temporal.atZone(ZoneId.of("UTC")));
+          LOG.info("OffsetDateTime {} ", from);
+
           client
               .newProcessInstanceSearchRequest()
-              .filter(
-                  (f) -> {
-                    f.startDate(
-                        date ->
-                            date.gt(
-                                OffsetDateTime.from(
-                                    Instant.ofEpochMilli(
-                                        results.getFirst().startTimeNanos / 1_000_000))));
-                  })
+              .filter((f) -> f.startDate(date -> date.gt(from)))
               .sort(ProcessInstanceSort::processInstanceKey)
               .send()
-              .thenAcceptAsync(
-                  resp -> {
+              .whenCompleteAsync(
+                  (resp, error) -> {
+                    if (error != null) {
+                      LOG.error("Error while requesting process instances", error);
+                      return;
+                    }
+
+                    LOG.info("Response items{} ", resp.items());
+                    LOG.info("Response {} ", resp.page());
                     resp.items()
                         .forEach(
                             pi -> {
+                              LOG.info(
+                                  "PI {} - {} start {}",
+                                  pi,
+                                  pi.getProcessInstanceKey(),
+                                  pi.getStartDate());
                               for (final PiCreationResult waitingPI :
                                   Collections.unmodifiableList(results)) {
 
@@ -129,19 +147,20 @@ public class Starter extends App {
                                   LOG.warn(
                                       "Process instance {} retrieved in {} ms",
                                       processInstanceKey,
-                                      durationNanos / 1_000_000);
+                                      TimeUnit.NANOSECONDS.toMillis(durationNanos));
 
                                   final int partitionId =
                                       Protocol.decodePartitionId(processInstanceKey);
                                   partitionToTimerMap
                                       .get(partitionId)
                                       .record(durationNanos, TimeUnit.NANOSECONDS);
-                                  LOG.warn(
-                                      "Process instance {} retrieved in {} ms",
-                                      processInstanceKey,
-                                      durationNanos / 1_000_000);
                                   results.remove(waitingPI);
                                   break;
+                                } else {
+                                  LOG.info(
+                                      "PI {} not match {}",
+                                      pi.getProcessInstanceKey(),
+                                      waitingPI.processInstanceKey);
                                 }
                               }
                             });
@@ -259,12 +278,15 @@ public class Starter extends App {
         .thenApply(
             (response) -> {
               final long processInstanceKey = response.getProcessInstanceKey();
-              results.add(new PiCreationResult(processInstanceKey, startTime));
-              LOG.warn(
-                  "Process instance {} started at {} (delay {} ms) try to get from API",
-                  processInstanceKey,
-                  Instant.ofEpochMilli(startTime / 1_000_000),
-                  Duration.ofNanos(System.nanoTime() - startTime).toMillis());
+              final long duration = Duration.ofNanos(System.nanoTime() - startTime).toMillis();
+              final long epochMilli = System.currentTimeMillis() - duration;
+              results.add(new PiCreationResult(processInstanceKey, startTime, epochMilli));
+              //              LOG.warn(
+              //                  "Process instance {} started at around {} (delay {} ms) try to get
+              // from API",
+              //                  processInstanceKey,
+              //                  Instant.ofEpochMilli(epochMilli),
+              //                  duration);
               //              checkForProcessInstanceExistence(client, startTime,
               // processInstanceKey);
               return response;
@@ -274,11 +296,12 @@ public class Starter extends App {
   private void checkForProcessInstanceExistence(
       final CamundaClient client, final long startTime, final long processInstanceKey) {
 
+    final long duration = Duration.ofNanos(System.nanoTime() - startTime).toMillis();
     LOG.warn(
-        "Process instance {} started at {} (delay {} ms) try to get from API",
+        "Process instance {} started at around {} (delay {} ms) try to get from API",
         processInstanceKey,
-        Instant.ofEpochMilli(startTime / 1_000_000),
-        Duration.ofNanos(System.nanoTime() - startTime).toMillis());
+        Instant.ofEpochMilli(System.currentTimeMillis() - duration),
+        duration);
     client
         .newProcessInstanceGetRequest(processInstanceKey)
         .send()
@@ -393,5 +416,6 @@ public class Starter extends App {
     createApp(Starter::new);
   }
 
-  private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
+  private record PiCreationResult(
+      long processInstanceKey, long startTimeNanos, long startTimeEpochMillis) {}
 }
