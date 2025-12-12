@@ -29,8 +29,7 @@ public interface EvaluateExpressionCommandStep1 {
   EvaluateExpressionCommandStep2 expression(String expression);
 
   interface EvaluateExpressionCommandStep2
-      extends CommandWithTenantStep<EvaluateExpressionCommandStep2>,
-          FinalCommandStep<EvaluateExpressionResponse> {
+      extends EvaluateExpressionCommandStep1, FinalCommandStep<EvaluateExpressionResponse> {
 
     /**
      * Sets the tenant ID for multi-tenant environments.
@@ -38,7 +37,6 @@ public interface EvaluateExpressionCommandStep1 {
      * @param tenantId the tenant ID
      * @return the builder for this command
      */
-    @Override
     EvaluateExpressionCommandStep2 tenantId(String tenantId);
   }
 }
