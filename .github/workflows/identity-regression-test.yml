@@ -47,16 +47,6 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ~/.m2/wrapper
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-m2-
-
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -322,8 +312,8 @@ jobs:
 
           echo "Waiting for Camunda to start on port 8080..."
           for i in {1..60}; do
-          if nc -z localhost 8080; then
-          echo "✅ Camunda is up!"
+            if nc -z localhost 8080; then
+            echo "✅ Camunda is up!"
           break
           fi
           echo "⏳ Still waiting ($i/60)..."
@@ -338,7 +328,9 @@ jobs:
       - name: Start Camunda (OIDC config for mapping-rules)
         if: matrix.case == 'mapping-rules.http'
         run: |
-          cd ./dist/target/camunda-zeebe-8.9.0-SNAPSHOT
+          cd ./dist/target
+          dir=$(ls -d camunda-zeebe-*/)
+          cd "$dir"
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
           export CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://localhost:${{ matrix.hostPort }} && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:${{ matrix.hostPort }} && \
@@ -359,8 +351,8 @@ jobs:
           echo "Waiting for Camunda to start on port 8080..."
           for i in {1..60}; do
           if nc -z localhost 8080; then
-          echo "✅ Camunda is up!"
-          break
+            echo "✅ Camunda is up!"
+            break
           fi
           echo "⏳ Still waiting ($i/60)..."
           sleep 5
