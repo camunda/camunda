@@ -148,7 +148,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       // there was missing data, but this is often transient, so we just skip this batch for now.
       // we return the batch size so it's clear that we want to try again soon (as there was work
       // to do, but we just can't do it ATM)
-      metrics.recordIncidentUpdatesSkipped(incidentCount);
+      metrics.recordIncidentUpdatesRetriesNeeded(incidentCount);
       return CompletableFuture.completedFuture(incidentCount);
     }
 
