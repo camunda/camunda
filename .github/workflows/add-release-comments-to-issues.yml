@@ -41,14 +41,15 @@ on:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
-permissions:
-  issues: write
-  contents: read
+permissions: {}
 
 jobs:
   add-release-comments:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      issues: write
+      contents: read
     defaults:
       run:
         shell: bash
@@ -57,6 +58,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
 
       - name: Add release comments to issues
         env:
