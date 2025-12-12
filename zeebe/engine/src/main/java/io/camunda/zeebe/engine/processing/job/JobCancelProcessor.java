@@ -30,30 +30,35 @@ public final class JobCancelProcessor implements TypedRecordProcessor<JobRecord>
   private final JobState jobState;
   private final JobProcessingMetrics jobMetrics;
   private final StateWriter stateWriter;
-  private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
 
   public JobCancelProcessor(
       final ProcessingState state, final JobProcessingMetrics jobMetrics, final Writers writers) {
     jobState = state.getJobState();
     this.jobMetrics = jobMetrics;
     stateWriter = writers.state();
-    responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
   }
 
   @Override
-  public void processRecord(final TypedRecord<JobRecord> record) {
-    final long jobKey = record.getKey();
+  public void processRecord(final TypedRecord<JobRecord> command) {
+    final var jobKey = command.getKey();
     final JobRecord job = jobState.getJob(jobKey);
     if (job != null) {
-      // Note that this logic is duplicated in BpmnJobBehavior, if you change this please change
-      // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
+      if (command.hasRequestMetadata()) {
+        responseWriter.writeEventOnCommand(jobKey, JobIntent.CANCELED, job, command);
+      }
       jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
     } else {
-      rejectionWriter.appendRejection(
-          record, RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey));
+      final RejectionType rejectionType = RejectionType.NOT_FOUND;
+      final String rejectionReason = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
+      rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
+      if (command.hasRequestMetadata()) {
+        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+      }
     }
   }
 }
