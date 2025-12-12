@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.0.27
+
+### 🩹 Fixes
+
+- fix exports ([#42145](https://github.com/camunda/camunda/pull/42145))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.26
+
+### 🩹 Fixes
+
+- add missing exports ([#42145](https://github.com/camunda/camunda/pull/42145))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.25
+
+### 🚀 Enhancements
+
+- add process definitions statistic v2 queries ([#42145](https://github.com/camunda/camunda/pull/42145))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.24
 
 ### 🚀 Enhancements

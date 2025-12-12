@@ -8,6 +8,8 @@
 
 import type {
   ElementInstance,
+  GetProcessDefinitionInstanceStatisticsRequestBody,
+  GetProcessDefinitionInstanceVersionStatisticsRequestBody,
   ProcessInstance,
   QueryBatchOperationItemsRequestBody,
   QueryBatchOperationsRequestBody,
@@ -75,6 +77,16 @@ const queryKeys = {
       'processDefinition',
       processDefinitionKey,
     ],
+  },
+  processDefinitionStatistics: {
+    get: (payload?: GetProcessDefinitionInstanceStatisticsRequestBody) => [
+      'processDefinitionStatistics',
+      payload,
+    ],
+    getByVersion: (
+      processDefinitionId: string,
+      payload?: GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+    ) => ['processDefinitionVersionStatistics', processDefinitionId, payload],
   },
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
