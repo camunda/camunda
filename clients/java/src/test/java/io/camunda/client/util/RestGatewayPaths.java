@@ -34,6 +34,8 @@ public class RestGatewayPaths {
   private static final String URL_CLUSTER_VARIABLES_SEARCH = URL_CLUSTER_VARIABLES + "/search";
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
+  private static final String URL_CONDITIONAL_EVALUATION =
+      REST_API_PATH + "/conditionals/evaluation";
   private static final String URL_DECISION_DEFINITION = REST_API_PATH + "/decision-definitions/%s";
   private static final String URL_DECISION_EVALUATION =
       REST_API_PATH + "/decision-definitions/evaluation";
@@ -185,6 +187,10 @@ public class RestGatewayPaths {
 
   public static String getBroadcastSignalUrl() {
     return URL_SIGNAL_BROADCAST;
+  }
+
+  public static String getEvaluateConditionalUrl() {
+    return URL_CONDITIONAL_EVALUATION;
   }
 
   public static String getEvaluateDecisionUrl() {

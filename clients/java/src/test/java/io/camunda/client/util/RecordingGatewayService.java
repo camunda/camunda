@@ -28,6 +28,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ConditionalEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -443,6 +445,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
     handle(request, responseObserver);
   }
 
+  @Override
+  public void evaluateConditional(
+      final ConditionalEvaluationInstruction request,
+      final StreamObserver<EvaluateConditionalResult> responseObserver) {
+    handle(request, responseObserver);
+  }
+
   public void onTopologyRequest(
       final int clusterSize,
       final int partitionsCount,
@@ -532,6 +541,27 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setKey(key)
                 .setTenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
                 .build());
+  }
+
+  public void onEvaluateConditionalRequest(
+      final long processDefinitionKey, final long processInstanceKey) {
+    addRequestHandler(
+        ConditionalEvaluationInstruction.class,
+        request ->
+            EvaluateConditionalResult.newBuilder()
+                .addProcessInstances(
+                    io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceReference
+                        .newBuilder()
+                        .setProcessDefinitionKey(processDefinitionKey)
+                        .setProcessInstanceKey(processInstanceKey)
+                        .build())
+                .build());
+  }
+
+  public void onEvaluateConditionalRequest() {
+    addRequestHandler(
+        ConditionalEvaluationInstruction.class,
+        request -> EvaluateConditionalResult.newBuilder().build());
   }
 
   public void onCreateProcessInstanceWithResultRequest(
