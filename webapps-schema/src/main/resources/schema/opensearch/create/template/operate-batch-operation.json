@@ -1,35 +1,35 @@
 {
-	"mappings": {
+  "mappings": {
     "dynamic": "strict",
-		"properties": {
-			"operationsFinishedCount": {
-				"type": "long"
-			},
-			"endDate": {
-				"format": "date_time || epoch_millis",
-				"type": "date"
-			},
-			"name": {
-				"type": "keyword"
-			},
-			"instancesCount": {
-				"type": "long"
-			},
-			"operationsTotalCount": {
-				"type": "long"
-			},
-			"id": {
-				"type": "keyword"
-			},
-			"type": {
-				"type": "keyword"
-			},
-			"startDate": {
-				"format": "date_time || epoch_millis",
-				"type": "date"
-			},
-			"username": {
-				"type": "keyword"
+    "properties": {
+      "operationsFinishedCount": {
+        "type": "long"
+      },
+      "endDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "instancesCount": {
+        "type": "long"
+      },
+      "operationsTotalCount": {
+        "type": "long"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "startDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "username": {
+        "type": "keyword"
       },
       "state": {
         "type": "keyword"
@@ -54,6 +54,6 @@
           }
         }
       }
-		}
-	}
+    }
+  }
 }

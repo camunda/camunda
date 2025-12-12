@@ -1,5 +1,5 @@
 {
-	"settings": {
+  "settings": {
       "analysis": {
         "normalizer": {
           "case_insensitive": {
@@ -25,104 +25,104 @@
           }
         }
       }
-	},
-	"mappings": {
+  },
+  "mappings": {
     "dynamic": "strict",
-		"properties": {
-			"varName": {
-				"type": "keyword"
-			},
-			"endDate": {
-				"format": "date_time || epoch_millis",
-				"type": "date"
-			},
-			"partitionId": {
-				"type": "integer"
-			},
-			"errorMessage": {
-				"type": "text"
-			},
-			"processName": {
+    "properties": {
+      "varName": {
+        "type": "keyword"
+      },
+      "endDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "errorMessage": {
+        "type": "text"
+      },
+      "processName": {
                 "normalizer": "case_insensitive",
-				"type": "keyword"
-			},
-			"joinRelation": {
-				"type": "join",
-				"relations": {
-					"processInstance": [
-						"activity",
-						"variable"
-					]
-				}
-			},
-			"activityId": {
-				"eager_global_ordinals": true,
-				"type": "keyword"
-			},
-			"varValue": {
-				"type": "keyword",
-				"ignore_above": 8191
-			},
-			"activityState": {
-				"type": "keyword"
-			},
-			"incidentKeys": {
-				"type": "long"
-			},
-			"processDefinitionKey": {
-				"type": "long"
-			},
-			"scopeKey": {
-				"type": "long"
-			},
-			"processInstanceKey": {
-				"type": "long"
-			},
-			"id": {
-				"type": "keyword"
-			},
-			"processVersion": {
-				"type": "long"
-			},
+        "type": "keyword"
+      },
+      "joinRelation": {
+        "type": "join",
+        "relations": {
+          "processInstance": [
+            "activity",
+            "variable"
+          ]
+        }
+      },
+      "activityId": {
+        "eager_global_ordinals": true,
+        "type": "keyword"
+      },
+      "varValue": {
+        "type": "keyword",
+        "ignore_above": 8191
+      },
+      "activityState": {
+        "type": "keyword"
+      },
+      "incidentKeys": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "scopeKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "processVersion": {
+        "type": "long"
+      },
       "processVersionTag": {
         "type": "keyword"
       },
-			"bpmnProcessId": {
-				"type": "keyword"
-			},
-			"state": {
-				"type": "keyword"
-			},
-			"activityType": {
-				"type": "keyword"
-			},
-			"batchOperationIds": {
-				"type": "keyword"
-			},
-			"parentProcessInstanceKey": {
-				"type": "long"
-			},
-			"parentFlowNodeInstanceKey": {
-				"type": "long"
-			},
-			"startDate": {
-				"format": "date_time || epoch_millis",
-				"type": "date"
-			},
-			"key": {
-				"type": "long"
-			},
-			"treePath": {
-				"type": "text",
-				"analyzer": "ca_path_tree",
-				"fielddata": true
-			},
-			"incident": {
-				"type": "boolean"
-			},
-			"pendingIncident": {
-				"type": "boolean"
-			},
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "activityType": {
+        "type": "keyword"
+      },
+      "batchOperationIds": {
+        "type": "keyword"
+      },
+      "parentProcessInstanceKey": {
+        "type": "long"
+      },
+      "parentFlowNodeInstanceKey": {
+        "type": "long"
+      },
+      "startDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "key": {
+        "type": "long"
+      },
+      "treePath": {
+        "type": "text",
+        "analyzer": "ca_path_tree",
+        "fielddata": true
+      },
+      "incident": {
+        "type": "boolean"
+      },
+      "pendingIncident": {
+        "type": "boolean"
+      },
       "tenantId": {
         "type": "keyword"
       },
@@ -143,6 +143,6 @@
       "tags": {
         "type": "keyword"
       }
-		}
-	}
+    }
+  }
 }
