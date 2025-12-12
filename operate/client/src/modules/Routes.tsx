@@ -32,6 +32,9 @@ const Paths = {
   forbidden() {
     return '/forbidden';
   },
+  batchOperations() {
+    return '/batch-operations';
+  },
 } as const;
 
 const Locations = {
@@ -67,6 +70,11 @@ const Locations = {
     return {
       pathname: Paths.decisions(),
       search: params.toString(),
+    };
+  },
+  batchOperations(): To {
+    return {
+      pathname: Paths.batchOperations(),
     };
   },
 } as const;

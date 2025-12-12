@@ -6,29 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {useInfiniteQuery} from '@tanstack/react-query';
 import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
 import type {QueryBatchOperationsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {queryKeys} from '../queryKeys';
 
-type PaginationArgs = {page: number; pageSize: number};
+const MAX_OPERATIONS_PER_REQUEST = 50;
 
-const usePaginatedBatchOperations = (
+const useInfiniteScrollBatchOperations = (
   payload: QueryBatchOperationsRequestBody,
-  pagination: PaginationArgs,
 ) => {
-  const limit = pagination.pageSize;
-  const from = (pagination.page - 1) * pagination.pageSize;
-
-  return useQuery({
-    queryKey: [queryKeys.batchOperations.query(payload), {limit, from}],
-    queryFn: async () => {
+  return useInfiniteQuery({
+    queryKey: queryKeys.batchOperations.query(payload),
+    queryFn: async ({pageParam}) => {
       const requestPayload = {
         ...payload,
         page: {
           ...payload.page,
-          limit,
-          from,
+          limit: MAX_OPERATIONS_PER_REQUEST,
+          from: pageParam,
         },
       };
 
@@ -37,10 +33,32 @@ const usePaginatedBatchOperations = (
       if (response !== null) {
         return response;
       }
+
       throw error;
     },
-    placeholderData: (prev) => prev,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const {page} = lastPage;
+      const nextPage = lastPageParam + MAX_OPERATIONS_PER_REQUEST;
+
+      if (nextPage > page.totalItems) {
+        return null;
+      }
+
+      return nextPage;
+    },
+    getPreviousPageParam: (_, __, firstPageParam) => {
+      const previousPage = firstPageParam - MAX_OPERATIONS_PER_REQUEST;
+
+      if (previousPage < 0) {
+        return null;
+      }
+
+      return previousPage;
+    },
+    refetchInterval: 5000,
+    maxPages: 2,
   });
 };
 
-export {usePaginatedBatchOperations};
+export {useInfiniteScrollBatchOperations};
