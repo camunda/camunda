@@ -9,12 +9,14 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
 
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.Set;
 
 public class AuditLogTransformerConfigs {
@@ -36,4 +38,8 @@ public class AuditLogTransformerConfigs {
               BatchOperationIntent.SUSPEND,
               BatchOperationIntent.CANCEL),
           Set.of(RejectionType.INVALID_STATE));
+
+  public static final TransformerConfig PROCESS_INSTANCE_CREATION_CONFIG =
+      TransformerConfig.with(PROCESS_INSTANCE_CREATION)
+          .withIntents(ProcessInstanceCreationIntent.CREATED);
 }
