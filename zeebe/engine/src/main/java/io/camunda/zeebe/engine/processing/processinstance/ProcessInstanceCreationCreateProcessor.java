@@ -80,13 +80,15 @@ public final class ProcessInstanceCreationCreateProcessor
   private final ProcessEngineMetrics metrics;
 
   private final ElementActivationBehavior elementActivationBehavior;
+  private final ProcessInstanceCreationHelper processInstanceCreationHelper;
 
   public ProcessInstanceCreationCreateProcessor(
       final ProcessState processState,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final ProcessInstanceCreationHelper processInstanceCreationHelper) {
     this.processState = processState;
     variableBehavior = bpmnBehaviors.variableBehavior();
     this.keyGenerator = keyGenerator;
@@ -96,6 +98,7 @@ public final class ProcessInstanceCreationCreateProcessor
     stateWriter = writers.state();
     this.metrics = metrics;
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    this.processInstanceCreationHelper = processInstanceCreationHelper;
   }
 
   @Override
