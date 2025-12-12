@@ -12,17 +12,25 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessCheck
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions;
+import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -294,5 +302,121 @@ public class ProcessDefinitionIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldFindProcessDefinitionInstanceStatistics(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader =
+        rdbmsService.getProcessDefinitionInstanceStatisticsReader();
+
+    final var processDefinition =
+        createAndSaveProcessDefinition(rdbmsWriter, b -> b.name("proc-1").version(1));
+    createAndSaveRandomProcessInstance(
+        rdbmsWriter,
+        b ->
+            b.processDefinitionId(processDefinition.processDefinitionId())
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1)
+                .tenantId(processDefinition.tenantId()));
+
+    createAndSaveRandomProcessInstance(
+        rdbmsWriter,
+        b ->
+            b.processDefinitionId(processDefinition.processDefinitionId())
+                .state(ProcessInstanceState.ACTIVE)
+                .processDefinitionKey(processDefinition.processDefinitionKey())
+                .version(1)
+                .tenantId(processDefinition.tenantId())
+                .numIncidents(1));
+
+    final var searchResult =
+        processDefinitionInstanceStatisticsDbReader.aggregate(
+            ProcessDefinitionInstanceStatisticsQuery.of(b -> b));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items()).hasSize(1);
+    final var statistics = searchResult.items().getFirst();
+    assertThat(statistics.processDefinitionId()).isEqualTo(processDefinition.processDefinitionId());
+    assertThat(statistics.latestProcessDefinitionName()).isEqualTo(processDefinition.name());
+    assertThat(statistics.hasMultipleVersions()).isFalse();
+    assertThat(statistics.tenantId()).isEqualTo(processDefinition.tenantId());
+    assertThat(statistics.activeInstancesWithIncidentCount()).isEqualTo(1);
+    assertThat(statistics.activeInstancesWithoutIncidentCount()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldFindProcessDefinitionInstanceVersionStatistics(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionInstanceVersionStatisticsDbReader
+        processDefinitionInstanceVersionStatisticsDbReader =
+            rdbmsService.getProcessDefinitionInstanceVersionStatisticsReader();
+
+    final var processDefinitionV1 =
+        createAndSaveProcessDefinition(
+            rdbmsWriter, b -> b.name("proc-v1").version(1).processDefinitionId("proc-1-id"));
+    final var processDefinitionV2 =
+        createAndSaveProcessDefinition(
+            rdbmsWriter, b -> b.name("proc-v2").version(2).processDefinitionId("proc-1-id"));
+
+    createAndSaveRandomProcessInstance(
+        rdbmsWriter,
+        b ->
+            b.processDefinitionId(processDefinitionV1.processDefinitionId())
+                .processDefinitionKey(processDefinitionV1.processDefinitionKey())
+                .state(ProcessInstanceState.ACTIVE)
+                .version(1)
+                .tenantId(processDefinitionV1.tenantId()));
+
+    createAndSaveRandomProcessInstance(
+        rdbmsWriter,
+        b ->
+            b.processDefinitionId(processDefinitionV2.processDefinitionId())
+                .processDefinitionKey(processDefinitionV2.processDefinitionKey())
+                .state(ProcessInstanceState.ACTIVE)
+                .version(2)
+                .tenantId(processDefinitionV2.tenantId())
+                .numIncidents(1));
+
+    final var searchResult =
+        processDefinitionInstanceVersionStatisticsDbReader.aggregate(
+            ProcessDefinitionInstanceVersionStatisticsQuery.of(
+                b ->
+                    b.filter(
+                        f -> f.processDefinitionId(processDefinitionV1.processDefinitionId()))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items())
+        .extracting(
+            ProcessDefinitionInstanceVersionStatisticsEntity::processDefinitionId,
+            ProcessDefinitionInstanceVersionStatisticsEntity::processDefinitionKey,
+            ProcessDefinitionInstanceVersionStatisticsEntity::processDefinitionVersion,
+            ProcessDefinitionInstanceVersionStatisticsEntity::processDefinitionName,
+            ProcessDefinitionInstanceVersionStatisticsEntity::tenantId,
+            ProcessDefinitionInstanceVersionStatisticsEntity::activeInstancesWithoutIncidentCount,
+            ProcessDefinitionInstanceVersionStatisticsEntity::activeInstancesWithIncidentCount)
+        .containsExactlyInAnyOrder(
+            tuple(
+                processDefinitionV1.processDefinitionId(),
+                processDefinitionV1.processDefinitionKey(),
+                1,
+                processDefinitionV1.name(),
+                processDefinitionV1.tenantId(),
+                1L,
+                0L),
+            tuple(
+                processDefinitionV2.processDefinitionId(),
+                processDefinitionV2.processDefinitionKey(),
+                2,
+                processDefinitionV2.name(),
+                processDefinitionV2.tenantId(),
+                0L,
+                1L));
   }
 }
