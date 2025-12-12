@@ -168,7 +168,7 @@ jobs:
       matrix:
         include:
           - scenario-name: 'maximize-load'
-            load-test-load: '--set starter.rate=0'
+            load-test-load: '--set starter.rate=0 --set app.brokerManagementUrl=http://camunda-gateway:9600'
 #          - scenario-name: 'pi-creation-latency'
 #            load-test-load: '--set starter.replicas=0'
 #          - scenario-name: 'measure-cpu-usage'
