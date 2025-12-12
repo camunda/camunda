@@ -8,6 +8,7 @@ When a partition's key generator becomes corrupted (e.g., key overflow), this re
 
 ## Files
 
+- **`generate-recovery-job.sh`**: Standalone YAML generator (simple, no cluster interaction)
 - **`recovery-script.sh`**: Bash script that performs the actual key recovery operations (inlined in generated Job YAML)
 - **`recovery-procedure.sh`**: Automated recovery procedure script (generates and applies Job YAML)
 - **`recovery-values.example.sh`**: Example configuration file for environment variables
@@ -18,6 +19,66 @@ When a partition's key generator becomes corrupted (e.g., key overflow), this re
 - **`generated/`**: Directory containing generated Job YAML files
 
 ## Quick Start
+
+### Generate YAML Only (Simple & Fast)
+
+If you just want to generate the recovery Job YAML without running the full procedure:
+
+```bash
+# Set required variables
+export NAMESPACE="camunda"
+export PARTITION_ID="1"
+export LAST_LEADER_BROKER="0"
+export NEW_KEY="2251800000000000"
+export PARTITION_BROKER_IDS="0 1 2"  # Space-separated broker IDs hosting this partition
+export CONTAINER_IMAGE="camunda/camunda:8.6.1"
+
+# Optional variables
+export NEW_MAX_KEY="2251900000000000"
+export STATEFULSET_NAME="camunda"
+export PVC_PREFIX="data-camunda"
+
+# Generate YAML
+./generate-recovery-job.sh
+# Output: generated/recovery-job-partition-1-20251212-143022.yaml
+```
+
+**What it does:**
+- ✓ Generates recovery Job YAML with inline recovery script
+- ✓ Mounts only the PVCs for specified brokers
+- ✓ No cluster interaction - pure YAML generation
+- ✓ Fast and simple - perfect for review/editing before applying
+
+**Then you can:**
+```bash
+# Review the YAML
+cat generated/recovery-job-partition-1-*.yaml
+
+# Apply manually when ready
+kubectl apply -f generated/recovery-job-partition-1-*.yaml
+
+# Monitor the job
+kubectl logs -f job/key-recovery-job -n camunda
+```
+
+**Required Environment Variables:**
+- `NAMESPACE` - Kubernetes namespace
+- `PARTITION_ID` - Partition ID to recover
+- `LAST_LEADER_BROKER` - Broker ID that was the leader (0, 1, 2, ...)
+- `NEW_KEY` - New key value to set
+- `PARTITION_BROKER_IDS` - **Space-separated** broker IDs (e.g., "0 1 2")
+- `CONTAINER_IMAGE` - Container image (e.g., "camunda/camunda:8.6.1")
+
+**Optional Environment Variables:**
+- `NEW_MAX_KEY` - New max key value (if not set, max key won't be updated)
+- `STATEFULSET_NAME` - StatefulSet name (default: "camunda")
+- `PVC_PREFIX` - PVC name prefix (default: "data-${STATEFULSET_NAME}")
+- `CONTAINER_USER_ID` - User ID (default: 1000)
+- `CONTAINER_GROUP_ID` - Group ID (default: 1001)
+- `CONTAINER_FS_GROUP` - fsGroup ID (default: 1001)
+- `OUTPUT_FILE` - Output file path (default: auto-generated with timestamp)
+
+**Note:** You need to know which brokers host the partition beforehand. Use `recovery-procedure.sh` to auto-detect this, or check the actuator endpoint manually.
 
 ### Using the Automated Script (Recommended)
 
