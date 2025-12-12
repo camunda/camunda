@@ -56,6 +56,7 @@ import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.command.EvaluateConditionalCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
@@ -3068,4 +3069,26 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessDefinitionInstanceVersionStatisticsRequest
       newProcessDefinitionInstanceVersionStatisticsRequest(String processDefinitionId);
+
+  /**
+   * Command to evaluate root-level conditional start events for process definitions.
+   *
+   * <pre>
+   * camundaClient
+   *  .newEvaluateConditionalCommand()
+   *  .variables(json)
+   *  .send();
+   *
+   * // Or for a specific process definition and tenant:
+   * camundaClient
+   *  .newEvaluateConditionalCommand()
+   *  .variables(json)
+   *  .processDefinitionKey(12345L)
+   *  .tenantId("tenant-1")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  EvaluateConditionalCommandStep1 newEvaluateConditionalCommand();
 }
