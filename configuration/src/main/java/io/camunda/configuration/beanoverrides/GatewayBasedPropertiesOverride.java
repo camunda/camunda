@@ -69,8 +69,7 @@ public class GatewayBasedPropertiesOverride {
     populateFromGrpc(override);
     populateFromLongPolling(override);
     populateFromRestFilters(override);
-    // TODO KPO remove
-    // populateFromSecurity(override);
+    populateFromSecurity(override);
 
     return override;
   }
@@ -78,15 +77,15 @@ public class GatewayBasedPropertiesOverride {
   private void populateFromSecurity(final GatewayBasedProperties override) {
     final var tlsCluster =
         unifiedConfiguration.getCamunda().getSecurity().getTransportLayerSecurity().getCluster();
-    override.getSecurity().setEnabled(tlsCluster.isEnabled());
-    override.getSecurity().setCertificateChainPath(tlsCluster.getCertificateChainPath());
-    override.getSecurity().setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
-    override
-        .getSecurity()
+
+    final SecurityCfg clusterSecurity = override.getCluster().getSecurity();
+    clusterSecurity.setEnabled(tlsCluster.isEnabled());
+    clusterSecurity.setCertificateChainPath(tlsCluster.getCertificateChainPath());
+    clusterSecurity.setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
+    clusterSecurity
         .getKeyStore()
         .setFilePath(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getFilePath());
-    override
-        .getSecurity()
+    clusterSecurity
         .getKeyStore()
         .setPassword(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getPassword());
   }

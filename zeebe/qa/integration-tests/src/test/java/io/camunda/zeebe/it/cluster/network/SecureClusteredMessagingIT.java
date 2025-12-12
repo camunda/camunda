@@ -148,11 +148,10 @@ final class SecureClusteredMessagingIT {
   private static void configureCertChainGateway(final TestStandaloneGateway gateway) {
     gateway.withUnifiedConfig(
         cfg -> {
-          // TODO KPO set ssl via camunda.api
-          final var ssl = cfg.getApi().getGrpc().getSsl();
-          ssl.setEnabled(true);
-          ssl.setCertificate(CERTIFICATE.certificate());
-          ssl.setCertificatePrivateKey(CERTIFICATE.privateKey());
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.setCertificateChainPath(CERTIFICATE.certificate());
+          tlsCluster.setCertificatePrivateKeyPath(CERTIFICATE.privateKey());
         });
     // TODO KPO remove
     // set security via properties because it is not yet supported in unified config
@@ -166,10 +165,10 @@ final class SecureClusteredMessagingIT {
   private static void configureCertChainBroker(final TestStandaloneBroker broker) {
     broker.withUnifiedConfig(
         cfg -> {
-          final var tlsNetwork = cfg.getSecurity().getTransportLayerSecurity().getCluster();
-          tlsNetwork.setEnabled(true);
-          tlsNetwork.setCertificateChainPath(CERTIFICATE.certificate());
-          tlsNetwork.setCertificatePrivateKeyPath(CERTIFICATE.privateKey());
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.setCertificateChainPath(CERTIFICATE.certificate());
+          tlsCluster.setCertificatePrivateKeyPath(CERTIFICATE.privateKey());
         });
     // TODO KPO remove
     // set security via properties because it is not yet supported in unified config
@@ -184,10 +183,10 @@ final class SecureClusteredMessagingIT {
       final TestStandaloneGateway gateway, final File pkcs12) {
     gateway.withUnifiedConfig(
         cfg -> {
-          final var ssl = cfg.getApi().getGrpc().getSsl();
-          ssl.setEnabled(true);
-          ssl.getKeyStore().setFilePath(pkcs12.getAbsoluteFile());
-          ssl.getKeyStore().setPassword("password");
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.getKeyStore().setFilePath(pkcs12.getAbsoluteFile());
+          tlsCluster.getKeyStore().setPassword("password");
         });
     // TODO KPO remove
     // set security via properties because it is not yet supported in unified config
@@ -201,10 +200,10 @@ final class SecureClusteredMessagingIT {
       final TestStandaloneBroker broker, final File pkcs12) {
     broker.withUnifiedConfig(
         cfg -> {
-          final var tlsNetwork = cfg.getSecurity().getTransportLayerSecurity().getCluster();
-          tlsNetwork.setEnabled(true);
-          tlsNetwork.getKeyStore().setFilePath(pkcs12.getAbsoluteFile());
-          tlsNetwork.getKeyStore().setPassword("password");
+          final var tlsCluster = cfg.getSecurity().getTransportLayerSecurity().getCluster();
+          tlsCluster.setEnabled(true);
+          tlsCluster.getKeyStore().setFilePath(pkcs12.getAbsoluteFile());
+          tlsCluster.getKeyStore().setPassword("password");
         });
     // TODO KPO remove
     // set security via properties because it is not yet supported in unified config

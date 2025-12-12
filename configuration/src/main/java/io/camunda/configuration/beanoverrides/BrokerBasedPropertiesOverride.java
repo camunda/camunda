@@ -149,23 +149,15 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromSecurity(final BrokerBasedProperties override) {
     final var tlsCluster =
         unifiedConfiguration.getCamunda().getSecurity().getTransportLayerSecurity().getCluster();
-    override.getNetwork().getSecurity().setEnabled(tlsCluster.isEnabled());
-    override
-        .getNetwork()
-        .getSecurity()
-        .setCertificateChainPath(tlsCluster.getCertificateChainPath());
-    override
-        .getNetwork()
-        .getSecurity()
-        .setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
-    override
-        .getNetwork()
-        .getSecurity()
+
+    final var networkSecurity = override.getNetwork().getSecurity();
+    networkSecurity.setEnabled(tlsCluster.isEnabled());
+    networkSecurity.setCertificateChainPath(tlsCluster.getCertificateChainPath());
+    networkSecurity.setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
+    networkSecurity
         .getKeyStore()
         .setFilePath(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getFilePath());
-    override
-        .getNetwork()
-        .getSecurity()
+    networkSecurity
         .getKeyStore()
         .setPassword(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getPassword());
   }
