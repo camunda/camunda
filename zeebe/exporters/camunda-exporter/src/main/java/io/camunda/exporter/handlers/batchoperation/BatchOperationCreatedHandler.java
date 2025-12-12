@@ -16,7 +16,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -120,19 +120,18 @@ public class BatchOperationCreatedHandler
         return ActorInfo.NULL_VALUES;
       }
 
-      final var clientId =
-          (String) record.getAuthorizations().get(Authorization.AUTHORIZED_CLIENT_ID);
-      if (clientId != null) {
-        return new ActorInfo(BatchOperationActorType.CLIENT, clientId);
+      final AuditLogActor auditLogActor = AuditLogActor.of(record);
+      if (auditLogActor == null) {
+        return ActorInfo.NULL_VALUES;
       }
 
-      final var username =
-          (String) record.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME);
-      if (username != null) {
-        return new ActorInfo(BatchOperationActorType.USER, username);
-      }
-
-      return ActorInfo.NULL_VALUES;
+      final var actorType =
+          switch (auditLogActor.actorType()) {
+            case USER -> BatchOperationActorType.USER;
+            case CLIENT -> BatchOperationActorType.CLIENT;
+            case null -> null;
+          };
+      return new ActorInfo(actorType, auditLogActor.actorId());
     }
   }
 }
