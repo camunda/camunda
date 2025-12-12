@@ -8,7 +8,9 @@
 package io.camunda.exporter.tasks.historydeletion;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.exporter.ExporterResourceProvider;
@@ -64,6 +66,41 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
               return CompletableFuture.completedFuture(new HistoryDeletionBatch(deletionEntities));
             },
             executor);
+  }
+
+  @Override
+  public CompletableFuture<Boolean> deleteDocumentsByField(
+      final String sourceIndexName, final String idFieldName, final List<Long> fieldValues) {
+    final var deleteRequest =
+        new DeleteByQueryRequest.Builder()
+            .index(sourceIndexName)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(
+                q ->
+                    q.terms(
+                        t ->
+                            t.field(idFieldName)
+                                .terms(
+                                    v ->
+                                        v.value(
+                                            fieldValues.stream().map(FieldValue::of).toList()))))
+            .build();
+
+    return client
+        .deleteByQuery(deleteRequest)
+        .thenComposeAsync(
+            (response) -> {
+              if (!response.failures().isEmpty()) {
+                logger.error(
+                    "Deleting documents from index '{}' by field '{}' failed with failures: {}",
+                    sourceIndexName,
+                    idFieldName,
+                    response.failures());
+                return CompletableFuture.completedFuture(false);
+              }
+              return CompletableFuture.completedFuture(true);
+            });
   }
 
   private SearchRequest createSearchRequest() {

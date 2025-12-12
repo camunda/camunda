@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.historydeletion;
 
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.List;
 
 /**
@@ -15,4 +16,12 @@ import java.util.List;
  *
  * @param historyDeletionEntities List of entities marked for deletion
  */
-public record HistoryDeletionBatch(List<HistoryDeletionEntity> historyDeletionEntities) {}
+public record HistoryDeletionBatch(List<HistoryDeletionEntity> historyDeletionEntities) {
+
+  List<Long> getProcessInstanceIds() {
+    return historyDeletionEntities.stream()
+        .filter(entity -> entity.getResourceType().equals(HistoryDeletionType.PROCESS_INSTANCE))
+        .map(HistoryDeletionEntity::getResourceKey)
+        .toList();
+  }
+}

@@ -68,6 +68,12 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             executor);
   }
 
+  @Override
+  public CompletableFuture<Boolean> deleteDocumentsByField(
+      final String sourceIndexName, final String idFieldName, final List<Long> fieldValues) {
+    return CompletableFuture.completedFuture(true);
+  }
+
   private SearchRequest createSearchRequest() {
     return createSearchRequest(indexDescriptor.getFullQualifiedName());
   }

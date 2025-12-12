@@ -25,10 +25,28 @@ public interface HistoryDeletionRepository extends AutoCloseable {
    */
   CompletableFuture<HistoryDeletionBatch> getNextBatch();
 
+  /**
+   * Deletes documents from the specified index where the given field matches any of the provided
+   * values.
+   *
+   * @param sourceIndexName The index to delete the documents from
+   * @param idFieldName The field name to match against
+   * @param fieldValues The values to match for deletion
+   * @return a {@link CompletableFuture} indicating whether the deletion was successful
+   */
+  CompletableFuture<Boolean> deleteDocumentsByField(
+      final String sourceIndexName, final String idFieldName, final List<Long> fieldValues);
+
   class NoopHistoryDeletionRepository implements HistoryDeletionRepository {
     @Override
     public CompletableFuture<HistoryDeletionBatch> getNextBatch() {
       return CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of()));
+    }
+
+    @Override
+    public CompletableFuture<Boolean> deleteDocumentsByField(
+        final String sourceIndexName, final String idFieldName, final List<Long> fieldValues) {
+      return CompletableFuture.completedFuture(true);
     }
 
     @Override

@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.historydeletion;
 
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -51,9 +52,41 @@ public class HistoryDeletionJob implements BackgroundTask {
   }
 
   private CompletionStage<Integer> deleteBatch(final HistoryDeletionBatch batch) {
-    logger.trace(
-        "Deleting history for process instances with historyDeletionEntities: {}",
-        batch.historyDeletionEntities());
-    return CompletableFuture.completedFuture(0);
+    logger.trace("Deleting historic data for entities: {}", batch.historyDeletionEntities());
+
+    if (batch.historyDeletionEntities().isEmpty()) {
+      logger.trace("No historic data to delete");
+      return CompletableFuture.completedFuture(0);
+    }
+
+    return deleteProcessInstances(batch);
+  }
+
+  private CompletionStage<Integer> deleteProcessInstances(final HistoryDeletionBatch batch) {
+    final var deletionFutures =
+        processInstanceDependants.stream()
+            .filter(t -> !(t instanceof OperationTemplate))
+            .map(
+                dependant -> {
+                  final var dependentSourceIdx = dependant.getFullQualifiedName() + "*";
+                  final var dependentIdFieldName = dependant.getProcessInstanceDependantField();
+                  return deleterRepository.deleteDocumentsByField(
+                      dependentSourceIdx, dependentIdFieldName, batch.getProcessInstanceIds());
+                })
+            .toList();
+
+    return CompletableFuture.allOf(deletionFutures.toArray(CompletableFuture[]::new))
+        .thenApply(
+            ignored -> {
+              final var deletionsSucceeded =
+                  deletionFutures.stream().allMatch(CompletableFuture::join);
+              if (!deletionsSucceeded) {
+                logger.warn(
+                    "Not all process instance deletions completed successfully. Halting further deletions.");
+                throw new IllegalStateException(
+                    "At least one history-deletion operation failed for batch " + batch);
+              }
+              return 0;
+            });
   }
 }
