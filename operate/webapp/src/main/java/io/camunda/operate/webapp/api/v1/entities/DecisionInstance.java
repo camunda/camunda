@@ -38,6 +38,7 @@ public class DecisionInstance {
   private DecisionInstanceState state;
   private String evaluationDate;
   private String evaluationFailure;
+  private String evaluationFailureMessage;
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private String decisionId;
@@ -93,6 +94,10 @@ public class DecisionInstance {
   public DecisionInstance setEvaluationFailure(final String evaluationFailure) {
     this.evaluationFailure = evaluationFailure;
     return this;
+  }
+
+  public String getEvaluationFailureMessage() {
+    return evaluationFailureMessage;
   }
 
   public Long getProcessDefinitionKey() {

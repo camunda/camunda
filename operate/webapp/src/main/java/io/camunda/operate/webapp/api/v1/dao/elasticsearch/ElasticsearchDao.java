@@ -15,7 +15,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
@@ -23,8 +25,11 @@ import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
+import io.camunda.operate.webapp.api.v1.entities.Results;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.Operator;
@@ -150,6 +155,27 @@ public abstract class ElasticsearchDao<T> {
     return searchRequestBuilder;
   }
 
+  protected <ResultType> Results<ResultType> searchWithResultsReturn(
+      final SearchRequest searchRequest, final Class<ResultType> clazz) throws IOException {
+
+    final var res = es8Client.search(searchRequest, clazz);
+
+    final var hits = res.hits().hits();
+
+    if (hits.isEmpty()) {
+      return new Results<ResultType>().setTotal(res.hits().total().value());
+    }
+
+    final Object[] sortValues = hits.getLast().sort().stream().map(FieldValue::_get).toArray();
+
+    final var items = hits.stream().map(Hit::source).toList();
+
+    return new Results<ResultType>()
+        .setTotal(res.hits().total().value())
+        .setItems(items)
+        .setSortValues(sortValues);
+  }
+
   protected abstract void buildFiltering(
       final Query<T> query, final SearchSourceBuilder searchSourceBuilder);
 
@@ -179,6 +205,14 @@ public abstract class ElasticsearchDao<T> {
     return null;
   }
 
+  protected <V> co.elastic.clients.elasticsearch._types.query_dsl.Query buildIfPresent(
+      final String field,
+      final V value,
+      final BiFunction<String, V, co.elastic.clients.elasticsearch._types.query_dsl.Query>
+          builder) {
+    return value == null ? null : builder.apply(field, value);
+  }
+
   protected QueryBuilder buildTermQuery(final String name, final Boolean value) {
     if (value != null) {
       return termQuery(name, value);
@@ -204,5 +238,15 @@ public abstract class ElasticsearchDao<T> {
           .format(dateTimeFormatter.getApiDateTimeFormatString());
     }
     return null;
+  }
+
+  protected co.elastic.clients.elasticsearch._types.query_dsl.Query buildMatchDateQueryEs8(
+      final String name, final String dateAsString) {
+    if (dateAsString == null) {
+      return null;
+    }
+
+    return RangeQuery.of(r -> r.term(t -> t.field(name).gte(dateAsString).lte(dateAsString)))
+        ._toQuery();
   }
 }
