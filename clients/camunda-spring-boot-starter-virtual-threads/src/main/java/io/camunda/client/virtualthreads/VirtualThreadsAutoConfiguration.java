@@ -83,7 +83,6 @@ public class VirtualThreadsAutoConfiguration {
   }
 
   private ThreadFactory createVirtualThreadFactory() {
-    final AtomicInteger counter = new AtomicInteger(0);
-    return Thread.ofVirtual().name("job-worker-virtual-", counter.getAndIncrement()).factory();
+    return Thread.ofVirtual().name("job-worker-virtual-", 0).factory();
   }
 }
