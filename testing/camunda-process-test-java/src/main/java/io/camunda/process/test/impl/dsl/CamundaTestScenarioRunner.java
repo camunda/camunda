@@ -21,12 +21,18 @@ import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CamundaTestScenarioRunner implements TestScenarioRunner {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaTestScenarioRunner.class);
 
   private static final Map<Class<? extends TestCaseInstruction>, TestCaseInstructionHandler<?>>
       INSTRUCTION_HANDLERS = new HashMap<>();
@@ -49,16 +55,25 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
 
   @Override
   public void run(final TestCase testCase) {
+    LOGGER.debug("Running test case: '{}'", testCase.getName());
+    final Instant start = Instant.now();
+
     try (final CamundaClient camundaClient = context.createClient()) {
 
       testCase
           .getInstructions()
           .forEach(instruction -> executeInstruction(instruction, camundaClient));
+
+    } finally {
+      final Duration duration = Duration.between(start, Instant.now());
+      LOGGER.debug("Finished test case: '{}' (duration: {})", testCase.getName(), duration);
     }
   }
 
   private void executeInstruction(
       final TestCaseInstruction instruction, final CamundaClient camundaClient) {
+    LOGGER.debug("Executing instruction: {}", instruction);
+
     //noinspection rawtypes
     final TestCaseInstructionHandler instructionHandler = getInstructionHandler(instruction);
 
