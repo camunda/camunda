@@ -71,6 +71,7 @@ import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTrans
 import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -453,6 +454,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           .addHandler(new BatchOperationCreationAuditLogTransformer())
           .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
           .addHandler(new ProcessInstanceCreationAuditLogTransformer())
+          .addHandler(new VariableAddUpdateAuditLogTransformer())
           .build()
           .forEach(exportHandlers::add);
     }
