@@ -357,7 +357,7 @@ jobs:
 
           echo "Docker build completed. Running verification..."
           echo "Verifying with VERSION=${VERSION}, REVISION=${REVISION}, DATE=${DATE}, BASE_IMAGE=${BASE_IMAGE}"
-          
+
           # Verify using the most reliable tag (DockerHub)
           ./optimize/docker/test/verify.sh "${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}"
 
@@ -389,11 +389,10 @@ jobs:
         uses: octokit/request-action@v2.4.0
         with:
           route: POST /repos/camunda/camunda/releases
-          draft: false
+          make_latest: false
           name: ${{ env.TAG }}
           tag_name: ${{ env.TAG }}
           generate_release_notes: true
-          make_latest: \"false\"
 
       - name: Docker log dump
         if: always()
