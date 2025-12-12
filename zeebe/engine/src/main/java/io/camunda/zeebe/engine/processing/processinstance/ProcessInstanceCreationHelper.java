@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -14,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -23,8 +25,17 @@ import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 
 public class ProcessInstanceCreationHelper {
+  private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
+      "Expected at least a bpmnProcessId or a key greater than -1, but none given";
+  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
+      "Expected to find process definition with process ID '%s', but none found";
+  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
+      "Expected to find process definition with process ID '%s' and version '%d', but none found";
+  private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
+      "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
@@ -34,8 +45,71 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.BOUNDARY_EVENT,
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
+  private final ProcessState processState;
 
-  public ProcessInstanceCreationHelper() {}
+  public ProcessInstanceCreationHelper(final ProcessState processState) {
+    this.processState = processState;
+  }
+
+  public Either<Rejection, DeployedProcess> findRelevantProcess(
+      final ProcessInstanceCreationRecord record) {
+    final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
+
+    if (bpmnProcessId.capacity() > 0) {
+      if (record.getVersion() >= 0) {
+        return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
+      } else {
+        return getProcess(bpmnProcessId, record.getTenantId());
+      }
+    } else if (record.getProcessDefinitionKey() >= 0) {
+      return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
+    } else {
+      return Either.left(
+          new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
+    }
+  }
+
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final String tenantId) {
+    final DeployedProcess process =
+        processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(ERROR_MESSAGE_NOT_FOUND_BY_PROCESS, bufferAsString(bpmnProcessId))));
+    }
+  }
+
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final int version, final String tenantId) {
+    final DeployedProcess process =
+        processState.getProcessByProcessIdAndVersion(bpmnProcessId, version, tenantId);
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(
+                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
+                  bufferAsString(bpmnProcessId),
+                  version)));
+    }
+  }
+
+  private Either<Rejection, DeployedProcess> getProcess(final long key, final String tenantId) {
+    final DeployedProcess process = processState.getProcessByKeyAndTenant(key, tenantId);
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND, String.format(ERROR_MESSAGE_NOT_FOUND_BY_KEY, key)));
+    }
+  }
 
   public Either<Rejection, DeployedProcess> validateCommand(
       final ProcessInstanceCreationRecord command, final DeployedProcess deployedProcess) {
