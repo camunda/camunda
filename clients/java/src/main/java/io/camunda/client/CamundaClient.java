@@ -57,6 +57,7 @@ import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
@@ -3032,4 +3033,19 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the incidents by element instance search request
    */
   AuditLogSearchRequest newAuditLogSearchRequest();
+
+  /**
+   * Command to evaluate a FEEL expression.
+   *
+   * <pre>
+   * camundaClient
+   *  .newEvaluateExpressionCommand()
+   *  .expression("=x + y")
+   *  .tenantId("tenant_123")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  EvaluateExpressionCommandStep1 newEvaluateExpressionCommand();
 }

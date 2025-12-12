@@ -34,6 +34,7 @@ import io.camunda.client.protocol.rest.DecisionRequirementsResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
+import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.GroupCreateResult;
 import io.camunda.client.protocol.rest.GroupResult;
@@ -114,6 +115,10 @@ public class RestGatewayService {
 
   public void onEvaluateDecisionRequest(final EvaluateDecisionResult response) {
     registerPost(RestGatewayPaths.getEvaluateDecisionUrl(), response);
+  }
+
+  public void onExpressionEvaluationRequest(final ExpressionEvaluationResult response) {
+    registerPost(RestGatewayPaths.getExpressionEvaluationUrl(), response);
   }
 
   public void onDeploymentsRequest(final DeploymentResult response) {

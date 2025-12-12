@@ -65,6 +65,7 @@ import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
@@ -221,6 +222,7 @@ import io.camunda.client.impl.command.DeleteUserCommandImpl;
 import io.camunda.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
+import io.camunda.client.impl.command.EvaluateExpressionCommandImpl;
 import io.camunda.client.impl.command.GloballyScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.GloballyScopedDeleteClusterVariableImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
@@ -1516,6 +1518,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AuditLogSearchRequest newAuditLogSearchRequest() {
     return new AuditLogSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public EvaluateExpressionCommandStep1 newEvaluateExpressionCommand() {
+    return new EvaluateExpressionCommandImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {
