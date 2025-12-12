@@ -218,10 +218,17 @@ jobs:
           commit_hash=$(git rev-parse --verify HEAD)
           date_time_stamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
+<<<<<<< HEAD
           export VERSION=$VERSION
           export DATE=$date_time_stamp
           export REVISION=$commit_hash
           export BASE_IMAGE=docker.io/library/alpine:3.19.1
+=======
+          export VERSION="$VERSION"
+          export DATE="$date_time_stamp"
+          export REVISION="$commit_hash"
+          export BASE_IMAGE=docker.io/library/alpine:3.23.0
+>>>>>>> 68e14e4b (deps: update alpine base image to 3.23.0)
           sudo apt update
           sudo apt install -y jq
           sudo apt install -y bash
