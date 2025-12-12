@@ -483,6 +483,15 @@ public final class BpmnStateTransitionBehavior {
       return Either.right(context);
     }
 
+    // if an element is part of a multi-instance, we skip runtime instructions as they are applied
+    // to the multi-instance container element
+    final var isMultiInstanceActivity =
+        element.getFlowScope() != null
+            && element.getFlowScope().getElementType() == BpmnElementType.MULTI_INSTANCE_BODY;
+    if (isMultiInstanceActivity) {
+      return Either.right(context);
+    }
+
     // We only have one runtime instruction type for now (termination), so we can directly execute
     // its logic (interrupt process instance and request termination).
     // Due to this, we also assume that only one non-duplicate instruction can be present for each
