@@ -18,6 +18,7 @@ package io.camunda.process.test.api.dsl.instructions;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.dsl.ProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
+import io.camunda.process.test.api.dsl.TestCaseInstructionType;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceStartInstruction;
 import java.util.List;
@@ -28,6 +29,12 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCreateProcessInstanceInstruction.Builder.class)
 public interface CreateProcessInstanceInstruction extends TestCaseInstruction {
+
+  @Value.Default
+  @Override
+  default String getType() {
+    return TestCaseInstructionType.CREATE_PROCESS_INSTANCE;
+  }
 
   /**
    * The selector to identify the process definition to create the instance for.

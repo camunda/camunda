@@ -28,7 +28,6 @@ import com.networknt.schema.ValidationMessage;
 import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.ImmutableTestScenario;
-import io.camunda.process.test.api.dsl.TestCaseInstructionType;
 import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
@@ -114,7 +113,6 @@ public class PojoCompatibilityTest {
                         .name("test case 1")
                         .addInstructions(
                             ImmutableCreateProcessInstanceInstruction.builder()
-                                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
                                 .processDefinitionSelector(
                                     ImmutableProcessDefinitionSelector.builder()
                                         .processDefinitionId("my-process")
@@ -130,7 +128,6 @@ public class PojoCompatibilityTest {
                         .name("test case 1")
                         .addInstructions(
                             ImmutableCreateProcessInstanceInstruction.builder()
-                                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
                                 .processDefinitionSelector(
                                     ImmutableProcessDefinitionSelector.builder()
                                         .processDefinitionId("my-process")
