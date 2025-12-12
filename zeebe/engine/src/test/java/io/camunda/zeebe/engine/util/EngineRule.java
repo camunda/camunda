@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
 import io.camunda.zeebe.engine.util.client.ConditionalEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
+import io.camunda.zeebe.engine.util.client.GlobalListenerBatchClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
 import io.camunda.zeebe.engine.util.client.HistoryDeletionClient;
 import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
@@ -738,6 +739,10 @@ public final class EngineRule extends ExternalResource {
 
   public ActorScheduler actorScheduler() {
     return environmentRule.getActorScheduler();
+  }
+
+  public GlobalListenerBatchClient globalListenerBatch() {
+    return new GlobalListenerBatchClient(environmentRule);
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {
