@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.config;
+package io.camunda.client.spring.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProvider;
-import io.camunda.client.spring.configuration.CredentialsProviderConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.util.Base64;
