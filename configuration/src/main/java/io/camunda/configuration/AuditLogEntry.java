@@ -7,8 +7,8 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import java.util.Set;
 
 public class AuditLogEntry {

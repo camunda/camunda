@@ -30,6 +30,6 @@ public record ExportingCfg(
   }
 
   public static ExportingCfg defaultExportingCfg() {
-    return new ExportingCfg(null, null, new AuditLogCfg(true));
+    return new ExportingCfg(null, null, new AuditLogCfg());
   }
 }

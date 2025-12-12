@@ -290,6 +290,9 @@ public class RdbmsExporterWrapper implements Exporter {
                         rdbmsWriter.getAuditLogWriter(),
                         vendorDatabaseProperties,
                         transformer,
-                        new AuditLogConfiguration()))); // TODO figure the correct configuration
+                        AuditLogConfiguration.from(
+                            brokerCfg
+                                .getExporting()
+                                .auditLogCfg())))); // TODO figure the correct configuration
   }
 }

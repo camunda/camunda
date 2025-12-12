@@ -42,7 +42,6 @@ import io.camunda.configuration.Write;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
-import io.camunda.zeebe.broker.system.configuration.AuditLogCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
@@ -589,9 +588,13 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateFromExport(final BrokerBasedProperties override) {
     final Export export = unifiedConfiguration.getCamunda().getData().getExport();
-    final AuditLogCfg auditLogCfg = new AuditLogCfg(export.getAuditLog().isEnabled());
+
     final var exportingCfg =
-        new ExportingCfg(export.getSkipRecords(), export.getDistributionInterval(), auditLogCfg);
+        new ExportingCfg(
+            export.getSkipRecords(),
+            export.getDistributionInterval(),
+            export.getAuditLog().toCfg());
+
     override.setExporting(exportingCfg);
   }
 

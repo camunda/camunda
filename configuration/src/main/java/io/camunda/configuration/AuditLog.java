@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.zeebe.broker.system.configuration.AuditLogCfg;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class AuditLog {
@@ -37,5 +38,15 @@ public class AuditLog {
 
   public void setUser(final AuditLogEntry user) {
     this.user = user;
+  }
+
+  public AuditLogCfg toCfg() {
+    final AuditLogCfg auditLogCfg = new AuditLogCfg();
+    auditLogCfg.setEnabled(isEnabled());
+    auditLogCfg.getClient().setCategories(getClient().getCategories());
+    auditLogCfg.getClient().setExcludes(getClient().getExcludes());
+    auditLogCfg.getUser().setCategories(getUser().getCategories());
+    auditLogCfg.getUser().setExcludes(getUser().getExcludes());
+    return auditLogCfg;
   }
 }

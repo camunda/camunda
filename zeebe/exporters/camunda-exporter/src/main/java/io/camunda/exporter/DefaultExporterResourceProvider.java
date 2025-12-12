@@ -120,6 +120,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -150,6 +151,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
+  private final BrokerCfg brokerCfg;
 
   public DefaultExporterResourceProvider(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;
@@ -357,7 +359,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     // TODO: check if this is only done for the camunda exporter? we should prevent doing this for
     // other exporters
-    addAuditLogHandlers(new AuditLogConfiguration());
+    addAuditLogHandlers(AuditLogConfiguration.from(brokerCfg.getExporting().auditLogCfg()));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

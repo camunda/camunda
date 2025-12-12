@@ -12,14 +12,12 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import java.util.Set;
 
 public class AuditLogCfg implements ConfigurationEntry {
-  private boolean isEnabled = false;
+  private boolean isEnabled = true;
 
   private final Entry user = new Entry();
   private final Entry client = new Entry();
 
-  public AuditLogCfg(final boolean isEnabled) {
-    this.isEnabled = isEnabled;
-  }
+  public AuditLogCfg() {}
 
   public boolean isEnabled() {
     return isEnabled;
