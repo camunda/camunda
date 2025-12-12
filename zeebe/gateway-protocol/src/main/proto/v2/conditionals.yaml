@@ -87,8 +87,7 @@ components:
         variables:
           type: object
           description: |
-            JSON object representing the variables to use for evaluation.
-            Variables will be used for evaluation of the conditions and are passed to the process instances which have been triggered.
+            JSON object representing the variables to use for evaluation of the conditions and to pass to the process instances that have been triggered.
           additionalProperties: true
           example:
             x: 2

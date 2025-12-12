@@ -42,8 +42,8 @@ public class ConditionalServices extends ApiServices<ConditionalServices> {
         brokerRequestAuthorizationConverter);
   }
 
-  public CompletableFuture<ConditionalEvaluationRecord> evaluateConditionalEvent(
-      final ConditionalEventCreateRequest request) {
+  public CompletableFuture<ConditionalEvaluationRecord> evaluateConditional(
+      final EvaluateConditionalRequest request) {
     final var brokerRequest =
         new BrokerEvaluateConditionalRequest()
             .setProcessDefinitionKey(request.processDefinitionKey())
@@ -53,6 +53,6 @@ public class ConditionalServices extends ApiServices<ConditionalServices> {
     return sendBrokerRequest(brokerRequest);
   }
 
-  public record ConditionalEventCreateRequest(
+  public record EvaluateConditionalRequest(
       String tenantId, Long processDefinitionKey, Map<String, Object> variables) {}
 }

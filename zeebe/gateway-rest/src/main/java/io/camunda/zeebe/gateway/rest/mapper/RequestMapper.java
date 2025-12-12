@@ -44,7 +44,7 @@ import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivat
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
-import io.camunda.service.ConditionalServices.ConditionalEventCreateRequest;
+import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -1208,7 +1208,7 @@ public class RequestMapper {
                     && request.getCancelRemainingInstances()));
   }
 
-  public static Either<ProblemDetail, ConditionalEventCreateRequest> toEvaluateConditionalEvent(
+  public static Either<ProblemDetail, EvaluateConditionalRequest> toEvaluateConditionalRequest(
       final ConditionalEvaluationInstruction request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Conditional Event")
@@ -1219,7 +1219,7 @@ public class RequestMapper {
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
         tenantId ->
-            new ConditionalEventCreateRequest(
+            new EvaluateConditionalRequest(
                 tenantId,
                 getKeyOrDefault(
                     request, ConditionalEvaluationInstruction::getProcessDefinitionKey, -1L),

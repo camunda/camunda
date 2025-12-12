@@ -17,7 +17,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalServices;
-import io.camunda.service.ConditionalServices.ConditionalEventCreateRequest;
+import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -40,13 +40,13 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(value = ConditionalController.class)
 public class ConditionalControllerTest extends RestControllerTest {
 
-  static final String CONDITIONAL_EVENT_URL = "/v2/conditionals/evaluation";
+  static final String CONDITIONAL_EVALUATION_URL = "/v2/conditionals/evaluation";
 
   @MockitoBean ConditionalServices conditionalServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
-  @Captor ArgumentCaptor<ConditionalEventCreateRequest> requestCaptor;
+  @Captor ArgumentCaptor<EvaluateConditionalRequest> requestCaptor;
 
   @BeforeEach
   void setupServices() {
@@ -63,7 +63,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    when(conditionalServices.evaluateConditionalEvent(any(ConditionalEventCreateRequest.class)))
+    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponseRecord));
 
     final var request =
@@ -78,7 +78,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CONDITIONAL_EVENT_URL)
+        .uri(CONDITIONAL_EVALUATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -90,7 +90,7 @@ public class ConditionalControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedApiResponse, JsonCompareMode.STRICT);
 
-    verify(conditionalServices).evaluateConditionalEvent(requestCaptor.capture());
+    verify(conditionalServices).evaluateConditional(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.variables()).containsEntry("x", 100).containsEntry("y", 50);
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1);
@@ -122,7 +122,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CONDITIONAL_EVENT_URL)
+        .uri(CONDITIONAL_EVALUATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -159,7 +159,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CONDITIONAL_EVENT_URL)
+        .uri(CONDITIONAL_EVALUATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -179,7 +179,7 @@ public class ConditionalControllerTest extends RestControllerTest {
 
     final var expectedError = "This is an expected error";
 
-    when(conditionalServices.evaluateConditionalEvent(any(ConditionalEventCreateRequest.class)))
+    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException(expectedError, ServiceException.Status.INVALID_ARGUMENT)));
@@ -207,7 +207,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CONDITIONAL_EVENT_URL)
+        .uri(CONDITIONAL_EVALUATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -244,7 +244,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CONDITIONAL_EVENT_URL)
+        .uri(CONDITIONAL_EVALUATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -262,7 +262,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    when(conditionalServices.evaluateConditionalEvent(any(ConditionalEventCreateRequest.class)))
+    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
         .thenThrow(
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.processDefinition().createProcessInstance())));
@@ -288,7 +288,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CONDITIONAL_EVENT_URL)
+        .uri(CONDITIONAL_EVALUATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -328,7 +328,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CONDITIONAL_EVENT_URL)
+        .uri(CONDITIONAL_EVALUATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
