@@ -5,13 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.testkit;
+package io.camunda.zeebe.backup.api;
 
-public interface BackupStoreTestKit
-    extends SavingBackup,
-        DeletingBackup,
-        RestoringBackup,
-        UpdatingBackupStatus,
-        QueryingBackupStatus,
-        ListingBackups,
-        StoringBackupIndex {}
+/** Uniquely identifies a specific {@link BackupIndex}. */
+public interface BackupIndexIdentifier {
+  int nodeId();
+
+  int partitionId();
+}

@@ -5,13 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.testkit;
+package io.camunda.zeebe.backup.common;
 
-public interface BackupStoreTestKit
-    extends SavingBackup,
-        DeletingBackup,
-        RestoringBackup,
-        UpdatingBackupStatus,
-        QueryingBackupStatus,
-        ListingBackups,
-        StoringBackupIndex {}
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
+
+public record BackupIndexIdentifierImpl(int partitionId, int nodeId)
+    implements BackupIndexIdentifier {}
