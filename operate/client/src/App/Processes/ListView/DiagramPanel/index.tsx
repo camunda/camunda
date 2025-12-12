@@ -11,7 +11,7 @@ import {observer} from 'mobx-react';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {Section} from '../../DiagramPanel/styled';
+import {Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
@@ -19,11 +19,11 @@ import {StateOverlay} from 'modules/components/StateOverlay';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
-import {BatchModificationNotification} from './BatchModificationNotification';
+import {BatchModificationNotification} from '../v2/DiagramPanel/BatchModificationNotification';
 import {DiagramHeader} from './DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
-import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import {useProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {
   getFlowNode,
@@ -139,7 +139,7 @@ const DiagramPanel: React.FC = observer(() => {
     <Section aria-label="Diagram Panel">
       <DiagramHeader
         processDetails={processDetails}
-        processDefinitionKey={processDefinitionKey}
+        processDefinitionId={processId}
       />
       <DiagramShell
         status={getStatus()}
