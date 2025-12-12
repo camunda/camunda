@@ -32,6 +32,9 @@ public class StarterCfg {
   private boolean startViaMessage;
   private String msgName;
 
+  private double rateAdjustmentFactor;
+  private int rateAdjustmentIntervalMs;
+
   public boolean isStartViaMessage() {
     return startViaMessage;
   }
@@ -126,5 +129,21 @@ public class StarterCfg {
 
   public void setDurationLimit(final int durationLimit) {
     this.durationLimit = durationLimit;
+  }
+
+  public double getRateAdjustmentFactor() {
+    return rateAdjustmentFactor;
+  }
+
+  public void setRateAdjustmentFactor(final double rateAdjustmentFactor) {
+    this.rateAdjustmentFactor = rateAdjustmentFactor;
+  }
+
+  public int getRateAdjustmentIntervalMs() {
+    return rateAdjustmentIntervalMs;
+  }
+
+  public void setRateAdjustmentIntervalMs(final int rateAdjustmentIntervalMs) {
+    this.rateAdjustmentIntervalMs = rateAdjustmentIntervalMs;
   }
 }
