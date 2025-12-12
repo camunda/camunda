@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.exporter.CamundaExporter;
+import io.camunda.exporter.rdbms.RdbmsExporterFactory;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -108,7 +110,12 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     // the repository still uses the default "exporter instantiation" as fallback
 
     // TODO: check if camndaexporter is configured and if yes, create the descriptor here!
-    new ExporterDescriptor("camunda-exporter", CamundaExporterFactory.class, Map.of());
+    final var camundaExporter = new CamundaExporter();
+    new ExporterDescriptor("camundaexporter", CamundaExporterFactory.class, Map.of());
+    new ExporterDescriptor(
+        "rdbmsexporter",
+        new RdbmsExporterFactory(rdbmsService, brokerCfg, vendorDatabaseProperties),
+        Map.of());
 
     if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
       LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");

@@ -9,9 +9,12 @@ package io.camunda.zeebe.exporter.common.auditlog;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.zeebe.broker.system.configuration.AuditLogCfg;
 import java.util.Set;
 
 public final class AuditLogConfiguration {
+
+  private boolean isEnabled = true;
 
   private ActorAuditLogConfiguration user = new ActorAuditLogConfiguration();
   private ActorAuditLogConfiguration client = new ActorAuditLogConfiguration();
@@ -40,7 +43,12 @@ public final class AuditLogConfiguration {
   }
 
   public boolean isEnabled() {
-    return !(getUser().getCategories().isEmpty() && getClient().getCategories().isEmpty());
+    return isEnabled
+        && !(getUser().getCategories().isEmpty() && getClient().getCategories().isEmpty());
+  }
+
+  public void setEnabled(final boolean enabled) {
+    isEnabled = enabled;
   }
 
   public boolean isEnabled(final AuditLogInfo auditLog) {
@@ -52,6 +60,25 @@ public final class AuditLogConfiguration {
 
     return config.getCategories().contains(auditLog.category())
         && !config.getExcludes().contains(auditLog.entityType());
+  }
+
+  public static AuditLogConfiguration from(final AuditLogCfg auditLogCfg) {
+    final var config = new AuditLogConfiguration();
+    config.setEnabled(auditLogCfg.isEnabled());
+
+    final var userCfg = auditLogCfg.getUser();
+    final var userConfig = new ActorAuditLogConfiguration();
+    userConfig.setCategories(userCfg.getCategories());
+    userConfig.setExcludes(userCfg.getExcludes());
+    config.setUser(userConfig);
+
+    final var clientCfg = auditLogCfg.getClient();
+    final var clientConfig = new ActorAuditLogConfiguration();
+    clientConfig.setCategories(clientCfg.getCategories());
+    clientConfig.setExcludes(clientCfg.getExcludes());
+    config.setClient(clientConfig);
+
+    return config;
   }
 
   public static final class ActorAuditLogConfiguration {

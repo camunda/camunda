@@ -85,7 +85,11 @@ public class CamundaExporter implements Exporter {
   private int partitionId;
   private Context context;
 
-  // not possible? must have emtpty constructor ???
+  // not possible? must have emtpty constructor ??? yes, worst case, yes
+  public CamundaExporter() {
+    this(BrokerCfg.defaultCfg());
+  }
+
   public CamundaExporter(final BrokerCfg brokerCfg) {
     // the metadata will be initialized on open
     this(new DefaultExporterResourceProvider(brokerCfg), null);

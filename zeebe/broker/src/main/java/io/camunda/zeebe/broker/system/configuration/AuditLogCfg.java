@@ -7,8 +7,15 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import java.util.Set;
+
 public class AuditLogCfg implements ConfigurationEntry {
   private boolean isEnabled = false;
+
+  private final Entry user = new Entry();
+  private final Entry client = new Entry();
 
   public AuditLogCfg(final boolean isEnabled) {
     this.isEnabled = isEnabled;
@@ -20,5 +27,34 @@ public class AuditLogCfg implements ConfigurationEntry {
 
   public void setEnabled(final boolean enabled) {
     isEnabled = enabled;
+  }
+
+  public Entry getUser() {
+    return user;
+  }
+
+  public Entry getClient() {
+    return client;
+  }
+
+  public class Entry {
+    private Set<AuditLogOperationCategory> categories = Set.of();
+    private Set<AuditLogEntityType> excludes = Set.of();
+
+    public Set<AuditLogOperationCategory> getCategories() {
+      return categories;
+    }
+
+    public void setCategories(final Set<AuditLogOperationCategory> categories) {
+      this.categories = categories;
+    }
+
+    public Set<AuditLogEntityType> getExcludes() {
+      return excludes;
+    }
+
+    public void setExcludes(final Set<AuditLogEntityType> excludes) {
+      this.excludes = excludes;
+    }
   }
 }
