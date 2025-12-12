@@ -112,22 +112,18 @@ public class BrokerBasedPropertiesOverride {
     final BrokerBasedProperties override = new BrokerBasedProperties();
     BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
 
-    // from camunda.cluster.* sections
     populateFromCluster(override);
 
     populateFromLongPolling(override);
 
     populateFromRestFilters(override);
 
-    // from camunda.system.* sections in relation
-    // with zeebe.broker.*
     populateFromSystem(override);
 
     populateFromPrimaryStorage(override);
 
     populateFromGrpc(override);
 
-    // from camunda.data.* sections
     populateFromData(override);
 
     if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
@@ -141,13 +137,29 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromMonitoring(override);
 
-    // TODO: Populate the rest of the bean using unifiedConfiguration
-    //  override.setSampleField(unifiedConfiguration.getSampleField());
     populateFromProcessing(override);
 
     populateFromFlowControl(override);
 
+    populateFromSecurity(override);
+
     return override;
+  }
+
+  private void populateFromSecurity(final BrokerBasedProperties override) {
+    final var tlsCluster =
+        unifiedConfiguration.getCamunda().getSecurity().getTransportLayerSecurity().getCluster();
+
+    final var networkSecurity = override.getNetwork().getSecurity();
+    networkSecurity.setEnabled(tlsCluster.isEnabled());
+    networkSecurity.setCertificateChainPath(tlsCluster.getCertificateChainPath());
+    networkSecurity.setPrivateKeyPath(tlsCluster.getCertificatePrivateKeyPath());
+    networkSecurity
+        .getKeyStore()
+        .setFilePath(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getFilePath());
+    networkSecurity
+        .getKeyStore()
+        .setPassword(tlsCluster.getKeyStore().withTlsClusterKeyStoreProperties().getPassword());
   }
 
   private void populateFromProcessing(final BrokerBasedProperties override) {
