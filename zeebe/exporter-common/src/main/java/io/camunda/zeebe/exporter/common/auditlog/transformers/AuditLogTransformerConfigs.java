@@ -11,12 +11,14 @@ import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATIO
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
 
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Set;
 
 public class AuditLogTransformerConfigs {
@@ -42,4 +44,8 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig PROCESS_INSTANCE_CREATION_CONFIG =
       TransformerConfig.with(PROCESS_INSTANCE_CREATION)
           .withIntents(ProcessInstanceCreationIntent.CREATED);
+
+  public static final TransformerConfig VARIABLE_CONFIG =
+      TransformerConfig.with(VARIABLE)
+          .withIntents(VariableIntent.CREATED, VariableIntent.UPDATED);
 }
