@@ -48,6 +48,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
+import io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
@@ -84,6 +85,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.feelexpression.ExpressionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -784,6 +786,16 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toClusterVariableDeleteResponse(
       final ClusterVariableRecord unused) {
     return ResponseEntity.noContent().build();
+  }
+
+  public static ResponseEntity<Object> toExpressionEvaluationResult(
+      final ExpressionRecord expressionRecord) {
+    final var response =
+        new ExpressionEvaluationResult()
+            .expression(expressionRecord.getExpression())
+            .result(expressionRecord.getResultValue())
+            .warnings(expressionRecord.getWarnings());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   static class RestJobActivationResult

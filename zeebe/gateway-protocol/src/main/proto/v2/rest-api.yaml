@@ -39,6 +39,7 @@ tags:
   - name: Decision requirements
   - name: Document
   - name: Element instance
+  - name: Expression
   - name: Group
   - name: Incident
   - name: Job
@@ -166,6 +167,10 @@ paths:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1incidents~1search'
   /element-instances/{elementInstanceKey}/variables:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
+
+  # Expression endpoints
+  /expression/evaluation:
+    $ref: 'expression.yaml#/paths/~1expression~1evaluation'
 
   # Group endpoints
   /groups:

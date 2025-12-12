@@ -13,27 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.zeebe.protocol.record.intent;
 
-public enum ResourceType {
-  AUDIT_LOG,
-  AUTHORIZATION,
-  BATCH,
-  CLUSTER_VARIABLE,
-  COMPONENT,
-  DECISION_DEFINITION,
-  DECISION_REQUIREMENTS_DEFINITION,
-  DOCUMENT,
-  EXPRESSION,
-  GROUP,
-  MAPPING_RULE,
-  MESSAGE,
-  PROCESS_DEFINITION,
-  RESOURCE,
-  ROLE,
-  SYSTEM,
-  TENANT,
-  USER,
-  USER_TASK,
-  UNKNOWN_ENUM_VALUE,
+public enum ExpressionIntent implements Intent {
+  EVALUATE(0),
+  EVALUATED(1);
+
+  private final short value;
+
+  ExpressionIntent(final int value) {
+    this.value = (short) value;
+  }
+
+  public short getIntent() {
+    return value;
+  }
+
+  public static Intent from(final short value) {
+    switch (value) {
+      case 0:
+        return EVALUATE;
+      case 1:
+        return EVALUATED;
+      default:
+        return UNKNOWN;
+    }
+  }
+
+  @Override
+  public short value() {
+    return value;
+  }
+
+  @Override
+  public boolean isEvent() {
+    return this == EVALUATED;
+  }
 }

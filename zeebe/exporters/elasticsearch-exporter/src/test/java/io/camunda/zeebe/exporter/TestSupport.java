@@ -78,6 +78,7 @@ final class TestSupport {
       case CLUSTER_VARIABLE -> config.clusterVariable = value;
       case CONDITIONAL_SUBSCRIPTION -> config.conditionalSubscription = value;
       case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
+      case EXPRESSION -> config.expression = value;
       case GLOBAL_LISTENER_BATCH -> config.globalListenerBatch = value;
       default ->
           throw new IllegalArgumentException(
@@ -136,7 +137,8 @@ final class TestSupport {
             ValueType.MULTI_INSTANCE,
             ValueType.HISTORY_DELETION,
             ValueType.CONDITIONAL_SUBSCRIPTION,
-            ValueType.CONDITIONAL_EVALUATION);
+            ValueType.CONDITIONAL_EVALUATION,
+            ValueType.EXPRESSION);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 
