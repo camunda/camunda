@@ -49,6 +49,15 @@ public final class TestSearchContainers {
   private static final DockerImageName ORACLE_IMAGE =
       DockerImageName.parse("gvenzl/oracle-free").withTag("slim");
 
+  /** Database name for manual user testing with restricted privileges */
+  public static final String CAMUNDA_MANUAL_DATABASE = "camunda_manual";
+
+  /** Username for manual user testing with restricted privileges */
+  public static final String CAMUNDA_MANUAL_USER = "camunda_user";
+
+  /** Password for manual user testing with restricted privileges */
+  public static final String CAMUNDA_MANUAL_PASSWORD = "Camunda_Pass123!";
+
   private TestSearchContainers() {}
 
   /**
@@ -113,6 +122,7 @@ public final class TestSearchContainers {
         .withDatabaseName("camunda")
         .withUsername("camunda")
         .withPassword("camunda")
+        .withInitScript("db-init-scripts/postgres-manual-user.sql")
         .withStartupTimeout(Duration.ofMinutes(5));
   }
 
@@ -121,6 +131,7 @@ public final class TestSearchContainers {
         .withDatabaseName("camunda")
         .withUsername("camunda")
         .withPassword("camunda")
+        .withInitScript("db-init-scripts/oracle-manual-user.sql")
         .withStartupTimeout(Duration.ofMinutes(5));
   }
 
@@ -129,6 +140,7 @@ public final class TestSearchContainers {
         .withDatabaseName("camunda")
         .withUsername("camunda")
         .withPassword("camunda")
+        .withInitScript("db-init-scripts/mariadb-manual-user.sql")
         .withStartupTimeout(Duration.ofMinutes(5));
   }
 
@@ -137,11 +149,13 @@ public final class TestSearchContainers {
         .withDatabaseName("camunda")
         .withUsername("camunda")
         .withPassword("camunda")
+        .withInitScript("db-init-scripts/mysql-manual-user.sql")
         .withStartupTimeout(Duration.ofMinutes(5));
   }
 
   public static MSSQLServerContainer<?> createDefaultMSSQLServerContainer() {
     return new MSSQLServerContainer<>(MSSQLSERVER_IMAGE)
+        .withInitScript("db-init-scripts/mssql-manual-user.sql")
         .withStartupTimeout(Duration.ofMinutes(5))
         .acceptLicense();
   }
