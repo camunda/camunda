@@ -10,8 +10,12 @@ package io.camunda.exporter.handlers.auditlog;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.BatchOperation;
@@ -23,6 +27,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
@@ -106,10 +111,10 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
     entity
         .setEntityKey(String.valueOf(record.getKey()))
-        .setEntityType(info.entityType())
-        .setCategory(info.category())
-        .setOperationType(info.operationType())
-        .setActorType(info.actor().actorType())
+        .setEntityType(mapEntityType(info))
+        .setCategory(mapCategory(info))
+        .setOperationType(mapOperationType(info))
+        .setActorType(mapActorType(info))
         .setActorId(info.actor().actorId())
         .setBatchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
         .setEntityVersion(record.getRecordVersion())
@@ -135,6 +140,30 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private AuditLogEntityType mapEntityType(final AuditLogInfo info) {
+    return Objects.nonNull(info.entityType())
+        ? AuditLogEntityType.valueOf(info.entityType().name())
+        : null;
+  }
+
+  private AuditLogOperationCategory mapCategory(final AuditLogInfo info) {
+    return Objects.nonNull(info.category())
+        ? AuditLogOperationCategory.valueOf(info.category().name())
+        : null;
+  }
+
+  private AuditLogOperationType mapOperationType(final AuditLogInfo info) {
+    return Objects.nonNull(info.operationType())
+        ? AuditLogOperationType.valueOf(info.operationType().name())
+        : null;
+  }
+
+  private AuditLogActorType mapActorType(final AuditLogInfo info) {
+    return Objects.nonNull(info.actor()) && Objects.nonNull(info.actor().actorType())
+        ? AuditLogActorType.valueOf(info.actor().actorType().name())
+        : null;
   }
 
   public static AuditLogHandlerBuilder builder(

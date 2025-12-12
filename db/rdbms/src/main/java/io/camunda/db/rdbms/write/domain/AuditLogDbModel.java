@@ -7,35 +7,30 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
 public record AuditLogDbModel(
     String auditLogKey,
     String entityKey,
-    AuditLogEntityType entityType,
-    AuditLogOperationType operationType,
+    AuditLogEntity.AuditLogEntityType entityType,
+    AuditLogEntity.AuditLogOperationType operationType,
     Integer entityVersion,
     Short entityValueType,
     Short entityOperationIntent,
     Long batchOperationKey,
     BatchOperationType batchOperationType,
     OffsetDateTime timestamp,
-    AuditLogActorType actorType,
+    AuditLogEntity.AuditLogActorType actorType,
     String actorId,
     String tenantId,
-    AuditLogTenantScope tenantScope,
-    AuditLogOperationResult result,
+    AuditLogEntity.AuditLogTenantScope tenantScope,
+    AuditLogEntity.AuditLogOperationResult result,
     String annotation,
-    AuditLogOperationCategory category,
+    AuditLogEntity.AuditLogOperationCategory category,
     String processDefinitionId,
     String decisionRequirementsId,
     String decisionDefinitionId,
@@ -96,21 +91,21 @@ public record AuditLogDbModel(
 
     private String auditLogKey;
     private String entityKey;
-    private AuditLogEntityType entityType;
-    private AuditLogOperationType operationType;
+    private AuditLogEntity.AuditLogEntityType entityType;
+    private AuditLogEntity.AuditLogOperationType operationType;
     private Integer entityVersion;
     private Short entityValueType;
     private Short entityOperationIntent;
     private Long batchOperationKey;
     private BatchOperationType batchOperationType;
     private OffsetDateTime timestamp;
-    private AuditLogActorType actorType;
+    private AuditLogEntity.AuditLogActorType actorType;
     private String actorId;
     private String tenantId;
-    private AuditLogTenantScope tenantScope;
-    private AuditLogOperationResult result;
+    private AuditLogEntity.AuditLogTenantScope tenantScope;
+    private AuditLogEntity.AuditLogOperationResult result;
     private String annotation;
-    private AuditLogOperationCategory category;
+    private AuditLogEntity.AuditLogOperationCategory category;
     private String processDefinitionId;
     private String decisionRequirementsId;
     private String decisionDefinitionId;
@@ -138,12 +133,12 @@ public record AuditLogDbModel(
       return this;
     }
 
-    public Builder entityType(final AuditLogEntityType entityType) {
+    public Builder entityType(final AuditLogEntity.AuditLogEntityType entityType) {
       this.entityType = entityType;
       return this;
     }
 
-    public Builder operationType(final AuditLogOperationType operationType) {
+    public Builder operationType(final AuditLogEntity.AuditLogOperationType operationType) {
       this.operationType = operationType;
       return this;
     }
@@ -178,7 +173,7 @@ public record AuditLogDbModel(
       return this;
     }
 
-    public Builder actorType(final AuditLogActorType actorType) {
+    public Builder actorType(final AuditLogEntity.AuditLogActorType actorType) {
       this.actorType = actorType;
       return this;
     }
@@ -193,12 +188,12 @@ public record AuditLogDbModel(
       return this;
     }
 
-    public Builder tenantScope(final AuditLogTenantScope tenantScope) {
+    public Builder tenantScope(final AuditLogEntity.AuditLogTenantScope tenantScope) {
       this.tenantScope = tenantScope;
       return this;
     }
 
-    public Builder result(final AuditLogOperationResult result) {
+    public Builder result(final AuditLogEntity.AuditLogOperationResult result) {
       this.result = result;
       return this;
     }
@@ -208,7 +203,7 @@ public record AuditLogDbModel(
       return this;
     }
 
-    public Builder category(final AuditLogOperationCategory category) {
+    public Builder category(final AuditLogEntity.AuditLogOperationCategory category) {
       this.category = category;
       return this;
     }

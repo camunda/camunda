@@ -10,7 +10,7 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs.PROCESS_INSTANCE_MODIFICATION_CONFIG;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -32,6 +32,6 @@ public class ProcessInstanceModificationAuditLogTransformer
     entity
         .processInstanceKey(value.getProcessInstanceKey())
         .tenantId(value.getTenantId())
-        .tenantScope(AuditLogTenantScope.TENANT);
+        .tenantScope(AuditLogEntity.AuditLogTenantScope.TENANT);
   }
 }

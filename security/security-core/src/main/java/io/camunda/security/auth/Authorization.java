@@ -26,7 +26,6 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCE
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_OPERATOR_AUDIT_LOG;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USAGE_METRIC;
@@ -173,10 +172,6 @@ public record Authorization<T>(
 
     public Builder<T> readUsageMetric() {
       return permissionType(READ_USAGE_METRIC);
-    }
-
-    public Builder<T> readOperatorAuditLog() {
-      return permissionType(READ_OPERATOR_AUDIT_LOG);
     }
 
     public Builder<T> batchOperation() {

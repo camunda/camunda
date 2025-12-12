@@ -9,11 +9,6 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -28,6 +23,7 @@ public record AuditLogEntity(
     String actorId,
     AuditLogActorType actorType,
     String tenantId,
+    AuditLogTenantScope tenantScope,
     AuditLogOperationResult result,
     String annotation,
     AuditLogOperationCategory category,
@@ -58,6 +54,7 @@ public record AuditLogEntity(
     private String actorId;
     private AuditLogActorType actorType;
     private String tenantId;
+    private AuditLogTenantScope tenantScope;
     private AuditLogOperationResult result;
     private String annotation;
     private AuditLogOperationCategory category;
@@ -123,6 +120,11 @@ public record AuditLogEntity(
 
     public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
+      return this;
+    }
+
+    public Builder tenantScope(final AuditLogTenantScope tenantScope) {
+      this.tenantScope = tenantScope;
       return this;
     }
 
@@ -224,6 +226,7 @@ public record AuditLogEntity(
           actorId,
           actorType,
           tenantId,
+          tenantScope,
           result,
           annotation,
           category,
@@ -242,5 +245,61 @@ public record AuditLogEntity(
           formKey,
           resourceKey);
     }
+  }
+
+  public enum AuditLogActorType {
+    USER,
+    CLIENT
+  }
+
+  public enum AuditLogTenantScope {
+    GLOBAL,
+    TENANT
+  }
+
+  public enum AuditLogEntityType {
+    UNKNOWN,
+    PROCESS_INSTANCE,
+    VARIABLE,
+    INCIDENT,
+    USER_TASK,
+    DECISION,
+    BATCH,
+    USER,
+    MAPPING_RULE,
+    ROLE,
+    GROUP,
+    TENANT,
+    AUTHORIZATION,
+    RESOURCE
+  }
+
+  public enum AuditLogOperationCategory {
+    UNKNOWN,
+    ADMIN,
+    OPERATOR,
+    USER_TASK
+  }
+
+  public enum AuditLogOperationResult {
+    SUCCESS,
+    FAIL
+  }
+
+  public enum AuditLogOperationType {
+    UNKNOWN,
+    CREATE,
+    UPDATE,
+    DELETE,
+    ASSIGN,
+    UNASSIGN,
+    MODIFY,
+    MIGRATE,
+    CANCEL,
+    RESOLVE,
+    COMPLETE,
+    SUSPEND,
+    RESUME,
+    EVALUATE
   }
 }

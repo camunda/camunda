@@ -22,11 +22,7 @@ import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogCategoryEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogEntityTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogOperationTypeEnum;
@@ -121,17 +117,17 @@ public class AuditLogControllerTest extends RestControllerTest {
       new AuditLogEntity.Builder()
           .auditLogKey("123")
           .entityKey("entityKey")
-          .entityType(AuditLogEntityType.USER)
-          .operationType(AuditLogOperationType.CREATE)
+          .entityType(AuditLogEntity.AuditLogEntityType.USER)
+          .operationType(AuditLogEntity.AuditLogOperationType.CREATE)
           .batchOperationKey(456L)
           .batchOperationType(BatchOperationType.ADD_VARIABLE)
           .timestamp(OffsetDateTime.parse("2024-01-01T00:00:00Z"))
           .actorId("actor")
-          .actorType(AuditLogActorType.USER)
+          .actorType(AuditLogEntity.AuditLogActorType.USER)
           .tenantId("tenant")
-          .result(AuditLogOperationResult.SUCCESS)
+          .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
           .annotation("annotation")
-          .category(AuditLogOperationCategory.OPERATOR)
+          .category(AuditLogEntity.AuditLogOperationCategory.OPERATOR)
           .processDefinitionId("processDefinitionId")
           .processDefinitionKey(789L)
           .processInstanceKey(987L)

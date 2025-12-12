@@ -21,17 +21,18 @@ public class AuditLogEntityTransformer
     return new AuditLogEntity(
         value.getId(),
         value.getEntityKey(),
-        value.getEntityType(),
-        value.getOperationType(),
+        mapEntityType(value.getEntityType()),
+        mapOperationType(value.getOperationType()),
         value.getBatchOperationKey(),
         mapBatchOperationType(value.getBatchOperationType()),
         value.getTimestamp(),
         value.getActorId(),
-        value.getActorType(),
+        mapActorType(value.getActorType()),
         value.getTenantId(),
-        value.getResult(),
+        mapTenantScope(value.getTenantScope()),
+        mapOperationResult(value.getResult()),
         value.getAnnotation(),
-        value.getCategory(),
+        mapOperationCategory(value.getCategory()),
         value.getProcessDefinitionId(),
         value.getProcessDefinitionKey(),
         value.getProcessInstanceKey(),
@@ -48,18 +49,44 @@ public class AuditLogEntityTransformer
         value.getResourceKey());
   }
 
+  private AuditLogEntity.AuditLogEntityType mapEntityType(
+      final io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType entityType) {
+    return entityType != null ? AuditLogEntity.AuditLogEntityType.valueOf(entityType.name()) : null;
+  }
+
+  private AuditLogEntity.AuditLogOperationType mapOperationType(
+      final io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType operationType) {
+    return operationType != null
+        ? AuditLogEntity.AuditLogOperationType.valueOf(operationType.name())
+        : null;
+  }
+
   private BatchOperationType mapBatchOperationType(
       final io.camunda.zeebe.protocol.record.value.BatchOperationType batchOperationType) {
-    if (batchOperationType == null) {
-      return null;
-    }
+    return batchOperationType != null
+        ? BatchOperationType.valueOf(batchOperationType.name())
+        : null;
+  }
 
-    return switch (batchOperationType) {
-      case RESOLVE_INCIDENT -> BatchOperationType.RESOLVE_INCIDENT;
-      case CANCEL_PROCESS_INSTANCE -> BatchOperationType.CANCEL_PROCESS_INSTANCE;
-      case DELETE_PROCESS_INSTANCE -> BatchOperationType.DELETE_PROCESS_INSTANCE;
-      case MODIFY_PROCESS_INSTANCE -> BatchOperationType.MODIFY_PROCESS_INSTANCE;
-      case MIGRATE_PROCESS_INSTANCE -> BatchOperationType.MIGRATE_PROCESS_INSTANCE;
-    };
+  private AuditLogEntity.AuditLogActorType mapActorType(
+      final io.camunda.webapps.schema.entities.auditlog.AuditLogActorType actorType) {
+    return actorType != null ? AuditLogEntity.AuditLogActorType.valueOf(actorType.name()) : null;
+  }
+
+  private AuditLogEntity.AuditLogTenantScope mapTenantScope(
+      final io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope result) {
+    return result != null ? AuditLogEntity.AuditLogTenantScope.valueOf(result.name()) : null;
+  }
+
+  private AuditLogEntity.AuditLogOperationResult mapOperationResult(
+      final io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult result) {
+    return result != null ? AuditLogEntity.AuditLogOperationResult.valueOf(result.name()) : null;
+  }
+
+  private AuditLogEntity.AuditLogOperationCategory mapOperationCategory(
+      final io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory category) {
+    return category != null
+        ? AuditLogEntity.AuditLogOperationCategory.valueOf(category.name())
+        : null;
   }
 }

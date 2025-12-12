@@ -194,8 +194,7 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.AUDIT_LOG)
-                    .hasOnlyPermissionTypes(
-                        PermissionType.READ, PermissionType.READ_OPERATOR_AUDIT_LOG));
+                    .hasOnlyPermissionTypes(PermissionType.READ));
   }
 
   @Test
@@ -296,8 +295,7 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.AUDIT_LOG)
-                    .hasOnlyPermissionTypes(
-                        PermissionType.READ, PermissionType.READ_OPERATOR_AUDIT_LOG));
+                    .hasOnlyPermissionTypes(PermissionType.READ));
   }
 
   @Test

@@ -12,7 +12,7 @@ import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.BatchOperation;
@@ -88,10 +88,10 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .timestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
     if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
-      auditLog.result(AuditLogOperationResult.FAIL);
+      auditLog.result(AuditLogEntity.AuditLogOperationResult.FAIL);
       // TODO: set rejection type and reason to AuditLogEntity#details
     } else {
-      auditLog.result(AuditLogOperationResult.SUCCESS);
+      auditLog.result(AuditLogEntity.AuditLogOperationResult.SUCCESS);
       transformer.transform(record, auditLog);
     }
     return auditLog.build();
