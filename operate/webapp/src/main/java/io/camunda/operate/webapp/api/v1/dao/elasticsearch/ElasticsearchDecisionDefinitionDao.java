@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -77,25 +76,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
         buildQueryOn(query, DecisionDefinition.KEY, new Builder(), true);
     try {
       final var searchReq = searchRequestBuilder.index(decisionIndex.getAlias()).build();
-      final var res = es8Client.search(searchReq, DecisionDefinition.class);
-
-      final var hits = res.hits().hits();
-
-      if (hits.isEmpty()) {
-        return new Results<DecisionDefinition>().setTotal(res.hits().total().value());
-      }
-
-      final Object[] sortValues = hits.getLast().sort().stream().map(FieldValue::_get).toArray();
-
-      final var decisionDefinitions = hits.stream().map(Hit::source).toList();
-
-      populateDecisionRequirementsNameAndVersion(decisionDefinitions);
-
-      return new Results<DecisionDefinition>()
-          .setTotal(res.hits().total().value())
-          .setItems(decisionDefinitions)
-          .setSortValues(sortValues);
-
+      return searchWithResultsReturn(searchReq, DecisionDefinition.class);
     } catch (final Exception e) {
       throw new ServerException("Error in reading decision definitions", e);
     }
@@ -130,39 +111,36 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
     }
 
     final var idQ =
-        filter.getId() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(DecisionDefinition.ID, filter.getId());
+        buildIfPresent(DecisionDefinition.ID, filter.getId(), ElasticsearchUtil::termsQuery);
     final var keyQ =
-        filter.getKey() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(DecisionDefinition.KEY, filter.getKey());
+        buildIfPresent(DecisionDefinition.KEY, filter.getKey(), ElasticsearchUtil::termsQuery);
     final var decIdQ =
-        filter.getDecisionId() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(DecisionDefinition.DECISION_ID, filter.getDecisionId());
+        buildIfPresent(
+            DecisionDefinition.DECISION_ID, filter.getDecisionId(), ElasticsearchUtil::termsQuery);
+
     final var tenantIdQ =
-        filter.getTenantId() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(DecisionDefinition.TENANT_ID, filter.getTenantId());
+        buildIfPresent(
+            DecisionDefinition.TENANT_ID, filter.getTenantId(), ElasticsearchUtil::termsQuery);
+
     final var nameQ =
-        filter.getName() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(DecisionDefinition.NAME, filter.getName());
+        buildIfPresent(DecisionDefinition.NAME, filter.getName(), ElasticsearchUtil::termsQuery);
+
     final var verQ =
-        filter.getVersion() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(DecisionDefinition.VERSION, filter.getVersion());
+        buildIfPresent(
+            DecisionDefinition.VERSION, filter.getVersion(), ElasticsearchUtil::termsQuery);
+
     final var decReqIdQ =
-        filter.getDecisionRequirementsId() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(
-                DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId());
+        buildIfPresent(
+            DecisionDefinition.DECISION_REQUIREMENTS_ID,
+            filter.getDecisionRequirementsId(),
+            ElasticsearchUtil::termsQuery);
+
     final var decReqKeyQ =
-        filter.getDecisionRequirementsKey() == null
-            ? null
-            : ElasticsearchUtil.termsQuery(
-                DecisionDefinition.DECISION_REQUIREMENTS_KEY, filter.getDecisionRequirementsKey());
+        buildIfPresent(
+            DecisionDefinition.DECISION_REQUIREMENTS_KEY,
+            filter.getDecisionRequirementsKey(),
+            ElasticsearchUtil::termsQuery);
+
     final var filteringQ =
         buildFilteringByEs8(
             filter.getDecisionRequirementsName(), filter.getDecisionRequirementsVersion());
