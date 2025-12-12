@@ -60,7 +60,7 @@ jobs:
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@7db437bac241fa58b8b82ed5ef1984822cad0614 # 2.1.69
+        uses: YunaBraska/java-info-action@82fed751c5a2cfb4b740fdb2c56166616d81eab9 # 2.1.90
         with:
           work-dir: ./optimize
 
