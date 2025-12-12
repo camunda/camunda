@@ -351,6 +351,43 @@ class BackupMultiPartitionTest {
     assertThat(backupStates.get(1).checkpointPosition()).isGreaterThan(0);
   }
 
+  @Test
+  @Timeout(value = 120)
+  void canRetrieveCheckpointStateFromPartialPartitions()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    // given
+    final long processKey = client.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
+    createProcessInstanceOnPartitionOne(processKey);
+
+    final long backupId = 3;
+    // trigger backup only on partition 2
+    takeBackupOnPartition(backupId, 2);
+
+    // then
+    waitUntilBackupCompletedOnPartition(backupId, 2);
+
+    final var state = getCheckpointState();
+    assertThat(state).isNotNull();
+    assertThat(state.getCheckpointStates()).hasSize(1);
+    assertThat(state.getBackupStates()).hasSize(1);
+
+    final var checkpointStates =
+        state.getCheckpointStates().stream()
+            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
+            .toList();
+
+    final var backupStates =
+        state.getBackupStates().stream()
+            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
+            .toList();
+
+    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
+    assertThat(backupStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
+
+    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
+    assertThat(backupStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
+  }
+
   private Set<Long> createJobsOnAllPartitions() {
     final Set<Integer> partitions = new HashSet<>();
     final Set<Long> jobKeys = new HashSet<>();

@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.InstantSource;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -145,9 +144,10 @@ public final class BackupRequestHandler implements BackupApi {
                       .toList();
 
               return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
-                  .thenApply(
-                      ignore ->
+                  .handle(
+                      (ignored, error) ->
                           statusesReceived.stream()
+                              .filter(f -> !f.isCompletedExceptionally() && f.join().isResponse())
                               .map(response -> response.join().getResponse())
                               .collect(Collectors.toSet()))
                   .thenApply(this::aggregateCheckpointResponses);
