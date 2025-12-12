@@ -679,7 +679,8 @@ final class BackupEndpointTest {
     void shouldReturnCheckpointState() {
       // given
       final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
 
       final var stateResponse = new CheckpointStateResponse();
       stateResponse.setCheckpointStates(
@@ -700,7 +701,8 @@ final class BackupEndpointTest {
     void shouldReturnBackupOnDifferentTypeState() {
       // given
       final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
 
       final var stateResponse = new CheckpointStateResponse();
       stateResponse.setBackupStates(
@@ -721,7 +723,8 @@ final class BackupEndpointTest {
     void shouldReturnBothCheckpointAndBackupState() {
       // given
       final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
 
       final var stateResponse = new CheckpointStateResponse();
       stateResponse.setBackupStates(
@@ -743,7 +746,8 @@ final class BackupEndpointTest {
     void shouldReturnEmptyState() {
       // given
       final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
 
       final var stateResponse = new CheckpointStateResponse();
 
@@ -762,7 +766,8 @@ final class BackupEndpointTest {
     void shouldReturnAllPartitionsState() {
       // given
       final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
 
       final var stateResponse = new CheckpointStateResponse();
 
