@@ -211,6 +211,7 @@ public class ProcessInstanceCreationHelper {
         processInstance.getProcessInstanceKey(),
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessInstanceKey(),
+        processInstance.getRootProcessInstanceKey(),
         processInstance.getBpmnProcessIdBuffer(),
         processInstance.getTenantId(),
         variablesBuffer);
