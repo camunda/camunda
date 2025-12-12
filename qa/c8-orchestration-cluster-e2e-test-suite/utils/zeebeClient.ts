@@ -20,10 +20,8 @@ const c8 = new Camunda8({
   CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
-  ZEEBE_GRPC_ADDRESS: process.env.ZEEBE_GRPC_ADDRESS || 'localhost:26500',
-  zeebeGrpcSettings: {
-    ZEEBE_INSECURE_CONNECTION: true,
-  },
+  ZEEBE_GRPC_ADDRESS:
+    process.env.ZEEBE_GRPC_ADDRESS || 'grpc://localhost:26500',
 });
 
 function generateManyVariables(): Record<string, string> {
