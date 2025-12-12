@@ -102,6 +102,13 @@ const routes = createRoutesFromElements(
           return {Component: DecisionInstance};
         }}
       />
+      <Route
+        path={Paths.auditLog()}
+        lazy={async () => {
+          const {OperationsLog} = await import('./OperationsLog/index');
+          return {Component: OperationsLog};
+        }}
+      />
     </Route>
   </Route>,
 );
