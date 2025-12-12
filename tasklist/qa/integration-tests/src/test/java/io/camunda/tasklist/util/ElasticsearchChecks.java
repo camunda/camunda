@@ -12,11 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.*;
-import io.camunda.tasklist.exceptions.NotFoundException;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
-import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.List;
 import java.util.function.Predicate;
@@ -41,59 +37,6 @@ public class ElasticsearchChecks {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchChecks.class);
 
   @Autowired private ElasticsearchHelper elasticsearchHelper;
-
-  @Autowired private ProcessStore processStore;
-
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
-
-  /** Checks whether the process of given args[0] processId (Long) is deployed. */
-  @Bean(name = PROCESS_IS_DEPLOYED_CHECK)
-  public TestCheck getProcessIsDeployedCheck() {
-    return new TestCheck() {
-      @Override
-      public String getName() {
-        return PROCESS_IS_DEPLOYED_CHECK;
-      }
-
-      @Override
-      public boolean test(final Object[] objects) {
-        assertThat(objects).hasSize(1);
-        assertThat(objects[0]).isInstanceOf(String.class);
-        final String processId = (String) objects[0];
-        try {
-          final ProcessEntity process = processStore.getProcess(processId);
-          return process != null;
-        } catch (final TasklistRuntimeException ex) {
-          return false;
-        }
-      }
-    };
-  }
-
-  @Bean(name = PROCESS_IS_DELETED_CHECK)
-  public TestCheck getProcessIsDeletedCheck() {
-    return new TestCheck() {
-      @Override
-      public String getName() {
-        return PROCESS_IS_DELETED_CHECK;
-      }
-
-      @Override
-      public boolean test(final Object[] objects) {
-        assertThat(objects).hasSize(1);
-        assertThat(objects[0]).isInstanceOf(String.class);
-        final String processId = (String) objects[0];
-        try {
-          processStore.getProcess(processId);
-          return false;
-        } catch (final NotFoundException nfe) {
-          return true;
-        } catch (final TasklistRuntimeException ex) {
-          return false;
-        }
-      }
-    };
-  }
 
   /** Checks whether the task for given args[0] taskId (String) exists and is in state CREATED. */
   @Bean(name = TASK_IS_CREATED_CHECK)
