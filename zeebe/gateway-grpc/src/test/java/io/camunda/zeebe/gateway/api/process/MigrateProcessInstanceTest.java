@@ -42,6 +42,7 @@ public class MigrateProcessInstanceTest {
     // then
     assertThat(record.getProcessInstanceKey()).isEqualTo(1L);
     assertThat(record.getTargetProcessDefinitionKey()).isEqualTo(2L);
+    assertThat(record.getTenantId()).isEqualTo("<default>");
     final var mappingInstructions = record.getMappingInstructions();
     assertThat(mappingInstructions).hasSize(1);
     final var mappingInstruction = mappingInstructions.get(0);

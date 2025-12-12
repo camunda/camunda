@@ -77,8 +77,9 @@ class RdbmsExporterWrapperTest {
         Set.of(
             ValueType.BATCH_OPERATION_CREATION,
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            ValueType.PROCESS_INSTANCE_MODIFICATION,
-            ValueType.PROCESS_INSTANCE_CREATION);
+            ValueType.PROCESS_INSTANCE_CREATION,
+            ValueType.PROCESS_INSTANCE_MIGRATION,
+            ValueType.PROCESS_INSTANCE_MODIFICATION);
 
     // Check that all expected AuditLogExportHandlers are registered
     assertAuditLogExportPresent(registeredHandlers, expectedRegisteredTransformers);
