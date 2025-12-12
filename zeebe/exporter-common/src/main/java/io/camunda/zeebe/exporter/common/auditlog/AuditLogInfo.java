@@ -139,16 +139,15 @@ public record AuditLogInfo(
 
     public static AuditLogActor of(final Record<?> record) {
       final Map<String, Object> authorizations = record.getAuthorizations();
-      if (authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
-        return new AuditLogActor(
-            AuditLogActorType.CLIENT,
-            (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID));
-      } else if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null) {
-        return new AuditLogActor(
-            AuditLogActorType.USER, (String) authorizations.get(Authorization.AUTHORIZED_USERNAME));
-      } else {
-        return null;
+      final var clientId = (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID);
+      if (clientId != null) {
+        return new AuditLogActor(AuditLogActorType.CLIENT, clientId);
       }
+      final var username = (String) authorizations.get(Authorization.AUTHORIZED_USERNAME);
+      if (username != null) {
+        return new AuditLogActor(AuditLogActorType.USER, username);
+      }
+      return null;
     }
   }
 
