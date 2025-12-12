@@ -76,7 +76,10 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
         buildQueryOn(query, DecisionDefinition.KEY, new Builder(), true);
     try {
       final var searchReq = searchRequestBuilder.index(decisionIndex.getAlias()).build();
-      return searchWithResultsReturn(searchReq, DecisionDefinition.class);
+      final var decisionDefinitions = searchWithResultsReturn(searchReq, DecisionDefinition.class);
+      populateDecisionRequirementsNameAndVersion(decisionDefinitions.getItems());
+
+      return decisionDefinitions;
     } catch (final Exception e) {
       throw new ServerException("Error in reading decision definitions", e);
     }
