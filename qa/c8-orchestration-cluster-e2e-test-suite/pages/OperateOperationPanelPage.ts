@@ -56,4 +56,32 @@ export class OperateOperationPanelPage {
       operationEntry,
     ).innerText();
   }
+
+  getMigrationOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Migrate'})
+      .filter({hasText: `${successCount} operations succeeded`});
+  }
+
+  getRetryOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Retry'})
+      .filter({hasText: `${successCount} retries succeeded`})
+      .first();
+  }
+
+  getCancelOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Cancel'})
+      .filter({hasText: `${successCount} operations succeeded`});
+  }
+
+  async clickOperationLink(operationEntry: Locator): Promise<void> {
+    await operationEntry
+      .locator('[data-testid="operation-id"]')
+      .click({timeout: 30000});
+  }
 }
