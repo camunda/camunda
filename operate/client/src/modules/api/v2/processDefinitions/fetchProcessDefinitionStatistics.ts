@@ -7,7 +7,7 @@
  */
 
 import {
-  getProcessDefinitionInstanceStatistics,
+  endpoints,
   type GetProcessDefinitionInstanceStatisticsRequestBody,
   type GetProcessDefinitionInstanceStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
@@ -17,8 +17,8 @@ const fetchProcessDefinitionStatistics = async (
   payload: GetProcessDefinitionInstanceStatisticsRequestBody = {},
 ) => {
   return requestWithThrow<GetProcessDefinitionInstanceStatisticsResponseBody>({
-    url: getProcessDefinitionInstanceStatistics.getUrl(),
-    method: getProcessDefinitionInstanceStatistics.method,
+    url: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
+    method: endpoints.getProcessDefinitionInstanceStatistics.method,
     body: payload,
   });
 };

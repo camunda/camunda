@@ -8,13 +8,13 @@
 
 import {mockPostRequest} from 'modules/mocks/api/mockRequest';
 import {
-  getProcessDefinitionInstanceStatistics,
+  endpoints,
   type GetProcessDefinitionInstanceStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockFetchProcessDefinitionStatistics = () =>
   mockPostRequest<GetProcessDefinitionInstanceStatisticsResponseBody>(
-    getProcessDefinitionInstanceStatistics.getUrl(),
+    endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
   );
 
 export {mockFetchProcessDefinitionStatistics};

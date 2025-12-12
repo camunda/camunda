@@ -7,7 +7,7 @@
  */
 
 import {
-  getProcessDefinitionInstanceVersionStatistics,
+  endpoints,
   type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
   type GetProcessDefinitionInstanceVersionStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
@@ -19,10 +19,10 @@ const fetchProcessDefinitionVersionStatistics = async (
 ) => {
   return requestWithThrow<GetProcessDefinitionInstanceVersionStatisticsResponseBody>(
     {
-      url: getProcessDefinitionInstanceVersionStatistics.getUrl({
+      url: endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl({
         processDefinitionId,
       }),
-      method: getProcessDefinitionInstanceVersionStatistics.method,
+      method: endpoints.getProcessDefinitionInstanceVersionStatistics.method,
       body: payload,
     },
   );
