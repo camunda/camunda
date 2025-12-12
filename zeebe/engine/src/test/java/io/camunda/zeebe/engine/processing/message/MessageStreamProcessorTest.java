@@ -164,8 +164,8 @@ public final class MessageStreamProcessorTest {
             () -> {
               rule.getClock()
                   .addTime(
-                      MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(
-                          MessageObserver.SUBSCRIPTION_TIMEOUT));
+                      PendingMessageSubscriptionChecker.SUBSCRIPTION_CHECK_INTERVAL.plus(
+                          PendingMessageSubscriptionChecker.SUBSCRIPTION_TIMEOUT));
               verify(mockInterpartitionCommandSender, timeout(100).atLeast(2))
                   .sendCommand(
                       eq(0),
@@ -201,8 +201,8 @@ public final class MessageStreamProcessorTest {
             () -> {
               rule.getClock()
                   .addTime(
-                      MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(
-                          MessageObserver.SUBSCRIPTION_TIMEOUT));
+                      PendingMessageSubscriptionChecker.SUBSCRIPTION_CHECK_INTERVAL.plus(
+                          PendingMessageSubscriptionChecker.SUBSCRIPTION_TIMEOUT));
               verify(mockInterpartitionCommandSender, timeout(100).times(2))
                   .sendCommand(
                       eq(0),
