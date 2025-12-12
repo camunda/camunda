@@ -56,7 +56,7 @@ There are three sources of commands.
 
 ### Relation to other components
 
-The workflow engine is build on top of the `protocol` and `stream-platform` modules.
+The workflow engine is built on top of the `protocol` and `stream-platform` modules.
 
 The `procotol` module defines the available records.
 This includes their schema as well as the available value types which specify the data schema of records of that particular type.
