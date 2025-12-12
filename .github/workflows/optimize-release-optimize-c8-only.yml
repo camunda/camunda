@@ -202,7 +202,7 @@ jobs:
         uses: YunaBraska/java-info-action@main
         with:
           work-dir: ./optimize
-          
+
       - name: Clean release
         run: |
           mvn release:clean
@@ -354,11 +354,10 @@ jobs:
         uses: octokit/request-action@v2.3.1
         with:
           route: POST /repos/camunda/camunda/releases
-          draft: false
+          make_latest: false
           name: ${{ env.TAG }}
           tag_name: ${{ env.TAG }}
           generate_release_notes: true
-          make_latest: \"false\"
 
       - name: Docker log dump
         if: always()
