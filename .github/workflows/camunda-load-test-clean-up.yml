@@ -1,4 +1,4 @@
-# description: This workflow deletes eligible load tests when reaching their deadline
+# description: This workflow deletes eligible load tests that reached or passed their deadline
 # type: CI
 # owner: camunda/orchestration-cluster-team
 name: camunda-load-test-clean-up.yml
@@ -8,9 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       date:
-        description: 'Date in YYYY-MM-DD format to delete load tests for (defaults to current date)'
+        description: 'Namespaces with deadline-date on or before this date (YYYY-MM-DD) will be deleted. Defaults to current date.'
         type: string
         required: false
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
 defaults:
   run:
@@ -19,8 +23,11 @@ defaults:
     shell: bash
 
 jobs:
-  delete-load-tests-that-reached-deadline:
-    name: Delete load tests that reached deadline
+  # Legacy job: clean up old GKE-based benchmark infrastructure.
+  # Will be removed once migration to the new benchmark infrastructure is complete.
+  # TODO: remove this job after migration is complete, see https://github.com/camunda/team-infrastructure/issues/829
+  delete-load-tests-legacy:
+    name: Delete load tests (legacy infra)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -38,26 +45,63 @@ jobs:
           location: europe-west1-b
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
-        run: |
-          currentDate=$(date -d "${{ inputs.date }}" +'%Y-%m-%d')
-          echo "Date used for deletion: $currentDate"
-          namespacesDeleted=""
-          for ns in $(kubectl get namespace --selector=deadline-date="$currentDate" -o json | jq -r '.items[].metadata.name');
-          do
-            kubectl delete namespace "$ns" --wait=false
-            namespacesDeleted+=" * $ns\n"
-          done
+        run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":meow_trash: *Load tests have been cleaned up (legacy):*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.delete-namespaces.outputs.namespaces }}"
+                  }
+                }
+              ]
+            }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-          echo -e "Namespaces deleted:\n$namespacesDeleted"
-          # With multiline strings the output needs to be set differently.
-          #
-          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
-          #
-          {
-            echo 'NAMESPACES<<EOF'
-            echo "$namespacesDeleted"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
+  delete-load-tests:
+    name: Delete load tests (new infra)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
+        with:
+          version: 17.2.2
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - name: Delete namespaces eligible for deletion
+        id: delete-namespaces
+        run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
       - id: slack-notify
         uses: slackapi/slack-github-action@v2.1.1
         with:
