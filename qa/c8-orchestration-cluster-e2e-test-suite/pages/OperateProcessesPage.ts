@@ -34,7 +34,7 @@ class OperateProcessesPage {
   readonly continueMigrationDialogButton: Locator;
   readonly cancelProcessInstanceButton: Locator;
   readonly cancelProcessInstanceDialogButton: Locator;
-  readonly singleCancellationSpinner: Locator;
+  readonly singleOperationSpinner: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
   readonly processActiveCheckbox: Locator;
   readonly processCompletedCheckbox: Locator;
@@ -56,6 +56,13 @@ class OperateProcessesPage {
   readonly collapsedOperationsPanel: Locator;
   readonly expandOperationsButton: Locator;
   readonly inProgressBar: Locator;
+  readonly selectAllRowsCheckbox: Locator;
+  readonly retryButton: Locator;
+  readonly cancelButton: Locator;
+  readonly applyButton: Locator;
+  readonly resultsCount: Locator;
+  readonly scheduledOperationsIcons: Locator;
+  processInstanceLinkByKey: (processInstanceKey: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -120,7 +127,7 @@ class OperateProcessesPage {
     this.cancelProcessInstanceDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
-    this.singleCancellationSpinner = page.getByTestId('operation-spinner');
+    this.singleOperationSpinner = page.getByTestId('operation-spinner');
     this.processActiveCheckbox = page
       .locator('label')
       .filter({hasText: 'Active'});
@@ -171,6 +178,20 @@ class OperateProcessesPage {
     this.inProgressBar = this.operationsList.locator(
       '[role="progressbar"][aria-busy="true"]',
     );
+    this.selectAllRowsCheckbox = page.getByRole('columnheader', {
+      name: 'Select all rows',
+    });
+    this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
+    this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
+    this.applyButton = page.getByRole('button', {name: 'Apply'});
+    this.resultsCount = page.getByText(/\d+ results/);
+    this.scheduledOperationsIcons = page.getByTitle(
+      /has scheduled operations/i,
+    );
+    this.processInstanceLinkByKey = (processInstanceKey: string) =>
+      page.getByRole('link', {
+        name: processInstanceKey,
+      });
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -240,6 +261,42 @@ class OperateProcessesPage {
 
   static getProcessVersion(row: Locator): Locator {
     return row.getByTestId('cell-processVersion');
+  }
+
+  getInstanceRow(index: number): Locator {
+    return this.dataList.getByRole('row').nth(index);
+  }
+
+  getCanceledIcon(processInstanceKey: string): Locator {
+    return this.page.getByTestId(`CANCELED-icon-${processInstanceKey}`);
+  }
+
+  getRetryInstanceButton(processInstanceKey: string): Locator {
+    return this.page.getByRole('button', {
+      name: `Retry Instance ${processInstanceKey}`,
+    });
+  }
+
+  getCancelInstanceButton(processInstanceKey: string): Locator {
+    return this.page.getByRole('button', {
+      name: `Cancel Instance ${processInstanceKey}`,
+    });
+  }
+
+  async clickRetryInstanceButton(processInstanceKey: string): Promise<void> {
+    const button = this.getRetryInstanceButton(processInstanceKey);
+    try {
+      await button.click({timeout: 30000});
+    } catch (error) {
+      await button.scrollIntoViewIfNeeded({timeout: 60000});
+      await button.click({timeout: 60000});
+    }
+  }
+
+  async clickCancelInstanceButton(processInstanceKey: string): Promise<void> {
+    const button = this.getCancelInstanceButton(processInstanceKey);
+    await button.scrollIntoViewIfNeeded({timeout: 30000});
+    await button.click({timeout: 30000});
   }
 
   static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
@@ -402,6 +459,21 @@ class OperateProcessesPage {
     return this.page
       .locator('[data-testid="operations-entry"]')
       .filter({hasText: 'Migrate'})
+      .filter({hasText: `${successCount} operations succeeded`});
+  }
+
+  getRetryOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Retry'})
+      .filter({hasText: `${successCount} retries succeeded`})
+      .first();
+  }
+
+  getCancelOperationEntry(successCount: number): Locator {
+    return this.page
+      .locator('[data-testid="operations-entry"]')
+      .filter({hasText: 'Cancel'})
       .filter({hasText: `${successCount} operations succeeded`});
   }
 

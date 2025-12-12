@@ -95,14 +95,26 @@ import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node
 
 type Props = {
   diagramBusinessObject: BusinessObject | undefined;
+  isRootProcess?: boolean;
   className?: string;
 };
 
 const ElementInstanceIcon: React.FC<Props> = ({
   diagramBusinessObject,
   className,
+  isRootProcess = false,
   ...rest
 }) => {
+  if (isRootProcess) {
+    return (
+      <FlowNodeProcess
+        className={className}
+        data-testid="element-instance-icon"
+        {...rest}
+      />
+    );
+  }
+
   if (diagramBusinessObject === undefined) {
     return (
       <FlowNodeTask

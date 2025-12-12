@@ -8,21 +8,24 @@
 
 import {InstancesList} from '../../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
-import {Filters} from '../Filters';
+import {Filters} from './Filters';
 import {InstancesTableWrapper} from './InstancesTable/InstancesTableWrapper';
 import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 import {useFilters} from 'modules/hooks/useFilters';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {reaction} from 'mobx';
+import {tracking} from 'modules/tracking';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -64,6 +67,22 @@ const ListView: React.FC = observer(() => {
   useEffect(() => {
     processInstancesSelectionStore.resetState();
   }, [filtersJSON]);
+
+  useEffect(() => {
+    const disposer = reaction(
+      () => variableFilterStore.state.variable,
+      () => {
+        if (processesStatus === 'fetched') {
+          tracking.track({
+            eventName: 'process-instances-filtered',
+            filterName: 'variable',
+            multipleValues: variableFilterStore.state.isInMultipleMode,
+          });
+        }
+      },
+    );
+    return disposer;
+  }, [processesStatus]);
 
   useEffect(() => {
     if (processesStatus === 'fetched') {

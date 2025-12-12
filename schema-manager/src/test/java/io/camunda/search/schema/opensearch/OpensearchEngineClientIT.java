@@ -505,7 +505,11 @@ public class OpensearchEngineClientIT {
 
   private String getPolicyMinAge(final String policyName) throws IOException {
     final var request =
-        Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
+        Requests.builder()
+            .method("GET")
+            .endpoint(
+                String.format("%s/%s", OpensearchEngineClient.ISM_POLICIES_ENDPOINT, policyName))
+            .build();
 
     final var policyJsonNode =
         objectMapper.readTree(openSearchClient.generic().execute(request).getBody().get().body());

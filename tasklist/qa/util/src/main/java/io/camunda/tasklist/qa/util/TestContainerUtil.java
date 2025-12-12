@@ -83,7 +83,6 @@ public class TestContainerUtil {
   public static final String IDENTITY_DATABASE_NAME = "identity";
   public static final String IDENTITY_DATABASE_USERNAME = "identity";
   public static final String IDENTITY_DATABASE_PASSWORD = "t2L@!AqSMg8%I%NmHM";
-  public static final String PROPERTIES_PREFIX = "camunda.tasklist.";
   public static final String TENANT_1 = "tenant_1";
   public static final String TENANT_2 = "tenant_2";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
@@ -429,39 +428,20 @@ public class TestContainerUtil {
       final Integer osPort = testContext.getInternalOsPort();
       final String osUrl = String.format("http://%s:%s", osHost, osPort);
       tasklistContainer
-          // Unified config for db url + compatibility
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", osUrl)
-          .withEnv("CAMUNDA_DATABASE_URL", osUrl)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
-          .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", osUrl)
-          // Unified config for db type + compatibility vars
-          .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "opensearch")
-          .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", indexPrefix)
           // ---
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
-          // Prefix Setup
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort));
     } else {
       final String elsHost = testContext.getInternalElsHost();
       final Integer elsPort = testContext.getInternalElsPort();
       final String esUrl = String.format("http://%s:%s", elsHost, elsPort);
       tasklistContainer
-          // Unified config for db type + compatibility vars
-          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
-          // Unified config for db type + compatibility vars
-          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
-          .withEnv("CAMUNDA_OPERATE_DATABASE", "elasticsearch")
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", "elasticsearch")
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
           // ---
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
@@ -473,12 +453,7 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
-          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com")
-          // Prefix Setup
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", indexPrefix)
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix);
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
     }
 
     final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
@@ -548,40 +523,31 @@ public class TestContainerUtil {
                   Map.of("waitPeriodBeforeArchiving", "1s")));
         });
 
-    zeebeBroker.withUnifiedConfig(
-        cfg -> {
-          cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.valueOf(type));
-          if (TestUtil.isOpenSearch()) {
-            cfg.getData().getSecondaryStorage().getOpensearch().setUrl(url);
-            if (testContext.getIndexPrefix() != null) {
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getOpensearch()
-                  .setIndexPrefix(testContext.getIndexPrefix());
-            }
-          } else {
-            cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(url);
-            if (testContext.getIndexPrefix() != null) {
-              cfg.getData()
-                  .getSecondaryStorage()
-                  .getElasticsearch()
-                  .setIndexPrefix(testContext.getIndexPrefix());
-            }
-          }
-        });
-
-    zeebeBroker.withAdditionalProperties(
-        Map.of(
-            "camunda.data.secondary-storage.type",
-            type,
-            "camunda.database.type",
-            type,
-            "camunda.operate.database",
-            type,
-            "camunda.tasklist.database",
-            type,
-            "camunda.database.url",
-            url));
+    zeebeBroker
+        .withSecondaryStorageType(
+            TestUtil.isOpenSearch()
+                ? SecondaryStorageType.opensearch
+                : SecondaryStorageType.elasticsearch)
+        .withUnifiedConfig(
+            cfg -> {
+              if (TestUtil.isOpenSearch()) {
+                cfg.getData().getSecondaryStorage().getOpensearch().setUrl(url);
+                if (testContext.getIndexPrefix() != null) {
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getOpensearch()
+                      .setIndexPrefix(testContext.getIndexPrefix());
+                }
+              } else {
+                cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(url);
+                if (testContext.getIndexPrefix() != null) {
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getElasticsearch()
+                      .setIndexPrefix(testContext.getIndexPrefix());
+                }
+              }
+            });
   }
 
   public void stopZeebeAndTasklist(final TestContext testContext) {

@@ -71,7 +71,7 @@ jobs:
       TEST_TYPE: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -109,7 +109,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End"
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
@@ -126,7 +126,7 @@ jobs:
           node-version: "22"
       - run: npm ci
         name: Install dependencies
-      - run: npm run test
+      - run: npm run test -- --no-file-parallelism --maxWorkers 1
         name: Unit & Integration tests
       - name: Observe build status
         if: always()

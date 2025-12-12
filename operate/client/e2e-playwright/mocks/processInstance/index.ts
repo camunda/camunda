@@ -14,11 +14,10 @@ import type {
   GetProcessInstanceSequenceFlowsResponseBody,
   ProcessInstance,
   QueryProcessInstanceIncidentsResponseBody,
+  QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
-  FlowNodeInstanceDto,
-  FlowNodeInstancesDto,
   MetaDataDto,
   ProcessInstanceIncidentsDto,
   SequenceFlowsDto,
@@ -29,7 +28,7 @@ type InstanceMock = {
   detail: ProcessInstanceEntity;
   detailV2: ProcessInstance;
   callHierarchy: GetProcessInstanceCallHierarchyResponseBody;
-  flowNodeInstances: FlowNodeInstancesDto<FlowNodeInstanceDto>;
+  elementInstances: QueryElementInstancesResponseBody;
   statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
   sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
@@ -43,7 +42,7 @@ function mockResponses({
   processInstanceDetail,
   processInstanceDetailV2,
   callHierarchy,
-  flowNodeInstances,
+  elementInstances,
   statisticsV2,
   sequenceFlows,
   sequenceFlowsV2,
@@ -56,7 +55,7 @@ function mockResponses({
   processInstanceDetail?: ProcessInstanceEntity;
   processInstanceDetailV2?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
-  flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
+  elementInstances?: QueryElementInstancesResponseBody;
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
   sequenceFlowsV2?: GetProcessInstanceSequenceFlowsResponseBody;
@@ -84,10 +83,20 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('/api/flow-node-instances')) {
+    if (route.request().url().includes('/v2/element-instances/search')) {
       return route.fulfill({
-        status: flowNodeInstances === undefined ? 400 : 200,
-        body: JSON.stringify(flowNodeInstances),
+        status: elementInstances === undefined ? 400 : 200,
+        body: JSON.stringify(elementInstances),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/batch-operation-items/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({items: [], page: {totalItems: 0}}),
         headers: {
           'content-type': 'application/json',
         },

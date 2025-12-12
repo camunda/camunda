@@ -643,7 +643,7 @@ public final class SearchQueryRequestMapper {
       return Either.right(SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().build());
     }
 
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toOffsetPagination(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromProcessDefinitionInstanceStatisticsQuerySortRequest(
@@ -665,7 +665,7 @@ public final class SearchQueryRequestMapper {
           SearchQueryBuilders.processDefinitionInstanceVersionStatisticsQuery().build());
     }
 
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toOffsetPagination(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper
@@ -711,14 +711,15 @@ public final class SearchQueryRequestMapper {
     return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
-  private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
-      final ProcessDefinitionInstanceStatisticsPageRequest requestedPage) {
+  private static Either<List<String>, SearchQueryPage> toOffsetPagination(
+      final OffsetPagination requestedPage) {
+
     if (requestedPage == null) {
       return Either.right(null);
     }
 
-    return Either.right(
-        SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom())));
+    // Delegate to the existing mapping
+    return Either.right(toSearchQueryPage(requestedPage));
   }
 
   private static <

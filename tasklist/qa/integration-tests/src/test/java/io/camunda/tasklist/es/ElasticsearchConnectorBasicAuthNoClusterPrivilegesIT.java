@@ -107,21 +107,8 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
 
       final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
       TestPropertyValues.of(
-              "camunda.tasklist.elasticsearch.username=" + TASKLIST_ES_USER,
-              "camunda.tasklist.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
-              "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
-              // DB url
               "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
-              "camunda.database.url=" + elsUrl,
-              "camunda.operate.elasticsearch.url=" + elsUrl,
-              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
-              "camunda.tasklist.elasticsearch.url=" + elsUrl,
-              // DB type
               "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.database.type=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              // Unified config
               "camunda.data.secondary-storage.elasticsearch.username=" + TASKLIST_ES_USER,
               "camunda.data.secondary-storage.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
               // Disable health check as tasklist ES client has no cluster privileges

@@ -107,7 +107,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
-        flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
+        elementInstances: orderProcessInstance.incidentState.elementInstances,
         statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
@@ -184,7 +184,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
-        flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
+        elementInstances: orderProcessInstance.incidentState.elementInstances,
         statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
@@ -243,8 +243,8 @@ test.describe('variables and incidents', () => {
         processInstanceDetailV2:
           orderProcessInstance.incidentResolvedState.detailV2,
         callHierarchy: orderProcessInstance.incidentResolvedState.callHierarchy,
-        flowNodeInstances:
-          orderProcessInstance.incidentResolvedState.flowNodeInstances,
+        elementInstances:
+          orderProcessInstance.incidentResolvedState.elementInstances,
         statisticsV2: orderProcessInstance.incidentResolvedState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentResolvedState.sequenceFlows,
         sequenceFlowsV2:
@@ -270,8 +270,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.completedState.detail,
         processInstanceDetailV2: orderProcessInstance.completedState.detailV2,
         callHierarchy: orderProcessInstance.completedState.callHierarchy,
-        flowNodeInstances:
-          orderProcessInstance.completedState.flowNodeInstances,
+        elementInstances: orderProcessInstance.completedState.elementInstances,
         statisticsV2: orderProcessInstance.completedState.statisticsV2,
         sequenceFlows: orderProcessInstance.completedState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.completedState.sequenceFlowsV2,

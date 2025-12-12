@@ -15,6 +15,7 @@ import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOver
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
+import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
@@ -35,6 +36,7 @@ public class StandaloneBroker {
                 // Unified Configuration classes
                 UnifiedConfiguration.class,
                 UnifiedConfigurationHelper.class,
+                PrimaryStorageBackupPropertiesOverride.class,
                 BrokerBasedPropertiesOverride.class,
                 ActorClockControlledPropertiesOverride.class,
                 IdleStrategyPropertiesOverride.class,

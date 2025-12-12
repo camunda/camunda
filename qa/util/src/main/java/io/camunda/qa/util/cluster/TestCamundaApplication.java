@@ -25,6 +25,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
@@ -84,6 +85,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         SearchEngineRetentionPropertiesOverride.class,
         GatewayRestPropertiesOverride.class,
         BrokerBasedPropertiesOverride.class,
+        PrimaryStorageBackupPropertiesOverride.class,
         // ---
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,

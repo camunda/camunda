@@ -273,32 +273,37 @@ const instanceWithIncident: InstanceMock = {
     </bpmndi:BPMNDiagram>
   </bpmn:definitions>
   `,
-  flowNodeInstances: {
-    '6755399441062827': {
-      children: [
-        {
-          id: '6755399441062837',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'StartEvent_1',
-          startDate: '2023-08-14T05:47:07.376+0000',
-          endDate: '2023-08-14T05:47:07.376+0000',
-          treePath: '6755399441062827/6755399441062837',
-          sortValues: ['', ''],
-        },
-        {
-          id: '6755399441062840',
-          type: 'SERVICE_TASK',
-          state: 'INCIDENT',
-          flowNodeId: 'Task_1b1r7ow',
-          startDate: '2023-08-14T05:47:07.376+0000',
-          endDate: null,
-          treePath: '6755399441062827/6755399441062840',
-          sortValues: ['', ''],
-        },
-      ],
-      running: null,
-    },
+  elementInstances: {
+    items: [
+      {
+        elementInstanceKey: '6755399441062837',
+        processInstanceKey: '6755399441062827',
+        processDefinitionKey: '2251799813687188',
+        processDefinitionId: 'orderProcess',
+        elementId: 'StartEvent_1',
+        elementName: 'Order received',
+        type: 'START_EVENT',
+        state: 'COMPLETED',
+        hasIncident: false,
+        startDate: '2023-08-14T05:47:07.376+0000',
+        endDate: '2023-08-14T05:47:07.376+0000',
+        tenantId: '',
+      },
+      {
+        elementInstanceKey: '6755399441062840',
+        processInstanceKey: '6755399441062827',
+        processDefinitionKey: '2251799813687188',
+        processDefinitionId: 'orderProcess',
+        elementId: 'Task_1b1r7ow',
+        elementName: 'Check payment',
+        type: 'SERVICE_TASK',
+        state: 'ACTIVE',
+        hasIncident: true,
+        startDate: '2023-08-14T05:47:07.376+0000',
+        tenantId: '',
+      },
+    ],
+    page: {totalItems: 2},
   },
   variables: [
     {

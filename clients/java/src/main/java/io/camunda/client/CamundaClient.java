@@ -164,6 +164,8 @@ import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
@@ -3032,4 +3034,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the incidents by element instance search request
    */
   AuditLogSearchRequest newAuditLogSearchRequest();
+
+  /**
+   * Get statistics about process instances, grouped by process definition and tenant.
+   *
+   * <pre>
+   *
+   *  camundaClient
+   *  .newProcessDefinitionInstanceStatisticsRequest()
+   *  .sort((s) -> s.processDefinitionId().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process definition instance statistics request
+   */
+  ProcessDefinitionInstanceStatisticsRequest newProcessDefinitionInstanceStatisticsRequest();
+
+  /**
+   * Get statistics about process instances, grouped by version for a given process definition.
+   *
+   * <pre>
+   *    camundaClient
+   *    .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
+   *    .filter((f) -> f.tenantId("tenantId"))
+   *    .sort((s) -> s.processDefinitionVersion().asc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   *  </pre>
+   *
+   * @param processDefinitionId the id of the process definition
+   * @return a builder for the process definition version instance statistics request
+   */
+  ProcessDefinitionInstanceVersionStatisticsRequest
+      newProcessDefinitionInstanceVersionStatisticsRequest(String processDefinitionId);
 }

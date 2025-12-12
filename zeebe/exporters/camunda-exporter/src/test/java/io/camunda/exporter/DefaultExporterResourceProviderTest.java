@@ -13,15 +13,19 @@ import static org.mockito.Mockito.mock;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -123,13 +127,55 @@ public class DefaultExporterResourceProviderTest {
         TestObjectMapper.objectMapper());
 
     // then
-    assertThat(provider.getExportHandlers())
+    // AuditLogHandlers are excluded because they by design have multiple instances
+    final var handlersExcludingAuditLog =
+        provider.getExportHandlers().stream()
+            .filter(handler -> !(handler instanceof AuditLogHandler))
+            .toList();
+
+    assertThat(handlersExcludingAuditLog)
         .hasSize(
             (int)
-                provider.getExportHandlers().stream()
-                    .map(ExportHandler::getClass)
-                    .distinct()
-                    .count());
+                handlersExcludingAuditLog.stream().map(ExportHandler::getClass).distinct().count());
+  }
+
+  @Test
+  void shouldAddAuditLogHandlersFromAddAuditLogHandlersMethod() {
+    // given
+    final var config = new ExporterConfiguration();
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // then
+    final var auditLogHandlers =
+        provider.getExportHandlers().stream().filter(AuditLogHandler.class::isInstance).toList();
+
+    final Set<ValueType> expectedValueTypes =
+        Set.of(
+            ValueType.BATCH_OPERATION_CREATION,
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            ValueType.PROCESS_INSTANCE_MODIFICATION);
+
+    // Verify that all expected AuditLogHandler value types are present
+    assertThat(
+            auditLogHandlers.stream()
+                .map(ExportHandler::getHandledValueType)
+                .collect(Collectors.toSet()))
+        .isEqualTo(expectedValueTypes);
+
+    assertThat(auditLogHandlers)
+        .as(
+            "Should have exactly "
+                + expectedValueTypes.size()
+                + " AuditLogHandler instances added by addAuditLogHandlers method")
+        .hasSize(expectedValueTypes.size());
   }
 
   static Stream<ExporterConfiguration> configProvider() {

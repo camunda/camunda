@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
-
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
@@ -23,6 +20,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
+import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
@@ -49,7 +47,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
@@ -72,6 +69,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         CommonsModuleConfiguration.class,
         UnifiedConfigurationHelper.class,
         UnifiedConfiguration.class,
+        PrimaryStorageBackupPropertiesOverride.class,
         NodeIdProviderConfiguration.class,
         BrokerBasedPropertiesOverride.class,
         GatewayBasedPropertiesOverride.class,
@@ -528,32 +526,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         SearchEngineRetentionProperties.class);
     // enable schema creation as ES is used in the current tests
     withCreateSchema(true);
-    return this;
-  }
-
-  public TestStandaloneBroker withRdbmsExporter() {
-    final String dbType = "rdbms";
-    final String dbUrl =
-        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
-
-    // type
-    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
-    withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
-
-    // url
-    withProperty("camunda.database.url", dbUrl);
-
-    withProperty("camunda.database.username", "sa");
-    withProperty("camunda.database.password", "");
-    withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
-    withProperty("logging.level.org.mybatis", "DEBUG");
-    withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "PT0S");
-    withProperty("zeebe.broker.exporters.rdbms.args.history.defaultHistoryTTL", "PT2S");
-    withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.defaultBatchOperationHistoryTTL", "PT2S");
-    withProperty("zeebe.broker.exporters.rdbms.args.history.minHistoryCleanupInterval", "PT2S");
-    withProperty("zeebe.broker.exporters.rdbms.args.history.maxHistoryCleanupInterval", "PT5S");
-    withExporter("rdbms", cfg -> cfg.setClassName("-"));
     return this;
   }
 }

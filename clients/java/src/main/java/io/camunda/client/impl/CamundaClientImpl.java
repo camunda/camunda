@@ -175,6 +175,8 @@ import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
@@ -329,6 +331,8 @@ import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
@@ -1516,6 +1520,19 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AuditLogSearchRequest newAuditLogSearchRequest() {
     return new AuditLogSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ProcessDefinitionInstanceStatisticsRequest
+      newProcessDefinitionInstanceStatisticsRequest() {
+    return new ProcessDefinitionInstanceStatisticsRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ProcessDefinitionInstanceVersionStatisticsRequest
+      newProcessDefinitionInstanceVersionStatisticsRequest(final String processDefinitionId) {
+    return new ProcessDefinitionInstanceVersionStatisticsRequestImpl(
+        httpClient, jsonMapper, processDefinitionId);
   }
 
   private JobClient newJobClient() {

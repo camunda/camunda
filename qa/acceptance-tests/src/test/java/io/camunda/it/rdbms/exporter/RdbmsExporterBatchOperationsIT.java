@@ -26,6 +26,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getRejectedCancelProce
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
@@ -55,10 +56,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",
-      "zeebe.broker.exporters.rdbms.args.queueSize=0",
       "camunda.data.secondary-storage.type=rdbms",
-      "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
-      "camunda.database.index-prefix=C8_"
+      "camunda.data.secondary-storage.rdbms.queue-size=0",
     })
 class RdbmsExporterBatchOperationsIT {
 
@@ -74,6 +73,8 @@ class RdbmsExporterBatchOperationsIT {
             }
           });
 
+  @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
+
   @Autowired private RdbmsService rdbmsService;
 
   private RdbmsExporterWrapper exporter;
@@ -84,7 +85,8 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   private void setup(final boolean exportPendingItems) {
-    exporter = new RdbmsExporterWrapper(rdbmsService, vendorDatabaseProperties);
+    exporter =
+        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
     exporter.configure(
         new ExporterContext(
             null,

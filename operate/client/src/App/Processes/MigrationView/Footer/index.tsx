@@ -12,18 +12,20 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {Container} from './styled.tsx';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
-import {useProcessInstanceQueryFilters} from 'modules/hooks/useProcessInstanceQueryFilters';
 import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {handleOperationError} from 'modules/utils/notifications';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
 
 const Footer: React.FC = observer(() => {
-  const baseFilter = useProcessInstanceQueryFilters().filter;
+  const [searchParams] = useSearchParams();
+  const baseFilter = parseProcessInstancesSearchFilter(searchParams);
 
   const navigate = useNavigate();
 
@@ -65,6 +67,7 @@ const Footer: React.FC = observer(() => {
             onRequestSubmit={() => {
               setOpen(false);
               processInstanceMigrationStore.disable();
+              processInstancesSelectionStore.reset();
             }}
             onRequestClose={() => setOpen(false)}
             size="md"
@@ -168,6 +171,7 @@ const Footer: React.FC = observer(() => {
 
                   panelStatesStore.expandOperationsPanel();
                   processInstanceMigrationStore.disable();
+                  processInstancesSelectionStore.reset();
 
                   tracking.track({
                     eventName: 'process-instance-migration-confirmed',

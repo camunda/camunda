@@ -31,6 +31,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client</artifactId>
     </dependency>
 
@@ -311,11 +316,6 @@
     <dependency>
       <groupId>org.mybatis</groupId>
       <artifactId>mybatis-spring</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.liquibase</groupId>
-      <artifactId>liquibase-core</artifactId>
     </dependency>
 
     <dependency>
@@ -923,7 +923,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.12.0</version>
+        <version>7.17.0</version>
         <executions>
           <execution>
             <id>backups</id>

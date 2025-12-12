@@ -32,8 +32,8 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -43,6 +43,8 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -4049,14 +4051,26 @@ final class JsonSerializableToJsonTest {
                 new ConditionalEvaluationRecord()
                     .setTenantId("tenant-1")
                     .setProcessDefinitionKey(456L)
-                    .setVariables(VARIABLES_MSGPACK),
+                    .setVariables(VARIABLES_MSGPACK)
+                    .addStartedProcessInstance(123L, 789L)
+                    .addStartedProcessInstance(456L, 999L),
         """
                 {
+                  "processDefinitionKey": 456,
+                  "startedProcessInstances": [
+                    {
+                      "processDefinitionKey": 123,
+                      "processInstanceKey": 789
+                    },
+                    {
+                      "processDefinitionKey": 456,
+                      "processInstanceKey": 999
+                    }
+                  ],
+                  "tenantId": "tenant-1",
                   "variables": {
                     "foo": "bar"
-                  },
-                  "tenantId":"tenant-1",
-                  "processDefinitionKey":456
+                  }
                 }
                 """
       },
@@ -4071,12 +4085,62 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) ConditionalEvaluationRecord::new,
         """
                 {
-                "processDefinitionKey":-1,
-                "variables":{},
-                "tenantId":"<default>"
+                  "processDefinitionKey": -1,
+                  "startedProcessInstances": [],
+                  "tenantId": "<default>",
+                  "variables": {}
                 }
                 """
       },
+      //////////////////////////////////// GlobalListenerBatchRecord /////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "GlobalListenerBatchRecord",
+        (Supplier<GlobalListenerBatchRecord>)
+            () ->
+                new GlobalListenerBatchRecord()
+                    .setGlobalListenerBatchKey(1)
+                    .addTaskListener(
+                        new GlobalListenerRecord()
+                            .setType("global1")
+                            .setEventTypes(List.of("creating", "assigning"))
+                            .setRetries(5))
+                    .addTaskListener(
+                        new GlobalListenerRecord()
+                            .setType("global2")
+                            .setEventTypes(List.of("all"))
+                            .setRetries(3)
+                            .setAfterNonGlobal(false)),
+        """
+      {
+        "globalListenerBatchKey": 1,
+        "taskListeners": [
+          {
+            "type": "global1",
+            "retries": 5,
+            "eventTypes": ["creating", "assigning"],
+            "afterNonGlobal": false
+          },
+          {
+            "type": "global2",
+            "retries": 3,
+            "eventTypes": ["all"],
+            "afterNonGlobal": false
+          }
+        ]
+      }
+      """
+      },
+      {
+        "Empty GlobalListenerBatchRecord",
+        (Supplier<GlobalListenerBatchRecord>) () -> new GlobalListenerBatchRecord(),
+        """
+      {
+        "globalListenerBatchKey": -1,
+        "taskListeners": []
+      }
+      """
+      }
     };
   }
 

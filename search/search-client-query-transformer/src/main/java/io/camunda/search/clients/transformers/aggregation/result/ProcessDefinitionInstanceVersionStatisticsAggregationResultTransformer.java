@@ -76,8 +76,8 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationResultTransfor
                                   entity.processDefinitionVersion(),
                                   entity.processDefinitionName(),
                                   entity.tenantId(),
-                                  activeInstancesWithIncidents,
-                                  activeInstancesWithoutIncidents))
+                                  activeInstancesWithoutIncidents,
+                                  activeInstancesWithIncidents))
                       .orElse(null);
                 })
             .toList();

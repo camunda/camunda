@@ -513,9 +513,8 @@ components:
       type: object
       properties:
         page:
-          description: Pagination criteria.
           allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageRequest'
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array
@@ -524,17 +523,14 @@ components:
 
     ProcessDefinitionInstanceStatisticsQueryResult:
       type: object
-      description: Process definition instance statistics query response.
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The process definition instance statistics result.
           type: array
           items:
             $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsResult'
-        page:
-          allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageResponse'
-          description: Pagination information about the search results.
 
     ProcessDefinitionInstanceStatisticsResult:
       description: Process definition instance statistics response.
@@ -574,37 +570,13 @@ components:
       required:
         - field
 
-    ProcessDefinitionInstanceStatisticsPageRequest:
-      type: object
-      properties:
-        from:
-          description: The index of items to start searching from.
-          type: integer
-          format: int32
-        limit:
-          description: The maximum number of items to return in one request.
-          type: integer
-          default: 100
-
-    ProcessDefinitionInstanceStatisticsPageResponse:
-      description: Pagination information about the search results.
-      type: object
-      properties:
-        totalItems:
-          description: Total items matching the criteria.
-          type: integer
-          format: int64
-        hasMoreTotalItems:
-          description: Indicates whether there are more items matching the criteria.
-          type: boolean
-
     ProcessDefinitionInstanceVersionStatisticsQuery:
       type: object
       properties:
         page:
           description: Pagination criteria.
           allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageRequest'
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array
@@ -626,17 +598,14 @@ components:
 
     ProcessDefinitionInstanceVersionStatisticsQueryResult:
       type: object
-      description: Process definition instance version statistics query response.
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The process definition instance version statistics result.
           type: array
           items:
             $ref: '#/components/schemas/ProcessDefinitionInstanceVersionStatisticsResult'
-        page:
-          description: Pagination information about the search results.
-          allOf:
-            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageResponse'
 
     ProcessDefinitionInstanceVersionStatisticsResult:
       description: Process definition instance version statistics response.

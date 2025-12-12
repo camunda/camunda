@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
+import java.util.List;
 import org.immutables.value.Value;
 
 /**
@@ -34,4 +35,9 @@ public interface ConditionalEvaluationRecordValue
    * @return the process definition key
    */
   long getProcessDefinitionKey();
+
+  /**
+   * @return the list of process instances that were started as a result of the evaluation
+   */
+  List<ConditionalStartedProcessInstanceValue> getStartedProcessInstances();
 }

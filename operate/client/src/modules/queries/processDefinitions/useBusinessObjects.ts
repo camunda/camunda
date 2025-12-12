@@ -14,7 +14,9 @@ import {
 import {isFlowNode} from 'modules/utils/flowNodes';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
-function businessObjectsParser({diagramModel}: ParsedXmlData): BusinessObjects {
+function businessObjectsParser({
+  diagramModel,
+}: Pick<ParsedXmlData, 'diagramModel'>): BusinessObjects {
   const businessObjects = Object.entries(diagramModel.elementsById).reduce(
     (flowNodes, [flowNodeId, businessObject]) => {
       if (isFlowNode(businessObject)) {

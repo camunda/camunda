@@ -46,6 +46,8 @@ import io.camunda.client.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
@@ -402,6 +404,19 @@ public class RestGatewayService {
 
   public void onSearchAuditLogRequest(final AuditLogSearchQueryResult response) {
     registerPost(RestGatewayPaths.getAuditLogSearchUrl(), response);
+  }
+
+  public void onProcessDefinitionInstanceStatisticsRequest(
+      final ProcessDefinitionInstanceStatisticsQueryResult response) {
+    registerPost(RestGatewayPaths.getProcessDefinitionInstanceStatisticsUrl(), response);
+  }
+
+  public void onProcessDefinitionInstanceVersionStatisticsRequest(
+      final String processDefinitionId,
+      final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
+    registerPost(
+        RestGatewayPaths.getProcessDefinitionInstanceVersionStatisticsUrl(processDefinitionId),
+        response);
   }
 
   public void onStatusRequestHealthy() {

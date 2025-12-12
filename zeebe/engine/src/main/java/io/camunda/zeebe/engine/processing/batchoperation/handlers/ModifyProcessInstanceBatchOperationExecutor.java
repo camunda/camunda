@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
@@ -37,16 +36,7 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
     final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new ProcessInstanceModificationRecord();
     command.setProcessInstanceKey(processInstanceKey);
-    batchOperation
-        .getModificationPlan()
-        .getMoveInstructions()
-        .forEach(
-            i ->
-                command.addMoveInstruction(
-                    new ProcessInstanceModificationMoveInstruction()
-                        .setSourceElementId(i.getSourceElementId())
-                        .setTargetElementId(i.getTargetElementId())
-                        .setUseSourceParentKeyAsAncestorScope(true)));
+    batchOperation.getModificationPlan().getMoveInstructions().forEach(command::addMoveInstruction);
 
     LOGGER.trace("Modifying process instance with key '{}'", processInstanceKey);
     commandWriter.appendFollowUpCommand(

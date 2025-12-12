@@ -13,7 +13,6 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.qa.util.TestUtil;
-import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,25 +53,6 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
     camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
     camunda.getData().getSecondaryStorage().getElasticsearch().setUrl(dbUrl);
     camunda.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(indexPrefix);
-  }
-
-  @Override
-  protected Map<String, String> getLegacyConfiguration(final String indexPrefix) {
-    final String dbUrl = "http://host.testcontainers.internal:9200";
-
-    return Map.of(
-        "camunda.database.type",
-        getDatabaseType().name(),
-        "camunda.database.url",
-        dbUrl,
-        "camunda.tasklist.database",
-        getDatabaseType().name(),
-        "camunda.operate.database",
-        getDatabaseType().name(),
-        "camunda.tasklist.elasticsearch.url",
-        dbUrl,
-        "camunda.operate.elasticsearch.url",
-        dbUrl);
   }
 
   @Override

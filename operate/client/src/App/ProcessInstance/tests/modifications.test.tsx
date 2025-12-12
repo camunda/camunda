@@ -20,27 +20,14 @@ import {
   createvariable,
 } from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
-import {
-  getWrapper,
-  mockRequests,
-  processInstancesMock,
-  waitForPollingsToBeComplete,
-} from './mocks';
+import {getWrapper, mockRequests} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {act} from 'react';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
-
-const clearPollingStates = () => {
-  flowNodeInstanceStore.isPollRequestRunning = false;
-};
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/stores/process', () => ({
@@ -267,85 +254,6 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  it('should stop polling during the modification mode', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
-    const initFlowNodeInstanceSpy = vi.spyOn(flowNodeInstanceUtils, 'init');
-    const startPollingFlowNodeInstanceSpy = vi.spyOn(
-      flowNodeInstanceUtils,
-      'startPolling',
-    );
-
-    mockRequests();
-    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-
-    storeStateLocally({
-      [`hideModificationHelperModal`]: true,
-    });
-
-    expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
-
-    clearPollingStates();
-    await act(async () => {
-      await vi.runOnlyPendingTimersAsync();
-    });
-    await act(async () => {
-      await vi.runOnlyPendingTimersAsync();
-    });
-    expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-    });
-
-    expect(
-      await screen.findByRole('button', {
-        name: /modify instance/i,
-      }),
-    ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole('button', {
-        name: /modify instance/i,
-      }),
-    );
-
-    clearPollingStates();
-    mockRequests();
-
-    await act(async () => {
-      await vi.runOnlyPendingTimersAsync();
-    });
-
-    clearPollingStates();
-    mockRequests();
-
-    await act(async () => {
-      await vi.runOnlyPendingTimersAsync();
-    });
-
-    mockRequests();
-    await user.click(screen.getByTestId('discard-all-button'));
-    await user.click(
-      await screen.findByRole('button', {name: /danger discard/i}),
-    );
-
-    clearPollingStates();
-    mockRequests();
-
-    await act(async () => {
-      await vi.runOnlyPendingTimersAsync();
-    });
-
-    await waitFor(() => {
-      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-    });
-
-    await waitForPollingsToBeComplete();
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
-  });
-
   it('should display loading overlay when modifications are applied', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockModify().withSuccess(
@@ -386,10 +294,6 @@ describe('ProcessInstance - modification mode', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 

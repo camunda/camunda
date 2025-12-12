@@ -34,9 +34,16 @@ describe('OperationsLog', () => {
   it('should show skeleton state when data undefined', () => {
     mockQueryAuditLogs().withServerError();
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible={false} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <OperationsLog
+        isRootNodeSelected={true}
+        flowNodeInstanceId="123"
+        isVisible={false}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
   });
@@ -47,9 +54,16 @@ describe('OperationsLog', () => {
       page: {totalItems: 0},
     });
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <OperationsLog
+        isRootNodeSelected={true}
+        flowNodeInstanceId="123"
+        isVisible={true}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(
       await screen.findByText('No operations found for this instance'),
@@ -75,9 +89,16 @@ describe('OperationsLog', () => {
       page: {totalItems: 1},
     });
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <OperationsLog
+        isRootNodeSelected={true}
+        flowNodeInstanceId="123"
+        isVisible={true}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(
       screen.getByRole('columnheader', {name: /operation/i}),
@@ -107,9 +128,16 @@ describe('OperationsLog', () => {
       page: {totalItems: 0},
     });
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <OperationsLog
+        isRootNodeSelected={true}
+        flowNodeInstanceId="123"
+        isVisible={true}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
   });
@@ -117,9 +145,16 @@ describe('OperationsLog', () => {
   it('should handle error state', async () => {
     mockQueryAuditLogs().withNetworkError();
 
-    render(<OperationsLog flowNodeInstanceId="123" isVisible={true} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <OperationsLog
+        isRootNodeSelected={true}
+        flowNodeInstanceId="123"
+        isVisible={true}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({

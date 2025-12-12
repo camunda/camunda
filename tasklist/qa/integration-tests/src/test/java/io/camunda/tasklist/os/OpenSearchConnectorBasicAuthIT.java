@@ -93,25 +93,11 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
       final String osUrl =
           String.format("http://%s:%s", opensearch.getHost(), opensearch.getMappedPort(9200));
       TestPropertyValues.of(
-              // Unified Configuration
               "camunda.data.secondary-storage.type=opensearch",
               "camunda.data.secondary-storage.opensearch.url=" + osUrl,
               "camunda.data.secondary-storage.opensearch.cluster-name=docker-cluster",
-
-              // TODO: The following legacy values are set somewhere equal to http://localhost:9200.
-              //  We should find them and unset them, so that they don't cause conflicts. In the
-              //  meantime, this test can run in double configuration mode.
-              "camunda.database.url=" + osUrl,
-              "camunda.tasklist.opensearch.url=" + osUrl,
-              "camunda.operate.opensearch.url=" + osUrl,
-              // Unified config
               "camunda.data.secondary-storage.opensearch.username=opensearch",
-              "camunda.data.secondary-storage.opensearch.password=changeme",
-
-              // ---
-
-              "camunda.tasklist.opensearch.username=opensearch",
-              "camunda.tasklist.opensearch.password=changeme")
+              "camunda.data.secondary-storage.opensearch.password=changeme")
           .applyTo(applicationContext.getEnvironment());
     }
   }

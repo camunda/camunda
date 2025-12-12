@@ -295,6 +295,11 @@ type Events =
       eventName: 'batch-move-modification-apply-button-clicked';
     }
   | {
+      eventName: 'audit-logs-loaded';
+      filters: string[];
+      sort?: {field: string; order?: 'desc' | 'asc'}[];
+    }
+  | {
       eventName: 'audit-logs-fetch-failed';
     };
 

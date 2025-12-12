@@ -142,10 +142,8 @@ describe('Filters', () => {
       wrapper: getWrapper(initialPath),
     });
 
-    // Wait for data to be fetched
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
-    // Hidden fields
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.endDateAfter),
     ).toBeInTheDocument();
@@ -158,7 +156,6 @@ describe('Filters', () => {
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.endDateBefore),
     ).toBeInTheDocument();
-    // Non-hidden fields
     expect(
       screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00'),
     ).toBeInTheDocument();
@@ -186,7 +183,6 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    // Wait for data to be fetched
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
     await waitFor(() =>
       expect(screen.getByLabelText('Flow Node')).toBeEnabled(),
@@ -306,7 +302,7 @@ describe('Filters', () => {
     } as const;
 
     await waitFor(() => {
-      return expect(
+      expect(
         Object.fromEntries(
           new URLSearchParams(
             screen.getByTestId('search').textContent ?? '',
@@ -446,7 +442,7 @@ describe('Filters', () => {
     );
   });
 
-  it('Should order optional filters', async () => {
+  it('should order optional filters', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
@@ -466,9 +462,9 @@ describe('Filters', () => {
       return [...acc, ...optionalFilter.fields];
     }, [] as string[]);
 
-    for (let i = 0; i < optionalFilters.length; i++) {
+    for (const filter of optionalFilters) {
       await user.click(screen.getByRole('button', {name: 'More Filters'}));
-      await user.click(screen.getByText(optionalFilters[i]!.name));
+      await user.click(screen.getByText(filter.name));
     }
 
     let visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
@@ -488,9 +484,9 @@ describe('Filters', () => {
       return [...acc, ...optionalFilter.fields];
     }, [] as string[]);
 
-    for (let i = 0; i < optionalFilters.length; i++) {
+    for (const filter of optionalFilters) {
       await user.click(screen.getByRole('button', {name: 'More Filters'}));
-      await user.click(screen.getByText(optionalFilters[i]!.name));
+      await user.click(screen.getByText(filter.name));
     }
 
     visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);

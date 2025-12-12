@@ -10,7 +10,6 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
-import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
@@ -41,7 +40,6 @@ import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.UserServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.annotation.PostConstruct;
@@ -60,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -80,7 +77,6 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
@@ -456,12 +452,6 @@ public class WebSecurityConfig {
         final TenantServices tenantServices) {
       return new UsernamePasswordAuthenticationTokenConverter(
           roleServices, groupServices, tenantServices);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(UserDetailsService.class)
-    public CamundaUserDetailsService camundaUserDetailsService(final UserServices userServices) {
-      return new CamundaUserDetailsService(userServices);
     }
 
     @Bean

@@ -176,7 +176,7 @@ public class PrimaryStorageBackupPropertiesTest {
   @TestPropertySource(
       properties = {
         "camunda.data.primary-storage.backup.continuous=true",
-        "zeebe.broker.experimental.continuous-backups=true"
+        "zeebe.broker.experimental.continuousBackups=true"
       })
   class ContinuousPropertyCompatibility {
     final BackupCfg backupSchedulerCfg;

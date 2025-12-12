@@ -45,6 +45,11 @@ class VariableFilter {
   setIsInMultipleMode = (isInMultipleMode: boolean) => {
     this.state.isInMultipleMode = isInMultipleMode;
   };
+
+  get variable() {
+    return this.state.variable;
+  }
 }
 
 export const variableFilterStore = new VariableFilter();
+export type {Variable};

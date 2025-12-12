@@ -25,8 +25,8 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.conditionalevaluation.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -205,6 +206,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.BATCH_OPERATION_INITIALIZATION -> new BatchOperationInitializationRecord();
       case ValueType.CHECKPOINT -> new CheckpointRecord();
       case ValueType.MESSAGE_SUBSCRIPTION -> new MessageSubscriptionRecord();
+      case ValueType.GLOBAL_LISTENER_BATCH -> new GlobalListenerBatchRecord();
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };

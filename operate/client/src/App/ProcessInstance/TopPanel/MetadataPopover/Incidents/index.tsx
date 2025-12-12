@@ -30,39 +30,47 @@ const Incidents: React.FC<Props> = ({elementInstanceKey, elementName}) => {
   const totalIncidents = data?.totalIncidents ?? 0;
   const singleIncident = data?.singleIncident;
 
-  return (
-    <>
-      {isSearchingIncidents ? (
-        <Loading small withOverlay={false} data-testid="incidents-loading" />
-      ) : totalIncidents === 1 && singleIncident ? (
-        <>
-          <Divider />
-          <SingleIncident
-            incident={singleIncident}
-            onButtonClick={() => {
-              incidentsPanelStore.showIncidentsForElementInstance(
-                elementInstanceKey,
-                elementName,
-              );
-            }}
-          />
-        </>
-      ) : totalIncidents > 1 ? (
-        <>
-          <Divider />
-          <MultiIncidents
-            count={totalIncidents}
-            onButtonClick={() => {
-              incidentsPanelStore.showIncidentsForElementInstance(
-                elementInstanceKey,
-                elementName,
-              );
-            }}
-          />
-        </>
-      ) : null}
-    </>
-  );
+  if (isSearchingIncidents) {
+    return (
+      <Loading small withOverlay={false} data-testid="incidents-loading" />
+    );
+  }
+
+  if (totalIncidents === 1 && singleIncident) {
+    return (
+      <>
+        <Divider />
+        <SingleIncident
+          incident={singleIncident}
+          onButtonClick={() => {
+            incidentsPanelStore.showIncidentsForElementInstance(
+              elementInstanceKey,
+              elementName,
+            );
+          }}
+        />
+      </>
+    );
+  }
+
+  if (totalIncidents > 1) {
+    return (
+      <>
+        <Divider />
+        <MultiIncidents
+          count={totalIncidents}
+          onButtonClick={() => {
+            incidentsPanelStore.showIncidentsForElementInstance(
+              elementInstanceKey,
+              elementName,
+            );
+          }}
+        />
+      </>
+    );
+  }
+
+  return null;
 };
 
 export {Incidents};

@@ -15,10 +15,11 @@ import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
+import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.StateCode;
-import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
+import io.camunda.zeebe.backup.gcs.GcsBackupConfig.Builder;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +76,7 @@ final class ContinuousBackupIT {
   @BeforeAll
   static void setupBucket() throws Exception {
     final var config =
-        new GcsBackupConfig.Builder()
+        new Builder()
             .withoutAuthentication()
             .withHost(GCS.externalEndpoint())
             .withBucketName(BUCKET_NAME)
@@ -104,7 +107,7 @@ final class ContinuousBackupIT {
     processSomeData();
 
     // when - taking a successful backup, then processing a bit more and taking a snapshot
-    takeAndAwaitBackup(1L);
+    takeAndAwaitBackup();
 
     // then - even after a new snapshot is taken, it's index is still the backup index
     partitionsActuator.takeSnapshot();
@@ -115,14 +118,17 @@ final class ContinuousBackupIT {
   @Test
   void canRestoreFromMultipleBackups() throws IOException {
     // given - three backups with some initial data
+    final long firstBackup;
+    final long secondBackup;
+    final long thirdBackup;
     try (final var client = broker.newClientBuilder().build()) {
       final var process = deployTestProcess(client);
       client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
-      takeAndAwaitBackup(1L);
+      firstBackup = takeAndAwaitBackup();
       client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
-      takeAndAwaitBackup(2L);
+      secondBackup = takeAndAwaitBackup();
       client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
-      takeAndAwaitBackup(3L);
+      thirdBackup = takeAndAwaitBackup();
       client.newCreateInstanceCommand().processDefinitionKey(process).send().join();
     }
 
@@ -135,7 +141,7 @@ final class ContinuousBackupIT {
         new TestRestoreApp()
             .withUnifiedConfig(this::configureRestoreApp)
             .withWorkingDirectory(workingDirectory)
-            .withBackupId(1, 2, 3)
+            .withBackupId(firstBackup, secondBackup, thirdBackup)
             .start();
     restore.close();
 
@@ -154,19 +160,21 @@ final class ContinuousBackupIT {
   @Test
   void restoreFailsOnGapsBetweenBackups() throws IOException {
     // given - three backups spanning over multiple segments with snapshots in between
+    final long firstBackup;
+    final long thirdBackup;
     try (final var client = broker.newClientBuilder().build()) {
       final var process = deployTestProcess(client);
 
       createManyInstances(client, process);
-      takeAndAwaitBackup(1L);
+      firstBackup = takeAndAwaitBackup();
 
       partitionsActuator.takeSnapshot();
       createManyInstances(client, process);
-      takeAndAwaitBackup(2L);
+      takeAndAwaitBackup();
 
       partitionsActuator.takeSnapshot();
       createManyInstances(client, process);
-      takeAndAwaitBackup(3L);
+      thirdBackup = takeAndAwaitBackup();
     }
 
     // when/then - restoring from backup 1 and 3, but skipping backup 2
@@ -177,7 +185,7 @@ final class ContinuousBackupIT {
         new TestRestoreApp()
             .withUnifiedConfig(this::configureRestoreApp)
             .withWorkingDirectory(workingDirectory)
-            .withBackupId(1, 3);
+            .withBackupId(firstBackup, thirdBackup);
 
     // then restore will fail
     assertThatThrownBy(restore::start)
@@ -216,8 +224,13 @@ final class ContinuousBackupIT {
     }
   }
 
-  void takeAndAwaitBackup(final long backupId) {
-    backupActuator.take(backupId);
+  long takeAndAwaitBackup() {
+    final var res = backupActuator.take();
+    final Pattern pattern = Pattern.compile("backup with id (\\d+)");
+    final Matcher matcher = pattern.matcher(res.getMessage());
+    matcher.find();
+    final long backupId = Long.parseLong(matcher.group(1));
+
     await("backup is completed")
         .timeout(Duration.ofSeconds(20))
         .ignoreExceptions()
@@ -225,6 +238,8 @@ final class ContinuousBackupIT {
             () ->
                 assertThat(backupActuator.status(backupId).getState())
                     .isEqualTo(StateCode.COMPLETED));
+
+    return backupId;
   }
 
   private long getSnapshotIndex() {
@@ -252,15 +267,12 @@ final class ContinuousBackupIT {
     // cfg.getExperimental().setContinuousBackups(true); // Not available yet
 
     final var gcsConfig = new Gcs();
-    gcsConfig.setAuth(Gcs.GcsBackupStoreAuth.NONE);
+    gcsConfig.setAuth(GcsBackupStoreAuth.NONE);
     gcsConfig.setBasePath(basePath);
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
     cfg.getData().getPrimaryStorage().getBackup().setGcs(gcsConfig);
-    cfg.getData()
-        .getPrimaryStorage()
-        .getBackup()
-        .setStore(PrimaryStorageBackup.BackupStoreType.GCS);
+    cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.GCS);
     cfg.getData().getPrimaryStorage().getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
     cfg.getData().getPrimaryStorage().getBackup().setContinuous(true);
     cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
@@ -269,14 +281,11 @@ final class ContinuousBackupIT {
 
   private void configureRestoreApp(final Camunda cfg) {
     final var gcsConfig = new Gcs();
-    gcsConfig.setAuth(Gcs.GcsBackupStoreAuth.NONE);
+    gcsConfig.setAuth(GcsBackupStoreAuth.NONE);
     gcsConfig.setBasePath(basePath);
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
     cfg.getData().getPrimaryStorage().getBackup().setGcs(gcsConfig);
-    cfg.getData()
-        .getPrimaryStorage()
-        .getBackup()
-        .setStore(PrimaryStorageBackup.BackupStoreType.GCS);
+    cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.GCS);
   }
 }

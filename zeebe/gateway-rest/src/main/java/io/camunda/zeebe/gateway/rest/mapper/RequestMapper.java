@@ -79,6 +79,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DirectAncestorKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
@@ -94,6 +95,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
@@ -103,6 +105,9 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOpera
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
@@ -1068,13 +1073,25 @@ public class RequestMapper {
                 processInstanceKey,
                 mapProcessInstanceModificationActivateInstruction(
                     request.getActivateInstructions()),
+                mapProcessInstanceModificationMoveInstruction(request.getMoveInstructions()),
                 request.getTerminateInstructions().stream()
                     .map(
-                        terminateInstruction ->
-                            new ProcessInstanceModificationTerminateInstruction()
-                                .setElementInstanceKey(
-                                    KeyUtil.keyToLong(
-                                        terminateInstruction.getElementInstanceKey())))
+                        instruction -> {
+                          final var mappedInstruction =
+                              new ProcessInstanceModificationTerminateInstruction();
+                          if (instruction
+                              instanceof
+                              final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
+                            mappedInstruction.setElementInstanceKey(
+                                KeyUtil.keyToLong(byKey.getElementInstanceKey()));
+                          } else {
+                            mappedInstruction.setElementId(
+                                ((ProcessInstanceModificationTerminateByIdInstruction) instruction)
+                                    .getElementId());
+                          }
+
+                          return mappedInstruction;
+                        })
                     .toList(),
                 request.getOperationReference()));
   }
@@ -1087,7 +1104,7 @@ public class RequestMapper {
         () ->
             new ProcessInstanceModifyBatchOperationRequest(
                 toRequiredProcessInstanceFilter(request.getFilter()).get(),
-                mapProcessInstanceModificationMoveInstruction(request.getMoveInstructions())));
+                mapProcessInstanceModificationMoveBatchInstruction(request.getMoveInstructions())));
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
@@ -1202,17 +1219,18 @@ public class RequestMapper {
                   .setElementId(instruction.getElementId())
                   .setAncestorScopeKey(getAncestorKey(instruction.getAncestorElementInstanceKey()));
               instruction.getVariableInstructions().stream()
-                  .map(
-                      variable ->
-                          new ProcessInstanceModificationVariableInstruction()
-                              .setElementId(variable.getScopeId())
-                              .setVariables(
-                                  new UnsafeBuffer(
-                                      MsgPackConverter.convertToMsgPack(variable.getVariables()))))
+                  .map(RequestMapper::mapVariableInstruction)
                   .forEach(mappedInstruction::addVariableInstruction);
               return mappedInstruction;
             })
         .toList();
+  }
+
+  private static ProcessInstanceModificationVariableInstruction mapVariableInstruction(
+      final ModifyProcessInstanceVariableInstruction variable) {
+    return new ProcessInstanceModificationVariableInstruction()
+        .setElementId(variable.getScopeId())
+        .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.getVariables())));
   }
 
   private static Long getAncestorKey(final String ancestorElementInstanceKey) {
@@ -1225,15 +1243,40 @@ public class RequestMapper {
   private static List<ProcessInstanceModificationMoveInstruction>
       mapProcessInstanceModificationMoveInstruction(
           final List<
-                  io.camunda.zeebe.gateway.protocol.rest
-                      .ProcessInstanceModificationMoveBatchOperationInstruction>
+                  io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction>
               instructions) {
+    return instructions.stream()
+        .map(
+            instruction -> {
+              final var mappedInstruction =
+                  new ProcessInstanceModificationMoveInstruction()
+                      .setSourceElementId(instruction.getSourceElementId())
+                      .setTargetElementId(instruction.getTargetElementId());
+              switch (instruction.getAncestorScopeInstruction()) {
+                case null -> mappedInstruction.setAncestorScopeKey(-1);
+                case final DirectAncestorKeyInstruction direct ->
+                    mappedInstruction.setAncestorScopeKey(
+                        getAncestorKey(direct.getAncestorElementInstanceKey()));
+                default -> mappedInstruction.setUseSourceParentKeyAsAncestorScope(true);
+              }
+              instruction.getVariableInstructions().stream()
+                  .map(RequestMapper::mapVariableInstruction)
+                  .forEach(mappedInstruction::addVariableInstruction);
+              return mappedInstruction;
+            })
+        .toList();
+  }
+
+  private static List<ProcessInstanceModificationMoveInstruction>
+      mapProcessInstanceModificationMoveBatchInstruction(
+          final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions) {
     return instructions.stream()
         .map(
             instruction ->
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId(instruction.getSourceElementId())
-                    .setTargetElementId(instruction.getTargetElementId()))
+                    .setTargetElementId(instruction.getTargetElementId())
+                    .setUseSourceParentKeyAsAncestorScope(true))
         .toList();
   }
 

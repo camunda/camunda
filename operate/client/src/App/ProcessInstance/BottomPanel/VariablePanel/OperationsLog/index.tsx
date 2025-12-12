@@ -28,12 +28,16 @@ import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {AuditLogIcon} from './AuditLogIcon';
 
 type Props = {
-  flowNodeInstanceId?: string | undefined;
+  isRootNodeSelected: boolean;
+  flowNodeInstanceId: string | undefined;
   isVisible: boolean;
 };
 
+const ROW_HEIGHT = 46;
+const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
+
 const OperationsLog: React.FC<Props> = observer(
-  ({flowNodeInstanceId, isVisible}: Props) => {
+  ({isRootNodeSelected, flowNodeInstanceId, isVisible}: Props) => {
     const location = useLocation();
     const sortParams = getSortParams(location.search) || {
       sortBy: 'timestamp',
@@ -51,18 +55,40 @@ const OperationsLog: React.FC<Props> = observer(
           },
         ],
         filter: {
-          elementInstanceKey: flowNodeInstanceId,
-        },
-        page: {
-          from: 0,
-          limit: 100,
+          processInstanceKey: isRootNodeSelected
+            ? flowNodeInstanceId
+            : undefined,
+          elementInstanceKey: isRootNodeSelected
+            ? undefined
+            : flowNodeInstanceId,
         },
       }),
-      [flowNodeInstanceId, sortBy, sortParams.sortOrder],
+      [isRootNodeSelected, flowNodeInstanceId, sortBy, sortParams.sortOrder],
     );
 
-    const {data, isLoading, error} = useAuditLogs(request, {
+    const {
+      data,
+      isLoading,
+      error,
+      isFetchingPreviousPage,
+      hasPreviousPage,
+      fetchPreviousPage,
+      isFetchingNextPage,
+      hasNextPage,
+      fetchNextPage,
+    } = useAuditLogs(request, {
       enabled: isVisible,
+      select: (data) => {
+        tracking.track({
+          eventName: 'audit-logs-loaded',
+          filters: Object.keys(request.filter ?? {}),
+          sort: request.sort,
+        });
+        return {
+          auditLogs: data.pages.flatMap((page) => page.items),
+          totalCount: data.pages.at(0)?.page.totalItems ?? 0,
+        };
+      },
     });
 
     useEffect(() => {
@@ -81,7 +107,7 @@ const OperationsLog: React.FC<Props> = observer(
 
     const rows = useMemo(
       () =>
-        data?.items.map((item: AuditLog) => ({
+        data?.auditLogs.map((item: AuditLog) => ({
           id: item.auditLogKey,
           operationType: `${spaceAndCapitalize(item.operationType.toString())} ${spaceAndCapitalize(
             item.entityType.toString(),
@@ -132,6 +158,17 @@ const OperationsLog: React.FC<Props> = observer(
           rows={rows}
           emptyMessage={{
             message: 'No operations found for this instance',
+          }}
+          onVerticalScrollStartReach={async (scrollDown) => {
+            if (hasPreviousPage && !isFetchingPreviousPage) {
+              await fetchPreviousPage();
+              scrollDown(SMOOTH_SCROLL_STEP_SIZE);
+            }
+          }}
+          onVerticalScrollEndReach={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
           }}
           headerColumns={[
             {

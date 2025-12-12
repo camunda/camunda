@@ -122,11 +122,6 @@ public class ElasticsearchConnectorIT {
     setPluginConfig(registry, OperateProperties.PREFIX + ".elasticsearch", plugin);
     setPluginConfig(registry, OperateProperties.PREFIX + ".zeebeElasticsearch", plugin);
     registry.add("camunda.data.secondary-storage.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.database.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.operate.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.operate.zeebeElasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.tasklist.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.tasklist.zeebeElasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
   }
 
   private static void setPluginConfig(

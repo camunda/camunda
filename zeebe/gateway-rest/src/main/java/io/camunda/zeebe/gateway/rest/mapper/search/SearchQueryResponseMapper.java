@@ -118,7 +118,6 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
@@ -262,7 +261,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionInstanceStatisticsQueryResult
       toProcessInstanceStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
-    final var page = toProcessDefinitionInstanceStatisticsPageResponse(result);
+    final var page = toSearchQueryPageResponse(result);
     return new ProcessDefinitionInstanceStatisticsQueryResult()
         .page(page)
         .items(
@@ -274,7 +273,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionInstanceVersionStatisticsQueryResult
       toProcessInstanceVersionStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
-    final var page = toProcessDefinitionInstanceStatisticsPageResponse(result);
+    final var page = toSearchQueryPageResponse(result);
     return new ProcessDefinitionInstanceVersionStatisticsQueryResult()
         .page(page)
         .items(
@@ -602,14 +601,6 @@ public final class SearchQueryResponseMapper {
         .hasMoreTotalItems(result.hasMoreTotalItems())
         .startCursor(result.startCursor())
         .endCursor(result.endCursor());
-  }
-
-  private static ProcessDefinitionInstanceStatisticsPageResponse
-      toProcessDefinitionInstanceStatisticsPageResponse(final SearchQueryResult<?> result) {
-
-    return new ProcessDefinitionInstanceStatisticsPageResponse()
-        .totalItems(result.total())
-        .hasMoreTotalItems(result.hasMoreTotalItems());
   }
 
   private static List<ProcessDefinitionResult> toProcessDefinitions(
