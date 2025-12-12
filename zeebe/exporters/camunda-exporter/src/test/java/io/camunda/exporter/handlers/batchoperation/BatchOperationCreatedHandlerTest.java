@@ -17,14 +17,17 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.entities.operation.BatchOperationActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class BatchOperationCreatedHandlerTest {
@@ -88,7 +91,11 @@ class BatchOperationCreatedHandlerTest {
     final Record<BatchOperationCreationRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_CREATION,
-            r -> r.withIntent(BatchOperationIntent.CREATED).withValue(recordValue));
+            r ->
+                r.withIntent(BatchOperationIntent.CREATED)
+                    .withValue(recordValue)
+                    .withBrokerVersion("8.8.0") // doesn't support actor info yet
+                    .withAuthorizations(Map.of())); // No username or clientId
 
     final var entity = new BatchOperationEntity();
 
@@ -100,8 +107,79 @@ class BatchOperationCreatedHandlerTest {
     assertThat(entity.getType())
         .isEqualTo(OperationType.valueOf(recordValue.getBatchOperationType().name()));
     assertThat(entity.getState()).isEqualTo(BatchOperationEntity.BatchOperationState.CREATED);
+    assertThat(entity.getActorType()).isNull();
+    assertThat(entity.getActorId()).isNull();
 
     verify(batchOperationCache).put(eq(entity.getId()), any());
+  }
+
+  @Test
+  void shouldUpdateEntityWithActorInfoFromRecordWithUsernameClaim() {
+    // given
+    final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
+    final Record<BatchOperationCreationRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CREATION,
+            r ->
+                r.withIntent(BatchOperationIntent.CREATED)
+                    .withValue(recordValue)
+                    .withBrokerVersion("8.9.0") // required for storing actor info
+                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, "username")));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getActorType()).isEqualTo(BatchOperationActorType.USER);
+    assertThat(entity.getActorId()).isEqualTo("username");
+  }
+
+  @Test
+  void shouldUpdateEntityWithActorInfoFromRecordWithClientIdClaim() {
+    // given
+    final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
+    final Record<BatchOperationCreationRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CREATION,
+            r ->
+                r.withIntent(BatchOperationIntent.CREATED)
+                    .withValue(recordValue)
+                    .withBrokerVersion("8.9.0") // required for storing actor info
+                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_CLIENT_ID, "client-id")));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getActorType()).isEqualTo(BatchOperationActorType.CLIENT);
+    assertThat(entity.getActorId()).isEqualTo("client-id");
+  }
+
+  @Test
+  void shouldUpdateEntityWithMissingActorInfoFromRecordWithoutClaims() {
+    // given
+    final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
+    final Record<BatchOperationCreationRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_CREATION,
+            r ->
+                r.withIntent(BatchOperationIntent.CREATED)
+                    .withValue(recordValue)
+                    .withBrokerVersion("8.9.0") // required for storing actor info
+                    .withAuthorizations(Map.of())); // No username or clientId
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getActorType()).isNull();
+    assertThat(entity.getActorId()).isNull();
   }
 
   @Test

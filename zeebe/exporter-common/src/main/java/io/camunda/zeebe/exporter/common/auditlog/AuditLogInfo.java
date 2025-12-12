@@ -34,7 +34,7 @@ public record AuditLogInfo(
         getOperationCategory(record.getValueType()),
         getEntityType(record.getValueType()),
         getOperationType(record.getIntent()),
-        getActor(record.getAuthorizations()),
+        AuditLogActor.of(record),
         getBatchOperation(record));
   }
 
@@ -44,19 +44,6 @@ public record AuditLogInfo(
       return Optional.of(new BatchOperation(batchOperationKey));
     }
     return Optional.empty();
-  }
-
-  private static AuditLogActor getActor(final Map<String, Object> authorizations) {
-    if (authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
-      return new AuditLogActor(
-          AuditLogActorType.CLIENT,
-          (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID));
-    } else if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null) {
-      return new AuditLogActor(
-          AuditLogActorType.USER, (String) authorizations.get(Authorization.AUTHORIZED_USERNAME));
-    } else {
-      return null;
-    }
   }
 
   private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
@@ -148,7 +135,21 @@ public record AuditLogInfo(
     }
   }
 
-  public record AuditLogActor(AuditLogActorType actorType, String actorId) {}
+  public record AuditLogActor(AuditLogActorType actorType, String actorId) {
+
+    public static AuditLogActor of(final Record<?> record) {
+      final Map<String, Object> authorizations = record.getAuthorizations();
+      final var clientId = (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID);
+      if (clientId != null) {
+        return new AuditLogActor(AuditLogActorType.CLIENT, clientId);
+      }
+      final var username = (String) authorizations.get(Authorization.AUTHORIZED_USERNAME);
+      if (username != null) {
+        return new AuditLogActor(AuditLogActorType.USER, username);
+      }
+      return null;
+    }
+  }
 
   public record BatchOperation(long key) {}
 }
