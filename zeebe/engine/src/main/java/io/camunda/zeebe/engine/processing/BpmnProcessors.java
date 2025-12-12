@@ -226,12 +226,7 @@ public final class BpmnProcessors {
         new ProcessInstanceCreationHelper(processingState.getProcessState());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            processingState.getProcessState(),
-            keyGenerator,
-            writers,
-            bpmnBehaviors,
-            metrics,
-            processInstanceCreationHelper);
+            keyGenerator, writers, bpmnBehaviors, metrics, processInstanceCreationHelper);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
