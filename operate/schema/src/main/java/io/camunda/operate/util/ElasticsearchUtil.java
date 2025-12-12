@@ -21,7 +21,6 @@ import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
-import io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
