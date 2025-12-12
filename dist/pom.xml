@@ -657,6 +657,11 @@
       <artifactId>java-jwt</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>debug-cli</artifactId>
+    </dependency>
+
     <!-- /end -->
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -876,6 +881,10 @@
               <id>data-migration</id>
               <mainClass>io.camunda.application.StandaloneDataMigration</mainClass>
             </program>
+            <program>
+              <id>cdbg</id>
+              <mainClass>io.camunda.debug.cli.Main</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -929,6 +938,9 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
+            <!-- Needed for the debug CLI tool -->
+            <dependency>io.camunda:debug-cli</dependency>
+
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->
