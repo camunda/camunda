@@ -161,7 +161,7 @@ public class Starter extends App {
     client
         .newProcessInstanceSearchRequest()
         .filter((f) -> f.startDate(date -> date.gt(from)))
-        .sort(ProcessInstanceSort::processInstanceKey)
+        .sort(ProcessInstanceSort::startDate)
         .send()
         .whenCompleteAsync(
             (resp, error) -> {
