@@ -25,6 +25,8 @@ import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
@@ -78,6 +80,10 @@ public class RdbmsService {
   private final ProcessDefinitionMessageSubscriptionStatisticsDbReader
       processDefinitionMessageSubscriptionStatisticsDbReader;
   private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader;
+  private final ProcessDefinitionInstanceStatisticsDbReader
+      processDefinitionInstanceStatisticsDbReader;
+  private final ProcessDefinitionInstanceVersionStatisticsDbReader
+      processDefinitionInstanceVersionStatisticsDbReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -111,7 +117,10 @@ public class RdbmsService {
       final MessageSubscriptionDbReader messageSubscriptionReader,
       final ProcessDefinitionMessageSubscriptionStatisticsDbReader
           processDefinitionMessageSubscriptionStatisticsDbReader,
-      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
+      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
+      final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader,
+      final ProcessDefinitionInstanceVersionStatisticsDbReader
+          processDefinitionInstanceVersionStatisticsDbReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -144,6 +153,9 @@ public class RdbmsService {
     this.processDefinitionMessageSubscriptionStatisticsDbReader =
         processDefinitionMessageSubscriptionStatisticsDbReader;
     this.correlatedMessageSubscriptionReader = correlatedMessageSubscriptionReader;
+    this.processDefinitionInstanceStatisticsDbReader = processDefinitionInstanceStatisticsDbReader;
+    this.processDefinitionInstanceVersionStatisticsDbReader =
+        processDefinitionInstanceVersionStatisticsDbReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -269,6 +281,16 @@ public class RdbmsService {
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?
     return createWriter(new RdbmsWriterConfig.Builder().partitionId((int) partitionId).build());
+  }
+
+  public ProcessDefinitionInstanceStatisticsDbReader
+      getProcessDefinitionInstanceStatisticsReader() {
+    return processDefinitionInstanceStatisticsDbReader;
+  }
+
+  public ProcessDefinitionInstanceVersionStatisticsDbReader
+      getProcessDefinitionInstanceVersionStatisticsReader() {
+    return processDefinitionInstanceVersionStatisticsDbReader;
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {

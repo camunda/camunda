@@ -35,6 +35,11 @@ public class ProcessDefinitionInstanceVersionStatisticsDbReader
     this.processDefinitionMapper = processDefinitionMapper;
   }
 
+  public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> aggregate(
+      final ProcessDefinitionInstanceVersionStatisticsQuery query) {
+    return aggregate(query, ResourceAccessChecks.disabled());
+  }
+
   @Override
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> aggregate(
       final ProcessDefinitionInstanceVersionStatisticsQuery query,
