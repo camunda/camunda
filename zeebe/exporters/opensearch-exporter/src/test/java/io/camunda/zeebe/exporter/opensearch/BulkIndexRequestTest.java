@@ -655,7 +655,8 @@ final class BulkIndexRequestTest {
           "PROCESS_INSTANCE_MIGRATION",
           "PROCESS_INSTANCE_MODIFICATION",
           "PROCESS_MESSAGE_SUBSCRIPTION",
-          "USER_TASK"
+          "USER_TASK",
+          "VARIABLE",
         })
     void shouldIndexWithoutRootProcessInstanceKeyOnPreviousVersion(final ValueType valueType)
         throws Exception {
@@ -694,7 +695,8 @@ final class BulkIndexRequestTest {
           "PROCESS_INSTANCE_MIGRATION",
           "PROCESS_INSTANCE_MODIFICATION",
           "PROCESS_MESSAGE_SUBSCRIPTION",
-          "USER_TASK"
+          "USER_TASK",
+          "VARIABLE",
         })
     void shouldIndexWithRootProcessInstanceKey(final ValueType valueType) throws Exception {
       // given
