@@ -78,6 +78,24 @@
             </excludes>
             <flexmark/>
           </markdown>
+          <formats>
+            <format>
+              <includes>
+                <include>**/*.json</include>
+              </includes>
+              <excludes>
+                <exclude>**/target/**/*.json</exclude>
+                <exclude>**/node_modules/**/*.json</exclude>
+                <exclude>**/package.json</exclude>
+                <exclude>**/package-lock.json</exclude>
+                <exclude>**/tsconfig.json</exclude>
+              </excludes>
+              <indent>
+                <spaces>true</spaces>
+                <spacesPerTab>2</spacesPerTab>
+              </indent>
+            </format>
+          </formats>
         </configuration>
       </plugin>
     </plugins>
