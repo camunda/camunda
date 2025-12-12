@@ -169,13 +169,14 @@ jobs:
         include:
           - scenario-name: 'maximize-load'
             load-test-load: '--set starter.rate=0'
-          - scenario-name: 'pi-creation-latency'
-            load-test-load: '--set starter.replicas=0'
-          - scenario-name: 'measure-cpu-usage'
-            load-test-load: '--set starter.replicas=0'
+#          - scenario-name: 'pi-creation-latency'
+#            load-test-load: '--set starter.replicas=0'
+#          - scenario-name: 'measure-cpu-usage'
+#            load-test-load: '--set starter.replicas=0'
     uses: camunda/camunda/.github/workflows/camunda-benchmark-scenario.yml@feat/camunda-db-benchmarks
     with:
       name: cthiel-benchmark
       scenario-name: ${{ matrix.scenario-name }}
+      load-test-load: ${{ matrix.load-test-load }}
       ref: ${{ inputs.ref }}
       image-tag: ${{ needs.calculate-image-tag.outputs.image-tag }}
