@@ -42,6 +42,10 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -63,6 +67,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -83,6 +88,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider
 import org.springframework.security.oauth2.client.endpoint.NimbusJwtClientAuthenticationParametersConverter;
 import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
 import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -92,6 +98,7 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
@@ -110,6 +117,7 @@ import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHe
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.savedrequest.NullRequestCache;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -587,6 +595,34 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public MeterRegistry meterRegistry() {
+      return new SimpleMeterRegistry();
+    }
+
+    @Bean
+    public RestClient restClient(final MeterRegistry meterRegistry) {
+      // Setup observation for RestClient as per
+      // https://docs.spring.io/spring-framework/reference/integration/observability.html#observability.http-client.restclient
+      final var observationRegistry = ObservationRegistry.create();
+      observationRegistry
+          .observationConfig()
+          .observationHandler(new DefaultMeterObservationHandler(meterRegistry));
+
+      // The message converters are taken from the expected rest client in
+      // AbstractRestClientOAuth2AccessTokenResponseClient
+      return RestClient.builder()
+          .messageConverters(
+              (messageConverters) -> {
+                messageConverters.clear();
+                messageConverters.add(new FormHttpMessageConverter());
+                messageConverters.add(new OAuth2AccessTokenResponseHttpMessageConverter());
+              })
+          .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
+          .observationRegistry(observationRegistry)
+          .build();
+    }
+
+    @Bean
     public TokenClaimsConverter tokenClaimsConverter(
         final SecurityConfiguration securityConfiguration,
         final MembershipService membershipService) {
@@ -710,22 +746,25 @@ public class WebSecurityConfig {
     @Bean
     public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
         final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
-        final AssertionJwkProvider assertionJwkProvider) {
+        final AssertionJwkProvider assertionJwkProvider,
+        final RestClient restClient) {
       return new OidcTokenEndpointCustomizer(
-          oidcAuthenticationConfigurationRepository, assertionJwkProvider);
+          oidcAuthenticationConfigurationRepository, assertionJwkProvider, restClient);
     }
 
     @Bean
     public OAuth2AuthorizedClientManager authorizedClientManager(
         final ClientRegistrationRepository registrations,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final AssertionJwkProvider assertionJwkProvider) {
+        final AssertionJwkProvider assertionJwkProvider,
+        final RestClient restClient) {
 
       final var manager =
           new DefaultOAuth2AuthorizedClientManager(registrations, authorizedClientRepository);
 
       // we build a refresh token flow client manually to add support for private_key_jwt
       final var refreshClient = new RestClientRefreshTokenTokenResponseClient();
+      refreshClient.setRestClient(restClient);
       final var assertionConverter =
           new NimbusJwtClientAuthenticationParametersConverter<OAuth2RefreshTokenGrantRequest>(
               registration -> assertionJwkProvider.createJwk(registration.getRegistrationId()));
