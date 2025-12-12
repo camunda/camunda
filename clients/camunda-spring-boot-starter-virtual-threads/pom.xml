@@ -37,6 +37,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-starter</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Spring Boot Auto-configuration -->

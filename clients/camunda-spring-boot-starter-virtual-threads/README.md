@@ -2,6 +2,8 @@
 
 This module provides a Spring Boot auto-configuration extension for the Camunda client that enables virtual threads for job execution.
 
+It extends the standard `camunda-spring-boot-starter` and must be used in addition to it; it cannot be used as a standalone replacement.
+
 ## Overview
 
 Virtual threads (introduced in Java 21) are lightweight threads that allow for highly concurrent job processing without the overhead of traditional platform threads. This module configures the Camunda client to use:
