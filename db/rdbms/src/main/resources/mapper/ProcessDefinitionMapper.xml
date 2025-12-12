@@ -351,7 +351,7 @@
       FROM ${prefix}PROCESS_INSTANCE pi
     <include refid="processInstanceStatisticsWhere"/>
     <include refid="processInstanceStatisticsGroupBy"/>
-    )
+    ) t
   </select>
 
   <select id="processInstanceStatistics" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
