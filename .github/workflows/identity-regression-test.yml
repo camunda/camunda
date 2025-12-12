@@ -16,17 +16,13 @@ on:
         required: true
         default: 'true'
         type: choice
-        options:
-          - 'true'
-          - 'false'
+        options: ['true', 'false']
       authorizations:
         description: 'Enable Authorizations?'
         required: true
         default: 'true'
         type: choice
-        options:
-          - 'true'
-          - 'false'
+        options: ['true', 'false']
 
 concurrency:
   cancel-in-progress: true
@@ -34,27 +30,50 @@ concurrency:
 
 permissions:
   actions: write
-  attestations: none
   checks: write
   contents: read
-  deployments: none
-  id-token: none
-  issues: none
-  discussions: none
-  packages: none
-  pages: none
-  pull-requests: none
-  repository-projects: none
-  security-events: none
   statuses: write
 
 jobs:
+  build-and-package:
+    name: Build and Package Camunda
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build and package Camunda
+        run: |
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
+
+      - name: Upload Camunda Distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: camunda-dist
+          path: dist/target/camunda-zeebe-*.tar.gz
+          retention-days: 2
+
   run-http-regression-tests:
+    name: Run Regression Tests
+    needs: build-and-package
+    runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
-        env: [ 'local' ]
+        env: ['local']
         case:
           - user-authorizations-tests.http
           - tenant-tests.http
@@ -82,10 +101,10 @@ jobs:
             hostPort: 9250
             hostTransportPort: 9350
 
-    runs-on: [ubuntu-latest, gcp-core-2-default]
     environment: '${{ matrix.case }}'
     env:
       LC_ALL: C.UTF-8
+
     services:
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
@@ -106,12 +125,17 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup-build
+      - name: Download Camunda Distribution Artifact
+        uses: actions/download-artifact@v4
         with:
-          dockerhub-readonly: true
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          name: camunda-dist
+          path: ./dist/target
+
+      - name: Extract Distribution Tarball
+        run: |
+          cd ./dist/target
+          tarball=$(ls camunda-zeebe-*.tar.gz)
+          tar -xvzf "$tarball"
 
       - name: Import Secrets
         id: secrets
@@ -148,18 +172,6 @@ jobs:
           CLIENT_SECRET: ${{ steps.secrets.outputs.CLIENT_SECRET }}
           TOKEN_URL: ${{ steps.secrets.outputs.TOKEN_URL }}
           AUDIENCE: ${{ steps.secrets.outputs.AUDIENCE }}
-
-      - name: Package camunda-dist
-        shell: bash
-        id: build-dist
-        run: |
-          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
-
-      - name: Extract Distribution Tarball
-        run: |
-          cd ./dist/target
-          tarball=$(ls camunda-zeebe-*.tar.gz)
-          tar -xvzf "$tarball"
 
       - name: Wait for Elasticsearch
         run: |
@@ -362,7 +374,3 @@ jobs:
         if: always()
         run: |
           rm qa/http/http-client.private.env.json
-
-      - name: Shut down Docker Compose
-        if: always()
-        run: docker compose -f operate/docker-compose.yml down -v
