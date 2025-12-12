@@ -331,7 +331,7 @@ final class IncidentUpdateTaskTest {
     }
 
     @Test
-    void shouldSkipOnMissingProcessInstance() {
+    void shouldRetryOnMissingProcessInstance() {
       // given
       final var task =
           new IncidentUpdateTask(
@@ -352,7 +352,7 @@ final class IncidentUpdateTaskTest {
       // then
       assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(1);
 
-      verify(metrics).recordIncidentUpdatesSkipped(1);
+      verify(metrics).recordIncidentUpdatesRetriesNeeded(1);
       verify(repository, never()).bulkUpdate(any());
       verify(incidentNotifier, never()).notifyAsync(any());
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);

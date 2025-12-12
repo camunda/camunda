@@ -63,8 +63,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of standalone-decisions that have been archived. */
   private final Counter standaloneDecisionsArchived;
 
-  /** Count of incident updates that have been skipped. */
-  private final Counter incidentUpdatesSkipped;
+  /** Count of incident updates that needed retrying. */
+  private final Counter incidentUpdatesRetriesNeeded;
 
   /** Count of incident updates that were processed. */
   private final Counter incidentUpdatesProcessed;
@@ -180,11 +180,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
                 "Duration of how long it takes from resolving to archiving entities, all in all together.")
             .publishPercentileHistogram()
             .register(meterRegistry);
-    incidentUpdatesSkipped =
+    incidentUpdatesRetriesNeeded =
         Counter.builder(meterName("incident.updates"))
-            .tag("action", "skipped")
+            .tag("action", "retry")
             .description(
-                "Count of incidents that have been skipped due to matching process instances not being found.")
+                "Count of incidents that have will need retrying due to matching process instances not being found.")
             .register(meterRegistry);
     incidentUpdatesProcessed =
         Counter.builder(meterName("incident.updates"))
@@ -292,8 +292,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
     standaloneDecisionsArchiving.increment(count);
   }
 
-  public void recordIncidentUpdatesSkipped(final int count) {
-    incidentUpdatesSkipped.increment(count);
+  public void recordIncidentUpdatesRetriesNeeded(final int count) {
+    incidentUpdatesRetriesNeeded.increment(count);
   }
 
   public void recordIncidentUpdatesProcessed(final int count) {
@@ -361,7 +361,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
     meterRegistry.remove(recordExportDuration);
-    meterRegistry.remove(incidentUpdatesSkipped);
+    meterRegistry.remove(incidentUpdatesRetriesNeeded);
     meterRegistry.remove(incidentUpdatesProcessed);
 
     // Remove custom gauges by their names if needed
