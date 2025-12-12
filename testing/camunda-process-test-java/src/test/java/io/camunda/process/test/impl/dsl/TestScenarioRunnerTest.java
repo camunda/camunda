@@ -24,10 +24,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
-import io.camunda.process.test.api.dsl.TestCaseInstructionType;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,10 @@ public class TestScenarioRunnerTest {
     final TestCase testCase =
         createTestCase(
             ImmutableCreateProcessInstanceInstruction.builder()
-                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
+                .processDefinitionSelector(
+                    ImmutableProcessDefinitionSelector.builder()
+                        .processDefinitionId("process")
+                        .build())
                 .build());
 
     // when
@@ -100,7 +103,8 @@ public class TestScenarioRunnerTest {
 
     final TestCaseInstruction instruction =
         ImmutableCreateProcessInstanceInstruction.builder()
-            .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder().processDefinitionId("process").build())
             .build();
     final TestCase testCase = createTestCase(instruction);
 
