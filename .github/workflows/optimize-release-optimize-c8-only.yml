@@ -381,10 +381,9 @@ jobs:
         uses: octokit/request-action@v2.4.0
         with:
           route: POST /repos/camunda/camunda/releases
-          draft: false
+          make_latest: false
           name: ${{ env.TAG }}
           tag_name: ${{ env.TAG }}
-          make_latest: \"false\"
           body: |
             Please refer to the [Camunda Monorepo ${{ env.RELEASE_VERSION }} Release Notes](https://github.com/camunda/camunda/releases/tag/${{ env.RELEASE_VERSION }}) for full details.
 
