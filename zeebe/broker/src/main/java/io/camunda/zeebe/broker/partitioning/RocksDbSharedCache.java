@@ -12,9 +12,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import java.lang.management.ManagementFactory;
-import org.rocksdb.LRUCache;
-import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +20,6 @@ public class RocksDbSharedCache {
   private static final double MAX_ROCKSDB_MEMORY_FRACTION = 0.5;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RocksDbSharedCache.class);
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   static SharedRocksDbResources allocateSharedCache(final BrokerCfg brokerCfg) {
     final int partitionsCount = brokerCfg.getCluster().getPartitionsCount();
@@ -39,13 +32,7 @@ public class RocksDbSharedCache {
         blockCacheBytes,
         brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
 
-    // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
-    // with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
-    // zeebeRocksDBFactory.
-    final long wbmLimitBytes = blockCacheBytes / 4;
-    final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
-    final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
-    return new SharedRocksDbResources(sharedCache, sharedWbm, blockCacheBytes);
+    return SharedRocksDbResources.allocate(blockCacheBytes);
   }
 
   public static long getBlockCacheBytes(final RocksdbCfg rocksdbCfg, final int partitionsCount) {

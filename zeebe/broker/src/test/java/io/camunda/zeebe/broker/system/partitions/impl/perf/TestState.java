@@ -14,7 +14,6 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -39,7 +38,7 @@ final class TestState {
   private static final int KEY_VALUE_SIZE = 8096;
 
   private static final SharedRocksDbResources SHARED_ROCKS_DB_RESOURCES =
-      new SharedResourcesTestHelper().sharedResources();
+      SharedRocksDbResources.allocate();
 
   TestContext generateContext(final long sizeInBytes) throws Exception {
     final var meterRegistry = new SimpleMeterRegistry();

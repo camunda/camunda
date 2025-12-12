@@ -44,8 +44,7 @@ import org.rocksdb.CompactionPriority;
 final class ZeebeRocksDbFactoryTest {
 
   @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources =
-      new SharedResourcesTestHelper().sharedResources();
+  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
 
   @AutoClose
   private DefaultZeebeDbFactory.ZeebeDbFactoryResources<DefaultColumnFamily> dbFactoryResources =

@@ -27,7 +27,6 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -69,8 +68,7 @@ final class CheckpointRecordsProcessorTest {
   private ZeebeDb zeebedb;
 
   @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources =
-      new SharedResourcesTestHelper().sharedResources();
+  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
 
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =

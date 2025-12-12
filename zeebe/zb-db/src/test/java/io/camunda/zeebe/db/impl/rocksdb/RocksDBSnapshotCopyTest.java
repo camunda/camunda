@@ -48,8 +48,7 @@ public class RocksDBSnapshotCopyTest {
   private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
 
   @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources =
-      new SharedResourcesTestHelper().sharedResources();
+  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
 
   @BeforeEach
   void setup() {

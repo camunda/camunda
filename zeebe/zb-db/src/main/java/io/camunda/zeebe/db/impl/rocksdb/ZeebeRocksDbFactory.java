@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.time.Duration;
@@ -45,10 +46,6 @@ import org.rocksdb.WriteBufferManager;
 public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   private final SharedRocksDbResources sharedRocksDbResources;
   private final RocksDbConfiguration rocksDbConfiguration;
@@ -364,6 +361,29 @@ public final class ZeebeRocksDbFactory<
   public record SharedRocksDbResources(
       LRUCache sharedCache, WriteBufferManager sharedWbm, long reservedMemory)
       implements AutoCloseable {
+
+    public static final long DEFAULT_CACHE_SIZE = 32L * 1024 * 1024;
+
+    static {
+      RocksDB.loadLibrary();
+    }
+
+    @VisibleForTesting
+    public static SharedRocksDbResources allocate() {
+      return allocate(DEFAULT_CACHE_SIZE);
+    }
+
+    @VisibleForTesting
+    public static SharedRocksDbResources allocate(final long cacheSize) {
+      // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM
+      // limit,
+      // with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
+      // zeebeRocksDBFactory.
+      final LRUCache sharedCache = new LRUCache(cacheSize, 8, false, 0.15);
+      final WriteBufferManager sharedWbm = new WriteBufferManager(cacheSize / 4, sharedCache);
+      return new SharedRocksDbResources(sharedCache, sharedWbm, cacheSize);
+    }
+
     @Override
     public void close() {
       sharedWbm.close();

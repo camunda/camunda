@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,6 +42,7 @@ class StateUpdateKeyCommandTest {
   @TempDir Path tempDir;
   StringWriter err;
   StringWriter out;
+  @AutoClose SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
 
   @BeforeEach
   public void setup() {
@@ -96,12 +99,15 @@ class StateUpdateKeyCommandTest {
   }
 
   private PersistedSnapshot takeInitialSnapshot(final Path partitionRoot) {
+    final int defaultPartitionCount = 3;
     final var zeebeDbFactory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setWalDisabled(false),
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            sharedRocksDbResources,
+            defaultPartitionCount);
 
     final var initialRuntime = zeebeDbFactory.createDb(tempDir.resolve("initialRuntime").toFile());
 

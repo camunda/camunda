@@ -21,7 +21,6 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
@@ -43,8 +42,7 @@ public class MigrationTransitionStepTest {
   private ZeebeRocksDbFactory<?> factory;
 
   @AutoClose
-  private SharedRocksDbResources sharedRocksDbResources =
-      new SharedResourcesTestHelper().sharedResources();
+  private SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
 
   @BeforeEach
   void setup() {

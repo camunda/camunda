@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.SharedResourcesTestHelper;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -23,8 +22,7 @@ public final class DefaultZeebeDbFactory {
 
   public static ZeebeDbFactoryResources getDefaultFactoryResources() {
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    final SharedRocksDbResources sharedRocksDbResources =
-        new SharedResourcesTestHelper().sharedResources();
+    final SharedRocksDbResources sharedRocksDbResources = SharedRocksDbResources.allocate();
     final int defaultPartitionCount = 3;
     final ZeebeDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
@@ -40,7 +38,7 @@ public final class DefaultZeebeDbFactory {
   public static ZeebeDbFactoryResources getDefaultFactoryResources(final long cacheSize) {
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     final SharedRocksDbResources sharedRocksDbResources =
-        new SharedResourcesTestHelper().sharedResources(cacheSize);
+        SharedRocksDbResources.allocate(cacheSize);
     final int defaultPartitionCount = 3;
     final ZeebeDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
