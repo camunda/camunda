@@ -394,6 +394,9 @@ public final class ProcessingStateMachine {
       processedCommandsCount++;
       processingMetrics.commandsProcessed();
     }
+    // We are done with processing, no new writes or responses will be added.
+    pendingWrites = Collections.unmodifiableList(pendingWrites);
+    pendingResponses = Collections.unmodifiableCollection(pendingResponses);
   }
 
   /**
@@ -499,8 +502,6 @@ public final class ProcessingStateMachine {
           currentRecord,
           metadata,
           e);
-      pendingResponses.clear();
-      pendingWrites.clear();
     }
     return false;
   }
