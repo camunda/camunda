@@ -1104,8 +1104,6 @@ export {
   multiInstanceProcess,
   eventSubProcess,
   mockProcessInstancesV2,
-  createMultiInstanceFlowNodeInstances,
-  createEventSubProcessFlowNodeInstances,
   createvariable,
   createBatchOperation,
   createUser,
