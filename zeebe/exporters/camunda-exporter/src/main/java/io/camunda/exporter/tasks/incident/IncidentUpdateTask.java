@@ -174,6 +174,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
               metadata.setLastIncidentUpdatePosition(batch.highestPosition());
 
               metrics.recordIncidentUpdatesProcessed(incidentCount);
+              metrics.recordIncidentUpdatesDocumentsUpdated(documentsUpdated);
               return CompletableFuture.completedFuture(documentsUpdated);
             },
             executor);

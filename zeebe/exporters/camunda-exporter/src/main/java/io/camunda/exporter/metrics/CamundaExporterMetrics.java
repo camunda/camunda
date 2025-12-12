@@ -69,6 +69,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of incident updates that were processed. */
   private final Counter incidentUpdatesProcessed;
 
+  /** Count of document updated when incident updates were processed. */
+  private final Counter incidentUpdatesDocumentsUpdated;
+
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
@@ -191,6 +194,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tag("action", "processed")
             .description("Count of incidents that have been processed.")
             .register(meterRegistry);
+    incidentUpdatesDocumentsUpdated =
+        Counter.builder(meterName("incident.updates.documents"))
+            .tag("action", "updated")
+            .description("Count of documents that were updated when incidents were processed.")
+            .register(meterRegistry);
     bulkSize =
         DistributionSummary.builder(meterName("bulk.size"))
             .description("How many items were exported in one bulk request")
@@ -298,6 +306,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordIncidentUpdatesProcessed(final int count) {
     incidentUpdatesProcessed.increment(count);
+  }
+
+  public void recordIncidentUpdatesDocumentsUpdated(final int count) {
+    incidentUpdatesDocumentsUpdated.increment(count);
   }
 
   public void recordFlushFailureType(final String failureType) {
