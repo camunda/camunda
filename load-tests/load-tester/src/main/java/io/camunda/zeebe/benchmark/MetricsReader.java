@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.benchmark;
 
+import java.util.Set;
+
 public class MetricsReader {
-  private static final int DEFAULT_PARTITION_ID = 1;
+
+  private static final Set<String> EXPORTERS = Set.of("rdbmsexporter", "camundaexporter");
 
   private final PrometheusClient prometheusClient;
 
@@ -38,15 +41,16 @@ public class MetricsReader {
     final var lastCommitted =
         metrics.stream()
             .filter(p -> p.name().equals("zeebe_log_appender_last_committed_position"))
-            .findFirst()
             .map(PrometheusMetric::value)
+            .max(Double::compare)
             .orElse(0d);
 
     final var lastExported =
         metrics.stream()
             .filter(p -> p.name().equals("zeebe_exporter_last_exported_position"))
-            .findFirst()
+            .filter(p -> EXPORTERS.contains(p.labels().get("exporter")))
             .map(PrometheusMetric::value)
+            .findFirst()
             .orElse(0d);
 
     System.out.println("lastCommitted: " + lastCommitted + ", lastExported: " + lastExported);

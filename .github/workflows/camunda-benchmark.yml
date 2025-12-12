@@ -171,8 +171,8 @@ jobs:
             load-test-load: '--set starter.rate=0 --set app.brokerManagementUrl=http://camunda-gateway:9600'
 #          - scenario-name: 'pi-creation-latency'
 #            load-test-load: '--set starter.replicas=0'
-          - scenario-name: 'measure-cpu-usage'
-            load-test-load: '--set starter.rate=200'
+#          - scenario-name: 'measure-cpu-usage'
+#            load-test-load: '--set starter.rate=200'
     uses: camunda/camunda/.github/workflows/camunda-benchmark-scenario.yml@feat/camunda-db-benchmarks
     with:
       name: cthiel-benchmark

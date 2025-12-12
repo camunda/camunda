@@ -45,7 +45,7 @@ public class Starter extends App {
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
-  private static final int DYNAMIC_RATE_INITIAL = 200;
+  private static final int DYNAMIC_RATE_INITIAL = 50;
   private final StarterCfg starterCfg;
 
   Starter(final AppCfg config) {
@@ -233,7 +233,7 @@ public class Starter extends App {
 
   private boolean isExporterOverloaded(final MetricsReader metricsReader) {
     final var recordsNotExported = metricsReader.getRecordsNotExported();
-    LOG.info("Current number of records not exported: {}", recordsNotExported);
+    THROTTLED_LOGGER.info("Current number of records not exported: {}", recordsNotExported);
     return recordsNotExported > 10000;
   }
 
@@ -245,7 +245,7 @@ public class Starter extends App {
     if (overloaded) {
       // Decrease rate by configured factor
       newRate = Math.max(1, (long) (oldRate * (1 - adjustmentFactor)));
-      LOG.info(
+      THROTTLED_LOGGER.info(
           "Exporter overloaded, decreasing rate from {} to {} instances/second (factor: {})",
           oldRate,
           newRate,
@@ -253,7 +253,7 @@ public class Starter extends App {
     } else {
       // Increase rate by configured factor
       newRate = (long) (oldRate * (1 + adjustmentFactor));
-      LOG.info(
+      THROTTLED_LOGGER.info(
           "Exporter not overloaded, increasing rate from {} to {} instances/second (factor: {})",
           oldRate,
           newRate,

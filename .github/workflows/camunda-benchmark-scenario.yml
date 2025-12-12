@@ -134,7 +134,7 @@ jobs:
               restartPolicy: Never
         EOF
     - name: Wait for benchmark job
-      run: kubectl wait --for=condition=complete job/benchmark -n ${{inputs.name}} --timeout=600s
+      run: kubectl wait --for=condition=complete job/benchmark -n ${{inputs.name}} --timeout=900s
     - name: Collect Benchmark Output
       id: collect-output
       run: |
