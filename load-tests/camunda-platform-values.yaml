@@ -38,7 +38,7 @@ identity:
   enabled: true
 
 identityKeycloak:
-  enabled: false
+  enabled: true
 
 optimize:
   enabled: true
