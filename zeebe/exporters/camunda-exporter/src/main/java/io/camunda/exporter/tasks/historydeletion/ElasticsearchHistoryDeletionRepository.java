@@ -16,11 +16,9 @@ import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
-import java.util.Map;
-import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -60,15 +58,10 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
             (response) -> {
               final var hits = response.hits().hits();
               if (hits.isEmpty()) {
-                return CompletableFuture.completedFuture(new HistoryDeletionBatch(Map.of()));
+                return CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of()));
               }
-              final var ids =
-                  hits.stream()
-                      .collect(
-                          Collectors.toMap(
-                              Hit::id,
-                              hit -> Objects.requireNonNull(hit.source()).getResourceType()));
-              return CompletableFuture.completedFuture(new HistoryDeletionBatch(ids));
+              final var deletionEntities = hits.stream().map(Hit::source).toList();
+              return CompletableFuture.completedFuture(new HistoryDeletionBatch(deletionEntities));
             },
             executor);
   }

@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.historydeletion;
 import static io.camunda.search.test.utils.SearchDBExtension.HISTORY_DELETION_ID_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -98,8 +99,8 @@ abstract class HistoryDeletionRepositoryIT {
     // then
     assertThat(future)
         .succeedsWithin(REQUEST_TIMEOUT)
-        .extracting(HistoryDeletionBatch::ids)
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .extracting(HistoryDeletionBatch::historyDeletionEntities)
+        .asInstanceOf(InstanceOfAssertFactories.list(HistoryDeletionEntity.class))
         .isEmpty();
   }
 
@@ -115,10 +116,10 @@ abstract class HistoryDeletionRepositoryIT {
     // then
     assertThat(future)
         .succeedsWithin(REQUEST_TIMEOUT)
-        .extracting(HistoryDeletionBatch::ids)
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
-        .hasSize(1)
-        .containsEntry(entityId, HistoryDeletionType.PROCESS_INSTANCE);
+        .extracting(HistoryDeletionBatch::historyDeletionEntities)
+        .asInstanceOf(InstanceOfAssertFactories.list(HistoryDeletionEntity.class))
+        .extracting(HistoryDeletionEntity::getId, HistoryDeletionEntity::getResourceType)
+        .containsOnly(tuple(entityId, HistoryDeletionType.PROCESS_INSTANCE));
   }
 
   @Test
@@ -133,8 +134,8 @@ abstract class HistoryDeletionRepositoryIT {
     // then
     assertThat(future)
         .succeedsWithin(REQUEST_TIMEOUT)
-        .extracting(HistoryDeletionBatch::ids)
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .extracting(HistoryDeletionBatch::historyDeletionEntities)
+        .asInstanceOf(InstanceOfAssertFactories.list(HistoryDeletionEntity.class))
         .isEmpty();
   }
 }
