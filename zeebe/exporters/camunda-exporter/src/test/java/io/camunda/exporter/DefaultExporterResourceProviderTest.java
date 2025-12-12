@@ -22,6 +22,7 @@ import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTran
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.UserAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
@@ -184,7 +185,8 @@ public class DefaultExporterResourceProviderTest {
             Map.entry(
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
-            Map.entry(UserAuditLogTransformer.class, ValueType.USER));
+            Map.entry(UserAuditLogTransformer.class, ValueType.USER),
+            Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Verify that all expected AuditLogHandler transformers are present
     assertThat(

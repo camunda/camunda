@@ -9,15 +9,20 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class BatchOperationLifecycleManagementAuditLogHandlerTest {
 
@@ -25,8 +30,20 @@ class BatchOperationLifecycleManagementAuditLogHandlerTest {
   private final BatchOperationLifecycleManagementAuditLogTransformer transformer =
       new BatchOperationLifecycleManagementAuditLogTransformer();
 
-  @Test
-  void shouldTransformBatchOperationCanceledRecord() {
+  public static Stream<Arguments> getIntentMappings() {
+    return Stream.of(
+        Arguments.of(BatchOperationIntent.RESUMED, AuditLogOperationType.RESUME),
+        Arguments.of(BatchOperationIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
+        Arguments.of(BatchOperationIntent.CANCELED, AuditLogOperationType.CANCEL),
+        Arguments.of(BatchOperationIntent.RESUME, AuditLogOperationType.RESUME),
+        Arguments.of(BatchOperationIntent.SUSPEND, AuditLogOperationType.SUSPEND),
+        Arguments.of(BatchOperationIntent.CANCEL, AuditLogOperationType.CANCEL));
+  }
+
+  @MethodSource("getIntentMappings")
+  @ParameterizedTest
+  void shouldTransformBatchOperationLifecycleRecord(
+      final BatchOperationIntent intent, final AuditLogOperationType operationType) {
     // given
     final BatchOperationLifecycleManagementRecordValue recordValue =
         ImmutableBatchOperationLifecycleManagementRecordValue.builder()
@@ -37,7 +54,7 @@ class BatchOperationLifecycleManagementAuditLogHandlerTest {
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(BatchOperationIntent.CANCELED).withValue(recordValue));
+            r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final AuditLogEntity entity = new AuditLogEntity();
@@ -45,49 +62,7 @@ class BatchOperationLifecycleManagementAuditLogHandlerTest {
 
     // then
     assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
-  }
-
-  @Test
-  void shouldTransformBatchOperationSuspendedRecord() {
-    // given
-    final BatchOperationLifecycleManagementRecordValue recordValue =
-        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-            .from(factory.generateObject(BatchOperationLifecycleManagementRecordValue.class))
-            .withBatchOperationKey(789L)
-            .build();
-
-    final Record<BatchOperationLifecycleManagementRecordValue> record =
-        factory.generateRecord(
-            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(BatchOperationIntent.SUSPENDED).withValue(recordValue));
-
-    // when
-    final AuditLogEntity entity = new AuditLogEntity();
-    transformer.transform(record, entity);
-
-    // then
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
-  }
-
-  @Test
-  void shouldTransformBatchOperationResumedRecord() {
-    // given
-    final BatchOperationLifecycleManagementRecordValue recordValue =
-        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-            .from(factory.generateObject(BatchOperationLifecycleManagementRecordValue.class))
-            .withBatchOperationKey(321L)
-            .build();
-
-    final Record<BatchOperationLifecycleManagementRecordValue> record =
-        factory.generateRecord(
-            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(BatchOperationIntent.RESUMED).withValue(recordValue));
-
-    // when
-    final AuditLogEntity entity = new AuditLogEntity();
-    transformer.transform(record, entity);
-
-    // then
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
+    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
+    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
   }
 }

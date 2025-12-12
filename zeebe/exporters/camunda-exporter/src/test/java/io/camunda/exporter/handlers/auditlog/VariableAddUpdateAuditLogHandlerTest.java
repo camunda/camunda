@@ -15,51 +15,58 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
-import io.camunda.zeebe.protocol.record.value.BatchOperationType;
-import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class BatchOperationCreationAuditLogHandlerTest {
+class VariableAddUpdateAuditLogHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final BatchOperationCreationAuditLogTransformer transformer =
-      new BatchOperationCreationAuditLogTransformer();
+  private final VariableAddUpdateAuditLogTransformer transformer =
+      new VariableAddUpdateAuditLogTransformer();
 
   public static Stream<Arguments> getIntentMappings() {
     return Stream.of(
-        Arguments.of(BatchOperationIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(BatchOperationIntent.CREATE, AuditLogOperationType.CREATE));
+        Arguments.of(VariableIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(VariableIntent.UPDATED, AuditLogOperationType.UPDATE));
   }
 
   @MethodSource("getIntentMappings")
   @ParameterizedTest
-  void shouldTransformBatchOperationCreationRecord(
-      final BatchOperationIntent intent, final AuditLogOperationType operationType) {
+  void shouldTransformVariableRecord(
+      final VariableIntent intent, final AuditLogOperationType operationType) {
     // given
-    final BatchOperationCreationRecordValue recordValue =
-        ImmutableBatchOperationCreationRecordValue.builder()
-            .from(factory.generateObject(BatchOperationCreationRecordValue.class))
-            .withBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE)
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withProcessDefinitionKey(456L)
+            .withBpmnProcessId("bpmn-process-id")
+            .withTenantId("tenant-1")
+            .withProcessInstanceKey(123L)
+            .withScopeKey(789L)
             .build();
 
-    final Record<BatchOperationCreationRecordValue> record =
+    final Record<VariableRecordValue> record =
         factory.generateRecord(
-            ValueType.BATCH_OPERATION_CREATION, r -> r.withIntent(intent).withValue(recordValue));
+            ValueType.VARIABLE, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final AuditLogEntity entity = new AuditLogEntity();
     transformer.transform(record, entity);
 
     // then
-    assertThat(entity.getBatchOperationType())
-        .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(456L);
+    assertThat(entity.getTenantId()).isEqualTo("tenant-1");
+    assertThat(entity.getProcessDefinitionId()).isEqualTo("bpmn-process-id");
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
+    assertThat(entity.getElementInstanceKey()).isEqualTo(789L);
+    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
     assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
   }

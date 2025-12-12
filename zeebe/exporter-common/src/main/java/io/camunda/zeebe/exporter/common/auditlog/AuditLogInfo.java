@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Map;
 import java.util.Optional;
 
@@ -154,6 +155,11 @@ public record AuditLogInfo(
         return AuditLogOperationType.UPDATE;
       case UserIntent.DELETED:
         return AuditLogOperationType.DELETE;
+
+      case VariableIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case VariableIntent.UPDATED:
+        return AuditLogOperationType.UPDATE;
 
       // TODO: map additional intents to operations here
       default:

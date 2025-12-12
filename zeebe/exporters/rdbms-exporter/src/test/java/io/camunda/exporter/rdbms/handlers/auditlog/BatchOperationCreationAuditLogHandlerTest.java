@@ -10,7 +10,9 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -18,16 +20,27 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-class BatchOperationCreationAuditLogExportHandlerTest {
+class BatchOperationCreationAuditLogHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final BatchOperationCreationAuditLogTransformer transformer =
       new BatchOperationCreationAuditLogTransformer();
 
-  @Test
-  void shouldTransformBatchOperationCreationRecord() {
+  public static Stream<Arguments> getIntentMappings() {
+    return Stream.of(
+        Arguments.of(BatchOperationIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(BatchOperationIntent.CREATE, AuditLogOperationType.CREATE));
+  }
+
+  @MethodSource("getIntentMappings")
+  @ParameterizedTest
+  void shouldTransformBatchOperationCreationRecord(
+      final BatchOperationIntent intent, final AuditLogOperationType operationType) {
     // given
     final BatchOperationCreationRecordValue recordValue =
         ImmutableBatchOperationCreationRecordValue.builder()
@@ -37,8 +50,7 @@ class BatchOperationCreationAuditLogExportHandlerTest {
 
     final Record<BatchOperationCreationRecordValue> record =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_MODIFICATION,
-            r -> r.withIntent(BatchOperationIntent.CREATED).withValue(recordValue));
+            ValueType.BATCH_OPERATION_CREATION, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final AuditLogDbModel.Builder builder = new AuditLogDbModel.Builder();
@@ -49,5 +61,7 @@ class BatchOperationCreationAuditLogExportHandlerTest {
     assertThat(entity.batchOperationType())
         .isEqualTo(io.camunda.search.entities.BatchOperationType.MODIFY_PROCESS_INSTANCE);
     assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
+    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
+    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
   }
 }
