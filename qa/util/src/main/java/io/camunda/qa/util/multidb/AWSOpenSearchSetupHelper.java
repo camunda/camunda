@@ -7,14 +7,21 @@
  */
 package io.camunda.qa.util.multidb;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.net.URI;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest;
+import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest.Builder;
+import org.opensearch.client.opensearch.cluster.PutClusterSettingsResponse;
 import org.opensearch.client.opensearch.core.InfoResponse;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexTemplateRequest;
@@ -28,20 +35,16 @@ import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
-public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
+public class AWSOpenSearchSetupHelper extends OpenSearchSetupHelper {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(AWSOpenSearchSetupHelper.class);
-
   private final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
   private final OpenSearchClient client;
 
-  private final Collection<IndexDescriptor> expectedDescriptors;
-
   public AWSOpenSearchSetupHelper(
       final String endpoint, final Collection<IndexDescriptor> expectedDescriptors) {
+    super(endpoint, expectedDescriptors);
     final URI uri = URI.create(endpoint);
-    this.expectedDescriptors = expectedDescriptors;
     final var region = new DefaultAwsRegionProviderChain().getRegion();
     client =
         new OpenSearchClient(
@@ -52,6 +55,11 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
                 AwsSdk2TransportOptions.builder()
                     .setMapper(new JacksonJsonpMapper(OBJECT_MAPPER))
                     .build()));
+  }
+
+  @Override
+  public void close() {
+    httpClient.close();
   }
 
   @Override
@@ -97,6 +105,9 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
 
   @Override
   public void cleanup(final String prefix) {
+    // reset cluster settings if changed
+    super.resetLifecyclePollInterval();
+
     try {
       client.indices().delete(new DeleteIndexRequest.Builder().index(prefix + "*").build());
     } catch (final IOException e) {
@@ -113,8 +124,28 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
   }
 
   @Override
-  public void close() throws Exception {
-    httpClient.close();
+  protected void applyClusterSettings(final Map<String, Object> settings) {
+    withRetry(
+        () -> {
+          final Map<String, JsonData> mappedSettings =
+              settings.entrySet().stream()
+                  .map(s -> new SimpleEntry<>(s.getKey(), JsonData.of(s.getValue())))
+                  .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+          final PutClusterSettingsRequest build = new Builder().persistent(mappedSettings).build();
+
+          final PutClusterSettingsResponse putSettingsResponse =
+              client.cluster().putSettings(build);
+
+          if (putSettingsResponse.acknowledged()) {
+            LOGGER.info("Applied cluster settings successfully");
+          } else {
+            LOGGER.warn("Failed to apply cluster settings, retrying...");
+          }
+
+          return putSettingsResponse.acknowledged();
+        },
+        5);
   }
 
   protected int getCountOfIndicesWithPrefix(final String testPrefix)
