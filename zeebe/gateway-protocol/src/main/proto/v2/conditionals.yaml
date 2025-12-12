@@ -54,7 +54,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'common-responses.yaml#/components/responses/Forbidden'
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "404":
           description: The process definition was not found for the given processDefinitionKey.
           content:
@@ -94,10 +94,11 @@ components:
 
     EvaluateConditionalResult:
       type: object
+      required:
+        - processInstances
       properties:
         processInstances:
           type: array
-          required: true
           items:
             $ref: '#/components/schemas/ProcessInstanceReference'
           description: List of process instances created. If no root-level conditional start events evaluated to true, the list will be empty.
