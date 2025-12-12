@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import com.google.protobuf.ByteString;
+import io.camunda.zeebe.gateway.api.conditional.EvaluateConditionalStub;
 import io.camunda.zeebe.gateway.api.decision.EvaluateDecisionStub;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;

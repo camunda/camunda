@@ -15,7 +15,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -28,49 +27,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ResponseMapperTest {
-
-  @Test
-  void shouldMapEvaluateConditionalResponseWithMultipleInstances() {
-    // given
-    final var brokerResponse =
-        new ConditionalEvaluationRecord()
-            .addStartedProcessInstance(2251799813685249L, 2251799813685250L)
-            .addStartedProcessInstance(2251799813685251L, 2251799813685252L);
-    final long key = 1L;
-
-    // when
-    final var response = ResponseMapper.toEvaluateConditionalResponse(key, brokerResponse);
-
-    // then
-    assertThat(response.getProcessInstancesList())
-        .hasSize(2)
-        .satisfies(
-            instances -> {
-              assertThat(instances.get(0).getProcessDefinitionKey()).isEqualTo(2251799813685249L);
-              assertThat(instances.get(0).getProcessInstanceKey()).isEqualTo(2251799813685250L);
-              assertThat(instances.get(1).getProcessDefinitionKey()).isEqualTo(2251799813685251L);
-              assertThat(instances.get(1).getProcessInstanceKey()).isEqualTo(2251799813685252L);
-            });
-  }
-
-  @Test
-  void shouldMapEvaluateConditionalResponseWithEmptyList() {
-    // given
-    final var brokerResponse = new ConditionalEvaluationRecord();
-    final long key = 1L;
-
-    // when
-    final var response = ResponseMapper.toEvaluateConditionalResponse(key, brokerResponse);
-
-    // then
-    assertThat(response.getProcessInstancesList()).isEmpty();
-  }
 
   @Nested
   class ActivatedJobMappingTest {
