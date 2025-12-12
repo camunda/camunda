@@ -118,6 +118,9 @@
             "type": "integer"
           }
         }
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
       }
     }
   }

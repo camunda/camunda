@@ -28,6 +28,7 @@ public class SnapshotTaskVariableTemplate extends AbstractTemplateDescriptor
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
   public static final String TENANT_ID = "tenantId";
+  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public SnapshotTaskVariableTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

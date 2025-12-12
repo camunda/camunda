@@ -120,6 +120,9 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long resourceKey;
 
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -387,5 +390,14 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public void setDecisionEvaluationKey(final Long decisionEvaluationKey) {
     this.decisionEvaluationKey = decisionEvaluationKey;
+  }
+
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public AuditLogEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
   }
 }

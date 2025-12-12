@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -54,6 +55,10 @@ public class DecisionInstanceEntity
   @BeforeVersion880 private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   @BeforeVersion880 private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
   @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -335,6 +340,15 @@ public class DecisionInstanceEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public DecisionInstanceEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result1 =
@@ -366,7 +380,8 @@ public class DecisionInstanceEntity
             result,
             evaluatedInputs,
             evaluatedOutputs,
-            tenantId);
+            tenantId,
+            rootProcessInstanceKey);
     result1 = 31 * result1 + Arrays.hashCode(sortValues);
     return result1;
   }
@@ -408,6 +423,7 @@ public class DecisionInstanceEntity
         && Objects.equals(evaluatedInputs, that.evaluatedInputs)
         && Objects.equals(evaluatedOutputs, that.evaluatedOutputs)
         && Objects.equals(tenantId, that.tenantId)
-        && Arrays.equals(sortValues, that.sortValues);
+        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 }

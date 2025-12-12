@@ -32,6 +32,7 @@ public class CorrelatedMessageSubscriptionTemplate extends AbstractTemplateDescr
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String SUBSCRIPTION_KEY = "subscriptionKey";
   public static final String TENANT_ID = "tenantId";
+  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public CorrelatedMessageSubscriptionTemplate(
       final String indexPrefix, final boolean isElasticsearch) {
