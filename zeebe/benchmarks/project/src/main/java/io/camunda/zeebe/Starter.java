@@ -18,13 +18,11 @@ package io.camunda.zeebe;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.ProcessInstanceStartMeter.PiCreationResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
@@ -32,19 +30,15 @@ import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.Timer;
 import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,9 +62,7 @@ public class Starter extends App {
   private final StarterCfg starterCfg;
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
-  private ScheduledExecutorService piCheckExecutorService;
-  private ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
-  private CopyOnWriteArrayList<PiCreationResult> results;
+  private ProcessInstanceStartMeter processInstanceStartMeter;
 
   Starter(final AppCfg appCfg) {
     this.appCfg = appCfg;
@@ -79,47 +71,38 @@ public class Starter extends App {
 
   @Override
   public void run() {
-    partitionToTimerMap = new ConcurrentHashMap<>();
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
-    results = new CopyOnWriteArrayList<>();
-    partitionToTimerMap.put(
-        1,
-        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
-            .tag("partition", "1")
-            .register(registry));
-    partitionToTimerMap.put(
-        2,
-        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
-            .tag("partition", "2")
-            .register(registry));
-    partitionToTimerMap.put(
-        3,
-        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
-            .tag("partition", "3")
-            .register(registry));
     final ZeebeClient client = createZeebeClient();
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            registry,
+            Executors.newScheduledThreadPool(1),
+            (listOfStartedInstances) -> {
+              //              final CamundaFuture<SearchResponse<ProcessInstance>> send =
+              //                  client
+              //                      .newProcessInstanceSearchRequest()
+              //                      .filter((f) -> f.processInstanceKey(key ->
+              // key.in(listOfStartedInstances)))
+              //                      .sort(ProcessInstanceSort::startDate)
+              //                      .send();
+
+              return CompletableFuture.completedFuture(List.of());
+
+              //              return send.thenApply(
+              //                  processInstanceSearchResponse ->
+              //                      processInstanceSearchResponse.items().stream()
+              //                          .map(ProcessInstance::getProcessInstanceKey)
+              //                          .toList());
+            });
+    processInstanceStartMeter.start();
 
     // init - check for topology and deploy process
     printTopology(client);
     deployProcess(client, starterCfg);
 
     // setup to start instances on given rate
-    piCheckExecutorService = Executors.newScheduledThreadPool(20);
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-
-    piCheckExecutorService.scheduleAtFixedRate(
-        () -> {
-          try {
-            queryProcessInstances(client);
-          } catch (final Exception e) {
-            LOG.error("Failed to query process instances. Will retry...", e);
-          }
-        },
-        1000,
-        250,
-        TimeUnit.MILLISECONDS);
-
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch, client);
@@ -130,7 +113,7 @@ public class Starter extends App {
                 () -> {
                   if (!executorService.isShutdown()) {
                     executorService.shutdown();
-                    piCheckExecutorService.shutdown();
+                    processInstanceStartMeter.close();
                     try {
                       executorService.awaitTermination(60, TimeUnit.SECONDS);
                     } catch (final InterruptedException e) {
@@ -150,82 +133,7 @@ public class Starter extends App {
 
     scheduledTask.cancel(true);
     executorService.shutdown();
-    piCheckExecutorService.shutdown();
-  }
-
-  private void queryProcessInstances(final ZeebeClient client) {
-    LOG.warn("Started {} process instances so far", results.size());
-    // request results for started instances
-
-    final PiCreationResult first = results.getFirst();
-    LOG.info("First result {} ", results.getFirst());
-    final long startTimeNanos = first.startTimeNanos();
-    LOG.info("StartTimeNanos {} ", startTimeNanos);
-    final long millis = TimeUnit.NANOSECONDS.toMillis(startTimeNanos);
-    LOG.info("millis {} ", millis);
-    final long startTimeEpochMillis = first.startTimeEpochMillis;
-    LOG.info("EpochMillis {} ", startTimeEpochMillis);
-    final Instant temporal = Instant.ofEpochMilli(startTimeEpochMillis);
-    LOG.info("Instant {} ", temporal);
-    final OffsetDateTime from = OffsetDateTime.from(temporal.atZone(ZoneId.of("UTC")));
-    LOG.info("OffsetDateTime {} ", from);
-    final List<Long> list = results.stream().map(k -> k.processInstanceKey).toList();
-    //
-    //    client
-    //        .newProcessInstanceSearchRequest()
-    //        .filter((f) -> f.processInstanceKey(key -> key.in(list)))
-    //        .sort(ProcessInstanceSort::startDate)
-    //        .send()
-    //        .whenCompleteAsync(
-    //            (resp, error) -> {
-    //              if (error != null) {
-    //                LOG.error("Error while requesting process instances", error);
-    //                return;
-    //              }
-    //
-    //              LOG.warn("Response items: {} ", resp.items().size());
-    //              resp.items()
-    //                  .forEach(
-    //                      pi -> {
-    //                        LOG.info(
-    //                            "PI {} - {} start {}",
-    //                            pi,
-    //                            pi.getProcessInstanceKey(),
-    //                            pi.getStartDate());
-    //                        for (final PiCreationResult waitingPI :
-    //                            Collections.unmodifiableList(results)) {
-    //
-    //                          // TODO do more efficient search
-    //                          final long processInstanceKey = waitingPI.processInstanceKey;
-    //                          if (processInstanceKey == pi.getProcessInstanceKey()) {
-    //                            final long durationNanos = System.nanoTime() -
-    // waitingPI.startTimeNanos;
-    //                            final long durationMillisNanos =
-    //                                System.currentTimeMillis() - waitingPI.startTimeNanos;
-    //                            LOG.warn(
-    //                                "Process instance {} retrieved in {} ms; {} ms (from epoch)",
-    //                                processInstanceKey,
-    //                                TimeUnit.NANOSECONDS.toMillis(durationNanos),
-    //                                durationMillisNanos);
-    //
-    //                            final int partitionId =
-    // Protocol.decodePartitionId(processInstanceKey);
-    //                            partitionToTimerMap
-    //                                .get(partitionId)
-    //                                .record(durationNanos, TimeUnit.NANOSECONDS);
-    //                            results.remove(waitingPI);
-    //                            break;
-    //                          }
-    //                          //                          else {
-    //                          //                            LOG.info(
-    //                          //                                "PI {} not match {}",
-    //                          //                                pi.getProcessInstanceKey(),
-    //                          //                                waitingPI.processInstanceKey);
-    //                          //                          }
-    //                        }
-    //                      });
-    //            },
-    //            piCheckExecutorService);
+    processInstanceStartMeter.close();
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -302,55 +210,9 @@ public class Starter extends App {
         .thenApply(
             (response) -> {
               final long processInstanceKey = response.getProcessInstanceKey();
-              final long duration = Duration.ofNanos(System.nanoTime() - startTime).toMillis();
-              final long epochMilli = System.currentTimeMillis() - duration;
-              results.add(new PiCreationResult(processInstanceKey, startTime, epochMilli));
-              //              LOG.warn(
-              //              LOG.warn(
-              //                  "Process instance {} started at around {} (delay {} ms) try to get
-              // from API",
-              //                  processInstanceKey,
-              //                  Instant.ofEpochMilli(epochMilli),
-              //                  duration);
-              //              checkForProcessInstanceExistence(client, startTime,
-              // processInstanceKey);
+              processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
               return response;
             });
-  }
-
-  private void checkForProcessInstanceExistence(
-      final ZeebeClient client, final long startTime, final long processInstanceKey) {
-
-    final long duration = Duration.ofNanos(System.nanoTime() - startTime).toMillis();
-    LOG.warn(
-        "Process instance {} started at around {} (delay {} ms) try to get from API",
-        processInstanceKey,
-        Instant.ofEpochMilli(System.currentTimeMillis() - duration),
-        duration);
-    client
-        .newProcessInstanceGetRequest(processInstanceKey)
-        .send()
-        .whenCompleteAsync(
-            (resp, err) -> {
-              if (err != null) {
-                // on error, we need to retry
-                piCheckExecutorService.schedule(
-                    () -> checkForProcessInstanceExistence(client, startTime, processInstanceKey),
-                    100,
-                    TimeUnit.MILLISECONDS);
-                LOG.trace("Failed to get process instance {}", processInstanceKey, err);
-              } else {
-                final long durationNanos = System.nanoTime() - startTime;
-                LOG.warn(
-                    "Process instance {} retrieved in {} ms",
-                    processInstanceKey,
-                    durationNanos / 1_000_000);
-
-                final int partitionId = Protocol.decodePartitionId(processInstanceKey);
-                partitionToTimerMap.get(partitionId).record(durationNanos, TimeUnit.NANOSECONDS);
-              }
-            },
-            piCheckExecutorService);
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
