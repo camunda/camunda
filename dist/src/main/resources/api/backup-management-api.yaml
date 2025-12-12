@@ -588,7 +588,7 @@ components:
             type: array
             description: List of partition backup states
             items:
-              $ref: '#/components/schemas/PartitionCheckpointState'
+              $ref: '#/components/schemas/PartitionBackupState'
 
     PartitionCheckpointState:
       title: Partition Checkpoint State

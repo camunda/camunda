@@ -102,8 +102,10 @@ public final class BackupEndpoint {
   @ReadOperation
   public WebEndpointResponse<?> query(
       @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
-    if (arguments.length != 1) {
-      return listAll();
+    if (arguments.length > 1) {
+      return new WebEndpointResponse<>(
+          new Error().message("Invalid arguments provided."),
+          WebEndpointResponse.STATUS_BAD_REQUEST);
     }
     final String argument = arguments[0];
     if (BackupApi.STATE.equals(argument)) {
