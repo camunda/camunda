@@ -144,8 +144,8 @@ public final class BackupRequestHandler implements BackupApi {
                       .toList();
 
               return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
-                  .handle(
-                      (ignored, error) ->
+                  .thenApply(
+                      ignored ->
                           statusesReceived.stream()
                               .map(response -> response.join().getResponse())
                               .collect(Collectors.toSet()))
