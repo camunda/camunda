@@ -379,14 +379,10 @@ public final class ProcessInstanceServices
       final Long processInstanceKey, final Long operationReference) {
 
     // make sure process instance exists before deletion, otherwise return not found
-    final ProcessInstanceEntity processInstance =
+    final var processInstance =
         getByKey(
             processInstanceKey,
-            securityContextProvider.provideSecurityContext(
-                authentication,
-                Authorization.withAuthorization(
-                    PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION,
-                    ProcessInstanceEntity::processDefinitionId)));
+            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
