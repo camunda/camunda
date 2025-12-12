@@ -8,11 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinitionVersionStatistics} from 'modules/api/v2/processDefinitions/fetchProcessDefinitionVersionStatistics';
-import type {
-  GetProcessDefinitionInstanceVersionStatisticsRequestBody,
-  GetProcessDefinitionInstanceVersionStatisticsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
-import type {RequestError} from 'modules/request';
+import type {GetProcessDefinitionInstanceVersionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {queryKeys} from '../queryKeys.ts';
 
 type UseProcessDefinitionVersionStatisticsOptions = {
@@ -24,11 +20,7 @@ const useProcessDefinitionVersionStatistics = (
   processDefinitionId: string,
   {payload, enabled = true}: UseProcessDefinitionVersionStatisticsOptions,
 ) => {
-  return useQuery<
-    GetProcessDefinitionInstanceVersionStatisticsResponseBody,
-    RequestError,
-    GetProcessDefinitionInstanceVersionStatisticsResponseBody
-  >({
+  return useQuery({
     queryKey: queryKeys.processDefinitionStatistics.getByVersion(
       processDefinitionId,
       payload,
