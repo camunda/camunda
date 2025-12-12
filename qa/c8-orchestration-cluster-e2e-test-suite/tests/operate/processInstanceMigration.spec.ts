@@ -88,8 +88,8 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateProcessMigrationModePage,
     operateOperationPanelPage,
+    operateProcessMigrationModePage,
   }) => {
     test.slow();
     const sourceVersion = testProcesses.processV1.version.toString();
@@ -331,8 +331,8 @@ test.describe.serial('Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateProcessMigrationModePage,
     operateOperationPanelPage,
+    operateProcessMigrationModePage,
   }) => {
     test.slow();
     const sourceVersion = testProcesses.processV2.version.toString();
@@ -614,7 +614,7 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Verify Business rule task incident migration', async () => {
       await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-      await operateDiagramPage.showMetaData();
+      await operateDiagramPage.clickShowMetaData();
 
       await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
 
