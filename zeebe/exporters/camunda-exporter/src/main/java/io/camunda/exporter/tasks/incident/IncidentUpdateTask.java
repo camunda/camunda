@@ -156,9 +156,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
                   documentsUpdated,
                   batch.highestPosition());
 
-              if (documentsUpdated > 0) {
-                metadata.setLastIncidentUpdatePosition(batch.highestPosition());
-              }
+              metadata.setLastIncidentUpdatePosition(batch.highestPosition());
 
               return CompletableFuture.completedFuture(documentsUpdated);
             },
