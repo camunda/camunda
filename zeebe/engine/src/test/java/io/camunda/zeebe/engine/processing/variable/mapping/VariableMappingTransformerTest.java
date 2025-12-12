@@ -12,12 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import org.junit.Test;
@@ -26,8 +27,8 @@ public final class VariableMappingTransformerTest {
 
   private final VariableMappingTransformer transformer = new VariableMappingTransformer();
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage(
-          new ZeebeFeelEngineClock(InstantSource.system()));
+      new FeelExpressionLanguage(
+          new ZeebeFeelEngineClock(InstantSource.system()), new SimpleMeterRegistry());
 
   @Test
   public void shouldCreateValidExpression() {

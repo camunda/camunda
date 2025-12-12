@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -51,7 +52,8 @@ public final class ProcessingStateRule extends ExternalResource {
             new TransientPendingSubscriptionState(),
             new TransientPendingSubscriptionState(),
             new EngineConfiguration(),
-            InstantSource.system());
+            InstantSource.system(),
+            new SimpleMeterRegistry());
   }
 
   @Override

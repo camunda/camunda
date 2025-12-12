@@ -82,6 +82,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.function.Supplier;
 
@@ -151,7 +152,8 @@ public final class EngineProcessors {
             decisionBehavior,
             clock,
             authCheckBehavior,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            typedRecordProcessorContext.getMeterRegistry());
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -178,7 +180,8 @@ public final class EngineProcessors {
         config,
         clock,
         authCheckBehavior,
-        routingInfo);
+        routingInfo,
+        typedRecordProcessorContext.getMeterRegistry());
     addMessageProcessors(
         typedRecordProcessorContext.getPartitionId(),
         bpmnBehaviors,
@@ -400,7 +403,8 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final MeterRegistry meterRegistry) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -412,7 +416,8 @@ public final class EngineProcessors {
         jobStreamer,
         clock,
         authCheckBehavior,
-        transientProcessMessageSubscriptionState);
+        transientProcessMessageSubscriptionState,
+        meterRegistry);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -464,7 +469,8 @@ public final class EngineProcessors {
       final EngineConfiguration config,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final MeterRegistry meterRegistry) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -478,7 +484,8 @@ public final class EngineProcessors {
             distributionBehavior,
             config,
             clock,
-            authCheckBehavior);
+            authCheckBehavior,
+            meterRegistry);
 
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 

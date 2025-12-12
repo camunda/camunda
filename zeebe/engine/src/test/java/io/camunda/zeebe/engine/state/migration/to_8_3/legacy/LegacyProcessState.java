@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.impl.state.NextValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.Collections;
@@ -83,7 +84,7 @@ public final class LegacyProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock, null);
+    transformer = BpmnFactory.createTransformer(clock, null, new SimpleMeterRegistry());
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     processColumnFamily =

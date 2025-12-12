@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.activity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTr
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ConditionalEventDefinitionBuilder;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +39,8 @@ public class ConditionalEventTransformerTest {
   private static final String CONDITIONAL_ID = "conditional";
 
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage(
-          new ZeebeFeelEngineClock(InstantSource.system()));
+      new FeelExpressionLanguage(
+          new ZeebeFeelEngineClock(InstantSource.system()), new SimpleMeterRegistry());
   private final GlobalListenersConfiguration globalListenersConfiguration =
       new GlobalListenersConfiguration(new ArrayList<>());
   private final BpmnTransformer transformer =

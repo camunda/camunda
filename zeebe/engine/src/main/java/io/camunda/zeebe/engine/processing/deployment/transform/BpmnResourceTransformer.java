@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Optional;
@@ -59,15 +60,16 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final ExpressionProcessor expressionProcessor,
       final boolean enableStraightThroughProcessingLoopDetector,
       final EngineConfiguration config,
-      final InstantSource clock) {
-    bpmnTransformer = BpmnFactory.createTransformer(clock, config);
+      final InstantSource clock,
+      final MeterRegistry meterRegistry) {
+    bpmnTransformer = BpmnFactory.createTransformer(clock, config, meterRegistry);
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
     validator =
         BpmnFactory.createValidator(
-            clock, expressionProcessor, config.getValidatorsResultsOutputMaxSize());
+            clock, expressionProcessor, config.getValidatorsResultsOutputMaxSize(), meterRegistry);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 

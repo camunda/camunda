@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -25,7 +26,8 @@ public class FeelExpressionTest {
 
   private final TestFeelEngineClock clock = new TestFeelEngineClock();
 
-  private final ExpressionLanguage expressionLanguage = new FeelExpressionLanguage(clock);
+  private final ExpressionLanguage expressionLanguage =
+      new FeelExpressionLanguage(clock, new SimpleMeterRegistry());
 
   @Test
   public void stringLiteral() {

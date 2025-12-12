@@ -10,8 +10,10 @@ package io.camunda.zeebe.el;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Test;
@@ -19,7 +21,7 @@ import org.junit.jupiter.api.Test;
 public class EvaluationContextTest {
 
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
+      new FeelExpressionLanguage(new TestFeelEngineClock(), new SimpleMeterRegistry());
 
   @Test
   public void stringVariable() {

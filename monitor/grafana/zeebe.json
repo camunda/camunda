@@ -109,7 +109,7 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "enable": true,
+        "enable": false,
         "expr": "zeebe_flow_control_write_rate_maximum{namespace=~\"$namespace\", pod=~\"$pod\"} > zeebe_flow_control_write_rate_limit{namespace=~\"$namespace\", pod=~\"$pod\"}",
         "hide": false,
         "iconColor": "orange",
@@ -121,7 +121,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 26,
   "links": [],
   "panels": [
     {
@@ -230,7 +229,7 @@
             "showHeader": true,
             "sortBy": []
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -329,7 +328,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -364,6 +363,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -424,11 +424,12 @@
               "showLegend": false
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -513,7 +514,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -546,6 +547,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "opacity",
@@ -606,11 +608,12 @@
               "width": 250
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -654,6 +657,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "opacity",
@@ -714,11 +718,12 @@
               "width": 250
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -754,6 +759,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -801,7 +807,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 947
           },
           "id": 62,
           "options": {
@@ -812,11 +818,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -877,7 +884,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 12
+            "y": 947
           },
           "id": 232,
           "options": {
@@ -898,7 +905,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -933,6 +940,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -981,7 +989,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 12
+            "y": 947
           },
           "id": 74,
           "options": {
@@ -992,11 +1000,12 @@
               "showLegend": false
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1054,7 +1063,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 14
+            "y": 949
           },
           "id": 118,
           "maxDataPoints": 100,
@@ -1075,7 +1084,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1133,7 +1142,7 @@
             "h": 2,
             "w": 5,
             "x": 8,
-            "y": 842
+            "y": 951
           },
           "id": 117,
           "maxDataPoints": 100,
@@ -1154,7 +1163,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1212,7 +1221,7 @@
             "h": 2,
             "w": 4,
             "x": 13,
-            "y": 842
+            "y": 951
           },
           "id": 655,
           "maxDataPoints": 100,
@@ -1233,7 +1242,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1268,6 +1277,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -1317,7 +1327,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 844
+            "y": 953
           },
           "id": 39,
           "options": {
@@ -1328,11 +1338,12 @@
               "showLegend": false
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1363,6 +1374,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -1411,7 +1423,7 @@
             "h": 6,
             "w": 5,
             "x": 8,
-            "y": 844
+            "y": 953
           },
           "id": 190,
           "options": {
@@ -1435,11 +1447,12 @@
             "text": {},
             "textMode": "auto",
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1501,7 +1514,7 @@
             "h": 6,
             "w": 4,
             "x": 13,
-            "y": 844
+            "y": 953
           },
           "id": 612,
           "options": {
@@ -1519,7 +1532,7 @@
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1555,6 +1568,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -1645,7 +1659,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 844
+            "y": 953
           },
           "id": 33,
           "options": {
@@ -1656,11 +1670,12 @@
               "showLegend": false
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -1763,7 +1778,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 898
+            "y": 959
           },
           "id": 622,
           "maxPerRow": 3,
@@ -1886,7 +1901,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 1845
           },
           "id": 272,
           "options": {
@@ -1942,7 +1957,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 1852
           },
           "id": 418,
           "options": {
@@ -2060,7 +2075,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 1852
           },
           "id": 421,
           "options": {
@@ -2159,7 +2174,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 843
+            "y": 2686
           },
           "id": 192,
           "options": {
@@ -2272,7 +2287,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 843
+            "y": 2686
           },
           "id": 602,
           "options": {
@@ -2394,7 +2409,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 899
+            "y": 2742
           },
           "id": 194,
           "options": {
@@ -2526,7 +2541,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 899
+            "y": 2742
           },
           "id": 199,
           "options": {
@@ -2665,7 +2680,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 899
+            "y": 2742
           },
           "id": 196,
           "options": {
@@ -2804,7 +2819,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 899
+            "y": 2742
           },
           "id": 200,
           "options": {
@@ -2943,7 +2958,7 @@
             "h": 8,
             "w": 5,
             "x": 12,
-            "y": 903
+            "y": 2746
           },
           "id": 198,
           "options": {
@@ -3082,7 +3097,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 903
+            "y": 2746
           },
           "id": 268,
           "options": {
@@ -3186,7 +3201,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 905
+            "y": 2748
           },
           "id": 189,
           "options": {
@@ -3320,7 +3335,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 905
+            "y": 2748
           },
           "id": 201,
           "options": {
@@ -3443,7 +3458,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 911
+            "y": 2754
           },
           "id": 604,
           "interval": "1s",
@@ -3572,7 +3587,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 911
+            "y": 2754
           },
           "id": 605,
           "interval": "1s",
@@ -3692,7 +3707,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 917
+            "y": 2760
           },
           "id": 543,
           "options": {
@@ -3786,7 +3801,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 923
+            "y": 2766
           },
           "id": 561,
           "options": {
@@ -3884,7 +3899,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 923
+            "y": 2766
           },
           "id": 594,
           "options": {
@@ -3989,7 +4004,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 1846
           },
           "id": 12,
           "options": {
@@ -4089,7 +4104,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 1846
           },
           "id": 13,
           "options": {
@@ -4194,7 +4209,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 8
+            "y": 1851
           },
           "id": 2,
           "options": {
@@ -4301,7 +4316,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 8
+            "y": 1851
           },
           "id": 3,
           "options": {
@@ -4408,7 +4423,7 @@
             "h": 6,
             "w": 9,
             "x": 0,
-            "y": 14
+            "y": 1857
           },
           "id": 4,
           "options": {
@@ -4506,7 +4521,7 @@
             "h": 6,
             "w": 7,
             "x": 9,
-            "y": 14
+            "y": 1857
           },
           "id": 266,
           "options": {
@@ -4605,7 +4620,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 14
+            "y": 1857
           },
           "id": 267,
           "options": {
@@ -4704,7 +4719,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 846
+            "y": 2689
           },
           "id": 290,
           "options": {
@@ -4800,7 +4815,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 846
+            "y": 2689
           },
           "id": 291,
           "options": {
@@ -4896,7 +4911,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 846
+            "y": 2689
           },
           "id": 288,
           "options": {
@@ -4992,7 +5007,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 846
+            "y": 2689
           },
           "id": 289,
           "options": {
@@ -5102,7 +5117,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 918
+            "y": 2761
           },
           "id": 102,
           "options": {
@@ -5158,7 +5173,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 918
+            "y": 2761
           },
           "id": 112,
           "options": {
@@ -5296,7 +5311,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 926
+            "y": 2769
           },
           "id": 105,
           "options": {
@@ -5351,7 +5366,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 926
+            "y": 2769
           },
           "id": 106,
           "options": {
@@ -5473,7 +5488,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 961
+            "y": 2804
           },
           "id": 182,
           "options": {
@@ -5626,7 +5641,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 1848
           },
           "id": 261,
           "options": {
@@ -5800,7 +5815,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 1848
           },
           "id": 659,
           "options": {
@@ -5921,7 +5936,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 1857
           },
           "id": 98,
           "options": {
@@ -6064,7 +6079,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 1857
           },
           "id": 35,
           "options": {
@@ -6169,7 +6184,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 848
+            "y": 2691
           },
           "id": 579,
           "options": {
@@ -6260,7 +6275,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 848
+            "y": 2691
           },
           "id": 580,
           "options": {
@@ -6355,7 +6370,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 904
+            "y": 2747
           },
           "id": 285,
           "options": {
@@ -6464,7 +6479,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 904
+            "y": 2747
           },
           "id": 286,
           "options": {
@@ -6588,7 +6603,7 @@
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 6
+            "y": 1849
           },
           "id": 614,
           "options": {
@@ -6690,7 +6705,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 15
+            "y": 1858
           },
           "id": 64,
           "options": {
@@ -6793,7 +6808,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 15
+            "y": 1858
           },
           "id": 294,
           "options": {
@@ -6943,7 +6958,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 989
+            "y": 2832
           },
           "id": 260,
           "options": {
@@ -7035,7 +7050,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 994
+            "y": 2837
           },
           "id": 379,
           "options": {
@@ -7130,7 +7145,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 994
+            "y": 2837
           },
           "id": 381,
           "options": {
@@ -7251,7 +7266,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1002
+            "y": 2845
           },
           "id": 37,
           "options": {
@@ -7359,7 +7374,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1002
+            "y": 2845
           },
           "id": 40,
           "options": {
@@ -7457,7 +7472,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1010
+            "y": 2853
           },
           "id": 122,
           "options": {
@@ -7556,7 +7571,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1010
+            "y": 2853
           },
           "id": 124,
           "options": {
@@ -7654,7 +7669,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1018
+            "y": 2861
           },
           "id": 126,
           "options": {
@@ -7752,7 +7767,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1018
+            "y": 2861
           },
           "id": 127,
           "options": {
@@ -7824,7 +7839,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1027
+            "y": 2870
           },
           "id": 339,
           "options": {
@@ -7922,7 +7937,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1027
+            "y": 2870
           },
           "id": 341,
           "options": {
@@ -8059,7 +8074,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 1035
+            "y": 2878
           },
           "id": 343,
           "options": {
@@ -8183,7 +8198,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 1035
+            "y": 2878
           },
           "id": 345,
           "options": {
@@ -8305,7 +8320,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1045
+            "y": 2888
           },
           "id": 347,
           "options": {
@@ -8400,7 +8415,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1045
+            "y": 2888
           },
           "id": 349,
           "options": {
@@ -8495,7 +8510,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1053
+            "y": 2896
           },
           "id": 353,
           "options": {
@@ -8591,7 +8606,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1053
+            "y": 2896
           },
           "id": 351,
           "options": {
@@ -8703,7 +8718,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -8756,6 +8771,7 @@
                 "axisLabel": "seconds",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -8814,11 +8830,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -8900,7 +8917,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 843
+            "y": 17
           },
           "id": 133,
           "options": {
@@ -8941,7 +8958,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9000,7 +9017,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 843
+            "y": 17
           },
           "id": 135,
           "options": {
@@ -9041,7 +9058,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9099,7 +9116,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 899
+            "y": 25
           },
           "id": 28,
           "options": {
@@ -9140,7 +9157,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9178,6 +9195,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -9223,7 +9241,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 906
+            "y": 32
           },
           "id": 593,
           "options": {
@@ -9234,11 +9252,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9312,7 +9331,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 916
+            "y": 42
           },
           "id": 233,
           "options": {
@@ -9353,7 +9372,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9397,7 +9416,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 916
+            "y": 42
           },
           "id": 269,
           "options": {
@@ -9438,7 +9457,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9454,6 +9473,178 @@
             }
           ],
           "title": "Batch Event Replay Duration",
+          "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Time taken to evaluate a feel expression",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 49
+          },
+          "id": 690,
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#ef843c",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_feel_expression_evaluation_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Feel expression eval duration",
+          "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Time taken to prase a feel expression",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 49
+          },
+          "id": 691,
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#ef843c",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_feel_expression_parsing_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Feel expression parsing duration",
           "type": "heatmap"
         },
         {
@@ -9481,7 +9672,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 923
+            "y": 56
           },
           "id": 420,
           "options": {
@@ -9519,7 +9710,7 @@
               "unit": "s"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9563,7 +9754,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 923
+            "y": 56
           },
           "id": 419,
           "options": {
@@ -9601,7 +9792,7 @@
               "unit": "s"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9637,6 +9828,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -9683,7 +9875,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 930
+            "y": 63
           },
           "id": 310,
           "options": {
@@ -9694,11 +9886,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9765,6 +9958,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -9811,7 +10005,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 930
+            "y": 63
           },
           "id": 311,
           "options": {
@@ -9822,11 +10016,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9899,7 +10094,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 937
+            "y": 70
           },
           "id": 235,
           "options": {
@@ -9940,7 +10135,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -9982,7 +10177,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 937
+            "y": 70
           },
           "id": 234,
           "options": {
@@ -10023,7 +10218,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.0.2",
           "targets": [
             {
               "datasource": {
@@ -10119,7 +10314,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 2145
+            "y": 3988
           },
           "id": 26,
           "options": {
@@ -10215,7 +10410,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 2145
+            "y": 3988
           },
           "id": 27,
           "options": {
@@ -10282,7 +10477,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 2152
+            "y": 3995
           },
           "id": 22,
           "options": {
@@ -10376,7 +10571,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 2152
+            "y": 3995
           },
           "id": 23,
           "options": {
@@ -10470,7 +10665,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 2152
+            "y": 3995
           },
           "id": 24,
           "options": {
@@ -10579,7 +10774,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 2146
+            "y": 3989
           },
           "id": 164,
           "options": {
@@ -10735,7 +10930,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2154
+            "y": 3997
           },
           "id": 166,
           "options": {
@@ -10853,7 +11048,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2154
+            "y": 3997
           },
           "id": 168,
           "options": {
@@ -11003,7 +11198,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 2147
+            "y": 3990
           },
           "id": 278,
           "options": {
@@ -11142,7 +11337,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 2147
+            "y": 3990
           },
           "id": 283,
           "options": {
@@ -11238,7 +11433,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 2154
+            "y": 3997
           },
           "id": 373,
           "options": {
@@ -11335,7 +11530,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 2162
+            "y": 4005
           },
           "id": 363,
           "options": {
@@ -11432,7 +11627,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 2162
+            "y": 4005
           },
           "id": 406,
           "options": {
@@ -11529,7 +11724,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 2169
+            "y": 4012
           },
           "id": 79,
           "options": {
@@ -11626,7 +11821,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 2169
+            "y": 4012
           },
           "id": 114,
           "options": {
@@ -11680,7 +11875,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 2176
+            "y": 4019
           },
           "id": 86,
           "options": {
@@ -11801,7 +11996,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 2176
+            "y": 4019
           },
           "id": 305,
           "options": {
@@ -11866,7 +12061,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2183
+            "y": 4026
           },
           "id": 70,
           "options": {
@@ -12010,7 +12205,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2183
+            "y": 4026
           },
           "id": 72,
           "options": {
@@ -12109,7 +12304,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2191
+            "y": 4034
           },
           "id": 432,
           "interval": "1s",
@@ -12251,7 +12446,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2191
+            "y": 4034
           },
           "id": 95,
           "interval": "1s",
@@ -12370,7 +12565,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 2199
+            "y": 4042
           },
           "id": 205,
           "options": {
@@ -12497,7 +12692,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 2264
+            "y": 4107
           },
           "id": 209,
           "options": {
@@ -12572,7 +12767,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 2319
+            "y": 4162
           },
           "id": 396,
           "options": {
@@ -12637,7 +12832,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 2329
+            "y": 4172
           },
           "id": 215,
           "options": {
@@ -12712,7 +12907,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 407
+            "y": 2250
           },
           "id": 78,
           "options": {
@@ -12757,7 +12952,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "expr": "sum(increase(atomix_compaction_time_ms_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or increase(atomix_compaction_time_ms_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
@@ -12834,7 +13030,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 918
+            "y": 2761
           },
           "id": 180,
           "options": {
@@ -12930,7 +13126,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 926
+            "y": 2769
           },
           "id": 368,
           "options": {
@@ -13027,7 +13223,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 926
+            "y": 2769
           },
           "id": 411,
           "options": {
@@ -13123,7 +13319,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 933
+            "y": 2776
           },
           "id": 300,
           "options": {
@@ -13194,7 +13390,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 933
+            "y": 2776
           },
           "id": 89,
           "options": {
@@ -13278,7 +13474,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 940
+            "y": 2783
           },
           "id": 401,
           "options": {
@@ -13401,7 +13597,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 940
+            "y": 2783
           },
           "id": 416,
           "options": {
@@ -13494,7 +13690,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 947
+            "y": 2790
           },
           "id": 386,
           "options": {
@@ -13577,7 +13773,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 947
+            "y": 2790
           },
           "id": 81,
           "options": {
@@ -13662,7 +13858,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 953
+            "y": 2796
           },
           "id": 426,
           "options": {
@@ -13784,7 +13980,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 953
+            "y": 2796
           },
           "id": 427,
           "options": {
@@ -13891,7 +14087,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 960
+            "y": 2803
           },
           "id": 304,
           "options": {
@@ -13963,7 +14159,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 960
+            "y": 2803
           },
           "id": 391,
           "options": {
@@ -14008,7 +14204,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(atomix_last_flushed_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le) or sum(increase(atomix_last_flushed_index_update_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -14046,7 +14243,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 966
+            "y": 2809
           },
           "id": 687,
           "options": {
@@ -14091,7 +14288,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "expr": "sum(increase(atomix_compaction_time_ms_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or increase(atomix_compaction_time_ms_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
@@ -14128,7 +14326,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 966
+            "y": 2809
           },
           "id": 559,
           "options": {
@@ -14173,7 +14371,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(atomix_journal_seek_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le) or sum(increase(atomix_journal_seek_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -14247,7 +14446,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 966
+            "y": 2809
           },
           "id": 560,
           "options": {
@@ -14356,7 +14555,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 919
+            "y": 2762
           },
           "id": 356,
           "options": {
@@ -14376,7 +14575,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_sequencer_queue_size{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
@@ -14416,7 +14616,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 925
+            "y": 2768
           },
           "id": 357,
           "options": {
@@ -14460,7 +14660,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_sequencer_batch_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
@@ -14500,7 +14701,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 925
+            "y": 2768
           },
           "id": 358,
           "options": {
@@ -14545,7 +14746,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_sequencer_batch_length_bytes_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
@@ -14622,7 +14824,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 933
+            "y": 2776
           },
           "id": 586,
           "options": {
@@ -14641,7 +14843,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND\"}[$__rate_interval])) by (valueType, intent)",
@@ -14718,7 +14921,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 933
+            "y": 2776
           },
           "id": 589,
           "options": {
@@ -14737,7 +14940,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"EVENT\"}[$__rate_interval])) by (valueType, intent)",
@@ -14814,7 +15018,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 933
+            "y": 2776
           },
           "id": 590,
           "options": {
@@ -14833,7 +15037,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND_REJECTION\"}[$__rate_interval])) by (valueType, intent)",
@@ -14910,7 +15115,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 942
+            "y": 2785
           },
           "id": 606,
           "options": {
@@ -15009,7 +15214,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 942
+            "y": 2785
           },
           "id": 607,
           "options": {
@@ -15118,7 +15323,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 950
+            "y": 2793
           },
           "id": 608,
           "options": {
@@ -15210,7 +15415,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 950
+            "y": 2793
           },
           "id": 609,
           "options": {
@@ -15306,7 +15511,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 958
+            "y": 2801
           },
           "id": 610,
           "options": {
@@ -15416,7 +15621,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 958
+            "y": 2801
           },
           "id": 611,
           "options": {
@@ -15478,7 +15683,7 @@
             "h": 9,
             "w": 6,
             "x": 0,
-            "y": 966
+            "y": 2809
           },
           "id": 588,
           "options": {
@@ -15504,7 +15709,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND\"}[$__rate_interval])) by (recordType, valueType, intent)",
@@ -15548,7 +15754,7 @@
             "h": 9,
             "w": 6,
             "x": 6,
-            "y": 966
+            "y": 2809
           },
           "id": 591,
           "options": {
@@ -15574,7 +15780,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"EVENT\"}[$__rate_interval])) by (valueType, intent)",
@@ -15619,7 +15826,7 @@
             "h": 9,
             "w": 5,
             "x": 12,
-            "y": 966
+            "y": 2809
           },
           "id": 592,
           "options": {
@@ -15645,7 +15852,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND_REJECTION\"}[$__rate_interval])) by (valueType, intent)",
@@ -15696,7 +15904,7 @@
             "h": 9,
             "w": 7,
             "x": 17,
-            "y": 966
+            "y": 2809
           },
           "id": 613,
           "options": {
@@ -15813,7 +16021,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 922
+            "y": 2765
           },
           "id": 154,
           "options": {
@@ -15910,7 +16118,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 922
+            "y": 2765
           },
           "id": 144,
           "options": {
@@ -16006,7 +16214,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 928
+            "y": 2771
           },
           "id": 142,
           "options": {
@@ -16103,7 +16311,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 934
+            "y": 2777
           },
           "id": 151,
           "options": {
@@ -16200,7 +16408,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 934
+            "y": 2777
           },
           "id": 152,
           "options": {
@@ -16297,7 +16505,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 940
+            "y": 2783
           },
           "id": 150,
           "options": {
@@ -16394,7 +16602,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 946
+            "y": 2789
           },
           "id": 147,
           "options": {
@@ -16491,7 +16699,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 946
+            "y": 2789
           },
           "id": 149,
           "options": {
@@ -16587,7 +16795,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 953
+            "y": 2796
           },
           "id": 148,
           "options": {
@@ -16683,7 +16891,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 959
+            "y": 2802
           },
           "id": 155,
           "options": {
@@ -16779,7 +16987,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 959
+            "y": 2802
           },
           "id": 156,
           "options": {
@@ -16873,7 +17081,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 967
+            "y": 2810
           },
           "id": 158,
           "options": {
@@ -16970,7 +17178,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 967
+            "y": 2810
           },
           "id": 157,
           "options": {
@@ -17066,7 +17274,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 967
+            "y": 2810
           },
           "id": 146,
           "options": {
@@ -17162,7 +17370,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 973
+            "y": 2816
           },
           "id": 159,
           "options": {
@@ -17258,7 +17466,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 973
+            "y": 2816
           },
           "id": 160,
           "options": {
@@ -17355,7 +17563,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 973
+            "y": 2816
           },
           "id": 153,
           "options": {
@@ -17454,7 +17662,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 980
+            "y": 2823
           },
           "id": 603,
           "options": {
@@ -17534,7 +17742,7 @@
             "h": 8,
             "w": 4,
             "x": 0,
-            "y": 16
+            "y": 1859
           },
           "id": 675,
           "options": {
@@ -17598,7 +17806,7 @@
             "h": 8,
             "w": 10,
             "x": 4,
-            "y": 16
+            "y": 1859
           },
           "id": 676,
           "options": {
@@ -17671,7 +17879,7 @@
             "h": 8,
             "w": 10,
             "x": 14,
-            "y": 16
+            "y": 1859
           },
           "id": 677,
           "options": {
@@ -17783,7 +17991,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 754
+            "y": 2597
           },
           "id": 667,
           "options": {
@@ -17883,7 +18091,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 754
+            "y": 2597
           },
           "id": 683,
           "options": {
@@ -17940,7 +18148,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 762
+            "y": 2605
           },
           "id": 670,
           "options": {
@@ -18025,7 +18233,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 762
+            "y": 2605
           },
           "id": 673,
           "options": {
@@ -18105,7 +18313,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 770
+            "y": 2613
           },
           "id": 669,
           "maxDataPoints": 494,
@@ -18233,7 +18441,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 770
+            "y": 2613
           },
           "id": 674,
           "options": {
@@ -18296,7 +18504,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 778
+            "y": 2621
           },
           "id": 678,
           "options": {
@@ -18380,7 +18588,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 778
+            "y": 2621
           },
           "id": 668,
           "options": {
@@ -18466,7 +18674,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 786
+            "y": 2629
           },
           "id": 672,
           "options": {
@@ -18586,7 +18794,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 786
+            "y": 2629
           },
           "id": 665,
           "options": {
@@ -18661,7 +18869,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 1101
+            "y": 2944
           },
           "id": 20,
           "options": {
@@ -18706,7 +18914,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "expr": "sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
@@ -18784,7 +18993,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 1101
+            "y": 2944
           },
           "id": 255,
           "options": {
@@ -18803,7 +19012,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
               "expr": "rate(zeebe_elasticsearch_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
@@ -18839,7 +19049,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 1111
+            "y": 2954
           },
           "id": 21,
           "options": {
@@ -18884,7 +19094,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "expr": "sum(increase(zeebe_elasticsearch_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
@@ -18961,7 +19172,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 1111
+            "y": 2954
           },
           "id": 185,
           "options": {
@@ -18980,7 +19191,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "expr": "zeebe_elasticsearch_exporter_bulk_memory_size{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
               "format": "time_series",
@@ -19062,7 +19274,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 1121
+            "y": 2964
           },
           "id": 52,
           "options": {
@@ -19086,7 +19298,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\"})",
@@ -19136,7 +19349,7 @@
             "h": 9,
             "w": 10,
             "x": 0,
-            "y": 18
+            "y": 1861
           },
           "id": 616,
           "options": {
@@ -19181,7 +19394,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_camunda_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -19230,7 +19444,7 @@
             "h": 9,
             "w": 3,
             "x": 10,
-            "y": 18
+            "y": 1861
           },
           "id": 617,
           "options": {
@@ -19252,7 +19466,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "builder",
               "exemplar": true,
@@ -19335,7 +19550,7 @@
             "h": 9,
             "w": 11,
             "x": 13,
-            "y": 18
+            "y": 1861
           },
           "id": 621,
           "options": {
@@ -19355,7 +19570,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -19393,7 +19609,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 52
+            "y": 1895
           },
           "id": 618,
           "options": {
@@ -19438,7 +19654,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_camunda_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -19518,7 +19735,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 57
+            "y": 1900
           },
           "id": 628,
           "options": {
@@ -19571,7 +19788,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of evictions of the process cache",
           "fieldConfig": {
@@ -19633,7 +19850,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 57
+            "y": 1900
           },
           "id": 623,
           "options": {
@@ -19670,7 +19887,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time the cache spent computing or retrieving the new value",
           "fieldConfig": {
@@ -19692,7 +19909,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 64
+            "y": 1907
           },
           "id": 626,
           "options": {
@@ -19754,7 +19971,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -19836,7 +20053,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 64
+            "y": 1907
           },
           "id": 627,
           "options": {
@@ -19856,7 +20073,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_cache_process_load_duration_success_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
@@ -19950,7 +20168,7 @@
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 70
+            "y": 1913
           },
           "id": 643,
           "options": {
@@ -20026,7 +20244,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 79
+            "y": 1922
           },
           "id": 647,
           "options": {
@@ -20110,7 +20328,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 87
+            "y": 1930
           },
           "id": 646,
           "options": {
@@ -20209,7 +20427,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 87
+            "y": 1930
           },
           "id": 645,
           "options": {
@@ -20292,7 +20510,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 87
+            "y": 1930
           },
           "id": 658,
           "options": {
@@ -20388,7 +20606,7 @@
             "h": 9,
             "w": 10,
             "x": 0,
-            "y": 19
+            "y": 1862
           },
           "id": 630,
           "options": {
@@ -20433,7 +20651,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_rdbms_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -20474,7 +20693,7 @@
             "h": 9,
             "w": 11,
             "x": 10,
-            "y": 19
+            "y": 1862
           },
           "id": 636,
           "options": {
@@ -20528,7 +20747,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -20569,7 +20789,7 @@
             "h": 9,
             "w": 3,
             "x": 21,
-            "y": 19
+            "y": 1862
           },
           "id": 634,
           "options": {
@@ -20591,7 +20811,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
@@ -20647,7 +20868,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 28
+            "y": 1871
           },
           "id": 633,
           "options": {
@@ -20733,7 +20954,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 28
+            "y": 1871
           },
           "id": 688,
           "options": {
@@ -20881,7 +21102,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 36
+            "y": 1879
           },
           "id": 684,
           "options": {
@@ -21074,7 +21295,7 @@
             "h": 8,
             "w": 8,
             "x": 10,
-            "y": 36
+            "y": 1879
           },
           "id": 685,
           "options": {
@@ -21161,7 +21382,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 36
+            "y": 1879
           },
           "id": 686,
           "options": {
@@ -21287,7 +21508,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 1887
           },
           "id": 689,
           "options": {
@@ -21315,7 +21536,11 @@
               "legendFormat": "__auto",
               "range": true,
               "refId": "Execution Queue Memory Size",
-              "useBackend": false
+              "useBackend": false,
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
             }
           ],
           "title": "RDBMS Execution Queue Memory Size",
@@ -21369,7 +21594,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 1544
+            "y": 3387
           },
           "id": 170,
           "maxPerRow": 6,
@@ -21453,7 +21678,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 1556
+            "y": 3399
           },
           "id": 174,
           "options": {
@@ -21529,7 +21754,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 1556
+            "y": 3399
           },
           "id": 265,
           "options": {
@@ -21609,7 +21834,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2153
+            "y": 3996
           },
           "id": 329,
           "options": {
@@ -21675,7 +21900,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2153
+            "y": 3996
           },
           "id": 319,
           "options": {
@@ -21735,7 +21960,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2161
+            "y": 4004
           },
           "id": 323,
           "maxDataPoints": 25,
@@ -21826,7 +22051,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2161
+            "y": 4004
           },
           "id": 325,
           "options": {
@@ -21924,7 +22149,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2169
+            "y": 4012
           },
           "id": 313,
           "options": {
@@ -21983,7 +22208,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2169
+            "y": 4012
           },
           "id": 321,
           "options": {
@@ -22079,7 +22304,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2177
+            "y": 4020
           },
           "id": 335,
           "options": {
@@ -22137,7 +22362,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2177
+            "y": 4020
           },
           "id": 317,
           "options": {
@@ -22199,7 +22424,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2185
+            "y": 4028
           },
           "id": 327,
           "options": {
@@ -22274,7 +22499,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1106
+            "y": 2949
           },
           "id": 538,
           "options": {
@@ -22359,7 +22584,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1106
+            "y": 2949
           },
           "id": 540,
           "options": {
@@ -22484,7 +22709,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1114
+            "y": 2957
           },
           "id": 444,
           "options": {
@@ -22594,7 +22819,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1114
+            "y": 2957
           },
           "id": 446,
           "options": {
@@ -22703,7 +22928,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1122
+            "y": 2965
           },
           "id": 440,
           "options": {
@@ -22798,7 +23023,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1122
+            "y": 2965
           },
           "id": 442,
           "options": {
@@ -22869,7 +23094,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1107
+            "y": 2950
           },
           "id": 547,
           "options": {
@@ -22992,7 +23217,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1107
+            "y": 2950
           },
           "id": 549,
           "options": {
@@ -23104,7 +23329,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 1108
+            "y": 2951
           },
           "id": 562,
           "options": {
@@ -23203,7 +23428,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 1108
+            "y": 2951
           },
           "id": 563,
           "options": {
@@ -23302,7 +23527,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 1108
+            "y": 2951
           },
           "id": 564,
           "options": {
@@ -23423,7 +23648,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 1109
+            "y": 2952
           },
           "id": 566,
           "options": {
@@ -23521,7 +23746,7 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 1109
+            "y": 2952
           },
           "id": 567,
           "options": {
@@ -23619,7 +23844,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 1109
+            "y": 2952
           },
           "id": 568,
           "options": {
@@ -23749,7 +23974,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1110
+            "y": 2953
           },
           "id": 573,
           "options": {
@@ -23875,7 +24100,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1110
+            "y": 2953
           },
           "id": 574,
           "options": {
@@ -23989,7 +24214,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1118
+            "y": 2961
           },
           "id": 600,
           "options": {
@@ -24092,7 +24317,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1118
+            "y": 2961
           },
           "id": 601,
           "options": {
@@ -24188,7 +24413,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1126
+            "y": 2969
           },
           "id": 575,
           "options": {
@@ -24297,7 +24522,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1569
+            "y": 3412
           },
           "id": 570,
           "options": {
@@ -24403,7 +24628,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1569
+            "y": 3412
           },
           "id": 577,
           "options": {
@@ -24508,7 +24733,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1577
+            "y": 3420
           },
           "id": 578,
           "options": {
@@ -24604,7 +24829,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1577
+            "y": 3420
           },
           "id": 571,
           "options": {
@@ -24710,7 +24935,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 2176
+            "y": 4019
           },
           "id": 582,
           "options": {
@@ -24801,7 +25026,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 2176
+            "y": 4019
           },
           "id": 583,
           "options": {
@@ -24893,7 +25118,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 2176
+            "y": 4019
           },
           "id": 584,
           "options": {
@@ -24998,7 +25223,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1113
+            "y": 2956
           },
           "id": 596,
           "options": {
@@ -25095,7 +25320,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1113
+            "y": 2956
           },
           "id": 597,
           "options": {
@@ -25157,7 +25382,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1121
+            "y": 2964
           },
           "id": 598,
           "options": {
@@ -25282,7 +25507,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1121
+            "y": 2964
           },
           "id": 599,
           "options": {
@@ -25404,7 +25629,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 903
+            "y": 2746
           },
           "id": 680,
           "options": {
@@ -25502,7 +25727,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 903
+            "y": 2746
           },
           "id": 666,
           "options": {
@@ -25559,7 +25784,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 911
+            "y": 2754
           },
           "id": 681,
           "options": {
@@ -25657,7 +25882,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 911
+            "y": 2754
           },
           "id": 682,
           "options": {
@@ -25811,7 +26036,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1114
+            "y": 2957
           },
           "id": 664,
           "maxPerRow": 6,
@@ -25858,7 +26083,6 @@
       "type": "row"
     }
   ],
-  "preload": false,
   "refresh": "",
   "schemaVersion": 41,
   "tags": [],
@@ -26001,5 +26225,7 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 45
+  "version": 0,
+  "weekStart": "",
+  "id": null
 }

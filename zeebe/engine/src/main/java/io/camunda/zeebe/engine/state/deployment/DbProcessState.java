@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -113,8 +114,9 @@ public final class DbProcessState implements MutableProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config,
-      final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock, config);
+      final InstantSource clock,
+      final MeterRegistry meterRegistry) {
+    transformer = BpmnFactory.createTransformer(clock, config, meterRegistry);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();

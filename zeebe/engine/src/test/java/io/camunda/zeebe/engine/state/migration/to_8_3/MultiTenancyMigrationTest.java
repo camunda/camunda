@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -93,7 +94,11 @@ public class MultiTenancyMigrationTest {
       legacyState = new LegacyProcessState(zeebeDb, transactionContext, InstantSource.system());
       processState =
           new DbProcessState(
-              zeebeDb, transactionContext, new EngineConfiguration(), InstantSource.system());
+              zeebeDb,
+              transactionContext,
+              new EngineConfiguration(),
+              InstantSource.system(),
+              new SimpleMeterRegistry());
     }
 
     @Test

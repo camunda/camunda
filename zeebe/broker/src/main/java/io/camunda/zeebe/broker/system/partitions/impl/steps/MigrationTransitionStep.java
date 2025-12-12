@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 
 public class MigrationTransitionStep implements PartitionTransitionStep {
@@ -49,7 +50,8 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
-            InstantSource.system());
+            InstantSource.system(),
+            new SimpleMeterRegistry());
 
     final var dbMigrator =
         new DbMigratorImpl(
