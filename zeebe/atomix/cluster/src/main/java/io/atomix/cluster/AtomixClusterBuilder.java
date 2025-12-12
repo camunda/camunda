@@ -109,7 +109,7 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    * @return the cluster builder
    */
   public AtomixClusterBuilder withMemberId(final MemberId localMemberId) {
-    config.getNodeConfig().setId(localMemberId);
+    withMemberId(localMemberId);
     return this;
   }
 
