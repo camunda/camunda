@@ -8,6 +8,7 @@ When a partition's key generator becomes corrupted (e.g., key overflow), this re
 
 ## Files
 
+- **`identify-partition-brokers.sh`**: Identifies which brokers host a partition (leader and replicas)
 - **`generate-recovery-job.sh`**: Standalone YAML generator (simple, no cluster interaction)
 - **`recovery-script.sh`**: Bash script that performs the actual key recovery operations (inlined in generated Job YAML)
 - **`recovery-procedure.sh`**: Automated recovery procedure script (generates and applies Job YAML)
@@ -19,6 +20,87 @@ When a partition's key generator becomes corrupted (e.g., key overflow), this re
 - **`generated/`**: Directory containing generated Job YAML files
 
 ## Quick Start
+
+### Identify Partition Brokers
+
+If you need to find which brokers host a specific partition:
+
+```bash
+# Set required variables
+export NAMESPACE="camunda"
+export PARTITION_ID="1"
+export BROKER_COUNT="3"
+
+# Optional variables
+export STATEFULSET_NAME="camunda"
+export POD_PREFIX="camunda"
+export ACTUATOR_PORT="9600"
+
+# Run the script
+./identify-partition-brokers.sh
+# Output to stdout:
+# LEADER=0
+# REPLICAS="0 1 2"
+# Output to stderr:
+# INFO: Broker information saved to: generated/.partition-brokers-1.env
+
+# The script writes to a state file AND outputs to stdout
+# You can use either approach:
+
+# Approach 1: Capture stdout and eval
+eval $(./identify-partition-brokers.sh 2>/dev/null)
+echo "Leader: $LEADER"
+echo "Replicas: $REPLICAS"
+
+# Approach 2: Read from generated state file
+./identify-partition-brokers.sh
+source generated/.partition-brokers-1.env
+echo "Leader: $LEADER"
+echo "Replicas: $REPLICAS"
+```
+
+**What it does:**
+- ✓ Queries actuator endpoint on each broker
+- ✓ Identifies the LEADER for the partition
+- ✓ Identifies all FOLLOWER brokers (replicas)
+- ✓ **Saves results to state file**: `generated/.partition-brokers-<ID>.env`
+- ✓ **Outputs to stdout**: `LEADER=X` and `REPLICAS="X Y Z"`
+- ✓ Useful for manual recovery or scripting
+
+**Required Environment Variables:**
+- `NAMESPACE` - Kubernetes namespace
+- `PARTITION_ID` - Partition ID to identify
+- `BROKER_COUNT` - Number of brokers in the cluster
+
+**Optional Environment Variables:**
+- `STATEFULSET_NAME` - StatefulSet name (default: "camunda")
+- `POD_PREFIX` - Pod name prefix (default: "${STATEFULSET_NAME}")
+- `ACTUATOR_PORT` - Actuator port (default: 9600)
+- `GENERATED_DIR` - Output directory for state file (default: "generated")
+
+**State File:**
+
+The script saves broker information to a state file that can be shared between scripts:
+- **Location**: `generated/.partition-brokers-<PARTITION_ID>.env`
+- **Format**: Simple `KEY=VALUE` pairs that can be sourced
+- **Purpose**: Allows multiple scripts to use the same broker information
+- **Lifetime**: Persists until manually deleted or overwritten
+
+**Example workflow:**
+```bash
+# Step 1: Identify brokers (run once)
+./identify-partition-brokers.sh
+
+# Step 2: Use the state file in other scripts
+source generated/.partition-brokers-1.env
+echo "Using leader broker: $LEADER"
+echo "Using replicas: $REPLICAS"
+
+# Step 3: Generate recovery job with the same broker info
+export PARTITION_BROKER_IDS="$REPLICAS"
+export LAST_LEADER_BROKER="$LEADER"
+./generate-recovery-job.sh
+```
 
 ### Generate YAML Only (Simple & Fast)
 

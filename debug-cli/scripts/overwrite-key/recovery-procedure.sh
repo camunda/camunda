@@ -341,82 +341,62 @@ function pause_for_user() {
 }
 
 function identify_partition_leader() {
-        print_header "Identifying Partition Leader and Replicas"
+	print_header "Identifying Partition Leader and Replicas"
 
-        echo "Checking partition $PARTITION_ID across all $BROKER_COUNT brokers to find the leader and replicas..."
-        echo ""
+	echo "Checking partition $PARTITION_ID across all $BROKER_COUNT brokers to find the leader and replicas..."
+	echo ""
 
-        LEADER_BROKER=""
-        PARTITION_REPLICAS=()
+	if [ "$DRY_RUN" = true ]; then
+		# In dry-run mode, simulate a typical setup for YAML generation
+		print_info "[DRY-RUN] Simulating partition replica discovery for YAML generation..."
+		LEADER_BROKER=0
+		PARTITION_REPLICAS=(0 1 2)
+		print_success "[DRY-RUN] Using simulated leader: $(get_pod_name $LEADER_BROKER)"
+		print_info "[DRY-RUN] Using simulated replicas (${#PARTITION_REPLICAS[@]} total):"
+		for replica_id in "${PARTITION_REPLICAS[@]}"; do
+			echo "  - Broker $replica_id: $(get_pod_name $replica_id)"
+		done
+		export LAST_LEADER_BROKER=$LEADER_BROKER
+		export PARTITION_BROKER_IDS="${PARTITION_REPLICAS[*]}"
+		return
+	fi
 
-        for i in $(get_broker_ids); do
-                local pod_name=$(get_pod_name $i)
-                echo "Checking $pod_name..."
+	# Export variables needed by identify-partition-brokers.sh
+	export NAMESPACE
+	export PARTITION_ID
+	export BROKER_COUNT
+	export STATEFULSET_NAME
+	export POD_PREFIX
+	export ACTUATOR_PORT
+	export GENERATED_DIR
 
-                # Port forward to the broker
-                kubectl port-forward -n $NAMESPACE $pod_name $ACTUATOR_PORT:$ACTUATOR_PORT >/dev/null 2>&1 &
-                PF_PID=$!
-                sleep 2
+	# Call the standalone script to identify brokers
+	if ! ./identify-partition-brokers.sh; then
+		print_error "Failed to identify partition brokers"
+		exit 1
+	fi
 
-                # Get partition role (use || true to prevent script exit on curl failure)
-                HTTP_RESPONSE=$(curl -s http://localhost:$ACTUATOR_PORT/actuator/partitions/$PARTITION_ID || true)
-                ROLE=$(echo "$HTTP_RESPONSE" | jq -r ".role" 2>/dev/null || true)
-                if [ -z "$ROLE" ] || [ "$ROLE" = "null" ]; then
-                        ROLE="UNKNOWN"
-                fi
+	# Source the generated state file
+	BROKER_STATE_FILE="${GENERATED_DIR}/.partition-brokers-${PARTITION_ID}.env"
+	if [ ! -f "$BROKER_STATE_FILE" ]; then
+		print_error "Broker state file not found: $BROKER_STATE_FILE"
+		exit 1
+	fi
+	source "$BROKER_STATE_FILE"
 
-                echo "  $pod_name: Partition $PARTITION_ID is $ROLE"
+	# Convert to expected variable names and format
+	LEADER_BROKER=$LEADER
+	PARTITION_REPLICAS=($REPLICAS)
 
-                if [ "$ROLE" == "LEADER" ]; then
-                        LEADER_BROKER=$i
-                        PARTITION_REPLICAS+=($i)
-                        print_info "Found leader: $pod_name"
-                elif [ "$ROLE" == "FOLLOWER" ]; then
-                        PARTITION_REPLICAS+=($i)
-                        print_info "Found follower: $pod_name"
-                fi
+	echo ""
+	print_success "Partition $PARTITION_ID leader is: $(get_pod_name $LEADER_BROKER)"
+	print_info "Partition $PARTITION_ID replicas (${#PARTITION_REPLICAS[@]} total):"
+	for replica_id in "${PARTITION_REPLICAS[@]}"; do
+		echo "  - Broker $replica_id: $(get_pod_name $replica_id)"
+	done
 
-                # Kill port-forward
-                kill $PF_PID 2>/dev/null || true
-                sleep 1
-        done
-
-        echo ""
-
-        if [ "$DRY_RUN" = true ]; then
-                # In dry-run mode, simulate a typical setup for YAML generation
-                print_info "[DRY-RUN] Simulating partition replica discovery for YAML generation..."
-                LEADER_BROKER=0
-                PARTITION_REPLICAS=(0 1 2)
-                print_success "[DRY-RUN] Using simulated leader: $(get_pod_name $LEADER_BROKER)"
-                print_info "[DRY-RUN] Using simulated replicas (${#PARTITION_REPLICAS[@]} total):"
-                for replica_id in "${PARTITION_REPLICAS[@]}"; do
-                        echo "  - Broker $replica_id: $(get_pod_name $replica_id)"
-                done
 	export LAST_LEADER_BROKER=$LEADER_BROKER
-	# Convert array to space-separated string for generate-recovery-job.sh
 	export PARTITION_BROKER_IDS="${PARTITION_REPLICAS[*]}"
-                return
-        fi
-
-        if [ -z "$LEADER_BROKER" ]; then
-                print_error "Could not find leader for partition $PARTITION_ID"
-                exit 1
-        fi
-
-        if [ ${#PARTITION_REPLICAS[@]} -eq 0 ]; then
-                print_error "Could not find any replicas for partition $PARTITION_ID"
-                exit 1
-        fi
-
-        print_success "Partition $PARTITION_ID leader is: $(get_pod_name $LEADER_BROKER)"
-        print_info "Partition $PARTITION_ID replicas (${#PARTITION_REPLICAS[@]} total):"
-        for replica_id in "${PARTITION_REPLICAS[@]}"; do
-                echo "  - Broker $replica_id: $(get_pod_name $replica_id)"
-        done
-
-        export LAST_LEADER_BROKER=$LEADER_BROKER
-        export PARTITION_BROKER_IDS="${PARTITION_REPLICAS[@]}"
 }
 
 function check_cluster_state() {
