@@ -393,8 +393,9 @@ function identify_partition_leader() {
                 for replica_id in "${PARTITION_REPLICAS[@]}"; do
                         echo "  - Broker $replica_id: $(get_pod_name $replica_id)"
                 done
-                export LAST_LEADER_BROKER=$LEADER_BROKER
-                export PARTITION_BROKER_IDS="${PARTITION_REPLICAS[@]}"
+	export LAST_LEADER_BROKER=$LEADER_BROKER
+	# Convert array to space-separated string for generate-recovery-job.sh
+	export PARTITION_BROKER_IDS="${PARTITION_REPLICAS[*]}"
                 return
         fi
 
@@ -521,146 +522,6 @@ function backup_reminder() {
         pause_for_user
 }
 
-function generate_recovery_job_yaml() {
-        local broker_ids="$1"
-
-        # Read the recovery script content
-        if [ ! -f "recovery-script.sh" ]; then
-                print_error "recovery-script.sh not found!"
-                exit 1
-        fi
-
-        # Read script and escape for YAML (indent by 12 spaces, escape special chars)
-        local script_content=$(cat recovery-script.sh | sed 's/$/\\n\\/' | sed 's/"/\\"/g' | sed 's/^/            /')
-
-        # Generate volumeMounts section (only PVCs, no ConfigMap)
-        local volume_mounts=""
-        volume_mounts+="        # Broker data PVCs (only for partition replicas)\n"
-
-        for broker_id in $broker_ids; do
-                volume_mounts+="        - name: broker-${broker_id}-data\n"
-                volume_mounts+="          mountPath: /mnt/broker-${broker_id}\n"
-                volume_mounts+="        \n"
-        done
-
-        volume_mounts+="        # Temporary storage for recovery operations\n"
-        volume_mounts+="        - name: temp-storage\n"
-        volume_mounts+="          mountPath: /tmp/recovery"
-
-        # Generate volumes section (only PVCs, no ConfigMap)
-        local volumes=""
-        volumes+="      # Broker PVCs (only for partition replicas)\n"
-
-        for broker_id in $broker_ids; do
-                volumes+="      - name: broker-${broker_id}-data\n"
-                volumes+="        persistentVolumeClaim:\n"
-                volumes+="          claimName: ${PVC_PREFIX}-${broker_id}\n"
-                volumes+="      \n"
-        done
-
-        volumes+="      # Temporary storage\n"
-        volumes+="      - name: temp-storage\n"
-        volumes+="        emptyDir:\n"
-        volumes+="          sizeLimit: 10Gi"
-
-        # Calculate actual broker count (number of replicas for this partition)
-        local partition_broker_count=$(echo "$broker_ids" | wc -w)
-
-        # Build environment variables section
-        local env_vars=""
-        env_vars+="        # Required parameters\n"
-        env_vars+="        - name: PARTITION_ID\n"
-        env_vars+="          value: \"${PARTITION_ID}\"\n"
-        env_vars+="        \n"
-        env_vars+="        - name: LAST_LEADER_BROKER\n"
-        env_vars+="          value: \"${LAST_LEADER_BROKER}\"\n"
-        env_vars+="        \n"
-        env_vars+="        - name: NEW_KEY\n"
-        env_vars+="          value: \"${NEW_KEY}\"\n"
-        env_vars+="        \n"
-        env_vars+="        - name: CAMUNDA_LOG_FILE_APPENDER_ENABLED\n"
-        env_vars+="          value: \"false\"\n"
-        env_vars+="        \n"
-
-        # Only add NEW_MAX_KEY if it's set
-        if [ -n "${NEW_MAX_KEY}" ]; then
-                env_vars+="        - name: NEW_MAX_KEY\n"
-                env_vars+="          value: \"${NEW_MAX_KEY}\"\n"
-                env_vars+="        \n"
-        fi
-
-        env_vars+="        \n"
-        env_vars+="        - name: PARTITION_BROKER_IDS\n"
-        env_vars+="          value: \"${broker_ids}\"\n"
-        env_vars+="        \n"
-        env_vars+="        # Optional: override snapshot selection\n"
-        env_vars+="        # Uncomment and set to use a specific snapshot ID\n"
-        env_vars+="        # - name: SNAPSHOT_ID\n"
-        env_vars+="        #   value: \"79292-1-963202-962181-0-c52549fd\""
-
-        # Generate complete Job YAML with inline script
-        cat <<'EOF'
-apiVersion: batch/v1
-kind: Job
-metadata:
-EOF
-        cat <<EOF
-  name: key-recovery-job
-  namespace: ${NAMESPACE}
-  labels:
-    app: camunda-recovery
-    component: key-recovery
-spec:
-  # 10 minute timeout
-  activeDeadlineSeconds: 600
-
-  # Don't retry on failure - we want to investigate
-  backoffLimit: 0
-
-  template:
-    metadata:
-      labels:
-        app: camunda-recovery
-        component: key-recovery
-    spec:
-      restartPolicy: Never
-
-      # Run as the same user as Camunda containers
-      # User 1000 (camunda), Group 1000, fsGroup 1001
-      securityContext:
-        runAsUser: ${CONTAINER_USER_ID}
-        runAsGroup: ${CONTAINER_GROUP_ID}
-        fsGroup: ${CONTAINER_FS_GROUP}
-        runAsNonRoot: true
-
-      containers:
-      - name: recovery
-        image: ${CONTAINER_IMAGE}
-
-        # Execute inline recovery script
-        command: ["/bin/bash", "-c"]
-        args:
-          - |
-$(cat recovery-script.sh | sed 's/^/            /')
-
-        env:
-$(echo -e "$env_vars")
-
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "1000m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
-
-        volumeMounts:
-$(echo -e "$volume_mounts")
-
-      volumes:
-$(echo -e "$volumes")
-EOF
-}
 function run_recovery_job() {
         print_header "Running Recovery Job"
 
@@ -676,32 +537,51 @@ function run_recovery_job() {
                 fi
         fi
 
-        print_info "Generating recovery job manifest with inline script and dynamic PVC mounts..."
+	print_info "Generating recovery job manifest with inline script and dynamic PVC mounts..."
 
-        # Create generated directory if it doesn't exist
-        mkdir -p "$GENERATED_DIR"
+	# Create generated directory if it doesn't exist
+	mkdir -p "$GENERATED_DIR"
 
-        # Generate the Job YAML
-        GENERATED_JOB_YAML=$(generate_recovery_job_yaml "$PARTITION_BROKER_IDS")
+	# Export variables needed by generate-recovery-job.sh
+	export NAMESPACE
+	export PARTITION_ID
+	export LAST_LEADER_BROKER
+	export NEW_KEY
+	export NEW_MAX_KEY
+	export PARTITION_BROKER_IDS
+	export STATEFULSET_NAME
+	export PVC_PREFIX
+	export CONTAINER_IMAGE
+	export CONTAINER_USER_ID
+	export CONTAINER_GROUP_ID
+	export CONTAINER_FS_GROUP
+	export GENERATED_DIR
+	export OUTPUT_FILE="$GENERATED_JOB_FILE"
 
-        # Save to file
-        echo "$GENERATED_JOB_YAML" >"$GENERATED_JOB_FILE"
-        print_success "Generated Job YAML saved to: $GENERATED_JOB_FILE"
+	# Generate the Job YAML using standalone script
+	if ! GENERATED_JOB_FILE=$(./generate-recovery-job.sh); then
+		print_error "Failed to generate recovery Job YAML"
+		exit 1
+	fi
 
-        echo ""
-        print_header "Generated Recovery Job YAML"
-        echo ""
-        echo "The following Job will be applied to namespace: $NAMESPACE"
-        echo ""
-        echo "PVCs to be mounted:"
-        for broker_id in $PARTITION_BROKER_IDS; do
-                echo "  - ${PVC_PREFIX}-${broker_id} (Broker ${broker_id})"
-        done
-        echo ""
-        echo "----------------------------------------"
-        echo "$GENERATED_JOB_YAML"
-        echo "----------------------------------------"
-        echo ""
+	# Read the generated YAML for display
+	GENERATED_JOB_YAML=$(cat "$GENERATED_JOB_FILE")
+	print_success "Generated Job YAML saved to: $GENERATED_JOB_FILE"
+
+	echo ""
+	print_header "Generated Recovery Job YAML"
+	echo ""
+	echo "The following Job will be applied to namespace: $NAMESPACE"
+	echo ""
+	echo "PVCs to be mounted:"
+	for broker_id in $PARTITION_BROKER_IDS; do
+		echo "  - ${PVC_PREFIX}-${broker_id} (Broker ${broker_id})"
+	done
+	echo ""
+	echo "----------------------------------------"
+	echo "$GENERATED_JOB_YAML"
+	echo "----------------------------------------"
+	echo ""
 
         if [ "$DRY_RUN" = true ]; then
                 print_info "[DRY-RUN] Job YAML has been saved to: $GENERATED_JOB_FILE"
