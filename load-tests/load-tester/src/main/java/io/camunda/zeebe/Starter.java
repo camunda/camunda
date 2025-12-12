@@ -41,10 +41,12 @@ import org.slf4j.LoggerFactory;
 
 public class Starter extends App {
 
+  public static final int DYNAMIC_RATE_MAX = 300;
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
+  private static final int DYNAMIC_RATE_MIN = 1;
   private static final int DYNAMIC_RATE_INITIAL = 50;
   private final StarterCfg starterCfg;
 
@@ -231,20 +233,24 @@ public class Starter extends App {
     return newClientBuilder().numJobWorkerExecutionThreads(0).build();
   }
 
-  private boolean isExporterOverloaded(final MetricsReader metricsReader) {
+  private boolean isClusterOverloaded(final MetricsReader metricsReader) {
     final var recordsNotExported = metricsReader.getRecordsNotExported();
+    final var clusterLoad = metricsReader.getClusterLoad();
+    final var backpressureRate = metricsReader.getBackpressureRate();
     THROTTLED_LOGGER.info("Current number of records not exported: {}", recordsNotExported);
-    return recordsNotExported > 10000;
+    THROTTLED_LOGGER.info("Current cluster load: {}", clusterLoad);
+    THROTTLED_LOGGER.info("Current backpressure rate: {}", backpressureRate);
+    return recordsNotExported > 10000 || clusterLoad > 0.8 || backpressureRate > 0.1;
   }
 
   private long adjustRateBasedOnLoad(final MetricsReader metricsReader, final long oldRate) {
-    final boolean overloaded = isExporterOverloaded(metricsReader);
+    final boolean overloaded = isClusterOverloaded(metricsReader);
     final double adjustmentFactor = starterCfg.getRateAdjustmentFactor();
 
     final long newRate;
     if (overloaded) {
       // Decrease rate by configured factor
-      newRate = Math.max(1, (long) (oldRate * (1 - adjustmentFactor)));
+      newRate = Math.max(DYNAMIC_RATE_MIN, (long) (oldRate * (1 - adjustmentFactor)));
       THROTTLED_LOGGER.info(
           "Exporter overloaded, decreasing rate from {} to {} instances/second (factor: {})",
           oldRate,
@@ -252,7 +258,7 @@ public class Starter extends App {
           adjustmentFactor);
     } else {
       // Increase rate by configured factor
-      newRate = (long) (oldRate * (1 + adjustmentFactor));
+      newRate = Math.min(DYNAMIC_RATE_MAX, (long) (oldRate * (1 + adjustmentFactor)));
       THROTTLED_LOGGER.info(
           "Exporter not overloaded, increasing rate from {} to {} instances/second (factor: {})",
           oldRate,
