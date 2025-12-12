@@ -102,4 +102,8 @@ public abstract class Authorizations {
 
   public static final Authorization<ClusterVariableEntity> CLUSTER_VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.clusterVariable().read());
+
+  public static final Authorization<ProcessInstanceEntity>
+      PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION =
+          Authorization.of(a -> a.processDefinition().deleteProcessInstance());
 }

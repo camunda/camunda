@@ -2642,13 +2642,21 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
   @Test
   void shouldDeleteProcessInstance() {
-    // when / then
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.deleteProcessInstance(1L, 123L))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
     final var request =
         """
             {
               "operationReference": 123
             }""";
 
+    // when / then
     webClient
         .post()
         .uri(DELETE_PROCESS_URL.formatted("1"))
@@ -2657,11 +2665,27 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
   void shouldDeleteProcessInstanceWithNoBody() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.deleteProcessInstance(1L, null))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
     // when / then
     webClient
         .post()
@@ -2669,16 +2693,32 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
   void shouldDeleteProcessInstanceWithEmptyBody() {
-    // when / then
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.deleteProcessInstance(1L, null))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
     final var request =
         """
         {}""";
 
+    // when / then
     webClient
         .post()
         .uri(DELETE_PROCESS_URL.formatted("1"))
@@ -2687,6 +2727,49 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectDeleteProcessInstanceOnProcessInstanceNotFound() {
+    // given
+    when(processInstanceServices.deleteProcessInstance(1L, null))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new io.camunda.service.exception.ServiceException(
+                    "Process Instance with key '1' not found",
+                    io.camunda.service.exception.ServiceException.Status.NOT_FOUND)));
+
+    final var expectedBody =
+        """
+            {
+                "type": "about:blank",
+                "title": "NOT_FOUND",
+                "status": 404,
+                "detail": "Process Instance with key '1' not found",
+                "instance": "/v2/process-instances/1/deletion"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(DELETE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 }
