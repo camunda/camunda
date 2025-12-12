@@ -23,13 +23,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * Autoconfiguration for Camunda client with virtual threads support.
@@ -54,9 +54,9 @@ public class VirtualThreadsAutoConfiguration {
    *     platform thread for scheduling
    */
   @Bean
-  @ConditionalOnClass(MeterRegistry.class)
+  @ConditionalOnClass({MeterRegistry.class, EndpointAutoConfiguration.class})
   public CamundaClientExecutorService camundaClientExecutorService(
-      @Autowired(required = false) final MeterRegistry meterRegistry) {
+      @Lazy final MeterRegistry meterRegistry) {
     final ThreadFactory virtualThreadFactory = createVirtualThreadFactory();
     final ExecutorService jobHandlingExecutor =
         Executors.newThreadPerTaskExecutor(virtualThreadFactory);
