@@ -17,6 +17,7 @@ package io.camunda.client.spring.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.impl.CamundaJackson3ObjectMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -28,21 +29,29 @@ import org.springframework.context.annotation.Bean;
 @AutoConfigureAfter(
     name = {
       "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration",
-      "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration"
+      "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration",
+      "org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration"
     })
 public class JsonMapperConfiguration {
   final ObjectMapper objectMapper;
+  final tools.jackson.databind.ObjectMapper jackson3ObjectMapper;
 
   @Autowired
-  public JsonMapperConfiguration(@Autowired(required = false) final ObjectMapper objectMapper) {
+  public JsonMapperConfiguration(
+      @Autowired(required = false) final ObjectMapper objectMapper,
+      @Autowired(required = false) final tools.jackson.databind.ObjectMapper jackson3ObjectMapper) {
     this.objectMapper = objectMapper;
+    this.jackson3ObjectMapper = jackson3ObjectMapper;
   }
 
   @Bean(name = "camundaJsonMapper")
   @ConditionalOnMissingBean
   public JsonMapper jsonMapper() {
-    if (objectMapper == null) {
+    if (objectMapper == null && jackson3ObjectMapper == null) {
       return new CamundaObjectMapper();
+    }
+    if (jackson3ObjectMapper != null) {
+      return new CamundaJackson3ObjectMapper(jackson3ObjectMapper);
     }
     return new CamundaObjectMapper(objectMapper.copy());
   }
