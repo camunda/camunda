@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.config;
+package io.camunda.client.spring.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.spring.configuration.CredentialsProviderConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

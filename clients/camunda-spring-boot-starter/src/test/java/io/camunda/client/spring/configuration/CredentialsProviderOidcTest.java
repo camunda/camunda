@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.config;
+package io.camunda.client.spring.configuration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -24,7 +24,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.spring.configuration.CredentialsProviderConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.nio.file.Paths;

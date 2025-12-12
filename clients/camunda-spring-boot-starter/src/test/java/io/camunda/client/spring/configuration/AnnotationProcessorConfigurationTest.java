@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.config;
+package io.camunda.client.spring.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +26,6 @@ import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.annotation.processor.AbstractCamundaAnnotationProcessor;
-import io.camunda.client.spring.configuration.AnnotationProcessorConfiguration;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.event.CamundaClientEventListener;
 import java.util.Set;

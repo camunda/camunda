@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.config;
+package io.camunda.client.spring.configuration;
 
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
@@ -21,8 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.impl.NoopCredentialsProvider;
-import io.camunda.client.spring.config.legacy.CamundaClientStarterAutoConfigurationTest;
-import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
+import io.camunda.client.spring.configuration.legacy.CamundaClientStarterAutoConfigurationTest;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
