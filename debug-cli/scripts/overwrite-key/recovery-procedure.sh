@@ -28,7 +28,6 @@
 #
 # Optional environment variables:
 #   NEW_MAX_KEY        - New max key value (if not set, only key is updated)
-#   BROKER_COUNT       - Number of brokers (default: 3)
 #   STATEFULSET_NAME   - StatefulSet name (default: camunda)
 #   POD_PREFIX         - Pod name prefix (default: camunda)
 #   PVC_PREFIX         - PVC name prefix (default: data-camunda)
@@ -66,7 +65,6 @@
 #
 # Optional environment variables:
 #   NEW_MAX_KEY        - New max key value (if not set, only key is updated)
-#   BROKER_COUNT       - Number of brokers (default: 3)
 #   STATEFULSET_NAME   - StatefulSet name (default: camunda)
 #   POD_PREFIX         - Pod name prefix (default: camunda)
 #   PVC_PREFIX         - PVC name prefix (default: data-camunda)
@@ -435,6 +433,18 @@ function check_cluster_state() {
         kubectl get statefulset $STATEFULSET_NAME -n $NAMESPACE || echo "  (StatefulSet '$STATEFULSET_NAME' not found)"
         echo ""
 
+        # Auto-detect broker count from StatefulSet replicas
+        print_info "Detecting broker count from StatefulSet..."
+        DETECTED_BROKER_COUNT=$(kubectl get statefulset $STATEFULSET_NAME -n $NAMESPACE -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+
+        # Use detected count if found, otherwise use environment variable or default
+        if [ "$DETECTED_BROKER_COUNT" -gt 0 ]; then
+                BROKER_COUNT=$DETECTED_BROKER_COUNT
+                print_success "Detected broker count from StatefulSet: $BROKER_COUNT"
+        else
+                print_info "Could not auto-detect broker count, using configured value: $BROKER_COUNT"
+        fi
+
         echo "Detected Configuration:"
         echo "  Broker Count:        $BROKER_COUNT"
         echo "  StatefulSet Name:    $STATEFULSET_NAME"
@@ -460,6 +470,7 @@ function check_cluster_state() {
         fi
 
         export CONTAINER_IMAGE
+        export BROKER_COUNT
         echo ""
 
         if [ "$DRY_RUN" = true ]; then
@@ -567,6 +578,9 @@ function generate_recovery_job_yaml() {
         env_vars+="        - name: NEW_KEY\n"
         env_vars+="          value: \"${NEW_KEY}\"\n"
         env_vars+="        \n"
+        env_vars+="        - name: CAMUNDA_LOG_FILE_APPENDER_ENABLED\n"
+        env_vars+="          value: \"false\"\n"
+        env_vars+="        \n"
 
         # Only add NEW_MAX_KEY if it's set
         if [ -n "${NEW_MAX_KEY}" ]; then
@@ -575,8 +589,6 @@ function generate_recovery_job_yaml() {
                 env_vars+="        \n"
         fi
 
-        env_vars+="        - name: BROKER_COUNT\n"
-        env_vars+="          value: \"${partition_broker_count}\"\n"
         env_vars+="        \n"
         env_vars+="        - name: PARTITION_BROKER_IDS\n"
         env_vars+="          value: \"${broker_ids}\"\n"
@@ -720,80 +732,80 @@ function run_recovery_job() {
                 exit 0
         fi
 
-	print_info "Applying recovery job from file: $GENERATED_JOB_FILE"
-	kubectl apply -f "$GENERATED_JOB_FILE"
+        print_info "Applying recovery job from file: $GENERATED_JOB_FILE"
+        kubectl apply -f "$GENERATED_JOB_FILE"
 
-	echo ""
-	print_info "Recovery job started. Waiting for pod to be ready..."
-	echo ""
+        echo ""
+        print_info "Recovery job started. Waiting for pod to be ready..."
+        echo ""
 
-	# Wait for the pod to be created
-	sleep 3
+        # Wait for the pod to be created
+        sleep 3
 
-	# Follow logs in background so we can also wait for completion
-	print_info "Following job logs..."
-	kubectl logs -f job/key-recovery-job -n $NAMESPACE 2>&1 &
-	LOGS_PID=$!
+        # Follow logs in background so we can also wait for completion
+        print_info "Following job logs..."
+        kubectl logs -f job/key-recovery-job -n $NAMESPACE 2>&1 &
+        LOGS_PID=$!
 
-	echo ""
-	print_info "Waiting for job to complete..."
+        echo ""
+        print_info "Waiting for job to complete..."
 
-	# Poll job status until it completes or fails (max 10 minutes)
-	TIMEOUT=600
-	ELAPSED=0
-	JOB_DONE=false
-	
-	while [ $ELAPSED -lt $TIMEOUT ]; do
-		# Check job status
-		JOB_STATUS=$(kubectl get job key-recovery-job -n $NAMESPACE -o jsonpath='{.status.conditions[?(@.status=="True")].type}' 2>/dev/null || echo "")
-		
-		if [[ "$JOB_STATUS" == *"Complete"* ]]; then
-			JOB_DONE=true
-			break
-		elif [[ "$JOB_STATUS" == *"Failed"* ]]; then
-			JOB_DONE=true
-			break
-		fi
-		
-		sleep 5
-		ELAPSED=$((ELAPSED + 5))
-	done
-	
-	# Kill the logs follow if still running
-	kill $LOGS_PID 2>/dev/null || true
-	wait $LOGS_PID 2>/dev/null || true
-	echo ""
-	
-	if [ "$JOB_DONE" = false ]; then
-		print_error "Recovery job did not complete within timeout (${TIMEOUT}s)"
-		echo ""
-		echo "Job status:"
-		kubectl get job key-recovery-job -n $NAMESPACE
-		echo ""
-		echo "Recent logs:"
-		kubectl logs job/key-recovery-job -n $NAMESPACE --tail=50 || true
-		exit 1
-	fi
-	
-	# Check final status
-	if [[ "$JOB_STATUS" == *"Complete"* ]]; then
-		print_success "Recovery job completed successfully!"
-	elif [[ "$JOB_STATUS" == *"Failed"* ]]; then
-		print_error "Recovery job failed!"
-		echo ""
-		echo "Job status:"
-		kubectl get job key-recovery-job -n $NAMESPACE
-		echo ""
-		echo "Pod logs:"
-		kubectl logs job/key-recovery-job -n $NAMESPACE --tail=100
-		echo ""
-		print_info "Full logs available with: kubectl logs job/key-recovery-job -n $NAMESPACE"
-		exit 1
-	else
-		print_error "Recovery job finished with unknown status: $JOB_STATUS"
-		kubectl get job key-recovery-job -n $NAMESPACE
-		exit 1
-	fi
+        # Poll job status until it completes or fails (max 10 minutes)
+        TIMEOUT=600
+        ELAPSED=0
+        JOB_DONE=false
+
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+                # Check job status
+                JOB_STATUS=$(kubectl get job key-recovery-job -n $NAMESPACE -o jsonpath='{.status.conditions[?(@.status=="True")].type}' 2>/dev/null || echo "")
+
+                if [[ "$JOB_STATUS" == *"Complete"* ]]; then
+                        JOB_DONE=true
+                        break
+                elif [[ "$JOB_STATUS" == *"Failed"* ]]; then
+                        JOB_DONE=true
+                        break
+                fi
+
+                sleep 5
+                ELAPSED=$((ELAPSED + 5))
+        done
+
+        # Kill the logs follow if still running
+        kill $LOGS_PID 2>/dev/null || true
+        wait $LOGS_PID 2>/dev/null || true
+        echo ""
+
+        if [ "$JOB_DONE" = false ]; then
+                print_error "Recovery job did not complete within timeout (${TIMEOUT}s)"
+                echo ""
+                echo "Job status:"
+                kubectl get job key-recovery-job -n $NAMESPACE
+                echo ""
+                echo "Recent logs:"
+                kubectl logs job/key-recovery-job -n $NAMESPACE --tail=50 || true
+                exit 1
+        fi
+
+        # Check final status
+        if [[ "$JOB_STATUS" == *"Complete"* ]]; then
+                print_success "Recovery job completed successfully!"
+        elif [[ "$JOB_STATUS" == *"Failed"* ]]; then
+                print_error "Recovery job failed!"
+                echo ""
+                echo "Job status:"
+                kubectl get job key-recovery-job -n $NAMESPACE
+                echo ""
+                echo "Pod logs:"
+                kubectl logs job/key-recovery-job -n $NAMESPACE --tail=100
+                echo ""
+                print_info "Full logs available with: kubectl logs job/key-recovery-job -n $NAMESPACE"
+                exit 1
+        else
+                print_error "Recovery job finished with unknown status: $JOB_STATUS"
+                kubectl get job key-recovery-job -n $NAMESPACE
+                exit 1
+        fi
 }
 
 function cleanup_recovery_job() {
@@ -814,122 +826,6 @@ function cleanup_recovery_job() {
         print_success "Recovery job deleted"
 }
 
-function restart_cluster() {
-        print_header "Restarting Cluster"
-
-        if [ "$DRY_RUN" = true ]; then
-                print_info "[DRY-RUN] Would scale StatefulSet '$STATEFULSET_NAME' back to $BROKER_COUNT replicas"
-                echo ""
-                echo "[DRY-RUN] Would run:"
-                echo "  kubectl scale statefulset $STATEFULSET_NAME --replicas=$BROKER_COUNT -n $NAMESPACE"
-                echo "  kubectl wait --for=condition=ready $(get_all_pod_names) -n $NAMESPACE --timeout=300s"
-                echo ""
-                print_success "[DRY-RUN] Would restart cluster"
-                return
-        fi
-
-        print_info "Scaling StatefulSet '$STATEFULSET_NAME' back to $BROKER_COUNT replicas..."
-
-        kubectl scale statefulset $STATEFULSET_NAME --replicas=$BROKER_COUNT -n $NAMESPACE
-
-        echo "Waiting for pods to be ready..."
-        local all_pods=$(get_all_pod_names)
-        kubectl wait --for=condition=ready $all_pods -n $NAMESPACE --timeout=300s || true
-
-        echo ""
-        echo "Current pods:"
-        kubectl get pods -n $NAMESPACE | grep "^${POD_PREFIX}"
-        echo ""
-
-        print_success "Cluster restarted"
-}
-
-function verify_recovery() {
-        print_header "Verifying Recovery"
-
-        if [ "$DRY_RUN" = true ]; then
-                print_info "[DRY-RUN] Would verify partition $PARTITION_ID health"
-                echo ""
-                echo "[DRY-RUN] Would:"
-                echo "  1. Wait 30 seconds for cluster to stabilize"
-                echo "  2. Check pod status with: kubectl get pods -n $NAMESPACE"
-                echo "  3. Port-forward to leader and check partition health"
-                echo "  4. Check partition leadership across all brokers"
-                echo "  5. Check broker logs for errors"
-                echo ""
-                print_success "[DRY-RUN] Would complete verification"
-                return
-        fi
-
-        echo "Waiting for cluster to stabilize (30 seconds)..."
-        sleep 30
-
-        echo ""
-        print_step "1" "Checking pod status"
-        kubectl get pods -n $NAMESPACE | grep "^${POD_PREFIX}"
-
-        echo ""
-        local leader_pod=$(get_pod_name $LAST_LEADER_BROKER)
-        print_step "2" "Checking partition $PARTITION_ID health on leader ($leader_pod)"
-
-        kubectl port-forward -n $NAMESPACE $leader_pod $ACTUATOR_PORT:$ACTUATOR_PORT >/dev/null 2>&1 &
-        PF_PID=$!
-        sleep 2
-
-        PARTITION_INFO=$(curl -s http://localhost:$ACTUATOR_PORT/actuator/partitions | jq ".\"$PARTITION_ID\"")
-
-        echo "$PARTITION_INFO" | jq '.'
-
-        ROLE=$(echo "$PARTITION_INFO" | jq -r '.role')
-        HEALTH=$(echo "$PARTITION_INFO" | jq -r '.health.status')
-
-        kill $PF_PID 2>/dev/null || true
-
-        echo ""
-        print_info "Partition $PARTITION_ID status:"
-        print_info "  Role:   $ROLE"
-        print_info "  Health: $HEALTH"
-
-        echo ""
-        print_step "3" "Checking partition leadership across cluster"
-
-        for i in $(get_broker_ids); do
-                local pod_name=$(get_pod_name $i)
-                kubectl port-forward -n $NAMESPACE $pod_name $ACTUATOR_PORT:$ACTUATOR_PORT >/dev/null 2>&1 &
-                PF_PID=$!
-                sleep 2
-
-                ROLE=$(curl -s http://localhost:$ACTUATOR_PORT/actuator/partitions | jq -r ".\"$PARTITION_ID\".role" 2>/dev/null || echo "UNKNOWN")
-                echo "  $pod_name: Partition $PARTITION_ID is $ROLE"
-
-                kill $PF_PID 2>/dev/null || true
-                sleep 1
-        done
-
-        echo ""
-        print_step "4" "Checking broker logs for errors"
-
-        for i in $(get_broker_ids); do
-                local pod_name=$(get_pod_name $i)
-                echo "  Checking $pod_name logs..."
-                ERROR_COUNT=$(kubectl logs $pod_name -n $NAMESPACE --tail=100 | grep -i "error\|exception\|failed" | grep -v "Connection refused" | wc -l || echo "0")
-
-                if [ "$ERROR_COUNT" -gt "5" ]; then
-                        print_error "Found $ERROR_COUNT errors in $pod_name logs (review recommended)"
-                else
-                        print_success "$pod_name: $ERROR_COUNT errors (acceptable)"
-                fi
-        done
-
-        echo ""
-
-        if [ "$HEALTH" == "HEALTHY" ]; then
-                print_success "Recovery verification completed successfully!"
-        else
-                print_error "Partition health is not HEALTHY - please investigate"
-        fi
-}
-
 function print_summary() {
         print_header "Recovery Procedure Summary"
 
@@ -944,8 +840,6 @@ function print_summary() {
                 echo "   - Update key values using cdbg on leader's snapshot"
                 echo "   - Copy updated snapshot to all replicas"
                 echo "   - Clean up backup files"
-                echo "5. Restart the cluster (scale to $BROKER_COUNT)"
-                echo "6. Verify partition health and leadership"
                 echo ""
                 echo "Recovery job parameters:"
                 echo "  - Partition ID:     $PARTITION_ID"
@@ -959,7 +853,6 @@ function print_summary() {
                 echo ""
                 echo "Cluster configuration:"
                 echo "  - Namespace:        $NAMESPACE"
-                echo "  - Broker Count:     $BROKER_COUNT"
                 echo "  - StatefulSet:      $STATEFULSET_NAME"
                 echo "  - Pod Prefix:       $POD_PREFIX"
                 echo "  - PVC Prefix:       $PVC_PREFIX"
@@ -984,8 +877,6 @@ function print_summary() {
         echo "   - Updated key values using cdbg on leader's snapshot"
         echo "   - Copied updated snapshot to all replicas"
         echo "   - Cleaned up backup files"
-        echo "4. Restarted the cluster (scaled to $BROKER_COUNT)"
-        echo "5. Verified partition health and leadership"
         echo ""
         echo "Recovery job parameters:"
         echo "  - Partition ID:     $PARTITION_ID"
@@ -1191,24 +1082,6 @@ if should_run_step "cleanup-job"; then
         pause_for_user
 else
         print_info "Skipping step: cleanup-job (resuming from later step)"
-fi
-
-# Step 7: Restart cluster
-if should_run_step "restart"; then
-        restart_cluster
-        mark_step_complete "restart"
-        pause_for_user
-else
-        print_info "Skipping step: restart (resuming from later step)"
-fi
-
-# Step 8: Verify recovery
-if should_run_step "verify"; then
-        verify_recovery
-        mark_step_complete "verify"
-        pause_for_user
-else
-        print_info "Skipping step: verify (resuming from later step)"
 fi
 
 # Summary
