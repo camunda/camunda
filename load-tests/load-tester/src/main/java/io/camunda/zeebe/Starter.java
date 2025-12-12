@@ -98,74 +98,11 @@ public class Starter extends App {
 
     piCheckExecutorService.scheduleAtFixedRate(
         () -> {
-          LOG.info("Started {} process instances so far", results.size());
-          // request results for started instances
-
-          final PiCreationResult first = results.getFirst();
-          LOG.info("First result {} ", results.getFirst());
-          final long startTimeNanos = first.startTimeNanos;
-          LOG.info("StartTimeNanos {} ", startTimeNanos);
-          final long millis = TimeUnit.NANOSECONDS.toMillis(startTimeNanos);
-          LOG.info("millis {} ", millis);
-          final long startTimeEpochMillis = first.startTimeEpochMillis;
-          LOG.info("EpochMillis {} ", startTimeEpochMillis);
-          final Instant temporal = Instant.ofEpochMilli(startTimeEpochMillis);
-          LOG.info("Instant {} ", temporal);
-          final OffsetDateTime from = OffsetDateTime.from(temporal.atZone(ZoneId.of("UTC")));
-          LOG.info("OffsetDateTime {} ", from);
-
-          client
-              .newProcessInstanceSearchRequest()
-              .filter((f) -> f.startDate(date -> date.gt(from)))
-              .sort(ProcessInstanceSort::processInstanceKey)
-              .send()
-              .whenCompleteAsync(
-                  (resp, error) -> {
-                    if (error != null) {
-                      LOG.error("Error while requesting process instances", error);
-                      return;
-                    }
-
-                    LOG.info("Response items{} ", resp.items());
-                    LOG.info("Response {} ", resp.page());
-                    resp.items()
-                        .forEach(
-                            pi -> {
-                              LOG.info(
-                                  "PI {} - {} start {}",
-                                  pi,
-                                  pi.getProcessInstanceKey(),
-                                  pi.getStartDate());
-                              for (final PiCreationResult waitingPI :
-                                  Collections.unmodifiableList(results)) {
-
-                                // TODO do more efficient search
-                                final long processInstanceKey = waitingPI.processInstanceKey;
-                                if (processInstanceKey == pi.getProcessInstanceKey()) {
-                                  final long durationNanos =
-                                      System.nanoTime() - waitingPI.startTimeNanos;
-                                  LOG.warn(
-                                      "Process instance {} retrieved in {} ms",
-                                      processInstanceKey,
-                                      TimeUnit.NANOSECONDS.toMillis(durationNanos));
-
-                                  final int partitionId =
-                                      Protocol.decodePartitionId(processInstanceKey);
-                                  partitionToTimerMap
-                                      .get(partitionId)
-                                      .record(durationNanos, TimeUnit.NANOSECONDS);
-                                  results.remove(waitingPI);
-                                  break;
-                                } else {
-                                  LOG.info(
-                                      "PI {} not match {}",
-                                      pi.getProcessInstanceKey(),
-                                      waitingPI.processInstanceKey);
-                                }
-                              }
-                            });
-                  },
-                  piCheckExecutorService);
+          try {
+            queryProcessInstances(client);
+          } catch (final Exception e) {
+            LOG.error("Failed to query process instances. Will retry...", e);
+          }
         },
         1000,
         250,
@@ -202,6 +139,78 @@ public class Starter extends App {
     scheduledTask.cancel(true);
     executorService.shutdown();
     piCheckExecutorService.shutdown();
+  }
+
+  private void queryProcessInstances(final CamundaClient client) {
+    LOG.warn("Started {} process instances so far", results.size());
+    // request results for started instances
+
+    final PiCreationResult first = results.getFirst();
+    LOG.info("First result {} ", results.getFirst());
+    final long startTimeNanos = first.startTimeNanos;
+    LOG.info("StartTimeNanos {} ", startTimeNanos);
+    final long millis = TimeUnit.NANOSECONDS.toMillis(startTimeNanos);
+    LOG.info("millis {} ", millis);
+    final long startTimeEpochMillis = first.startTimeEpochMillis;
+    LOG.info("EpochMillis {} ", startTimeEpochMillis);
+    final Instant temporal = Instant.ofEpochMilli(startTimeEpochMillis);
+    LOG.info("Instant {} ", temporal);
+    final OffsetDateTime from = OffsetDateTime.from(temporal.atZone(ZoneId.of("UTC")));
+    LOG.info("OffsetDateTime {} ", from);
+
+    client
+        .newProcessInstanceSearchRequest()
+        .filter((f) -> f.startDate(date -> date.gt(from)))
+        .sort(ProcessInstanceSort::processInstanceKey)
+        .send()
+        .whenCompleteAsync(
+            (resp, error) -> {
+              if (error != null) {
+                LOG.error("Error while requesting process instances", error);
+                return;
+              }
+
+              LOG.warn("Response items: {} ", resp.items().size());
+              resp.items()
+                  .forEach(
+                      pi -> {
+                        LOG.info(
+                            "PI {} - {} start {}",
+                            pi,
+                            pi.getProcessInstanceKey(),
+                            pi.getStartDate());
+                        for (final PiCreationResult waitingPI :
+                            Collections.unmodifiableList(results)) {
+
+                          // TODO do more efficient search
+                          final long processInstanceKey = waitingPI.processInstanceKey;
+                          if (processInstanceKey == pi.getProcessInstanceKey()) {
+                            final long durationNanos = System.nanoTime() - waitingPI.startTimeNanos;
+                            final long durationMillisNanos =
+                                System.currentTimeMillis() - waitingPI.startTimeNanos;
+                            LOG.warn(
+                                "Process instance {} retrieved in {} ms; {} ms (from epoch)",
+                                processInstanceKey,
+                                TimeUnit.NANOSECONDS.toMillis(durationNanos),
+                                durationMillisNanos);
+
+                            final int partitionId = Protocol.decodePartitionId(processInstanceKey);
+                            partitionToTimerMap
+                                .get(partitionId)
+                                .record(durationNanos, TimeUnit.NANOSECONDS);
+                            results.remove(waitingPI);
+                            break;
+                          }
+                          //                          else {
+                          //                            LOG.info(
+                          //                                "PI {} not match {}",
+                          //                                pi.getProcessInstanceKey(),
+                          //                                waitingPI.processInstanceKey);
+                          //                          }
+                        }
+                      });
+            },
+            piCheckExecutorService);
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -281,6 +290,7 @@ public class Starter extends App {
               final long duration = Duration.ofNanos(System.nanoTime() - startTime).toMillis();
               final long epochMilli = System.currentTimeMillis() - duration;
               results.add(new PiCreationResult(processInstanceKey, startTime, epochMilli));
+              //              LOG.warn(
               //              LOG.warn(
               //                  "Process instance {} started at around {} (delay {} ms) try to get
               // from API",
