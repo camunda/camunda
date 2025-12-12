@@ -139,6 +139,7 @@ import java.util.function.BiConsumer;
  * This is the class where teams should make their components such as handlers, and index/index
  * template descriptors available
  */
+// TODO rename to CamundaExporterResourceProvider
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
   public static final String NAMESPACE = "zeebe.camunda.exporter.cache";
 
@@ -149,6 +150,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
+
+  public DefaultExporterResourceProvider(final BrokerCfg brokerCfg) {
+    this.brokerCfg = brokerCfg;
+  }
 
   @Override
   public void init(
@@ -349,6 +354,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
+
+    // TODO: check if this is only done for the camunda exporter? we should prevent doing this for
+    // other exporters
     addAuditLogHandlers(new AuditLogConfiguration());
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {

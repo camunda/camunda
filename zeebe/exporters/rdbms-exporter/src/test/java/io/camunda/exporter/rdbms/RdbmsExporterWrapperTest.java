@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
@@ -27,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class RdbmsExporterWrapperTest {
+
+  final BrokerCfg brokerCfg = new BrokerCfg();
 
   @Test
   public void shouldFailWithInvalidConfiguration() {
@@ -40,6 +43,7 @@ class RdbmsExporterWrapperTest {
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
             Mockito.mock(RdbmsService.class),
+            brokerCfg,
             Mockito.mock(LiquibaseSchemaManager.class),
             Mockito.mock(VendorDatabaseProperties.class));
 
@@ -64,6 +68,7 @@ class RdbmsExporterWrapperTest {
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
             rdbmsService,
+            brokerCfg,
             Mockito.mock(LiquibaseSchemaManager.class),
             Mockito.mock(VendorDatabaseProperties.class));
 

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -101,6 +102,14 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   @Bean
   public ExporterRepository exporterRepository(
       @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
+    // I guess here the rdbms descriptor would be discovered
+    // what we could do here is create a customized descriptor/factory for the camunda exporter,
+    // thus we can pass along more config information
+    // the repository still uses the default "exporter instantiation" as fallback
+
+    // TODO: check if camndaexporter is configured and if yes, create the descriptor here!
+    new ExporterDescriptor("camunda-exporter", CamundaExporterFactory.class, Map.of());
+
     if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
       LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
       return new ExporterRepository(exporterDescriptors);
@@ -110,11 +119,17 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   }
 
   @Bean(destroyMethod = "close")
-  public Broker broker(final ExporterRepository exporterRepository) {
+  public Broker broker(
+      final ExporterRepository exporterRepository,
+      final UnifiedConfiguration unifiedConfiguration) {
+
+    // Here the SystemContext ist setup from a BrokerBasedConfiguration which ias autowired as
+    // Configuration (which in turn is autowired from BrokerBasedProperties)
+    // Interestingly, the unifiedConfiguration is not used for this at all ??? ...
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
-            configuration.config(),
+            configuration.config(), // here the BrokerCfg is used from BrokerBasedConfiguration
             identityConfiguration,
             actorScheduler,
             cluster,
@@ -128,6 +143,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             new BrokerRequestAuthorizationConverter(securityConfiguration));
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
+
+    // Here the system context which contains the BrokerCfg is passed to the Broker
     broker =
         new Broker(systemContext, springBrokerBridge, Collections.emptyList(), exporterRepository);
 

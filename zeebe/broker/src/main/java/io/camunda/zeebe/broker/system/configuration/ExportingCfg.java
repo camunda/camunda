@@ -16,15 +16,20 @@ import java.util.Set;
  * Exporting component configuration. This configuration pertains to configurations that are common
  * to all exporters.
  */
-public record ExportingCfg(Set<Long> skipRecords, Duration distributionInterval) {
+public record ExportingCfg(
+    Set<Long> skipRecords, Duration distributionInterval, AuditLogCfg auditLogCfg) {
 
-  public ExportingCfg(final Set<Long> skipRecords, final Duration distributionInterval) {
+  public ExportingCfg(
+      final Set<Long> skipRecords,
+      final Duration distributionInterval,
+      final AuditLogCfg auditLogCfg) {
     this.skipRecords = skipRecords == null ? Set.of() : skipRecords;
     this.distributionInterval =
         distributionInterval == null ? DEFAULT_DISTRIBUTION_INTERVAL : distributionInterval;
+    this.auditLogCfg = auditLogCfg;
   }
 
   public static ExportingCfg defaultExportingCfg() {
-    return new ExportingCfg(null, null);
+    return new ExportingCfg(null, null, new AuditLogCfg(true));
   }
 }

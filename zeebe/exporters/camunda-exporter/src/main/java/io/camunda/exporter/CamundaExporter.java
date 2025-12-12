@@ -77,7 +77,7 @@ public class CamundaExporter implements Exporter {
   private ClientAdapter clientAdapter;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
-  private final ExporterResourceProvider provider;
+  private final DefaultExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
@@ -85,18 +85,20 @@ public class CamundaExporter implements Exporter {
   private int partitionId;
   private Context context;
 
-  public CamundaExporter() {
+  // not possible? must have emtpty constructor ???
+  public CamundaExporter(final BrokerCfg brokerCfg) {
     // the metadata will be initialized on open
-    this(new DefaultExporterResourceProvider(), null);
+    this(new DefaultExporterResourceProvider(brokerCfg), null);
   }
 
   @VisibleForTesting
-  public CamundaExporter(final ExporterResourceProvider provider) {
+  public CamundaExporter(final DefaultExporterResourceProvider provider) {
     this(provider, null);
   }
 
   @VisibleForTesting
-  public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
+  public CamundaExporter(
+      final DefaultExporterResourceProvider provider, final ExporterMetadata metadata) {
     this.provider = provider;
     this.metadata = metadata;
   }

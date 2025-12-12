@@ -46,6 +46,7 @@ import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -104,6 +105,7 @@ import org.springframework.test.context.TestPropertySource;
 class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
+  private final BrokerCfg brokerCfg = new BrokerCfg();
   private final VendorDatabaseProperties vendorDatabaseProperties =
       new VendorDatabaseProperties(
           new Properties() {
@@ -123,7 +125,8 @@ class RdbmsExporterIT {
   @BeforeEach
   void setUp() {
     exporter =
-        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+        new RdbmsExporterWrapper(
+            rdbmsService, brokerCfg, liquibaseSchemaManager, vendorDatabaseProperties);
     exporter.configure(
         new ExporterContext(
             null,

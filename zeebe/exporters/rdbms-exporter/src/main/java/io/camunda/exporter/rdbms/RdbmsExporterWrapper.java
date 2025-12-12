@@ -50,6 +50,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationE
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -75,6 +76,7 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private final RdbmsService rdbmsService;
   private final RdbmsSchemaManager rdbmsSchemaManager;
+  private final BrokerCfg brokerCfg;
   private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private RdbmsExporter exporter;
@@ -85,8 +87,10 @@ public class RdbmsExporterWrapper implements Exporter {
 
   public RdbmsExporterWrapper(
       final RdbmsService rdbmsService,
+      final BrokerCfg brokerCfg,
       final RdbmsSchemaManager rdbmsSchemaManager,
       final VendorDatabaseProperties vendorDatabaseProperties) {
+    this.brokerCfg = brokerCfg;
     this.rdbmsService = rdbmsService;
     this.rdbmsSchemaManager = rdbmsSchemaManager;
     this.vendorDatabaseProperties = vendorDatabaseProperties;

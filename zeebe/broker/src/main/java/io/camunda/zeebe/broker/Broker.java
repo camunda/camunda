@@ -80,7 +80,8 @@ public final class Broker implements AutoCloseable {
             springBrokerBridge,
             scheduler,
             healthCheckService,
-            buildExporterRepository(getConfig()),
+            buildExporterRepository(
+                getConfig()), // Here the BrokerCfg is taken from the SystemContext
             new ClusterServicesImpl(systemContext.getCluster()),
             systemContext.getBrokerClient(),
             additionalPartitionListeners,
@@ -170,6 +171,7 @@ public final class Broker implements AutoCloseable {
       final var id = exporterEntry.getKey();
       final var exporterCfg = exporterEntry.getValue();
       try {
+        // TODO here the config is fowarded
         exporterRepository.load(id, exporterCfg);
       } catch (final ExporterLoadException | ExternalJarLoadException e) {
         throw new IllegalStateException(

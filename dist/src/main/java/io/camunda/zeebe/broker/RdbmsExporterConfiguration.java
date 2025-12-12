@@ -34,9 +34,11 @@ public class RdbmsExporterConfiguration {
   @Bean
   public RdbmsExporterFactory rdbmsExporterFactory(
       final RdbmsService rdbmsService,
+      final BrokerBasedProperties brokerBasedProperties,
       final VendorDatabaseProperties vendorDatabaseProperties,
       final RdbmsSchemaManager rdbmsSchemaManager) {
-    return new RdbmsExporterFactory(rdbmsService, vendorDatabaseProperties, rdbmsSchemaManager);
+    return new RdbmsExporterFactory(
+        rdbmsService, brokerBasedProperties, rdbmsSchemaManager, vendorDatabaseProperties);
   }
 
   @Bean
@@ -50,5 +52,6 @@ public class RdbmsExporterConfiguration {
         Optional.ofNullable(brokerBasedProperties.getRdbmsExporter())
             .map(ExporterCfg::getArgs)
             .orElseGet(Map::of));
+    // TODO merge with audit log unified config OR extend the ExporterCfg
   }
 }

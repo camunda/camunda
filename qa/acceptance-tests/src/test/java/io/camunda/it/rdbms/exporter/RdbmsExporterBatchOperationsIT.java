@@ -36,6 +36,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -62,6 +63,7 @@ import org.springframework.test.context.TestPropertySource;
 class RdbmsExporterBatchOperationsIT {
 
   private final ExporterTestController controller = new ExporterTestController();
+  private final BrokerCfg brokerCfg = new BrokerCfg();
   private final VendorDatabaseProperties vendorDatabaseProperties =
       new VendorDatabaseProperties(
           new Properties() {
@@ -86,7 +88,9 @@ class RdbmsExporterBatchOperationsIT {
 
   private void setup(final boolean exportPendingItems) {
     exporter =
-        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+        new RdbmsExporterWrapper(
+            rdbmsService, brokerCfg, liquibaseSchemaManager, vendorDatabaseProperties);
+
     exporter.configure(
         new ExporterContext(
             null,

@@ -32,6 +32,9 @@ class DefaultExporterFactory implements ExporterFactory {
   public Exporter newInstance() throws ExporterInstantiationException {
     LOG.info("Use default exporter factory to create instance of {}", exporterClass);
     try {
+      // here we instantiate the default constructor :(, thus for camunda exporter we can;t forward
+      // any params
+      // should we create a customer factory for the camunda exporter?
       return ReflectUtil.newInstance(exporterClass);
     } catch (final Exception e) {
       throw new ExporterInstantiationException(id, e);

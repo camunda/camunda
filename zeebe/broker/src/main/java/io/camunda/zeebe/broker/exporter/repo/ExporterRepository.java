@@ -61,6 +61,7 @@ public final class ExporterRepository {
     ExporterDescriptor descriptor = exporters.get(id);
 
     if (descriptor == null) {
+      // TODO: here a descriptor is created (e.g. for camunda exporter)
       descriptor = new ExporterDescriptor(id, exporterClass, args);
       validate(descriptor);
 
@@ -92,6 +93,7 @@ public final class ExporterRepository {
       throw new ExporterLoadException(id, "cannot load specified class", e);
     }
 
+    // TODO: here the ExporterCfg is turned into a simple Map<String, Object> args again :(
     return validateAndAddExporterDescriptor(id, exporterClass, config.getArgs());
   }
 
