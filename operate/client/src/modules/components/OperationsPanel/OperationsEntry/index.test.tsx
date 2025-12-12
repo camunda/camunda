@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useLayoutEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import {
   render,
@@ -36,24 +35,6 @@ function createWrapper() {
 
   return Wrapper;
 }
-
-const FinishingOperationsEntry: React.FC = () => {
-  const [completedCount, setCompletedCount] = useState(0);
-
-  useLayoutEffect(() => {
-    setCompletedCount(5);
-  }, []);
-
-  return (
-    <OperationsEntry
-      operation={{
-        ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
-        operationsTotalCount: 5,
-        operationsCompletedCount: completedCount,
-      }}
-    />
-  );
-};
 
 const OPERATIONS_TIMESTAMP = '2023-11-22 08:03:29';
 
@@ -281,7 +262,40 @@ describe('OperationsEntry', () => {
 
   it('should render 100% progress and hide progress bar', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
-    render(<FinishingOperationsEntry />, {wrapper: createWrapper()});
+    const {rerender} = render(
+      <OperationsEntry
+        operation={{
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          endDate: undefined,
+          operationsTotalCount: 5,
+          operationsCompletedCount: 0,
+        }}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    vi.runOnlyPendingTimersAsync();
+    await waitFor(() =>
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '10',
+      ),
+    );
+
+    expect(screen.queryByText(OPERATIONS_TIMESTAMP)).not.toBeInTheDocument();
+
+    rerender(
+      <OperationsEntry
+        operation={{
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          endDate: OPERATIONS_TIMESTAMP,
+          operationsTotalCount: 5,
+          operationsCompletedCount: 5,
+        }}
+      />,
+    );
+
+    vi.runOnlyPendingTimersAsync();
 
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
@@ -290,12 +304,27 @@ describe('OperationsEntry', () => {
       ),
     );
 
-    expect(screen.queryByText(OPERATIONS_TIMESTAMP)).not.toBeInTheDocument();
-
-    vi.runOnlyPendingTimersAsync();
     await waitForElementToBeRemoved(screen.queryByRole('progressbar'));
     expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     vi.clearAllTimers();
     vi.useRealTimers();
+  });
+
+  it('should not show progress bar when operation is finished but counts do not match', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={{
+          ...OPERATIONS.CANCEL_PROCESS_INSTANCE,
+          endDate: '2023-11-22T09:03:29.564+0100',
+          operationsTotalCount: 8,
+          operationsCompletedCount: 8,
+          operationsFailedCount: 2,
+        }}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 });
