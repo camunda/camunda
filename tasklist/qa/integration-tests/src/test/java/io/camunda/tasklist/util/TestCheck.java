@@ -17,6 +17,8 @@ public interface TestCheck extends Predicate<Object[]> {
   String PROCESS_INSTANCE_IS_COMPLETED_CHECK = "processInstanceIsCompletedCheck";
   String PROCESS_INSTANCE_IS_CANCELED_CHECK = "processInstanceIsCanceledCheck";
 
+  String FORM_EXISTS_CHECK = "formExistsCheck";
+
   String TASK_IS_CREATED_CHECK = "taskIsCreatedCheck";
   String TASK_IS_ASSIGNED_CHECK = "taskIsAssignedCheck";
 
