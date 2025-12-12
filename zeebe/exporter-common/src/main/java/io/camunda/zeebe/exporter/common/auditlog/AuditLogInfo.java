@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import java.util.Map;
 import java.util.Optional;
@@ -123,13 +124,12 @@ public record AuditLogInfo(
       return AuditLogOperationType.UNKNOWN;
     }
 
-    switch (intent) {
-      case ProcessInstanceModificationIntent.MODIFIED:
-        return AuditLogOperationType.MODIFY;
+    return switch (intent) {
+      case ProcessInstanceModificationIntent.MODIFIED -> AuditLogOperationType.MODIFY;
+      case ProcessInstanceCreationIntent.CREATED -> AuditLogOperationType.CREATE;
       // TODO: map additional intents to operations here
-      default:
-        return AuditLogOperationType.UNKNOWN;
-    }
+      default -> AuditLogOperationType.UNKNOWN;
+    };
   }
 
   public record AuditLogActor(AuditLogActorType actorType, String actorId) {}
