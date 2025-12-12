@@ -6,57 +6,23 @@
       "instructions": [
         {
           "type": "CREATE_PROCESS_INSTANCE",
-          "processDefinitionId": "order-process",
+          "processDefinitionSelector": {
+            "processDefinitionId": "order-process"
+          },
           "variables": {
             "order_id": "order-1"
-          }
-        },
-        {
-          "type": "ASSERT_ELEMENT_INSTANCES",
-          "selector": {
-            "processDefinitionId": "order-process",
-            "elementNames": [
-              "Received tracking code"
-            ]
           },
-          "state": "IS_ACTIVE"
-        },
-        {
-          "type": "ASSERT_VARIABLES",
-          "selector": {
-            "processDefinitionId": "order-process"
-          },
-          "variables": {
-            "shipping_id": "shipping-1"
-          }
-        },
-        {
-          "type": "PUBLISH_MESSAGE",
-          "messageName": "Received tracking code",
-          "correlationKey": "shipping-1",
-          "variables": {
-            "tracking_code": "tracking-1"
-          }
-        },
-        {
-          "type": "ASSERT_ELEMENT_INSTANCES",
-          "selector": {
-            "processDefinitionId": "order-process",
-            "elementNames": [
-              "Collect money",
-              "Fetch items",
-              "Ship parcel",
-              "Received tracking code"
-            ]
-          },
-          "state": "IS_COMPLETED"
-        },
-        {
-          "type": "ASSERT_PROCESS_INSTANCE",
-          "selector": {
-            "processDefinitionId": "order-process"
-          },
-          "state": "IS_COMPLETED"
+          "startInstructions": [
+            {
+              "elementId": "task1"
+            }
+          ],
+          "runtimeInstructions": [
+            {
+              "type": "TERMINATE_PROCESS_INSTANCE",
+              "afterElementId": "task2"
+            }
+          ]
         }
       ]
     }
