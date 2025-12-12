@@ -457,6 +457,7 @@ final class IncidentUpdateTaskTest {
               .setState(IncidentState.PENDING);
       verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
       verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
     }
 
     @Test
@@ -503,6 +504,7 @@ final class IncidentUpdateTaskTest {
               .setState(IncidentState.PENDING);
       verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
       verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
     }
 
     @Test
@@ -545,6 +547,7 @@ final class IncidentUpdateTaskTest {
               .setState(IncidentState.PENDING);
       verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
       verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
     }
 
     @Test
@@ -608,6 +611,7 @@ final class IncidentUpdateTaskTest {
 
       verify(incidentNotifier, times(0)).notifyAsync(any());
       verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(7);
     }
 
     @Test
@@ -670,6 +674,7 @@ final class IncidentUpdateTaskTest {
               "4",
               new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
       verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(6);
     }
 
     @Test
@@ -699,6 +704,8 @@ final class IncidentUpdateTaskTest {
       assertThat(repository.updated.incidentRequests()).isEmpty();
       assertThat(repository.updated.flowNodeInstanceRequests()).isEmpty();
       verify(incidentNotifier, times(0)).notifyAsync(any());
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(0);
     }
   }
 }
