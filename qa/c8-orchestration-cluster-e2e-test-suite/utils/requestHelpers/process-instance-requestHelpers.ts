@@ -46,7 +46,7 @@ export async function createCancellationBatch(
     processInstanceKeys.push(String(startJson.processInstanceKey));
   }
 
-  await sleep(2_000);
+  await sleep(7_000);
 
   const result: Record<string, string> = {};
   await expect(async () => {
@@ -63,7 +63,6 @@ export async function createCancellationBatch(
         },
       },
     );
-    await sleep(2_000);
     await assertStatusCode(batchRes, 200);
     const json = await batchRes.json();
     expect(json).toHaveProperty('batchOperationKey');
