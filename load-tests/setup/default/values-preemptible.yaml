@@ -4,10 +4,10 @@ orchestration:
   # Require n2-standard-2 to ensure the broker is the only application running on its node
   # However, that node does not have the required cpu/memory capacity
   nodeSelector:
-    cloud.google.com/gke-nodepool: n2-standard-4-stable
+    cloud.google.com/gke-nodepool: n2-standard-4
 
   tolerations:
   - key: nodepool
     operator: Equal
-    value: n2-standard-4-stable
+    value: n2-standard-4
     effect: NoSchedule

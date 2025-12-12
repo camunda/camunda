@@ -86,6 +86,7 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
+		-f values-preemptible.yaml \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		$(additional_platform_configuration)
 
@@ -131,6 +132,7 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) camunda/$(helm_chart) \
 		-f camunda-platform-values.yaml \
+		-f values-preemptible.yaml \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		--output-dir .
 
