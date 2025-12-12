@@ -1,0 +1,23 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.msgpack.util;
+
+import org.agrona.DirectBuffer;
+
+public interface EnumParser<E extends Enum<E>> {
+  E parse(final DirectBuffer buffer, final int offset, final int length);
+
+  default E parse(
+      final DirectBuffer buffer, final int offset, final int length, final E defaultValue) {
+    final var value = parse(buffer, offset, length);
+    if (value == null) {
+      return defaultValue;
+    }
+    return value;
+  }
+}
