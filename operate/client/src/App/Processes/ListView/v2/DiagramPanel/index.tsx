@@ -29,8 +29,8 @@ import {
   getFlowNode,
   getSubprocessOverlayFromIncidentFlowNodes,
 } from 'modules/utils/flowNodes';
-import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects.ts';
-import type {FlowNodeState} from 'modules/types/operate.ts';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import type {FlowNodeState} from 'modules/types/operate';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
