@@ -13,9 +13,7 @@ import type {
   GetProcessDefinitionInstanceVersionStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {RequestError} from 'modules/request';
-
-const PROCESS_DEFINITION_VERSION_STATISTICS_QUERY_KEY =
-  'processDefinitionVersionStatistics';
+import {queryKeys} from '../queryKeys.ts';
 
 type UseProcessDefinitionVersionStatisticsOptions = {
   payload?: GetProcessDefinitionInstanceVersionStatisticsRequestBody;
@@ -31,11 +29,10 @@ const useProcessDefinitionVersionStatistics = (
     RequestError,
     GetProcessDefinitionInstanceVersionStatisticsResponseBody
   >({
-    queryKey: [
-      PROCESS_DEFINITION_VERSION_STATISTICS_QUERY_KEY,
+    queryKey: queryKeys.processDefinitionStatistics.getByVersion(
       processDefinitionId,
       payload,
-    ],
+    ),
     queryFn: async () => {
       const {response, error} = await fetchProcessDefinitionVersionStatistics(
         processDefinitionId,

@@ -8,15 +8,8 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinitionStatistics} from 'modules/api/v2/processDefinitions/fetchProcessDefinitionStatistics';
-import type {
-  GetProcessDefinitionInstanceStatisticsRequestBody,
-  GetProcessDefinitionInstanceStatisticsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
-import type {RequestError} from 'modules/request';
-
-const REFETCH_INTERVAL = 5000;
-
-const PROCESS_DEFINITION_STATISTICS_QUERY_KEY = 'processDefinitionStatistics';
+import type {GetProcessDefinitionInstanceStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {queryKeys} from '../queryKeys.ts';
 
 type UseProcessDefinitionStatisticsOptions = {
   payload?: GetProcessDefinitionInstanceStatisticsRequestBody;
@@ -27,12 +20,8 @@ const useProcessDefinitionStatistics = ({
   payload,
   enabled = true,
 }: UseProcessDefinitionStatisticsOptions = {}) => {
-  return useQuery<
-    GetProcessDefinitionInstanceStatisticsResponseBody,
-    RequestError,
-    GetProcessDefinitionInstanceStatisticsResponseBody
-  >({
-    queryKey: [PROCESS_DEFINITION_STATISTICS_QUERY_KEY, payload],
+  return useQuery({
+    queryKey: queryKeys.processDefinitionStatistics.get(payload),
     queryFn: async () => {
       const {response, error} = await fetchProcessDefinitionStatistics(payload);
 
@@ -43,7 +32,7 @@ const useProcessDefinitionStatistics = ({
       throw error;
     },
     enabled,
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval: 5000,
   });
 };
 
