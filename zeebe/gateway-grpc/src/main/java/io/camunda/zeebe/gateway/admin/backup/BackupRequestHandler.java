@@ -147,7 +147,6 @@ public final class BackupRequestHandler implements BackupApi {
                   .handle(
                       (ignored, error) ->
                           statusesReceived.stream()
-                              .filter(f -> !f.isCompletedExceptionally() && f.join().isResponse())
                               .map(response -> response.join().getResponse())
                               .collect(Collectors.toSet()))
                   .thenApply(this::aggregateCheckpointResponses);

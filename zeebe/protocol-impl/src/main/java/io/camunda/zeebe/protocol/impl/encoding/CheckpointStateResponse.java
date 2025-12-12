@@ -57,34 +57,26 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
   public void write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
-    if (checkpointStates.isEmpty()) {
-      bodyEncoder.checkpointStatesCount(0);
-    } else {
-      final var checkpointStateEncoder = bodyEncoder.checkpointStatesCount(checkpointStates.size());
-      for (final PartitionCheckpointState partitionState : checkpointStates) {
-        checkpointStateEncoder
-            .next()
-            .partitionId(partitionState.partitionId)
-            .checkpointId(partitionState.checkpointId)
-            .checkpointType(partitionState.checkpointType.getValue())
-            .checkpointTimestamp(partitionState.checkpointTimestamp)
-            .checkpointPosition(partitionState.checkpointPosition);
-      }
+    final var checkpointStateEncoder = bodyEncoder.checkpointStatesCount(checkpointStates.size());
+    for (final PartitionCheckpointState partitionState : checkpointStates) {
+      checkpointStateEncoder
+          .next()
+          .partitionId(partitionState.partitionId)
+          .checkpointId(partitionState.checkpointId)
+          .checkpointType(partitionState.checkpointType.getValue())
+          .checkpointTimestamp(partitionState.checkpointTimestamp)
+          .checkpointPosition(partitionState.checkpointPosition);
     }
 
-    if (backupStates.isEmpty()) {
-      bodyEncoder.backupStatesCount(0);
-    } else {
-      final var backupStateEncoder = bodyEncoder.backupStatesCount(backupStates.size());
-      for (final PartitionCheckpointState partitionState : backupStates) {
-        backupStateEncoder
-            .next()
-            .partitionId(partitionState.partitionId)
-            .checkpointId(partitionState.checkpointId)
-            .checkpointType(partitionState.checkpointType.getValue())
-            .checkpointTimestamp(partitionState.checkpointTimestamp)
-            .checkpointPosition(partitionState.checkpointPosition);
-      }
+    final var backupStateEncoder = bodyEncoder.backupStatesCount(backupStates.size());
+    for (final PartitionCheckpointState partitionState : backupStates) {
+      backupStateEncoder
+          .next()
+          .partitionId(partitionState.partitionId)
+          .checkpointId(partitionState.checkpointId)
+          .checkpointType(partitionState.checkpointType.getValue())
+          .checkpointTimestamp(partitionState.checkpointTimestamp)
+          .checkpointPosition(partitionState.checkpointPosition);
     }
   }
 

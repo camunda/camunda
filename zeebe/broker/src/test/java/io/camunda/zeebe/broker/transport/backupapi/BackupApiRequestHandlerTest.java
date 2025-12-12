@@ -516,7 +516,7 @@ final class BackupApiRequestHandlerTest {
   }
 
   @Test
-  void shouldReturnErrorWhenNoCheckpointAndBackupArePresent() {
+  void shouldReturnEmptyWhenNoCheckpointAndBackupArePresent() {
     // given
     when(checkpointState.getLatestCheckpointId()).thenReturn(-1L);
     when(checkpointState.getLatestBackupId()).thenReturn(-1L);
@@ -529,12 +529,9 @@ final class BackupApiRequestHandlerTest {
     handleRequest(request);
 
     // then
-    assertThat(responseFuture)
-        .succeedsWithin(Duration.ofMinutes(1))
-        .matches(Either::isLeft)
-        .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode)
-        .isEqualTo(ErrorCode.NO_CHECKPOINT_PRESENT);
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+    assertThat(stateResponse.getCheckpointStates()).isEmpty();
+    assertThat(stateResponse.getBackupStates()).isEmpty();
   }
 
   private void handleRequest(final BackupRequest request) {

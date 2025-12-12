@@ -99,7 +99,7 @@ public final class BackupApiRequestHandler
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
-      case QUERY_STATE -> handleQueryStateRequest(requestReader, responseWriter, errorWriter);
+      case QUERY_STATE -> handleQueryStateRequest(responseWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -215,21 +215,9 @@ public final class BackupApiRequestHandler
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleQueryStateRequest(
-      final BackupApiRequestReader requestReader,
-      final BackupApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter) {
+      final BackupApiResponseWriter responseWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
-
-    if (checkpointState.getLatestCheckpointId() == CheckpointState.NO_CHECKPOINT
-        && checkpointState.getLatestBackupId() == CheckpointState.NO_CHECKPOINT) {
-      errorWriter
-          .errorCode(ErrorCode.NO_CHECKPOINT_PRESENT)
-          .errorMessage("No checkpoint or backup found for partition " + partitionId);
-      result.complete(Either.left(errorWriter));
-      return result;
-    }
-
     final var response = new CheckpointStateResponse();
 
     if (checkpointState.getLatestBackupId() != CheckpointState.NO_CHECKPOINT) {
