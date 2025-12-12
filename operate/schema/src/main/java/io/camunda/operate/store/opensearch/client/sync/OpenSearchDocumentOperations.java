@@ -334,20 +334,20 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <R> Optional<R> getWithRetries(
-      final String index, final String id, final Class<R> entitiyClass) {
+      final String index, final String id, final Class<R> entityClass) {
     return executeWithRetries(
         () -> {
-          final GetResponse<R> response = openSearchClient.get(getRequest(index, id), entitiyClass);
+          final GetResponse<R> response = openSearchClient.get(getRequest(index, id), entityClass);
           return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
         });
   }
 
   public <R> Optional<R> getWithRetries(
-      final String index, final String id, final String routing, final Class<R> entitiyClass) {
+      final String index, final String id, final String routing, final Class<R> entityClass) {
     return executeWithRetries(
         () -> {
           final GetResponse<R> response =
-              openSearchClient.get(getRequest(index, id, routing), entitiyClass);
+              openSearchClient.get(getRequest(index, id, routing), entityClass);
           return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
         });
   }
