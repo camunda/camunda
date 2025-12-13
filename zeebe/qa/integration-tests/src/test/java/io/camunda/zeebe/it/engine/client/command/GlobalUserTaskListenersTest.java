@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -272,6 +274,85 @@ public class GlobalUserTaskListenersTest {
         .extracting(JobRecordValue::getType)
         // check correct listeners have been executed in correct order
         .containsExactly("newCreating", "oldCreating");
+  }
+
+  @Test
+  public void shouldApplyOldConfigurationToLifecycleEventStartedBeforeRestart() {
+    // given: global listener configuration and process already started
+
+    // configure global listeners
+    configureGlobalListeners(
+        List.of(createListenerConfig("oldCreating", List.of("creating"), false)));
+    restartBroker();
+
+    // setup workers for listeners (worker for old listener is paused to simulate long-running task)
+    final CountDownLatch workerLatch = new CountDownLatch(1);
+    camundaClient
+        .newWorker()
+        .jobType("oldCreating")
+        .handler(
+            (client, job) -> {
+              workerLatch.await();
+              client.newCompleteCommand(job).send().join();
+            })
+        .open();
+    setupAutocompleteWorker("newCreating");
+
+    // deploy process definition
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // start process and create task
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // when: configuration is changed and broker restarted
+    configureGlobalListeners(
+        List.of(
+            createListenerConfig("oldCreating", List.of("creating"), false),
+            createListenerConfig("newCreating", List.of("creating"), false)));
+    restartBroker();
+
+    // then: old configuration is used for lifecycle event started before restart
+
+    // wait for new configuration to be applied and check that listener has not been completed yet
+    assertThat(
+            RecordingExporter.records()
+                // skip until task creation is started
+                .skipUntil(r -> r.getIntent() == UserTaskIntent.CREATING)
+                // stop when new global listener configuration is applied
+                .limit(r -> r.getIntent() == GlobalListenerBatchIntent.CONFIGURED)
+                // check if any task listener job has been completed
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .isEmpty();
+
+    // unpause worker to allow completing the old listener job
+    workerLatch.countDown();
+
+    // check that only old listener has been executed
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    r -> // stop after task creation has been completed
+                    r.getIntent() == UserTaskIntent.CREATED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for creating event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.CREATING)
+        .extracting(JobRecordValue::getType)
+        // check correct listeners have been executed in correct order
+        .containsExactly("oldCreating");
   }
 
   private void setupAutocompleteWorker(final String jobType) {

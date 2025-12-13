@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -54,6 +55,7 @@ public final class VariableDocumentUpdateProcessor
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
   private final BpmnJobBehavior jobBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
   private final Writers writers;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -72,6 +74,7 @@ public final class VariableDocumentUpdateProcessor
     this.keyGenerator = keyGenerator;
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
@@ -142,9 +145,13 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getElementIdBuffer(),
               ExecutableUserTask.class);
 
-      if (userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
-        final var listener =
-            userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
+      final var firstTaskListener =
+          userTaskBehavior
+              .getTaskListeners(userTaskElement, userTaskKey, ZeebeTaskListenerEventType.updating)
+              .stream()
+              .findFirst();
+      if (firstTaskListener.isPresent()) {
+        final var listener = firstTaskListener.get();
         jobBehavior.createNewTaskListenerJob(
             buildContext(scope), userTaskRecord, listener, userTaskRecord.getChangedAttributes());
         return;

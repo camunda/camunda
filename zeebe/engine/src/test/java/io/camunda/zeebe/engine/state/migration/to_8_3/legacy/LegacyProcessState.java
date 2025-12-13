@@ -83,7 +83,7 @@ public final class LegacyProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock, null);
+    transformer = BpmnFactory.createTransformer(clock);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     processColumnFamily =

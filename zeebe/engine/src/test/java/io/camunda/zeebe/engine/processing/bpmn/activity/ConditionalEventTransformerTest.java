@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ConditionalEventDefinitionBuilder;
 import java.time.InstantSource;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -40,10 +38,7 @@ public class ConditionalEventTransformerTest {
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(
           new ZeebeFeelEngineClock(InstantSource.system()));
-  private final GlobalListenersConfiguration globalListenersConfiguration =
-      new GlobalListenersConfiguration(new ArrayList<>());
-  private final BpmnTransformer transformer =
-      new BpmnTransformer(expressionLanguage, globalListenersConfiguration);
+  private final BpmnTransformer transformer = new BpmnTransformer(expressionLanguage);
 
   private BpmnModelInstance processWithConditionalBoundaryEvent(
       final Consumer<ConditionalEventDefinitionBuilder> modifier) {
