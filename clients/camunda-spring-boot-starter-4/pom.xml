@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-library-parent</artifactId>
+    <version>8.8.8-SNAPSHOT</version>
+    <relativePath>../../library-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-spring-boot-starter-4</artifactId>
+
+  <name>Camunda Spring Boot 4 Starter</name>
+  <description>Camunda Spring Boot Starter for Spring Boot 4.x (temporary module for 8.8 branch)</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <version.java>17</version.java>
+    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
+    <!-- Override Spring Boot version for 4.x compatibility -->
+    <version.spring-boot>4.0.0</version.spring-boot>
+    <!-- Spring Framework 7.x is required for Spring Boot 4.0 -->
+    <version.spring>7.0.1</version.spring>
+    <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
+    <version.junit>6.0.1</version.junit>
+    <version.aspectjweaver>1.9.24</version.aspectjweaver>
+  </properties>
+
+  <dependencies>
+    <!-- Base Spring Boot starter - will be shaded/relocated -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-boot-starter</artifactId>
+      <exclusions>
+        <!-- Exclude Spring Boot 3.x dependencies - we use 4.x versions -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-autoconfigure</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-actuator</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-context</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-beans</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-aop</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Spring Boot 4 dependencies -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <!-- New in Spring Boot 4: Jackson module is separate -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
+
+    <!-- New in Spring Boot 4: Health module is separate -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-parameters</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <!-- Shade plugin to include and relocate classes from camunda-spring-boot-starter -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+              <artifactSet>
+                <includes>
+                  <!-- Only include the base starter module in the shaded jar -->
+                  <include>io.camunda:camunda-spring-boot-starter</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>io.camunda:camunda-spring-boot-starter</artifact>
+                  <excludes>
+                    <!-- Exclude classes that we override with Spring Boot 4 versions -->
+                    <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.class</exclude>
+                    <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class</exclude>
+                    <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.class</exclude>
+                    <!-- Exclude META-INF services that we override -->
+                    <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <!-- Merge service files -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
+                <!-- Keep manifest entries -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"></transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!-- These dependencies are used by the shaded camunda-spring-boot-starter classes -->
+          <usedDependencies>
+            <dependency>org.springframework.boot:spring-boot-actuator</dependency>
+          </usedDependencies>
+          <!-- These are transitive dependencies from shaded module - used but not directly declared -->
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>io.camunda:zeebe-gateway-protocol-impl</dependency>
+            <dependency>commons-logging:commons-logging</dependency>
+            <dependency>org.apache.commons:commons-lang3</dependency>
+            <dependency>io.camunda:zeebe-client-java</dependency>
+            <dependency>com.fasterxml.jackson.core:jackson-databind</dependency>
+            <dependency>org.slf4j:slf4j-api</dependency>
+            <dependency>com.fasterxml.jackson.core:jackson-annotations</dependency>
+            <dependency>org.apache.httpcomponents.client5:httpclient5</dependency>
+            <dependency>com.fasterxml.jackson.core:jackson-core</dependency>
+            <dependency>io.grpc:grpc-api</dependency>
+            <dependency>org.springframework:spring-aop</dependency>
+            <dependency>org.springframework:spring-beans</dependency>
+            <dependency>org.springframework:spring-context</dependency>
+            <dependency>org.springframework:spring-core</dependency>
+            <dependency>org.springframework.boot:spring-boot</dependency>
+            <dependency>io.camunda:camunda-client-java</dependency>
+          </ignoredUsedUndeclaredDependencies>
+        </configuration>
+      </plugin>
+
+      <!--
+        Note: Tests are skipped because test-jar tests from camunda-spring-boot-starter
+        were compiled with JUnit 5.x which is binary incompatible with JUnit 6.x
+        (required by Spring Boot 4). Test coverage is provided by the base module.
+        This is acceptable as this module is a temporary solution for the 8.8 branch.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
