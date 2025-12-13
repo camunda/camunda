@@ -1411,14 +1411,15 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda/camunda-composite-components@^0.20.2":
-  version "0.20.2"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.20.2.tgz#7040380e6815918c38b2a859502a806e7d54b800"
-  integrity sha512-BmgGH+y8z+bHR3ErRR62BoF/eo1aNDb0XatM7CgOaqholy2KcIBH9vXii2v9xPf/Bf8tds+yyErs1/zfU8r1bA==
+"@camunda/camunda-composite-components@^0.21.0":
+  version "0.21.4"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.21.4.tgz#d1468ac80ba55af4edfd746c58c9b66ff6035d4d"
+  integrity sha512-ObkVFPFeRiOvyEJJ0F2B07BeBs2xRoWOGcpYvc3rCzvl7PuEaJx03DaK6d7FNWkP0GZDlWlL2fEKFCfBYp2d7g==
   dependencies:
     jwt-decode "4.0.0"
     react-error-boundary "4.0.13"
     react-markdown "8.0.7"
+    semver "^7.7.3"
 
 "@camunda/camunda-optimize-composite-components@^0.0.16":
   version "0.0.16"
@@ -14748,6 +14749,11 @@ semver@^7.6.0:
   version "7.7.2"
   resolved "https://registry.yarnpkg.com/semver/-/semver-7.7.2.tgz#67d99fdcd35cec21e6f8b87a7fd515a33f982b58"
   integrity sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==
+
+semver@^7.7.3:
+  version "7.7.3"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.7.3.tgz#4b5f4143d007633a8dc671cd0a6ef9147b8bb946"
+  integrity sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==
 
 send@0.19.0:
   version "0.19.0"
