@@ -13,7 +13,7 @@
     "@inquirer/prompts": "^7.3.2",
     "@playwright/test": "^1.51.0",
     "@types/axios": "^0.14.4",
-    "@types/node": "^22.13.9",
+    "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "8.38.0",
     "@typescript-eslint/parser": "8.38.0",
     "eslint": "9.32.0",
