@@ -74,25 +74,9 @@ public class Starter extends App {
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
 
     final CamundaClient client = createCamundaClient();
-    processInstanceStartMeter =
-        new ProcessInstanceStartMeter(
-            registry,
-            Executors.newScheduledThreadPool(1),
-            (listOfStartedInstances) -> {
-              final CamundaFuture<SearchResponse<ProcessInstance>> send =
-                  client
-                      .newProcessInstanceSearchRequest()
-                      .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
-                      .sort(ProcessInstanceSort::startDate)
-                      .send();
-
-              return send.thenApply(
-                  processInstanceSearchResponse ->
-                      processInstanceSearchResponse.items().stream()
-                          .map(ProcessInstance::getProcessInstanceKey)
-                          .toList());
-            });
-    processInstanceStartMeter.start();
+    if (config.isMonitorDataAvailability()) {
+      setupDataAvailabilityMeter(client);
+    }
 
     // init - check for topology and deploy process
     printTopology(client);
@@ -110,7 +94,9 @@ public class Starter extends App {
                 () -> {
                   if (!executorService.isShutdown()) {
                     executorService.shutdown();
-                    processInstanceStartMeter.close();
+                    if (config.isMonitorDataAvailability()) {
+                      processInstanceStartMeter.close();
+                    }
                     try {
                       executorService.awaitTermination(60, TimeUnit.SECONDS);
                     } catch (final InterruptedException e) {
@@ -130,7 +116,34 @@ public class Starter extends App {
 
     scheduledTask.cancel(true);
     executorService.shutdown();
-    processInstanceStartMeter.close();
+
+    if (config.isMonitorDataAvailability()) {
+      processInstanceStartMeter.close();
+    }
+  }
+
+  private void setupDataAvailabilityMeter(final CamundaClient client) {
+    LOG.info("Monitor data availability of started process instances");
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            registry,
+            Executors.newScheduledThreadPool(1),
+            config.getMonitorDataAvailabilityInterval(),
+            (listOfStartedInstances) -> {
+              final CamundaFuture<SearchResponse<ProcessInstance>> send =
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
+                      .sort(ProcessInstanceSort::startDate)
+                      .send();
+
+              return send.thenApply(
+                  processInstanceSearchResponse ->
+                      processInstanceSearchResponse.items().stream()
+                          .map(ProcessInstance::getProcessInstanceKey)
+                          .toList());
+            });
+    processInstanceStartMeter.start();
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -198,18 +211,23 @@ public class Starter extends App {
       final long startTime,
       final String processId,
       final HashMap<String, Object> variables) {
-    return client
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .variables(variables)
-        .send()
-        .thenApply(
-            (response) -> {
-              final long processInstanceKey = response.getProcessInstanceKey();
-              processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
-              return response;
-            });
+    final var sendFuture =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(variables)
+            .send();
+
+    if (config.isMonitorDataAvailability()) {
+      return sendFuture.thenApply(
+          (response) -> {
+            final long processInstanceKey = response.getProcessInstanceKey();
+            processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
+            return response;
+          });
+    }
+    return sendFuture;
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(

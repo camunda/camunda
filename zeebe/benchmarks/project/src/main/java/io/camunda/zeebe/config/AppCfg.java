@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.config;
 
+import java.time.Duration;
+
 public class AppCfg {
 
   private String brokerUrl;
@@ -24,6 +26,8 @@ public class AppCfg {
   private StarterCfg starter;
   private WorkerCfg worker;
   private AuthCfg auth;
+  private boolean monitorDataAvailability = true;
+  private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
 
   public String getBrokerUrl() {
     return brokerUrl;
@@ -79,5 +83,21 @@ public class AppCfg {
 
   public void setAuth(final AuthCfg auth) {
     this.auth = auth;
+  }
+
+  public boolean isMonitorDataAvailability() {
+    return monitorDataAvailability;
+  }
+
+  public void setMonitorDataAvailability(final boolean monitorDataAvailability) {
+    this.monitorDataAvailability = monitorDataAvailability;
+  }
+
+  public Duration getMonitorDataAvailabilityInterval() {
+    return monitorDataAvailabilityInterval;
+  }
+
+  public void setMonitorDataAvailabilityInterval(final Duration monitorDataAvailabilityInterval) {
+    this.monitorDataAvailabilityInterval = monitorDataAvailabilityInterval;
   }
 }
