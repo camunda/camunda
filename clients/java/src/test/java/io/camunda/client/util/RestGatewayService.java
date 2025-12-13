@@ -33,6 +33,7 @@ import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionRequirementsResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
+import io.camunda.client.protocol.rest.EvaluateConditionalResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.GroupCreateResult;
@@ -392,6 +393,10 @@ public class RestGatewayService {
 
   public void onBroadcastSignalRequest(final SignalBroadcastResult response) {
     registerPost(RestGatewayPaths.getBroadcastSignalUrl(), response);
+  }
+
+  public void onEvaluateConditionalRequest(final EvaluateConditionalResult response) {
+    registerPost(RestGatewayPaths.getEvaluateConditionalUrl(), response);
   }
 
   public void onRoleRequest(final String roleId, final RoleResult response) {

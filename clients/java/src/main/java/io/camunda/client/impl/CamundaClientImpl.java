@@ -64,6 +64,7 @@ import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.command.EvaluateConditionalCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
@@ -222,6 +223,7 @@ import io.camunda.client.impl.command.DeleteTenantCommandImpl;
 import io.camunda.client.impl.command.DeleteUserCommandImpl;
 import io.camunda.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.client.impl.command.DeployResourceCommandImpl;
+import io.camunda.client.impl.command.EvaluateConditionalCommandImpl;
 import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
 import io.camunda.client.impl.command.GloballyScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.GloballyScopedDeleteClusterVariableImpl;
@@ -1579,5 +1581,11 @@ public final class CamundaClientImpl implements CamundaClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
+  }
+
+  @Override
+  public EvaluateConditionalCommandStep1 newEvaluateConditionalCommand() {
+    return new EvaluateConditionalCommandImpl(
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest, httpClient);
   }
 }
