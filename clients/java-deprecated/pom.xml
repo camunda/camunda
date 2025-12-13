@@ -317,6 +317,7 @@
             <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
             <library>google-api-client</library>
             <java8>true</java8>
+            <legacyDiscriminatorBehavior>true</legacyDiscriminatorBehavior>
             <openApiNullable>false</openApiNullable>
             <serializationLibrary>jackson</serializationLibrary>
             <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
