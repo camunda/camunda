@@ -108,4 +108,32 @@ public class UserTaskCreatingV2ApplierTest {
         .describedAs("Expect initial assignee to not be present")
         .isEmpty();
   }
+
+  @Test
+  public void shouldStoreRootProcessInstanceKeyWhenCreatingUserTask() {
+    // given
+    final long userTaskKey = new Random().nextLong();
+    final long elementInstanceKey = new Random().nextLong();
+    final long processInstanceKey = new Random().nextLong();
+    final long rootProcessInstanceKey = new Random().nextLong();
+
+    final var userTaskRecord =
+        new UserTaskRecord()
+            .setUserTaskKey(userTaskKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setRootProcessInstanceKey(rootProcessInstanceKey);
+
+    // when
+    userTaskCreatingV2Applier.applyState(userTaskKey, userTaskRecord);
+
+    // then
+    // ensure the user task has the correct rootProcessInstanceKey
+    assertThat(userTaskState.getUserTask(userTaskKey).getRootProcessInstanceKey())
+        .isEqualTo(rootProcessInstanceKey);
+    // ensure the intermediate state has the correct rootProcessInstanceKey
+    assertThat(
+            userTaskState.getIntermediateState(userTaskKey).getRecord().getRootProcessInstanceKey())
+        .isEqualTo(rootProcessInstanceKey);
+  }
 }

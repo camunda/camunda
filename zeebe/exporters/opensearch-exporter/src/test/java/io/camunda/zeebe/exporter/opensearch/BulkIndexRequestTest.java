@@ -15,13 +15,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -638,6 +641,168 @@ final class BulkIndexRequestTest {
           .describedAs(
               "Expect that the records are serialized with elementId in terminateInstructions")
           .containsExactly(tuple("foo", 5));
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutRootProcessInstanceKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new JobRecord()
+                              .setProcessInstanceKey(1L)
+                              .setRootProcessInstanceKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized without rootProcessInstanceKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobRecordWithRootProcessInstanceKey() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new JobRecord()
+                              .setProcessInstanceKey(1L)
+                              .setRootProcessInstanceKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized with rootProcessInstanceKey")
+          .containsExactly(12345);
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithoutRootProcessInstanceKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new UserTaskRecord()
+                              .setProcessInstanceKey(1L)
+                              .setRootProcessInstanceKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized without rootProcessInstanceKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithRootProcessInstanceKey() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new UserTaskRecord()
+                              .setProcessInstanceKey(1L)
+                              .setRootProcessInstanceKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized with rootProcessInstanceKey")
+          .containsExactly(12345);
+    }
+
+    @Test
+    void shouldIndexDecisionEvaluationRecordWithoutRootProcessInstanceKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new DecisionEvaluationRecord()
+                              .setProcessInstanceKey(1L)
+                              .setRootProcessInstanceKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized without rootProcessInstanceKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexDecisionEvaluationRecordWithRootProcessInstanceKey() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new DecisionEvaluationRecord()
+                              .setProcessInstanceKey(1L)
+                              .setRootProcessInstanceKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized with rootProcessInstanceKey")
+          .containsExactly(12345);
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

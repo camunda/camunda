@@ -53,6 +53,8 @@ public interface BpmnElementContext {
 
   Set<String> getTags();
 
+  long getRootProcessInstanceKey();
+
   BpmnElementContext copy(
       long elementInstanceKey, ProcessInstanceRecord recordValue, ProcessInstanceIntent intent);
 }

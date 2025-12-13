@@ -98,6 +98,16 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    // TODO check if we should rather store it directly in processInstanceRecord, as
+    // elementInstancePath is not always set in the record event
+    if (recordValue.getElementInstancePath().isEmpty()) {
+      return -1L;
+    }
+    return recordValue.getElementInstancePath().getFirst().getFirst();
+  }
+
+  @Override
   public BpmnElementContext copy(
       final long elementInstanceKey,
       final ProcessInstanceRecord recordValue,

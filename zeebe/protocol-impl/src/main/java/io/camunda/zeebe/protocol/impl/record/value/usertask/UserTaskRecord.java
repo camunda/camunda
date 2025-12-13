@@ -56,6 +56,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
   private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
   private static final StringValue VARIABLES_VALUE = new StringValue(VARIABLES);
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_VALUE =
+      new StringValue("rootProcessInstanceKey");
 
   /**
    * Defines the mapping between names of attributes that may be modified (updated or corrected) and
@@ -107,6 +109,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_VALUE, -1L);
 
   /**
    * Tracks the names of user task attributes that are intended to be modified (e.g. on `UPDATE`),
@@ -151,7 +155,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty listenersConfigKeyProp = new LongProperty("listenersConfigKey", -1L);
 
   public UserTaskRecord() {
-    super(24);
+    super(25);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -175,7 +179,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(priorityProp)
         .declareProperty(deniedReasonProp)
         .declareProperty(tagsProp)
-        .declareProperty(listenersConfigKeyProp);
+        .declareProperty(listenersConfigKeyProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -204,6 +209,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     deniedReasonProp.setValue(record.getDeniedReason());
     setTags(record.getTags());
     listenersConfigKeyProp.setValue(record.getListenersConfigKey());
+    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
   }
 
   /**
@@ -444,6 +450,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     if (tags != null) {
       tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
     }
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public UserTaskRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 
