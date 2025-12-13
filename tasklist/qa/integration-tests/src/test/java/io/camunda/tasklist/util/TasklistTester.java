@@ -85,6 +85,10 @@ public class TasklistTester {
   private TestCheck processIsDeletedCheck;
 
   @Autowired
+  @Qualifier(FORM_EXISTS_CHECK)
+  private TestCheck formExistsCheck;
+
+  @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
 
@@ -352,6 +356,15 @@ public class TasklistTester {
       final String tenantId, final String bpmnProcessId, final String payload) {
     processInstanceId =
         ZeebeTestUtil.startProcessInstance(tenantId, camundaClient, bpmnProcessId, payload);
+    return this;
+  }
+
+  public TasklistTester formExists(final String formId) {
+    return formExists(formId, null);
+  }
+
+  public TasklistTester formExists(final String formId, final Long versionId) {
+    databaseTestExtension.waitFor(formExistsCheck, processDefinitionKey, formId, versionId);
     return this;
   }
 
