@@ -27,14 +27,6 @@ on:
         type: string
         default: ""
         required: false
-      cluster:
-        description: 'Specifies which cluster to deploy the load test on'
-        default: 'zeebe-cluster'
-        required: false
-      cluster-region:
-        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
-        default: europe-west1-b
-        required: false
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
