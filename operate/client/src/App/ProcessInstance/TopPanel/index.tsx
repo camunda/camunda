@@ -32,6 +32,7 @@ import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
+import {ModificationDropdown as ModificationDropdownV1} from './ModificationDropdown/indexV1';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
@@ -134,9 +135,17 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
-  const isRootNodeSelected = useIsRootNodeSelected();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
-  const {clearSelection, selectElement} = useProcessInstanceElementSelection();
+  const {clearSelection, selectElement, resolvedElementInstance} =
+    useProcessInstanceElementSelection();
+
+  const isRootNodeSelected = useIsRootNodeSelected();
+  const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+    totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+    isRootNodeSelected,
+  });
+  const isSelectedElementInstanceRunning =
+    resolvedElementInstance?.state === 'ACTIVE';
 
   const {
     data: processDefinitionData,
@@ -344,12 +353,13 @@ const TopPanel: React.FC = observer(() => {
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount({
-          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
-          isRootNodeSelected,
-        }) > 1 && (
-          <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
-        )}
+        (IS_ELEMENT_SELECTION_V2
+          ? isSelectedElementInstanceRunning && (
+              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+            )
+          : selectedRunningInstanceCount > 1 && (
+              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+            ))}
       {modificationsStore.state.status === 'adding-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -422,13 +432,29 @@ const TopPanel: React.FC = observer(() => {
                 }
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (
-                    <ModificationDropdown />
+                    IS_ELEMENT_SELECTION_V2 ? (
+                      <ModificationDropdown />
+                    ) : (
+                      <ModificationDropdownV1 />
+                    )
                   ) : (
                     !isIncidentBarOpen && <MetadataPopover />
                   )
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
                 highlightedFlowNodeIds={highlightedSequenceFlowIds}
+                nonSelectableNodeTooltipText={
+                  isModificationModeEnabled
+                    ? 'Modification is not supported for this flow node.'
+                    : undefined
+                }
+                hasOuterBorderOnSelection={
+                  IS_ELEMENT_SELECTION_V2
+                    ? !isModificationModeEnabled ||
+                      isSelectedElementInstanceRunning
+                    : !isModificationModeEnabled ||
+                      selectedRunningInstanceCount > 1
+                }
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {

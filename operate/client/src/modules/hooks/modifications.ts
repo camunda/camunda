@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import isNil from 'lodash/isNil';
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {TOKEN_OPERATIONS} from 'modules/constants';
@@ -16,7 +15,6 @@ import {
   useTotalRunningInstancesVisibleForFlowNodes,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   EMPTY_MODIFICATION,
   modificationsStore,
@@ -231,63 +229,68 @@ const useNewScopeIdForFlowNode = (elementId?: string) => {
   return null;
 };
 
-const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
+const useCanBeCanceled = (
+  runningElementInstanceCount: number,
+  elementId?: string,
+) => {
   const cancellableFlowNodes = useCancellableFlowNodes();
-  const canBeModified = useCanBeModified();
+  const canBeModified = useCanBeModified(elementId);
   const hasPendingCancelOrMoveModification =
     useHasPendingCancelOrMoveModification();
 
-  if (
-    flowNodeSelectionStore.selectedFlowNodeId === undefined ||
-    !canBeModified
-  ) {
+  if (elementId === undefined || !canBeModified) {
     return false;
   }
 
   return (
-    cancellableFlowNodes.includes(flowNodeSelectionStore.selectedFlowNodeId) &&
+    cancellableFlowNodes.includes(elementId) &&
     !hasPendingCancelOrMoveModification &&
-    selectedRunningInstanceCount > 0
+    runningElementInstanceCount > 0
   );
 };
 
-const useCanBeModified = () => {
+const useCanBeModified = (elementId?: string) => {
   const nonModifiableFlowNodes = useNonModifiableFlowNodes();
 
-  if (flowNodeSelectionStore.selectedFlowNodeId === undefined) {
+  if (elementId === undefined) {
     return false;
   }
 
-  return !nonModifiableFlowNodes.includes(
-    flowNodeSelectionStore.selectedFlowNodeId,
-  );
+  return !nonModifiableFlowNodes.includes(elementId);
 };
 
-const useAvailableModifications = (selectedRunningInstanceCount: number) => {
+type UseAvailableModificationsParams = {
+  runningElementInstanceCount: number;
+  elementId?: string;
+  elementInstanceKey?: string;
+  isMultiInstanceBody?: boolean;
+  isElementInstanceResolved?: boolean;
+};
+
+const useAvailableModifications = ({
+  runningElementInstanceCount,
+  elementId,
+  elementInstanceKey,
+  isMultiInstanceBody,
+  isElementInstanceResolved,
+}: UseAvailableModificationsParams) => {
   const options: ModificationOption[] = [];
-  const {
-    state: {selection},
-  } = flowNodeSelectionStore;
   const appendableFlowNodes = useAppendableFlowNodes();
   const {data: businessObjects} = useBusinessObjects();
-  const canBeCanceled = useCanBeCanceled(selectedRunningInstanceCount);
-  const canBeModified = useCanBeModified();
+  const canBeCanceled = useCanBeCanceled(
+    runningElementInstanceCount,
+    elementId,
+  );
+  const canBeModified = useCanBeModified(elementId);
 
-  if (
-    flowNodeSelectionStore.selectedFlowNodeId === undefined ||
-    !canBeModified
-  ) {
+  if (elementId === undefined || !canBeModified) {
     return options;
   }
 
   if (
-    appendableFlowNodes.includes(flowNodeSelectionStore.selectedFlowNodeId) &&
-    !(
-      isMultiInstance(
-        businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId],
-      ) && !selection?.isMultiInstance
-    ) &&
-    selection?.flowNodeInstanceId === undefined
+    appendableFlowNodes.includes(elementId) &&
+    !(isMultiInstance(businessObjects?.[elementId]) && !isMultiInstanceBody) &&
+    elementInstanceKey === undefined
   ) {
     options.push('add');
   }
@@ -297,9 +300,9 @@ const useAvailableModifications = (selectedRunningInstanceCount: number) => {
   }
 
   const isSingleOperationAllowed =
-    !isNil(flowNodeSelectionStore.selectedFlowNodeInstanceId) &&
-    selectedRunningInstanceCount === 1 &&
-    !isSubProcess(businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId]);
+    isElementInstanceResolved &&
+    runningElementInstanceCount === 1 &&
+    !isSubProcess(businessObjects?.[elementId]);
 
   if (isSingleOperationAllowed) {
     options.push('cancel-instance');
@@ -307,9 +310,7 @@ const useAvailableModifications = (selectedRunningInstanceCount: number) => {
     options.push('cancel-all');
   }
 
-  if (
-    isSubProcess(businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId])
-  ) {
+  if (isSubProcess(businessObjects?.[elementId])) {
     return options;
   }
 

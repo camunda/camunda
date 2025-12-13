@@ -60,6 +60,7 @@ const useProcessInstanceElementSelection = () => {
   const {processInstanceId: processInstanceKey} =
     useProcessInstancePageParams();
   const elementInstanceKey = searchParams.get(ELEMENT_INSTANCE_KEY);
+
   const elementId = searchParams.get(ELEMENT_ID);
   const isMultiInstanceBody =
     searchParams.get(IS_MULTI_INSTANCE_BODY) === 'true';
@@ -116,7 +117,7 @@ const useProcessInstanceElementSelection = () => {
       enabled: !!elementId && !elementInstanceKey && !!processInstanceKey,
     });
 
-  const selectedElementInstance =
+  const resolvedElementInstance =
     elementInstanceByKey ??
     (searchResult?.page.totalItems === 1 ? searchResult?.items[0] : null);
 
@@ -124,8 +125,20 @@ const useProcessInstanceElementSelection = () => {
     selectElement,
     selectElementInstance,
     clearSelection,
-    selectedElementInstance,
+    /**
+     * The resolved element instance based on the URL search params, is null
+     * if no instance could be resolved or multiple instances exist for the given element id
+     */
+    resolvedElementInstance,
+    /**
+     * The currently selected element id from the URL search params
+     */
     selectedElementId: elementId,
+    /**
+     * The currently selected element instance key from the URL search params
+     */
+    selectedElementInstanceKey: elementInstanceKey,
+    isSelectedInstanceMultiInstanceBody: isMultiInstanceBody,
     isFetchingElement:
       isFetchingElementInstanceByKey || isFetchingElementInstancesSearch,
   };
