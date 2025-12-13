@@ -12,7 +12,7 @@ import java.util.Set;
 
 public interface FlowNodeStore {
 
-  String getFlowNodeIdByFlowNodeInstanceId(String flowNodeInstanceId);
+  String getFlowNodeIdByFlowNodeInstanceId(final long processInstanceId, String flowNodeInstanceId);
 
   Map<String, String> getFlowNodeIdsForFlowNodeInstances(Set<String> flowNodeInstances);
 

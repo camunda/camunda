@@ -33,7 +33,7 @@ public class TenantAwareElasticsearchClient
   private TenantCheckApplier<SearchRequest> tenantCheckApplier;
 
   @Override
-  public SearchResponse search(SearchRequest searchRequest) throws IOException {
+  public SearchResponse search(final SearchRequest searchRequest) throws IOException {
     return search(
         searchRequest,
         () -> {
@@ -42,15 +42,16 @@ public class TenantAwareElasticsearchClient
   }
 
   @Override
-  public <C> C search(SearchRequest searchRequest, Callable<C> searchExecutor) throws IOException {
+  public <C> C search(final SearchRequest searchRequest, final Callable<C> searchExecutor)
+      throws IOException {
     applyTenantCheckIfPresent(searchRequest);
     try {
       return searchExecutor.call();
-    } catch (IOException ioe) {
+    } catch (final IOException ioe) {
       throw ioe;
-    } catch (RuntimeException re) {
+    } catch (final RuntimeException re) {
       throw re;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final var message =
           String.format("Unexpectedly failed to execute search request with %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
