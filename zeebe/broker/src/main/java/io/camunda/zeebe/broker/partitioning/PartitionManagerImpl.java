@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.allocateSharedCache;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -32,6 +34,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -65,15 +68,14 @@ public final class PartitionManagerImpl
 
   public static final String GROUP_NAME = "raft-partition";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
-  private final ConcurrencyControl concurrencyControl;
 
+  private final ConcurrencyControl concurrencyControl;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
   private final TopologyManagerImpl topologyManager;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
@@ -81,6 +83,7 @@ public final class PartitionManagerImpl
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
+  private final SharedRocksDbResources sharedRocksDbResources;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -109,7 +112,6 @@ public final class PartitionManagerImpl
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
@@ -119,6 +121,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
+    sharedRocksDbResources = allocateSharedCache(brokerCfg);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -138,7 +141,8 @@ public final class PartitionManagerImpl
             featureFlags,
             securityConfig,
             searchClientsProxy,
-            brokerRequestAuthorizationConverter);
+            brokerRequestAuthorizationConverter,
+            sharedRocksDbResources);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
@@ -283,6 +287,7 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
+            sharedRocksDbResources.close();
             topologyManager.closeAsync().onComplete(result);
           }
         });
