@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
@@ -152,7 +151,7 @@ public final class BatchOperationClient {
           writer.writeCommandOnPartition(
               partition,
               r ->
-                  r.intent(ProcessInstanceCreationIntent.CREATE)
+                  r.intent(BatchOperationIntent.CREATE)
                       .event(batchOperationCreationRecord)
                       .authorizations(authorizations)
                       .requestId(new Random().nextLong())

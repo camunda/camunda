@@ -1413,6 +1413,13 @@ components:
         - variables
 
     ProcessInstanceModificationMoveInstruction:
+      x-polymorphic-schema: true
+      description: Instruction describing a move operation.
+      oneOf:
+        - $ref: "#/components/schemas/ProcessInstanceModificationMoveByIdInstruction"
+        - $ref: "#/components/schemas/ProcessInstanceModificationMoveByKeyInstruction"
+
+    ProcessInstanceModificationMoveByIdInstruction:
       type: object
       description: |
         Instruction describing a move operation. This instruction will terminate all active element
@@ -1439,6 +1446,32 @@ components:
         - sourceElementId
         - targetElementId
 
+    ProcessInstanceModificationMoveByKeyInstruction:
+      type: object
+      description: |
+        Instruction describing a move operation. This instruction will terminate one active element
+        instance with the sourceElementInstanceKey and activate a new element instance for at targetElementId. Note that, for multi-instance activities, only the multi-instance
+        body instance will activate new element instance at the target id.
+      properties:
+        sourceElementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The source element id.
+        targetElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The target element id.
+        ancestorScopeInstruction:
+          $ref: '#/components/schemas/AncestorScopeInstruction'
+        variableInstructions:
+          description: Instructions describing which variables to create or update.
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
+      required:
+        - sourceElementInstanceKey
+        - targetElementId
+
     AncestorScopeInstruction:
       x-polymorphic-schema: true
       description: |
@@ -1448,10 +1481,10 @@ components:
         propertyName: ancestorScopeType
         mapping:
           direct: '#/components/schemas/DirectAncestorKeyInstruction'
-          sourceParent: '#/components/schemas/SourceParentAncestorKeyInstruction'
+          inferred: '#/components/schemas/InferredAncestorKeyInstruction'
       oneOf:
         - $ref: "#/components/schemas/DirectAncestorKeyInstruction"
-        - $ref: "#/components/schemas/SourceParentAncestorKeyInstruction"
+        - $ref: "#/components/schemas/InferredAncestorKeyInstruction"
 
     DirectAncestorKeyInstruction:
       type: object
@@ -1475,16 +1508,15 @@ components:
         - ancestorElementInstanceKey
         - ancestorScopeType
 
-    SourceParentAncestorKeyInstruction:
+    InferredAncestorKeyInstruction:
       type: object
       description: |
-        Instructs the engine to use the source element's parent key as ancestor key for the created
-        element instance.
+        Instructs the engine to derive the ancestor scope key from the source element's hierarchy. The engine traverses the source element's ancestry to find an instance that matches one of the target element's flow scopes, ensuring the target is activated in the correct scope.
       properties:
         ancestorScopeType:
           description: The type of ancestor scope instruction.
           type: string
-          example: sourceParent
+          example: inferred
       required:
         - ancestorScopeType
 

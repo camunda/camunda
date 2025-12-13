@@ -27,11 +27,14 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivat
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveByIdInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -238,19 +241,40 @@ public class ProcessInstanceRequestValidator {
   private static void validateMoveInstructions(
       final List<ProcessInstanceModificationMoveInstruction> instructions,
       final List<String> violations) {
+    final var byIdInstructions =
+        instructions.stream()
+            .filter(ProcessInstanceModificationMoveByIdInstruction.class::isInstance)
+            .map(ProcessInstanceModificationMoveByIdInstruction.class::cast)
+            .toList();
+
+    final var byKeyInstructions =
+        instructions.stream()
+            .filter(ProcessInstanceModificationMoveByKeyInstruction.class::isInstance)
+            .map(ProcessInstanceModificationMoveByKeyInstruction.class::cast)
+            .toList();
+
+    validateMoveByIdInstructions(violations, byIdInstructions);
+    validateMoveByKeyInstructions(violations, byKeyInstructions);
+  }
+
+  private static void validateMoveByKeyInstructions(
+      final List<String> violations,
+      final List<ProcessInstanceModificationMoveByKeyInstruction> byKeyInstructions) {
     validateInstructions(
-        instructions,
+        byKeyInstructions,
         instruction ->
-            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isBlank(),
+            instruction.getSourceElementInstanceKey() != null
+                && KeyUtil.tryParseLong(instruction.getSourceElementInstanceKey()).isPresent(),
         violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementInstanceKey"));
+
     validateInstructions(
-        instructions,
+        byKeyInstructions,
         instruction ->
             instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
-    instructions.forEach(
+    byKeyInstructions.forEach(
         instruction -> {
           if (instruction.getAncestorScopeInstruction()
               instanceof final DirectAncestorKeyInstruction direct) {
@@ -259,7 +283,42 @@ public class ProcessInstanceRequestValidator {
           }
         });
     final var variableInstructions =
-        instructions.stream()
+        byKeyInstructions.stream()
+            .flatMap(instruction -> instruction.getVariableInstructions().stream())
+            .toList();
+    validateInstructions(
+        variableInstructions,
+        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
+  }
+
+  private static void validateMoveByIdInstructions(
+      final List<String> violations,
+      final List<ProcessInstanceModificationMoveByIdInstruction> byIdInstructions) {
+    validateInstructions(
+        byIdInstructions,
+        instruction ->
+            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isBlank(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
+
+    validateInstructions(
+        byIdInstructions,
+        instruction ->
+            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
+    byIdInstructions.forEach(
+        instruction -> {
+          if (instruction.getAncestorScopeInstruction()
+              instanceof final DirectAncestorKeyInstruction direct) {
+            validateKeyFormat(
+                direct.getAncestorElementInstanceKey(), "ancestorElementInstanceKey", violations);
+          }
+        });
+    final var variableInstructions =
+        byIdInstructions.stream()
             .flatMap(instruction -> instruction.getVariableInstructions().stream())
             .toList();
     validateInstructions(

@@ -1746,13 +1746,14 @@ final class JsonSerializableToJsonTest {
                   .addMoveInstruction(
                       new ProcessInstanceModificationMoveInstruction()
                           .setSourceElementId(variableInstructionElementId)
+                          .setSourceElementInstanceKey(elementInstanceKeyToTerminate)
                           .setTargetElementId(elementIdToActivate)
                           .addVariableInstruction(
                               new ProcessInstanceModificationVariableInstruction()
                                   .setVariables(VARIABLES_MSGPACK)
                                   .setElementId(variableInstructionElementId))
                           .setAncestorScopeKey(ancestorScopeKey)
-                          .setUseSourceParentKeyAsAncestorScope(true))
+                          .setInferAncestorScopeFromSourceHierarchy(true))
                   .addActivateInstruction(
                       new ProcessInstanceModificationActivateInstruction()
                           .setElementId(elementIdToActivate)
@@ -1772,6 +1773,7 @@ final class JsonSerializableToJsonTest {
                   }],
                   "moveInstructions": [{
                     "sourceElementId": "sub-process",
+                    "sourceElementInstanceKey": 2,
                     "targetElementId": "activity",
                     "variableInstructions": [{
                       "elementId": "sub-process",
@@ -1780,7 +1782,7 @@ final class JsonSerializableToJsonTest {
                       }
                     }],
                     "ancestorScopeKey": 3,
-                    "useSourceParentKeyAsAncestorScope": true
+                    "inferAncestorScopeFromSourceHierarchy": true
                   }],
                   "activateInstructions": [{
                     "ancestorScopeKey": 3,
@@ -3649,7 +3651,7 @@ final class JsonSerializableToJsonTest {
                                             .setVariables(VARIABLES_MSGPACK)
                                             .setElementId("sub-process"))
                                     .setAncestorScopeKey(55555L)
-                                    .setUseSourceParentKeyAsAncestorScope(true)))
+                                    .setInferAncestorScopeFromSourceHierarchy(true)))
                     .setAuthentication(
                         toMessagePack(
                             """
@@ -3698,6 +3700,7 @@ final class JsonSerializableToJsonTest {
                    "modificationPlan": {
                      "moveInstructions": [
                        {
+                         "sourceElementInstanceKey": -1,
                          "targetElementId": "targetTask",
                          "sourceElementId": "sourceTask",
                          "variableInstructions": [{
@@ -3707,11 +3710,11 @@ final class JsonSerializableToJsonTest {
                            }
                          }],
                          "ancestorScopeKey": 55555,
-                         "useSourceParentKeyAsAncestorScope": true
+                         "inferAncestorScopeFromSourceHierarchy": true
                        }
                      ],
                      "empty": false,
-                     "encodedLength": 196
+                     "encodedLength": 226
                    },
                    "authenticationBuffer": {
                      "expandable": false

@@ -121,6 +121,9 @@ public interface ProcessInstanceModificationRecordValue
     /** Returns the id of the element to terminate element instances at. */
     String getSourceElementId();
 
+    /** Returns the key of element instance to terminate. */
+    long getSourceElementInstanceKey();
+
     /** Returns the id of the element to create a new element instance at. */
     String getTargetElementId();
 
@@ -131,8 +134,9 @@ public interface ProcessInstanceModificationRecordValue
     long getAncestorScopeKey();
 
     /**
-     * Indicates whether the source element's parent key should be used as the target ancestor scope
+     * Indicates whether the ancestor scope key should be inferred from the source element's
+     * hierarchy.
      */
-    boolean isUseSourceParentKeyAsAncestorScope();
+    boolean isInferAncestorScopeFromSourceHierarchy();
   }
 }
