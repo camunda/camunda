@@ -382,6 +382,8 @@ jobs:
           --reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set starter.resources.limits.cpu=3
+          --set starter.resources.requests.cpu=3
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
           ${{ inputs.load-test-load }}
