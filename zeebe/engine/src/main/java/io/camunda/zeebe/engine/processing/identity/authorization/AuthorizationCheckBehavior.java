@@ -15,6 +15,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.authorization.aggregator.RejectionAggregator;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.AuthorizationScopeResolver;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
@@ -119,11 +120,76 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  /**
+   * Checks if a user is authorized through ANY of the provided authorization requests. Returns
+   * success if at least one request is authorized (OR/disjunctive logic).
+   *
+   * <p>Note: This method does NOT skip internal commands. Use {@link
+   * #isAnyAuthorizedOrInternalCommand(AuthorizationRequest...)} if you need to skip authorization
+   * for internal commands.
+   *
+   * @param requests the authorization requests to check (at least one must pass)
+   * @return Either containing a rejection if ALL requests failed, or Void if any succeeded
+   */
+  public Either<Rejection, Void> isAnyAuthorized(final AuthorizationRequest... requests) {
+    if (requests == null || requests.length == 0) {
+      return Either.left(
+          new Rejection(RejectionType.FORBIDDEN, "No authorization requests provided"));
+    }
+
+    final List<Rejection> rejections = new ArrayList<>();
+
+    for (final var request : requests) {
+      final var result = isAuthorized(request);
+      if (result.isRight()) {
+        // At least one authorization passed, no need to check further
+        return Either.right(null);
+      }
+      rejections.add(result.getLeft());
+    }
+
+    return Either.left(RejectionAggregator.aggregateComposite(rejections));
+  }
+
+  /**
+   * Checks if a user is authorized to perform an action on a resource, or if the request is
+   * triggered by an internal command (in which case authorization is bypassed).
+   *
+   * @param request the authorization request to check authorization for
+   * @return a {@link Either} containing a {@link Rejection} if the user is not authorized or {@link
+   *     Void} if the user is authorized or if triggered by an internal command
+   */
   public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
     if (request.isTriggeredByInternalCommand()) {
       return Either.right(null);
     }
     return isAuthorized(request);
+  }
+
+  /**
+   * Checks if a user is authorized through ANY of the provided authorization requests, or if the
+   * request is triggered by an internal command (in which case authorization is bypassed). Returns
+   * success if at least one request is authorized (OR/disjunctive logic).
+   *
+   * @param requests the authorization requests to check (at least one must pass)
+   * @return Either containing a rejection if ALL requests failed, or Void if any succeeded or if
+   *     triggered by an internal command
+   */
+  public Either<Rejection, Void> isAnyAuthorizedOrInternalCommand(
+      final AuthorizationRequest... requests) {
+    if (requests == null || requests.length == 0) {
+      return Either.left(
+          new Rejection(RejectionType.FORBIDDEN, "No authorization requests provided"));
+    }
+
+    // bypass authorization if any request is from an internal command
+    for (final var request : requests) {
+      if (request.isTriggeredByInternalCommand()) {
+        return Either.right(null);
+      }
+    }
+
+    return isAnyAuthorized(requests);
   }
 
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
@@ -148,7 +214,7 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    return getRejection(aggregatedRejections);
+    return RejectionAggregator.aggregate(aggregatedRejections);
   }
 
   // Helper methods
@@ -301,56 +367,6 @@ public final class AuthorizationCheckBehavior {
         .map(AuthorizationScope::getResourceId)
         .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
         .anyMatch(request.resourceIds()::contains);
-  }
-
-  /**
-   * Returns a rejection based on the collected rejections. It prioritizes permission rejections
-   * first, then tenant rejections, and finally returns the first rejection if no specific type is
-   * found.
-   *
-   * @param rejections the list of collected authorization rejections
-   * @return an {@link Either} containing a {@link Rejection} or {@link Void}
-   */
-  private Either<Rejection, Void> getRejection(final List<AuthorizationRejection> rejections) {
-    // return permission rejection first, if it exists
-    final var permissionRejections =
-        rejections.stream()
-            .filter(AuthorizationRejection::isPermission)
-            .map(AuthorizationRejection::rejection)
-            .toList();
-    if (!permissionRejections.isEmpty()) {
-      final var reason =
-          permissionRejections.stream()
-              .map(Rejection::reason)
-              .distinct()
-              .collect(Collectors.joining("; "));
-      return Either.left(new Rejection(RejectionType.FORBIDDEN, reason));
-    }
-
-    // if there are tenant rejections, return them
-    final var tenantRejections =
-        rejections.stream()
-            .filter(AuthorizationRejection::isTenant)
-            .map(AuthorizationRejection::rejection)
-            .toList();
-    if (!tenantRejections.isEmpty()) {
-      final var reason =
-          tenantRejections.stream()
-              .map(Rejection::reason)
-              .distinct()
-              .collect(Collectors.joining("; "));
-      // Use the first rejection type (should be FORBIDDEN or NOT_FOUND)
-      return Either.left(new Rejection(tenantRejections.getFirst().type(), reason));
-    }
-
-    // Fallback: return the first rejection if present
-    if (!rejections.isEmpty()) {
-      return Either.left(rejections.getFirst().rejection());
-    }
-
-    // Should not happen, but fallback to forbidden
-    return Either.left(
-        new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
   }
 
   /**
