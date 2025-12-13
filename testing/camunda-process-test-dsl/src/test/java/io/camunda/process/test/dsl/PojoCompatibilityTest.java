@@ -25,11 +25,14 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.ImmutableTestScenario;
-import io.camunda.process.test.api.dsl.TestCaseInstructionType;
+import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
+import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -105,28 +108,36 @@ public class PojoCompatibilityTest {
                 .build()),
         Arguments.of(
             "create process instance: minimal",
-            ImmutableTestScenario.builder()
-                .addTestCases(
-                    ImmutableTestCase.builder()
-                        .name("test case 1")
-                        .addInstructions(
-                            ImmutableCreateProcessInstanceInstruction.builder()
-                                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
-                                .build())
-                        .build())
-                .build()),
+            singleTestCase(
+                ImmutableCreateProcessInstanceInstruction.builder()
+                    .processDefinitionSelector(
+                        ImmutableProcessDefinitionSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
         Arguments.of(
             "create process instance: full",
-            ImmutableTestScenario.builder()
-                .addTestCases(
-                    ImmutableTestCase.builder()
-                        .name("test case 1")
-                        .addInstructions(
-                            ImmutableCreateProcessInstanceInstruction.builder()
-                                .type(TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
-                                .putVariables("orderId", 12345)
-                                .build())
-                        .build())
-                .build()));
+            singleTestCase(
+                ImmutableCreateProcessInstanceInstruction.builder()
+                    .processDefinitionSelector(
+                        ImmutableProcessDefinitionSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .putVariables("orderId", 12345)
+                    .addStartInstructions(
+                        ImmutableCreateProcessInstanceStartInstruction.builder()
+                            .elementId("task1")
+                            .build())
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceTerminateRuntimeInstruction.builder()
+                            .afterElementId("task2")
+                            .build())
+                    .build())));
+  }
+
+  private static TestScenario singleTestCase(final TestCaseInstruction instruction) {
+    return ImmutableTestScenario.builder()
+        .addTestCases(ImmutableTestCase.builder().name("test").addInstructions(instruction).build())
+        .build();
   }
 }
