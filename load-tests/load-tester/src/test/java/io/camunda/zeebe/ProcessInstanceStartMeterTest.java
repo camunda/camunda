@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -32,7 +33,10 @@ public class ProcessInstanceStartMeterTest {
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     final ProcessInstanceStartMeter processInstanceStartMeter =
         new ProcessInstanceStartMeter(
-            meterRegistry, Executors.newScheduledThreadPool(1), CompletableFuture::completedFuture);
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
+            CompletableFuture::completedFuture);
 
     // when
     processInstanceStartMeter.start();
@@ -55,7 +59,7 @@ public class ProcessInstanceStartMeterTest {
                 .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
-        .isGreaterThan(100);
+        .isGreaterThan(1);
     processInstanceStartMeter.stop();
   }
 
@@ -68,6 +72,7 @@ public class ProcessInstanceStartMeterTest {
         new ProcessInstanceStartMeter(
             meterRegistry,
             Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
             (list) -> {
               countDownLatch.countDown();
               return CompletableFuture.completedFuture(list);
@@ -98,6 +103,7 @@ public class ProcessInstanceStartMeterTest {
         new ProcessInstanceStartMeter(
             meterRegistry,
             Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
             (list) -> {
               countDownLatch.countDown();
               // return empty list to simulate no available instances
@@ -128,7 +134,10 @@ public class ProcessInstanceStartMeterTest {
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     final ProcessInstanceStartMeter processInstanceStartMeter =
         new ProcessInstanceStartMeter(
-            meterRegistry, Executors.newScheduledThreadPool(1), CompletableFuture::completedFuture);
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            Duration.ZERO,
+            CompletableFuture::completedFuture);
 
     // when
     processInstanceStartMeter.recordProcessInstanceStart(
@@ -154,12 +163,13 @@ public class ProcessInstanceStartMeterTest {
         new ProcessInstanceStartMeter(
             meterRegistry,
             Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
             (list) -> {
-              countDownLatch.countDown();
-
-              // return only the first instance as available
-              return CompletableFuture.completedFuture(
-                  list.isEmpty() ? List.of() : List.of(list.getFirst()));
+              if (countDownLatch.getCount() == 1) {
+                countDownLatch.countDown();
+                return CompletableFuture.completedFuture(List.of(list.getFirst()));
+              }
+              return CompletableFuture.completedFuture(List.of());
             });
 
     // when
@@ -188,7 +198,7 @@ public class ProcessInstanceStartMeterTest {
                 .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
-        .isGreaterThan(100);
+        .isGreaterThan(1);
     processInstanceStartMeter.stop();
   }
 }
