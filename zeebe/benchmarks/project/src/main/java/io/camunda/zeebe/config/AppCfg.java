@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.config;
 
+import java.time.Duration;
+
 public class AppCfg {
 
   private String brokerUrl;
@@ -22,12 +24,14 @@ public class AppCfg {
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
+  private boolean monitorDataAvailability = true;
+  private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
 
   public String getBrokerUrl() {
     return brokerUrl;
   }
 
-  public void setBrokerUrl(String brokerUrl) {
+  public void setBrokerUrl(final String brokerUrl) {
     this.brokerUrl = brokerUrl;
   }
 
@@ -43,7 +47,7 @@ public class AppCfg {
     return starter;
   }
 
-  public void setStarter(StarterCfg starter) {
+  public void setStarter(final StarterCfg starter) {
     this.starter = starter;
   }
 
@@ -51,7 +55,7 @@ public class AppCfg {
     return worker;
   }
 
-  public void setWorker(WorkerCfg worker) {
+  public void setWorker(final WorkerCfg worker) {
     this.worker = worker;
   }
 
@@ -59,7 +63,23 @@ public class AppCfg {
     return monitoringPort;
   }
 
-  public void setMonitoringPort(int monitoringPort) {
+  public void setMonitoringPort(final int monitoringPort) {
     this.monitoringPort = monitoringPort;
+  }
+
+  public boolean isMonitorDataAvailability() {
+    return monitorDataAvailability;
+  }
+
+  public void setMonitorDataAvailability(final boolean monitorDataAvailability) {
+    this.monitorDataAvailability = monitorDataAvailability;
+  }
+
+  public Duration getMonitorDataAvailabilityInterval() {
+    return monitorDataAvailabilityInterval;
+  }
+
+  public void setMonitorDataAvailabilityInterval(final Duration monitorDataAvailabilityInterval) {
+    this.monitorDataAvailabilityInterval = monitorDataAvailabilityInterval;
   }
 }

@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -29,15 +30,18 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final ScheduledExecutorService piCheckExecutorService;
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
+  private final Duration availabilityCheckInterval;
 
   public ProcessInstanceStartMeter(
       final MeterRegistry meterRegistry,
       final ScheduledExecutorService scheduledExecutorService,
+      final Duration availabilityCheckInterval,
       final AvailabilityChecker availabilityChecker) {
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
     listOfStartedInstances = new CopyOnWriteArrayList<>();
     piCheckExecutorService = scheduledExecutorService;
+    this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
   }
 
@@ -51,8 +55,8 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             LOG.error("Failed to check process instances. Will retry...", e);
           }
         },
-        1000,
-        250,
+        availabilityCheckInterval.toMillis(),
+        availabilityCheckInterval.toMillis(),
         TimeUnit.MILLISECONDS);
   }
 
