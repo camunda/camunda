@@ -142,7 +142,6 @@ public final class AuthorizationCheckBehavior {
     for (final var request : requests) {
       final var result = isAuthorized(request);
       if (result.isRight()) {
-        // At least one authorization passed, no need to check further
         return Either.right(null);
       }
       rejections.add(result.getLeft());
@@ -160,10 +159,7 @@ public final class AuthorizationCheckBehavior {
    *     Void} if the user is authorized or if triggered by an internal command
    */
   public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
-    if (request.isTriggeredByInternalCommand()) {
-      return Either.right(null);
-    }
-    return isAuthorized(request);
+    return isAnyAuthorizedOrInternalCommand(request);
   }
 
   /**
