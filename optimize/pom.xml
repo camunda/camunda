@@ -74,7 +74,7 @@
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
-    <quartz.version>2.5.0</quartz.version>
+    <quartz.version>2.5.2</quartz.version>
 
     <!-- testing config -->
     <mockito.version>5.18.0</mockito.version>
