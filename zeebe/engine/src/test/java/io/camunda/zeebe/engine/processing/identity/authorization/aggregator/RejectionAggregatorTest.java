@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity.authorization.aggregator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
@@ -31,9 +32,8 @@ class RejectionAggregatorTest {
     final var result = RejectionAggregator.aggregate(List.of(tenantRejection, permissionRejection));
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.FORBIDDEN);
-    assertThat(result.getLeft().reason()).isEqualTo("permission denied");
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason()).isEqualTo("permission denied");
   }
 
   @Test
@@ -51,9 +51,8 @@ class RejectionAggregatorTest {
         RejectionAggregator.aggregate(List.of(permissionRejection1, permissionRejection2));
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.FORBIDDEN);
-    assertThat(result.getLeft().reason()).isEqualTo("permission denied 1; permission denied 2");
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason()).isEqualTo("permission denied 1; permission denied 2");
   }
 
   @Test
@@ -71,9 +70,8 @@ class RejectionAggregatorTest {
         RejectionAggregator.aggregate(List.of(permissionRejection1, permissionRejection2));
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.FORBIDDEN);
-    assertThat(result.getLeft().reason()).isEqualTo("permission denied");
+    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(result.reason()).isEqualTo("permission denied");
   }
 
   @Test
@@ -87,9 +85,8 @@ class RejectionAggregatorTest {
     final var result = RejectionAggregator.aggregate(List.of(tenantRejection));
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(result.getLeft().reason()).isEqualTo("tenant not found");
+    assertThat(result.type()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(result.reason()).isEqualTo("tenant not found");
   }
 
   @Test
@@ -106,9 +103,8 @@ class RejectionAggregatorTest {
     final var result = RejectionAggregator.aggregate(List.of(tenantRejection1, tenantRejection2));
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(result.getLeft().reason()).isEqualTo("tenant A not found; tenant B not found");
+    assertThat(result.type()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(result.reason()).isEqualTo("tenant A not found; tenant B not found");
   }
 
   @Test
@@ -125,20 +121,16 @@ class RejectionAggregatorTest {
     final var result = RejectionAggregator.aggregate(List.of(tenantRejection1, tenantRejection2));
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(result.getLeft().reason()).isEqualTo("tenant not found");
+    assertThat(result.type()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(result.reason()).isEqualTo("tenant not found");
   }
 
   @Test
-  void shouldReturnFallbackRejectionForEmptyList() {
-    // when
-    final var result = RejectionAggregator.aggregate(List.of());
-
-    // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().type()).isEqualTo(RejectionType.FORBIDDEN);
-    assertThat(result.getLeft().reason()).isEqualTo("Authorization failed for unknown reason");
+  void aggregateShouldThrowExceptionForEmptyList() {
+    // when / then
+    assertThatThrownBy(() -> RejectionAggregator.aggregate(List.of()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Cannot aggregate empty list of authorization rejections");
   }
 
   @Test
@@ -217,12 +209,10 @@ class RejectionAggregatorTest {
   }
 
   @Test
-  void aggregateCompositeShouldReturnFallbackForEmptyList() {
+  void aggregateCompositeShouldThrowExceptionForEmptyList() {
     // when
-    final var result = RejectionAggregator.aggregateComposite(List.of());
-
-    // then
-    assertThat(result.type()).isEqualTo(RejectionType.FORBIDDEN);
-    assertThat(result.reason()).isEqualTo("Authorization failed for unknown reason");
+    assertThatThrownBy(() -> RejectionAggregator.aggregateComposite(List.of()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Cannot aggregate empty list of rejections");
   }
 }

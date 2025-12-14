@@ -10,8 +10,9 @@ package io.camunda.zeebe.engine.processing.identity.authorization.aggregator;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.result.AuthorizationRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** Aggregates multiple {@link AuthorizationRejection} instances into a single {@link Rejection}. */
@@ -23,52 +24,43 @@ public final class RejectionAggregator {
 
   /**
    * Aggregates a list of authorization rejections into a single rejection. Prioritizes permission
-   * rejections first, then tenant rejections, and finally returns the first rejection if no
-   * specific type is found.
+   * rejections first, then tenant rejections.
    *
    * @param rejections the list of collected authorization rejections
-   * @return an {@link Either} containing a {@link Rejection} or {@link Void}
+   * @return a combined {@link Rejection}
    */
-  public static Either<Rejection, Void> aggregate(final List<AuthorizationRejection> rejections) {
-    // return permission rejection first, if it exists
-    final var permissionRejections =
-        rejections.stream()
-            .filter(AuthorizationRejection::isPermission)
+  public static Rejection aggregate(final List<AuthorizationRejection> rejections) {
+    if (rejections.isEmpty()) {
+      throw new IllegalArgumentException("Cannot aggregate empty list of authorization rejections");
+    }
+
+    return aggregateMatchingRejections(rejections, AuthorizationRejection::isPermission)
+        .or(() -> aggregateMatchingRejections(rejections, AuthorizationRejection::isTenant))
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Authorization rejections must be either permission or tenant type, but found neither in: "
+                        + rejections));
+  }
+
+  private static Optional<Rejection> aggregateMatchingRejections(
+      final List<AuthorizationRejection> authorizationRejections,
+      final Predicate<AuthorizationRejection> matchPredicate) {
+
+    final var rejections =
+        authorizationRejections.stream()
+            .filter(matchPredicate)
             .map(AuthorizationRejection::rejection)
             .toList();
-    if (!permissionRejections.isEmpty()) {
-      final var reason =
-          permissionRejections.stream()
-              .map(Rejection::reason)
-              .distinct()
-              .collect(Collectors.joining("; "));
-      return Either.left(new Rejection(RejectionType.FORBIDDEN, reason));
+
+    if (rejections.isEmpty()) {
+      return Optional.empty();
     }
 
-    // if there are tenant rejections, return them
-    final var tenantRejections =
-        rejections.stream()
-            .filter(AuthorizationRejection::isTenant)
-            .map(AuthorizationRejection::rejection)
-            .toList();
-    if (!tenantRejections.isEmpty()) {
-      final var reason =
-          tenantRejections.stream()
-              .map(Rejection::reason)
-              .distinct()
-              .collect(Collectors.joining("; "));
-      // Use the first rejection type (should be FORBIDDEN or NOT_FOUND)
-      return Either.left(new Rejection(tenantRejections.getFirst().type(), reason));
-    }
+    final var reason =
+        rejections.stream().map(Rejection::reason).distinct().collect(Collectors.joining("; "));
 
-    // Fallback: return the first rejection if present
-    if (!rejections.isEmpty()) {
-      return Either.left(rejections.getFirst().rejection());
-    }
-
-    // Should not happen, but fallback to forbidden
-    return Either.left(
-        new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
+    return Optional.of(new Rejection(rejections.getFirst().type(), reason));
   }
 
   /**
@@ -80,7 +72,7 @@ public final class RejectionAggregator {
    */
   public static Rejection aggregateComposite(final List<Rejection> rejections) {
     if (rejections.isEmpty()) {
-      return new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason");
+      throw new IllegalArgumentException("Cannot aggregate empty list of rejections");
     }
 
     // Combine all rejection messages

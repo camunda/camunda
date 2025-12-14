@@ -214,7 +214,7 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    return RejectionAggregator.aggregate(aggregatedRejections);
+    return Either.left(RejectionAggregator.aggregate(aggregatedRejections));
   }
 
   // Helper methods
