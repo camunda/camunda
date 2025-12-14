@@ -313,12 +313,14 @@ public class ProcessDefinitionIT {
         rdbmsService.getProcessDefinitionInstanceStatisticsReader();
 
     final var processDefinition =
-        createAndSaveProcessDefinition(rdbmsWriter, b -> b.name("proc-1").version(1));
+        createAndSaveProcessDefinition(
+            rdbmsWriter, b -> b.name("proc-1-name").processDefinitionId("proc-1-id").version(1));
     createAndSaveRandomProcessInstance(
         rdbmsWriter,
         b ->
             b.processDefinitionId(processDefinition.processDefinitionId())
                 .state(ProcessInstanceState.ACTIVE)
+                .processDefinitionKey(processDefinition.processDefinitionKey())
                 .version(1)
                 .tenantId(processDefinition.tenantId()));
 
@@ -334,11 +336,18 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionInstanceStatisticsDbReader.aggregate(
-            ProcessDefinitionInstanceStatisticsQuery.of(b -> b));
+            ProcessDefinitionInstanceStatisticsQuery.of(
+                b ->
+                    b.filter(
+                        f -> f.processDefinitionIds(processDefinition.processDefinitionId()))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.items()).hasSize(1);
-    final var statistics = searchResult.items().getFirst();
+    assertThat(searchResult.items()).hasSize(3);
+    final var statistics =
+        searchResult.items().stream()
+            .filter(f -> "proc-1-id".equals(f.processDefinitionId()))
+            .toList()
+            .getFirst();
     assertThat(statistics.processDefinitionId()).isEqualTo(processDefinition.processDefinitionId());
     assertThat(statistics.latestProcessDefinitionName()).isEqualTo(processDefinition.name());
     assertThat(statistics.hasMultipleVersions()).isFalse();
@@ -358,10 +367,10 @@ public class ProcessDefinitionIT {
 
     final var processDefinitionV1 =
         createAndSaveProcessDefinition(
-            rdbmsWriter, b -> b.name("proc-v1").version(1).processDefinitionId("proc-1-id"));
+            rdbmsWriter, b -> b.name("proc-v1-name").version(1).processDefinitionId("proc-2-id"));
     final var processDefinitionV2 =
         createAndSaveProcessDefinition(
-            rdbmsWriter, b -> b.name("proc-v2").version(2).processDefinitionId("proc-1-id"));
+            rdbmsWriter, b -> b.name("proc-v2-name").version(2).processDefinitionId("proc-2-id"));
 
     createAndSaveRandomProcessInstance(
         rdbmsWriter,
