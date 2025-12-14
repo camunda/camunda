@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.ProcessInstanceStartMeter.AvailabilityChecker;
 import io.camunda.zeebe.protocol.Protocol;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -19,24 +20,37 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ProcessInstanceStartMeterTest {
 
-  @BeforeAll
-  public static void setup() {}
+  private ProcessInstanceStartMeter processInstanceStartMeter;
+  private SimpleMeterRegistry meterRegistry;
+  private AvailabilityChecker availabilityChecker;
 
-  @Test
-  public void shouldRecordInstanceAvailability() {
-    // given
-    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-    final ProcessInstanceStartMeter processInstanceStartMeter =
+  @BeforeEach
+  public void setUp() {
+    meterRegistry = new SimpleMeterRegistry();
+    availabilityChecker = CompletableFuture::completedFuture;
+    processInstanceStartMeter =
         new ProcessInstanceStartMeter(
             meterRegistry,
             Executors.newScheduledThreadPool(1),
             Duration.ofMillis(1),
-            CompletableFuture::completedFuture);
+            (list) -> availabilityChecker.findAvailableInstances(list));
+  }
+
+  @AfterEach
+  public void tearDown() {
+    processInstanceStartMeter.stop();
+    meterRegistry.close();
+  }
+
+  @Test
+  public void shouldRecordInstanceAvailability() {
+    // given
 
     // when
     processInstanceStartMeter.start();
@@ -60,23 +74,17 @@ public class ProcessInstanceStartMeterTest {
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
         .isGreaterThan(1);
-    processInstanceStartMeter.stop();
   }
 
   @Test
   public void shouldNotRecordInstanceAvailability() throws InterruptedException {
     // given
-    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    final ProcessInstanceStartMeter processInstanceStartMeter =
-        new ProcessInstanceStartMeter(
-            meterRegistry,
-            Executors.newScheduledThreadPool(1),
-            Duration.ofMillis(1),
-            (list) -> {
-              countDownLatch.countDown();
-              return CompletableFuture.completedFuture(list);
-            });
+    availabilityChecker =
+        (list) -> {
+          countDownLatch.countDown();
+          return CompletableFuture.completedFuture(list);
+        };
 
     // when
     processInstanceStartMeter.start();
@@ -90,25 +98,18 @@ public class ProcessInstanceStartMeterTest {
                     .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                     .timer())
         .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
-
-    processInstanceStartMeter.stop();
   }
 
   @Test
   public void shouldNotRecordInstanceAvailabilityWhenNotAvailable() throws InterruptedException {
     // given
-    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    final ProcessInstanceStartMeter processInstanceStartMeter =
-        new ProcessInstanceStartMeter(
-            meterRegistry,
-            Executors.newScheduledThreadPool(1),
-            Duration.ofMillis(1),
-            (list) -> {
-              countDownLatch.countDown();
-              // return empty list to simulate no available instances
-              return CompletableFuture.completedFuture(List.of());
-            });
+    availabilityChecker =
+        (list) -> {
+          countDownLatch.countDown();
+          // return empty list to simulate no available instances
+          return CompletableFuture.completedFuture(List.of());
+        };
 
     // when
     processInstanceStartMeter.start();
@@ -124,15 +125,12 @@ public class ProcessInstanceStartMeterTest {
                     .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                     .timer())
         .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
-
-    processInstanceStartMeter.stop();
   }
 
   @Test
-  public void shouldNotRecordInstanceAvailabilityWhenNotStarted() throws InterruptedException {
+  public void shouldNotRecordInstanceAvailabilityWhenNotStarted() {
     // given
-    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-    final ProcessInstanceStartMeter processInstanceStartMeter =
+    processInstanceStartMeter =
         new ProcessInstanceStartMeter(
             meterRegistry,
             Executors.newScheduledThreadPool(1),
@@ -150,27 +148,20 @@ public class ProcessInstanceStartMeterTest {
                     .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                     .timer())
         .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
-
-    processInstanceStartMeter.stop();
   }
 
   @Test
   public void shouldOnlyRecordAvailableInstances() throws InterruptedException {
     // given
-    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    final ProcessInstanceStartMeter processInstanceStartMeter =
-        new ProcessInstanceStartMeter(
-            meterRegistry,
-            Executors.newScheduledThreadPool(1),
-            Duration.ofMillis(1),
-            (list) -> {
-              if (countDownLatch.getCount() == 1) {
-                countDownLatch.countDown();
-                return CompletableFuture.completedFuture(List.of(list.getFirst()));
-              }
-              return CompletableFuture.completedFuture(List.of());
-            });
+    availabilityChecker =
+        (list) -> {
+          if (countDownLatch.getCount() == 1) {
+            countDownLatch.countDown();
+            return CompletableFuture.completedFuture(List.of(list.getFirst()));
+          }
+          return CompletableFuture.completedFuture(List.of());
+        };
 
     // when
     processInstanceStartMeter.recordProcessInstanceStart(
@@ -199,6 +190,5 @@ public class ProcessInstanceStartMeterTest {
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
         .isGreaterThan(1);
-    processInstanceStartMeter.stop();
   }
 }
