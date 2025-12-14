@@ -28,7 +28,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsM
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionInput;
@@ -508,10 +508,10 @@ public final class ResponseMapper {
         .build();
   }
 
-  public static EvaluateConditionalResult toEvaluateConditionalResponse(
+  public static EvaluateConditionalResponse toEvaluateConditionalResponse(
       final long key, final ConditionalEvaluationRecord brokerResponse) {
-    final EvaluateConditionalResult.Builder responseBuilder =
-        EvaluateConditionalResult.newBuilder();
+    final EvaluateConditionalResponse.Builder responseBuilder =
+        EvaluateConditionalResponse.newBuilder();
 
     brokerResponse.getStartedProcessInstances().stream()
         .map(

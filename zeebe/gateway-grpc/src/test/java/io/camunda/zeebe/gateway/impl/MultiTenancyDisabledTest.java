@@ -26,7 +26,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ConditionalEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
@@ -34,6 +33,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsM
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
@@ -312,7 +312,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   public void evaluateConditionalShouldUseDefaultTenant() {
     // when
     client.evaluateConditional(
-        ConditionalEvaluationInstruction.newBuilder().setVariables("{\"x\": 1}").build());
+        EvaluateConditionalRequest.newBuilder().setVariables("{\"x\": 1}").build());
 
     // then
     assertThatDefaultTenantIdSet();
@@ -322,7 +322,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   public void evaluateConditionalRequestRejectsNonDefaultTenantIdWhenMultiTenancyDisabled() {
     // given
     final var request =
-        ConditionalEvaluationInstruction.newBuilder()
+        EvaluateConditionalRequest.newBuilder()
             .setTenantId("tenant-a")
             .setVariables("{\"x\": 1}")
             .build();

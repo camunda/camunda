@@ -25,7 +25,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ConditionalEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
@@ -33,6 +32,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsM
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
@@ -342,7 +342,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     // when
     final var response =
         client.evaluateConditional(
-            ConditionalEvaluationInstruction.newBuilder()
+            EvaluateConditionalRequest.newBuilder()
                 .setTenantId("tenant-a")
                 .setVariables("{\"x\": 1}")
                 .build());
@@ -355,8 +355,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
   @Test
   public void evaluateConditionalRequestRequiresTenantId() {
     // given
-    final var request =
-        ConditionalEvaluationInstruction.newBuilder().setVariables("{\"x\": 1}").build();
+    final var request = EvaluateConditionalRequest.newBuilder().setVariables("{\"x\": 1}").build();
 
     // when/then
     assertThatRejectsRequestMissingTenantId(
