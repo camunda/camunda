@@ -137,7 +137,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
           ),
           removePadding: true,
           onClick: () => {
-            setListenerTabVisibility(true);
+            setListenerTabVisibility(false);
           },
         },
       ]}

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react';
 import {formatDate} from 'modules/utils/date';
 import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs';
@@ -25,6 +25,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
+import {DetailsModal} from './DetailsModal.tsx';
 import {AuditLogIcon} from './AuditLogIcon';
 
 type Props = {
@@ -35,6 +36,11 @@ type Props = {
 
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
+
+type DetailsModalState = {
+  isOpen: boolean;
+  auditLog?: AuditLog;
+};
 
 const OperationsLog: React.FC<Props> = observer(
   ({isRootNodeSelected, flowNodeInstanceId, isVisible}: Props) => {
@@ -91,6 +97,10 @@ const OperationsLog: React.FC<Props> = observer(
       },
     });
 
+    const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
+      isOpen: false,
+    });
+
     useEffect(() => {
       if (error !== null) {
         tracking.track({
@@ -130,6 +140,7 @@ const OperationsLog: React.FC<Props> = observer(
               tooltipPosition="left"
               iconDescription="Open details"
               aria-label="Open details"
+              onClick={() => setDetailsModal({isOpen: true, auditLog: item})}
               hasIconOnly
               renderIcon={Information}
             />
@@ -197,6 +208,13 @@ const OperationsLog: React.FC<Props> = observer(
             },
           ]}
         />
+        {detailsModal.auditLog && (
+          <DetailsModal
+            isOpen={detailsModal.isOpen}
+            onClose={() => setDetailsModal({isOpen: false})}
+            auditLog={detailsModal.auditLog}
+          />
+        )}
       </Container>
     );
   },

@@ -7,11 +7,11 @@
  */
 
 import styled from 'styled-components';
-
 import {
   CheckmarkFilled as BaseCheckmarkFilled,
   ErrorFilled as BaseErrorFilled,
 } from '@carbon/react/icons';
+import {StructuredListCell, StructuredListRow} from '@carbon/react';
 
 const Container = styled.section`
   height: 100%;
@@ -22,7 +22,7 @@ const Container = styled.section`
 const OperationLogName = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--cds-spacing-04);
+  gap: var(--cds-spacing-02);
 `;
 
 const CheckmarkFilled = styled(BaseCheckmarkFilled)`
@@ -33,4 +33,28 @@ const ErrorFilled = styled(BaseErrorFilled)`
   fill: var(--cds-support-error);
 `;
 
-export {Container, OperationLogName, CheckmarkFilled, ErrorFilled};
+const FirstColumn = styled(StructuredListCell)`
+  min-width: 200px;
+`;
+
+const VerticallyAlignedRow = styled(StructuredListRow)`
+  .cds--structured-list-td {
+    vertical-align: middle;
+  }
+`;
+
+const ParagraphWithIcon = styled.p`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+`;
+
+export {
+  Container,
+  OperationLogName,
+  CheckmarkFilled,
+  ErrorFilled,
+  FirstColumn,
+  VerticallyAlignedRow,
+  ParagraphWithIcon,
+};
