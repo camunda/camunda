@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.request;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -21,6 +20,15 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 public final class AuthorizationRequest {
+
+  private static final String FORBIDDEN_ERROR_MESSAGE =
+      "Insufficient permissions to perform operation '%s' on resource '%s'";
+  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS =
+      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '[*, %s]'";
+  private static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
+  private static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
 
   private final Map<String, Object> claims;
   private final AuthorizationResourceType resourceType;
@@ -90,11 +98,10 @@ public final class AuthorizationRequest {
 
   public String getForbiddenErrorMessage() {
     if (resourceIds.isEmpty()) {
-      return AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE.formatted(
-          permissionType, resourceType);
+      return FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType);
     }
 
-    return AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+    return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS.formatted(
         permissionType,
         resourceType,
         resourceIds.stream().sorted().collect(Collectors.joining(", ")));
@@ -102,9 +109,7 @@ public final class AuthorizationRequest {
 
   public String getTenantErrorMessage() {
     final var errorMsg =
-        isNewResource
-            ? AuthorizationCheckBehavior.FORBIDDEN_FOR_TENANT_ERROR_MESSAGE
-            : AuthorizationCheckBehavior.NOT_FOUND_FOR_TENANT_ERROR_MESSAGE;
+        isNewResource ? FORBIDDEN_FOR_TENANT_ERROR_MESSAGE : NOT_FOUND_FOR_TENANT_ERROR_MESSAGE;
     return errorMsg.formatted(permissionType, resourceType, tenantId);
   }
 

@@ -43,16 +43,8 @@ import java.util.stream.Stream;
 
 public final class AuthorizationCheckBehavior {
 
-  public static final String FORBIDDEN_ERROR_MESSAGE =
-      "Insufficient permissions to perform operation '%s' on resource '%s'";
-  public static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
-      "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
-  public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
-      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '[*, %s]'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
-  public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
-      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
   private final MappingRuleState mappingRuleState;
   private final ClaimsExtractor claimsExtractor;
   private final TenantResolver tenantResolver;
