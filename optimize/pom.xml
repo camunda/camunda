@@ -57,6 +57,7 @@
     <version.tomcat>10.1.44</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
+    <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
     <netty.version>4.1.127.Final</netty.version>
     <lombok.version>1.18.34</lombok.version>
@@ -283,6 +284,22 @@
         <version>${version.tomcat}</version>
       </dependency>
 
+      <!-- see https://github.com/camunda/camunda/issues/42660 -->
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-stdlib-jdk8</artifactId>
+        <version>${kotlin-stdlib.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-stdlib</artifactId>
+        <version>${kotlin-stdlib.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-stdlib-jdk7</artifactId>
+        <version>${kotlin-stdlib.version}</version>
+      </dependency>
 
       <dependency>
         <groupId>jakarta.ws.rs</groupId>
