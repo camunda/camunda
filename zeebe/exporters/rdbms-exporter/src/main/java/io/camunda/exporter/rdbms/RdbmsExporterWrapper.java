@@ -24,6 +24,7 @@ import io.camunda.exporter.rdbms.handlers.FlowNodeExportHandler;
 import io.camunda.exporter.rdbms.handlers.FlowNodeInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
+import io.camunda.exporter.rdbms.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
@@ -235,6 +236,9 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
         new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
             rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
+    builder.withHandler(
+        ValueType.HISTORY_DELETION,
+        new HistoryDeletionDeletedHandler(rdbmsWriter.getHistoryDeletionWriter()));
 
     registerAuditLogHandlers(rdbmsWriter, builder);
   }
