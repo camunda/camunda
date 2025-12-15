@@ -12,11 +12,11 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
-  private final CopyOnWriteArrayList<PiCreationResult> startedInstances;
+  private final Map<Long, PiCreationResult> startedInstances;
   private final ScheduledExecutorService piCheckExecutorService;
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
@@ -39,7 +39,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
       final AvailabilityChecker availabilityChecker) {
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
-    startedInstances = new CopyOnWriteArrayList<>();
+    startedInstances = new ConcurrentHashMap<>();
     piCheckExecutorService = scheduledExecutorService;
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
@@ -77,9 +77,8 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     }
 
     LOG.debug("Current instances awaiting {}", startedInstances.size());
-    final List<Long> list = startedInstances.stream().map(k -> k.processInstanceKey).toList();
     availabilityChecker
-        .findAvailableInstances(list)
+        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
         .whenCompleteAsync(
             (availableInstances, error) -> {
               if (error != null) {
@@ -87,23 +86,13 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                 return;
               }
 
-              checkAvailableInstances(availableInstances);
+              LOG.debug("Available process instances items: {} ", availableInstances.size());
+              availableInstances.stream()
+                  .map(startedInstances::get)
+                  .filter(Objects::nonNull)
+                  .forEach(this::recordInstanceAvailable);
             },
             piCheckExecutorService);
-  }
-
-  private void checkAvailableInstances(final List<Long> availableInstances) {
-    LOG.debug("Available process instances items: {} ", availableInstances.size());
-    for (final Long availableInstanceKey : availableInstances) {
-      LOG.debug("Available process instance key: {} ", availableInstanceKey);
-
-      for (final PiCreationResult awaitingPI : Collections.unmodifiableList(startedInstances)) {
-        if (awaitingPI.processInstanceKey == availableInstanceKey) {
-          recordInstanceAvailable(awaitingPI);
-          break;
-        }
-      }
-    }
   }
 
   private void recordInstanceAvailable(final PiCreationResult awaitingPI) {
@@ -122,11 +111,12 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                     .tag("partition", Integer.toString(key))
                     .register(registry))
         .record(durationNanos, TimeUnit.NANOSECONDS);
-    startedInstances.remove(awaitingPI);
+    startedInstances.remove(awaitingPI.processInstanceKey);
   }
 
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
-    startedInstances.add(new PiCreationResult(processInstanceKey, startTimeNanos));
+    startedInstances.put(
+        processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
   }
 
   private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
