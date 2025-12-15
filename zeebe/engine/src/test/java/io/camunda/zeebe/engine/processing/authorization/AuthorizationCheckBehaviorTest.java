@@ -12,6 +12,7 @@ import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleReco
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -900,6 +902,186 @@ final class AuthorizationCheckBehaviorTest {
 
     // then
     assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
+  void isAuthorizedOrInternalCommandShouldBeAuthorizedForInternalCommand() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.isInternalCommand()).thenReturn(true);
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.READ_DECISION_INSTANCE)
+            .addResourceId(UUID.randomUUID().toString())
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorizedOrInternalCommand(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void isAnyAuthorizedShouldThrowExceptionWhenNoRequestsProvided() {
+    // when - then
+    assertThatThrownBy(() -> authorizationCheckBehavior.isAnyAuthorized())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("No authorization requests provided");
+  }
+
+  @Test
+  void isAnyAuthorizedShouldBeAuthorizedByFirstRequest() {
+    // given
+    final var user = createUser();
+    final var resourceType1 = AuthorizationResourceType.PROCESS_DEFINITION;
+    final var permissionType1 = PermissionType.READ_USER_TASK;
+    final var resourceIdScope1 = AuthorizationScope.of(UUID.randomUUID().toString());
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType1,
+        permissionType1,
+        resourceIdScope1);
+    final var command = mockCommand(user.getUsername());
+    final var processDefinitionReadUserTaskRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType1)
+            .permissionType(permissionType1)
+            .addResourceId(resourceIdScope1.getResourceId())
+            .build();
+
+    // no USER_TASK[READ] permission added for user
+    final var userTaskReadRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.USER_TASK)
+            .permissionType(PermissionType.READ)
+            .addResourceId(String.valueOf(random.nextLong()))
+            .build();
+
+    // when
+    final var result =
+        authorizationCheckBehavior.isAnyAuthorized(
+            processDefinitionReadUserTaskRequest, userTaskReadRequest);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+  }
+
+  @Test
+  void isAnyAuthorizedShouldBeAuthorizedBySecondRequest() {
+    // given
+    final var user = createUser();
+    final var command = mockCommand(user.getUsername());
+
+    // no PROCESS_DEFINITION[READ_USER_TASK] permission added for user
+    final var processDefinitionReadUserTaskRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.READ_USER_TASK)
+            .addResourceId(UUID.randomUUID().toString())
+            .build();
+
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.READ;
+    final var resourceIdScope = AuthorizationScope.id(String.valueOf(random.nextLong()));
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        resourceIdScope);
+
+    final var userTaskReadRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
+
+    // when
+    final var result =
+        authorizationCheckBehavior.isAnyAuthorized(
+            processDefinitionReadUserTaskRequest, userTaskReadRequest);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+  }
+
+  @Test
+  void isAnyAuthorizedShouldRejectWhenNoRequestIsAuthorized() {
+    // given
+    final var user = createUser();
+    // no permissions added for user
+
+    final var command = mockCommand(user.getUsername());
+    final var processDefinitionReadUserTaskRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.READ_USER_TASK)
+            .addResourceId(UUID.randomUUID().toString())
+            .build();
+    final var userTaskReadRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.USER_TASK)
+            .permissionType(PermissionType.READ)
+            .addResourceId(String.valueOf(random.nextLong()))
+            .build();
+
+    // when
+    final var result =
+        authorizationCheckBehavior.isAnyAuthorized(
+            processDefinitionReadUserTaskRequest, userTaskReadRequest);
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .satisfies(
+            rejection -> {
+              assertThat(rejection.type()).isEqualTo(RejectionType.FORBIDDEN);
+              assertThat(rejection.reason())
+                  .startsWith(
+                      "Insufficient permissions to perform operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION'")
+                  .contains(
+                      "; and Insufficient permissions to perform operation 'READ' on resource 'USER_TASK'");
+            });
+  }
+
+  @Test
+  void isAnyAuthorizedOrInternalCommandShouldBeAuthorizedForInternalCommand() {
+    // given
+    final var externalCommandRequest =
+        AuthorizationRequest.builder().command(mock(TypedRecord.class)).build();
+
+    final var internalCommand = mock(TypedRecord.class);
+    when(internalCommand.isInternalCommand()).thenReturn(true);
+    final var internalCommandRequest =
+        AuthorizationRequest.builder().command(internalCommand).build();
+
+    // when
+    final var result =
+        authorizationCheckBehavior.isAnyAuthorizedOrInternalCommand(
+            externalCommandRequest, internalCommandRequest);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void isAnyAuthorizedOrInternalCommandShouldThrowExceptionWhenNoRequestsProvided() {
+    // when - then
+    assertThatThrownBy(() -> authorizationCheckBehavior.isAnyAuthorizedOrInternalCommand())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("No authorization requests provided");
   }
 
   @Test
