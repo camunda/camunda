@@ -42,19 +42,42 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {useNavigate, useSearchParams} from 'react-router-dom';
+import {
+  getDefinitionIdentifier,
+  splitDefinitionIdentifier,
+} from 'modules/hooks/processDefinitions';
 
-const initialValues: ProcessInstancesFilter = {
+interface FilterValues extends ProcessInstancesFilter {
+  variableName?: string;
+  variableValues?: string;
+}
+
+const initialValues: FilterValues = {
   active: true,
   incidents: true,
 };
 
 const Filters: React.FC = observer(() => {
+  const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filtersFromUrl = parseProcessInstancesFilter(searchParams);
-  const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
+  const filterValues: FilterValues = parseProcessInstancesFilter(searchParams);
   const variable = variableFilterStore.variable;
+  if (variable) {
+    filterValues.variableName = variable.name;
+    filterValues.variableValues = variable.values;
+  }
+  if (filterValues.process && filterValues.tenant !== 'all') {
+    filterValues.process = getDefinitionIdentifier(
+      filterValues.process,
+      filterValues.tenant,
+    );
+  }
+  if (filterValues.tenant === 'all') {
+    delete filterValues.process;
+    delete filterValues.version;
+  }
 
   return (
     <Form<ProcessInstancesFilter>
@@ -64,33 +87,11 @@ const Filters: React.FC = observer(() => {
         navigate({
           search: updateProcessInstancesFilterSearchString(searchParams, {
             ...values,
-            ...(values.process !== undefined
-              ? {
-                  process: processesStore.state.processes.find(
-                    ({key}) => key === values.process,
-                  )?.bpmnProcessId,
-                }
-              : {}),
+            process: splitDefinitionIdentifier(values.process).definitionId,
           }),
         });
       }}
-      initialValues={{
-        ...filtersFromUrl,
-        ...(filtersFromUrl.process !== undefined
-          ? {
-              process: processesStore.getProcess({
-                bpmnProcessId: filtersFromUrl.process,
-                tenantId: filtersFromUrl.tenant,
-              })?.key,
-            }
-          : {}),
-        ...(variable
-          ? {
-              variableName: variable.name,
-              variableValues: variable.values,
-            }
-          : {}),
-      }}
+      initialValues={filterValues}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
