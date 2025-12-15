@@ -25,7 +25,7 @@ global:
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets: []
-  # By default, we run without Identity
+  # Identity authentication is enabled for Optimize
   identity:
     auth:
       enabled: true
