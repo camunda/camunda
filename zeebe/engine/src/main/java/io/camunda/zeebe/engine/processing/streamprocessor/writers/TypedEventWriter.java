@@ -91,7 +91,7 @@ public interface TypedEventWriter {
     final var decodedPartitionId = Protocol.decodePartitionId(key);
     if (decodedPartitionId == expectedPartitionId && key > keyGenerator.getCurrentKey()) {
       throw new UnrecoverableException(
-          "Expected to receive a key lesser than %d, but got %d"
+          "Expected to append event with key lesser than the last generated key %d, but got %d"
               .formatted(keyGenerator.getCurrentKey(), key));
     }
   }

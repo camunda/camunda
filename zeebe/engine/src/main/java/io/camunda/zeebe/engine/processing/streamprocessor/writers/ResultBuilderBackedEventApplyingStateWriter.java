@@ -47,7 +47,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    validateKey(key);
+    // key is validated in appendFollowUpEvent
     final int latestVersion = eventApplier.getLatestVersion(intent);
     appendFollowUpEvent(key, intent, value, latestVersion);
   }
