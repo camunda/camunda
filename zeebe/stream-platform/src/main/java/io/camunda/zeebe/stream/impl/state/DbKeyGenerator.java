@@ -80,6 +80,11 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
   }
 
   @Override
+  public int partitionId() {
+    return partitionId;
+  }
+
+  @Override
   public long nextKey() {
     final var nextKey = nextValueManager.getNextValue();
     if (Protocol.decodePartitionId(nextKey) != partitionId) {

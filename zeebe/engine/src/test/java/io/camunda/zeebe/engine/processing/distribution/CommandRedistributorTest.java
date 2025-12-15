@@ -12,10 +12,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.DistributionMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
@@ -117,24 +113,6 @@ public class CommandRedistributorTest {
       final boolean commandDistributionPaused,
       final Duration redistributionInterval,
       final Duration maxBackoffDuration) {
-    final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
-    final var keyGenerator = new AtomicKeyGenerator(1);
-    final Writers writers =
-        new Writers(1, () -> fakeProcessingResultBuilder, mock(EventAppliers.class));
-    writers.setKeyGenerator(keyGenerator);
-
-    final RoutingInfo routingInfo =
-        RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
-
-    final CommandDistributionBehavior behavior =
-        new CommandDistributionBehavior(
-            processingState.getDistributionState(),
-            writers,
-            1,
-            routingInfo,
-            mockCommandSender,
-            mockDistributionMetrics);
-
     final var config =
         new EngineConfiguration()
             .setCommandDistributionPaused(commandDistributionPaused)
