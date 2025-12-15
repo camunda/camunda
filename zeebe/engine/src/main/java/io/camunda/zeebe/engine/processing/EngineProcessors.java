@@ -376,6 +376,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         bpmnBehaviors.feelResolverBehavior(),
+        bpmnBehaviors.expressionLanguage(),
         authCheckBehavior);
 
     return typedRecordProcessors;

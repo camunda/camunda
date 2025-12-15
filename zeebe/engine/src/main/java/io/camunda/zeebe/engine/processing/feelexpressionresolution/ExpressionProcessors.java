@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.feelexpressionresolution;
 
+import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,11 +24,13 @@ public final class ExpressionProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ExpressionBehavior expressionBehavior,
+      final ExpressionLanguage expressionLanguage,
       final AuthorizationCheckBehavior authCheckBehavior) {
+    final var validator = new ExpressionValidator(expressionLanguage);
     typedRecordProcessors.onCommand(
         ValueType.EXPRESSION,
         ExpressionIntent.EVALUATE,
         new ExpressionEvaluateProcessor(
-            keyGenerator, writers, expressionBehavior, authCheckBehavior));
+            keyGenerator, writers, expressionBehavior, validator, authCheckBehavior));
   }
 }

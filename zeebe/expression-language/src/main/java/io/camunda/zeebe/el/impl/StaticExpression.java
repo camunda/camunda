@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Period;
@@ -21,10 +22,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * This class handles static expressions of type {@code String} or {@code Number}. Boolean types are
- * not yet implemented. Also the method {@code toBuffer()} is not implemented
+ * not supported for static expressions.
  */
 public final class StaticExpression implements Expression, EvaluationResult {
 
@@ -94,8 +98,30 @@ public final class StaticExpression implements Expression, EvaluationResult {
 
   @Override
   public DirectBuffer toBuffer() {
-    LOGGER.warn("StaticExpression.toBuffer() - not yet implemented");
-    return null;
+    final MsgPackWriter writer = new MsgPackWriter();
+    final MutableDirectBuffer writeBuffer = new ExpandableArrayBuffer();
+    final DirectBuffer resultView = new UnsafeBuffer();
+
+    writer.wrap(writeBuffer, 0);
+
+    if (resultType == ResultType.NUMBER) {
+      final BigDecimal number = (BigDecimal) result;
+      if (number.scale() <= 0
+          && number.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) <= 0
+          && number.compareTo(BigDecimal.valueOf(Long.MIN_VALUE)) >= 0) {
+        writer.writeInteger(number.longValue());
+      } else {
+        writer.writeFloat(number.doubleValue());
+      }
+    } else if (resultType == ResultType.STRING) {
+      final String stringValue = (String) result;
+      final DirectBuffer stringWrapper = new UnsafeBuffer();
+      stringWrapper.wrap(stringValue.getBytes());
+      writer.writeString(stringWrapper);
+    }
+
+    resultView.wrap(writeBuffer, 0, writer.getOffset());
+    return resultView;
   }
 
   @Override

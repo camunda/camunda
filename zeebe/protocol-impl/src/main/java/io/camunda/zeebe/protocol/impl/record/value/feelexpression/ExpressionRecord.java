@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.feelexpression;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -39,7 +38,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
   public ExpressionRecord() {
-    super(5);
+    super(4);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
@@ -58,7 +57,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   @Override
   public Object getResultValue() {
-    return MsgPackConverter.fromDirectBuffer(resultValueProp.getValue());
+    return MsgPackConverter.convertToObject(resultValueProp.getValue(), Object.class);
   }
 
   @Override
@@ -82,11 +81,6 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
     return this;
   }
 
-  public ExpressionRecord addWarning(final String warning) {
-    warningsProp.add().wrap(BufferUtil.wrapString(warning));
-    return this;
-  }
-
   @Override
   public String getTenantId() {
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
@@ -95,10 +89,5 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   public ExpressionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
@@ -60,6 +61,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
   private final ExpressionBehavior feelResolverBehavior;
+  private final ExpressionLanguage expressionLanguage;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -103,7 +105,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     final var processVariableContext =
         new VariableEvaluationContext(processingState.getVariableState());
 
-    final var expressionLanguage =
+    expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock));
 
     expressionBehavior =
@@ -374,5 +376,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   public ExpressionBehavior feelResolverBehavior() {
     return feelResolverBehavior;
+  }
+
+  public ExpressionLanguage expressionLanguage() {
+    return expressionLanguage;
   }
 }

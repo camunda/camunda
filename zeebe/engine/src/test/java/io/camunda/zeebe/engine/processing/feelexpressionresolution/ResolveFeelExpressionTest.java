@@ -383,4 +383,139 @@ public class ResolveFeelExpressionTest {
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getResultValue()).isEqualTo(false);
   }
+
+  // --- Static Expression Tests (expressions without '=' prefix) ---
+
+  @Test
+  public void shouldResolveStaticStringExpression() {
+    // when - expression without '=' is treated as static
+    final var record = ENGINE_RULE.expression().withExpression("hello world").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("hello world");
+  }
+
+  @Test
+  public void shouldResolveStaticNumberExpression() {
+    // when - numeric string without '=' is treated as static number
+    final var record = ENGINE_RULE.expression().withExpression("42").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(42);
+  }
+
+  @Test
+  public void shouldResolveStaticDecimalExpression() {
+    // when - decimal string without '=' is treated as static number
+    final var record = ENGINE_RULE.expression().withExpression("3.14159").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(3.14159);
+  }
+
+  @Test
+  public void shouldResolveStaticNegativeNumberExpression() {
+    // when - negative number string without '=' is treated as static number
+    final var record = ENGINE_RULE.expression().withExpression("-100").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(-100);
+  }
+
+  @Test
+  public void shouldResolveStaticStringWithSpecialCharacters() {
+    // when - string with special characters without '='
+    final var record = ENGINE_RULE.expression().withExpression("hello-world_123!@#$%").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("hello-world_123!@#$%");
+  }
+
+  @Test
+  public void shouldResolveStaticStringWithSpaces() {
+    // when - string with spaces without '='
+    final var record = ENGINE_RULE.expression().withExpression("this is a test string").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("this is a test string");
+  }
+
+  @Test
+  public void shouldResolveStaticScientificNotationAsString() {
+    // when - scientific notation is treated as string (not number parsing in StaticExpression)
+    final var record = ENGINE_RULE.expression().withExpression("1e10").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    // Note: StaticExpression uses BigDecimal which can parse scientific notation
+    assertThat(record.getValue().getResultValue()).isEqualTo(10000000000L);
+  }
+
+  @Test
+  public void shouldResolveStaticZeroExpression() {
+    // when - zero as static number
+    final var record = ENGINE_RULE.expression().withExpression("0").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldResolveStaticLargeNumberExpression() {
+    // when - large number as static
+    final var record = ENGINE_RULE.expression().withExpression("9223372036854775807").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(Long.MAX_VALUE);
+  }
+
+  @Test
+  public void shouldResolveStaticStringThatLooksLikeFeel() {
+    // when - string that looks like FEEL but without '=' prefix
+    final var record = ENGINE_RULE.expression().withExpression("10 + 5").resolve();
+
+    // then - treated as plain string, not evaluated
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("10 + 5");
+  }
+
+  @Test
+  public void shouldResolveStaticUnicodeStringExpression() {
+    // when - unicode string without '='
+    final var record = ENGINE_RULE.expression().withExpression("héllo wörld 日本語").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("héllo wörld 日本語");
+  }
 }

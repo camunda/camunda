@@ -22,22 +22,17 @@ import io.camunda.zeebe.util.Either;
 public class ExpressionBehavior {
 
   private final ExpressionProcessor clusterExpressionProcessor;
-  private final ExpressionLanguage expressionLanguage;
 
   public ExpressionBehavior(
       final NamespacedEvaluationContext namespaceFullClusterContext,
       final ExpressionLanguage expressionLanguage) {
     clusterExpressionProcessor =
         new ExpressionProcessor(expressionLanguage, namespaceFullClusterContext);
-    this.expressionLanguage = expressionLanguage;
   }
 
-  public Either<Rejection, ExpressionRecord> resolveFeelExpressionClusterAtClusterLevelAndAbove(
-      final ExpressionRecord expressionRecord) {
-    return parseExpression(expressionRecord)
-        .flatMap(
-            expression ->
-                evaluateAnyClusterLevelExpression(expression, expressionRecord.getTenantId()))
+  public Either<Rejection, ExpressionRecord> resolveExpression(
+      final Expression expression, final ExpressionRecord expressionRecord) {
+    return evaluate(expression, expressionRecord.getTenantId())
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
   }
 
@@ -53,23 +48,12 @@ public class ExpressionBehavior {
     }
   }
 
-  private Either<Rejection, EvaluationResult> evaluateAnyClusterLevelExpression(
+  private Either<Rejection, EvaluationResult> evaluate(
       final Expression expression, final String tenantId) {
     return clusterExpressionProcessor
         .evaluateRawExpression(expression, -1, tenantId)
         .mapLeft(this::mapEvaluationFailure)
         .flatMap(this::mapResultFailure);
-  }
-
-  private Either<Rejection, Expression> parseExpression(final ExpressionRecord expressionRecord) {
-    final var expression = expressionLanguage.parseExpression(expressionRecord.getExpression());
-    if (!expression.isValid()) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              "Failed to parse expression: " + expression.getFailureMessage()));
-    }
-    return Either.right(expression);
   }
 
   private Rejection mapEvaluationFailure(final Failure failure) {
@@ -78,7 +62,9 @@ public class ExpressionBehavior {
 
   private ExpressionRecord mapSuccess(
       final EvaluationResult evaluationResult, final ExpressionRecord expressionRecord) {
-    return expressionRecord
+    return new ExpressionRecord()
+        .setTenantId(expressionRecord.getTenantId())
+        .setExpression(expressionRecord.getExpression())
         .setWarnings(
             evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
         .setResultValue(evaluationResult.toBuffer());
