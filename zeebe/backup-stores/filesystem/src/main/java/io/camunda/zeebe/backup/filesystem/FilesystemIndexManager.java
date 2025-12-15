@@ -27,7 +27,7 @@ final class FilesystemIndexManager {
     this.indexBaseDir = indexBaseDir;
   }
 
-  void upload(final FilesystemBackupIndexFile indexFile) {
+  FilesystemBackupIndexFile upload(final FilesystemBackupIndexFile indexFile) {
     final Path targetPath = indexPath(indexFile.id());
     try {
       FileUtil.ensureDirectoryExists(targetPath.getParent());
@@ -35,6 +35,7 @@ final class FilesystemIndexManager {
       FileUtil.flush(targetPath);
       FileUtil.flushDirectory(targetPath.getParent());
       LOG.debug("Uploaded index {} to {}", indexFile.id(), targetPath);
+      return indexFile;
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to upload index " + indexFile.id(), e);
     }

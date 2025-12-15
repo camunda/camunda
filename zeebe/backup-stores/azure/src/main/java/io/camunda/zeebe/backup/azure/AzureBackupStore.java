@@ -213,7 +213,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
     if (!(indexFile instanceof final AzureBackupIndexFile azureIndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"
@@ -222,7 +222,7 @@ public final class AzureBackupStore implements BackupStore {
                   indexFile.getClass().getSimpleName(),
                   indexFile));
     }
-    return CompletableFuture.runAsync(() -> indexManager.upload(azureIndexFile), executor);
+    return CompletableFuture.supplyAsync(() -> indexManager.upload(azureIndexFile), executor);
   }
 
   @Override

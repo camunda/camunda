@@ -11,22 +11,5 @@ import io.camunda.zeebe.backup.api.BackupIndexFile;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import java.nio.file.Path;
 
-public final class FilesystemBackupIndexFile implements BackupIndexFile {
-  private final BackupIndexIdentifier id;
-  private final Path path;
-
-  FilesystemBackupIndexFile(final Path path, final BackupIndexIdentifier id) {
-    this.path = path;
-    this.id = id;
-  }
-
-  @Override
-  public BackupIndexIdentifier id() {
-    return id;
-  }
-
-  @Override
-  public Path path() {
-    return path;
-  }
-}
+public record FilesystemBackupIndexFile(Path path, BackupIndexIdentifier id)
+    implements BackupIndexFile {}

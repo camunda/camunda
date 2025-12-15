@@ -78,7 +78,7 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
     throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 

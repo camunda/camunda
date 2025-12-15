@@ -155,7 +155,7 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
     if (!(indexFile instanceof final GcsBackupIndexFile gcsBackupIndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"
@@ -164,7 +164,7 @@ public final class GcsBackupStore implements BackupStore {
                   indexFile.getClass().getSimpleName(),
                   indexFile));
     }
-    return CompletableFuture.runAsync(() -> indexManager.upload(gcsBackupIndexFile), executor);
+    return CompletableFuture.supplyAsync(() -> indexManager.upload(gcsBackupIndexFile), executor);
   }
 
   @Override

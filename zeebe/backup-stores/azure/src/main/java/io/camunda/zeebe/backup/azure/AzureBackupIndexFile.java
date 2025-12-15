@@ -11,37 +11,9 @@ import io.camunda.zeebe.backup.api.BackupIndexFile;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import java.nio.file.Path;
 
-public final class AzureBackupIndexFile implements BackupIndexFile {
-  private final BackupIndexIdentifier id;
-  private final Path path;
-  private String eTag;
-
+public record AzureBackupIndexFile(BackupIndexIdentifier id, Path path, String eTag)
+    implements BackupIndexFile {
   AzureBackupIndexFile(final Path path, final BackupIndexIdentifier id) {
-    this.id = id;
-    this.path = path;
-  }
-
-  public AzureBackupIndexFile(final Path path, final BackupIndexIdentifier id, final String eTag) {
-    this.id = id;
-    this.path = path;
-    this.eTag = eTag;
-  }
-
-  @Override
-  public BackupIndexIdentifier id() {
-    return id;
-  }
-
-  @Override
-  public Path path() {
-    return path;
-  }
-
-  String getETag() {
-    return eTag;
-  }
-
-  void setETag(final String eTag) {
-    this.eTag = eTag;
+    this(id, path, null);
   }
 }

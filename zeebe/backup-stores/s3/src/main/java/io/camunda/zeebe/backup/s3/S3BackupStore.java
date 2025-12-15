@@ -251,7 +251,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
     if (!(indexFile instanceof final S3BackupIndexFile s3IndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"

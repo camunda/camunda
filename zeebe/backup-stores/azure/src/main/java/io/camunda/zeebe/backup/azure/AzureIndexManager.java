@@ -36,14 +36,14 @@ final class AzureIndexManager {
     containerCreated = !createContainer;
   }
 
-  void upload(final AzureBackupIndexFile indexFile) {
+  AzureBackupIndexFile upload(final AzureBackupIndexFile indexFile) {
     assureContainerCreated();
     final BlobClient blobClient = containerClient.getBlobClient(objectKey(indexFile.id()));
 
     try {
       final BlobRequestConditions conditions = new BlobRequestConditions();
-      if (indexFile.getETag() != null) {
-        conditions.setIfMatch(indexFile.getETag());
+      if (indexFile.eTag() != null) {
+        conditions.setIfMatch(indexFile.eTag());
       } else {
         conditions.setIfNoneMatch("*");
       }
@@ -54,9 +54,10 @@ final class AzureIndexManager {
               new BlobParallelUploadOptions(binaryData).setRequestConditions(conditions),
               null,
               Context.NONE);
-      indexFile.setETag(response.getValue().getETag());
-
       LOG.debug("Uploaded index {}", indexFile.id());
+
+      return new AzureBackupIndexFile(
+          indexFile.id(), indexFile.path(), response.getValue().getETag());
     } catch (final BlobStorageException e) {
       if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
         throw new AzureBackupStoreException.BlobAlreadyExists(
@@ -90,8 +91,8 @@ final class AzureIndexManager {
       LOG.debug("Downloaded index {} to {}", id, targetPath);
 
       return new AzureBackupIndexFile(
-          targetPath,
           new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()),
+          targetPath,
           properties.getETag());
     } catch (final BlobStorageException e) {
       throw new AzureBackupStoreException.IndexReadException(

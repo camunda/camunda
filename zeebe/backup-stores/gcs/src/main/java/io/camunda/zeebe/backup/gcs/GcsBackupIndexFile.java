@@ -11,31 +11,10 @@ import io.camunda.zeebe.backup.api.BackupIndexFile;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import java.nio.file.Path;
 
-public class GcsBackupIndexFile implements BackupIndexFile {
-  private final BackupIndexIdentifier id;
-  private final Path path;
-  private Long generation;
+public record GcsBackupIndexFile(BackupIndexIdentifier id, Path path, Long generation)
+    implements BackupIndexFile {
 
   public GcsBackupIndexFile(final Path path, final BackupIndexIdentifier id) {
-    this.path = path;
-    this.id = id;
-  }
-
-  @Override
-  public BackupIndexIdentifier id() {
-    return id;
-  }
-
-  @Override
-  public Path path() {
-    return path;
-  }
-
-  public Long getGeneration() {
-    return generation;
-  }
-
-  public void setGeneration(final long generation) {
-    this.generation = generation;
+    this(id, path, null);
   }
 }

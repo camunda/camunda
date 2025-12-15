@@ -9,12 +9,7 @@ package io.camunda.zeebe.backup.api;
 
 import java.nio.file.Path;
 
-/**
- * An opaque holder for a {@link BackupIndex}.
- *
- * @implNote Some implementations might contain additional mutable state that allows the {@link
- *     BackupStore} to detect and prevent against illegal concurrent modifications.
- */
+/** An opaque holder for a {@link BackupIndex}. */
 public interface BackupIndexFile {
   BackupIndexIdentifier id();
 

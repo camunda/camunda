@@ -11,20 +11,11 @@ import io.camunda.zeebe.backup.api.BackupIndexFile;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import java.nio.file.Path;
 
-public final class S3BackupIndexFile implements BackupIndexFile {
-  private final BackupIndexIdentifier id;
-  private final Path path;
-  private String eTag;
+public record S3BackupIndexFile(BackupIndexIdentifier id, Path path, String eTag)
+    implements BackupIndexFile {
 
   S3BackupIndexFile(final Path path, final BackupIndexIdentifier id) {
-    this.id = id;
-    this.path = path;
-  }
-
-  public S3BackupIndexFile(final Path path, final BackupIndexIdentifier id, final String eTag) {
-    this.id = id;
-    this.path = path;
-    this.eTag = eTag;
+    this(id, path, null);
   }
 
   @Override
@@ -35,13 +26,5 @@ public final class S3BackupIndexFile implements BackupIndexFile {
   @Override
   public Path path() {
     return path;
-  }
-
-  String getETag() {
-    return eTag;
-  }
-
-  void setETag(final String eTag) {
-    this.eTag = eTag;
   }
 }

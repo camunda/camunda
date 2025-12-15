@@ -38,15 +38,15 @@ final class S3IndexManager {
     this.config = config;
   }
 
-  CompletableFuture<Void> upload(final S3BackupIndexFile indexFile) {
+  CompletableFuture<BackupIndexFile> upload(final S3BackupIndexFile indexFile) {
     final var requestBuilder =
         PutObjectRequest.builder()
             .bucket(config.bucketName())
             .key(objectKey(indexFile.id()))
             .contentType("application/octet-stream");
 
-    if (indexFile.getETag() != null) {
-      requestBuilder.ifMatch(indexFile.getETag());
+    if (indexFile.eTag() != null) {
+      requestBuilder.ifMatch(indexFile.eTag());
     } else {
       requestBuilder.ifNoneMatch("*");
     }
@@ -55,9 +55,8 @@ final class S3IndexManager {
         .putObject(requestBuilder.build(), AsyncRequestBody.fromFile(indexFile.path()))
         .thenApply(
             response -> {
-              indexFile.setETag(response.eTag());
               LOG.debug("Uploaded index {}", indexFile.id());
-              return null;
+              return new S3BackupIndexFile(indexFile.id(), indexFile.path(), response.eTag());
             });
   }
 
@@ -84,8 +83,8 @@ final class S3IndexManager {
             response -> {
               LOG.debug("Downloaded index {} to {}", id, targetPath);
               return new S3BackupIndexFile(
-                  targetPath,
                   new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()),
+                  targetPath,
                   response.eTag());
             })
         .exceptionally(

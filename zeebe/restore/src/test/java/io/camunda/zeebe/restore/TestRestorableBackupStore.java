@@ -123,7 +123,7 @@ final class TestRestorableBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
     throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 

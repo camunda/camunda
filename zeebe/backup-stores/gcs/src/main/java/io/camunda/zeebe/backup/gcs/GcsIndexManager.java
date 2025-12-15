@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
-import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -33,21 +32,20 @@ public final class GcsIndexManager {
     this.basePath = basePath;
   }
 
-  void upload(final GcsBackupIndexFile indexFile) {
-    final Blob newBlob;
+  GcsBackupIndexFile upload(final GcsBackupIndexFile indexFile) {
     try {
       final BlobWriteOption mode;
-      if (indexFile.getGeneration() != null) {
-        mode = BlobWriteOption.generationMatch(indexFile.getGeneration());
+      if (indexFile.generation() != null) {
+        mode = BlobWriteOption.generationMatch(indexFile.generation());
       } else {
         mode = BlobWriteOption.doesNotExist();
       }
-      newBlob = client.createFrom(indexBlobInfo(indexFile.id()), indexFile.path(), mode);
+      final var newBlob = client.createFrom(indexBlobInfo(indexFile.id()), indexFile.path(), mode);
+      LOG.debug("Uploaded index {}", indexFile.id());
+      return new GcsBackupIndexFile(indexFile.id(), indexFile.path(), newBlob.getGeneration());
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-    indexFile.setGeneration(newBlob.getGeneration());
-    LOG.debug("Uploaded index {}", indexFile.id());
   }
 
   GcsBackupIndexFile download(final BackupIndexIdentifier id, final Path targetPath) {
@@ -66,9 +64,7 @@ public final class GcsIndexManager {
     }
     blob.downloadTo(targetPath);
     LOG.debug("Downloaded index {} to {}", id, targetPath);
-    final var indexFile = new GcsBackupIndexFile(targetPath, id);
-    indexFile.setGeneration(blob.getGeneration());
-    return indexFile;
+    return new GcsBackupIndexFile(id, targetPath, blob.getGeneration());
   }
 
   private BlobInfo indexBlobInfo(final BackupIndexIdentifier id) {

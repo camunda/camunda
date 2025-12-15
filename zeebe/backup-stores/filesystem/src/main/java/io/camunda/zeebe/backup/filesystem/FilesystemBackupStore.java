@@ -169,7 +169,7 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
     if (!(indexFile instanceof final FilesystemBackupIndexFile filesystemIndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"
@@ -178,7 +178,7 @@ public final class FilesystemBackupStore implements BackupStore {
                   indexFile.getClass().getSimpleName(),
                   indexFile));
     }
-    return CompletableFuture.runAsync(() -> indexManager.upload(filesystemIndexFile), executor);
+    return CompletableFuture.supplyAsync(() -> indexManager.upload(filesystemIndexFile), executor);
   }
 
   @Override
