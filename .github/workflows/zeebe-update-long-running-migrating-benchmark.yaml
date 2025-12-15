@@ -24,8 +24,6 @@ jobs:
     secrets: inherit
     with:
       name: release-rolling
-      cluster: zeebe-cluster
-      cluster-region: europe-west1-b
       ref: refs/tags/${{ needs.fetch-release.outputs.release-tag }}
       load-test-load: >
         --set starter.rate=5
