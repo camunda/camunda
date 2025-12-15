@@ -133,8 +133,7 @@ public final class AuthorizationCheckBehavior {
    */
   public Either<Rejection, Void> isAnyAuthorized(final AuthorizationRequest... requests) {
     if (requests == null || requests.length == 0) {
-      return Either.left(
-          new Rejection(RejectionType.FORBIDDEN, "No authorization requests provided"));
+      throw new IllegalArgumentException("No authorization requests provided");
     }
 
     final List<Rejection> rejections = new ArrayList<>();
@@ -168,14 +167,13 @@ public final class AuthorizationCheckBehavior {
    * success if at least one request is authorized (OR/disjunctive logic).
    *
    * @param requests the authorization requests to check (at least one must pass)
-   * @return Either containing a rejection if ALL requests failed, or Void if any succeeded or if
-   *     triggered by an internal command
+   * @return Either containing a rejection (left) if ALL requests failed, or Void (right) if any
+   *     succeeded or if triggered by an internal command
    */
   public Either<Rejection, Void> isAnyAuthorizedOrInternalCommand(
       final AuthorizationRequest... requests) {
     if (requests == null || requests.length == 0) {
-      return Either.left(
-          new Rejection(RejectionType.FORBIDDEN, "No authorization requests provided"));
+      throw new IllegalArgumentException("No authorization requests provided");
     }
 
     // bypass authorization if any request is from an internal command

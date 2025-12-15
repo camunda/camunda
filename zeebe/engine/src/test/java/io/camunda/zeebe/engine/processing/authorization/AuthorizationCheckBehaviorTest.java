@@ -12,6 +12,7 @@ import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -924,19 +925,11 @@ final class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  void isAnyAuthorizedShouldRejectWhenNoRequestsProvided() {
-    // when
-    final var result = authorizationCheckBehavior.isAnyAuthorized();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            rejection -> {
-              assertThat(rejection.type()).isEqualTo(RejectionType.FORBIDDEN);
-              assertThat(rejection.reason()).isEqualTo("No authorization requests provided");
-            });
+  void isAnyAuthorizedShouldThrowExceptionWhenNoRequestsProvided() {
+    // when - then
+    assertThatThrownBy(() -> authorizationCheckBehavior.isAnyAuthorized())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("No authorization requests provided");
   }
 
   @Test
@@ -1081,6 +1074,14 @@ final class AuthorizationCheckBehaviorTest {
 
     // then
     assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void isAnyAuthorizedOrInternalCommandShouldThrowExceptionWhenNoRequestsProvided() {
+    // when - then
+    assertThatThrownBy(() -> authorizationCheckBehavior.isAnyAuthorizedOrInternalCommand())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("No authorization requests provided");
   }
 
   @Test
