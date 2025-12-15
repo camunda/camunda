@@ -127,9 +127,7 @@
     },
     {
       "name": "camunda.client.worker.defaults.tenant-ids",
-      "defaultValue": [
-        "<default>"
-      ]
+      "defaultValue": ["<default>"]
     },
     {
       "name": "camunda.client.worker.defaults.timeout",
