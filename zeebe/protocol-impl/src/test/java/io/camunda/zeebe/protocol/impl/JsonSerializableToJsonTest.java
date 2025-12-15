@@ -812,7 +812,8 @@ final class JsonSerializableToJsonTest {
                   .setElementInstanceKey(activityInstanceKey)
                   .setChangedAttributes(changedAttributes)
                   .setResult(result)
-                  .setTags(Set.of("tag1", "tag2"));
+                  .setTags(Set.of("tag1", "tag2"))
+                  .setIsJobToUserTaskMigration(true);
 
               return record;
             },
@@ -851,6 +852,7 @@ final class JsonSerializableToJsonTest {
                       "tenantId": "<default>",
                       "changedAttributes": ["bar", "foo"],
                       "tags": ["tag1", "tag2"],
+                      "jobToUserTaskMigration": true,
                       "result": {
                         "type": "USER_TASK",
                         "denied": true,
@@ -997,7 +999,8 @@ final class JsonSerializableToJsonTest {
                       .setElementInstanceKey(activityInstanceKey)
                       .setChangedAttributes(changedAttributes)
                       .setResult(result)
-                      .setTags(Set.of("tag1", "tag2"));
+                      .setTags(Set.of("tag1", "tag2"))
+                      .setIsJobToUserTaskMigration(true);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -1029,6 +1032,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": 14,
                   "tenantId": "<default>",
                   "tags": ["tag1", "tag2"],
+                  "jobToUserTaskMigration": true,
                   "changedAttributes": ["bar", "foo"],
                   "result": {
                     "type": "AD_HOC_SUB_PROCESS",
@@ -1102,6 +1106,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": -1,
                   "tenantId": "<default>",
                   "tags": [],
+                  "jobToUserTaskMigration": false,
                   "changedAttributes": [],
                   "result": {
                     "type": "USER_TASK",
@@ -1160,6 +1165,7 @@ final class JsonSerializableToJsonTest {
                   "customHeaders": {},
                   "tenantId": "<default>",
                   "tags": [],
+                  "jobToUserTaskMigration": false,
                   "changedAttributes": [],
                   "result": {
                     "type": "USER_TASK",
