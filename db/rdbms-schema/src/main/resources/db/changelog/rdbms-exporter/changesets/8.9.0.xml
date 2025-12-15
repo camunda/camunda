@@ -851,4 +851,26 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_history_deletion_table" author="camunda">
+    <createTable tableName="${prefix}HISTORY_DELETION">
+      <column name="RESOURCE_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="RESOURCE_TYPE" type="VARCHAR(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="PARTITION_ID" type="NUMBER">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <createIndex tableName="${prefix}HISTORY_DELETION" indexName="${prefix}IDX_HISTORY_DELETION_PARTITION_ID">
+      <column name="PARTITION_ID"/>
+    </createIndex>
+
+  </changeSet>
+
 </databaseChangeLog>
