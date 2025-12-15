@@ -25,7 +25,6 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENA
 import java.time.Duration;
 import java.util.List;
 
-@MapProperties(propertyPath = "camunda.client.worker.override", placeHolder = "job-type")
 public class CamundaClientJobWorkerProperties {
 
   /** The type of jobs to work on. */
