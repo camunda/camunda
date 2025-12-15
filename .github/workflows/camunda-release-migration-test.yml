@@ -296,6 +296,7 @@ jobs:
           export POSTGRESQL_ADMIN_PASSWORD
           POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
           export POSTGRESQL_KEYCLOAK_PASSWORD
+          MIGRATION_SECRET=$(openssl rand -hex 32)
           kubectl create secret generic camunda-credentials \
           --namespace $release \
           --from-literal=identity-optimize-client-token="$OPTIMIZE_SECRET" \
@@ -303,7 +304,8 @@ jobs:
           --from-literal=identity-orchestration-client-token="$ORCHESTRATION_SECRET" \
           --from-literal=identity-keycloak-admin-password="$KEYCLOAK_ADMIN_SECRET" \
           --from-literal=identity-keycloak-postgresql-admin-password="$POSTGRESQL_ADMIN_PASSWORD" \
-          --from-literal=identity-keycloak-postgresql-user-password="$POSTGRESQL_KEYCLOAK_PASSWORD"
+          --from-literal=identity-keycloak-postgresql-user-password="$POSTGRESQL_KEYCLOAK_PASSWORD" \
+          --from-literal=identity-migration-client-secret="$MIGRATION_SECRET"
 
       - name: Upgrade platform
         id: upgrade-platform
@@ -329,7 +331,7 @@ jobs:
           --set orchestration.migration.data.enabled=true \
           --set orchestration.migration.identity.enabled=true \
           --set orchestration.migration.identity.secret.existingSecret=camunda-credentials \
-          --set orchestration.migration.identity.secret.existingSecretKey=identity-orchestration-client-token \
+          --set orchestration.migration.identity.secret.existingSecretKey=identity-migration-client-secret \
           --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
