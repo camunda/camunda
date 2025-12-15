@@ -99,7 +99,7 @@ public class StartEventSubscriptionManager {
   private void closeConditionalExistingStartEventSubscriptions(
       final ProcessMetadata processRecord) {
     final DeployedProcess lastConditionalProcess =
-        findLastStartProcess(processRecord, ExecutableCatchEventElement::isConditional);
+        findPreviousVersionOfProcess(processRecord, ExecutableCatchEventElement::isConditional);
     if (lastConditionalProcess == null) {
       return;
     }
@@ -119,7 +119,7 @@ public class StartEventSubscriptionManager {
 
   private void closeMessageExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastMsgProcess =
-        findLastStartProcess(processRecord, ExecutableCatchEventElement::isMessage);
+        findPreviousVersionOfProcess(processRecord, ExecutableCatchEventElement::isMessage);
     if (lastMsgProcess == null) {
       return;
     }
@@ -139,7 +139,7 @@ public class StartEventSubscriptionManager {
 
   private void closeSignalExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastSignalProcess =
-        findLastStartProcess(processRecord, ExecutableCatchEventElement::isSignal);
+        findPreviousVersionOfProcess(processRecord, ExecutableCatchEventElement::isSignal);
     if (lastSignalProcess == null) {
       return;
     }
@@ -155,17 +155,17 @@ public class StartEventSubscriptionManager {
                 subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord()));
   }
 
-  private DeployedProcess findLastStartProcess(
+  private DeployedProcess findPreviousVersionOfProcess(
       final ProcessMetadata processRecord,
       final Predicate<ExecutableCatchEventElement> hasStartEventMatching) {
     for (int version = processRecord.getVersion() - 1; version > 0; --version) {
-      final DeployedProcess lastStartProcess =
+      final DeployedProcess previousVersionOfProcess =
           processState.getProcessByProcessIdAndVersion(
               processRecord.getBpmnProcessIdBuffer(), version, processRecord.getTenantId());
-      if (lastStartProcess != null
-          && lastStartProcess.getProcess().getStartEvents().stream()
+      if (previousVersionOfProcess != null
+          && previousVersionOfProcess.getProcess().getStartEvents().stream()
               .anyMatch(hasStartEventMatching)) {
-        return lastStartProcess;
+        return previousVersionOfProcess;
       }
     }
 
