@@ -227,6 +227,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
                 < 0)) { // some events might not have a source pointer
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
+      LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
 
       final var processor =
           recordProcessors.stream()
