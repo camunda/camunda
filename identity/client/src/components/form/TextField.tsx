@@ -46,6 +46,7 @@ export type TextFieldProps = {
   readOnly?: boolean;
   onChange?: (newValue: string) => void;
   validate?: (newValue: string) => boolean;
+  decorator?: ReactNode;
 } & (TextInputProps | TextAreaProps | PasswordInputProps);
 
 const TextField: FC<TextFieldProps> = ({
@@ -64,6 +65,7 @@ const TextField: FC<TextFieldProps> = ({
   maxCount = 255,
   enableCounter = false,
   counterMode = "character",
+  decorator,
 }) => {
   const { t } = useTranslate();
   const fieldId = useId();
@@ -75,6 +77,7 @@ const TextField: FC<TextFieldProps> = ({
     helperText: helperText,
     value: value,
     placeholder: placeholder,
+    decorator: decorator,
     onChange: (
       e: ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
     ) => {
