@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class StartEventSubscriptionManager {
@@ -125,18 +126,27 @@ public class StartEventSubscriptionManager {
   private DeployedProcess findPreviousVersionOfProcess(
       final ProcessMetadata processRecord,
       final Predicate<ExecutableCatchEventElement> hasStartEventMatching) {
-    for (int version = processRecord.getVersion() - 1; version > 0; --version) {
-      final DeployedProcess previousVersionOfProcess =
-          processState.getProcessByProcessIdAndVersion(
-              processRecord.getBpmnProcessIdBuffer(), version, processRecord.getTenantId());
-      if (previousVersionOfProcess != null
-          && previousVersionOfProcess.getProcess().getStartEvents().stream()
-              .anyMatch(hasStartEventMatching)) {
-        return previousVersionOfProcess;
-      }
+    final Optional<Integer> processVersionBefore =
+        processState.findProcessVersionBefore(
+            processRecord.getBpmnProcessId(),
+            processRecord.getVersion(),
+            processRecord.getTenantId());
+    if (processVersionBefore.isEmpty()) {
+      return null;
     }
 
-    return null;
+    final var previousVersionOfProcess =
+        processState.getProcessByProcessIdAndVersion(
+            processRecord.getBpmnProcessIdBuffer(),
+            processVersionBefore.get(),
+            processRecord.getTenantId());
+    final var hasMatchingStartEvent =
+        previousVersionOfProcess.getProcess().getStartEvents().stream()
+            .anyMatch(hasStartEventMatching);
+    if (!hasMatchingStartEvent) {
+      return null;
+    }
+    return previousVersionOfProcess;
   }
 
   private void openStartEventSubscriptions(final ProcessMetadata processRecord) {
