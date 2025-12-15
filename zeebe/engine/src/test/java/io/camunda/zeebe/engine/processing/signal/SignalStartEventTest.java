@@ -67,6 +67,7 @@ public class SignalStartEventTest {
         .hasBpmnProcessId(processInstance.getValue().getBpmnProcessId())
         .hasVersion(processInstance.getValue().getVersion())
         .hasProcessInstanceKey(processInstance.getKey())
+        .hasRootProcessInstanceKey(processInstance.getKey())
         .hasBpmnEventType(BpmnEventType.SIGNAL)
         .hasElementId("start")
         .hasFlowScopeKey(processInstance.getKey());
