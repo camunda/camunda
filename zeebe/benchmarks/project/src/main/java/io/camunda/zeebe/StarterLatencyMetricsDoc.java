@@ -8,6 +8,7 @@
 package io.camunda.zeebe;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import java.time.Duration;
 
@@ -17,6 +18,8 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
    * instance creation to the time the instance can be queried.
    */
   DATA_AVAILABILITY_LATENCY {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.PARTITION};
+
     private static final Duration[] BUCKETS = {
       Duration.ofMillis(500),
       Duration.ofSeconds(1),
@@ -29,6 +32,11 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
       Duration.ofSeconds(60),
       Duration.ofSeconds(90),
     };
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
 
     @Override
     public String getDescription() {
@@ -90,4 +98,15 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
       return BUCKETS;
     }
   };
+
+  public enum StarterMetricKeyNames implements KeyName {
+
+    /** The ID of the partition associated to the metric */
+    PARTITION {
+      @Override
+      public String asString() {
+        return "partition";
+      }
+    },
+  }
 }
