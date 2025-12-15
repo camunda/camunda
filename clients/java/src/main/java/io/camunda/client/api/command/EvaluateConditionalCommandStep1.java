@@ -27,7 +27,9 @@ public interface EvaluateConditionalCommandStep1
           FinalCommandStep<EvaluateConditionalResponse> {
 
     /**
-     * Set the key of the process definition to evaluate conditional start events for.
+     * Set the key of the process definition to evaluate conditional start events for. If a key is
+     * not set, the root-level conditional start events across all process definitions will be
+     * evaluated.
      *
      * <p>This value will be used to evaluate only the conditional start events of the specified
      * process definition.

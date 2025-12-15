@@ -233,6 +233,49 @@ public final class EvaluateConditionalTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldEvaluateConditionalForLatestVersionOnly(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String processId = "process-" + testInfo.getTestMethod().get().getName();
+    final long processDefinitionKeyV1 = deployProcess(processId, "x > 50", useRest);
+    final long processDefinitionKeyV2 = deployProcess(processId, "x > 50", useRest);
+
+    // when
+    final EvaluateConditionalResponse response =
+        getCommand(client, useRest).variables(Map.of("x", 100)).send().join();
+
+    // then
+    assertThat(response.getProcessInstances()).hasSize(1);
+    final var processInstance = response.getProcessInstances().getFirst();
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(processDefinitionKeyV2);
+    assertThat(processInstance.getProcessInstanceKey()).isPositive();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessDefinitionKey(processDefinitionKeyV2)
+                .limit(1))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getProcessDefinitionKey,
+            ProcessInstanceRecordValue::getVersion,
+            ProcessInstanceRecordValue::getProcessInstanceKey)
+        .containsExactly(tuple(processDefinitionKeyV2, 2, processInstance.getProcessInstanceKey()));
+
+    assertThat(
+            RecordingExporter.records()
+                .betweenProcessInstance(processInstance.getProcessInstanceKey())
+                .processInstanceRecords()
+                .withProcessDefinitionKey(processDefinitionKeyV1)
+                .withVersion(1)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isFalse();
+  }
+
   private EvaluateConditionalCommandStep1 getCommand(
       final CamundaClient client, final boolean useRest) {
     final EvaluateConditionalCommandStep1 command = client.newEvaluateConditionalCommand();

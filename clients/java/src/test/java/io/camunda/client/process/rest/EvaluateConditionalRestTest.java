@@ -18,6 +18,7 @@ package io.camunda.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.api.response.EvaluateConditionalResponse;
 import io.camunda.client.protocol.rest.ConditionalEvaluationInstruction;
 import io.camunda.client.protocol.rest.EvaluateConditionalResult;
 import io.camunda.client.protocol.rest.ProcessInstanceReference;
@@ -158,6 +159,19 @@ public class EvaluateConditionalRestTest extends ClientRestTest {
     final ConditionalEvaluationInstruction request =
         gatewayService.getLastRequest(ConditionalEvaluationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo("custom-tenant");
+  }
+
+  @Test
+  public void shouldEvaluateConditionalWithEmptyResponse() {
+    // given
+    gatewayService.onEvaluateConditionalRequest(new EvaluateConditionalResult());
+
+    // when
+    final EvaluateConditionalResponse response =
+        client.newEvaluateConditionalCommand().variables("{\"x\":100}").send().join();
+
+    // then
+    assertThat(response.getProcessInstances()).isEmpty();
   }
 
   public static class Variables {

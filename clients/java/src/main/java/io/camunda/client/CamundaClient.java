@@ -3088,7 +3088,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the command
+   * @return a builder for the request to evaluate root-level conditional start events
    */
   EvaluateConditionalCommandStep1 newEvaluateConditionalCommand();
 }

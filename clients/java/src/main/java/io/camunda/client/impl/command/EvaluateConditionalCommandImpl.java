@@ -32,6 +32,7 @@ import io.camunda.client.protocol.rest.ConditionalEvaluationInstruction;
 import io.camunda.client.protocol.rest.EvaluateConditionalResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +45,7 @@ public final class EvaluateConditionalCommandImpl
 
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
-  private final GatewayOuterClass.EvaluateConditionalRequest.Builder grpcRequestObjectBuilder;
+  private final EvaluateConditionalRequest.Builder grpcRequestObjectBuilder;
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -60,7 +61,7 @@ public final class EvaluateConditionalCommandImpl
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
-    grpcRequestObjectBuilder = GatewayOuterClass.EvaluateConditionalRequest.newBuilder();
+    grpcRequestObjectBuilder = EvaluateConditionalRequest.newBuilder();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     httpRequestObject = new ConditionalEvaluationInstruction();
@@ -69,6 +70,7 @@ public final class EvaluateConditionalCommandImpl
     requestTimeout(config.getDefaultRequestTimeout());
   }
 
+  @Override
   protected EvaluateConditionalCommandStep2 setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
     // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
@@ -140,7 +142,7 @@ public final class EvaluateConditionalCommandImpl
   }
 
   private CamundaFuture<EvaluateConditionalResponse> sendGrpcRequest() {
-    final GatewayOuterClass.EvaluateConditionalRequest request = grpcRequestObjectBuilder.build();
+    final EvaluateConditionalRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<
             EvaluateConditionalResponse, GatewayOuterClass.EvaluateConditionalResponse>
@@ -155,7 +157,7 @@ public final class EvaluateConditionalCommandImpl
   }
 
   private void sendGrpcRequest(
-      final GatewayOuterClass.EvaluateConditionalRequest request,
+      final EvaluateConditionalRequest request,
       final StreamObserver<GatewayOuterClass.EvaluateConditionalResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
