@@ -30,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -88,9 +87,6 @@ class IdentityAuthenticationTest {
   public void authenticationShouldReturnTrueWhenAccessTokenExpiredButRefreshTokenValid() {
     // given
     identityAuthentication.setAuthenticated(true);
-
-    ReflectionTestUtils.setField(
-        identityAuthentication, "refreshTokenExpiresAt", new Date(futureTime));
 
     final List<String> permissionsList =
         Arrays.asList(
