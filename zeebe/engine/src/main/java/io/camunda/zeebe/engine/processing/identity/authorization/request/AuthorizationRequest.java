@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +26,12 @@ public final class AuthorizationRequest {
       "Insufficient permissions to perform operation '%s' on resource '%s'";
   private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS =
       FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '[*, %s]'";
+  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_PROPERTIES =
+      FORBIDDEN_ERROR_MESSAGE + ", resource did not match property constraints '[%s]'";
+  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS_AND_PROPERTIES =
+      FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS
+          + " or resource must match property constraints '[%s]'";
+
   private static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
   private static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
@@ -35,6 +42,7 @@ public final class AuthorizationRequest {
   private final PermissionType permissionType;
   private final String tenantId;
   private final Set<String> resourceIds;
+  private final Map<String, Object> resourceProperties;
   private final boolean isNewResource;
   private final boolean isTenantOwnedResource;
   private final boolean isTriggeredByInternalCommand;
@@ -45,6 +53,7 @@ public final class AuthorizationRequest {
     permissionType = builder.permissionType;
     tenantId = builder.tenantId;
     resourceIds = Collections.unmodifiableSet(builder.resourceIds);
+    resourceProperties = Collections.unmodifiableMap(builder.resourceProperties);
     isNewResource = builder.isNewResource;
     isTenantOwnedResource = deriveTenantOwnedResource(builder);
     isTriggeredByInternalCommand = deriveTriggeredByInternalCommand(builder);
@@ -84,6 +93,14 @@ public final class AuthorizationRequest {
     return resourceIds;
   }
 
+  public Map<String, Object> resourceProperties() {
+    return resourceProperties;
+  }
+
+  public boolean hasResourceProperties() {
+    return !resourceProperties.isEmpty();
+  }
+
   public boolean isNewResource() {
     return isNewResource;
   }
@@ -97,14 +114,32 @@ public final class AuthorizationRequest {
   }
 
   public String getForbiddenErrorMessage() {
-    if (resourceIds.isEmpty()) {
+    final boolean hasIds = !resourceIds.isEmpty();
+    final boolean hasProps = hasResourceProperties();
+
+    if (!hasIds && !hasProps) {
       return FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType);
     }
 
-    return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS.formatted(
+    if (hasIds && hasProps) {
+      return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS_AND_PROPERTIES.formatted(
+          permissionType,
+          resourceType,
+          resourceIds.stream().sorted().collect(Collectors.joining(", ")),
+          resourceProperties.keySet().stream().sorted().collect(Collectors.joining(", ")));
+    }
+
+    if (hasIds) {
+      return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS.formatted(
+          permissionType,
+          resourceType,
+          resourceIds.stream().sorted().collect(Collectors.joining(", ")));
+    }
+
+    return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_PROPERTIES.formatted(
         permissionType,
         resourceType,
-        resourceIds.stream().sorted().collect(Collectors.joining(", ")));
+        resourceProperties.keySet().stream().sorted().collect(Collectors.joining(", ")));
   }
 
   public String getTenantErrorMessage() {
@@ -124,6 +159,7 @@ public final class AuthorizationRequest {
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
     private final Set<String> resourceIds = new HashSet<>();
+    private final Map<String, Object> resourceProperties = new HashMap<>();
     private String tenantId;
     private boolean isNewResource;
 
@@ -170,6 +206,13 @@ public final class AuthorizationRequest {
 
     public Builder addAllResourceIds(final Collection<String> resourceIds) {
       resourceIds.forEach(this::addResourceId);
+      return this;
+    }
+
+    public Builder addResourceProperty(final String propertyName, final Object propertyValue) {
+      if (StringUtils.isNotEmpty(propertyName) && propertyValue != null) {
+        resourceProperties.put(propertyName, propertyValue);
+      }
       return this;
     }
 
