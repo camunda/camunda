@@ -27,7 +27,6 @@ import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAMI
 import java.time.Duration;
 import java.util.List;
 
-@MapProperties(propertyPath = "camunda.client.worker.override", placeHolder = "job-type")
 public class CamundaClientJobWorkerProperties {
   public static final boolean DEFAULT_AUTO_COMPLETE = true;
   public static final boolean DEFAULT_ENABLED = true;
