@@ -7,10 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.IncidentStatisticsEntity;
+import io.camunda.search.query.IncidentStatisticsQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
@@ -20,9 +25,11 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -33,7 +40,15 @@ import org.springframework.test.json.JsonCompareMode;
 public class IncidentControllerTest extends RestControllerTest {
 
   static final String INCIDENT_BASE_URL = "/v2/incidents";
-
+  static final String INCIDENT_SEARCH_URL = INCIDENT_BASE_URL + "/search";
+  static final String INCIDENT_STATISTICS_URL = INCIDENT_BASE_URL + "/statistics";
+  private static final SearchQueryResult<IncidentStatisticsEntity> INCIDENT_STATISTICS_RESULT =
+      new SearchQueryResult.Builder<IncidentStatisticsEntity>()
+          .total(1L)
+          .items(List.of(new IncidentStatisticsEntity("hash", "error", 10L)))
+          .startCursor(null)
+          .endCursor(null)
+          .build();
   @MockitoBean IncidentServices incidentServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
@@ -110,5 +125,45 @@ public class IncidentControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(incidentServices).resolveIncident(1L, null);
+  }
+
+  @Test
+  void shouldReturnIncidentStatistics() {
+    when(incidentServices.incidentStatistics(any(IncidentStatisticsQuery.class)))
+        .thenReturn(INCIDENT_STATISTICS_RESULT);
+
+    webClient
+        .post()
+        .uri(INCIDENT_STATISTICS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+                {
+                  "items": [
+                    {
+                      "errorHashCode": "hash",
+                      "errorMessage": "error",
+                      "activeInstancesWithErrorCount": 10
+                    }
+                  ],
+                  "page": {
+                    "totalItems": 1,
+                    "hasMoreTotalItems": false
+                  }
+                }
+                """,
+            JsonCompareMode.STRICT);
+
+    final var result = new IncidentStatisticsQuery.Builder().build();
+    final ArgumentCaptor<IncidentStatisticsQuery> captor =
+        ArgumentCaptor.forClass(IncidentStatisticsQuery.class);
+    verify(incidentServices).incidentStatistics(captor.capture());
+    assertThat(captor.getValue()).isEqualTo(result);
   }
 }
