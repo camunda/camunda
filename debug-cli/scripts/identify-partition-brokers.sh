@@ -78,7 +78,6 @@ PARTITION_REPLICAS=()
 for i in $(get_broker_ids); do
         pod_name=$(get_pod_name $i)
 
-        echo "Port forwarding for pod $pod_name at port $ACTUATOR_PORT"
         # Port forward to the broker
         kubectl port-forward -n $NAMESPACE $pod_name $ACTUATOR_PORT:$ACTUATOR_PORT >/dev/null 2>&1 &
         PF_PID=$!
@@ -137,6 +136,7 @@ REPLICAS="${PARTITION_REPLICAS[*]}"
 echo "LAST_LEADER_BROKER=$LEADER_BROKER"
 echo "PARTITION_BROKER_IDS=\"${PARTITION_REPLICAS[*]}\""
 
+echo
 echo "================================================="
 echo
 echo "You can export these variables with the following, so it can be used by other scripts"
