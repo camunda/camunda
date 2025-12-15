@@ -324,7 +324,7 @@ final class CompactBackupIndexTest {
         assertThat(index.all()).hasSize(1);
 
         // when
-        index.remove(backup);
+        index.remove(backup.checkpointId());
 
         // then
         assertThat(index.all()).isEmpty();
@@ -346,7 +346,7 @@ final class CompactBackupIndexTest {
         index.add(backup3);
 
         // when
-        index.remove(backup3);
+        index.remove(backup3.checkpointId());
 
         // then
         assertThat(index.all()).containsExactly(backup1, backup2);
@@ -368,7 +368,7 @@ final class CompactBackupIndexTest {
         index.add(backup3);
 
         // when
-        index.remove(backup1);
+        index.remove(backup1.checkpointId());
 
         // then
         assertThat(index.all()).containsExactly(backup2, backup3);
@@ -390,7 +390,7 @@ final class CompactBackupIndexTest {
         index.add(backup3);
 
         // when
-        index.remove(backup2);
+        index.remove(backup2.checkpointId());
 
         // then
         assertThat(index.all()).containsExactly(backup1, backup3);
@@ -407,7 +407,7 @@ final class CompactBackupIndexTest {
 
       try (final var index = CompactBackupIndex.open(indexFile)) {
         // when - try to remove from empty index
-        index.remove(backup);
+        index.remove(backup.checkpointId());
 
         // then - should be no-op
         assertThat(index.all()).isEmpty();
@@ -430,7 +430,7 @@ final class CompactBackupIndexTest {
         index.add(backup3);
 
         // when - try to remove non-existent entry
-        index.remove(nonExistent);
+        index.remove(nonExistent.checkpointId());
 
         // then - should be no-op
         assertThat(index.all()).containsExactly(backup1, backup2, backup3);
@@ -455,8 +455,8 @@ final class CompactBackupIndexTest {
         index.add(backup5);
 
         // when - remove multiple entries
-        index.remove(backup2);
-        index.remove(backup4);
+        index.remove(backup2.checkpointId());
+        index.remove(backup4.checkpointId());
 
         // then
         assertThat(index.all()).containsExactly(backup1, backup3, backup5);
@@ -479,9 +479,9 @@ final class CompactBackupIndexTest {
         index.add(backup3);
 
         // when - remove all entries
-        index.remove(backup1);
-        index.remove(backup2);
-        index.remove(backup3);
+        index.remove(backup1.checkpointId());
+        index.remove(backup2.checkpointId());
+        index.remove(backup3.checkpointId());
 
         // then
         assertThat(index.all()).isEmpty();
@@ -502,7 +502,7 @@ final class CompactBackupIndexTest {
 
         // when - try to remove with same checkpoint id but different data
         final var backup2Different = createBackup(2, 999L, 999L);
-        index.remove(backup2Different);
+        index.remove(backup2Different.checkpointId());
 
         // then - should still remove based on checkpoint id
         assertThat(index.all()).containsExactly(backup1);
@@ -525,7 +525,7 @@ final class CompactBackupIndexTest {
         index.add(backup4);
 
         // when - remove middle entry and add it back
-        index.remove(backup3);
+        index.remove(backup3.checkpointId());
         assertThat(index.all()).containsExactly(backup1, backup4);
 
         // Add backup2 in the gap
@@ -584,7 +584,7 @@ final class CompactBackupIndexTest {
 
       // Reopen and remove backup2
       try (final var index = CompactBackupIndex.open(indexFile)) {
-        index.remove(backup2);
+        index.remove(backup2.checkpointId());
       }
 
       // Reopen and verify backup2 is gone
@@ -638,7 +638,8 @@ final class CompactBackupIndexTest {
 
         // when - remove every other backup
         for (var i = 2; i <= numBackups; i += 2) {
-          index.remove(createBackup(i, 0, 0)); // Data doesn't matter
+          // Data doesn't matter
+          index.remove(createBackup(i, 0, 0).checkpointId());
         }
 
         // then - verify only odd-numbered backups remain

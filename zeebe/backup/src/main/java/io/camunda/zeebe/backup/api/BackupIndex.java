@@ -14,7 +14,7 @@ public interface BackupIndex {
 
   void add(IndexedBackup backup);
 
-  void remove(IndexedBackup backup);
+  void remove(long checkpointId);
 
   record IndexedBackup(long checkpointId, long firstLogPosition, long lastLogPosition) {}
 }

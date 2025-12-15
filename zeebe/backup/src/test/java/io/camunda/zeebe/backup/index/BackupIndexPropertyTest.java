@@ -167,7 +167,7 @@ final class BackupIndexPropertyTest {
 
     void removeBackup(final IndexedBackup backup) {
       inMemorySet.remove(backup);
-      compactBackupIndex.remove(backup);
+      compactBackupIndex.remove(backup.checkpointId());
     }
 
     Stream<IndexedBackup> getInMemorySet() {

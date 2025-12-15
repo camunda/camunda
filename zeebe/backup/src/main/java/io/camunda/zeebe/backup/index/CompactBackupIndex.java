@@ -112,8 +112,8 @@ public final class CompactBackupIndex implements BackupIndex, AutoCloseable {
   /**
    * Returns a stream of all backup entries in the index. The stream supports parallel processing
    * and reflects the state of the index at the time of calling this method. Concurrent
-   * modifications to the index done through {@link #add(IndexedBackup)} and {@link
-   * #remove(IndexedBackup)} are not reflected in the returned stream.
+   * modifications to the index done through {@link #add(IndexedBackup)} and {@link #remove(long)}
+   * are not reflected in the returned stream.
    */
   @Override
   public Stream<IndexedBackup> all() {
@@ -140,8 +140,8 @@ public final class CompactBackupIndex implements BackupIndex, AutoCloseable {
   }
 
   @Override
-  public void remove(final IndexedBackup entryToRemove) {
-    final var existingEntry = byCheckpointId(entryToRemove.checkpointId());
+  public void remove(final long checkpointId) {
+    final var existingEntry = byCheckpointId(checkpointId);
     if (existingEntry == null) {
       return;
     }
@@ -503,7 +503,7 @@ public final class CompactBackupIndex implements BackupIndex, AutoCloseable {
    * A spliterator over backup index entries. This spliterator supports splitting for parallel
    * processing. The underlying buffer is frozen on creating a new instance which guarantees that
    * modification done through {@link CompactBackupIndex#add(IndexedBackup)} and {@link
-   * CompactBackupIndex#remove(IndexedBackup)} after this spliterator is opened are not reflected.
+   * CompactBackupIndex#remove(long)} after this spliterator is opened are not reflected.
    */
   @SuppressWarnings("ClassCanBeRecord")
   private static final class EntrySpliterator implements Spliterator<IndexedBackup> {
