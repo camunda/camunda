@@ -42,6 +42,7 @@ PARTITION_ID=1 ../identify-partition-brokers.sh
 ```
 
 **Example output:**
+
 ```bash
 LAST_LEADER_BROKER=0
 PARTITION_BROKER_IDS="0 1 2"
@@ -54,7 +55,6 @@ export PARTITION_BROKER_IDS="0 1 2"
 ```
 
 (Your output will vary based on which brokers actually host the partition)
-
 
 ### 2. Shut Down the Cluster
 
@@ -140,8 +140,8 @@ The Job will:
 - Backups are NOT automatically deleted - you must clean them up manually after verifying recovery (see Step 11)
 
 ### 6. Apply the Recovery Job
-**NOTE**: if you recreate the job more than once, you need to first delete the previous versions (see [here](#8-clean-up-recovery-job))
 
+**NOTE**: if you recreate the job more than once, you need to first delete the previous versions (see [here](#8-clean-up-recovery-job))
 
 ```bash
 kubectl apply -f generated/recovery-job-partition-1-*.yaml
@@ -205,6 +205,7 @@ Monitor partition health using Grafana or check broker logs:
 - Verify one broker is LEADER and others are FOLLOWER
 
 **Option B: Check Actuator Endpoint**
+
 ```bash
 # Check partition health on a specific broker
 kubectl port-forward -n $NAMESPACE ${POD_PREFIX}-0 9600:9600 &
@@ -214,6 +215,7 @@ curl -s http://localhost:9600/actuator/partitions | jq ".\"$PARTITION_ID\""
 ```
 
 **Option C: Check Broker Logs**
+
 ```bash
 # Check for errors in broker logs
 kubectl logs ${POD_PREFIX}-0 -n $NAMESPACE --tail=100 | grep -i "partition.*$PARTITION_ID"
@@ -297,6 +299,7 @@ env:
 **Cause:** Previous recovery attempt left backups on PVCs.
 
 **Solution:** Review the backups and manually remove if appropriate:
+
 ```bash
 # Check what's in the backup (replace broker_id with actual broker, e.g., 0, 1, 2)
 kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
@@ -336,7 +339,7 @@ kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
 - **`generate-recovery-job.sh`** - Generates recovery Job YAML with inline recovery script
 - **`recovery-script.sh`** - Recovery operations script (embedded in generated Job YAML)
 
-
 ## Development
+
 The file `test-yaml-equivalence.sh` can be used to test the generation of yaml files comparing the two methods (`bash` and `yq`). This is to ensure that the bash method produces the same result as `yq` to be used when `yq` is not installed in the system.
 
