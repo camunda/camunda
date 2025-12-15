@@ -31,6 +31,15 @@ export async function navigateToApp(
   }
 }
 
+export async function hideModificationHelperModal(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'sharedState',
+      JSON.stringify({hideModificationHelperModal: true}),
+    );
+  });
+}
+
 export async function validateURL(page: Page, URL: RegExp): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-floating-promises, playwright/missing-playwright-await
   expect(page).toHaveURL(URL);
