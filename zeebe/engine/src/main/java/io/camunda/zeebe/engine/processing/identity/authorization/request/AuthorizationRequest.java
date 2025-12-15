@@ -30,24 +30,29 @@ public final class AuthorizationRequest {
   private final boolean isTenantOwnedResource;
   private final boolean isTriggeredByInternalCommand;
 
-  // private constructor to enforce the use of the builder
-  private AuthorizationRequest(
-      final Map<String, Object> claims,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String tenantId,
-      final Set<String> resourceIds,
-      final boolean isNewResource,
-      final boolean isTenantOwnedResource,
-      final boolean isTriggeredByInternalCommand) {
-    this.claims = claims;
-    this.resourceType = resourceType;
-    this.permissionType = permissionType;
-    this.tenantId = tenantId;
-    this.resourceIds = resourceIds;
-    this.isNewResource = isNewResource;
-    this.isTenantOwnedResource = isTenantOwnedResource;
-    this.isTriggeredByInternalCommand = isTriggeredByInternalCommand;
+  private AuthorizationRequest(final Builder builder) {
+    claims = resolveClaims(builder);
+    resourceType = builder.resourceType;
+    permissionType = builder.permissionType;
+    tenantId = builder.tenantId;
+    resourceIds = Collections.unmodifiableSet(builder.resourceIds);
+    isNewResource = builder.isNewResource;
+    isTenantOwnedResource = deriveTenantOwnedResource(builder);
+    isTriggeredByInternalCommand = deriveTriggeredByInternalCommand(builder);
+  }
+
+  private static Map<String, Object> resolveClaims(final Builder builder) {
+    final var claims =
+        builder.command != null ? builder.command.getAuthorizations() : builder.authorizationClaims;
+    return Collections.unmodifiableMap(claims);
+  }
+
+  private static boolean deriveTenantOwnedResource(final Builder builder) {
+    return builder.tenantId != null && !builder.tenantId.isEmpty();
+  }
+
+  private static boolean deriveTriggeredByInternalCommand(final Builder builder) {
+    return builder.command != null && builder.command.isInternalCommand();
   }
 
   public Map<String, Object> claims() {
@@ -169,20 +174,7 @@ public final class AuthorizationRequest {
     }
 
     public AuthorizationRequest build() {
-      final Map<String, Object> claims =
-          command != null ? command.getAuthorizations() : authorizationClaims;
-      final boolean isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
-      final boolean triggeredByInternalCommand = command != null && command.isInternalCommand();
-
-      return new AuthorizationRequest(
-          Collections.unmodifiableMap(claims),
-          resourceType,
-          permissionType,
-          tenantId,
-          Collections.unmodifiableSet(resourceIds),
-          isNewResource,
-          isTenantOwnedResource,
-          triggeredByInternalCommand);
+      return new AuthorizationRequest(this);
     }
   }
 }
