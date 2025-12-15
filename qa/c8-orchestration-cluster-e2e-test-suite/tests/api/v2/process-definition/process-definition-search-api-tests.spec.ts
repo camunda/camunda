@@ -30,6 +30,8 @@ test.describe.parallel('Process Definition Search API', () => {
       (instances) => {
         state['processDefinitionKey'] = instances[0].processDefinitionKey;
         state['processDefinitionId'] = instances[0].processDefinitionId;
+        state['processDefinitionVersion'] =
+          instances[0].processDefinitionVersion;
       },
     );
   });
@@ -84,7 +86,7 @@ test.describe.parallel('Process Definition Search API', () => {
         headers: jsonHeaders(),
         data: {
           filter: {
-            version: 1,
+            version: state.processDefinitionVersion,
             processDefinitionKey: state.processDefinitionKey,
           },
         },
@@ -93,7 +95,7 @@ test.describe.parallel('Process Definition Search API', () => {
       const body = await res.json();
       expect(body.page.totalItems).toBe(body.items.length);
       expect(body.page.totalItems).toBe(1);
-      expect(body.items[0].version).toBe(1);
+      expect(body.items[0].version).toBe(state.processDefinitionVersion);
       expect(body.items[0].processDefinitionKey).toBe(
         state.processDefinitionKey,
       );
