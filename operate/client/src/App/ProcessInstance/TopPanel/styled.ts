@@ -18,6 +18,7 @@ const DiagramPanel = styled.div`
   display: flex;
   position: relative;
   flex-grow: 1;
+  z-index: 0;
 `;
 
 export {Container, DiagramPanel};
