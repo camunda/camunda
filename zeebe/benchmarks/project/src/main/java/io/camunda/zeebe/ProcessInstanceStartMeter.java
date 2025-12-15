@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe;
 
+import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -108,7 +109,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             partitionId,
             key ->
                 MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY)
-                    .tag("partition", Integer.toString(key))
+                    .tag(StarterMetricKeyNames.PARTITION.asString(), Integer.toString(key))
                     .register(registry))
         .record(durationNanos, TimeUnit.NANOSECONDS);
     startedInstances.remove(awaitingPI.processInstanceKey);
