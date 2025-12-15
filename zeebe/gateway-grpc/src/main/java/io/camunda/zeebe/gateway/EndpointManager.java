@@ -32,7 +32,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ConditionalEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
@@ -43,7 +42,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -425,8 +425,8 @@ public final class EndpointManager {
   }
 
   public void evaluateConditional(
-      final ConditionalEvaluationInstruction request,
-      final ServerStreamObserver<EvaluateConditionalResult> responseObserver) {
+      final EvaluateConditionalRequest request,
+      final ServerStreamObserver<EvaluateConditionalResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toEvaluateConditionalRequest,

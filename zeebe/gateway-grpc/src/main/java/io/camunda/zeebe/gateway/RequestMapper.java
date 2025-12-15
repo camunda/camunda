@@ -34,12 +34,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ConditionalEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
@@ -407,7 +407,7 @@ public final class RequestMapper extends RequestUtil {
   }
 
   public static BrokerEvaluateConditionalRequest toEvaluateConditionalRequest(
-      final ConditionalEvaluationInstruction grpcRequest) {
+      final EvaluateConditionalRequest grpcRequest) {
     final BrokerEvaluateConditionalRequest brokerRequest = new BrokerEvaluateConditionalRequest();
 
     if (grpcRequest.hasProcessDefinitionKey()) {

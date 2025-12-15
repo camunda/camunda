@@ -867,7 +867,7 @@ message BroadcastSignalResponse {
   string tenantId = 2;
 }
 
-message ConditionalEvaluationInstruction {
+message EvaluateConditionalRequest {
   // Used to evaluate root-level conditional start events for a tenant with the given ID.
   // This will only evaluate root-level conditional start events of process definitions which belong to the tenant.
   string tenantId = 1;
@@ -884,7 +884,7 @@ message ProcessInstanceReference {
   int64 processInstanceKey = 2;
 }
 
-message EvaluateConditionalResult {
+message EvaluateConditionalResponse {
   // List of process instances created. If no root-level conditional start events evaluated to true, the list will be empty.
   repeated ProcessInstanceReference processInstances = 1;
 }
@@ -1226,7 +1226,7 @@ service Gateway {
       - If a processDefinitionKey is not provided, this indicates that the client is not authorized
         to start process instances for at least one of the matched process definitions
    */
-  rpc EvaluateConditional (ConditionalEvaluationInstruction) returns (EvaluateConditionalResult) {
+  rpc EvaluateConditional (EvaluateConditionalRequest) returns (EvaluateConditionalResponse) {
 
   }
 }
