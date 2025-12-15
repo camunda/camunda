@@ -80,7 +80,7 @@ public class RepositoryNodeIdProviderIT {
   public void setUp() {
     final var bucketName = UUID.randomUUID().toString();
     taskId = UUID.randomUUID().toString();
-    config = new Config(bucketName, EXPIRY_DURATION);
+    config = new Config(bucketName, EXPIRY_DURATION, Duration.ofMinutes(2));
     client.createBucket(b -> b.bucket(config.bucketName()));
     final var initialInstant =
         LocalDateTime.of(2025, 11, 1, 13, 46, 22).atZone(ZoneId.of("UTC")).toInstant();
@@ -279,7 +279,12 @@ public class RepositoryNodeIdProviderIT {
   RepositoryNodeIdProvider ofSize(final int clusterSize, final boolean awaitInitialization) {
     final var provider =
         new RepositoryNodeIdProvider(
-            repository, clock, EXPIRY_DURATION, taskId, () -> leaseFailed = true);
+            repository,
+            clock,
+            EXPIRY_DURATION,
+            Duration.ofSeconds(2),
+            taskId,
+            () -> leaseFailed = true);
     final var future = provider.initialize(clusterSize);
     if (awaitInitialization) {
       future.join();

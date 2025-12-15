@@ -43,15 +43,17 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final NodeIdRepository nodeIdRepository,
       final InstantSource clock,
       final Duration expiryDuration,
+      final Duration leaseAcquireMaxDelay,
       final String taskId,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
     this.clock = Objects.requireNonNull(clock, "clock cannot be null");
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
+    Objects.requireNonNull(leaseAcquireMaxDelay, "leaseAcquireMaxDelay cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
-    backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseDuration.dividedBy(2));
+    backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseAcquireMaxDelay);
     renewalDelay = leaseDuration.dividedBy(3);
     currentDelay = 0L;
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
