@@ -223,10 +223,10 @@ public final class BpmnProcessors {
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
     final var processInstanceCreationHelper =
-        new ProcessInstanceCreationHelper(processingState.getProcessState());
+        new ProcessInstanceCreationHelper(processingState.getProcessState(), bpmnBehaviors);
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            keyGenerator, writers, bpmnBehaviors, metrics, processInstanceCreationHelper);
+            keyGenerator, writers, metrics, processInstanceCreationHelper);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 

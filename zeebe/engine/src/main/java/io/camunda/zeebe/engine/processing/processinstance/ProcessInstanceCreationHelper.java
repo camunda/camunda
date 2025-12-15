@@ -10,15 +10,19 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
@@ -46,9 +50,14 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
   private final ProcessState processState;
+  private final VariableBehavior variableBehavior;
+  private final ElementActivationBehavior elementActivationBehavior;
 
-  public ProcessInstanceCreationHelper(final ProcessState processState) {
+  public ProcessInstanceCreationHelper(
+      final ProcessState processState, final BpmnBehaviors bpmnBehaviors) {
     this.processState = processState;
+    variableBehavior = bpmnBehaviors.variableBehavior();
+    elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
   }
 
   public Either<Rejection, DeployedProcess> findRelevantProcess(
@@ -67,6 +76,20 @@ public class ProcessInstanceCreationHelper {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
+  }
+
+  public ProcessInstanceRecord initProcessInstanceRecord(
+      final DeployedProcess process, final long processInstanceKey) {
+    final var newProcessInstance = new ProcessInstanceRecord();
+    newProcessInstance.setBpmnProcessId(process.getBpmnProcessId());
+    newProcessInstance.setVersion(process.getVersion());
+    newProcessInstance.setProcessDefinitionKey(process.getKey());
+    newProcessInstance.setProcessInstanceKey(processInstanceKey);
+    newProcessInstance.setBpmnElementType(BpmnElementType.PROCESS);
+    newProcessInstance.setElementId(process.getProcess().getId());
+    newProcessInstance.setFlowScopeKey(-1);
+    newProcessInstance.setTenantId(process.getTenantId());
+    return newProcessInstance;
   }
 
   private Either<Rejection, DeployedProcess> getProcess(
@@ -123,6 +146,41 @@ public class ProcessInstanceCreationHelper {
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
         .map(valid -> deployedProcess);
+  }
+
+  public void updateCreationRecord(
+      final ProcessInstanceCreationRecord record, final ProcessInstanceRecord processInstance) {
+    record
+        .setProcessInstanceKey(processInstance.getProcessInstanceKey())
+        .setBpmnProcessId(processInstance.getBpmnProcessId())
+        .setVersion(processInstance.getVersion())
+        .setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
+  }
+
+  public void setVariablesFromDocument(
+      final DeployedProcess process,
+      final long processInstanceKey,
+      final DirectBuffer variablesBuffer) {
+
+    variableBehavior.mergeLocalDocument(
+        processInstanceKey,
+        process.getKey(),
+        processInstanceKey,
+        process.getBpmnProcessId(),
+        process.getTenantId(),
+        variablesBuffer);
+  }
+
+  public void activateElementsForStartInstructions(
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
+      final DeployedProcess process,
+      final ProcessInstanceRecord processInstance) {
+
+    startInstructions.forEach(
+        instruction -> {
+          final var element = process.getProcess().getElementById(instruction.getElementId());
+          elementActivationBehavior.activateElement(processInstance, element);
+        });
   }
 
   private Either<Rejection, ?> validateHasNoneStartEventOrStartInstructions(
