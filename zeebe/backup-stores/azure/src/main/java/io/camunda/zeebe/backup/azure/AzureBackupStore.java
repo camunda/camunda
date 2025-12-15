@@ -53,7 +53,7 @@ public final class AzureBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
-  private final IndexManager indexManager;
+  private final AzureIndexManager indexManager;
 
   AzureBackupStore(final AzureBackupConfig config) {
     this(config, buildClient(config));
@@ -65,7 +65,7 @@ public final class AzureBackupStore implements BackupStore {
 
     fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
     manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
-    indexManager = new IndexManager(blobContainerClient, isCreateContainer(config));
+    indexManager = new AzureIndexManager(blobContainerClient, isCreateContainer(config));
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {

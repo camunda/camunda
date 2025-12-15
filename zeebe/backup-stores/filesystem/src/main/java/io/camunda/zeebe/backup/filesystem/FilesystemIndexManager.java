@@ -18,12 +18,12 @@ import java.nio.file.StandardCopyOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class IndexManager {
-  private static final Logger LOG = LoggerFactory.getLogger(IndexManager.class);
+final class FilesystemIndexManager {
+  private static final Logger LOG = LoggerFactory.getLogger(FilesystemIndexManager.class);
 
   private final Path indexBaseDir;
 
-  IndexManager(final Path indexBaseDir) {
+  FilesystemIndexManager(final Path indexBaseDir) {
     this.indexBaseDir = indexBaseDir;
   }
 

@@ -86,7 +86,7 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
-  private final IndexManager indexManager;
+  private final S3IndexManager indexManager;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -96,7 +96,7 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
-    indexManager = new IndexManager(client, config);
+    indexManager = new S3IndexManager(client, config);
     final var basePath = config.basePath();
     backupIdentifierPattern =
         Pattern.compile(

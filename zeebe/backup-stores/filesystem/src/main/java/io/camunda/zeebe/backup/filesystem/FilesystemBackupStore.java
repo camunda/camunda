@@ -54,7 +54,7 @@ public final class FilesystemBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
-  private final IndexManager indexManager;
+  private final FilesystemIndexManager indexManager;
 
   FilesystemBackupStore(final FilesystemBackupConfig config) {
     this(config, Executors.newVirtualThreadPerTaskExecutor());
@@ -80,7 +80,7 @@ public final class FilesystemBackupStore implements BackupStore {
 
     fileSetManager = new FileSetManager(contentsDir);
     manifestManager = new ManifestManager(manifestsDir);
-    indexManager = new IndexManager(indexDir);
+    indexManager = new FilesystemIndexManager(indexDir);
   }
 
   @Override

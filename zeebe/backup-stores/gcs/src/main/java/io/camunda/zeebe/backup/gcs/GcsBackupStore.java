@@ -48,7 +48,7 @@ public final class GcsBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
-  private final IndexManager indexManager;
+  private final GcsIndexManager indexManager;
   private final Storage client;
 
   GcsBackupStore(final GcsBackupConfig config) {
@@ -62,7 +62,7 @@ public final class GcsBackupStore implements BackupStore {
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
     fileSetManager = new FileSetManager(client, bucketInfo, basePath);
-    indexManager = new IndexManager(client, bucketInfo, basePath);
+    indexManager = new GcsIndexManager(client, bucketInfo, basePath);
   }
 
   public static BackupStore of(final GcsBackupConfig config) {

@@ -25,13 +25,13 @@ import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class IndexManager {
-  private static final Logger LOG = LoggerFactory.getLogger(IndexManager.class);
+final class AzureIndexManager {
+  private static final Logger LOG = LoggerFactory.getLogger(AzureIndexManager.class);
 
   private final BlobContainerClient containerClient;
   private boolean containerCreated;
 
-  IndexManager(final BlobContainerClient containerClient, final boolean createContainer) {
+  AzureIndexManager(final BlobContainerClient containerClient, final boolean createContainer) {
     this.containerClient = containerClient;
     containerCreated = !createContainer;
   }

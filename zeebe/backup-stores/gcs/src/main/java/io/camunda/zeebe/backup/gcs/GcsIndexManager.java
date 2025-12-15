@@ -20,14 +20,14 @@ import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class IndexManager {
-  private static final Logger LOG = LoggerFactory.getLogger(IndexManager.class);
+public final class GcsIndexManager {
+  private static final Logger LOG = LoggerFactory.getLogger(GcsIndexManager.class);
 
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
 
-  public IndexManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
+  public GcsIndexManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
     this.client = client;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;

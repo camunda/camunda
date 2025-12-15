@@ -27,13 +27,13 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-final class IndexManager {
-  private static final Logger LOG = LoggerFactory.getLogger(IndexManager.class);
+final class S3IndexManager {
+  private static final Logger LOG = LoggerFactory.getLogger(S3IndexManager.class);
 
   private final S3AsyncClient client;
   private final S3BackupConfig config;
 
-  IndexManager(final S3AsyncClient client, final S3BackupConfig config) {
+  S3IndexManager(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
     this.config = config;
   }
