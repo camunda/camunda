@@ -53,7 +53,7 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
     }
 
     final long fileSize;
-    try (final var fc = FileChannel.open(file, java.nio.file.StandardOpenOption.READ)) {
+    try (final FileChannel fc = FileChannel.open(file, java.nio.file.StandardOpenOption.READ)) {
       fileSize = fc.size();
       if (fileSize > Integer.MAX_VALUE) {
         throw new IllegalArgumentException("File is too large to process: " + fileSize + " bytes");
