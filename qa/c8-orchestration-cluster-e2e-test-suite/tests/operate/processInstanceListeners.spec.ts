@@ -136,7 +136,7 @@ test.describe('Process Instance Listeners', () => {
     });
 
     await test.step('Add a new flow node instance', async () => {
-      await operateProcessInstancePage.startModificationFlow();
+      await operateProcessInstancePage.enterModificationMode();
       await operateProcessModificationModePage.clickFlowNode(
         'taskWithListener',
       );
@@ -283,7 +283,7 @@ test.describe('Process Instance Listeners', () => {
         id: processInstanceKey,
       });
 
-      await operateProcessInstancePage.startModificationFlow();
+      await operateProcessInstancePage.enterModificationMode();
       await operateProcessModificationModePage.clickFlowNode(
         'taskWithListener',
       );

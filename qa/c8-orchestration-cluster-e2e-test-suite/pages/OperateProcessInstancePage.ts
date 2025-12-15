@@ -23,6 +23,7 @@ class OperateProcessInstancePage {
   readonly statusVariable: Locator;
   readonly instanceHeader: Locator;
   readonly instanceHistory: Locator;
+  readonly rootProcessNode: Locator;
   readonly incidentsTable: Locator;
   readonly incidentsTableOperationSpinner: Locator;
   readonly incidentsTableRows: Locator;
@@ -41,20 +42,13 @@ class OperateProcessInstancePage {
   readonly executionCountToggleButton: Locator;
   readonly listenersTabButton: Locator;
   readonly metadataModal: Locator;
-  readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly editVariableButton: Locator;
   readonly editVariableButtonInList: Locator;
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
   readonly migratedTag: Locator;
-  readonly modifyDialog: Locator;
-  readonly modifyDialogContinueButton: Locator;
-  readonly continueButton: Locator;
-  readonly applyModificationsButton: Locator;
   readonly applyButton: Locator;
-  readonly addSingleFlowNodeInstanceButton: Locator;
-  readonly moveSelectedInstanceButton: Locator;
   readonly executionListenerText: Locator;
   readonly taskListenerText: Locator;
   readonly stateOverlayActive: Locator;
@@ -65,10 +59,15 @@ class OperateProcessInstancePage {
   readonly executionCountToggle: Locator;
   readonly endDateField: Locator;
   readonly incidentsViewHeader: Locator;
+  readonly modifyInstanceButton: Locator;
+  readonly modifyDialog: Locator;
+  readonly modifyDialogContinueButton: Locator;
+  readonly diagram: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.diagramPage = new OperateDiagramPage(page);
+    this.diagram = this.page.getByTestId('diagram');
     this.drilldownButton = page.locator('.bjs-drilldown');
     this.completedIcon = page
       .getByTestId('instance-header')
@@ -90,6 +89,9 @@ class OperateProcessInstancePage {
     this.variableValueInput = page.getByTestId('edit-variable-value');
     this.instanceHeader = page.getByTestId('instance-header');
     this.instanceHistory = page.getByTestId('instance-history');
+    this.rootProcessNode = this.instanceHistory
+      .locator('[data-testid^="node-details-"]')
+      .first();
     this.incidentsTable = page.getByTestId('data-list');
     this.incidentsTableOperationSpinner =
       this.incidentsTable.getByTestId('operation-spinner');
@@ -119,29 +121,12 @@ class OperateProcessInstancePage {
     );
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
     this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
-    this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
     this.variableAddedBanner = this.page.getByText('Variable added');
     this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
       hasText: /^Migrated/,
     });
-    this.modifyDialog = this.page.getByLabel(
-      'Process Instance Modification Mode',
-    );
-    this.modifyDialogContinueButton = this.modifyDialog.getByRole('button', {
-      name: 'Continue',
-    });
-    this.continueButton = page.getByRole('button', {name: 'Continue'});
-    this.applyModificationsButton = page.getByRole('button', {
-      name: 'Apply Modifications',
-    });
     this.applyButton = page.getByRole('button', {name: 'Apply', exact: true});
-    this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
-      name: 'Add single flow node instance',
-    });
-    this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this flow node to another target',
-    });
     this.executionListenerText = page.getByText('Execution listener');
     this.taskListenerText = page.getByText('Task listener');
     this.stateOverlayActive = page.getByTestId('state-overlay-active');
@@ -162,6 +147,13 @@ class OperateProcessInstancePage {
     );
     this.endDateField = this.instanceHeader.getByTestId('end-date');
     this.incidentsViewHeader = page.getByText(/incidents view/i);
+    this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
+    this.modifyDialog = this.page.getByLabel(
+      'Process Instance Modification Mode',
+    );
+    this.modifyDialogContinueButton = this.modifyDialog.getByRole('button', {
+      name: 'Continue',
+    });
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -210,17 +202,9 @@ class OperateProcessInstancePage {
       });
   }
 
-  getNewVariableNameFieldSelector = (variableName: string) => {
-    return this.page
-      .getByTestId(`variable-${variableName}`)
-      .getByTestId('new-variable-name');
-  };
-
-  getNewVariableValueFieldSelector = (variableName: string) => {
-    return this.page
-      .getByTestId(`variable-${variableName}`)
-      .getByTestId('new-variable-value');
-  };
+  getVariableTestId(variableName: string) {
+    return this.page.getByTestId(`variable-${variableName}`);
+  }
 
   getListenerTypeFilterOption = (
     option: 'Execution listeners' | 'User task listeners' | 'All listeners',
@@ -228,12 +212,12 @@ class OperateProcessInstancePage {
     return this.listenerTypeFilter.getByText(option, {exact: true});
   };
 
-  async undoModification() {
-    await this.page
-      .getByRole('button', {
-        name: 'undo',
-      })
-      .click();
+  async clickFlowNode(flowNodeName: string) {
+    await this.diagram.getByText(flowNodeName).first().click({timeout: 20000});
+  }
+
+  async navigateToRootScope() {
+    await this.rootProcessNode.click();
   }
 
   async navigateToProcessInstance(id: string) {
@@ -346,14 +330,6 @@ class OperateProcessInstancePage {
     await retryButton.click();
   }
 
-  async clickModifyInstanceButton(): Promise<void> {
-    await this.modifyInstanceButton.click();
-  }
-
-  async clickModifyDialogContinueButton(): Promise<void> {
-    await this.modifyDialogContinueButton.click();
-  }
-
   async getAllInstanceHistoryNodeDetails(): Promise<Locator[]> {
     return this.instanceHistory
       .getByRole('treeitem')
@@ -405,11 +381,6 @@ class OperateProcessInstancePage {
     const parentLocator =
       await this.getNestedParentLocatorInHistory(parentElementName);
     return parentLocator.getByRole('group');
-  }
-
-  async enterModificationMode(): Promise<void> {
-    await this.clickModifyInstanceButton();
-    await this.clickModifyDialogContinueButton();
   }
 
   async getHistoryElementsDataByName(itemName: string) {
@@ -486,18 +457,6 @@ class OperateProcessInstancePage {
 
   async verifyListenersTabVisible(): Promise<void> {
     await expect(this.listenersTabButton).toBeVisible();
-  }
-
-  async startModificationFlow(): Promise<void> {
-    await this.modifyInstanceButton.click();
-    await this.continueButton.click();
-  }
-
-  async applyModifications(): Promise<void> {
-    await expect(this.applyModificationsButton).toBeEnabled({timeout: 10000});
-
-    await this.applyModificationsButton.click();
-    await this.applyButton.click();
   }
 
   getTreeItem(name: string | RegExp, exact?: boolean): Locator {
@@ -591,7 +550,7 @@ class OperateProcessInstancePage {
   }
 
   async getDiagramElementBadge(elementId: string) {
-    return this.page.$(`[data-element-id="${elementId}"] .badge`);
+    return this.page.locator(`[data-element-id="${elementId}"] .badge`);
   }
 
   async verifyExecutionCountBadgesNotVisible(
@@ -599,7 +558,7 @@ class OperateProcessInstancePage {
   ): Promise<void> {
     for (const elementId of elementIds) {
       const badge = await this.getDiagramElementBadge(elementId);
-      expect(badge).toBeNull();
+      await expect(badge).toHaveCount(0);
     }
   }
 
@@ -607,6 +566,19 @@ class OperateProcessInstancePage {
     for (const elementId of elementIds) {
       await expect(this.getDiagramElement(elementId)).toBeVisible();
     }
+  }
+
+  async enterModificationMode(): Promise<void> {
+    await this.clickModifyInstanceButton();
+    await this.clickModifyDialogContinueButton();
+  }
+
+  async clickModifyInstanceButton(): Promise<void> {
+    await this.modifyInstanceButton.click();
+  }
+
+  async clickModifyDialogContinueButton(): Promise<void> {
+    await this.modifyDialogContinueButton.click();
   }
 }
 
