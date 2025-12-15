@@ -21,13 +21,13 @@ Before starting, you need:
 - **CONTAINER_IMAGE**: The Camunda container image (e.g., "camunda/camunda:8.6.1")
 - **SNAPSHOT_ID**: Specific snapshot to use (optional - required only if multiple snapshots exist)
 
-**Tip:** Use `./detect-config.sh <namespace>` to auto-detect most of these values (namespace, broker count, pod prefix, PVC prefix, container image, etc.)
+**Tip:** Use `../detect-config.sh <namespace>` to auto-detect most of these values (namespace, broker count, pod prefix, PVC prefix, container image, etc.)
 
 ## Recovery Steps
 
 ### 1. Identify Partition Leader and Replicas
 
-Use the helper script to identify which brokers host the partition  before shutting down the broker.
+Use the [helper script](../identify-partition-brokers.sh) to identify which brokers host the partition  before shutting down the broker.
 In this example partition we run the script for partition 1:
 
 ```bash
@@ -38,13 +38,19 @@ export STATEFULSET_NAME="camunda"  # optional, default: "camunda"
 export POD_PREFIX="camunda"         # optional, default: "camunda"
 export ACTUATOR_PORT="9600"         # optional, default: 9600
 
-PARTITION_ID=1 ./identify-partition-brokers.sh
+PARTITION_ID=1 ../identify-partition-brokers.sh
 ```
 
 **Example output:**
 ```bash
-LEADER=0
-REPLICAS="0 1 2"
+LAST_LEADER_BROKER=0
+PARTITION_BROKER_IDS="0 1 2"
+=================================================
+
+You can export these variables with the following, so it can be used by other scripts
+
+export LAST_LEADER_BROKER=0
+export PARTITION_BROKER_IDS="0 1 2"
 ```
 
 (Your output will vary based on which brokers actually host the partition)
@@ -327,12 +333,10 @@ kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
 
 ## Files
 
-- **`identify-partition-brokers.sh`** - Identifies which brokers host a partition (leader and replicas)
 - **`generate-recovery-job.sh`** - Generates recovery Job YAML with inline recovery script
 - **`recovery-script.sh`** - Recovery operations script (embedded in generated Job YAML)
-- **`detect-config.sh`** - Auto-detect cluster configuration (namespace, StatefulSet, broker count, container image, etc.)
-- **`test-yaml-equivalence.sh`** - Test YAML generation methods
 
-## Configuration Examples
 
-See `CONFIG_EXAMPLES.md` for configuration examples with different Camunda versions.
+## Development
+The file `test-yaml-equivalence.sh` can be used to test the generation of yaml files comparing the two methods (`bash` and `yq`). This is to ensure that the bash method produces the same result as `yq` to be used when `yq` is not installed in the system.
+
