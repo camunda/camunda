@@ -77,6 +77,10 @@ const queryKeys = {
       'processDefinition',
       processDefinitionKey,
     ],
+    search: (payload?: object) =>
+      payload
+        ? ['processDefinitionsSearch', payload]
+        : ['processDefinitionsSearch'],
   },
   processDefinitionStatistics: {
     get: (payload?: GetProcessDefinitionInstanceStatisticsRequestBody) => [
