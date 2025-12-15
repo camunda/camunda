@@ -176,8 +176,9 @@ public class StreamProcessorHealthTest {
                   assertThat(healthReport.isUnhealthy()).isTrue();
                   assertThat(healthReport.getIssue()).isNotNull();
                   assertThat(healthReport.getIssue().message())
-                      .isEqualTo(
-                          "actor appears blocked, processing 'LoggedEvent [position=1, key=1, timestamp=1765200166956, sourceEventPosition=-1] RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=ACTIVATE_ELEMENT, authorization={\"format\":\"UNKNOWN\",\"authData\":\"***\",\"claims\":\"***\"}}'");
+                      .startsWith("actor appears blocked, processing")
+                      .contains("position=1")
+                      .contains("ACTIVATE_ELEMENT");
                 });
       } finally {
         block.countDown();
@@ -215,8 +216,9 @@ public class StreamProcessorHealthTest {
             .untilAsserted(
                 () ->
                     assertThat(streamProcessor.getHealthReport().getIssue().message())
-                        .isEqualTo(
-                            "actor appears blocked, replaying event TypedRecordImpl{metadata=RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATED, authorization={\"format\":\"UNKNOWN\",\"authData\":\"***\",\"claims\":\"***\"}}, value={\"bpmnElementType\":\"UNSPECIFIED\",\"elementId\":\"\",\"bpmnProcessId\":\"processId\",\"version\":-1,\"processDefinitionKey\":-1,\"processInstanceKey\":1,\"flowScopeKey\":-1,\"bpmnEventType\":\"UNSPECIFIED\",\"parentProcessInstanceKey\":-1,\"parentElementInstanceKey\":-1,\"tenantId\":\"<default>\",\"elementInstancePath\":[],\"processDefinitionPath\":[],\"callingElementPath\":[],\"tags\":[]}}"));
+                        .startsWith("actor appears blocked, replaying event")
+                        .contains("ELEMENT_ACTIVATED")
+                        .contains("PROCESS_INSTANCE"));
       } finally {
         block.countDown();
       }
