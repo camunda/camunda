@@ -144,7 +144,7 @@
   "jest": {
     "resetMocks": false,
     "transformIgnorePatterns": [
-      "/node_modules/(?!(@camunda/camunda-.*?|date-fns))"
+      "/node_modules/(?!(@camunda/camunda-.*?|@carbon/.*?|date-fns))"
     ],
     "moduleNameMapper": {
       "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js",
