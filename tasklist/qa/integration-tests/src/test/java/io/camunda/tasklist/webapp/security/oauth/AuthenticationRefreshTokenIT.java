@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.security.identity;
+package io.camunda.tasklist.webapp.security.oauth;
 
-import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.SecurityTestUtil.getRsaJWK;
-import static io.camunda.operate.webapp.security.SecurityTestUtil.signAndSerialize;
+import static io.camunda.tasklist.webapp.security.SecurityTestUtil.signAndSerialize;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,15 +20,16 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
-import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.identity.sdk.impl.dto.AccessTokenDto;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.SpringContextHolder;
-import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.SpringContextHolder;
+import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.tasklist.webapp.security.SecurityTestUtil;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import java.util.Date;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,15 +48,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
-      OperateProperties.class,
-      IdentityAuthentication.class,
-      PermissionConverter.class,
-      IdentityRetryService.class
+      TasklistProperties.class,
+      IdentityAuthentication.class
     },
     properties = {
       "camunda.identity.audience=test-client",
       "camunda.identity.clientId=test-client",
       "camunda.identity.clientSecret=secret",
+      "management.endpoint.health.validate-group-membership=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
@@ -65,9 +63,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 public class AuthenticationRefreshTokenIT {
 
   @Autowired private ApplicationContext applicationContext;
-  @Mock private Identity identity;
+
   private final WireMockRuntimeInfo wireMockInfo;
   private final ObjectMapper objectMapper = new ObjectMapper();
+
   @InjectMocks private IdentityAuthentication identityAuthentication;
 
   public AuthenticationRefreshTokenIT(final WireMockRuntimeInfo wireMockRuntimeInfo) {
@@ -92,7 +91,7 @@ public class AuthenticationRefreshTokenIT {
     // given
 
     // create expired access token and non-JWT refresh token
-    final RSAKey rsaJWK = getRsaJWK(JWSAlgorithm.RS256);
+    final RSAKey rsaJWK = SecurityTestUtil.getRsaJWK(JWSAlgorithm.RS256);
     final String expiredToken =
         signAndSerialize(
             rsaJWK, JWSAlgorithm.RS256, getClaimsSet(new Date(new Date().getTime() - 60 * 1000)));
