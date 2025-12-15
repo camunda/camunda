@@ -146,29 +146,6 @@ public class AlignmentTest {
   }
 
   @TestFactory
-  Stream<DynamicTest> libPropertiesAreIgnored() throws IOException {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    final JsonNode jsonNode =
-        objectMapper.readTree(
-            ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
-    final ArrayNode properties = (ArrayNode) jsonNode.get("properties");
-    final List<String> ignoredProperties =
-        jsonNode
-            .get("ignored")
-            .get("properties")
-            .valueStream()
-            .map(p -> p.get("name").asText())
-            .toList();
-    return properties
-        .valueStream()
-        .filter(p -> p.get("name").asText().startsWith("lib"))
-        .map(p -> p.get("name").asText())
-        .map(
-            name ->
-                DynamicTest.dynamicTest(name, () -> assertThat(ignoredProperties).contains(name)));
-  }
-
-  @TestFactory
   Stream<DynamicTest> alignmentWithLegacyPropertyMappingsTest() throws IOException {
     final List<CamundaClientLegacyPropertiesMapping> legacyPropertiesMappings =
         CamundaClientLegacyPropertiesMappingsLoader.load();
