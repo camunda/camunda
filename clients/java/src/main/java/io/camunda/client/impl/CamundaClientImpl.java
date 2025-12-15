@@ -177,6 +177,7 @@ import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsRequest;
+import io.camunda.client.api.statistics.request.IncidentStatisticsByErrorHashCodeRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -336,6 +337,7 @@ import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.IncidentStatisticsByErrorHashCodeRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
@@ -1555,6 +1557,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public EvaluateExpressionCommandStep1 newEvaluateExpressionCommand() {
     return new EvaluateExpressionCommandImpl(config, httpClient, jsonMapper);
+  }
+
+  @Override
+  public IncidentStatisticsByErrorHashCodeRequest newIncidentStatisticsByErrorHashCodeRequest(
+      final String errorHashCode) {
+    return new IncidentStatisticsByErrorHashCodeRequestImpl(httpClient, jsonMapper, errorHashCode);
   }
 
   private JobClient newJobClient() {

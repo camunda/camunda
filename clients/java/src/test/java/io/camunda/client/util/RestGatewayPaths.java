@@ -101,6 +101,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-definitions/%s/statistics/process-instances";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS =
       REST_API_PATH + "/incidents/statistics/process-instances";
+  private static final String URL_INCIDENT_STATISTICS_BY_ERROR_HASH_CODE =
+      REST_API_PATH + "/incidents/%s/statistics";
 
   /**
    * @return the topology request URL
@@ -387,6 +389,10 @@ public class RestGatewayPaths {
 
   public static String getIncidentProcessInstanceStatisticsUrl() {
     return URL_INCIDENT_PROCESS_INSTANCE_STATISTICS;
+  }
+
+  public static String getIncidentStatisticsByErrorHashCodeUrl(final String errorHashCode) {
+    return String.format(URL_INCIDENT_STATISTICS_BY_ERROR_HASH_CODE, errorHashCode);
   }
 
   @Deprecated

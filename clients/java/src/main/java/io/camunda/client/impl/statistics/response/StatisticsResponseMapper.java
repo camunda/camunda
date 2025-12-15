@@ -21,6 +21,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatistics;
+import io.camunda.client.api.statistics.response.IncidentStatisticsByErrorHashCode;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -133,6 +134,17 @@ public class StatisticsResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<IncidentProcessInstanceStatistics> items =
         toSearchResponseInstances(response.getItems(), IncidentProcessInstanceStatisticsImpl::new);
+    return new SearchResponseImpl<>(items, page);
+  }
+
+  public static SearchResponse<IncidentStatisticsByErrorHashCode>
+      toIncidentStatisticsByErrorHashCodeResponse(
+          final io.camunda.client.protocol.rest.IncidentStatisticsByErrorHashCodeQueryResult
+              response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<IncidentStatisticsByErrorHashCode> items =
+        toSearchResponseInstances(response.getItems(), IncidentStatisticsByErrorHashCodeImpl::new);
+
     return new SearchResponseImpl<>(items, page);
   }
 

@@ -142,14 +142,14 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
   /incidents/{errorHashCode}/statistics:
-    get:
+    post:
       x-eventually-consistent: true
       tags:
         - Incident
       operationId: getIncidentStatistics
-      summary: Get incident statistics for error hash code
+      summary: Get incident statistics by error hash code
       description: |
-        Returns incident statistics for an error hash code.
+        Returns incident statistics by error hash code.
       parameters:
         - name: errorHashCode
           in: path
@@ -162,14 +162,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IncidentStatisticsForErrorHashCodeQuery'
+              $ref: '#/components/schemas/IncidentStatisticsByErrorHashCodeQuery'
       responses:
         "200":
           description: The incident statistics are successfully returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IncidentStatisticsForErrorHashCodeResult'
+                $ref: '#/components/schemas/IncidentStatisticsByErrorHashCodeQueryResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -503,19 +503,32 @@ components:
       required:
         - field
 
-    IncidentStatisticsForErrorHashCodeQuery:
-      additionalProperties: false
+
+    IncidentStatisticsByErrorHashCodeQuery:
       type: object
-      allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       properties:
+        page:
+          description: Pagination criteria.
+          allOf:
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array
           items:
-            $ref: '#/components/schemas/IncidentStatisticsForErrorHashCodeQuerySortRequest'
+            $ref: '#/components/schemas/IncidentStatisticsByErrorHashCodeQuerySortRequest'
 
-    IncidentStatisticsForErrorHashCodeResult:
+    IncidentStatisticsByErrorHashCodeQueryResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The incident statistics by error hash code result.
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentStatisticsByErrorHashCodeResult'
+
+    IncidentStatisticsByErrorHashCodeResult:
       type: object
       properties:
         processDefinitionKey:
@@ -534,9 +547,10 @@ components:
           description: The tenant ID of these incidents.
         activeInstancesWithErrorCount:
           type: integer
+          format: int64
           description: The number of active incident instances with the given error hash code.
 
-    IncidentStatisticsForErrorHashCodeQuerySortRequest:
+    IncidentStatisticsByErrorHashCodeQuerySortRequest:
       type: object
       properties:
         field:
@@ -549,5 +563,7 @@ components:
               - activeInstancesWithErrorCount
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
 
 
