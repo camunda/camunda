@@ -23,6 +23,7 @@ import io.camunda.zeebe.db.impl.DbByte;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -100,7 +101,7 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(50704475L, CompactionPriority.OldestSmallestSeqFirst, 4);
+        .containsExactly(50_704_475L, CompactionPriority.OldestSmallestSeqFirst, 4);
 
     // then - user options should override defaults
     assertThat(customOptions)
@@ -119,46 +120,34 @@ final class ZeebeRocksDbFactoryTest {
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
 
-    // when
-    final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
+    // then - options should match our defaults
+    validateDefaultExpectedOptions(
+        factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>()));
+  }
 
-    // then - column family options match our defaults
-    assertThat(defaults.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
-    assertThat(defaults.minWriteBufferNumberToMerge()).isEqualTo(3);
-    assertThat(defaults.maxWriteBufferNumber()).isEqualTo(6);
-    assertThat(defaults.writeBufferSize()).isEqualTo(50_704_475L);
-    assertThat(defaults.compactionPriority())
-        .isEqualTo(org.rocksdb.CompactionPriority.OldestSmallestSeqFirst);
-    assertThat(defaults.compactionStyle()).isEqualTo(org.rocksdb.CompactionStyle.LEVEL);
-    assertThat(defaults.level0FileNumCompactionTrigger()).isEqualTo(6);
-    assertThat(defaults.level0SlowdownWritesTrigger()).isEqualTo(9);
-    assertThat(defaults.level0StopWritesTrigger()).isEqualTo(12);
-    assertThat(defaults.numLevels()).isEqualTo(4);
-    assertThat(defaults.maxBytesForLevelBase()).isEqualTo(33_554_432L);
-    assertThat(defaults.maxBytesForLevelMultiplier()).isEqualTo(10.0);
-    assertThat(defaults.compressionPerLevel())
-        .containsExactly(
-            org.rocksdb.CompressionType.NO_COMPRESSION,
-            org.rocksdb.CompressionType.NO_COMPRESSION,
-            org.rocksdb.CompressionType.LZ4_COMPRESSION,
-            org.rocksdb.CompressionType.LZ4_COMPRESSION);
-    assertThat(defaults.targetFileSizeBase()).isEqualTo(8 * 1_024 * 1_024L);
-    assertThat(defaults.targetFileSizeMultiplier()).isEqualTo(2);
+  @Test
+  void shouldHaveDefaultsIfPerBrokerMemoryAllocationStrategy() {
+    // when configuring with per-broker memory allocation strategy
+    final RocksDbConfiguration rocksDbConfiguration = new RocksDbConfiguration();
+    rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
 
-    // then - table config matches our defaults
-    final var tableConfig = (org.rocksdb.BlockBasedTableConfig) defaults.tableFormatConfig();
-    assertThat(tableConfig.blockSize()).isEqualTo(32 * 1_024L);
-    assertThat(tableConfig.formatVersion()).isEqualTo(5);
-    assertThat(tableConfig.cacheIndexAndFilterBlocks()).isTrue();
-    assertThat(tableConfig.pinL0FilterAndIndexBlocksInCache()).isTrue();
-    assertThat(tableConfig.cacheIndexAndFilterBlocksWithHighPriority()).isTrue();
-    assertThat(tableConfig.indexType()).isEqualTo(org.rocksdb.IndexType.kHashSearch);
-    assertThat(tableConfig.dataBlockIndexType())
-        .isEqualTo(org.rocksdb.DataBlockIndexType.kDataBlockBinaryAndHash);
-    assertThat(tableConfig.dataBlockHashTableUtilRatio()).isEqualTo(0.75);
-    assertThat(tableConfig.wholeKeyFiltering()).isTrue();
+    // adjust memory limit to be per broker
+    final int defaultPartitionCount = 3;
+    rocksDbConfiguration.setMemoryLimit(
+        rocksDbConfiguration.getMemoryLimit() * defaultPartitionCount);
 
-    defaults.close();
+    final var factoryWithCustomOptions =
+        new ZeebeRocksDbFactory<>(
+            rocksDbConfiguration,
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            SimpleMeterRegistry::new);
+
+    // then - options should match our defaults
+    // we expect the same options regardless of the memory allocation strategy
+    // as long as the memory limit per partition is the same.
+    validateDefaultExpectedOptions(
+        factoryWithCustomOptions.createColumnFamilyOptions(new ArrayList<>()));
   }
 
   @Test
@@ -252,6 +241,49 @@ final class ZeebeRocksDbFactoryTest {
     try (final var db = factory.openSnapshotOnlyDb(dbPath)) {
       assertThatCode(() -> assertions.accept(db)).isInstanceOf(UnsupportedOperationException.class);
     }
+  }
+
+  private static void validateDefaultExpectedOptions(
+      final ColumnFamilyOptions columnFamilyOptions) {
+
+    // column family options match our defaults
+    assertThat(columnFamilyOptions.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
+    assertThat(columnFamilyOptions.minWriteBufferNumberToMerge()).isEqualTo(3);
+    assertThat(columnFamilyOptions.maxWriteBufferNumber()).isEqualTo(6);
+    assertThat(columnFamilyOptions.writeBufferSize()).isEqualTo(50_704_475L);
+    assertThat(columnFamilyOptions.compactionPriority())
+        .isEqualTo(CompactionPriority.OldestSmallestSeqFirst);
+    assertThat(columnFamilyOptions.compactionStyle()).isEqualTo(org.rocksdb.CompactionStyle.LEVEL);
+    assertThat(columnFamilyOptions.level0FileNumCompactionTrigger()).isEqualTo(6);
+    assertThat(columnFamilyOptions.level0SlowdownWritesTrigger()).isEqualTo(9);
+    assertThat(columnFamilyOptions.level0StopWritesTrigger()).isEqualTo(12);
+    assertThat(columnFamilyOptions.numLevels()).isEqualTo(4);
+    assertThat(columnFamilyOptions.maxBytesForLevelBase()).isEqualTo(32L * 1024 * 1024);
+    assertThat(columnFamilyOptions.maxBytesForLevelMultiplier()).isEqualTo(10.0);
+    assertThat(columnFamilyOptions.compressionPerLevel())
+        .containsExactly(
+            org.rocksdb.CompressionType.NO_COMPRESSION,
+            org.rocksdb.CompressionType.NO_COMPRESSION,
+            org.rocksdb.CompressionType.LZ4_COMPRESSION,
+            org.rocksdb.CompressionType.LZ4_COMPRESSION);
+    assertThat(columnFamilyOptions.targetFileSizeBase()).isEqualTo(8L * 1024 * 1024);
+    assertThat(columnFamilyOptions.targetFileSizeMultiplier()).isEqualTo(2);
+
+    // table config matches our defaults
+    final var tableConfig =
+        (org.rocksdb.BlockBasedTableConfig) columnFamilyOptions.tableFormatConfig();
+    assertThat(tableConfig.blockSize()).isEqualTo(32L * 1024);
+    assertThat(tableConfig.formatVersion()).isEqualTo(5);
+    assertThat(tableConfig.cacheIndexAndFilterBlocks()).isTrue();
+    assertThat(tableConfig.pinL0FilterAndIndexBlocksInCache()).isTrue();
+    assertThat(tableConfig.cacheIndexAndFilterBlocksWithHighPriority()).isTrue();
+    assertThat(tableConfig.indexType()).isEqualTo(org.rocksdb.IndexType.kHashSearch);
+    assertThat(tableConfig.dataBlockIndexType())
+        .isEqualTo(org.rocksdb.DataBlockIndexType.kDataBlockBinaryAndHash);
+    assertThat(tableConfig.dataBlockHashTableUtilRatio()).isEqualTo(0.75);
+    assertThat(tableConfig.wholeKeyFiltering()).isTrue();
+
+    columnFamilyOptions.close();
   }
 
   private static Stream<Named<ThrowingConsumer<ZeebeDb<DefaultColumnFamily>>>>
