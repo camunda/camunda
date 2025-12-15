@@ -1413,24 +1413,15 @@ components:
         - variables
 
     ProcessInstanceModificationMoveInstruction:
-      x-polymorphic-schema: true
-      description: Instruction describing a move operation.
-      oneOf:
-        - $ref: "#/components/schemas/ProcessInstanceModificationMoveByIdInstruction"
-        - $ref: "#/components/schemas/ProcessInstanceModificationMoveByKeyInstruction"
-
-    ProcessInstanceModificationMoveByIdInstruction:
       type: object
       description: |
-        Instruction describing a move operation. This instruction will terminate all active element
-        instances with the sourceElementId and activate a new element instance for each terminated
+        Instruction describing a move operation. This instruction will terminate active element
+        instances based on the sourceElementInstruction and activate a new element instance for each terminated
         one at targetElementId. Note that, for multi-instance activities, only the multi-instance
         body instances will activate new element instances at the target id.
       properties:
-        sourceElementId:
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
-          description: The source element id.
+        sourceElementInstruction:
+          $ref: '#/components/schemas/SourceElementInstruction'
         targetElementId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
@@ -1443,34 +1434,60 @@ components:
           items:
             $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
       required:
-        - sourceElementId
+        - sourceElementInstruction
         - targetElementId
 
-    ProcessInstanceModificationMoveByKeyInstruction:
+    SourceElementInstruction:
+      x-polymorphic-schema: true
+      description: |
+        Defines the source element identifier for the move instruction. It can either be a sourceElementId, or sourceElementInstanceKey.
+      discriminator:
+        propertyName: sourceType
+        mapping:
+          byId: '#/components/schemas/SourceElementIdInstruction'
+          byKey: '#/components/schemas/SourceElementInstanceKeyInstruction'
+      oneOf:
+        - $ref: "#/components/schemas/SourceElementIdInstruction"
+        - $ref: "#/components/schemas/SourceElementInstanceKeyInstruction"
+
+    SourceElementIdInstruction:
       type: object
       description: |
-        Instruction describing a move operation. This instruction will terminate one active element
-        instance with the sourceElementInstanceKey and activate a new element instance for at targetElementId. Note that, for multi-instance activities, only the multi-instance
-        body instance will activate new element instance at the target id.
+        Defines an instruction with a sourceElementId. The move instruction with this sourceType will terminate all active element
+        instances with the sourceElementId and activate a new element instance for each terminated
+        one at targetElementId.
       properties:
-        sourceElementInstanceKey:
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-          description: The source element id.
-        targetElementId:
+        sourceType:
+          description: The type of source element instruction.
+          type: string
+          example: byId
+        sourceElementId:
+          description: |
+            The id of the source element for the move instruction.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
-          description: The target element id.
-        ancestorScopeInstruction:
-          $ref: '#/components/schemas/AncestorScopeInstruction'
-        variableInstructions:
-          description: Instructions describing which variables to create or update.
-          type: array
-          items:
-            $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
+      required:
+        - sourceElementId
+        - sourceType
+
+    SourceElementInstanceKeyInstruction:
+      type: object
+      description: |
+       Defines an instruction with a sourceElementInstanceKey. The move instruction with this sourceType will terminate one active element
+       instance with the sourceElementInstanceKey and activate a new element instance at targetElementId.
+      properties:
+        sourceType:
+          description: The type of source element instruction.
+          type: string
+          example: byKey
+        sourceElementInstanceKey:
+          description: |
+            The source element instance key for the move instruction.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
       required:
         - sourceElementInstanceKey
-        - targetElementId
+        - sourceType
 
     AncestorScopeInstruction:
       x-polymorphic-schema: true

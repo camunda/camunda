@@ -662,7 +662,9 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
       final long expectedAncestorKey,
       final boolean expectedUseParentScope,
       final int expectedVariableInstructions) {
-    assertThat(moveInstruction.getSourceElementId()).isEqualTo(expectedSourceElementId);
+    assertThat(moveInstruction.getSourceElementInstruction().getSourceType()).isEqualTo("byId");
+    assertThat(moveInstruction.getSourceElementInstruction().getSourceElementId())
+        .isEqualTo(expectedSourceElementId);
     assertThat(moveInstruction.getTargetElementId()).isEqualTo(expectedTargetElementId);
     if (expectedUseParentScope) {
       assertThat(moveInstruction.getAncestorScopeInstruction())

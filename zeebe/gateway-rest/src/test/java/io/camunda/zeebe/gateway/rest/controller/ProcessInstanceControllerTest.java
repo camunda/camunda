@@ -1045,7 +1045,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               ],
               "moveInstructions": [
                 {
-                  "sourceElementId": "sourceElementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId"
+                  },
                   "targetElementId": "targetElementId",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "direct",
@@ -1066,7 +1069,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   ]
                 },
                 {
-                  "sourceElementId": "sourceElementId2",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId2"
+                  },
                   "targetElementId": "targetElementId2",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "direct",
@@ -1074,25 +1080,37 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   }
                 },
                 {
-                  "sourceElementId": "sourceElementId3",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId3"
+                  },
                   "targetElementId": "targetElementId3",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "direct"
                   }
                 },
                 {
-                  "sourceElementId": "sourceElementId4",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId4"
+                  },
                   "targetElementId": "targetElementId4",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "inferred"
                   }
                 },
                 {
-                  "sourceElementId": "sourceElementId5",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId5"
+                  },
                   "targetElementId": "targetElementId5"
                 },
                 {
-                  "sourceElementId": "sourceElementId6",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId6"
+                  },
                   "targetElementId": "targetElementId6",
                   "variableInstructions": [
                     {
@@ -1228,7 +1246,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  },
                   "targetElementId": "elementId2"
                 }
               ],
@@ -1348,7 +1369,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  },
                   "targetElementId": "elementId2",
                   "variableInstructions": [
                     {
@@ -1473,7 +1497,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  },
                   "targetElementId": "elementId2",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "unknown"
@@ -1518,7 +1545,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId"
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  }
                 }
               ],
               "operationReference": 123
@@ -1568,9 +1598,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail": "At least one of [sourceElementId, sourceElementInstanceKey] is required.",
+                "detail": "No sourceElementInstruction provided.",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 
