@@ -177,8 +177,8 @@ class OperateProcessInstancePage {
     });
     this.modalDialog = page.getByRole('dialog');
     this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
-    this.viewRootCauseDecisionLink = page.getByRole('link').filter({
-      hasText: /view root cause decision/i,
+    this.viewRootCauseDecisionLink = page.getByRole('link', {
+      name: /View root cause decision/i,
     });
     this.popover = page.getByTestId('popover');
   }
@@ -595,6 +595,7 @@ class OperateProcessInstancePage {
   }
 
   async clickViewRootCauseDecisionLink(): Promise<void> {
+    await this.viewRootCauseDecisionLink.scrollIntoViewIfNeeded();
     await this.viewRootCauseDecisionLink.waitFor({
       state: 'visible',
       timeout: 30000,

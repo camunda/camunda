@@ -12,6 +12,7 @@ import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -81,7 +82,34 @@ test.describe('Decision Navigation', () => {
     });
 
     await test.step('Verify popover appears and navigate to decision', async () => {
-      await expect(operateProcessInstancePage.popover).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessInstancePage.popover).toBeVisible();
+        },
+        onFailure: async () => {
+          await operateProcessInstancePage.clickDiagramElement(
+            'Activity_1tjwahx',
+          );
+          await operateProcessInstancePage.clickDiagramElement(
+            'Activity_1tjwahx',
+          );
+        },
+      });
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.viewRootCauseDecisionLink,
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await operateProcessInstancePage.clickDiagramElement(
+            'Activity_1tjwahx',
+          );
+          await operateProcessInstancePage.clickDiagramElement(
+            'Activity_1tjwahx',
+          );
+        },
+      });
       await operateProcessInstancePage.clickViewRootCauseDecisionLink();
     });
 

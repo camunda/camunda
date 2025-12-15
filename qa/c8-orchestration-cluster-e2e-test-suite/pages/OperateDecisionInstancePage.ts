@@ -35,7 +35,7 @@ class OperateDecisionInstancePage {
   }
 
   async getDecisionInstanceId(): Promise<string> {
-    return this.instanceHeader.getByRole('cell').nth(6).innerText();
+    return this.instanceHeader.getByRole('cell').nth(1).innerText();
   }
 
   async gotoDecisionInstancePage(options: {id: string}): Promise<void> {
