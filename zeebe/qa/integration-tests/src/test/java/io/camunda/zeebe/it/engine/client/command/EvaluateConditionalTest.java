@@ -227,6 +227,29 @@ public final class EvaluateConditionalTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
+  public void shouldRejectEvaluateConditionalWithTenantIdWhenNoMultiTenancy(final boolean useRest) {
+    // given
+    final long nonExistingKey = 123L;
+    final var tenantId = "tenant-1";
+
+    // when
+    final var command =
+        getCommand(client, useRest)
+            .variables(Map.of("x", 100))
+            .processDefinitionKey(nonExistingKey)
+            .tenantId(tenantId)
+            .send();
+
+    // then
+    final var expectedRequestName = useRest ? "Evaluate Conditional" : "EvaluateConditional";
+    assertThatThrownBy(command::join)
+        .hasMessageContaining(
+            "Expected to handle request %s with tenant identifier '%s', but multi-tenancy is disabled"
+                .formatted(expectedRequestName, tenantId));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
   public void shouldThrowErrorWhenTryToEvaluateConditionalWithNullVariable(final boolean useRest) {
     // when/then
     assertThatThrownBy(() -> getCommand(client, useRest).variable(null, null).send().join())

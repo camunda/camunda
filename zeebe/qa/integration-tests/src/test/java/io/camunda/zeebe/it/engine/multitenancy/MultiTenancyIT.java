@@ -1666,6 +1666,57 @@ public class MultiTenancyIT {
     }
   }
 
+  @Test
+  void shouldStartInstanceWhenEvaluatingConditionalForDefaultTenant() {
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      // when
+      final Future<EvaluateConditionalResponse> result =
+          client.newEvaluateConditionalCommand().variables(Map.of("x", 100)).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that conditional can be evaluated and a process instance can be started for the default tenant")
+          .succeedsWithin(Duration.ofSeconds(20))
+          .satisfies(
+              response -> {
+                assertThat(response.getProcessInstances()).hasSize(1);
+                assertThat(response.getProcessInstances().getFirst().getProcessDefinitionKey())
+                    .isPositive();
+              });
+    }
+  }
+
+  @Test
+  void shouldRejectEvaluateConditionalForDefaultTenantWhenUnauthorized() {
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    }
+
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_A_WITHOUT_DEFAULT_TENANT)) {
+      final Future<EvaluateConditionalResponse> result =
+          client.newEvaluateConditionalCommand().variables(Map.of("x", 100)).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("FORBIDDEN")
+          .withMessageContaining(
+              "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant."
+                  .formatted(DEFAULT_TENANT));
+    }
+  }
+
   private static Stream<Named<UnaryOperator<TopologyRequestStep1>>> provideTopologyCases() {
     return Stream.of(
         Named.of("grpc", TopologyRequestStep1::useGrpc),

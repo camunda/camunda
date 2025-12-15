@@ -115,7 +115,7 @@ public class ConditionalControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Expected to handle request Evaluate Conditional Event with tenant identifier 'tenantId', but multi-tenancy is disabled",
+            "detail":"Expected to handle request Evaluate Conditional with tenant identifier 'tenantId', but multi-tenancy is disabled",
             "instance":"/v2/conditionals/evaluation"
          }""";
 
@@ -152,7 +152,7 @@ public class ConditionalControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Expected to handle request Evaluate Conditional Event with tenant identifiers [], but no tenant identifier was provided.",
+            "detail":"Expected to handle request Evaluate Conditional with tenant identifiers [], but no tenant identifier was provided.",
             "instance":"/v2/conditionals/evaluation"
          }""";
 
