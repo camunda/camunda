@@ -35,58 +35,6 @@ PARTITION_BROKER_IDS="${PARTITION_BROKER_IDS:-}" # Space-separated broker IDs
 LEADER_PATH="/mnt/broker-${LEADER_BROKER}/raft-partition/partitions/${PARTITION_ID}"
 RUNTIME_PATH="/tmp/recovery-runtime-${PARTITION_ID}"
 
-# Track whether backups have been created
-BACKUPS_CREATED=false
-
-# Cleanup function to restore backups on failure
-cleanup_on_failure() {
-        local exit_code=$?
-
-        if [ $exit_code -ne 0 ] && [ "$BACKUPS_CREATED" = true ]; then
-                echo ""
-                echo "============================================="
-                echo "=== ERROR DETECTED - RESTORING BACKUPS ==="
-                echo "============================================="
-                echo "An error occurred during recovery. Restoring original snapshots from backup..."
-                echo ""
-
-                for broker_id in $PARTITION_BROKER_IDS; do
-                        BROKER_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}"
-                        BROKER_BACKUP_PATH="${BROKER_PATH}/snapshots-backup"
-
-                        if [ -d "${BROKER_BACKUP_PATH}" ]; then
-                                echo "  - Restoring Broker ${broker_id} snapshots from backup..."
-
-                                # Remove all current snapshots (potentially corrupted)
-                                echo "    Removing corrupted snapshots..."
-                                rm -rf "${BROKER_PATH}/snapshots/"*
-
-                                # Restore from backup
-                                echo "    Restoring from backup..."
-                                cp -r "${BROKER_BACKUP_PATH}/"* "${BROKER_PATH}/snapshots/"
-
-                                # Verify restoration
-                                RESTORED_COUNT=$(ls -1 "${BROKER_PATH}/snapshots/" 2>/dev/null | grep -v ".checksum" | wc -l)
-                                echo "    Broker ${broker_id} restored (${RESTORED_COUNT} snapshots)"
-
-                                # Keep backup directory for investigation
-                                echo "    Backup directory preserved at: ${BROKER_BACKUP_PATH}"
-                        else
-                                echo "  - WARNING: No backup found for Broker ${broker_id} at ${BROKER_BACKUP_PATH}"
-                        fi
-                done
-
-                echo ""
-                echo "Original snapshots have been restored from backup."
-                echo "Backup directories preserved for investigation."
-                echo "============================================="
-                echo ""
-        fi
-}
-
-# Set trap to cleanup on any error
-trap cleanup_on_failure EXIT
-
 echo "============================================="
 echo "=== Key Recovery Job Starting ==="
 echo "============================================="
@@ -94,11 +42,7 @@ echo "Partition ID:       ${PARTITION_ID}"
 echo "Leader Broker:      ${LEADER_BROKER}"
 echo "Partition Brokers:  ${PARTITION_BROKER_IDS}"
 echo "New Key:            ${NEW_KEY}"
-if [ -n "${NEW_MAX_KEY}" ]; then
-        echo "New Max Key:        ${NEW_MAX_KEY}"
-else
-        echo "New Max Key:        <not set>"
-fi
+echo "New Max Key:        ${NEW_MAX_KEY:-<not set>}"
 echo "Snapshot Override:  ${SNAPSHOT_ID:-<auto-detect latest>}"
 echo "============================================="
 echo ""
@@ -120,9 +64,34 @@ if [ -n "${SNAPSHOT_ID}" ]; then
         echo "Using snapshot from SNAPSHOT_ID env var: ${SNAPSHOT_ID}"
         SELECTED_SNAPSHOT="${SNAPSHOT_ID}"
 else
-        # Auto-detect latest snapshot (exclude .checksum files)
-        SELECTED_SNAPSHOT=$(ls -t ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | head -1)
-        echo "Auto-detected latest snapshot: ${SELECTED_SNAPSHOT}"
+        # Auto-detect snapshot (exclude .checksum files)
+        SNAPSHOT_COUNT=$(ls -1 ${LEADER_PATH}/snapshots/ 2>/dev/null | grep -v ".checksum" | wc -l)
+
+        if [ "$SNAPSHOT_COUNT" -eq 0 ]; then
+                echo "ERROR: No snapshots found in ${LEADER_PATH}/snapshots/"
+                exit 1
+        elif [ "$SNAPSHOT_COUNT" -gt 1 ]; then
+                echo "ERROR: Multiple snapshots found, but SNAPSHOT_ID not specified"
+                echo ""
+                echo "Available snapshots:"
+                ls -1t ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | while read snapshot; do
+                        SIZE=$(du -sh "${LEADER_PATH}/snapshots/${snapshot}" 2>/dev/null | cut -f1)
+                        MODIFIED=$(stat -c %y "${LEADER_PATH}/snapshots/${snapshot}" 2>/dev/null | cut -d'.' -f1)
+                        echo "  - ${snapshot} (${SIZE}, modified: ${MODIFIED})"
+                done
+                echo ""
+                echo "Please set SNAPSHOT_ID environment variable to specify which snapshot to use:"
+                echo "  SNAPSHOT_ID=<snapshot-name>"
+                echo ""
+                echo "Example:"
+                EXAMPLE_SNAPSHOT=$(ls -1t ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | head -1)
+                echo "  SNAPSHOT_ID=${EXAMPLE_SNAPSHOT}"
+                exit 1
+        else
+                # Exactly one snapshot found
+                SELECTED_SNAPSHOT=$(ls -1 ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | head -1)
+                echo "Auto-detected snapshot (only one found): ${SELECTED_SNAPSHOT}"
+        fi
 fi
 
 # Validate snapshot exists
@@ -133,31 +102,29 @@ fi
 
 echo "Snapshot details:"
 ls -la "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}"
+echo "snapshot metadata:"
+cat "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}/zeebe.metadata"
+echo "\n"
 echo ""
 
 # Step 3: Create backups of all broker partition data to temporary location
 echo "[3/5] Creating backups of partition data on all replicas..."
 echo "Backups will be stored in each broker's volume under 'snapshots-backup'"
-echo "Processing brokers: ${PARTITION_BROKER_IDS}"
 echo ""
 
 # First, check if any backups already exist (from previous failed run)
 for broker_id in $PARTITION_BROKER_IDS; do
-        BROKER_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}"
-        BROKER_BACKUP_PATH="${BROKER_PATH}/snapshots-backup"
+        BROKER_BACKUP_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}/snapshots-backup"
 
         if [ -d "${BROKER_BACKUP_PATH}" ]; then
                 echo "ERROR: Existing backup found at ${BROKER_BACKUP_PATH}"
                 echo ""
-                echo "This indicates a previous recovery attempt may have failed or backups were not cleaned up."
-                echo "To proceed, you must manually review and remove existing backups:"
+                echo "This indicates a previous recovery attempt may have failed."
+                echo "To proceed, manually review and remove existing backups:"
                 echo ""
                 for bid in $PARTITION_BROKER_IDS; do
-                        BPATH="/mnt/broker-${bid}/raft-partition/partitions/${PARTITION_ID}"
-                        BBACKUP="${BPATH}/snapshots-backup"
-                        if [ -d "${BBACKUP}" ]; then
-                                echo "  kubectl exec -n ${NAMESPACE:-default} <pod-name> -- rm -rf ${BBACKUP}"
-                        fi
+                        BBACKUP="/mnt/broker-${bid}/raft-partition/partitions/${PARTITION_ID}/snapshots-backup"
+                        [ -d "${BBACKUP}" ] && echo "  kubectl exec <pod> -- rm -rf ${BBACKUP}"
                 done
                 echo ""
                 echo "Only remove these backups if you're certain they're no longer needed!"
@@ -170,31 +137,25 @@ for broker_id in $PARTITION_BROKER_IDS; do
         BROKER_BACKUP_PATH="${BROKER_PATH}/snapshots-backup"
 
         if [ -d "${BROKER_PATH}/snapshots" ]; then
-                echo "  - Backing up Broker ${broker_id} snapshots..."
-                echo "    Source: ${BROKER_PATH}/snapshots"
-                echo "    Backup: ${BROKER_BACKUP_PATH}"
-
+                echo "  Backing up Broker ${broker_id}..."
                 mkdir -p "${BROKER_BACKUP_PATH}"
-
-                # Copy all snapshots to backup location
                 cp -r "${BROKER_PATH}/snapshots/"* "${BROKER_BACKUP_PATH}/"
+                sync # Ensure backup is persisted to disk
 
                 # Verify backup was created
                 if [ -d "${BROKER_BACKUP_PATH}" ]; then
                         BACKUP_SIZE=$(du -sh "${BROKER_BACKUP_PATH}" | cut -f1)
                         BACKUP_COUNT=$(ls -1 "${BROKER_BACKUP_PATH}" 2>/dev/null | grep -v ".checksum" | wc -l)
-                        echo "    Backup created: ${BACKUP_SIZE} (${BACKUP_COUNT} snapshots)"
+                        echo "    ${BACKUP_SIZE} (${BACKUP_COUNT} snapshots)"
                 else
                         echo "    ERROR: Backup failed for Broker ${broker_id}"
                         exit 1
                 fi
         else
-                echo "  - WARNING: No snapshots directory for Broker ${broker_id}"
+                echo "  WARNING: No snapshots directory for Broker ${broker_id}"
         fi
-        echo ""
 done
 echo "Backups created successfully"
-BACKUPS_CREATED=true
 echo ""
 
 # Step 4: Run cdbg to update key values on leader
@@ -207,23 +168,11 @@ CDBG_CMD="${CDBG_CMD} --runtime ${RUNTIME_PATH}"
 CDBG_CMD="${CDBG_CMD} --snapshot ${SELECTED_SNAPSHOT}"
 CDBG_CMD="${CDBG_CMD} --partition-id ${PARTITION_ID}"
 CDBG_CMD="${CDBG_CMD} --key ${NEW_KEY}"
-
-if [ -n "${NEW_MAX_KEY}" ]; then
-        CDBG_CMD="${CDBG_CMD} --max-key ${NEW_MAX_KEY}"
-fi
-
+[ -n "${NEW_MAX_KEY}" ] && CDBG_CMD="${CDBG_CMD} --max-key ${NEW_MAX_KEY}"
 CDBG_CMD="${CDBG_CMD} --verbose"
 
-echo "Command: cdbg state update-key"
-echo "  --root ${LEADER_PATH}"
-echo "  --runtime ${RUNTIME_PATH}"
-echo "  --snapshot ${SELECTED_SNAPSHOT}"
-echo "  --partition-id ${PARTITION_ID}"
-echo "  --key ${NEW_KEY}"
-if [ -n "${NEW_MAX_KEY}" ]; then
-        echo "  --max-key ${NEW_MAX_KEY}"
-fi
-echo "  --verbose"
+# Print the full command being executed
+echo "Running: ${CDBG_CMD}"
 echo ""
 
 eval "${CDBG_CMD}"
@@ -236,12 +185,8 @@ echo ""
 echo "Removing original snapshot: ${SELECTED_SNAPSHOT}"
 rm -rf "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}"
 # Also remove the checksum file if it exists
-if [ -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum" ]; then
-        rm -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum"
-        echo "Original snapshot and checksum removed"
-else
-        echo "Original snapshot removed (no checksum file found)"
-fi
+[ -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum" ] && rm -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum"
+echo "Original snapshot removed"
 echo ""
 
 echo "Updated snapshot location: ${LEADER_PATH}/snapshots/"
@@ -254,52 +199,40 @@ echo "[5/5] Copying updated partition data to replicas..."
 for broker_id in $PARTITION_BROKER_IDS; do
         if [ "$broker_id" != "$LEADER_BROKER" ]; then
                 REPLICA_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}"
-                echo "  - Syncing to Broker ${broker_id}..."
-                echo "    Source: ${LEADER_PATH}/snapshots/"
-                echo "    Destination: ${REPLICA_PATH}/snapshots/"
+                echo "  Syncing to Broker ${broker_id}..."
 
-                # Remove all existing snapshots
-                echo "    Removing old snapshot data..."
+                # Remove all existing snapshots and copy new ones from leader
                 rm -rf "${REPLICA_PATH}/snapshots/"*
-
-                # Copy new snapshots from leader
-                echo "    Copying updated snapshots from leader..."
                 cp -r "${LEADER_PATH}/snapshots/"* "${REPLICA_PATH}/snapshots/"
+                sync # Ensure replicated snapshots are persisted to disk
 
                 # Verify copy
                 REPLICA_SNAPSHOT_COUNT=$(ls -1 "${REPLICA_PATH}/snapshots/" 2>/dev/null | grep -v ".checksum" | wc -l)
-                echo "    Broker ${broker_id} updated successfully (${REPLICA_SNAPSHOT_COUNT} snapshots)"
-                echo ""
+                echo "    Updated (${REPLICA_SNAPSHOT_COUNT} snapshots)"
         fi
 done
 
-# Step 6: Clean up backup files
-echo "[6/6] Cleaning up backup files..."
-for broker_id in $PARTITION_BROKER_IDS; do
-        BROKER_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}"
-        BROKER_BACKUP_PATH="${BROKER_PATH}/snapshots-backup"
-
-        if [ -d "${BROKER_BACKUP_PATH}" ]; then
-                echo "  - Removing backup for Broker ${broker_id}: ${BROKER_BACKUP_PATH}"
-                rm -rf "${BROKER_BACKUP_PATH}"
-        fi
-done
-echo "All backups removed"
 echo ""
-
-# Mark backups as cleaned up (don't restore on exit)
-BACKUPS_CREATED=false
-
+echo "Ensuring all data is persisted to disk..."
+sync
+echo "All changes flushed to disk"
+echo ""
 echo "============================================="
 echo "=== Recovery Complete ==="
 echo "============================================="
 echo "Partition ${PARTITION_ID} has been recovered with:"
 echo "  - Key:     ${NEW_KEY}"
-if [ -n "${NEW_MAX_KEY}" ]; then
-        echo "  - Max Key: ${NEW_MAX_KEY}"
-fi
+[ -n "${NEW_MAX_KEY}" ] && echo "  - Max Key: ${NEW_MAX_KEY}"
 echo "  - Snapshot: ${SELECTED_SNAPSHOT}"
 echo ""
 echo "All brokers have been updated with the new snapshot."
+echo ""
+echo "IMPORTANT: Backups are preserved in 'snapshots-backup' directories."
+echo "After verifying successful recovery, clean them up manually:"
+echo ""
+for broker_id in $PARTITION_BROKER_IDS; do
+        echo "  kubectl exec \${POD_PREFIX}-${broker_id} -n \${NAMESPACE} -- rm -rf /usr/local/zeebe/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup"
+done
+echo ""
 echo "You can now restart the cluster."
 echo "============================================="
