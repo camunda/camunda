@@ -28,7 +28,7 @@ public class TestChecks {
 
   @Autowired private FormStore formStore;
 
-  /** Checks whether the process of given args[0] processId (Long) is deployed. */
+  /** Checks whether the process of given args[0] processId (numeric string) is deployed. */
   @Bean(name = PROCESS_IS_DEPLOYED_CHECK)
   public TestCheck getProcessIsDeployedCheck() {
     return new TestCheck() {
@@ -52,6 +52,7 @@ public class TestChecks {
     };
   }
 
+  /** Checks whether the process of given args[0] processId (numeric string) is deleted. */
   @Bean(name = PROCESS_IS_DELETED_CHECK)
   public TestCheck getProcessIsDeletedCheck() {
     return new TestCheck() {
@@ -77,6 +78,10 @@ public class TestChecks {
     };
   }
 
+  /**
+   * Checks whether the form of given args[0] processDefinitionId and args[1] formId exists for a
+   * given args[2] versionId (Long - which may be null if we do not want a specific version).
+   */
   @Bean(name = FORM_EXISTS_CHECK)
   public TestCheck getFormExistsCheck() {
     return new TestCheck() {
