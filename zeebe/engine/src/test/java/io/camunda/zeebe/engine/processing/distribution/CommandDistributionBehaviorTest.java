@@ -71,10 +71,9 @@ class CommandDistributionBehaviorTest {
     mockDistributionState = mock(DistributionState.class);
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
-    writers =
-        new Writers(PARTITION_ID, () -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    writers = new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
     keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
-    writers.setKeyGenerator(keyGenerator);
+    writers.setKeyValidator(keyGenerator);
 
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;

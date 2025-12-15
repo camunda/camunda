@@ -57,9 +57,8 @@ public class SubscriptionCommandSenderTest {
         new SubscriptionCommandSender(SAME_PARTITION, mockInterPartitionCommandSender);
     mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
-    final var writers =
-        new Writers(SAME_PARTITION, () -> mockProcessingResultBuilder, mockEventAppliers);
-    writers.setKeyGenerator(new AtomicKeyGenerator(SAME_PARTITION));
+    final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
+    writers.setKeyValidator(new AtomicKeyGenerator(SAME_PARTITION));
     subscriptionCommandSender.setWriters(writers);
   }
 
