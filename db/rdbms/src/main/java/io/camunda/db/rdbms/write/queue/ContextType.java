@@ -18,6 +18,7 @@ public enum ContextType {
   FLOW_NODE(false),
   FORM(false),
   GROUP(false),
+  HISTORY_DELETION(false),
   INCIDENT(false),
   JOB(false),
   MAPPING_RULE(false),

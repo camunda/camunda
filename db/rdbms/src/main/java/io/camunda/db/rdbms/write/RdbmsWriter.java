@@ -39,6 +39,7 @@ import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
@@ -85,6 +86,7 @@ public class RdbmsWriter {
   private final UsageMetricTUWriter usageMetricTUWriter;
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
+  private final HistoryDeletionWriter historyDeletionWriter;
 
   private final HistoryCleanupService historyCleanupService;
   private final RdbmsWriterMetrics metrics;
@@ -152,6 +154,7 @@ public class RdbmsWriter {
         new CorrelatedMessageSubscriptionWriter(
             executionQueue, correlatedMessageSubscriptionMapper);
     clusterVariableWriter = new ClusterVariableWriter(executionQueue, vendorDatabaseProperties);
+    historyDeletionWriter = new HistoryDeletionWriter(executionQueue);
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -270,6 +273,10 @@ public class RdbmsWriter {
 
   public CorrelatedMessageSubscriptionWriter getCorrelatedMessageSubscriptionWriter() {
     return correlatedMessageSubscriptionWriter;
+  }
+
+  public HistoryDeletionWriter getHistoryDeletionWriter() {
+    return historyDeletionWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {
