@@ -2557,10 +2557,12 @@ final class JsonSerializableToJsonTest {
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
-                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")));
+                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")))
+                  .setStartTime(123L);
             },
         """
                 {
+                  "startTime": 123,
                   "partitionId": 1,
                   "queueId": "totally-random-queue-id",
                   "valueType": "DEPLOYMENT",
@@ -2603,6 +2605,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) () -> new CommandDistributionRecord().setPartitionId(1),
         """
                 {
+                  "startTime": -1,
                   "partitionId": 1,
                   "queueId": null,
                   "valueType": "NULL_VAL",

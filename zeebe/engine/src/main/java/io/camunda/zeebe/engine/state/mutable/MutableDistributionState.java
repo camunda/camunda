@@ -37,6 +37,16 @@ public interface MutableDistributionState extends DistributionState {
   void addRetriableDistribution(final long distributionKey, final int partition);
 
   /**
+   * Adds a retriable distribution to the state
+   *
+   * @param distributionKey the key of the distribution
+   * @param partition the partition for which the distribution is retriable
+   * @param startTime the start time of the distribution
+   */
+  void addRetriableDistribution(
+      final long distributionKey, final int partition, final long startTime);
+
+  /**
    * Removes a retriable distribution from the state
    *
    * @param distributionKey the key of the retriable distribution that will be removed
