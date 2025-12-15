@@ -61,16 +61,6 @@ on:
         type: string
         default: ""
         required: false
-      cluster:
-        description: 'Specifies which cluster to deploy the load test on'
-        default: 'zeebe-cluster'
-        type: string
-        required: false
-      cluster-region:
-        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
-        default: europe-west1-b
-        type: string
-        required: false
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         type: string
@@ -269,8 +259,8 @@ jobs:
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.5
         with:
-          cluster_name: ${{ inputs.cluster }}
-          location: ${{ inputs.cluster-region }}
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
       - name: Create namespace if not exists
         run: |
           if ! kubectl get namespace ${{ inputs.name }} >/dev/null 2>&1; then
@@ -362,8 +352,8 @@ jobs:
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.5
         with:
-          cluster_name: ${{ inputs.cluster }}
-          location: ${{ inputs.cluster-region }}
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
       - name: Add Load test Helm repo
         run: |
           helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
