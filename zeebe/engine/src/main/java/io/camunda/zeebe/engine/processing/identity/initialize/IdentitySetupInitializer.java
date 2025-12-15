@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity.initialize;
 
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
