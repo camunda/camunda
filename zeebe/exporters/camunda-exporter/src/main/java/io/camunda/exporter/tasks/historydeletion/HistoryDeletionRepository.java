@@ -32,7 +32,7 @@ public interface HistoryDeletionRepository extends AutoCloseable {
    * @param sourceIndexName The index to delete the documents from
    * @param idFieldName The field name to match against
    * @param fieldValues The values to match for deletion
-   * @return a {@link CompletableFuture} indicating whether the deletion was successful
+   * @return a {@link CompletableFuture} containing the field values
    */
   CompletableFuture<List<Long>> deleteDocumentsByField(
       final String sourceIndexName, final String idFieldName, final List<Long> fieldValues);
@@ -42,7 +42,7 @@ public interface HistoryDeletionRepository extends AutoCloseable {
    *
    * @param sourceIndexName The index to delete the documents from
    * @param ids The list of document IDs to delete
-   * @return a {@link CompletableFuture} indicating whether the deletion was successful
+   * @return a {@link CompletableFuture} containing th number of entities that were deleted
    */
   CompletableFuture<Integer> deleteDocumentsById(
       final String sourceIndexName, final List<String> ids);
