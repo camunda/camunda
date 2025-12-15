@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import {describe, it, expect} from 'vitest';
 import {render, screen} from 'modules/testing-library';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
@@ -27,9 +26,7 @@ const baseAuditLog: AuditLog = {
 
 describe('DetailsModal', () => {
   it('renders details for a normal audit log', () => {
-    render(
-      <DetailsModal isOpen={true} onClose={() => {}} auditLog={baseAuditLog} />,
-    );
+    render(<DetailsModal isOpen onClose={() => {}} auditLog={baseAuditLog} />);
 
     expect(
       screen.getByRole('heading', {name: /update variable/i}),
@@ -40,7 +37,7 @@ describe('DetailsModal', () => {
     expect(screen.getByText(/success/i)).toBeInTheDocument();
     expect(screen.getByText('demo')).toBeInTheDocument();
     expect(screen.getByText('2024-01-01 10:00:00')).toBeInTheDocument();
-    // should not render batch information
+
     expect(
       screen.queryByText(/this operation is part of a batch\./i),
     ).not.toBeInTheDocument();
@@ -52,13 +49,7 @@ describe('DetailsModal', () => {
       batchOperationKey: '999',
     };
 
-    render(
-      <DetailsModal
-        isOpen={true}
-        onClose={() => {}}
-        auditLog={batchAuditLog}
-      />,
-    );
+    render(<DetailsModal isOpen onClose={() => {}} auditLog={batchAuditLog} />);
 
     expect(
       screen.getByText(/this operation is part of a batch\./i),

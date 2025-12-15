@@ -23,7 +23,6 @@ import {
   VerticallyAlignedRow,
 } from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import React from 'react';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {AuditLogIcon} from './AuditLogIcon';
 
@@ -34,10 +33,6 @@ type Props = {
 };
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
-  if (!auditLog) {
-    return null;
-  }
-
   return (
     <Modal
       size="md"
