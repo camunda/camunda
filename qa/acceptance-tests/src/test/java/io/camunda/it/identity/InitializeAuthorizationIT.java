@@ -86,6 +86,7 @@ class InitializeAuthorizationIT {
     final Authorization authorization = response.items().getFirst();
     assertThat(authorization.getOwnerId()).isEqualTo(RESTRICTED);
     assertThat(authorization.getResourceType()).isEqualTo(PROCESS_DEFINITION);
+    assertThat(authorization.getResourceId()).isEqualTo("*");
     assertThat(authorization.getPermissionTypes())
         .containsExactlyInAnyOrder(READ_PROCESS_INSTANCE, CREATE_PROCESS_INSTANCE);
   }
