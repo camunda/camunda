@@ -93,7 +93,6 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
-  permissions?: [] | null;
   tenantId: string;
 }
 
