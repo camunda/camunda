@@ -11,14 +11,14 @@
     "@carbon/elements": "11.71.0",
     "@carbon/react": "1.57.0",
     "@devbookhq/splitter": "1.4.2",
-    "@floating-ui/react-dom": "2.1.4",
+    "@floating-ui/react-dom": "2.1.6",
     "@monaco-editor/react": "4.7.0",
     "@tanstack/eslint-plugin-query": "5.91.2",
     "@tanstack/react-query": "5.83.0",
     "@tanstack/react-query-devtools": "5.83.0",
     "@tanstack/react-virtual": "3.13.12",
     "bpmn-js": "18.6.2",
-    "bpmn-moddle": "9.0.2",
+    "bpmn-moddle": "9.0.4",
     "date-fns": "4.1.0",
     "dmn-js": "17.3.0",
     "dmn-js-decision-table": "17.3.0",
@@ -31,8 +31,8 @@
     "lodash": "4.17.21",
     "mixpanel-browser": "2.67.0",
     "mobx": "6.13.7",
-    "mobx-react": "9.2.0",
-    "mobx-react-lite": "4.1.0",
+    "mobx-react": "9.2.1",
+    "mobx-react-lite": "4.1.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-error-boundary": "6.0.0",
@@ -40,7 +40,7 @@
     "react-final-form-arrays": "4.0.0",
     "react-router-dom": "7.7.1",
     "react-transition-group": "4.4.5",
-    "serve": "14.2.4",
+    "serve": "14.2.5",
     "styled-components": "6.1.19",
     "tiny-svg": "4.1.3"
   },
@@ -66,10 +66,10 @@
     "knip": "knip --tsConfig tsconfig.app.json"
   },
   "devDependencies": {
-    "@camunda8/sdk": "8.7.18",
+    "@camunda8/sdk": "8.7.30",
     "@eslint/js": "9.38.0",
     "@playwright/test": "1.54.0",
-    "@testing-library/dom": "10.4.0",
+    "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.3.0",
     "@testing-library/user-event": "14.6.1",
@@ -131,5 +131,5 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.6.0"
+  "packageManager": "npm@11.6.2"
 }
