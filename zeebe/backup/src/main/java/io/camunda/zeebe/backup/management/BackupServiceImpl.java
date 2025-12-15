@@ -42,9 +42,13 @@ final class BackupServiceImpl {
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private final LogStreamWriter logStreamWriter;
-  private ConcurrencyControl concurrencyControl;
+  private final ConcurrencyControl concurrencyControl;
 
-  BackupServiceImpl(final BackupStore backupStore, final LogStreamWriter logStreamWriter) {
+  BackupServiceImpl(
+      final ConcurrencyControl concurrencyControl,
+      final BackupStore backupStore,
+      final LogStreamWriter logStreamWriter) {
+    this.concurrencyControl = concurrencyControl;
     this.backupStore = backupStore;
     this.logStreamWriter = logStreamWriter;
   }
@@ -60,8 +64,6 @@ final class BackupServiceImpl {
   ActorFuture<Void> takeBackup(
       final InProgressBackup inProgressBackup, final ConcurrencyControl concurrencyControl) {
     LOG.atInfo().addKeyValue("backup", inProgressBackup.id()).setMessage("Taking backup").log();
-
-    this.concurrencyControl = concurrencyControl;
 
     backupsInProgress.add(inProgressBackup);
     LOG.atDebug()

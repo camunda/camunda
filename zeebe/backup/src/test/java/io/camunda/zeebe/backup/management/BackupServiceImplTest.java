@@ -70,7 +70,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(backupStore, logStreamWriter);
+    backupService = new BackupServiceImpl(concurrencyControl, backupStore, logStreamWriter);
 
     lenient()
         .when(notExistingBackupStatus.statusCode())
