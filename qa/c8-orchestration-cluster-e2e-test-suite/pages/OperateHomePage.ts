@@ -12,6 +12,7 @@ class OperateHomePage {
   private page: Page;
   readonly operateBanner: Locator;
   readonly processesTab: Locator;
+  readonly decisionsTab: Locator;
   readonly informationDialog: Locator;
   readonly editVariableButton: Locator;
   readonly variableValueInput: Locator;
@@ -22,6 +23,7 @@ class OperateHomePage {
     this.page = page;
     this.operateBanner = page.getByRole('link', {name: 'Camunda logo Operate'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
+    this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
     this.informationDialog = page.getByRole('button', {
       name: 'Close this dialog',
     });
@@ -36,6 +38,10 @@ class OperateHomePage {
 
   async clickProcessesTab(): Promise<void> {
     await this.processesTab.click();
+  }
+
+  async clickDecisionsTab(): Promise<void> {
+    await this.decisionsTab.click();
   }
 
   async clickEditVariableButton(variableName: string): Promise<void> {

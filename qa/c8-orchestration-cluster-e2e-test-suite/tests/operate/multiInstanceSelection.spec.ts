@@ -12,7 +12,6 @@ import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForIncidents} from 'utils/incidentsHelper';
-import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {
   processInstanceKey: string;

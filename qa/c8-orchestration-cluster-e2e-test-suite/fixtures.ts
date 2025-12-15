@@ -13,6 +13,8 @@ import {TaskPanelPage} from '@pages/TaskPanelPage';
 import {LoginPage} from '@pages/LoginPage';
 import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
+import {OperateDecisionInstancePage} from '@pages/OperateDecisionInstancePage';
+import {OperateDecisionsPage} from '@pages/OperateDecisionsPage';
 import {OperateFiltersPanelPage} from '@pages/OperateFiltersPanelPage';
 import {OperateDashboardPage} from '@pages/OperateDashboardPage';
 import {OperateDiagramPage} from '@pages/OperateDiagramPage';
@@ -42,6 +44,8 @@ type PlaywrightFixtures = {
   taskPanelPage: TaskPanelPage;
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
+  operateDecisionInstancePage: OperateDecisionInstancePage;
+  operateDecisionsPage: OperateDecisionsPage;
   operateFiltersPanelPage: OperateFiltersPanelPage;
   operateProcessMigrationModePage: OperateProcessMigrationModePage;
   operateProcessModificationModePage: OperateProcessModificationModePage;
@@ -98,6 +102,15 @@ const test = base.extend<PlaywrightFixtures>({
   operateProcessInstancePage: async ({page}, use) => {
     await use(new OperateProcessInstancePage(page));
   },
+  operateDecisionInstancePage: async ({page}, use) => {
+    await use(new OperateDecisionInstancePage(page));
+  },
+  operateDecisionsPage: async ({page}, use) => {
+    await use(new OperateDecisionsPage(page));
+  },
+  operateOperationPanelPage: async ({page}, use) => {
+    await use(new OperateOperationPanelPage(page));
+  },
   operateFiltersPanelPage: async ({page}, use) => {
     await use(new OperateFiltersPanelPage(page));
   },
@@ -106,9 +119,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   operateProcessModificationModePage: async ({page}, use) => {
     await use(new OperateProcessModificationModePage(page));
-  },
-  operateOperationPanelPage: async ({page}, use) => {
-    await use(new OperateOperationPanelPage(page));
   },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));

@@ -288,12 +288,8 @@ class OperateProcessesPage {
   async clickRetryInstanceButton(processInstanceKey: string): Promise<void> {
     const button = this.getRetryInstanceButton(processInstanceKey);
     try {
-      await this.page
-        .getByRole('button', {
-          name: `Retry Instance ${processInstanceKey}`,
-        })
-        .click({timeout: 30000});
-    } catch (error) {
+      await button.click({timeout: 30000});
+    } catch {
       await button.scrollIntoViewIfNeeded({timeout: 60000});
       await button.click({timeout: 60000});
     }
