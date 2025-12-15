@@ -668,7 +668,8 @@ public final class BpmnStateTransitionBehavior {
         .setParentElementInstanceKey(context.getElementInstanceKey())
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType())
-        .setTenantId(context.getTenantId());
+        .setTenantId(context.getTenantId())
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);

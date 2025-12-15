@@ -70,6 +70,7 @@ public class SignalEndEventTest {
         .hasBpmnProcessId(PROCESS)
         .hasVersion(processInstance.getValue().getVersion())
         .hasProcessInstanceKey(processInstance.getKey())
+        .hasRootProcessInstanceKey(processInstance.getKey())
         .hasBpmnEventType(BpmnEventType.SIGNAL)
         .hasElementId("end")
         .hasFlowScopeKey(processInstance.getKey());

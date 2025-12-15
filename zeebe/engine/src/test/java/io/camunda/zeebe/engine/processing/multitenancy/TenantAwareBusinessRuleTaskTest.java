@@ -120,6 +120,7 @@ public class TenantAwareBusinessRuleTaskTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasTenantId(tenantOne);
   }
 

@@ -100,7 +100,8 @@ public final class MessageStartEventTest {
         .hasBpmnProcessId(processInstance.getValue().getBpmnProcessId())
         .hasVersion(processInstance.getValue().getVersion())
         .hasProcessInstanceKey(processInstance.getKey())
-        .hasFlowScopeKey(processInstance.getKey());
+        .hasFlowScopeKey(processInstance.getKey())
+        .hasRootProcessInstanceKey(processInstance.getKey());
   }
 
   @Test

@@ -422,7 +422,8 @@ public class CreateProcessInstanceAnywhereTest {
         .hasElementId("task")
         .hasFlowScopeKey(processInstanceKey)
         .hasParentProcessInstanceKey(-1L)
-        .hasParentElementInstanceKey(-1L);
+        .hasParentElementInstanceKey(-1L)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -463,6 +464,7 @@ public class CreateProcessInstanceAnywhereTest {
                     .hasBpmnProcessId(deployedProcess.getBpmnProcessId())
                     .hasVersion(deployedProcess.getVersion())
                     .hasProcessInstanceKey(processInstanceKey)
+                    .hasRootProcessInstanceKey(processInstanceKey)
                     .hasBpmnElementType(BpmnElementType.PROCESS)
                     .hasElementId(PROCESS_ID)
                     .hasFlowScopeKey(-1L)
@@ -485,6 +487,7 @@ public class CreateProcessInstanceAnywhereTest {
                     .hasBpmnProcessId(deployedProcess.getBpmnProcessId())
                     .hasVersion(deployedProcess.getVersion())
                     .hasProcessInstanceKey(processInstanceKey)
+                    .hasRootProcessInstanceKey(processInstanceKey)
                     .hasBpmnElementType(BpmnElementType.SUB_PROCESS)
                     .hasElementId("subprocess")
                     .hasFlowScopeKey(processInstanceKey)
@@ -504,6 +507,7 @@ public class CreateProcessInstanceAnywhereTest {
         .hasBpmnProcessId(deployedProcess.getBpmnProcessId())
         .hasVersion(deployedProcess.getVersion())
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasBpmnElementType(BpmnElementType.MANUAL_TASK)
         .hasElementId("task")
         .hasFlowScopeKey(subprocessElementInstanceKey)

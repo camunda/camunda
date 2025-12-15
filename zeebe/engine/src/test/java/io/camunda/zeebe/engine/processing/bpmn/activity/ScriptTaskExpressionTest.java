@@ -98,7 +98,8 @@ public final class ScriptTaskExpressionTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -137,6 +138,7 @@ public final class ScriptTaskExpressionTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasTenantId(tenantId);
   }
 

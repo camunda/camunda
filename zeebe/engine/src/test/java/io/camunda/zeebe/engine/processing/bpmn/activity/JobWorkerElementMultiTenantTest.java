@@ -130,7 +130,8 @@ public class JobWorkerElementMultiTenantTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey)
-        .hasTenantId(tenantId);
+        .hasTenantId(tenantId)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test

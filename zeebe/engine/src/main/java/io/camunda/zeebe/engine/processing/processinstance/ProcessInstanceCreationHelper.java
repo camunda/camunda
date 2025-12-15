@@ -93,17 +93,17 @@ public class ProcessInstanceCreationHelper {
 
   public ProcessInstanceRecord initProcessInstanceRecord(
       final DeployedProcess process, final long processInstanceKey, final Set<String> tags) {
-    final var newProcessInstance = new ProcessInstanceRecord();
-    newProcessInstance.setBpmnProcessId(process.getBpmnProcessId());
-    newProcessInstance.setVersion(process.getVersion());
-    newProcessInstance.setProcessDefinitionKey(process.getKey());
-    newProcessInstance.setProcessInstanceKey(processInstanceKey);
-    newProcessInstance.setBpmnElementType(BpmnElementType.PROCESS);
-    newProcessInstance.setElementId(process.getProcess().getId());
-    newProcessInstance.setFlowScopeKey(-1);
-    newProcessInstance.setTenantId(process.getTenantId());
-    newProcessInstance.setTags(tags);
-    return newProcessInstance;
+    return new ProcessInstanceRecord()
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setVersion(process.getVersion())
+        .setProcessDefinitionKey(process.getKey())
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(processInstanceKey)
+        .setBpmnElementType(BpmnElementType.PROCESS)
+        .setElementId(process.getProcess().getId())
+        .setFlowScopeKey(-1)
+        .setTenantId(process.getTenantId())
+        .setTags(tags);
   }
 
   private Either<Rejection, DeployedProcess> getProcess(

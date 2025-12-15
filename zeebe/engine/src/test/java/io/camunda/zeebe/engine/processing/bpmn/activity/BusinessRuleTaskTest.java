@@ -160,7 +160,8 @@ public final class BusinessRuleTaskTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)
-        .hasTenantId(tenantId);
+        .hasTenantId(tenantId)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test
