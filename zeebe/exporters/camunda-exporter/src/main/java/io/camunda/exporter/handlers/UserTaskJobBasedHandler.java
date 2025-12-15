@@ -86,7 +86,8 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   @Override
   public boolean handlesRecord(final Record<JobRecordValue> record) {
     return SUPPORTED_INTENTS.contains(record.getIntent())
-        && record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE);
+        && record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE)
+        && !record.getValue().isJobToUserTaskMigration();
   }
 
   @Override

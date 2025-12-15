@@ -629,6 +629,7 @@ public class MigrateUserTaskTest {
             RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.BPMN_ELEMENT)
+                .filter(r -> r.getValue().isJobToUserTaskMigration())
                 .exists())
         .describedAs("Expect that the job is canceled for the job based user task")
         .isTrue();
@@ -736,6 +737,7 @@ public class MigrateUserTaskTest {
             RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.BPMN_ELEMENT)
+                .filter(r -> r.getValue().isJobToUserTaskMigration())
                 .exists())
         .describedAs("Expect that the job is canceled for the job based user task")
         .isTrue();
@@ -848,6 +850,7 @@ public class MigrateUserTaskTest {
             RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.BPMN_ELEMENT)
+                .filter(r -> r.getValue().isJobToUserTaskMigration())
                 .exists())
         .describedAs("Expect that the job is canceled for the job based user task")
         .isTrue();
@@ -942,6 +945,7 @@ public class MigrateUserTaskTest {
         .addMappingInstruction("A", "B")
         .migrate();
 
+    // then
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -958,6 +962,7 @@ public class MigrateUserTaskTest {
             RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.BPMN_ELEMENT)
+                .filter(r -> r.getValue().isJobToUserTaskMigration())
                 .exists())
         .describedAs("Expect that the job is canceled for the job based user task")
         .isTrue();
@@ -1067,6 +1072,7 @@ public class MigrateUserTaskTest {
             RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.BPMN_ELEMENT)
+                .filter(r -> r.getValue().isJobToUserTaskMigration())
                 .exists())
         .describedAs("Expect that the job is canceled for the job based user task")
         .isTrue();

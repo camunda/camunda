@@ -1074,6 +1074,90 @@ public class UserTaskHandlerTest {
             indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
+  @Test
+  void flushedCreateEntityShouldContainUserTaskMigrationUpdates() {
+    // given
+    final long processInstanceKey = 123;
+    final long flowNodeInstanceKey = 456;
+    final long recordKey = 110;
+    final String formId = "my-form-id";
+    final String formKey = "my-form-key";
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
+    final var dateTime = OffsetDateTime.now();
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withChangedAttributes(
+                List.of(
+                    "priority",
+                    "dueDate",
+                    "followUpDate",
+                    "candidateUsersList",
+                    "candidateGroupsList"))
+            .withProcessInstanceKey(processInstanceKey)
+            .withPriority(99)
+            .withDueDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
+            .withFollowUpDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
+            .withCandidateUsersList(Arrays.asList("user1", "user2"))
+            .withCandidateGroupsList(Arrays.asList("group1", "group2"))
+            .withElementInstanceKey(flowNodeInstanceKey)
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CREATED)
+                    .withValue(taskRecordValue)
+                    .withKey(recordKey)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity =
+        underTest
+            .createNewEntity(String.valueOf(recordKey))
+            .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
+            .setFormId(formId)
+            .setFormKey(formKey);
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    underTest.flush(taskEntity, mockRequest);
+    final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
+    expectedUpdates.put(TaskTemplate.FOLLOW_UP_DATE, taskEntity.getFollowUpDate());
+    expectedUpdates.put(TaskTemplate.DUE_DATE, taskEntity.getDueDate());
+    expectedUpdates.put(TaskTemplate.CANDIDATE_USERS, taskEntity.getCandidateUsers());
+    expectedUpdates.put(TaskTemplate.CANDIDATE_GROUPS, taskEntity.getCandidateGroups());
+    expectedUpdates.put(
+        TaskTemplate.CHANGED_ATTRIBUTES,
+        List.of(
+            "priority", "dueDate", "followUpDate", "candidateUsersList", "candidateGroupsList"));
+    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(TaskTemplate.IMPLEMENTATION, taskEntity.getImplementation());
+    expectedUpdates.put(TaskTemplate.FORM_ID, taskEntity.getFormId());
+    expectedUpdates.put(TaskTemplate.FORM_KEY, taskEntity.getFormKey());
+
+    // then
+    assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
+    assertThat(taskEntity.getDueDate()).isEqualTo(taskRecordValue.getDueDate());
+    assertThat(taskEntity.getFollowUpDate()).isEqualTo(taskRecordValue.getFollowUpDate());
+    assertThat(taskEntity.getFormId()).isEqualTo(formId);
+    assertThat(taskEntity.getFormKey()).isEqualTo(formKey);
+    assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+    assertThat(Arrays.stream(taskEntity.getCandidateGroups()).toList())
+        .isEqualTo(taskRecordValue.getCandidateGroupsList());
+    assertThat(Arrays.stream(taskEntity.getCandidateUsers()).toList())
+        .isEqualTo(taskRecordValue.getCandidateUsersList());
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            indexName,
+            String.valueOf(recordKey),
+            taskEntity,
+            expectedUpdates,
+            String.valueOf(processInstanceKey));
+  }
+
   @ParameterizedTest
   @EnumSource(value = UserTaskIntent.class)
   void flushedEntityShouldContainPartialStates(final UserTaskIntent intent) {

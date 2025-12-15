@@ -104,6 +104,9 @@
                 "tags": {
                   "type": "keyword"
                 },
+                "jobToUserTaskMigration": {
+                  "type": "boolean"
+                },
                 "result": {
                   "properties": {
                     "type": {
