@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
  *     remapping when adding new entries.
  * @see BackupIndex
  */
-final class CompactBackupIndex implements BackupIndex, AutoCloseable {
+public final class CompactBackupIndex implements BackupIndex, AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(CompactBackupIndex.class);
 
   /**

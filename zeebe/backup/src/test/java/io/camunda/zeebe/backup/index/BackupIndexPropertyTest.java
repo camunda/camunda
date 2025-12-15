@@ -8,7 +8,7 @@
 
 package io.camunda.zeebe.backup.index;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.api.BackupIndex.IndexedBackup;
 import io.camunda.zeebe.backup.index.CompactBackupIndex.IndexCorruption;
@@ -32,7 +32,7 @@ import net.jqwik.api.state.Action;
 import net.jqwik.api.state.ActionChain;
 import net.jqwik.api.state.Transformer;
 
-public class BackupIndexPropertyTest {
+final class BackupIndexPropertyTest {
 
   /**
    * Verifies that an in-memory sorted set and the compact backup index maintain identical indexes

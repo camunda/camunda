@@ -59,25 +59,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <!--  Ensure non-jqwik junit5 tests can be run -->
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>
