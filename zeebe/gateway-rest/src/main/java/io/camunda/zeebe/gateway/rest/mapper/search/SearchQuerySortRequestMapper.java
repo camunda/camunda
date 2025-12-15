@@ -21,6 +21,7 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.IncidentStatisticsSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
@@ -232,6 +233,12 @@ public class SearchQuerySortRequestMapper {
               ProcessDefinitionInstanceVersionStatisticsQuerySortRequest.FieldEnum>>
       fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(
           final List<ProcessDefinitionInstanceVersionStatisticsQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<SearchQuerySortRequest<IncidentStatisticsQuerySortRequest.FieldEnum>>
+      fromIncidentStatisticsQuerySortRequest(
+          final List<IncidentStatisticsQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -870,6 +877,22 @@ public class SearchQuerySortRequestMapper {
         case ACTIVE_INSTANCES_WITH_INCIDENT_COUNT -> builder.activeInstancesWithIncidentCount();
         case ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT ->
             builder.activeInstancesWithoutIncidentCount();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  public static List<String> applyIncidentStatisticsSortField(
+      final IncidentStatisticsQuerySortRequest.FieldEnum field,
+      final IncidentStatisticsSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case ERROR_MESSAGE -> builder.errorMessage();
+        case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
