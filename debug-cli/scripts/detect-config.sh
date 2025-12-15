@@ -112,14 +112,14 @@ echo "[7/8] Detecting actuator port..."
 # Try management/monitoring port names first (actuator is typically on port 9600)
 ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="management")].containerPort}' 2>/dev/null || echo "")
 if [ -z "$ACTUATOR_PORT" ]; then
-	ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="http-management")].containerPort}' 2>/dev/null || echo "")
+        ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="http-management")].containerPort}' 2>/dev/null || echo "")
 fi
 if [ -z "$ACTUATOR_PORT" ]; then
-	ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="monitoring")].containerPort}' 2>/dev/null || echo "")
+        ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="monitoring")].containerPort}' 2>/dev/null || echo "")
 fi
 # Default to 9600 if not found
 if [ -z "$ACTUATOR_PORT" ]; then
-	ACTUATOR_PORT="9600"
+        ACTUATOR_PORT="9600"
 fi
 echo "  Actuator Port: $ACTUATOR_PORT (detected or default)"
 
@@ -169,5 +169,4 @@ fi
 echo ""
 echo "Then run:"
 echo "  ./identify-partition-brokers.sh  # Identify partition leader and replicas"
-echo "  ./generate-recovery-job.sh       # Generate recovery Job YAML"
 echo ""
