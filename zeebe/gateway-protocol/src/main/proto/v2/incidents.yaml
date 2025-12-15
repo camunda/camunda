@@ -111,33 +111,33 @@ paths:
 
   /incidents/statistics:
     post:
-        x-eventually-consistent: true
-        tags:
-            - Incident
-        operationId: getIncidentStatistics
-        summary: Get incident statistics
-        description: Returns aggregated statistics for active incidents, grouped by error message.
-        requestBody:
-            required: false
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/IncidentStatisticsQuery'
-        responses:
-            "200":
-                description: The incident statistics result.
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/IncidentStatisticsQueryResult'
-            "400":
-                $ref: 'common-responses.yaml#/components/responses/InvalidData'
-            "401":
-                $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-            "403":
-                $ref: 'common-responses.yaml#/components/responses/Forbidden'
-            "500":
-                $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+      tags:
+        - Incident
+      operationId: getIncidentStatistics
+      summary: Get incident statistics
+      description: Returns aggregated statistics for active incidents, grouped by error message.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentStatisticsQuery'
+      responses:
+        "200":
+          description: The incident statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
 ## Schema definitions
 
@@ -455,7 +455,7 @@ components:
           type: string
           enum:
             - errorMessage
-            - activeInstanceWithErrorCount
+            - activeInstancesWithErrorCount
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
