@@ -1061,12 +1061,16 @@ final class AuthorizationCheckBehaviorTest {
   void isAnyAuthorizedOrInternalCommandShouldBeAuthorizedForInternalCommand() {
     // given
     final var externalCommandRequest =
-        AuthorizationRequest.builder().command(mock(TypedRecord.class)).build();
+        AuthorizationRequest.builder().command(mock(TypedRecord.class))
+            .resourceType(AuthorizationResourceType.RESOURCE).permissionType(PermissionType.CREATE)
+            .build();
 
     final var internalCommand = mock(TypedRecord.class);
     when(internalCommand.isInternalCommand()).thenReturn(true);
     final var internalCommandRequest =
-        AuthorizationRequest.builder().command(internalCommand).build();
+        AuthorizationRequest.builder().command(internalCommand)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(PermissionType.DELETE_RESOURCE).build();
 
     // when
     final var result =

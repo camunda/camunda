@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.identity.authorization.resolver;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
@@ -41,16 +40,18 @@ public final class TenantResolver {
   }
 
   /**
-   * Checks if the principal in the request is assigned to the request's tenant.
+   * Checks if a user is assigned to a specific tenant. If multi-tenancy is disabled, this method
+   * will always return true.
    *
-   * @param request the authorization request
-   * @return true if the user is assigned to the tenant or multi-tenancy is disabled
+   * @param claims the authorization claims map
+   * @param tenantId the tenant we want to check assignment for
+   * @return true if assigned or multi-tenancy is disabled, false otherwise
    */
-  public boolean isAssignedToTenant(final AuthorizationRequest request) {
+  public boolean isAssignedToTenant(final Map<String, Object> claims, final String tenantId) {
     if (!multiTenancyEnabled) {
       return true;
     }
-    return getAuthorizedTenants(request.claims()).isAuthorizedForTenantId(request.tenantId());
+    return getAuthorizedTenants(claims).isAuthorizedForTenantId(tenantId);
   }
 
   /**

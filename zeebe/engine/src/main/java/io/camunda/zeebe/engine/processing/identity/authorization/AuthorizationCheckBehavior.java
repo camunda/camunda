@@ -399,8 +399,7 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned or multi-tenancy is disabled, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
-    return tenantResolver.isAssignedToTenant(
-        AuthorizationRequest.builder().command(command).tenantId(tenantId).build());
+    return tenantResolver.isAssignedToTenant(command.getAuthorizations(), tenantId);
   }
 
   /**

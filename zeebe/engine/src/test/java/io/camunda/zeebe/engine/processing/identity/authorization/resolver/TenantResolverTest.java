@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
@@ -43,10 +42,10 @@ class TenantResolverTest {
     // given - multi-tenancy disabled resolver
     final var resolverWithoutMt =
         new TenantResolver(membershipState, mappingRuleState, claimsExtractor, false);
-    final var request = mockAuthorizationRequest("demo-user", "tenant-1");
+    final var claims = Map.<String, Object>of();
 
     // when
-    final var isAssigned = resolverWithoutMt.isAssignedToTenant(request);
+    final var isAssigned = resolverWithoutMt.isAssignedToTenant(claims, "any-tenant");
 
     // then
     assertThat(isAssigned).isTrue();
@@ -58,16 +57,14 @@ class TenantResolverTest {
     final var username = "demo-user";
     final var tenant1 = "tenant-1";
     final var tenant2 = "tenant-2";
+    final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "demo-user");
     when(membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT))
         .thenReturn(List.of(tenant1, tenant2));
 
     // when
-    final var isAssignedToTenant1 =
-        tenantResolver.isAssignedToTenant(mockAuthorizationRequest(username, tenant1));
-    final var isAssignedToTenant2 =
-        tenantResolver.isAssignedToTenant(mockAuthorizationRequest(username, tenant2));
-    final var isAssignedToTenant3 =
-        tenantResolver.isAssignedToTenant(mockAuthorizationRequest(username, "non-existent"));
+    final var isAssignedToTenant1 = tenantResolver.isAssignedToTenant(claims, tenant1);
+    final var isAssignedToTenant2 = tenantResolver.isAssignedToTenant(claims, tenant2);
+    final var isAssignedToTenant3 = tenantResolver.isAssignedToTenant(claims, "non-existent");
 
     // then
     assertThat(isAssignedToTenant1).isTrue();
@@ -206,15 +203,5 @@ class TenantResolverTest {
     // then
     assertThat(authorizedTenants.getAuthorizedTenantIds())
         .containsExactlyInAnyOrder(directTenant, roleTenant, groupTenant);
-  }
-
-  // Helper methods
-
-  private AuthorizationRequest mockAuthorizationRequest(
-      final String username, final String tenantId) {
-    final var request = mock(AuthorizationRequest.class);
-    when(request.claims()).thenReturn(Map.of(AUTHORIZED_USERNAME, username));
-    when(request.tenantId()).thenReturn(tenantId);
-    return request;
   }
 }

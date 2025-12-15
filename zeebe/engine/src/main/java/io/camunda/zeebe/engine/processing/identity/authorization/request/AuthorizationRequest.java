@@ -13,11 +13,12 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 public final class AuthorizationRequest {
 
@@ -44,7 +45,7 @@ public final class AuthorizationRequest {
   private static Map<String, Object> resolveClaims(final Builder builder) {
     final var claims =
         builder.command != null ? builder.command.getAuthorizations() : builder.authorizationClaims;
-    return Collections.unmodifiableMap(claims);
+    return Collections.unmodifiableMap(Objects.requireNonNullElse(claims, Collections.emptyMap()));
   }
 
   private static boolean deriveTenantOwnedResource(final Builder builder) {
@@ -96,10 +97,7 @@ public final class AuthorizationRequest {
     return AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
         permissionType,
         resourceType,
-        resourceIds.stream()
-            .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
-            .sorted()
-            .collect(Collectors.joining(", ")));
+        resourceIds.stream().sorted().collect(Collectors.joining(", ")));
   }
 
   public String getTenantErrorMessage() {
@@ -120,14 +118,9 @@ public final class AuthorizationRequest {
     private Map<String, Object> authorizationClaims;
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
-    private Set<String> resourceIds;
+    private final Set<String> resourceIds = new HashSet<>();
     private String tenantId;
     private boolean isNewResource;
-
-    public Builder() {
-      authorizationClaims = new HashMap<>();
-      resourceIds = new HashSet<>();
-    }
 
     public Builder command(final TypedRecord<?> command) {
       this.command = command;
@@ -164,7 +157,9 @@ public final class AuthorizationRequest {
     }
 
     public Builder addResourceId(final String resourceId) {
-      resourceIds.add(resourceId);
+      if (StringUtils.isNotEmpty(resourceId)) {
+        resourceIds.add(resourceId);
+      }
       return this;
     }
 
@@ -174,6 +169,20 @@ public final class AuthorizationRequest {
     }
 
     public AuthorizationRequest build() {
+      if (resourceType == null) {
+        throw new IllegalStateException("resourceType must be set");
+      }
+      if (permissionType == null) {
+        throw new IllegalStateException("permissionType must be set");
+      }
+
+      if (command == null && authorizationClaims == null) {
+        throw new IllegalStateException("command or authorizationClaims must be provided");
+      }
+      if (command != null && authorizationClaims != null) {
+        throw new IllegalStateException("command and authorizationClaims are mutually exclusive");
+      }
+
       return new AuthorizationRequest(this);
     }
   }
