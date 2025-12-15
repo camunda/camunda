@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformation;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.AdHocSubProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BoundaryEventTransformer;
@@ -73,9 +72,7 @@ public final class BpmnTransformer {
 
   private final ExpressionLanguage expressionLanguage;
 
-  public BpmnTransformer(
-      final ExpressionLanguage expressionLanguage,
-      final GlobalListenersConfiguration globalListenersConfiguration) {
+  public BpmnTransformer(final ExpressionLanguage expressionLanguage) {
     this.expressionLanguage = expressionLanguage;
 
     step1Visitor = new TransformationVisitor();
@@ -101,8 +98,7 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new ScriptTaskTransformer());
     step2Visitor.registerHandler(new SequenceFlowTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
-    step2Visitor.registerHandler(
-        new UserTaskTransformer(expressionLanguage, globalListenersConfiguration));
+    step2Visitor.registerHandler(new UserTaskTransformer(expressionLanguage));
 
     step3Visitor = new TransformationVisitor();
     step3Visitor.registerHandler(new ContextProcessTransformer());
