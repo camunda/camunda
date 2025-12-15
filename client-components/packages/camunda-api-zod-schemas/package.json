@@ -215,15 +215,15 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@11.6.2",
+	"packageManager": "npm@11.7.0",
 	"devDependencies": {
-		"@types/node": "24.3.0",
+		"@types/node": "25.0.2",
 		"changelogen": "0.6.2",
 		"typescript": "5.9.3",
-		"vite": "7.1.11",
+		"vite": "7.3.0",
 		"vite-plugin-circular-dependency": "0.5.0",
 		"vite-plugin-dts": "4.5.4",
-		"zod": "^4.0.17"
+		"zod": "^4.2.0"
 	},
 	"peerDependencies": {
 		"zod": "^3.25.0 || ^4.0.0"
