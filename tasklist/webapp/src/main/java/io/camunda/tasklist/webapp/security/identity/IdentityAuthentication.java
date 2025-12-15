@@ -11,11 +11,9 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
-import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.tasklist.webapp.security.OldUsernameAware;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
@@ -30,9 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken
     implements OldUsernameAware, TenantAwareAuthentication {
@@ -45,7 +40,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   private List<String> permissions;
   private String subject;
   private Date expires;
-  private Date refreshTokenExpiresAt;
   private volatile List<TasklistTenant> tenants = Collections.emptyList();
   private IdentityAuthorization authorization;
   private List<String> groups;
@@ -91,8 +85,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         } else {
           tenants = List.of();
         }
-      } catch (RestException ex) {
-        LOGGER.warn("Unable to retrieve tenants from Identity. Error: " + ex.getMessage(), ex);
+      } catch (final RestException ex) {
+        LOGGER.warn("Unable to retrieve tenants from Identity. Error: {}", ex.getMessage(), ex);
         tenants = List.of();
       }
     } else {
@@ -108,18 +102,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return expires == null || expires.before(new Date());
   }
 
-  private boolean hasRefreshTokenExpired() {
-    try {
-      LOGGER.info("Refresh token will expire at {}", refreshTokenExpiresAt);
-      return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
-    } catch (final TokenDecodeException e) {
-      LOGGER.info(
-          "Refresh token is not a JWT and expire date can not be determined. Error message: {}",
-          e.getMessage());
-      return false;
-    }
-  }
-
   @Override
   public String getName() {
     return name;
@@ -129,19 +111,12 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   public boolean isAuthenticated() {
     if (hasExpired()) {
       LOGGER.info("Access token is expired");
-      if (hasRefreshTokenExpired()) {
-        LOGGER.info("No refresh token available. Authentication is invalid.");
+      LOGGER.info("Get a new access token by using refresh token");
+      try {
+        renewAccessToken();
+      } catch (final Exception e) {
+        LOGGER.error("Renewing access token failed with exception", e);
         setAuthenticated(false);
-        getIdentity().authentication().revokeToken(tokens.getRefreshToken());
-        return false;
-      } else {
-        try {
-          LOGGER.info("Get a new access token by using refresh token");
-          renewAccessToken();
-        } catch (Exception e) {
-          LOGGER.error("Renewing access token failed with exception", e);
-          setAuthenticated(false);
-        }
       }
     }
     return super.isAuthenticated();
@@ -155,6 +130,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return permissions.stream()
         .map(PermissionConverter.getInstance()::convert)
         .collect(Collectors.toList());
+  }
+
+  public IdentityAuthentication setPermissions(final List<String> permissions) {
+    this.permissions = permissions;
+    return this;
   }
 
   public void authenticate(final Tokens tokens) {
@@ -179,31 +159,16 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
             new IdentityAuthorization(
                 getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
       }
-    } catch (io.camunda.identity.sdk.exception.InvalidConfigurationException ice) {
+    } catch (final io.camunda.identity.sdk.exception.InvalidConfigurationException ice) {
       LOGGER.debug(
           "Base URL is not provided so it's not possible to get authorizations from Identity");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.debug("Identity and Tasklist misconfiguration.");
     }
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
     groups = accessToken.getUserDetails().getGroups();
-    if (!isPolling()) {
-      try {
-        refreshTokenExpiresAt =
-            getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
-      } catch (TokenDecodeException e) {
-        LOGGER.error(
-            "Unable to decode refresh token {} with exception: {}",
-            this.tokens.getRefreshToken(),
-            e.getMessage());
-      }
-    }
-    if (!hasExpired()) {
-      setAuthenticated(true);
-    } else {
-      setAuthenticated(false);
-    }
+    setAuthenticated(!hasExpired());
   }
 
   @NotNull
@@ -233,27 +198,22 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return this;
   }
 
-  public IdentityAuthentication setPermissions(final List<String> permissions) {
-    this.permissions = permissions;
-    return this;
-  }
-
   public String getUserDisplayName() {
     return userDisplayName;
+  }
+
+  public IdentityAuthentication setUserDisplayName(final String userDisplayName) {
+    this.userDisplayName = userDisplayName;
+    return this;
   }
 
   private String retrieveUserDisplayName() {
     return getIdentity()
         .authentication()
-        .verifyToken(this.tokens.getAccessToken())
+        .verifyToken(tokens.getAccessToken())
         .getUserDetails()
         .getName()
-        .orElse(this.name);
-  }
-
-  public IdentityAuthentication setUserDisplayName(String userDisplayName) {
-    this.userDisplayName = userDisplayName;
-    return this;
+        .orElse(name);
   }
 
   @Override
@@ -265,7 +225,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return authorization;
   }
 
-  public IdentityAuthentication setAuthorizations(IdentityAuthorization authorization) {
+  public IdentityAuthentication setAuthorizations(final IdentityAuthorization authorization) {
     this.authorization = authorization;
     return this;
   }
@@ -274,22 +234,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return groups;
   }
 
-  public IdentityAuthentication setGroups(List<String> groups) {
+  public IdentityAuthentication setGroups(final List<String> groups) {
     this.groups = groups;
     return this;
-  }
-
-  private boolean isPolling() {
-    final RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-    if (requestAttributes instanceof ServletRequestAttributes) {
-      return RequestContextHolder.getRequestAttributes() != null
-          && Boolean.TRUE.equals(
-              Boolean.parseBoolean(
-                  ((ServletRequestAttributes) requestAttributes)
-                      .getRequest()
-                      .getHeader(ElasticsearchSessionRepository.POLLING_HEADER)));
-    } else {
-      return false;
-    }
   }
 }

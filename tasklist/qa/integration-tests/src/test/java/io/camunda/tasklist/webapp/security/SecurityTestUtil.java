@@ -15,7 +15,9 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.util.Date;
@@ -85,5 +87,13 @@ public class SecurityTestUtil {
         .issuer("http://localhost")
         .expirationTime(new Date(new Date().getTime() + 60 * 1000))
         .build();
+  }
+
+  public static RSAKey getRsaJWK(final JWSAlgorithm alg) throws JOSEException {
+    return new RSAKeyGenerator(2048)
+        .keyID("123")
+        .keyUse(KeyUse.SIGNATURE)
+        .algorithm(alg)
+        .generate();
   }
 }
