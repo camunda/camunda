@@ -1,5 +1,2 @@
 # generated yaml
-generated/*.yaml
-# generated state for each run
-generated/recovery*
-generated/.partition-brokers*
+generated/*
