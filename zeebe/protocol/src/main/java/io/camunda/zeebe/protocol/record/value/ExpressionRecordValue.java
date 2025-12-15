@@ -30,7 +30,6 @@ import org.immutables.value.Value;
  *
  * <ul>
  *   <li>{@link #getExpression()} – the FEEL expression to evaluate.
- *   <li>{@link #getResultType()} – the type of the result.
  *   <li>{@link #getResultValue()} – the result value (nullable).
  *   <li>{@link #getWarnings()} – the list of warnings generated during evaluation.
  * </ul>

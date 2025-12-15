@@ -156,12 +156,12 @@ public final class EventAppliers implements EventApplier {
     registerHistoryDeletionAppliers();
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
-    registerClusterVariableResolutionEventAppliers();
+    registerExpressionEvaluationEventAppliers();
     registerGlobalListenersEventAppliers(state);
     return this;
   }
 
-  private void registerClusterVariableResolutionEventAppliers() {
+  private void registerExpressionEvaluationEventAppliers() {
     register(ExpressionIntent.EVALUATED, NOOP_EVENT_APPLIER);
   }
 

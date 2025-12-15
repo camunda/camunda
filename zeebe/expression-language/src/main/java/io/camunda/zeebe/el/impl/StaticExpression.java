@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.el.impl;
 
-import static io.camunda.zeebe.el.impl.Loggers.LOGGER;
-
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
@@ -27,8 +25,9 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * This class handles static expressions of type {@code String} or {@code Number}. Boolean types are
- * not supported for static expressions.
+ * This class handles static expressions of type {@code String}, {@code Number}, {@code Boolean}, or
+ * {@code null}. Static expressions are those that do not start with '=' and are treated as literal
+ * values.
  */
 public final class StaticExpression implements Expression, EvaluationResult {
 
@@ -39,11 +38,28 @@ public final class StaticExpression implements Expression, EvaluationResult {
   public StaticExpression(final String expression) {
     this.expression = expression;
 
-    try {
-      treatAsNumber(expression);
-    } catch (final NumberFormatException e) {
-      treatAsString(expression);
+    // Try to parse as different types in order of specificity
+    if (expression == null || "null".equals(expression)) {
+      treatAsNull();
+    } else if ("true".equals(expression) || "false".equals(expression)) {
+      treatAsBoolean(expression);
+    } else {
+      try {
+        treatAsNumber(expression);
+      } catch (final NumberFormatException e) {
+        treatAsString(expression);
+      }
     }
+  }
+
+  private void treatAsNull() {
+    result = null;
+    resultType = ResultType.NULL;
+  }
+
+  private void treatAsBoolean(final String expression) {
+    result = Boolean.parseBoolean(expression);
+    resultType = ResultType.BOOLEAN;
   }
 
   private void treatAsNumber(final String expression) {
@@ -104,20 +120,26 @@ public final class StaticExpression implements Expression, EvaluationResult {
 
     writer.wrap(writeBuffer, 0);
 
-    if (resultType == ResultType.NUMBER) {
-      final BigDecimal number = (BigDecimal) result;
-      if (number.scale() <= 0
-          && number.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) <= 0
-          && number.compareTo(BigDecimal.valueOf(Long.MIN_VALUE)) >= 0) {
-        writer.writeInteger(number.longValue());
-      } else {
-        writer.writeFloat(number.doubleValue());
+    switch (resultType) {
+      case NULL -> writer.writeNil();
+      case BOOLEAN -> writer.writeBoolean((Boolean) result);
+      case NUMBER -> {
+        final BigDecimal number = (BigDecimal) result;
+        if (number.scale() <= 0
+            && number.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) <= 0
+            && number.compareTo(BigDecimal.valueOf(Long.MIN_VALUE)) >= 0) {
+          writer.writeInteger(number.longValue());
+        } else {
+          writer.writeFloat(number.doubleValue());
+        }
       }
-    } else if (resultType == ResultType.STRING) {
-      final String stringValue = (String) result;
-      final DirectBuffer stringWrapper = new UnsafeBuffer();
-      stringWrapper.wrap(stringValue.getBytes());
-      writer.writeString(stringWrapper);
+      case STRING -> {
+        final String stringValue = (String) result;
+        final DirectBuffer stringWrapper = new UnsafeBuffer();
+        stringWrapper.wrap(stringValue.getBytes());
+        writer.writeString(stringWrapper);
+      }
+      default -> writer.writeNil();
     }
 
     resultView.wrap(writeBuffer, 0, writer.getOffset());
@@ -131,8 +153,7 @@ public final class StaticExpression implements Expression, EvaluationResult {
 
   @Override
   public Boolean getBoolean() {
-    LOGGER.warn("StaticExpression.getBoolean() - not yet implemented");
-    return null;
+    return getType() == ResultType.BOOLEAN ? (Boolean) result : null;
   }
 
   @Override

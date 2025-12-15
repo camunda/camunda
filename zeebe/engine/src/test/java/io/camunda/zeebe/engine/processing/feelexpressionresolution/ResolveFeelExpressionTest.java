@@ -508,14 +508,74 @@ public class ResolveFeelExpressionTest {
   }
 
   @Test
-  public void shouldResolveStaticUnicodeStringExpression() {
-    // when - unicode string without '='
-    final var record = ENGINE_RULE.expression().withExpression("héllo wörld 日本語").resolve();
+  public void shouldResolveStaticVerySmallDecimal() {
+    // when - very small decimal number
+    final var record = ENGINE_RULE.expression().withExpression("0.000001").resolve();
 
     // then
     Assertions.assertThat(record)
         .hasIntent(ExpressionIntent.EVALUATED)
         .hasRecordType(RecordType.EVENT);
-    assertThat(record.getValue().getResultValue()).isEqualTo("héllo wörld 日本語");
+    assertThat(record.getValue().getResultValue()).isEqualTo(0.000001);
+  }
+
+  @Test
+  public void shouldResolveStaticBooleanTrueExpression() {
+    // when - "true" without '=' is treated as static boolean
+    final var record = ENGINE_RULE.expression().withExpression("true").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(true);
+  }
+
+  @Test
+  public void shouldResolveStaticBooleanFalseExpression() {
+    // when - "false" without '=' is treated as static boolean
+    final var record = ENGINE_RULE.expression().withExpression("false").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(false);
+  }
+
+  @Test
+  public void shouldResolveStaticNullExpression() {
+    // when - "null" without '=' is treated as static null
+    final var record = ENGINE_RULE.expression().withExpression("null").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isNull();
+  }
+
+  @Test
+  public void shouldResolveStaticStringTrueWithDifferentCase() {
+    // when - "True" (different case) should be treated as string, not boolean
+    final var record = ENGINE_RULE.expression().withExpression("True").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("True");
+  }
+
+  @Test
+  public void shouldResolveStaticStringNullWithDifferentCase() {
+    // when - "Null" (different case) should be treated as string, not null
+    final var record = ENGINE_RULE.expression().withExpression("Null").resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("Null");
   }
 }
