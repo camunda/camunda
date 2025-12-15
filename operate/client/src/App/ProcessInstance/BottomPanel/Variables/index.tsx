@@ -25,6 +25,8 @@ import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIs
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -72,9 +74,12 @@ const Variables: React.FC<Props> = observer(
       : initialValues === undefined ||
         Object.values(initialValues).length === 0;
 
+    const {resolvedElementInstance} = useProcessInstanceElementSelection();
+
     useEffect(() => {
-      const isSelectedInstanceRunning =
-        flowNodeMetaDataStore.isSelectedInstanceRunning;
+      const isSelectedElementInstanceRunning = IS_ELEMENT_SELECTION_V2
+        ? resolvedElementInstance?.state === 'ACTIVE'
+        : flowNodeMetaDataStore.isSelectedInstanceRunning;
 
       if (!isProcessInstanceRunning) {
         setFooterVariant('disabled');
@@ -86,7 +91,10 @@ const Variables: React.FC<Props> = observer(
         return;
       }
 
-      if (!isViewMode || (!isRootNodeSelected && !isSelectedInstanceRunning)) {
+      if (
+        !isViewMode ||
+        (!isRootNodeSelected && !isSelectedElementInstanceRunning)
+      ) {
         setFooterVariant('disabled');
         return;
       }
@@ -97,6 +105,7 @@ const Variables: React.FC<Props> = observer(
       initialValues,
       isViewMode,
       isRootNodeSelected,
+      resolvedElementInstance?.state,
     ]);
 
     if (displayStatus === 'no-content') {
