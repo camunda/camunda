@@ -55,20 +55,17 @@ POD_PREFIX="${POD_PREFIX:-${STATEFULSET_NAME}}"
 ACTUATOR_PORT="${ACTUATOR_PORT:-9600}"
 GENERATED_DIR="${GENERATED_DIR:-generated}"
 
-# State file for sharing broker information
-STATE_FILE="${GENERATED_DIR}/.partition-brokers-${PARTITION_ID}.env"
-
 # ====================================================
 # Functions
 # ====================================================
 
 function get_pod_name() {
-    local broker_id=$1
-    echo "${POD_PREFIX}-${broker_id}"
+        local broker_id=$1
+        echo "${POD_PREFIX}-${broker_id}"
 }
 
 function get_broker_ids() {
-    seq 0 $((BROKER_COUNT - 1))
+        seq 0 $((BROKER_COUNT - 1))
 }
 
 # ====================================================
@@ -79,57 +76,70 @@ LEADER_BROKER=""
 PARTITION_REPLICAS=()
 
 for i in $(get_broker_ids); do
-    pod_name=$(get_pod_name $i)
-    
-    # Port forward to the broker
-    kubectl port-forward -n $NAMESPACE $pod_name $ACTUATOR_PORT:$ACTUATOR_PORT >/dev/null 2>&1 &
-    PF_PID=$!
-    sleep 2
-    
-    # Get partition role (use || true to prevent script exit on curl failure)
-    HTTP_RESPONSE=$(curl -s http://localhost:$ACTUATOR_PORT/actuator/partitions/$PARTITION_ID || true)
-    ROLE=$(echo "$HTTP_RESPONSE" | jq -r ".role" 2>/dev/null || true)
-    if [ -z "$ROLE" ] || [ "$ROLE" = "null" ]; then
-        ROLE="UNKNOWN"
-    fi
-    
-    # Track leader and replicas
-    if [ "$ROLE" = "LEADER" ]; then
-        LEADER_BROKER=$i
-        PARTITION_REPLICAS+=($i)
-    elif [ "$ROLE" = "FOLLOWER" ]; then
-        PARTITION_REPLICAS+=($i)
-    fi
-    
-    # Kill port-forward
-    kill $PF_PID 2>/dev/null || true
-    sleep 1
+        pod_name=$(get_pod_name $i)
+
+        echo "Port forwarding for pod $pod_name at port $ACTUATOR_PORT"
+        # Port forward to the broker
+        kubectl port-forward -n $NAMESPACE $pod_name $ACTUATOR_PORT:$ACTUATOR_PORT >/dev/null 2>&1 &
+        PF_PID=$!
+
+        # Get partition role with retry loop (10 attempts, 1 second between retries)
+        HTTP_RESPONSE=""
+        for attempt in {1..10}; do
+                HTTP_RESPONSE=$(curl -s http://localhost:$ACTUATOR_PORT/actuator/partitions/$PARTITION_ID 2>/dev/null || true)
+                if [ -n "$HTTP_RESPONSE" ]; then
+                        break
+                fi
+                sleep 1
+        done
+
+        if [ -z "$HTTP_RESPONSE" ]; then
+                echo "ERROR: Failed to get partition info for broker $i"
+                exit 1
+        fi
+
+        ROLE=$(echo "$HTTP_RESPONSE" | jq -r ".role" 2>/dev/null || true)
+        if [ -z "$ROLE" ] || [ "$ROLE" = "null" ]; then
+                ROLE="UNKNOWN"
+        fi
+
+        # Track leader and replicas
+        if [ "$ROLE" = "LEADER" ]; then
+                LEADER_BROKER=$i
+                PARTITION_REPLICAS+=($i)
+        elif [ "$ROLE" = "FOLLOWER" ]; then
+                PARTITION_REPLICAS+=($i)
+        fi
+
+        # Kill port-forward
+        kill $PF_PID 2>/dev/null || true
+        sleep 1
 done
 
 # Validate we found a leader
 if [ -z "$LEADER_BROKER" ]; then
-    echo "ERROR: Could not find leader for partition $PARTITION_ID" >&2
-    exit 1
+        echo "ERROR: Could not find leader for partition $PARTITION_ID" >&2
+        exit 1
 fi
 
 # Validate we found replicas
 if [ ${#PARTITION_REPLICAS[@]} -eq 0 ]; then
-    echo "ERROR: Could not find any replicas for partition $PARTITION_ID" >&2
-    exit 1
+        echo "ERROR: Could not find any replicas for partition $PARTITION_ID" >&2
+        exit 1
 fi
 
-# Save to state file
-mkdir -p "$GENERATED_DIR"
-cat > "$STATE_FILE" << EOF
 # Partition broker information for partition $PARTITION_ID
 # Generated: $(date)
 LEADER=$LEADER_BROKER
 REPLICAS="${PARTITION_REPLICAS[*]}"
-EOF
 
 # Output results (for backward compatibility and piping)
-echo "LEADER=$LEADER_BROKER"
-echo "REPLICAS=\"${PARTITION_REPLICAS[*]}\""
+echo "LAST_LEADER_BROKER=$LEADER_BROKER"
+echo "PARTITION_BROKER_IDS=\"${PARTITION_REPLICAS[*]}\""
 
-# Print info to stderr so it doesn't interfere with stdout parsing
-echo "INFO: Broker information saved to: $STATE_FILE" >&2
+echo "================================================="
+echo
+echo "You can export these variables with the following, so it can be used by other scripts"
+echo
+echo "export LAST_LEADER_BROKER=$LEADER_BROKER"
+echo "export PARTITION_BROKER_IDS=\"${PARTITION_REPLICAS[*]}\""
