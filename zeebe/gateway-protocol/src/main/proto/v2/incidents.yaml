@@ -116,7 +116,7 @@ paths:
         - Incident
       operationId: getIncidentStatistics
       summary: Get incident statistics
-      description: Returns aggregated statistics for active incidents, grouped by error message.
+      description: Returns aggregated statistics for active incidents, grouped by error code and message.
       requestBody:
         required: false
         content:
@@ -444,7 +444,7 @@ components:
           description: Error message which describes the error in more detail.
         activeInstancesWithErrorCount:
           type: integer
-          format: int32
+          format: int64
           description: The number of active process instances with this error.
 
     IncidentStatisticsQuerySortRequest:

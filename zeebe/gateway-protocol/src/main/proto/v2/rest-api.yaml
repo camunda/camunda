@@ -196,6 +196,8 @@ paths:
     $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}'
   /incidents/{incidentKey}/resolution:
     $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}~1resolution'
+  /incidents/statistics:
+    $ref: 'incidents.yaml#/paths/~1incidents~1statistics'
 
   # Job endpoints
   /jobs/activation:
