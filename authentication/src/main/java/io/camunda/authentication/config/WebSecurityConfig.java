@@ -142,7 +142,7 @@ public class WebSecurityConfig {
           // swagger-ui endpoint
           "/swagger-ui/**",
           "/v3/api-docs/**",
-          "/v2/rest-api.yaml",
+          "/v2/**",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/tasklist/new/**",
