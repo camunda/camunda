@@ -65,4 +65,16 @@ public final class ExpressionClient {
             DEFAULT_KEY, requestStreamId, requestId, ExpressionIntent.EVALUATE, expressionRecord);
     return expectation.apply(position);
   }
+
+  public Record<ExpressionRecordValue> resolve(final String username) {
+    final long position =
+        writer.writeCommand(
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            ExpressionIntent.EVALUATE,
+            username,
+            expressionRecord);
+    return expectation.apply(position);
+  }
 }
