@@ -370,6 +370,10 @@
           <!-- MSSQL needs an OFFSET when sorting in subselects -->
           OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY
         </when>
+        <!-- Oracle does not support LIMIT; FETCH FIRST is required even in subselects -->
+        <when test="_databaseId == 'oracle'">
+          FETCH FIRST 1 ROWS ONLY
+        </when>
         <otherwise>
           LIMIT 1
         </otherwise>
