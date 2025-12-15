@@ -131,7 +131,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-mcp</artifactId>
+      <artifactId>camunda-gateway-mcp</artifactId>
     </dependency>
 
     <dependency>

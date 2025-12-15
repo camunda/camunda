@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.mcp;
 
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -20,7 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
 @ConditionalOnWebApplication
-@ConditionalOnRestGatewayEnabled // TODO not depend on the REST gateway to allow standalone MCP
+// @ConditionalOnRestGatewayEnabled // TODO not depend on the REST gateway to allow standalone MCP
 @ConditionalOnProperty(
     name = {"camunda.mcp.server.enabled"},
     havingValue = "true")

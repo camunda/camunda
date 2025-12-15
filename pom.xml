@@ -35,6 +35,7 @@
     <module>service</module>
     <module>gateways/gateway-model</module>
     <module>gateways/gateway-mapping-http</module>
+    <module>gateways/gateway-mcp</module>
     <module>spring-utils</module>
     <module>clients/java</module>
     <module>clients/java-deprecated</module>

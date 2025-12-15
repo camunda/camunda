@@ -15,21 +15,11 @@
     <version>8.9.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
-  <artifactId>zeebe-gateway-mcp</artifactId>
+  <artifactId>camunda-gateway-mcp</artifactId>
   <packaging>jar</packaging>
-  <name>Zeebe Gateway MCP server</name>
+  <name>Camunda Gateway MCP server</name>
 
   <dependencies>
-    <!-- required to guarantee the protocol is processed earlier during the build -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-protocol</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-rest</artifactId>
-    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>

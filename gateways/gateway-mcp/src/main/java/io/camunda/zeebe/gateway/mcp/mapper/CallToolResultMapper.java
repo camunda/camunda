@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.mcp.mapper;
 
-import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.springframework.http.ProblemDetail;
 
@@ -17,8 +16,7 @@ public class CallToolResultMapper {
   }
 
   public static CallToolResult mapErrorToResult(final Throwable error) {
-    // TODO is the rest to problem mapper sufficient here?
-    return mapProblemToResult(RestErrorMapper.mapErrorToProblem(error));
+    return mapProblemToResult(McpErrorMapper.mapErrorToProblem(error));
   }
 
   public static CallToolResult mapProblemToResult(final ProblemDetail problemDetail) {
