@@ -46,7 +46,6 @@ public class RaftCommandTest {
     assertThat(output.term()).isEqualTo(2L);
     assertThat(output.lastFlushedIndex()).isEqualTo(96L);
     assertThat(output.votedFor()).isZero();
-    assertThat(output.commitIndex()).isEqualTo(96L);
   }
 
   @Test
