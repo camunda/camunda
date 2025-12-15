@@ -7,7 +7,7 @@
  */
 package io.camunda.debug.cli;
 
-import io.atomix.raft.storage.serializer.MetaStoreSerializer;
+import io.atomix.raft.storage.system.MetaStore;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -59,7 +59,7 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
         throw new IllegalArgumentException("File is too large to process: " + fileSize + " bytes");
       }
       final var metadataContentBuffer =
-          ByteBuffer.allocate((int) fileSize).order(MetaStoreSerializer.ENDIANESS);
+          ByteBuffer.allocate((int) fileSize).order(MetaStore.ENDIANESS);
       final int bytesRead = fc.read(metadataContentBuffer, 0);
       if (bytesRead != fileSize) {
         throw new RuntimeException(
@@ -72,14 +72,14 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
       metadataContentBuffer.flip();
 
       final var version = metadataContentBuffer.get();
-      if (version != MetaStoreSerializer.VERSION) {
+      if (version != MetaStore.VERSION) {
         throw new RuntimeException("Invalid version encoded in the metadata file: " + version);
       }
       final UnsafeBuffer metadataWithoutVersion = new UnsafeBuffer();
       metadataWithoutVersion.wrap(
           metadataContentBuffer,
-          MetaStoreSerializer.VERSION_LENGTH,
-          metadataContentBuffer.capacity() - MetaStoreSerializer.VERSION_LENGTH);
+          MetaStore.VERSION_LENGTH,
+          metadataContentBuffer.capacity() - MetaStore.VERSION_LENGTH);
 
       final byte[] irBytes;
       try (final var irFileResource =
