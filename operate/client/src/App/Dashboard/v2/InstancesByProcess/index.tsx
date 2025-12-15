@@ -7,14 +7,12 @@
  */
 
 import React from 'react';
-import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
-import {observer} from 'mobx-react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {getAccordionTitle} from './utils/getAccordionTitle';
-import {getAccordionLabel} from './utils/getAccordionLabel';
+import {getAccordionTitle} from '../InstancesByProcess/utils/getAccordionTitle';
+import {getAccordionLabel} from '../InstancesByProcess/utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {LinkWrapper, ErrorMessage} from '../../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
@@ -24,24 +22,30 @@ import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
+import {useProcessDefinitionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatistics';
+import {useVersionCounts} from 'modules/queries/processDefinitionStatistics/useVersionCounts';
+import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const InstancesByProcess: React.FC = observer(() => {
-  const {
-    state: {processInstances, status},
-    hasNoInstances,
-  } = processInstancesByNameStore;
+const InstancesByProcess: React.FC = () => {
+  const result = useProcessDefinitionStatistics();
   const {data: currentUser} = useCurrentUser();
-
   const modelerLink = Array.isArray(currentUser?.c8Links)
     ? currentUser?.c8Links.find((link) => link.name === 'modeler')?.link
     : undefined;
   const tenantsById = useAvailableTenants();
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
-  if (['initial', 'first-fetch'].includes(status)) {
+  const versionCountsMap = useVersionCounts(result.data?.items ?? []);
+
+  if (result.status === 'pending' && !result.data) {
     return <Skeleton />;
   }
 
+  if (result.status === 'error') {
+    return <ErrorMessage />;
+  }
+
+  const hasNoInstances = result.data?.items.length === 0;
   if (hasNoInstances) {
     return (
       <EmptyState
@@ -76,110 +80,132 @@ const InstancesByProcess: React.FC = observer(() => {
     );
   }
 
-  if (status === 'error') {
-    return <ErrorMessage />;
-  }
-
   return (
     <PartiallyExpandableDataTable
       dataTestId="instances-by-process"
       headers={[{key: 'instance', header: 'instance'}]}
-      rows={processInstances.map((item) => {
-        const {
-          instancesWithActiveIncidentsCount,
-          activeInstancesCount,
-          processName,
-          bpmnProcessId,
-          processes,
-          tenantId,
-        } = item;
-        const name = processName || bpmnProcessId;
-        const version = processes.length === 1 ? processes[0]!.version : 'all';
-        const totalInstancesCount =
-          instancesWithActiveIncidentsCount + activeInstancesCount;
-        const tenantName = tenantsById[item.tenantId] ?? item.tenantId;
+      rows={(result.data?.items ?? []).map(
+        (item: ProcessDefinitionInstanceStatistics) => {
+          const {
+            processDefinitionId,
+            latestProcessDefinitionName,
+            activeInstancesWithIncidentCount,
+            activeInstancesWithoutIncidentCount,
+            hasMultipleVersions,
+            tenantId,
+          } = item;
 
-        return {
-          id: generateProcessKey(bpmnProcessId, tenantId),
-          instance: (
-            <LinkWrapper
-              to={Locations.processes({
-                process: bpmnProcessId,
-                version: version.toString(),
-                active: true,
-                incidents: true,
-                ...(totalInstancesCount === 0
-                  ? {
-                      completed: true,
-                      canceled: true,
-                    }
-                  : {}),
-                ...(isMultiTenancyEnabled
-                  ? {
-                      tenant: tenantId,
-                    }
-                  : {}),
-              })}
-              onClick={() => {
-                panelStatesStore.expandFiltersPanel();
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'dashboard-process-instances-by-name-all-versions',
-                });
-              }}
-              title={getAccordionTitle({
-                processName: name,
-                instancesCount: totalInstancesCount,
-                versionsCount: processes.length,
-                ...(isMultiTenancyEnabled
-                  ? {
-                      tenant: tenantName,
-                    }
-                  : {}),
-              })}
-            >
-              <InstancesBar
-                label={{
-                  type: 'process',
-                  size: 'medium',
-                  text: getAccordionLabel({
-                    name,
-                    instancesCount: totalInstancesCount,
-                    versionsCount: processes.length,
-                    ...(isMultiTenancyEnabled
-                      ? {
-                          tenant: tenantName,
-                        }
-                      : {}),
-                  }),
-                }}
-                incidentsCount={instancesWithActiveIncidentsCount}
-                activeInstancesCount={activeInstancesCount}
-                size="medium"
-              />
-            </LinkWrapper>
-          ),
-        };
-      })}
-      expandedContents={processInstances.reduce(
-        (accumulator, {bpmnProcessId, tenantId, processName, processes}) => {
-          if (processes.length <= 1) {
-            return accumulator;
-          }
+          const normalizedTenantId = tenantId ?? '<default>';
+
+          const versionsCount =
+            versionCountsMap.get(processDefinitionId) ??
+            (hasMultipleVersions ? 2 : 1);
+
+          const name = latestProcessDefinitionName || processDefinitionId;
+          const version = hasMultipleVersions ? 'all' : '1';
+          const totalInstancesCount =
+            activeInstancesWithIncidentCount +
+            activeInstancesWithoutIncidentCount;
+          const tenantName =
+            tenantsById[normalizedTenantId] ?? normalizedTenantId;
+          const rowKey = generateProcessKey(
+            processDefinitionId,
+            normalizedTenantId,
+          );
 
           return {
-            ...accumulator,
-            [generateProcessKey(bpmnProcessId, tenantId)]: (
-              <Details
-                processName={processName || bpmnProcessId}
-                processes={processes}
-              />
+            id: rowKey,
+            instance: (
+              <LinkWrapper
+                to={Locations.processes({
+                  process: processDefinitionId,
+                  version: version.toString(),
+                  active: true,
+                  incidents: true,
+                  ...(totalInstancesCount === 0
+                    ? {
+                        completed: true,
+                        canceled: true,
+                      }
+                    : {}),
+                  ...(isMultiTenancyEnabled
+                    ? {
+                        tenant: normalizedTenantId,
+                      }
+                    : {}),
+                })}
+                onClick={() => {
+                  panelStatesStore.expandFiltersPanel();
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'dashboard-process-instances-by-name-all-versions',
+                  });
+                }}
+                title={getAccordionTitle({
+                  processName: name,
+                  instancesCount: totalInstancesCount,
+                  versionsCount,
+                  ...(isMultiTenancyEnabled
+                    ? {
+                        tenant: tenantName,
+                      }
+                    : {}),
+                })}
+              >
+                <InstancesBar
+                  label={{
+                    type: 'process',
+                    size: 'medium',
+                    text: getAccordionLabel({
+                      name,
+                      instancesCount: totalInstancesCount,
+                      versionsCount,
+                      ...(isMultiTenancyEnabled
+                        ? {
+                            tenant: tenantName,
+                          }
+                        : {}),
+                    }),
+                  }}
+                  incidentsCount={activeInstancesWithIncidentCount}
+                  activeInstancesCount={activeInstancesWithoutIncidentCount}
+                  size="medium"
+                />
+              </LinkWrapper>
             ),
           };
         },
-        {},
       )}
+      expandedContents={(result.data?.items ?? []).reduce<
+        Record<string, React.ReactElement<{tabIndex: number}>>
+      >((accumulator, item: ProcessDefinitionInstanceStatistics) => {
+        const {
+          processDefinitionId,
+          latestProcessDefinitionName,
+          hasMultipleVersions,
+          tenantId,
+        } = item;
+
+        const normalizedTenantId = tenantId ?? '<default>';
+        const rowKey = generateProcessKey(
+          processDefinitionId,
+          normalizedTenantId,
+        );
+
+        if (hasMultipleVersions) {
+          accumulator[rowKey] = (
+            <Details
+              processDefinitionId={processDefinitionId}
+              processName={latestProcessDefinitionName || processDefinitionId}
+              tenantId={normalizedTenantId}
+            />
+          );
+        }
+
+        return accumulator;
+      }, {})}
     />
   );
-});
+};
+
 export {InstancesByProcess};

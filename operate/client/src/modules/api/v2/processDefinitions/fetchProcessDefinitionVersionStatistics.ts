@@ -15,7 +15,7 @@ import {requestWithThrow} from 'modules/request';
 
 const fetchProcessDefinitionVersionStatistics = async (
   processDefinitionId: string,
-  payload: GetProcessDefinitionInstanceVersionStatisticsRequestBody = {},
+  payload?: GetProcessDefinitionInstanceVersionStatisticsRequestBody,
 ) => {
   return requestWithThrow<GetProcessDefinitionInstanceVersionStatisticsResponseBody>(
     {

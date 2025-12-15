@@ -6,43 +6,94 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getAccordionItemTitle} from './utils/getAccordionItemTitle';
-import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
+import {getAccordionItemTitle} from '../InstancesByProcess/utils/getAccordionItemTitle';
+import {getAccordionItemLabel} from '../InstancesByProcess/utils/getAccordionItemLabel';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import type {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
-import {Li, LinkWrapper} from '../../styled';
+import {Li, LinkWrapper, ErrorText} from '../../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
-import {observer} from 'mobx-react';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
+import {useProcessDefinitionVersionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionVersionStatistics';
+import {InlineLoading} from '@carbon/react';
+import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type Props = {
+  processDefinitionId: string;
   processName: string;
-  processes: ProcessInstanceByNameDto['processes'];
+  tenantId: string;
   tabIndex?: number;
 };
 
-const Details: React.FC<Props> = observer(
-  ({processName, processes, tabIndex}) => {
-    const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
-    const tenantsById = useAvailableTenants();
+const Details: React.FC<Props> = ({
+  processDefinitionId,
+  processName,
+  tenantId,
+  tabIndex,
+}) => {
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const tenantsById = useAvailableTenants();
 
+  const result = useProcessDefinitionVersionStatistics(processDefinitionId, {
+    payload:
+      isMultiTenancyEnabled && tenantId !== '<default>'
+        ? {
+            filter: {
+              tenantId: {$eq: tenantId},
+            },
+          }
+        : undefined,
+  });
+
+  if (result.status === 'pending' && !result.data) {
     return (
       <ul>
-        {processes.map((process) => {
-          const tenantName = tenantsById[process.tenantId] ?? process.tenantId;
+        <Li>
+          <InlineLoading description="Loading versions..." />
+        </Li>
+      </ul>
+    );
+  }
+
+  if (result.status === 'error' || !result.data) {
+    return (
+      <ul>
+        <Li>
+          <ErrorText>Failed to load version details</ErrorText>
+        </Li>
+      </ul>
+    );
+  }
+
+  return (
+    <ul>
+      {result.data.items.map(
+        (versionItem: ProcessDefinitionInstanceVersionStatistics) => {
+          const {
+            processDefinitionId,
+            processDefinitionKey,
+            processDefinitionName,
+            processDefinitionVersion,
+            activeInstancesWithIncidentCount,
+            activeInstancesWithoutIncidentCount,
+            tenantId: itemTenantId,
+          } = versionItem;
+
+          const normalizedTenantId = itemTenantId ?? '<default>';
+          const tenantName =
+            tenantsById[normalizedTenantId] ?? normalizedTenantId;
 
           const totalInstancesCount =
-            process.instancesWithActiveIncidentsCount +
-            process.activeInstancesCount;
+            activeInstancesWithIncidentCount +
+            activeInstancesWithoutIncidentCount;
+
           return (
-            <Li key={process.processId}>
+            <Li key={processDefinitionKey}>
               <LinkWrapper
                 tabIndex={tabIndex ?? 0}
                 to={Locations.processes({
-                  process: process.bpmnProcessId,
-                  version: process.version.toString(),
+                  process: processDefinitionId,
+                  version: processDefinitionVersion.toString(),
                   active: true,
                   incidents: true,
                   ...(totalInstancesCount === 0
@@ -53,7 +104,7 @@ const Details: React.FC<Props> = observer(
                     : {}),
                   ...(isMultiTenancyEnabled
                     ? {
-                        tenant: process.tenantId,
+                        tenant: normalizedTenantId,
                       }
                     : {}),
                 })}
@@ -65,9 +116,9 @@ const Details: React.FC<Props> = observer(
                   });
                 }}
                 title={getAccordionItemTitle({
-                  processName: process.name || processName,
+                  processName: processDefinitionName || processName,
                   instancesCount: totalInstancesCount,
-                  version: process.version,
+                  version: processDefinitionVersion,
                   ...(isMultiTenancyEnabled
                     ? {
                         tenant: tenantName,
@@ -80,9 +131,9 @@ const Details: React.FC<Props> = observer(
                     type: 'process',
                     size: 'small',
                     text: getAccordionItemLabel({
-                      name: process.name || processName,
+                      name: processDefinitionName || processName,
                       instancesCount: totalInstancesCount,
-                      version: process.version,
+                      version: processDefinitionVersion,
                       ...(isMultiTenancyEnabled
                         ? {
                             tenant: tenantName,
@@ -90,17 +141,17 @@ const Details: React.FC<Props> = observer(
                         : {}),
                     }),
                   }}
-                  incidentsCount={process.instancesWithActiveIncidentsCount}
-                  activeInstancesCount={process.activeInstancesCount}
+                  incidentsCount={activeInstancesWithIncidentCount}
+                  activeInstancesCount={activeInstancesWithoutIncidentCount}
                   size="small"
                 />
               </LinkWrapper>
             </Li>
           );
-        })}
-      </ul>
-    );
-  },
-);
+        },
+      )}
+    </ul>
+  );
+};
 
 export {Details};
