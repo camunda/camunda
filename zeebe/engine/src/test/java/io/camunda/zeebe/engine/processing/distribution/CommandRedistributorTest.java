@@ -128,8 +128,8 @@ public class CommandRedistributorTest {
     final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     final var keyGenerator = new AtomicKeyGenerator(1);
     final Writers writers =
-        new Writers(1, () -> fakeProcessingResultBuilder, mock(EventAppliers.class));
-    writers.setKeyGenerator(keyGenerator);
+        new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    writers.setKeyValidator(keyGenerator);
 
     final RoutingInfo routingInfo =
         RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
