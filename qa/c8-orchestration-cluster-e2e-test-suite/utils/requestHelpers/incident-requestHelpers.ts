@@ -142,3 +142,35 @@ export async function createTwoDifferentIncidentsInOneProcess(
     );
   });
 }
+
+export async function createSingleIncidentProcessInstance(
+  localState: Record<string, unknown>,
+  request: APIRequestContext,
+) {
+  await test.step('Create process instance with single incidents', async () => {
+    const instance = await createSingleInstance('singleIncidentProcess', 1);
+    localState['processInstanceKey'] = instance.processInstanceKey;
+  });
+
+  await test.step('Search incident to get incidentKey', async () => {
+    const incidents = await searchIncidentByPIK(request, {
+      processInstanceKey: localState['processInstanceKey'] as string,
+    });
+    localState['incidentKeys'] = incidents.map(
+      (incident) => incident.incidentKey,
+    );
+  });
+}
+
+/**
+ * This function creates a process instance of a process that has a job,
+ * so that we can later create an incident by setting retries to 0 on that job.
+ */
+export async function createProcessInstanceWithAJob(
+  localState: Record<string, unknown>,
+) {
+  await test.step('Create process instance with single incidents', async () => {
+    const instance = await createSingleInstance('ProcessFlakyWorker', 1);
+    localState['processInstanceKey'] = instance.processInstanceKey;
+  });
+}

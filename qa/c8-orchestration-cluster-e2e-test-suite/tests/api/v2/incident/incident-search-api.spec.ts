@@ -21,7 +21,7 @@ import {
   createTwoIncidentsInOneProcess,
   createIncidentsInTwoProcesses,
   createTwoDifferentIncidentsInOneProcess,
-} from '../../../../utils/requestHelpers/incident-requestHelpers';
+} from '@requestHelpers';
 
 const INCIDENT_SEARCH_ENDPOINT = '/incidents/search';
 
