@@ -76,9 +76,8 @@ public final class MessageStreamProcessorTest {
     final var mockDistributionState = mock(DistributionState.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
-    final var writers =
-        new Writers(PARTITION_ID, () -> mockProcessingResultBuilder, mockEventAppliers);
-    writers.setKeyGenerator(keyGenerator);
+    final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
+    writers.setKeyValidator(keyGenerator);
     spySubscriptionCommandSender =
         spy(new SubscriptionCommandSender(PARTITION_ID, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);

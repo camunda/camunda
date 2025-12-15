@@ -70,8 +70,8 @@ public class CommandDistributionScalingTest {
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
     final var eventAppliers = new EventAppliers().registerEventAppliers(state);
     keyGenerator = new AtomicKeyGenerator(1);
-    writers = new Writers(PARTITION_ID, () -> fakeProcessingResultBuilder, eventAppliers);
-    writers.setKeyGenerator(keyGenerator);
+    writers = new Writers(() -> fakeProcessingResultBuilder, eventAppliers);
+    writers.setKeyValidator(keyGenerator);
 
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;

@@ -16,8 +16,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.KeyValidator;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -32,21 +32,18 @@ import java.util.function.Supplier;
 final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBuilderBackedWriter
     implements StateWriter {
 
-  private final int partitionId;
   private final EventApplier eventApplier;
-  private KeyGenerator keyGenerator;
+  private KeyValidator keyValidator;
 
   public ResultBuilderBackedEventApplyingStateWriter(
-      final int partitionId,
       final Supplier<ProcessingResultBuilder> resultBuilderSupplier,
       final EventApplier eventApplier) {
     super(resultBuilderSupplier);
-    this.partitionId = partitionId;
     this.eventApplier = eventApplier;
   }
 
-  public void setKeyGenerator(final KeyGenerator keyGenerator) {
-    this.keyGenerator = keyGenerator;
+  public void setKeyValidator(final KeyValidator keyValidator) {
+    this.keyValidator = keyValidator;
   }
 
   @Override
@@ -106,8 +103,8 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   }
 
   private void validateKey(final long key) {
-    if (keyGenerator != null) {
-      TypedEventWriter.validateKey(key, partitionId, keyGenerator);
+    if (keyValidator != null) {
+      keyValidator.validateKey(key);
     }
   }
 }
