@@ -24,6 +24,17 @@ export class OperateProcessModificationModePage {
   readonly diagram: Locator;
   readonly multipleInstancesAlert: Locator;
   readonly history: Locator;
+  readonly continueButton: Locator;
+  readonly addSingleFlowNodeInstanceButton: Locator;
+  readonly moveSelectedInstanceButton: Locator;
+  readonly modificationModeText: Locator;
+  readonly lastAddedModificationText: Locator;
+  readonly undoModificationButton: Locator;
+  readonly deleteVariableModificationButton: Locator;
+  readonly cancelButton: Locator;
+  readonly addVariableModificationButton: Locator;
+  readonly modalDialog: Locator;
+  readonly noVariablesText: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -61,6 +72,28 @@ export class OperateProcessModificationModePage {
       'Flow node has multiple instances. To select one, use the instance history tree below.',
     );
     this.history = page.getByTestId('instance-history');
+
+    this.continueButton = page.getByRole('button', {name: 'Continue'});
+    this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
+      name: 'Add single flow node instance',
+    });
+    this.moveSelectedInstanceButton = page.getByRole('button', {
+      name: 'Move selected instance in this flow node to another target',
+    });
+    this.modificationModeText = page.getByText(
+      'Process Instance Modification Mode',
+    );
+    this.lastAddedModificationText = page.getByText('Last added modification:');
+    this.undoModificationButton = page.getByRole('button', {name: 'undo'});
+    this.deleteVariableModificationButton = page.getByRole('button', {
+      name: /delete variable modification/i,
+    });
+    this.cancelButton = page.getByRole('button', {name: 'Cancel'});
+    this.addVariableModificationButton = page.getByRole('button', {
+      name: /add variable/i,
+    });
+    this.modalDialog = page.getByRole('dialog');
+    this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
   }
 
   async clickAddModificationButtononPopup(): Promise<void> {
@@ -157,11 +190,6 @@ export class OperateProcessModificationModePage {
       .getByTestId('modifications-overlay');
   }
 
-  /**
-   *
-   * @param flowNodeName flow node to verify overlay
-   * @param tokenChange expected change value to verify on the overlay
-   */
   async verifyModificationOverlay(
     flowNodeName: string,
     tokenChange: number,
@@ -187,10 +215,6 @@ export class OperateProcessModificationModePage {
     expect(flowNodeModificationOverlayText).toContain(tokenChange.toString());
   }
 
-  /**
-   * This function always selects the first instance in the history tree
-   * @param flowNodeName - flow node to cancel token from
-   */
   async cancelOneTokenUsingHistory(flowNodeName: string): Promise<void> {
     await this.clickFlowNode(flowNodeName);
     await expect(this.multipleInstancesAlert).toBeVisible();
@@ -207,5 +231,109 @@ export class OperateProcessModificationModePage {
     await this.clickCancelButtononPopup();
     await this.verifyModificationOverlay(flowNodeName, -1);
     await this.applyChanges();
+  }
+
+  getNewVariableNameFieldSelector = (variableName: string) => {
+    return this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByTestId('new-variable-name');
+  };
+
+  getNewVariableValueFieldSelector = (variableName: string) => {
+    return this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByTestId('new-variable-value');
+  };
+
+  getEditVariableFieldSelector(variableName: string) {
+    return this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByRole('textbox', {
+        name: 'value',
+      });
+  }
+
+  async undoModification() {
+    await this.undoModificationButton.click();
+  }
+
+  async clickAddVariable() {
+    await this.addVariableModificationButton.click();
+  }
+
+  async clickDeleteVariableModification() {
+    await this.deleteVariableModificationButton.click();
+  }
+
+  async clickCancel() {
+    await this.cancelButton.click();
+  }
+
+  getEditVariableModificationText(variableName: string) {
+    return this.page.getByText(
+      new RegExp(`edit variable "${variableName}"`, 'i'),
+    );
+  }
+
+  getAddVariableModificationText(variableName: string) {
+    return this.page.getByText(
+      new RegExp(`add new variable "${variableName}"`, 'i'),
+    );
+  }
+
+  getVariableModificationSummaryText(variableName: string, value: string) {
+    return this.page.getByText(`${variableName}: ${value}`);
+  }
+
+  getDialogVariableModificationSummaryText(
+    variableName: string,
+    value: string,
+  ) {
+    return this.modalDialog.getByText(`${variableName}: ${value}`);
+  }
+
+  getDialogDeleteVariableModificationButton(index?: number) {
+    const button = this.modalDialog.getByRole('button', {
+      name: 'Delete variable modification',
+    });
+    return index !== undefined ? button.nth(index) : button;
+  }
+
+  getDialogCancelButton() {
+    return this.modalDialog.getByRole('button', {name: 'Cancel'});
+  }
+
+  async clickDialogDeleteVariableModification(index?: number) {
+    await this.getDialogDeleteVariableModificationButton(index).click();
+  }
+
+  async clickDialogCancel() {
+    await this.getDialogCancelButton().click();
+  }
+
+  async addNewVariable(variableIndex: string, name: string, value: string) {
+    await this.addVariableModificationButton.click();
+    await expect(
+      this.page.getByTestId(`variable-${variableIndex}`),
+    ).toBeVisible();
+
+    await this.getNewVariableNameFieldSelector(variableIndex).clear();
+    await this.getNewVariableNameFieldSelector(variableIndex).type(name);
+    await this.page.keyboard.press('Tab');
+
+    await this.getNewVariableValueFieldSelector(variableIndex).type(value);
+    await this.page.keyboard.press('Tab');
+  }
+
+  async editVariableValue(variableName: string, value: string) {
+    await this.getEditVariableFieldSelector(variableName).clear();
+    await this.getEditVariableFieldSelector(variableName).type(value);
+    await this.page.keyboard.press('Tab');
+  }
+
+  async applyModifications(): Promise<void> {
+    await expect(this.applyModificationsButton).toBeEnabled();
+    await this.applyModificationsButton.click();
+    await this.applyButtonModificationsDialog.click();
   }
 }
