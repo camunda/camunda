@@ -614,6 +614,13 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<SearchRequestSort> fromIncidentStatisticsQuerySortRequest(
+      final List<IncidentStatisticsQuerySortRequest> requests) {
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
+  }
+
   private static SearchRequestSort createFrom(final Object field, final SortOrderEnum order) {
     final SearchRequestSort request = new SearchRequestSort();
     request.setField(field.toString());

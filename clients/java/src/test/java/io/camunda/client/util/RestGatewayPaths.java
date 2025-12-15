@@ -98,6 +98,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-definitions/statistics/process-instances";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS =
       REST_API_PATH + "/process-definitions/%s/statistics/process-instances";
+  private static final String URL_INCIDENT_STATISTICS = REST_API_PATH + "/incidents/statistics";
 
   /**
    * @return the topology request URL
@@ -376,6 +377,10 @@ public class RestGatewayPaths {
   public static String getProcessDefinitionInstanceVersionStatisticsUrl(
       final String processDefinitionId) {
     return String.format(URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS, processDefinitionId);
+  }
+
+  public static String getIncidentStatisticsUrl() {
+    return URL_INCIDENT_STATISTICS;
   }
 
   @Deprecated
