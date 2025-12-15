@@ -37,6 +37,7 @@ public enum AuthorizationResourceType {
       PermissionType.DELETE_DECISION_INSTANCE),
   DECISION_REQUIREMENTS_DEFINITION(PermissionType.READ),
   DOCUMENT(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
+  EXPRESSION(PermissionType.EVALUATE),
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MAPPING_RULE(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
