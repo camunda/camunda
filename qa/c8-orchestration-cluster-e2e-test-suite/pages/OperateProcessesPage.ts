@@ -287,7 +287,7 @@ class OperateProcessesPage {
     const button = this.getRetryInstanceButton(processInstanceKey);
     try {
       await button.click({timeout: 30000});
-    } catch (error) {
+    } catch {
       await button.scrollIntoViewIfNeeded({timeout: 60000});
       await button.click({timeout: 60000});
     }
