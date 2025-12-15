@@ -6,12 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+const getIdPattern = (): RegExp => {
+  const configuredPattern = window.clientConfig?.idPattern;
+  if (!configuredPattern) {
+    // Keep in sync with `io.camunda.security.configuration.SecurityConfiguration.DEFAULT_ID_REGEX`
+    return /^[a-zA-Z0-9_~@.+-]{1,256}$/;
+  }
+  return new RegExp(configuredPattern);
+};
+
 /**
  * Validate an ID with the same rules as on the Backend side.
  * See: `io.camunda.security.configuration.SecurityConfiguration.DEFAULT_ID_REGEX`.
  */
-export const isValidId = (id: string): boolean =>
-  /^[a-zA-Z0-9_~@.+-]{1,256}$/.test(id);
+export const isValidId = (id: string): boolean => getIdPattern().test(id);
 
 export const AUTHORIZATION_WILDCARD = "*";
 
