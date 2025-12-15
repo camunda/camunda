@@ -64,7 +64,47 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
     }
   }
 
+  /**
+   * Creates a fluent API wrapper for convenient configuration mapping. Enables chaining operations
+   * like: <code>
+   * ExporterConfiguration.of(ConfigClass.class, args)
+   *     .map(config -> { config.setSomething(...); return config; })
+   *     .toArgs()
+   * </code>
+   */
+  public static <T> ConfigurationMapper<T> of(
+      final Class<T> configClass, final Map<String, Object> values) {
+    return new ConfigurationMapper<>(fromArgs(configClass, values));
+  }
+
   public static <T> Map<String, Object> asArgs(final T config) {
     return MAPPER.convertValue(config, new TypeReference<>() {});
+  }
+
+  /**
+   * Fluent API wrapper for configuration mapping operations. Allows chaining transformations before
+   * converting back to args map.
+   */
+  public static class ConfigurationMapper<T> {
+    private final T config;
+
+    private ConfigurationMapper(final T config) {
+      this.config = config;
+    }
+
+    public ConfigurationMapper apply(final java.util.function.Consumer<T> mapper) {
+      mapper.accept(config);
+      return this;
+    }
+
+    /** Returns the wrapped configuration object. */
+    public T get() {
+      return config;
+    }
+
+    /** Converts the configuration back to an args map. */
+    public Map<String, Object> toArgs() {
+      return asArgs(config);
+    }
   }
 }

@@ -893,12 +893,10 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
 
     final var auditLog = unifiedConfiguration.getCamunda().getData().getExport().getAuditLog();
-    final var camundaExporterConfiguration =
-        ExporterConfiguration.fromArgs(
-            io.camunda.exporter.config.ExporterConfiguration.class, args);
-    camundaExporterConfiguration.setAuditLog(auditLog.toConfiguration());
-
-    exporter.setArgs(ExporterConfiguration.asArgs(camundaExporterConfiguration));
+    exporter.setArgs(
+        ExporterConfiguration.of(io.camunda.exporter.config.ExporterConfiguration.class, args)
+            .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
+            .toArgs());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
@@ -978,12 +976,10 @@ public class BrokerBasedPropertiesOverride {
         args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
 
     final var auditLog = unifiedConfiguration.getCamunda().getData().getExport().getAuditLog();
-    final var rdbmsExporterConfiguration =
-        ExporterConfiguration.fromArgs(io.camunda.exporter.rdbms.ExporterConfiguration.class, args);
-    rdbmsExporterConfiguration.setAuditLog(auditLog.toConfiguration());
-
-    final var newArgs = ExporterConfiguration.asArgs(rdbmsExporterConfiguration);
-    exporter.setArgs(newArgs);
+    exporter.setArgs(
+        ExporterConfiguration.of(io.camunda.exporter.rdbms.ExporterConfiguration.class, args)
+            .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
+            .toArgs());
   }
 
   private void populateFromMonitoring(final BrokerBasedProperties override) {
