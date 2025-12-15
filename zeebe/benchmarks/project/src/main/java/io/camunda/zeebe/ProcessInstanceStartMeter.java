@@ -26,7 +26,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
-  private final CopyOnWriteArrayList<PiCreationResult> listOfStartedInstances;
+  private final CopyOnWriteArrayList<PiCreationResult> startedInstances;
   private final ScheduledExecutorService piCheckExecutorService;
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
@@ -39,7 +39,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
       final AvailabilityChecker availabilityChecker) {
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
-    listOfStartedInstances = new CopyOnWriteArrayList<>();
+    startedInstances = new CopyOnWriteArrayList<>();
     piCheckExecutorService = scheduledExecutorService;
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
@@ -71,13 +71,13 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   private void checkForProcessInstances() {
-    if (listOfStartedInstances.isEmpty()) {
+    if (startedInstances.isEmpty()) {
       LOG.debug("No instances awaiting, skip check for process instances.");
       return;
     }
 
-    LOG.debug("Current instances awaiting {}", listOfStartedInstances.size());
-    final List<Long> list = listOfStartedInstances.stream().map(k -> k.processInstanceKey).toList();
+    LOG.debug("Current instances awaiting {}", startedInstances.size());
+    final List<Long> list = startedInstances.stream().map(k -> k.processInstanceKey).toList();
     availabilityChecker
         .findAvailableInstances(list)
         .whenCompleteAsync(
@@ -97,8 +97,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     for (final Long availableInstanceKey : availableInstances) {
       LOG.debug("Available process instance key: {} ", availableInstanceKey);
 
-      for (final PiCreationResult awaitingPI :
-          Collections.unmodifiableList(listOfStartedInstances)) {
+      for (final PiCreationResult awaitingPI : Collections.unmodifiableList(startedInstances)) {
         if (awaitingPI.processInstanceKey == availableInstanceKey) {
           recordInstanceAvailable(awaitingPI);
           break;
@@ -123,11 +122,11 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                     .tag("partition", Integer.toString(key))
                     .register(registry))
         .record(durationNanos, TimeUnit.NANOSECONDS);
-    listOfStartedInstances.remove(awaitingPI);
+    startedInstances.remove(awaitingPI);
   }
 
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
-    listOfStartedInstances.add(new PiCreationResult(processInstanceKey, startTimeNanos));
+    startedInstances.add(new PiCreationResult(processInstanceKey, startTimeNanos));
   }
 
   private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
