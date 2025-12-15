@@ -7,7 +7,6 @@
  */
 
 import '@testing-library/jest-dom/vitest';
-import {cleanup} from '@testing-library/react';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {configure} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
@@ -113,7 +112,6 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  cleanup();
   reactQueryClient.clear();
   window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   nodeMockServer.resetHandlers();
