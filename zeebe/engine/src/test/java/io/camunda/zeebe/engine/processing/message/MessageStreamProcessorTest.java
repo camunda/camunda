@@ -41,8 +41,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -73,9 +71,8 @@ public final class MessageStreamProcessorTest {
     final var mockDistributionState = mock(DistributionState.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
-    final var writers =
-        new Writers(PARTITION_ID, () -> mockProcessingResultBuilder, mockEventAppliers);
-    writers.setKeyGenerator(keyGenerator);
+    final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
+    writers.setKeyValidator(keyGenerator);
     spySubscriptionCommandSender =
         spy(new SubscriptionCommandSender(PARTITION_ID, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
@@ -84,20 +81,15 @@ public final class MessageStreamProcessorTest {
             new CommandDistributionBehavior(
                 mockDistributionState,
                 writers,
-                1,
+                PARTITION_ID,
                 RoutingInfo.forStaticPartitions(1),
                 mockInterpartitionCommandSender));
-                PARTITION_ID,
-                routingInfo,
-                mockInterpartitionCommandSender,
-                mock(DistributionMetrics.class)));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
           MessageEventProcessors.addMessageProcessors(
-              PARTITION_ID,
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
               processingState,

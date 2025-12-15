@@ -82,7 +82,7 @@ public final class StateQueryService implements QueryService {
               Protocol.DEPLOYMENT_PARTITION,
               zeebeDb,
               zeebeDb.createContext(),
-              KeyGenerator.immutable(),
+              KeyGenerator.immutable(Protocol.DEPLOYMENT_PARTITION),
               new TransientPendingSubscriptionState(),
               new TransientPendingSubscriptionState(),
               new EngineConfiguration(),

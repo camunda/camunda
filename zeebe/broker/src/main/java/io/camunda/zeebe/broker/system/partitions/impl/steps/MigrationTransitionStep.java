@@ -44,7 +44,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             context.getPartitionId(),
             zeebeDb,
             zeebeDbContext,
-            KeyGenerator.immutable(),
+            KeyGenerator.immutable(context.getPartitionId()),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
