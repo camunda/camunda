@@ -49,8 +49,9 @@ import org.slf4j.LoggerFactory;
  */
 public class MetaStore implements JournalMetaStore, AutoCloseable {
 
-  private static final byte VERSION = 1;
-  private static final int VERSION_LENGTH = Byte.BYTES;
+  public static final byte VERSION = 1;
+  public static final int VERSION_LENGTH = Byte.BYTES;
+  public static final ByteOrder ENDIANESS = ByteOrder.LITTLE_ENDIAN;
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final ByteBuffer metaBuffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
