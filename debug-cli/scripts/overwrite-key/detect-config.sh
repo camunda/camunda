@@ -108,12 +108,26 @@ done
 
 # Try to detect actuator port
 echo ""
-echo "[7/6] Detecting actuator port..."
+echo "[7/8] Detecting actuator port..."
 ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="http")].containerPort}' 2>/dev/null || echo "9600")
 if [ -z "$ACTUATOR_PORT" ]; then
   ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="management")].containerPort}' 2>/dev/null || echo "9600")
 fi
 echo "  Actuator Port: $ACTUATOR_PORT (detected or default)"
+
+# Detect container image
+echo ""
+echo "[8/8] Detecting container image..."
+CONTAINER_IMAGE=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
+
+if [ -z "$CONTAINER_IMAGE" ]; then
+  echo "  WARNING: Could not detect container image from StatefulSet"
+  echo "  You will need to set CONTAINER_IMAGE manually"
+  CONTAINER_IMAGE="camunda/camunda:latest"
+  echo "  Using default: $CONTAINER_IMAGE"
+else
+  echo "  Container Image: $CONTAINER_IMAGE"
+fi
 
 echo ""
 echo "=========================================="
@@ -126,12 +140,13 @@ echo "Pod Prefix:        $POD_PREFIX"
 echo "PVC Prefix:        $PVC_PREFIX"
 echo "Broker Count:      $REPLICAS"
 echo "Actuator Port:     $ACTUATOR_PORT"
+echo "Container Image:   $CONTAINER_IMAGE"
 echo ""
 echo "=========================================="
 echo "Environment Variables"
 echo "=========================================="
 echo ""
-echo "Copy and paste these to configure the test script:"
+echo "Copy and paste these to configure the recovery scripts:"
 echo ""
 echo "export NAMESPACE=\"$NAMESPACE\""
 echo "export STATEFULSET_NAME=\"$STS\""
@@ -139,7 +154,9 @@ echo "export POD_PREFIX=\"$POD_PREFIX\""
 echo "export PVC_PREFIX=\"$PVC_PREFIX\""
 echo "export BROKER_COUNT=\"$REPLICAS\""
 echo "export ACTUATOR_PORT=\"$ACTUATOR_PORT\""
+echo "export CONTAINER_IMAGE=\"$CONTAINER_IMAGE\""
 echo ""
 echo "Then run:"
-echo "  ./test-recovery-procedure.sh"
+echo "  ./identify-partition-brokers.sh  # Identify partition leader and replicas"
+echo "  ./generate-recovery-job.sh       # Generate recovery Job YAML"
 echo ""
