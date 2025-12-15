@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata.Builder;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -49,7 +51,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    validateKey(key);
+    // key is validated in appendFollowUpEvent
     final int latestVersion = eventApplier.getLatestVersion(intent);
     appendFollowUpEvent(key, intent, value, latestVersion);
   }
@@ -57,7 +59,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    validateKey(key);
+    // key is validated in appendFollowUpEvent
     appendFollowUpEvent(key, intent, value, m -> m.recordVersion(recordVersion));
   }
 
@@ -86,6 +88,16 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
     resultBuilder().appendRecord(key, value, recordMetadata);
     eventApplier.applyState(key, intent, value, recordVersion);
+  }
+
+  @Override
+  public void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final Consumer<Builder> builderConsumer) {
+    validateKey(key);
+    StateWriter.super.appendFollowUpEvent(key, intent, value, builderConsumer);
   }
 
   @Override
