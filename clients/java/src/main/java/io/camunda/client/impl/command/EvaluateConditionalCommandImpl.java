@@ -33,18 +33,15 @@ import io.camunda.client.protocol.rest.EvaluateConditionalResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.grpc.stub.StreamObserver;
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class EvaluateConditionalCommandImpl
+    extends CommandWithVariables<EvaluateConditionalCommandStep2>
     implements EvaluateConditionalCommandStep1, EvaluateConditionalCommandStep2 {
 
-  private final JsonMapper objectMapper;
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
   private final GatewayOuterClass.EvaluateConditionalRequest.Builder grpcRequestObjectBuilder;
@@ -60,7 +57,7 @@ public final class EvaluateConditionalCommandImpl
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient) {
-    objectMapper = jsonMapper;
+    super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
     grpcRequestObjectBuilder = GatewayOuterClass.EvaluateConditionalRequest.newBuilder();
@@ -72,37 +69,7 @@ public final class EvaluateConditionalCommandImpl
     requestTimeout(config.getDefaultRequestTimeout());
   }
 
-  @Override
-  public EvaluateConditionalCommandStep2 variables(final String variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariablesInternal(objectMapper.validateJson("variables", variables));
-  }
-
-  @Override
-  public EvaluateConditionalCommandStep2 variables(final Object variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariablesInternal(objectMapper.toJson(variables));
-  }
-
-  @Override
-  public EvaluateConditionalCommandStep2 variables(final InputStream variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariablesInternal(objectMapper.validateJson("variables", variables));
-  }
-
-  @Override
-  public EvaluateConditionalCommandStep2 variables(final Map<String, Object> variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return variables((Object) variables);
-  }
-
-  @Override
-  public EvaluateConditionalCommandStep2 variable(final String key, final Object value) {
-    ArgumentUtil.ensureNotNull("key", key);
-    return variables(Collections.singletonMap(key, value));
-  }
-
-  private EvaluateConditionalCommandStep2 setVariablesInternal(final String variables) {
+  protected EvaluateConditionalCommandStep2 setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
     // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
     // gRPC and REST handle setting variables differently:
