@@ -82,7 +82,17 @@ const Filters: React.FC = observer(() => {
   return (
     <Form<ProcessInstancesFilter>
       onSubmit={(values) => {
-        variableFilterStore.setVariable(undefined);
+        if (
+          values.variableName !== undefined &&
+          values.variableValues !== undefined
+        ) {
+          variableFilterStore.setVariable({
+            name: values.variableName,
+            values: values.variableValues,
+          });
+        } else {
+          variableFilterStore.setVariable(undefined);
+        }
 
         navigate({
           search: updateProcessInstancesFilterSearchString(searchParams, {

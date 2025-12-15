@@ -362,7 +362,7 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('maps variable name and values to variables array', () => {
+  it('maps variable name and values to variables array from context', () => {
     const searchParams = createSearchParams({
       active: 'true',
     });
