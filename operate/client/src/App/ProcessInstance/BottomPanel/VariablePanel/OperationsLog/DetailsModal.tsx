@@ -28,12 +28,12 @@ import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {AuditLogIcon} from './AuditLogIcon';
 
 type Props = {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
-  auditLog?: AuditLog;
+  auditLog: AuditLog;
 };
 
-const DetailsModal: React.FC<Props> = ({open, onClose, auditLog}) => {
+const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
   if (!auditLog) {
     return null;
   }
@@ -41,7 +41,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, auditLog}) => {
   return (
     <Modal
       size="md"
-      open={open}
+      open={isOpen}
       onRequestClose={onClose}
       modalHeading={`${spaceAndCapitalize(auditLog.operationType.toString())} ${spaceAndCapitalize(
         auditLog.entityType.toString(),

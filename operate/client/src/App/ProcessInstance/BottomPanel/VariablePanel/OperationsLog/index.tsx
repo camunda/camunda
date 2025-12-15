@@ -38,7 +38,7 @@ const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
 type DetailsModalState = {
-  open: boolean;
+  isOpen: boolean;
   auditLog?: AuditLog;
 };
 
@@ -98,7 +98,7 @@ const OperationsLog: React.FC<Props> = observer(
     });
 
     const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
-      open: false,
+      isOpen: false,
     });
 
     useEffect(() => {
@@ -140,7 +140,7 @@ const OperationsLog: React.FC<Props> = observer(
               tooltipPosition="left"
               iconDescription="Open details"
               aria-label="Open details"
-              onClick={() => setDetailsModal({open: true, auditLog: item})}
+              onClick={() => setDetailsModal({isOpen: true, auditLog: item})}
               hasIconOnly
               renderIcon={Information}
             />
@@ -208,11 +208,13 @@ const OperationsLog: React.FC<Props> = observer(
             },
           ]}
         />
-        <DetailsModal
-          open={detailsModal.open}
-          onClose={() => setDetailsModal({open: false})}
-          auditLog={detailsModal.auditLog}
-        />
+        {detailsModal.auditLog && (
+          <DetailsModal
+            isOpen={detailsModal.isOpen}
+            onClose={() => setDetailsModal({isOpen: false})}
+            auditLog={detailsModal.auditLog}
+          />
+        )}
       </Container>
     );
   },
