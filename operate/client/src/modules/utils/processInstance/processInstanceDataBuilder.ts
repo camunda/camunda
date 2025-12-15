@@ -31,7 +31,6 @@ const buildV2ProcessInstanceData = (
     sortValues: [],
     rootInstanceId: null,
     callHierarchy: [],
-    permissions: undefined,
   };
 };
 

@@ -54,7 +54,6 @@ test.describe('variables and incidents', () => {
               rootInstanceId: null,
               callHierarchy: [],
               sortValues: [],
-              permissions: [],
               tenantId: '<default>',
             },
           ],

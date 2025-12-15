@@ -24,7 +24,6 @@ const runningInstance: InstanceMock = {
     rootInstanceId: null,
     callHierarchy: [],
     sortValues: ['', ''],
-    permissions: [],
     tenantId: '',
   },
   detailV2: {

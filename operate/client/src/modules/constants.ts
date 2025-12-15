@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ResourceBasedPermissionDto} from 'modules/types/operate';
-
 const OPERATION_STATE = {
   SCHEDULED: 'SCHEDULED',
   LOCKED: 'LOCKED',
@@ -31,13 +29,6 @@ const SORT_ORDER = {
   ASC: 'asc',
   DESC: 'desc',
 } as const;
-
-const PERMISSIONS: ResourceBasedPermissionDto[] = [
-  'READ',
-  'DELETE',
-  'UPDATE_PROCESS_INSTANCE',
-  'DELETE_PROCESS_INSTANCE',
-];
 
 const PAGE_TITLE = {
   LOGIN: 'Operate: Log In',
@@ -63,7 +54,6 @@ export {
   SORT_ORDER,
   PAGE_TITLE,
   PAGE_TOP_PADDING,
-  PERMISSIONS,
   COLLAPSABLE_PANEL_MIN_WIDTH,
   INSTANCE_HISTORY_LEFT_PADDING,
   COLLAPSABLE_PANEL_HEADER_HEIGHT,
