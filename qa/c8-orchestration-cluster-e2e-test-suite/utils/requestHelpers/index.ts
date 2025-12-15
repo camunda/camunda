@@ -11,6 +11,7 @@ export * from './resource-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
 export * from './get-value-from-state-requestHelpers';
+export * from './batch-operation-requestHelpers';
 export {createRoleAndStoreResponseFields} from './role-requestHelpers';
 export {createRole} from './role-requestHelpers';
 export {assignRolesToMappingRules} from './role-requestHelpers';
