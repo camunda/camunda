@@ -18,10 +18,17 @@ import java.util.List;
  */
 public record HistoryDeletionBatch(List<HistoryDeletionEntity> historyDeletionEntities) {
 
-  List<Long> getProcessInstanceIds() {
+  List<Long> getResourceKeys(final HistoryDeletionType historyDeletionType) {
     return historyDeletionEntities.stream()
-        .filter(entity -> entity.getResourceType().equals(HistoryDeletionType.PROCESS_INSTANCE))
+        .filter(entity -> entity.getResourceType().equals(historyDeletionType))
         .map(HistoryDeletionEntity::getResourceKey)
+        .toList();
+  }
+
+  List<String> getHistoryDeletionIds(final HistoryDeletionType historyDeletionType) {
+    return historyDeletionEntities.stream()
+        .filter(entity -> entity.getResourceType().equals(historyDeletionType))
+        .map(HistoryDeletionEntity::getId)
         .toList();
   }
 }

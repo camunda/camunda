@@ -69,9 +69,15 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<Boolean> deleteDocumentsByField(
+  public CompletableFuture<List<Long>> deleteDocumentsByField(
       final String sourceIndexName, final String idFieldName, final List<Long> fieldValues) {
-    return CompletableFuture.completedFuture(true);
+    return CompletableFuture.completedFuture(fieldValues);
+  }
+
+  @Override
+  public CompletableFuture<Integer> deleteDocumentsById(
+      final String sourceIndexName, final List<String> ids) {
+    return CompletableFuture.completedFuture(0);
   }
 
   private SearchRequest createSearchRequest() {

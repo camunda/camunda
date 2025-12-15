@@ -34,8 +34,18 @@ public interface HistoryDeletionRepository extends AutoCloseable {
    * @param fieldValues The values to match for deletion
    * @return a {@link CompletableFuture} indicating whether the deletion was successful
    */
-  CompletableFuture<Boolean> deleteDocumentsByField(
+  CompletableFuture<List<Long>> deleteDocumentsByField(
       final String sourceIndexName, final String idFieldName, final List<Long> fieldValues);
+
+  /**
+   * Deletes documents from the specified index by their IDs.
+   *
+   * @param sourceIndexName The index to delete the documents from
+   * @param ids The list of document IDs to delete
+   * @return a {@link CompletableFuture} indicating whether the deletion was successful
+   */
+  CompletableFuture<Integer> deleteDocumentsById(
+      final String sourceIndexName, final List<String> ids);
 
   class NoopHistoryDeletionRepository implements HistoryDeletionRepository {
     @Override
@@ -44,9 +54,15 @@ public interface HistoryDeletionRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletableFuture<Boolean> deleteDocumentsByField(
+    public CompletableFuture<List<Long>> deleteDocumentsByField(
         final String sourceIndexName, final String idFieldName, final List<Long> fieldValues) {
-      return CompletableFuture.completedFuture(true);
+      return CompletableFuture.completedFuture(fieldValues);
+    }
+
+    @Override
+    public CompletableFuture<Integer> deleteDocumentsById(
+        final String sourceIndexName, final List<String> ids) {
+      return CompletableFuture.completedFuture(0);
     }
 
     @Override

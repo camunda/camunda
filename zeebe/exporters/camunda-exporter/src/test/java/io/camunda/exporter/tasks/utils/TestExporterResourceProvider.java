@@ -62,6 +62,11 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
   }
 
   @Override
+  public <T extends IndexDescriptor> T getIndexDescriptor(final Class<T> descriptorClass) {
+    return indexDescriptors.get(descriptorClass);
+  }
+
+  @Override
   public Set<ExportHandler<?, ?>> getExportHandlers() {
     return Set.of();
   }
