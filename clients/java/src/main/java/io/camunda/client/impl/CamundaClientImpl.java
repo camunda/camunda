@@ -175,6 +175,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.IncidentStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -332,6 +333,7 @@ import io.camunda.client.impl.search.request.UsersByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
+import io.camunda.client.impl.statistics.request.IncidentStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
@@ -1535,6 +1537,11 @@ public final class CamundaClientImpl implements CamundaClient {
       newProcessDefinitionInstanceVersionStatisticsRequest(final String processDefinitionId) {
     return new ProcessDefinitionInstanceVersionStatisticsRequestImpl(
         httpClient, jsonMapper, processDefinitionId);
+  }
+
+  @Override
+  public IncidentStatisticsRequest newIncidentStatisticsRequest() {
+    return new IncidentStatisticsRequestImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {
