@@ -89,20 +89,37 @@ public final class CompactBackupIndex implements BackupIndex, AutoCloseable {
   /** The memory-mapped buffer for the index file. Might be replaced when remapping or rewriting */
   private MappedByteBuffer buffer;
 
-  private CompactBackupIndex(final Path path, final FileChannel file)
-      throws IndexCorruption, PartialIndexCorruption {
+  private CompactBackupIndex(final Path path, final FileChannel file) {
     this.path = path;
     this.file = file;
     createInitialMapping(file);
-    validate();
   }
 
   public static CompactBackupIndex open(final Path path)
       throws IOException, IndexCorruption, PartialIndexCorruption {
-    return new CompactBackupIndex(
-        path,
-        FileChannel.open(
-            path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE));
+    final var index =
+        new CompactBackupIndex(
+            path,
+            FileChannel.open(
+                path,
+                StandardOpenOption.READ,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE));
+    index.validate();
+    return index;
+  }
+
+  public static CompactBackupIndex create(final Path path) throws IOException {
+    final var index =
+        new CompactBackupIndex(
+            path,
+            FileChannel.open(
+                path,
+                StandardOpenOption.READ,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE_NEW));
+    index.buffer.limit(HEADER_SIZE + index.getEntries() * ENTRY_SIZE);
+    return index;
   }
 
   public void flush() {
@@ -471,9 +488,13 @@ public final class CompactBackupIndex implements BackupIndex, AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    flush();
-    IoUtil.unmap(buffer);
-    file.close();
+    if (file != null) {
+      flush();
+      IoUtil.unmap(buffer);
+      file.close();
+      file = null;
+      buffer = null;
+    }
   }
 
   public static final class IndexCorruption extends Exception {
