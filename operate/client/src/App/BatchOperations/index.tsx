@@ -51,6 +51,7 @@ const BatchOperations: React.FC = () => {
     usePaginatedBatchOperations({sort}, {page, pageSize});
 
   const operations = useMemo(() => data?.items ?? [], [data]);
+  const totalItems = data?.page.totalItems ?? 0;
 
   const getTableState = () => {
     if (isLoading) {
@@ -134,7 +135,7 @@ const BatchOperations: React.FC = () => {
               }}
             />
           </TableContainer>
-          {operations.length > 0 && (
+          {totalItems > pageSize && (
             <Pagination
               data-testid="batch-operations-pagination"
               backwardText="Previous page"
@@ -145,7 +146,7 @@ const BatchOperations: React.FC = () => {
               page={page}
               pageSize={pageSize}
               pageSizes={[20, 50, 100]}
-              totalItems={data?.page.totalItems ?? 0}
+              totalItems={totalItems}
               onChange={({page, pageSize}) => {
                 setPage(page);
                 setPageSize(pageSize);

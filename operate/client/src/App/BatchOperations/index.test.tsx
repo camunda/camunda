@@ -188,4 +188,23 @@ describe('<BatchOperations />', () => {
       expect(screen.getByText('1–50 of 100 items')).toBeInTheDocument();
     });
   });
+
+  it('should hide pagination when there is only one page', async () => {
+    mockQueryBatchOperations().withSuccess({
+      items: createMockOperations(5),
+      page: {totalItems: 5},
+    });
+
+    render(<BatchOperations />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.queryByRole('combobox', {
+        name: /items per page/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
 });
