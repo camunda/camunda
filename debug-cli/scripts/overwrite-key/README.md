@@ -210,6 +210,21 @@ Choosing the right `NEW_KEY` and `NEW_MAX_KEY` is not straightforward as it's im
 > [!IMPORTANT]
 > If there's overlap with existing records there is risk of data corruption!
 
+In camunda, the key for a partition `PARTITION_ID` must be in the range:
+
+```bash
+echo "[$(($PARTITION_ID << 51)), $((($PARTITION_ID + 1) << 51)))"
+# returns for PARTITION_ID=2
+# [4503599627370496, 6755399441055744)
+```
+
+If for some reason the key for partition 2 jumped from 4503599627370496 to 6755399441000000, then you should set the variables to:
+- `NEW_KEY`: higher than the key before the jump, such as `4503599900000000`
+- `NEW_MAX_KEY`: lower than the key it jumped to, such as `6755399000000000`
+
+It's ok to leave a lot of room between the keys for extra safety, the key space is quite big.
+
+
 ### 6. Review the Generated YAML
 
 ```bash
