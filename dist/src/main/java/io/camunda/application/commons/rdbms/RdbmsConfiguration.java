@@ -438,8 +438,8 @@ public class RdbmsConfiguration {
     };
   }
 
-  @Bean(name = "rdbms")
-  HealthContributor dbHealthContributor(final DataSource dataSource) {
+  @Bean
+  HealthContributor rdbmsStatusHealthIndicator(final DataSource dataSource) {
     // Equivalent to what Boot would normally wire for "db"
     return new DataSourceHealthIndicator(dataSource);
   }
