@@ -14,9 +14,9 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 @Schema(
-    name = "IncidentStateFilter",
-    description = "Incident state filter with different filter operations (can be combined).")
-public record IncidentStateFilter(
+    name = "IncidentStateFilterProperty",
+    description = "IncidentStateEnum with full advanced search capabilities.")
+public record IncidentStateFilterProperty(
     @Nullable
         @Schema(
             name = "eq",
@@ -25,18 +25,38 @@ public record IncidentStateFilter(
         IncidentState eq,
     @Nullable
         @Schema(
+            name = "neq",
             description = "Checks for inequality with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         IncidentState neq,
     @Nullable
+        @Schema(
+            name = "exists",
+            description = "Checks if the current property exists.",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        Boolean exists,
+    @Nullable
         @Valid
         @Schema(
+            name = "in",
             description = "Checks if the property matches any of the provided values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         List<@NotNull IncidentState> in,
     @Nullable
         @Valid
         @Schema(
-            description = "Checks if the property matches none of the provided values.",
+            name = "notIn",
+            description = "Checks if the property does not match any of the provided values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        List<@NotNull IncidentState> notIn) {}
+        List<@NotNull IncidentState> notIn,
+    @Nullable
+        @Schema(
+            name = "like",
+            description =
+                "Checks if the property matches the provided like value. "
+                    + "Supported wildcard characters are: "
+                    + "`*`: matches zero, one, or multiple characters. "
+                    + "`?`: matches one, single character. "
+                    + "Wildcard characters can be escaped with backslash, for instance: `\\*`.",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        String like) {}
