@@ -46,17 +46,17 @@ set -euo pipefail
 # Parse command-line arguments
 USE_YQ=false
 while [[ $# -gt 0 ]]; do
-	case $1 in
-		--use-yq)
-			USE_YQ=true
-			shift
-			;;
-		*)
-			echo "Unknown option: $1" >&2
-			echo "Usage: $0 [--use-yq]" >&2
-			exit 1
-			;;
-	esac
+        case $1 in
+        --use-yq)
+                USE_YQ=true
+                shift
+                ;;
+        *)
+                echo "Unknown option: $1" >&2
+                echo "Usage: $0 [--use-yq]" >&2
+                exit 1
+                ;;
+        esac
 done
 
 # Validate required variables
@@ -95,12 +95,12 @@ mkdir -p "$GENERATED_DIR"
 # ====================================================
 
 generate_yaml_traditional() {
-	# Read recovery script content and escape for YAML
-	RECOVERY_SCRIPT=$(cat recovery-script.sh | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+        # Read recovery script content and escape for YAML
+        RECOVERY_SCRIPT=$(cat recovery-script.sh | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
 
-	# Generate complete Job YAML matching yq format
-	{
-		cat <<-EOF
+        # Generate complete Job YAML matching yq format
+        {
+                cat <<-EOF
 		apiVersion: batch/v1
 		kind: Job
 		metadata:
@@ -145,54 +145,54 @@ generate_yaml_traditional() {
 		              value: "${PARTITION_BROKER_IDS}"
 		EOF
 
-		# Add NEW_MAX_KEY if set
-		if [ -n "${NEW_MAX_KEY}" ]; then
-			cat <<-EOF
+                # Add NEW_MAX_KEY if set
+                if [ -n "${NEW_MAX_KEY}" ]; then
+                        cat <<-EOF
 			            - name: NEW_MAX_KEY
 			              value: "${NEW_MAX_KEY}"
 			EOF
-		fi
+                fi
 
-		cat <<-EOF
+                cat <<-EOF
 		          resources:
 		            requests:
-		              memory: 1Gi
-		              cpu: 1000m
+		              memory: 500Mi
+		              cpu: 500m
 		            limits:
-		              memory: 1Gi
-		              cpu: 1000m
+		              memory: 500Mi
+		              cpu: 500m
 		          volumeMounts:
 		EOF
 
-		# Add volumeMounts
-		for broker_id in $PARTITION_BROKER_IDS; do
-			cat <<-EOF
+                # Add volumeMounts
+                for broker_id in $PARTITION_BROKER_IDS; do
+                        cat <<-EOF
 			            - name: broker-${broker_id}-data
 			              mountPath: /mnt/broker-${broker_id}
 			EOF
-		done
+                done
 
-		cat <<-EOF
+                cat <<-EOF
 		            - name: temp-storage
 		              mountPath: /tmp/recovery
 		      volumes:
 		EOF
 
-		# Add volumes
-		for broker_id in $PARTITION_BROKER_IDS; do
-			cat <<-EOF
+                # Add volumes
+                for broker_id in $PARTITION_BROKER_IDS; do
+                        cat <<-EOF
 			        - name: broker-${broker_id}-data
 			          persistentVolumeClaim:
 			            claimName: ${PVC_PREFIX}-${broker_id}
 			EOF
-		done
+                done
 
-		cat <<-EOF
+                cat <<-EOF
 		        - name: temp-storage
 		          emptyDir:
 		            sizeLimit: 10Gi
 		EOF
-	} > "$OUTPUT_FILE"
+        } >"$OUTPUT_FILE"
 }
 
 # ====================================================
@@ -200,34 +200,34 @@ generate_yaml_traditional() {
 # ====================================================
 
 generate_yaml_yq() {
-	# Check if yq is available
-	if ! command -v yq &> /dev/null; then
-		echo "ERROR: yq is not installed. Please install yq or run without --use-yq flag" >&2
-		echo "Install yq: https://github.com/mikefarah/yq" >&2
-		exit 1
-	fi
+        # Check if yq is available
+        if ! command -v yq &>/dev/null; then
+                echo "ERROR: yq is not installed. Please install yq or run without --use-yq flag" >&2
+                echo "Install yq: https://github.com/mikefarah/yq" >&2
+                exit 1
+        fi
 
-	# Export all variables for yq's env() function
-	# yq requires all env() variables to be set, even optional ones
-	export NAMESPACE
-	export PARTITION_ID
-	export LAST_LEADER_BROKER
-	export NEW_KEY
-	export PARTITION_BROKER_IDS
-	export CONTAINER_IMAGE
-	export STATEFULSET_NAME
-	export PVC_PREFIX
-	export CONTAINER_USER_ID
-	export CONTAINER_GROUP_ID
-	export CONTAINER_FS_GROUP
-	export NEW_MAX_KEY
+        # Export all variables for yq's env() function
+        # yq requires all env() variables to be set, even optional ones
+        export NAMESPACE
+        export PARTITION_ID
+        export LAST_LEADER_BROKER
+        export NEW_KEY
+        export PARTITION_BROKER_IDS
+        export CONTAINER_IMAGE
+        export STATEFULSET_NAME
+        export PVC_PREFIX
+        export CONTAINER_USER_ID
+        export CONTAINER_GROUP_ID
+        export CONTAINER_FS_GROUP
+        export NEW_MAX_KEY
 
-	# Read recovery script content
-	RECOVERY_SCRIPT=$(cat recovery-script.sh)
-	export RECOVERY_SCRIPT
+        # Read recovery script content
+        RECOVERY_SCRIPT=$(cat recovery-script.sh)
+        export RECOVERY_SCRIPT
 
-	# Create base structure
-	yq eval -n '
+        # Create base structure
+        yq eval -n '
 		.apiVersion = "batch/v1" |
 		.kind = "Job" |
 		.metadata.name = "key-recovery-job" |
@@ -243,21 +243,21 @@ generate_yaml_yq() {
 		.spec.template.spec.securityContext.runAsGroup = (env(CONTAINER_GROUP_ID) | tonumber) |
 		.spec.template.spec.securityContext.fsGroup = (env(CONTAINER_FS_GROUP) | tonumber) |
 		.spec.template.spec.securityContext.runAsNonRoot = true
-	' > "$OUTPUT_FILE"
+	' >"$OUTPUT_FILE"
 
-	# Add container
-	yq eval -i '
+        # Add container
+        yq eval -i '
 		.spec.template.spec.containers[0].name = "recovery" |
 		.spec.template.spec.containers[0].image = env(CONTAINER_IMAGE) |
 		.spec.template.spec.containers[0].command[0] = "/bin/bash" |
 		.spec.template.spec.containers[0].command[1] = "-c"
 	' "$OUTPUT_FILE"
 
-	# Add recovery script as arg
-	yq eval -i --from-file <(echo '.spec.template.spec.containers[0].args[0] = strenv(RECOVERY_SCRIPT)') "$OUTPUT_FILE"
+        # Add recovery script as arg
+        yq eval -i --from-file <(echo '.spec.template.spec.containers[0].args[0] = strenv(RECOVERY_SCRIPT)') "$OUTPUT_FILE"
 
-	# Add environment variables (using strenv to ensure values are strings, not numbers)
-	yq eval -i '
+        # Add environment variables (using strenv to ensure values are strings, not numbers)
+        yq eval -i '
 		.spec.template.spec.containers[0].env[0].name = "PARTITION_ID" |
 		.spec.template.spec.containers[0].env[0].value = strenv(PARTITION_ID) |
 		.spec.template.spec.containers[0].env[1].name = "LAST_LEADER_BROKER" |
@@ -270,50 +270,50 @@ generate_yaml_yq() {
 		.spec.template.spec.containers[0].env[4].value = (strenv(PARTITION_BROKER_IDS) | . style="double")
 	' "$OUTPUT_FILE"
 
-	# Add NEW_MAX_KEY if set
-	if [ -n "${NEW_MAX_KEY}" ]; then
-		yq eval -i '
+        # Add NEW_MAX_KEY if set
+        if [ -n "${NEW_MAX_KEY}" ]; then
+                yq eval -i '
 			.spec.template.spec.containers[0].env[5].name = "NEW_MAX_KEY" |
 			.spec.template.spec.containers[0].env[5].value = strenv(NEW_MAX_KEY)
 		' "$OUTPUT_FILE"
-	fi
+        fi
 
-	# Add resource requests and limits
-	yq eval -i '
+        # Add resource requests and limits
+        yq eval -i '
 		.spec.template.spec.containers[0].resources.requests.memory = "1Gi" |
 		.spec.template.spec.containers[0].resources.requests.cpu = "1000m" |
 		.spec.template.spec.containers[0].resources.limits.memory = "1Gi" |
 		.spec.template.spec.containers[0].resources.limits.cpu = "1000m"
 	' "$OUTPUT_FILE"
 
-	# Add volumeMounts for each broker
-	local mount_index=0
-	for broker_id in $PARTITION_BROKER_IDS; do
-		yq eval -i "
+        # Add volumeMounts for each broker
+        local mount_index=0
+        for broker_id in $PARTITION_BROKER_IDS; do
+                yq eval -i "
 			.spec.template.spec.containers[0].volumeMounts[$mount_index].name = \"broker-${broker_id}-data\" |
 			.spec.template.spec.containers[0].volumeMounts[$mount_index].mountPath = \"/mnt/broker-${broker_id}\"
 		" "$OUTPUT_FILE"
-		mount_index=$((mount_index + 1))
-	done
+                mount_index=$((mount_index + 1))
+        done
 
-	# Add temp storage volumeMount
-	yq eval -i "
+        # Add temp storage volumeMount
+        yq eval -i "
 		.spec.template.spec.containers[0].volumeMounts[$mount_index].name = \"temp-storage\" |
 		.spec.template.spec.containers[0].volumeMounts[$mount_index].mountPath = \"/tmp/recovery\"
 	" "$OUTPUT_FILE"
 
-	# Add volumes for each broker
-	local volume_index=0
-	for broker_id in $PARTITION_BROKER_IDS; do
-		yq eval -i "
+        # Add volumes for each broker
+        local volume_index=0
+        for broker_id in $PARTITION_BROKER_IDS; do
+                yq eval -i "
 			.spec.template.spec.volumes[$volume_index].name = \"broker-${broker_id}-data\" |
 			.spec.template.spec.volumes[$volume_index].persistentVolumeClaim.claimName = \"${PVC_PREFIX}-${broker_id}\"
 		" "$OUTPUT_FILE"
-		volume_index=$((volume_index + 1))
-	done
+                volume_index=$((volume_index + 1))
+        done
 
-	# Add temp storage volume
-	yq eval -i "
+        # Add temp storage volume
+        yq eval -i "
 		.spec.template.spec.volumes[$volume_index].name = \"temp-storage\" |
 		.spec.template.spec.volumes[$volume_index].emptyDir.sizeLimit = \"10Gi\"
 	" "$OUTPUT_FILE"
@@ -325,11 +325,11 @@ generate_yaml_yq() {
 
 # Generate YAML using selected method
 if [ "$USE_YQ" = true ]; then
-	echo "Using yq method for YAML generation..." >&2
-	generate_yaml_yq
+        echo "Using yq method for YAML generation..." >&2
+        generate_yaml_yq
 else
-	echo "Using traditional method for YAML generation..." >&2
-	generate_yaml_traditional
+        echo "Using traditional method for YAML generation..." >&2
+        generate_yaml_traditional
 fi
 
 # Output the file path to stdout (for calling scripts to capture)
