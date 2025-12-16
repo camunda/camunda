@@ -63,6 +63,10 @@ class OperateProcessInstancePage {
   readonly modifyDialog: Locator;
   readonly modifyDialogContinueButton: Locator;
   readonly diagram: Locator;
+  readonly cancelButton: Locator;
+  readonly addVariableModificationButton: Locator;
+  readonly modalDialog: Locator;
+  readonly noVariablesText: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -154,6 +158,12 @@ class OperateProcessInstancePage {
     this.modifyDialogContinueButton = this.modifyDialog.getByRole('button', {
       name: 'Continue',
     });
+    this.cancelButton = page.getByRole('button', {name: 'Cancel'});
+    this.addVariableModificationButton = page.getByRole('button', {
+      name: /add variable/i,
+    });
+    this.modalDialog = page.getByRole('dialog');
+    this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -547,6 +557,10 @@ class OperateProcessInstancePage {
 
   getDiagramElement(elementId: string): Locator {
     return this.diagramPage.diagram.locator(`[data-element-id="${elementId}"]`);
+  }
+
+  async clickDiagramElement(elementId: string): Promise<void> {
+    await this.getDiagramElement(elementId).click();
   }
 
   async getDiagramElementBadge(elementId: string) {

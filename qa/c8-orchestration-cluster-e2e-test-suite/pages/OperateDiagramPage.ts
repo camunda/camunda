@@ -20,6 +20,7 @@ export class OperateDiagramPage {
   readonly monacoScrollableElement: Locator;
   readonly showIncidentButton: Locator;
   readonly showMetadataButton: Locator;
+  readonly viewRootCauseDecisionLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -42,6 +43,9 @@ export class OperateDiagramPage {
     });
     this.showMetadataButton = this.popover.getByRole('button', {
       name: 'show more metadata',
+    });
+    this.viewRootCauseDecisionLink = this.page.getByRole('link', {
+      name: /View root cause decision/i,
     });
   }
 
@@ -246,5 +250,14 @@ export class OperateDiagramPage {
         tokenAmount.toString(),
       );
     }
+  }
+
+  async clickViewRootCauseDecisionLink(): Promise<void> {
+    await this.viewRootCauseDecisionLink.scrollIntoViewIfNeeded();
+    await this.viewRootCauseDecisionLink.waitFor({
+      state: 'visible',
+      timeout: 30000,
+    });
+    await this.viewRootCauseDecisionLink.click();
   }
 }
