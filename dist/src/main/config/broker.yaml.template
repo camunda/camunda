@@ -1202,10 +1202,19 @@
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLEACCESSMETRICS
         # accessMetrics: none
 
-        # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only applies to RocksDB, which is used by the Zeebe's state management and that
-        # an RocksDB instance is used per partition.
+        # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only
+        # applies to RocksDB, which is used by the Zeebe's state management with the memory limit being
+        # shared across all partitions in a broker. The memory allocation strategy depends on the
+        # memoryAllocationStrategy setting.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         # memoryLimit: 512MB
+
+        # Configures the memory allocation strategy by RocksDB. If set to 'PARTITION', the total memory
+        # allocated to RocksDB will be the number of partitions times the configured memory limit. If the
+        # value is set to 'BROKER', the total memory allocated to RocksDB will be equal to the configured
+        # memory limit.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYALLOCATIONSTRATEGY
+        # memoryAllocationStrategy: PARTITION
 
         # Configures how many files are kept open by RocksDB, per default it is unlimited (-1).
         # This is a performance optimization: if you set a value greater than zero, it will keep track and cap the number of open
