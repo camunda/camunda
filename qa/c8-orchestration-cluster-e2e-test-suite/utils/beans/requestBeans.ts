@@ -123,6 +123,14 @@ export const decisionDefinitionRequiredFields: string[] = [
   'decisionDefinitionKey',
   'decisionRequirementsKey',
 ];
+export const decisionRequirementRequiredFields: string[] = [
+    'decisionRequirementsId',
+    'version',
+    'decisionRequirementsName',
+    'tenantId',
+    'decisionRequirementsKey',
+    'resourceName',
+];
 export const evaluateDecisionRequiredFields: string[] = [
   'decisionDefinitionId',
   'decisionDefinitionName',
