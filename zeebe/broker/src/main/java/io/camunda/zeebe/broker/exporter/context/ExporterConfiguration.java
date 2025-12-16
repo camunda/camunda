@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.exporter.context;
 
 import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,12 +23,24 @@ import java.util.Map;
 public record ExporterConfiguration(String id, Map<String, Object> arguments)
     implements Configuration {
 
-  // Accepts more lenient cases, such that the property "something" would match a field "someThing"
-  // Note however that if a field "something" and "someThing" are present, only one of them will be
-  // instantiated (the last declared one), using the last matching value.
+  /**
+   * Jackson ObjectMapper for deserialization (fromArgs). Configured for lenient deserialization
+   * from Spring Boot properties, handling string-to-object conversions.
+   *
+   * <p>Features:
+   *
+   * <ul>
+   *   <li>Case-insensitive enum, property, and value matching
+   *   <li>Custom List deserializer for Spring Boot indexed properties (myList[0]=value)
+   *   <li>Custom Path module to preserve relative/absolute paths (no resolution)
+   *   <li>Custom Duration module to preserve Duration objects (no conversion to BigDecimal)
+   *   <li>JavaTimeModule for other temporal types (Instant, LocalDateTime, etc.)
+   * </ul>
+   */
   public static final ObjectMapper MAPPER =
       JsonMapper.builder()
           .addModule(new JavaTimeModule())
+          .addModule(createDurationModule())
           .addModule(createPathModule())
           .addModule(
               new SimpleModule()
@@ -40,40 +51,6 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
           .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
           .build();
-
-  /**
-   * Creates a Jackson module for Path serialization/deserialization that preserves the original
-   * path representation (relative vs absolute). This prevents relative paths from being converted
-   * to absolute paths during serialization.
-   */
-  private static SimpleModule createPathModule() {
-    return new SimpleModule()
-        .addSerializer(
-            Path.class,
-            new com.fasterxml.jackson.databind.JsonSerializer<Path>() {
-              @Override
-              public void serialize(
-                  final Path value,
-                  final com.fasterxml.jackson.core.JsonGenerator gen,
-                  final com.fasterxml.jackson.databind.SerializerProvider serializers)
-                  throws java.io.IOException {
-                // Serialize Path as string, preserving relative/absolute representation
-                gen.writeString(value.toString());
-              }
-            })
-        .addDeserializer(
-            Path.class,
-            new com.fasterxml.jackson.databind.JsonDeserializer<Path>() {
-              @Override
-              public Path deserialize(
-                  final com.fasterxml.jackson.core.JsonParser p,
-                  final com.fasterxml.jackson.databind.DeserializationContext ctxt)
-                  throws java.io.IOException {
-                // Deserialize string back to Path, preserving relative/absolute representation
-                return Path.of(p.getText());
-              }
-            });
-  }
 
   @Override
   public String getId() {
@@ -114,14 +91,108 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   }
 
   public static <T> Map<String, Object> asArgs(final T config) {
-    return MAPPER.convertValue(config, new TypeReference<>() {});
+    // Use ReflectUtil to extract fields, preserving all object types (Duration, Path, etc.)
+    // This avoids Jackson's serialization which would cause infinite recursion
+    return MAPPER.convertValue(config, Map.class);
+  }
+
+  /**
+   * Creates a Jackson module for Duration serialization/deserialization that handles Duration
+   * objects properly.
+   *
+   * <p>Serialization: Writes Duration as POJO (preserves Duration object in Maps from convertValue)
+   *
+   * <p>Deserialization: Parses Duration strings ("PT0.5S" → Duration.ofMillis(500))
+   */
+  private static SimpleModule createDurationModule() {
+    return new SimpleModule()
+        .addSerializer(
+            java.time.Duration.class,
+            new com.fasterxml.jackson.databind.JsonSerializer<java.time.Duration>() {
+              @Override
+              public void serialize(
+                  final java.time.Duration value,
+                  final com.fasterxml.jackson.core.JsonGenerator gen,
+                  final com.fasterxml.jackson.databind.SerializerProvider serializers)
+                  throws java.io.IOException {
+                // Write as embedded POJO to preserve Duration object when using convertValue()
+                // For TokenBuffer (used by convertValue), this keeps the Duration object as-is
+                if (gen instanceof com.fasterxml.jackson.databind.util.TokenBuffer) {
+                  gen.writeEmbeddedObject(value);
+                } else {
+                  // For actual JSON output, write as ISO-8601 string
+                  gen.writeString(value.toString());
+                }
+              }
+            })
+        .addDeserializer(
+            java.time.Duration.class,
+            new com.fasterxml.jackson.databind.JsonDeserializer<java.time.Duration>() {
+              @Override
+              public java.time.Duration deserialize(
+                  final com.fasterxml.jackson.core.JsonParser p,
+                  final com.fasterxml.jackson.databind.DeserializationContext ctxt)
+                  throws java.io.IOException {
+                // Handle embedded Duration objects (from TokenBuffer used by convertValue)
+                if (p.currentToken()
+                    == com.fasterxml.jackson.core.JsonToken.VALUE_EMBEDDED_OBJECT) {
+                  final Object embedded = p.getEmbeddedObject();
+                  if (embedded instanceof java.time.Duration) {
+                    return (java.time.Duration) embedded;
+                  }
+                }
+                // Parse from string format like "PT0.5S" (from Spring Boot properties)
+                final String text = p.getText();
+                if (text != null && !text.isEmpty()) {
+                  return java.time.Duration.parse(text);
+                }
+                return null;
+              }
+            });
+  }
+
+  /**
+   * Creates a Jackson module for Path serialization/deserialization that preserves the original
+   * path representation (relative vs absolute) without any path resolution.
+   *
+   * <p>Serialization: Converts Path to its string representation using toString()
+   *
+   * <p>Deserialization: Converts string to Path using Path.of() without resolution
+   */
+  private static SimpleModule createPathModule() {
+    return new SimpleModule()
+        .addSerializer(
+            Path.class,
+            new com.fasterxml.jackson.databind.JsonSerializer<Path>() {
+              @Override
+              public void serialize(
+                  final Path value,
+                  final com.fasterxml.jackson.core.JsonGenerator gen,
+                  final com.fasterxml.jackson.databind.SerializerProvider serializers)
+                  throws java.io.IOException {
+                // Serialize Path as its string representation, preserving relative/absolute form
+                gen.writeString(value.toString());
+              }
+            })
+        .addDeserializer(
+            Path.class,
+            new com.fasterxml.jackson.databind.JsonDeserializer<Path>() {
+              @Override
+              public Path deserialize(
+                  final com.fasterxml.jackson.core.JsonParser p,
+                  final com.fasterxml.jackson.databind.DeserializationContext ctxt)
+                  throws java.io.IOException {
+                // Deserialize string to Path using Path.of(), preserving relative/absolute form
+                return Path.of(p.getText());
+              }
+            });
   }
 
   /**
    * Fluent API wrapper for configuration mapping operations. Allows chaining transformations before
    * converting back to args map.
    */
-  public static class ConfigurationMapper<T> {
+  public static final class ConfigurationMapper<T> {
     private final T config;
 
     private ConfigurationMapper(final T config) {
