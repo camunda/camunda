@@ -95,6 +95,9 @@
       },
       "userTaskKey": {
         "type": "long"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
       }
     }
   }

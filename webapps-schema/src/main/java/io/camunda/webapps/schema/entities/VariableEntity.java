@@ -35,6 +35,10 @@ public class VariableEntity
 
   @BeforeVersion880 private Long position;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -168,6 +172,15 @@ public class VariableEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public VariableEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result =
@@ -184,7 +197,8 @@ public class VariableEntity
             processDefinitionKey,
             bpmnProcessId,
             tenantId,
-            position);
+            position,
+            rootProcessInstanceKey);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -211,7 +225,8 @@ public class VariableEntity
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(position, that.position)
-        && Arrays.equals(sortValues, that.sortValues);
+        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 
   @Override
@@ -236,6 +251,8 @@ public class VariableEntity
         + '\''
         + ", position="
         + position
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + "} "
         + super.toString();
   }

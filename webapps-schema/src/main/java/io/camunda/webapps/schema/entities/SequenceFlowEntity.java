@@ -25,6 +25,10 @@ public class SequenceFlowEntity implements ExporterEntity<SequenceFlowEntity>, T
   @BeforeVersion880 private String activityId;
   @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
+
   @Override
   public String getId() {
     return id;
@@ -82,10 +86,25 @@ public class SequenceFlowEntity implements ExporterEntity<SequenceFlowEntity>, T
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public SequenceFlowEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
-        id, processInstanceKey, processDefinitionKey, bpmnProcessId, activityId, tenantId);
+        id,
+        processInstanceKey,
+        processDefinitionKey,
+        bpmnProcessId,
+        activityId,
+        tenantId,
+        rootProcessInstanceKey);
   }
 
   @Override
@@ -102,6 +121,7 @@ public class SequenceFlowEntity implements ExporterEntity<SequenceFlowEntity>, T
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(activityId, that.activityId)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 }
