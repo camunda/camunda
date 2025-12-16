@@ -20,11 +20,13 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.containers.ZeebeContainer;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,60 +40,121 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.testcontainers.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
 /** Embedded Zeebe Extension */
 public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
-  private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
-  private static final String ZEEBE_VERSION =
-      IntegrationTestConfigurationUtil.getZeebeDockerVersion();
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeExtension.class);
 
-  private ZeebeContainer zeebeContainer;
+  private final TestStandaloneBroker standaloneBroker;
   private CamundaClient camundaClient;
 
   private String zeebeRecordPrefix;
 
   public ZeebeExtension() {
-    final int databasePort;
-    final String zeebeExporterClassName;
-    if (IntegrationTestConfigurationUtil.getDatabaseType().equals(DatabaseType.OPENSEARCH)) {
-      databasePort = 9200;
-      zeebeExporterClassName = ZEEBE_OPENSEARCH_EXPORTER;
-    } else {
-      databasePort = 9200;
-      zeebeExporterClassName = ZEEBE_ELASTICSEARCH_EXPORTER;
-    }
-    Testcontainers.exposeHostPorts(databasePort);
-    zeebeContainer =
-        new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + ZEEBE_VERSION))
-            .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
-            .withEnv("DATABASE_PORT", String.valueOf(databasePort))
-            .withEnv("ZEEBE_EXPORTER_CLASS_NAME", zeebeExporterClassName)
-            .withCopyFileToContainer(
-                MountableFile.forClasspathResource(ZEEBE_CONFIG_PATH),
-                "/usr/local/zeebe/config/application.yml");
-    if (!isZeebeVersionPre85()) {
-      zeebeContainer =
-          zeebeContainer
-              .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-              .withAdditionalExposedPort(8080);
-    }
+
+    System.setProperty("management.endpoints.web.exposure.include", "*");
+
+    standaloneBroker =
+        new TestStandaloneBroker()
+            .withAdditionalProperties(
+                Map.of(
+                    "zeebe.log.level",
+                    "ERROR",
+                    "atomix.log.level",
+                    "ERROR",
+                    "zeebe.clock.controlled",
+                    "true",
+                    "zeebe.broker.gateway.enable",
+                    "true"))
+            // Enable basic auth so that consolidated-auth triggers the spring security registration
+            // so that they don't get auto-configured by Spring as it hides the actuator endpoints
+            // behind authentication.
+            .withBasicAuth()
+            .withUnauthenticatedAccess()
+            .withAuthorizationsDisabled();
   }
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     zeebeRecordPrefix = ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX + "-" + IdGenerator.getNextId();
-    setZeebeRecordPrefixForTest();
-    zeebeContainer.start();
+    final var dbType = IntegrationTestConfigurationUtil.getDatabaseType();
+    final String zeebeExporterClassName;
+
+    if (dbType.equals(DatabaseType.OPENSEARCH)) {
+      zeebeExporterClassName = ZEEBE_OPENSEARCH_EXPORTER;
+    } else {
+      zeebeExporterClassName = ZEEBE_ELASTICSEARCH_EXPORTER;
+    }
+    Testcontainers.exposeHostPorts(9200);
+
+    standaloneBroker
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getCluster().setPartitionCount(2);
+              cfg.getData()
+                  .getSecondaryStorage()
+                  .setType(SecondaryStorageType.valueOf(dbType.getId()));
+              if (dbType.equals(DatabaseType.OPENSEARCH)) {
+                cfg.getData().getSecondaryStorage().getOpensearch().setUrl("http://localhost:9200");
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getOpensearch()
+                    .setIndexPrefix(zeebeRecordPrefix);
+              } else {
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getElasticsearch()
+                    .setUrl("http://localhost:9200");
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getElasticsearch()
+                    .setIndexPrefix(zeebeRecordPrefix);
+              }
+            })
+        .withExporter(
+            dbType.getId() + "exporter",
+            cfg -> {
+              cfg.setClassName(zeebeExporterClassName);
+              cfg.setArgs(
+                  Map.of(
+                      "index",
+                      Map.of("prefix", zeebeRecordPrefix),
+                      "bulk",
+                      Map.of("size", 1),
+                      "connect",
+                      Map.of(
+                          "url",
+                          "http://localhost:9200",
+                          "indexPrefix",
+                          zeebeRecordPrefix,
+                          "type",
+                          dbType.toString())));
+            })
+        .withCreateSchema(true)
+        .withAdditionalProperties(
+            Map.of(
+                "camunda.data.secondary-storage.type",
+                dbType.getId(),
+                "camunda.database.type",
+                dbType.getId(),
+                "camunda.database.url",
+                "http://localhost:9200",
+                "camunda.tasklist.database",
+                dbType.getId(),
+                "camunda.operate.database",
+                dbType.getId(),
+                "camunda.tasklist." + dbType.getId() + ".url",
+                "http://localhost:9200",
+                "camunda.operate." + dbType.getId() + ".url",
+                "http://localhost:9200"))
+        .start();
     createClient();
   }
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
-    zeebeContainer.stop();
+    standaloneBroker.stop();
     destroyClient();
   }
 
@@ -100,14 +163,15 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       camundaClient =
           CamundaClient.newClientBuilder()
               .defaultRequestTimeout(Duration.ofMillis(15000))
-              .grpcAddress(zeebeContainer.getGrpcAddress())
+              .grpcAddress(standaloneBroker.grpcAddress())
               .build();
     } else {
       camundaClient =
           CamundaClient.newClientBuilder()
+              .preferRestOverGrpc(false)
               .defaultRequestTimeout(Duration.ofMillis(15000))
-              .grpcAddress(zeebeContainer.getGrpcAddress())
-              .restAddress(zeebeContainer.getRestAddress())
+              .grpcAddress(standaloneBroker.grpcAddress())
+              .restAddress(standaloneBroker.restAddress())
               .build();
     }
   }
@@ -166,7 +230,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public void setClock(final Instant pinAt) throws IOException, InterruptedException {
     final ClockActuatorClient clockClient =
-        new ClockActuatorClient(zeebeContainer.getExternalMonitoringAddress());
+        new ClockActuatorClient(standaloneBroker.address(TestZeebePort.MONITORING));
     clockClient.pinZeebeTime(pinAt);
   }
 
@@ -271,12 +335,6 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
             .open();
     Awaitility.await().timeout(10, TimeUnit.SECONDS).untilTrue(jobCompleted);
     jobWorker.close();
-  }
-
-  private void setZeebeRecordPrefixForTest() {
-    zeebeContainer =
-        zeebeContainer.withEnv(
-            "ZEEBE_BROKER_EXPORTERS_OPTIMIZE_ARGS_INDEX_PREFIX", zeebeRecordPrefix);
   }
 
   private void destroyClient() {
