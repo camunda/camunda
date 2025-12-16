@@ -325,8 +325,8 @@ kubectl logs ${POD_PREFIX}-0 -n $NAMESPACE --tail=100 | grep -i "partition.*$PAR
 
 Expected outcome:
 - Partition shows HEALTHY status on all brokers
-- One broker is LEADER, others are FOLLOWER
-- No errors in logs related to the partition
+- One broker is LEADER, others are FOLLOWER for each partition
+- No errors in logs related to the partition modified
 
 ### 12. Clean Up Snapshot Backups (After Verification)
 
