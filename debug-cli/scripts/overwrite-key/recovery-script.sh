@@ -90,14 +90,8 @@ else
         else
                 # Exactly one snapshot found
                 SELECTED_SNAPSHOT=$(ls -1 ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | head -1)
-                echo "Auto-detected snapshot (only one found): ${SELECTED_SNAPSHOT}"
+                echo "Auto-detected snapshot: ${SELECTED_SNAPSHOT}"
         fi
-fi
-
-# Validate snapshot exists
-if [ ! -d "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}" ]; then
-        echo "ERROR: Snapshot directory does not exist: ${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}"
-        exit 1
 fi
 
 echo "Snapshot details:"
