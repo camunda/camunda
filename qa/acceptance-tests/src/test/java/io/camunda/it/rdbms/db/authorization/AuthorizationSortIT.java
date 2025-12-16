@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -121,11 +121,11 @@ public class AuthorizationSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<AuthorizationSort>> sortBuilder,
       final Comparator<AuthorizationEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuthorizationDbReader reader = rdbmsService.getAuthorizationReader();
 
     final var requirementsKey = nextKey();
-    createAndSaveRandomAuthorizations(rdbmsWriter, b -> b);
+    createAndSaveRandomAuthorizations(rdbmsWriters, b -> b);
 
     final var searchResult =
         reader

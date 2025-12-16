@@ -40,7 +40,7 @@ import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
@@ -283,7 +283,7 @@ public class RdbmsService {
     return correlatedMessageSubscriptionReader;
   }
 
-  public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?
+  public RdbmsWriters createWriter(final long partitionId) { // todo fix in all itests afterwards?
     return createWriter(new RdbmsWriterConfig.Builder().partitionId((int) partitionId).build());
   }
 
@@ -301,11 +301,11 @@ public class RdbmsService {
     return historyDeletionDbReader;
   }
 
-  public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
+  public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
     return rdbmsWriterFactory.createWriter(config);
   }
 
-  public RdbmsWriter createWriter(final Consumer<Builder> configBuilder) {
+  public RdbmsWriters createWriter(final Consumer<Builder> configBuilder) {
     final RdbmsWriterConfig.Builder builder = new RdbmsWriterConfig.Builder();
     configBuilder.accept(builder);
     return rdbmsWriterFactory.createWriter(builder.build());

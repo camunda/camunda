@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
@@ -52,7 +52,7 @@ public class HistoryCleanupService {
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
-  public HistoryCleanupService(final RdbmsWriterConfig config, final RdbmsWriter rdbmsWriter) {
+  public HistoryCleanupService(final RdbmsWriterConfig config, final RdbmsWriters rdbmsWriters) {
     LOG.info(
         "Creating HistoryCleanupService with default history ttl {}",
         config.history().defaultHistoryTTL());
@@ -71,20 +71,20 @@ public class HistoryCleanupService {
     usageMetricsCleanup = config.history().usageMetricsCleanup();
     usageMetricsTTL = config.history().usageMetricsTTL();
     cleanupBatchSize = config.history().historyCleanupBatchSize();
-    processInstanceWriter = rdbmsWriter.getProcessInstanceWriter();
-    incidentWriter = rdbmsWriter.getIncidentWriter();
-    flowNodeInstanceWriter = rdbmsWriter.getFlowNodeInstanceWriter();
-    userTaskWriter = rdbmsWriter.getUserTaskWriter();
-    variableInstanceWriter = rdbmsWriter.getVariableWriter();
-    decisionInstanceWriter = rdbmsWriter.getDecisionInstanceWriter();
-    jobWriter = rdbmsWriter.getJobWriter();
-    sequenceFlowWriter = rdbmsWriter.getSequenceFlowWriter();
-    batchOperationWriter = rdbmsWriter.getBatchOperationWriter();
-    messageSubscriptionWriter = rdbmsWriter.getMessageSubscriptionWriter();
-    correlatedMessageSubscriptionWriter = rdbmsWriter.getCorrelatedMessageSubscriptionWriter();
-    metrics = rdbmsWriter.getMetrics();
-    usageMetricWriter = rdbmsWriter.getUsageMetricWriter();
-    usageMetricTUWriter = rdbmsWriter.getUsageMetricTUWriter();
+    processInstanceWriter = rdbmsWriters.getProcessInstanceWriter();
+    incidentWriter = rdbmsWriters.getIncidentWriter();
+    flowNodeInstanceWriter = rdbmsWriters.getFlowNodeInstanceWriter();
+    userTaskWriter = rdbmsWriters.getUserTaskWriter();
+    variableInstanceWriter = rdbmsWriters.getVariableWriter();
+    decisionInstanceWriter = rdbmsWriters.getDecisionInstanceWriter();
+    jobWriter = rdbmsWriters.getJobWriter();
+    sequenceFlowWriter = rdbmsWriters.getSequenceFlowWriter();
+    batchOperationWriter = rdbmsWriters.getBatchOperationWriter();
+    messageSubscriptionWriter = rdbmsWriters.getMessageSubscriptionWriter();
+    correlatedMessageSubscriptionWriter = rdbmsWriters.getCorrelatedMessageSubscriptionWriter();
+    metrics = rdbmsWriters.getMetrics();
+    usageMetricWriter = rdbmsWriters.getUsageMetricWriter();
+    usageMetricTUWriter = rdbmsWriters.getUsageMetricTUWriter();
   }
 
   public void scheduleProcessForHistoryCleanup(

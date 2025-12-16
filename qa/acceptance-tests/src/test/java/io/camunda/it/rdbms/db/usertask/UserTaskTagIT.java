@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveUser
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -124,7 +124,7 @@ public class UserTaskTagIT {
     return testApplication.getRdbmsService().getUserTaskReader();
   }
 
-  private static RdbmsWriter setupWriter(final CamundaRdbmsTestApplication testApplication) {
+  private static RdbmsWriters setupWriter(final CamundaRdbmsTestApplication testApplication) {
     return testApplication.getRdbmsService().createWriter(PARTITION_ID);
   }
 }

@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
@@ -66,9 +66,9 @@ public class VariableIT {
     final VariableDbModel updatedVariable =
         randomizedVariable.copy(b -> ((VariableDbModelBuilder) b).value(newValue));
 
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
-    rdbmsWriter.getVariableWriter().update(updatedVariable);
-    rdbmsWriter.flush();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
+    rdbmsWriters.getVariableWriter().update(updatedVariable);
+    rdbmsWriters.flush();
 
     final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
 
@@ -304,7 +304,7 @@ public class VariableIT {
   @TestTemplate
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final VariableDbReader reader = rdbmsService.getVariableReader();
 
     final var cleanupDate = NOW.minusDays(1);
@@ -315,14 +315,14 @@ public class VariableIT {
     final var item3 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
 
     // set cleanup dates
-    rdbmsWriter.getVariableWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
-    rdbmsWriter
+    rdbmsWriters.getVariableWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
+    rdbmsWriters
         .getVariableWriter()
         .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // cleanup
-    rdbmsWriter.getVariableWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+    rdbmsWriters.getVariableWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
 
     final var searchResult =
         reader.search(

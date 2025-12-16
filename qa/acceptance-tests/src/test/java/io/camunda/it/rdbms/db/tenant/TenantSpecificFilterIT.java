@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -52,17 +52,17 @@ public class TenantSpecificFilterIT {
 
   @Autowired private TenantDbReader tenantReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @Test
   public void shouldFindTenantWithChildMemberWithMemberIdsByType() {
-    createAndSaveRandomTenants(rdbmsWriter, b -> b);
-    final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
+    createAndSaveRandomTenants(rdbmsWriters, b -> b);
+    final var tenant = createAndSaveTenant(rdbmsWriters, b -> b);
     addGroupToTenant(tenant.tenantId(), "group-1");
     addGroupToTenant(tenant.tenantId(), "group-2");
     addUserToTenant(tenant.tenantId(), "user-1");
@@ -82,8 +82,8 @@ public class TenantSpecificFilterIT {
 
   @Test
   public void shouldFindTenantWithChildMemberWithChildMemberId() {
-    createAndSaveRandomTenants(rdbmsWriter, b -> b);
-    final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
+    createAndSaveRandomTenants(rdbmsWriters, b -> b);
+    final var tenant = createAndSaveTenant(rdbmsWriters, b -> b);
     addGroupToTenant(tenant.tenantId(), "group-1");
     addGroupToTenant(tenant.tenantId(), "group-2");
     addUserToTenant(tenant.tenantId(), "user-1");
@@ -105,9 +105,9 @@ public class TenantSpecificFilterIT {
   @ParameterizedTest
   @MethodSource("shouldFindTenantWithSpecificFilterParameters")
   public void shouldFindTenantWithSpecificFilter(final TenantFilter filter) {
-    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+    createAndSaveRandomTenants(rdbmsWriters, b -> b);
     createAndSaveTenant(
-        rdbmsWriter,
+        rdbmsWriters,
         TenantFixtures.createRandomized(
             b -> b.tenantKey(42L).tenantId("tenant-42").name("Tenant 42")));
 
@@ -129,12 +129,12 @@ public class TenantSpecificFilterIT {
   }
 
   private void addGroupToTenant(final String tenantId, final String entityId) {
-    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "GROUP"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "GROUP"));
+    rdbmsWriters.flush();
   }
 
   private void addUserToTenant(final String tenantId, final String entityId) {
-    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
+    rdbmsWriters.flush();
   }
 }

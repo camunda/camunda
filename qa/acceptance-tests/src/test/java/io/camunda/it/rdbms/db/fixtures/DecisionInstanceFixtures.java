@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedInput;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedOutput;
@@ -70,43 +70,43 @@ public final class DecisionInstanceFixtures extends CommonFixtures {
         .toList();
   }
 
-  public static void createAndSaveRandomDecisionInstances(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomDecisionInstances(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomDecisionInstances(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomDecisionInstances(rdbmsWriters, b -> b);
   }
 
   public static DecisionInstanceDbModel createAndSaveRandomDecisionInstance(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<DecisionInstanceDbModel.Builder, DecisionInstanceDbModel.Builder>
           builderFunction) {
     final var instance = createRandomized(builderFunction);
-    rdbmsWriter.getDecisionInstanceWriter().create(instance);
-    rdbmsWriter.flush();
+    rdbmsWriters.getDecisionInstanceWriter().create(instance);
+    rdbmsWriters.flush();
     return instance;
   }
 
   public static void createAndSaveRandomDecisionInstances(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<DecisionInstanceDbModel.Builder, DecisionInstanceDbModel.Builder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter
+      rdbmsWriters
           .getDecisionInstanceWriter()
           .create(DecisionInstanceFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static void createAndSaveDecisionInstance(
-      final RdbmsWriter rdbmsWriter, final DecisionInstanceDbModel pecisionInstance) {
-    createAndSaveDecisionInstances(rdbmsWriter, List.of(pecisionInstance));
+      final RdbmsWriters rdbmsWriters, final DecisionInstanceDbModel pecisionInstance) {
+    createAndSaveDecisionInstances(rdbmsWriters, List.of(pecisionInstance));
   }
 
   public static void createAndSaveDecisionInstances(
-      final RdbmsWriter rdbmsWriter, final List<DecisionInstanceDbModel> pecisionInstanceList) {
+      final RdbmsWriters rdbmsWriters, final List<DecisionInstanceDbModel> pecisionInstanceList) {
     for (final DecisionInstanceDbModel pecisionInstance : pecisionInstanceList) {
-      rdbmsWriter.getDecisionInstanceWriter().create(pecisionInstance);
+      rdbmsWriters.getDecisionInstanceWriter().create(pecisionInstance);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

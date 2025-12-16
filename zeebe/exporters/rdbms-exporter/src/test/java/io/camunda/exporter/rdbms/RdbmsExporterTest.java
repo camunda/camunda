@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManager;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.PostFlushListener;
@@ -47,7 +47,7 @@ import org.mockito.Mockito;
 class RdbmsExporterTest {
 
   private Controller controller;
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
   private RdbmsExporter exporter;
   private StubExecutionQueue executionQueue;
   private ExporterPositionService positionService;
@@ -98,7 +98,7 @@ class RdbmsExporterTest {
     exporter.export(record);
 
     // then
-    verify(rdbmsWriter).flush(anyBoolean());
+    verify(rdbmsWriters).flush(anyBoolean());
   }
 
   @Test
@@ -113,7 +113,7 @@ class RdbmsExporterTest {
     exporter.export(record);
 
     // then
-    verify(rdbmsWriter, never()).flush(anyBoolean());
+    verify(rdbmsWriters, never()).flush(anyBoolean());
   }
 
   @Test
@@ -128,7 +128,7 @@ class RdbmsExporterTest {
     exporter.export(record);
 
     // then
-    verify(rdbmsWriter, never()).flush(anyBoolean());
+    verify(rdbmsWriters, never()).flush(anyBoolean());
   }
 
   @Test
@@ -442,7 +442,7 @@ class RdbmsExporterTest {
         .thenReturn(cleanupTask)
         .thenReturn(usageMetricsCleanupTask);
 
-    rdbmsWriter = mock(RdbmsWriter.class);
+    rdbmsWriters = mock(RdbmsWriters.class);
     executionQueue = new StubExecutionQueue();
     positionService = mock(ExporterPositionService.class);
     when(positionService.findOne(anyInt())).thenReturn(null);
@@ -453,26 +453,26 @@ class RdbmsExporterTest {
     when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
         .thenReturn(Duration.ofSeconds(1));
 
-    when(rdbmsWriter.getHistoryCleanupService()).thenReturn(historyCleanupService);
+    when(rdbmsWriters.getHistoryCleanupService()).thenReturn(historyCleanupService);
 
-    when(rdbmsWriter.getExporterPositionService()).thenReturn(positionService);
-    when(rdbmsWriter.getExecutionQueue()).thenReturn(executionQueue);
-    when(rdbmsWriter.getRdbmsPurger()).thenReturn(rdbmsPurger);
+    when(rdbmsWriters.getExporterPositionService()).thenReturn(positionService);
+    when(rdbmsWriters.getExecutionQueue()).thenReturn(executionQueue);
+    when(rdbmsWriters.getRdbmsPurger()).thenReturn(rdbmsPurger);
 
     // Mock getMetrics() to return a mock metrics instance by default
     metrics = mock(RdbmsWriterMetrics.class);
-    when(rdbmsWriter.getMetrics()).thenReturn(metrics);
+    when(rdbmsWriters.getMetrics()).thenReturn(metrics);
 
     // Mock schema manager
     schemaManager = mock(RdbmsSchemaManager.class);
     when(schemaManager.isInitialized()).thenReturn(schemaInitialized);
 
-    doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriter).flush(true);
-    doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriter).flush(false);
+    doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriters).flush(true);
+    doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
 
     final var builder =
         new RdbmsExporter.Builder()
-            .rdbmsWriter(rdbmsWriter)
+            .rdbmsWriter(rdbmsWriters)
             .partitionId(0)
             .flushInterval(Duration.ofMillis(500))
             .queueSize(100)

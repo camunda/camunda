@@ -58,7 +58,7 @@ import io.camunda.db.rdbms.write.service.VariableWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RdbmsWriter {
+public class RdbmsWriters {
 
   private final RdbmsPurger rdbmsPurger;
   private final ExecutionQueue executionQueue;
@@ -68,7 +68,7 @@ public class RdbmsWriter {
 
   private final Map<Class<?>, RdbmsModelWriter> writers = new HashMap<>();
 
-  public RdbmsWriter(
+  public RdbmsWriters(
       final RdbmsWriterConfig config,
       final ExecutionQueue executionQueue,
       final ExporterPositionService exporterPositionService,

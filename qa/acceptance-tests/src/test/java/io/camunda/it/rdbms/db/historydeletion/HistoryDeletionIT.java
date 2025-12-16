@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -32,21 +32,21 @@ public class HistoryDeletionIT {
   private static final Long BATCH_OPERATION_KEY = 2251799813685385L;
 
   private CamundaRdbmsTestApplication testApplication;
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
   private HistoryDeletionDbReader historyDeletionReader;
   private HistoryDeletionWriter historyDeletionWriter;
 
   @BeforeEach
   void setUp() {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     historyDeletionReader = rdbmsService.getHistoryDeletionDbReader();
-    historyDeletionWriter = rdbmsWriter.getHistoryDeletionWriter();
+    historyDeletionWriter = rdbmsWriters.getHistoryDeletionWriter();
   }
 
   @AfterEach
   void tearDown() {
-    rdbmsWriter.getRdbmsPurger().purgeRdbms();
+    rdbmsWriters.getRdbmsPurger().purgeRdbms();
   }
 
   @TestTemplate
@@ -56,7 +56,7 @@ public class HistoryDeletionIT {
         new HistoryDeletionDbModel(
             RESOURCE_KEY, PROCESS_INSTANCE, BATCH_OPERATION_KEY, PARTITION_ID);
     historyDeletionWriter.create(model);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 1);
@@ -93,7 +93,7 @@ public class HistoryDeletionIT {
             .build();
     historyDeletionWriter.create(model1);
     historyDeletionWriter.create(model2);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 10);
@@ -121,7 +121,7 @@ public class HistoryDeletionIT {
             .build();
     historyDeletionWriter.create(modelPartition0);
     historyDeletionWriter.create(modelPartition1);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actualPartition0 = historyDeletionReader.getNextBatch(0, 10);
@@ -159,7 +159,7 @@ public class HistoryDeletionIT {
     historyDeletionWriter.create(modelA);
     historyDeletionWriter.create(modelB);
     historyDeletionWriter.create(modelC);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // when
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 10);
@@ -180,12 +180,12 @@ public class HistoryDeletionIT {
         new HistoryDeletionDbModel(
             RESOURCE_KEY, PROCESS_INSTANCE, BATCH_OPERATION_KEY, PARTITION_ID);
     historyDeletionWriter.create(model);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
     assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1)).isNotEmpty();
 
     // when
     historyDeletionWriter.delete(RESOURCE_KEY, BATCH_OPERATION_KEY);
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // then
     assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1)).isEmpty();

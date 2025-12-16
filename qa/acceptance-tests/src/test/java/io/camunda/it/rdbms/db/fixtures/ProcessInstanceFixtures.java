@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -39,47 +39,47 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomProcessInstances(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomProcessInstances(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomProcessInstances(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomProcessInstances(rdbmsWriters, b -> b);
   }
 
   public static void createAndSaveRandomProcessInstances(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter
+      rdbmsWriters
           .getProcessInstanceWriter()
           .create(ProcessInstanceFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static ProcessInstanceDbModel createAndSaveRandomProcessInstance(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
 
     final ProcessInstanceDbModel processInstance =
         ProcessInstanceFixtures.createRandomized(builderFunction);
-    rdbmsWriter.getProcessInstanceWriter().create(processInstance);
+    rdbmsWriters.getProcessInstanceWriter().create(processInstance);
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     return processInstance;
   }
 
   public static void createAndSaveProcessInstance(
-      final RdbmsWriter rdbmsWriter, final ProcessInstanceDbModel processInstance) {
-    createAndSaveProcessInstances(rdbmsWriter, List.of(processInstance));
+      final RdbmsWriters rdbmsWriters, final ProcessInstanceDbModel processInstance) {
+    createAndSaveProcessInstances(rdbmsWriters, List.of(processInstance));
   }
 
   public static void createAndSaveProcessInstances(
-      final RdbmsWriter rdbmsWriter, final List<ProcessInstanceDbModel> processInstanceList) {
+      final RdbmsWriters rdbmsWriters, final List<ProcessInstanceDbModel> processInstanceList) {
     for (final ProcessInstanceDbModel processInstance : processInstanceList) {
-      rdbmsWriter.getProcessInstanceWriter().create(processInstance);
+      rdbmsWriters.getProcessInstanceWriter().create(processInstance);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -49,21 +49,21 @@ public class ElementInstanceSpecificFilterIT {
 
   @Autowired private FlowNodeInstanceDbReader elementInstanceReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindElementInstanceWithSpecificFilterParameters")
   public void shouldFindElementInstanceWithSpecificFilter(final FlowNodeInstanceFilter filter) {
     createAndSaveRandomElementInstances(
-        rdbmsWriter,
+        rdbmsWriters,
         b -> b.state(FlowNodeState.COMPLETED).type(FlowNodeType.BOUNDARY_EVENT).incidentKey(null));
     createAndSaveRandomElementInstance(
-        rdbmsWriter,
+        rdbmsWriters,
         ElementInstanceFixtures.createRandomized(
             b ->
                 b.flowNodeInstanceKey(42L)

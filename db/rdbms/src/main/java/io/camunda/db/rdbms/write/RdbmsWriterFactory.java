@@ -99,7 +99,7 @@ public class RdbmsWriterFactory {
     this.clusterVariableMapper = clusterVariableMapper;
   }
 
-  public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
+  public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
     final var executionQueue =
         new DefaultExecutionQueue(
             sqlSessionFactory,
@@ -107,7 +107,7 @@ public class RdbmsWriterFactory {
             config.queueSize(),
             config.queueMemoryLimit(),
             metrics);
-    return new RdbmsWriter(
+    return new RdbmsWriters(
         config,
         executionQueue,
         new ExporterPositionService(executionQueue, exporterPositionMapper),

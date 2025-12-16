@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
@@ -63,12 +63,12 @@ class RdbmsExporterWrapperTest {
     final var configuration = new ExporterConfiguration();
     final Context context = Mockito.mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
     final RdbmsService rdbmsService = Mockito.mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
-    final RdbmsWriter rdbmsWriter = Mockito.mock(RdbmsWriter.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsWriters rdbmsWriters = Mockito.mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
 
     Mockito.when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
         .thenReturn(configuration);
     Mockito.when(context.getPartitionId()).thenReturn(1);
-    Mockito.when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriter);
+    Mockito.when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
 
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(

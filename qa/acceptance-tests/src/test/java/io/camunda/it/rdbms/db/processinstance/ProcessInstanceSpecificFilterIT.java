@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -56,11 +56,11 @@ public class ProcessInstanceSpecificFilterIT {
 
   @Autowired private ProcessInstanceDbReader processInstanceReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
@@ -71,16 +71,16 @@ public class ProcessInstanceSpecificFilterIT {
       final int expectedItemsSize,
       final List<Long> expectedKeys) {
     createAndSaveProcessDefinition(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessDefinitionFixtures.createRandomized(
             b ->
                 b.processDefinitionKey(987654321L)
                     .processDefinitionId("test-process-987654321")
                     .name("Test Process 987654321")
                     .versionTag("Version 1")));
-    createAndSaveRandomProcessInstances(rdbmsWriter, b -> b.state(ProcessInstanceState.COMPLETED));
+    createAndSaveRandomProcessInstances(rdbmsWriters, b -> b.state(ProcessInstanceState.COMPLETED));
     createAndSaveProcessInstance(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(42L)

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.MessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -55,12 +55,12 @@ public class MessageSubscriptionSortIT {
       final Function<MessageSubscriptionSort.Builder, ObjectBuilder<MessageSubscriptionSort>>
           sortBuilder,
       final Comparator<MessageSubscriptionEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader();
 
     final var messageName = nextStringId();
     MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(
-        rdbmsWriter, b -> b.messageName(messageName));
+        rdbmsWriters, b -> b.messageName(messageName));
 
     final var searchResult =
         reader

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.db.rdbms.write.domain.GroupDbModel.Builder;
 import io.camunda.zeebe.test.util.Strings;
@@ -31,56 +31,56 @@ public final class GroupFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomGroups(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomGroups(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomGroups(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomGroups(rdbmsWriters, b -> b);
   }
 
   public static GroupDbModel createAndSaveRandomGroup(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var definition = GroupFixtures.createRandomized(builderFunction);
-    rdbmsWriter.getGroupWriter().create(definition);
-    rdbmsWriter.flush();
+    rdbmsWriters.getGroupWriter().create(definition);
+    rdbmsWriters.flush();
     return definition;
   }
 
   public static void createAndSaveRandomGroups(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getGroupWriter().create(GroupFixtures.createRandomized(builderFunction));
+      rdbmsWriters.getGroupWriter().create(GroupFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static void createAndSaveRandomGroupsWithMembers(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<GroupDbModel.Builder, GroupDbModel.Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
       final var group = GroupFixtures.createRandomized(builderFunction);
-      rdbmsWriter.getGroupWriter().create(group);
+      rdbmsWriters.getGroupWriter().create(group);
       GroupMemberFixtures.createAndSaveRandomGroupMembers(
-          rdbmsWriter, b -> b.groupId(group.groupId()));
+          rdbmsWriters, b -> b.groupId(group.groupId()));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static GroupDbModel createAndSaveGroup(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveGroups(rdbmsWriter, List.of(definition));
+    createAndSaveGroups(rdbmsWriters, List.of(definition));
     return definition;
   }
 
-  public static void createAndSaveGroup(final RdbmsWriter rdbmsWriter, final GroupDbModel group) {
-    createAndSaveGroups(rdbmsWriter, List.of(group));
+  public static void createAndSaveGroup(final RdbmsWriters rdbmsWriters, final GroupDbModel group) {
+    createAndSaveGroups(rdbmsWriters, List.of(group));
   }
 
   public static void createAndSaveGroups(
-      final RdbmsWriter rdbmsWriter, final List<GroupDbModel> groupList) {
+      final RdbmsWriters rdbmsWriters, final List<GroupDbModel> groupList) {
     for (final GroupDbModel group : groupList) {
-      rdbmsWriter.getGroupWriter().create(group);
+      rdbmsWriters.getGroupWriter().create(group);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }
