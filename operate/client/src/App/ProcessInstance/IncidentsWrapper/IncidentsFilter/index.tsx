@@ -27,8 +27,8 @@ const IncidentsFilter: React.FC = observer(() => {
             items={availableErrorTypes}
             selectedItems={incidentsPanelStore.state.selectedErrorTypes}
             itemToString={(selectedItem) => getIncidentErrorName(selectedItem)}
-            label="Filter by Incident Type"
-            titleText="Filter by Incident Type"
+            label="Incident Type"
+            titleText="Incident Type"
             hideLabel
             onChange={({selectedItems}) => {
               incidentsPanelStore.setErrorTypeSelection(selectedItems);
@@ -44,10 +44,10 @@ const IncidentsFilter: React.FC = observer(() => {
               });
             }}
             disabled={!incidentsPanelStore.hasActiveFilters}
-            title="Reset Filters"
+            title="Reset"
             size="sm"
           >
-            Reset Filters
+            Reset
           </Button>
         </Stack>
       </Container>
