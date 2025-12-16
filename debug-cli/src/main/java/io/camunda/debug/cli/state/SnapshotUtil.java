@@ -61,7 +61,7 @@ public class SnapshotUtil {
             new CurrentThreadConcurrencyControl(),
             new SnapshotMetrics(new SimpleMeterRegistry()));
 
-    final var snapshotId = FileBasedSnapshotId.ofFileName(stringSnapshotId).getOrThrow();
+    final var snapshotId = FileBasedSnapshotId.ofFileName(stringSnapshotId).get();
 
     final var transientSnapshot =
         snapshotStore
@@ -69,8 +69,7 @@ public class SnapshotUtil {
                 snapshotId.getIndex(),
                 snapshotId.getTerm(),
                 snapshotId.getProcessedPosition(),
-                snapshotId.getExportedPosition(),
-                true)
+                snapshotId.getExportedPosition())
             .get();
 
     transientSnapshot
