@@ -17,25 +17,27 @@ import {
   assertRequiredFields,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {deployMammalDecisionAndStoreResponse, deployTwoSimpleDecisionsAndStoreResponse} from '@requestHelpers';
+import {
+  deployMammalDecisionAndStoreResponse,
+  deployTwoSimpleDecisionsAndStoreResponse,
+} from '@requestHelpers';
 import {DecisionRequirementsDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import {validateResponse} from '../../../../json-body-assertions';
-import { decisionRequirementRequiredFields } from 'utils/beans/requestBeans';
+import {decisionRequirementRequiredFields} from 'utils/beans/requestBeans';
 
 const DECISION_REQUIREMENTS_SEARCH_ENDPOINT = '/decision-requirements/search';
 
-/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search Decision Requirements API Tests', () => {
   let decisionRequirements: DecisionRequirementsDeployment[] = [];
 
   test.beforeAll(async () => {
-    await deployMammalDecisionAndStoreResponse(
-      decisionRequirements,
-    );
+    await deployMammalDecisionAndStoreResponse(decisionRequirements);
     await deployTwoSimpleDecisionsAndStoreResponse(decisionRequirements);
   });
 
-  test('Search decision requirements - multiple results - success', async ({request}) => {
+  test('Search decision requirements - multiple results - success', async ({
+    request,
+  }) => {
     await expect(async () => {
       const res = await request.post(
         buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT, {}),
@@ -48,9 +50,9 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
       await assertStatusCode(res, 200);
       await validateResponse(
         {
-        path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
+          path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
         },
         res,
       );
@@ -64,22 +66,25 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
   test('Search decision requirements by version success', async ({request}) => {
     const decisionRequirementToSearch = decisionRequirements[1];
     await expect(async () => {
-      const res = await request.post(buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT), {
-        headers: jsonHeaders(),
-        data: {
-          filter: {
-            version: decisionRequirementToSearch.version,
+      const res = await request.post(
+        buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              version: decisionRequirementToSearch.version,
+            },
           },
         },
-      });
+      );
 
       await assertStatusCode(res, 200);
 
       await validateResponse(
         {
-        path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
+          path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
         },
         res,
       );
@@ -89,26 +94,32 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search decision requirements by decisionRequirementsName and version success', async ({request}) => {
+  test('Search decision requirements by decisionRequirementsName and version success', async ({
+    request,
+  }) => {
     const decisionRequirementToSearch = decisionRequirements[0];
     await expect(async () => {
-      const res = await request.post(buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT), {
-        headers: jsonHeaders(),
-        data: {
-          filter: {
-            decisionRequirementsName: decisionRequirementToSearch.decisionRequirementsName,
-            version: decisionRequirementToSearch.version,
+      const res = await request.post(
+        buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              decisionRequirementsName:
+                decisionRequirementToSearch.decisionRequirementsName,
+              version: decisionRequirementToSearch.version,
+            },
           },
         },
-      });
+      );
 
       await assertStatusCode(res, 200);
 
       await validateResponse(
         {
-        path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
+          path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
         },
         res,
       );
@@ -116,42 +127,55 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
       const body = await res.json();
       expect(body.items.length).toEqual(1);
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-      assertEqualsForKeys(decisionRequirementToSearch, body.items[0], decisionRequirementRequiredFields);
+      assertEqualsForKeys(
+        decisionRequirementToSearch,
+        body.items[0],
+        decisionRequirementRequiredFields,
+      );
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search decision requirements - unauthorized request', async ({request}) => {
+  test('Search decision requirements - unauthorized request', async ({
+    request,
+  }) => {
     await expect(async () => {
-        const res = await request.post(buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT), {
+      const res = await request.post(
+        buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT),
+        {
           headers: {
             'Content-Type': 'application/json',
           },
           data: {},
-        });
+        },
+      );
 
-        await assertUnauthorizedRequest(res);
-     }).toPass(defaultAssertionOptions);
-   });
+      await assertUnauthorizedRequest(res);
+    }).toPass(defaultAssertionOptions);
+  });
 
-   test('Search decision requirements - empty result', async ({request}) => {
-    const someNotExistingDecisionRequirementsName = 'someRandomDecisionRequirementsName';
+  test('Search decision requirements - empty result', async ({request}) => {
+    const someNotExistingDecisionRequirementsName =
+      'someRandomDecisionRequirementsName';
     await expect(async () => {
-      const res = await request.post(buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT), {
-        headers: jsonHeaders(),
+      const res = await request.post(
+        buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT),
+        {
+          headers: jsonHeaders(),
           data: {
             filter: {
               decisionRequirementsName: someNotExistingDecisionRequirementsName,
             },
           },
-      });
+        },
+      );
 
       await assertStatusCode(res, 200);
 
       await validateResponse(
         {
-        path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
-        method: 'POST',
-        status: '200',
+          path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
         },
         res,
       );
@@ -159,25 +183,28 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
       const body = await res.json();
       expect(body.items.length).toEqual(0);
       expect(body.page.totalItems).toEqual(0);
-     }).toPass(defaultAssertionOptions);
-   });
+    }).toPass(defaultAssertionOptions);
+  });
 
-   test('Search decision requirements - invalid filter', async ({request}) => {
+  test('Search decision requirements - invalid filter', async ({request}) => {
     const someRandomFilterValue = 'meow';
     await expect(async () => {
-      const res = await request.post(buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT), {
-        headers: jsonHeaders(),
+      const res = await request.post(
+        buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT),
+        {
+          headers: jsonHeaders(),
           data: {
             filter: {
               randomNotExistingFieldName: someRandomFilterValue,
             },
           },
-      });
+        },
+      );
 
       await assertBadRequest(
         res,
         'Request property [filter.randomNotExistingFieldName] cannot be parsed',
       );
-     }).toPass(defaultAssertionOptions);
-   });
+    }).toPass(defaultAssertionOptions);
+  });
 });
