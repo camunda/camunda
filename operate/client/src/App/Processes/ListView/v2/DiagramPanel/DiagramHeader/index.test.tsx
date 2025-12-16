@@ -11,8 +11,8 @@ import {DiagramHeader} from '.';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock} from 'modules/testUtils';
+import {mockProcessDefinitions} from 'modules/testUtils';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 function getWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -28,7 +28,7 @@ function getWrapper() {
 
 describe('DiagramHeader', () => {
   beforeEach(() => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
