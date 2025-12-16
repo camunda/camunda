@@ -13,9 +13,9 @@ import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTH
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
-import io.camunda.search.entities.IncidentStatisticsEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.search.query.IncidentQuery;
-import io.camunda.search.query.IncidentStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -97,14 +97,14 @@ public class IncidentServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public SearchQueryResult<IncidentStatisticsEntity> incidentStatistics(
-      final IncidentStatisticsQuery query) {
+  public SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
+      incidentProcessInstanceStatistics(final IncidentProcessInstanceStatisticsQuery query) {
     return executeSearchRequest(
         () ->
             incidentSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, INCIDENT_READ_AUTHORIZATION))
-                .incidentStatistics(query));
+                .incidentProcessInstanceStatistics(query));
   }
 }

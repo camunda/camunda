@@ -16,7 +16,7 @@
 package io.camunda.client.impl.statistics.request;
 
 import io.camunda.client.impl.search.request.SearchRequestSort;
-import io.camunda.client.protocol.rest.IncidentStatisticsQuerySortRequest;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQuerySortRequest;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQuerySortRequest;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuerySortRequest;
 import java.util.List;
@@ -57,15 +57,16 @@ public class StatisticsRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<IncidentStatisticsQuerySortRequest> toIncidentStatisticsSortRequests(
-      final List<SearchRequestSort> requests) {
+  public static List<IncidentProcessInstanceStatisticsQuerySortRequest>
+      toIncidentProcessInstanceStatisticsSortRequests(final List<SearchRequestSort> requests) {
     return requests.stream()
         .map(
             r -> {
-              final IncidentStatisticsQuerySortRequest request =
-                  new IncidentStatisticsQuerySortRequest();
+              final IncidentProcessInstanceStatisticsQuerySortRequest request =
+                  new IncidentProcessInstanceStatisticsQuerySortRequest();
               request.setField(
-                  IncidentStatisticsQuerySortRequest.FieldEnum.fromValue(r.getField()));
+                  IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum.fromValue(
+                      r.getField()));
               request.setOrder(r.getOrder());
               return request;
             })

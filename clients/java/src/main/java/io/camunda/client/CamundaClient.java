@@ -164,7 +164,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
-import io.camunda.client.api.statistics.request.IncidentStatisticsRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -3094,11 +3094,11 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   EvaluateConditionalCommandStep1 newEvaluateConditionalCommand();
 
   /**
-   * Executes a search request to query incident statistics.
+   * Get statistics about process instances with active incidents, grouped by error hash code.
    *
    * <pre>
    * camundaClient
-   *  .newIncidentStatisticsRequest()
+   *  .newIncidentProcessInstanceStatisticsRequest()
    *  .page(p -> p.limit(50))
    *  .sort(s -> s.activeInstancesWithErrorCount().desc())
    *  .send();
@@ -3106,5 +3106,5 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the incident statistics request
    */
-  IncidentStatisticsRequest newIncidentStatisticsRequest();
+  IncidentProcessInstanceStatisticsRequest newIncidentProcessInstanceStatisticsRequest();
 }

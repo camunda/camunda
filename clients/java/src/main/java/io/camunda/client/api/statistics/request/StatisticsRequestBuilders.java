@@ -16,11 +16,11 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
-import io.camunda.client.api.statistics.sort.IncidentStatisticsSort;
+import io.camunda.client.api.statistics.sort.IncidentProcessInstanceStatisticsSort;
 import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceStatisticsSort;
 import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceVersionStatisticsSort;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilterImpl;
-import io.camunda.client.impl.statistics.sort.IncidentStatisticsSortImpl;
+import io.camunda.client.impl.statistics.sort.IncidentProcessInstanceStatisticsSortImpl;
 import io.camunda.client.impl.statistics.sort.ProcessDefinitionInstanceStatisticsSortImpl;
 import io.camunda.client.impl.statistics.sort.ProcessDefinitionInstanceVersionStatisticsSortImpl;
 import java.util.function.Consumer;
@@ -53,9 +53,10 @@ public final class StatisticsRequestBuilders {
     return sort;
   }
 
-  public static IncidentStatisticsSort incidentStatisticsSort(
-      final Consumer<IncidentStatisticsSort> fn) {
-    final IncidentStatisticsSort sort = new IncidentStatisticsSortImpl();
+  public static IncidentProcessInstanceStatisticsSort incidentProcessInstanceStatisticsSort(
+      final Consumer<IncidentProcessInstanceStatisticsSort> fn) {
+    final IncidentProcessInstanceStatisticsSort sort =
+        new IncidentProcessInstanceStatisticsSortImpl();
     fn.accept(sort);
     return sort;
   }

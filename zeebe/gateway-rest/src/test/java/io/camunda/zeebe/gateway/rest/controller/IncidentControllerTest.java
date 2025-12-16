@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.IncidentStatisticsEntity;
-import io.camunda.search.query.IncidentStatisticsQuery;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -42,13 +42,14 @@ public class IncidentControllerTest extends RestControllerTest {
   static final String INCIDENT_BASE_URL = "/v2/incidents";
   static final String INCIDENT_SEARCH_URL = INCIDENT_BASE_URL + "/search";
   static final String INCIDENT_STATISTICS_URL = INCIDENT_BASE_URL + "/statistics";
-  private static final SearchQueryResult<IncidentStatisticsEntity> INCIDENT_STATISTICS_RESULT =
-      new SearchQueryResult.Builder<IncidentStatisticsEntity>()
-          .total(1L)
-          .items(List.of(new IncidentStatisticsEntity("hash", "error", 10L)))
-          .startCursor(null)
-          .endCursor(null)
-          .build();
+  private static final SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
+      INCIDENT_STATISTICS_RESULT =
+          new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsEntity>()
+              .total(1L)
+              .items(List.of(new IncidentProcessInstanceStatisticsEntity("hash", "error", 10L)))
+              .startCursor(null)
+              .endCursor(null)
+              .build();
   @MockitoBean IncidentServices incidentServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
@@ -128,8 +129,9 @@ public class IncidentControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnIncidentStatistics() {
-    when(incidentServices.incidentStatistics(any(IncidentStatisticsQuery.class)))
+  void shouldReturnIncidentProcessInstanceStatistics() {
+    when(incidentServices.incidentProcessInstanceStatistics(
+            any(IncidentProcessInstanceStatisticsQuery.class)))
         .thenReturn(INCIDENT_STATISTICS_RESULT);
 
     webClient
@@ -160,10 +162,10 @@ public class IncidentControllerTest extends RestControllerTest {
                 """,
             JsonCompareMode.STRICT);
 
-    final var result = new IncidentStatisticsQuery.Builder().build();
-    final ArgumentCaptor<IncidentStatisticsQuery> captor =
-        ArgumentCaptor.forClass(IncidentStatisticsQuery.class);
-    verify(incidentServices).incidentStatistics(captor.capture());
+    final var result = new IncidentProcessInstanceStatisticsQuery.Builder().build();
+    final ArgumentCaptor<IncidentProcessInstanceStatisticsQuery> captor =
+        ArgumentCaptor.forClass(IncidentProcessInstanceStatisticsQuery.class);
+    verify(incidentServices).incidentProcessInstanceStatistics(captor.capture());
     assertThat(captor.getValue()).isEqualTo(result);
   }
 }

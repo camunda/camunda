@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.statistics.response;
+package io.camunda.client.api.statistics.sort;
 
-public interface IncidentStatistics {
+import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
 
-  String getErrorHashCode();
+public interface IncidentProcessInstanceStatisticsSort
+    extends SearchRequestSort<IncidentProcessInstanceStatisticsSort> {
 
-  String getErrorMessage();
+  IncidentProcessInstanceStatisticsSort errorMessage();
 
-  Long getActiveInstancesWithErrorCount();
+  IncidentProcessInstanceStatisticsSort activeInstancesWithErrorCount();
 }

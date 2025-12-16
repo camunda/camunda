@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
+import static io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum.ACTIVE_INSTANCES_WITH_ERROR_COUNT;
+import static io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuerySortRequest.FieldEnum.ERROR_MESSAGE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
 
@@ -20,8 +22,8 @@ import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
+import io.camunda.search.sort.IncidentProcessInstanceStatisticsSort;
 import io.camunda.search.sort.IncidentSort;
-import io.camunda.search.sort.IncidentStatisticsSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
@@ -236,9 +238,10 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest<IncidentStatisticsQuerySortRequest.FieldEnum>>
-      fromIncidentStatisticsQuerySortRequest(
-          final List<IncidentStatisticsQuerySortRequest> requests) {
+  public static List<
+          SearchQuerySortRequest<IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum>>
+      fromIncidentProcessInstanceStatisticsQuerySortRequest(
+          final List<IncidentProcessInstanceStatisticsQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -883,9 +886,9 @@ public class SearchQuerySortRequestMapper {
     return validationErrors;
   }
 
-  public static List<String> applyIncidentStatisticsSortField(
-      final IncidentStatisticsQuerySortRequest.FieldEnum field,
-      final IncidentStatisticsSort.Builder builder) {
+  public static List<String> applyIncidentProcessInstanceStatisticsSortField(
+      final IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum field,
+      final IncidentProcessInstanceStatisticsSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);

@@ -11,21 +11,22 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record IncidentStatisticsSort(List<FieldSorting> orderings) implements SortOption {
+public record IncidentProcessInstanceStatisticsSort(List<FieldSorting> orderings)
+    implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
     return orderings;
   }
 
-  public static IncidentStatisticsSort of(
-      final Function<Builder, ObjectBuilder<IncidentStatisticsSort>> fn) {
-    return SortOptionBuilders.incidentStatistics(fn);
+  public static IncidentProcessInstanceStatisticsSort of(
+      final Function<Builder, ObjectBuilder<IncidentProcessInstanceStatisticsSort>> fn) {
+    return SortOptionBuilders.incidentProcessInstanceStatistics(fn);
   }
 
   public static final class Builder
-      extends SortOption.AbstractBuilder<IncidentStatisticsSort.Builder>
-      implements ObjectBuilder<IncidentStatisticsSort> {
+      extends SortOption.AbstractBuilder<IncidentProcessInstanceStatisticsSort.Builder>
+      implements ObjectBuilder<IncidentProcessInstanceStatisticsSort> {
 
     public Builder errorHashCode() {
       currentOrdering = new FieldSorting("errorHashCode", null);
@@ -48,8 +49,8 @@ public record IncidentStatisticsSort(List<FieldSorting> orderings) implements So
     }
 
     @Override
-    public IncidentStatisticsSort build() {
-      return new IncidentStatisticsSort(orderings);
+    public IncidentProcessInstanceStatisticsSort build() {
+      return new IncidentProcessInstanceStatisticsSort(orderings);
     }
   }
 }

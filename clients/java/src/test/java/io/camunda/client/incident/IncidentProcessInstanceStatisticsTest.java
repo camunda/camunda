@@ -22,8 +22,8 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
-import io.camunda.client.protocol.rest.IncidentStatisticsQuery;
-import io.camunda.client.protocol.rest.IncidentStatisticsQueryResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQuery;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.OffsetPagination;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -33,16 +33,16 @@ import java.util.Objects;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
-public class IncidentStatisticsTest extends ClientRestTest {
+public class IncidentProcessInstanceStatisticsTest extends ClientRestTest {
 
   @Test
-  void shouldRequestIncidentStatistics() {
+  void shouldRequestIncidentProcessInstanceStatistics() {
     // given
-    gatewayService.onIncidentStatisticsRequest(
-        Instancio.create(IncidentStatisticsQueryResult.class));
+    gatewayService.onIncidentProcessInstanceStatisticsRequest(
+        Instancio.create(IncidentProcessInstanceStatisticsQueryResult.class));
 
     // when
-    client.newIncidentStatisticsRequest().send().join();
+    client.newIncidentProcessInstanceStatisticsRequest().send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -52,17 +52,21 @@ public class IncidentStatisticsTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRequestIncidentStatisticsWithPagination() {
+  void shouldRequestIncidentProcessInstanceStatisticsWithPagination() {
     // given
-    gatewayService.onIncidentStatisticsRequest(
-        Instancio.create(IncidentStatisticsQueryResult.class));
+    gatewayService.onIncidentProcessInstanceStatisticsRequest(
+        Instancio.create(IncidentProcessInstanceStatisticsQueryResult.class));
 
     // when
-    client.newIncidentStatisticsRequest().page(p -> p.from(5).limit(10)).send().join();
+    client
+        .newIncidentProcessInstanceStatisticsRequest()
+        .page(p -> p.from(5).limit(10))
+        .send()
+        .join();
 
     // then
-    final IncidentStatisticsQuery request =
-        gatewayService.getLastRequest(IncidentStatisticsQuery.class);
+    final IncidentProcessInstanceStatisticsQuery request =
+        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsQuery.class);
     final OffsetPagination page = request.getPage();
     assertThat(page).isNotNull();
     assertThat(page.getFrom()).isEqualTo(5);
@@ -70,23 +74,23 @@ public class IncidentStatisticsTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRequestIncidentStatisticsWithSorting() {
+  void shouldRequestIncidentProcessInstanceStatisticsWithSorting() {
     // given
-    gatewayService.onIncidentStatisticsRequest(
-        Instancio.create(IncidentStatisticsQueryResult.class));
+    gatewayService.onIncidentProcessInstanceStatisticsRequest(
+        Instancio.create(IncidentProcessInstanceStatisticsQueryResult.class));
 
     // when
     client
-        .newIncidentStatisticsRequest()
+        .newIncidentProcessInstanceStatisticsRequest()
         .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
         .send()
         .join();
 
     // then
-    final IncidentStatisticsQuery request =
-        gatewayService.getLastRequest(IncidentStatisticsQuery.class);
+    final IncidentProcessInstanceStatisticsQuery request =
+        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsQuery.class);
     final List<SearchRequestSort> sorts =
-        SearchRequestSortMapper.fromIncidentStatisticsQuerySortRequest(
+        SearchRequestSortMapper.fromIncidentProcessInstanceStatisticsQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(2);
     assertSort(sorts.get(0), "errorMessage", SortOrderEnum.ASC);
