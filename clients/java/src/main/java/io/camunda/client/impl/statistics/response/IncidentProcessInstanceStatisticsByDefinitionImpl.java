@@ -15,26 +15,34 @@
  */
 package io.camunda.client.impl.statistics.response;
 
-import io.camunda.client.api.statistics.response.IncidentStatisticsByErrorHashCode;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByDefinition;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.IncidentStatisticsByErrorHashCodeResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionResult;
 import java.util.Objects;
 
-public class IncidentStatisticsByErrorHashCodeImpl implements IncidentStatisticsByErrorHashCode {
+public class IncidentProcessInstanceStatisticsByDefinitionImpl
+    implements IncidentProcessInstanceStatisticsByDefinition {
 
+  private final String processDefinitionId;
   private final Long processDefinitionKey;
   private final String processDefinitionName;
   private final Integer processDefinitionVersion;
   private final String tenantId;
   private final Long activeInstancesWithErrorCount;
 
-  public IncidentStatisticsByErrorHashCodeImpl(
-      final IncidentStatisticsByErrorHashCodeResult result) {
+  public IncidentProcessInstanceStatisticsByDefinitionImpl(
+      final IncidentProcessInstanceStatisticsByDefinitionResult result) {
+    processDefinitionId = result.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(result.getProcessDefinitionKey());
     processDefinitionName = result.getProcessDefinitionName();
     processDefinitionVersion = result.getProcessDefinitionVersion();
     tenantId = result.getTenantId();
     activeInstancesWithErrorCount = result.getActiveInstancesWithErrorCount();
+  }
+
+  @Override
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
   @Override
@@ -65,6 +73,7 @@ public class IncidentStatisticsByErrorHashCodeImpl implements IncidentStatistics
   @Override
   public int hashCode() {
     return Objects.hash(
+        processDefinitionId,
         processDefinitionKey,
         processDefinitionName,
         processDefinitionVersion,
@@ -80,8 +89,10 @@ public class IncidentStatisticsByErrorHashCodeImpl implements IncidentStatistics
     if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
-    final IncidentStatisticsByErrorHashCodeImpl other = (IncidentStatisticsByErrorHashCodeImpl) obj;
-    return Objects.equals(processDefinitionKey, other.processDefinitionKey)
+    final IncidentProcessInstanceStatisticsByDefinitionImpl other =
+        (IncidentProcessInstanceStatisticsByDefinitionImpl) obj;
+    return Objects.equals(processDefinitionId, other.processDefinitionId)
+        && Objects.equals(processDefinitionKey, other.processDefinitionKey)
         && Objects.equals(processDefinitionName, other.processDefinitionName)
         && Objects.equals(processDefinitionVersion, other.processDefinitionVersion)
         && Objects.equals(tenantId, other.tenantId)
@@ -91,7 +102,8 @@ public class IncidentStatisticsByErrorHashCodeImpl implements IncidentStatistics
   @Override
   public String toString() {
     return String.format(
-        "IncidentStatisticsByErrorHashCodeImpl{processDefinitionKey=%s, processDefinitionName='%s', processDefinitionVersion=%s, tenantId='%s', activeInstancesWithErrorCount=%s}",
+        "IncidentProcessInstanceStatisticsByDefinitionImpl{processDefinitionId=%s, processDefinitionKey=%s, processDefinitionName='%s', processDefinitionVersion=%s, tenantId='%s', activeInstancesWithErrorCount=%s}",
+        processDefinitionId,
         processDefinitionKey,
         processDefinitionName,
         processDefinitionVersion,

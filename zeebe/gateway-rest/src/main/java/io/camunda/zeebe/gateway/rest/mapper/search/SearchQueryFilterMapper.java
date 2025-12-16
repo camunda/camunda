@@ -16,6 +16,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.ClusterVariableFilter;
@@ -44,6 +45,7 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BaseProcessInstanceFilterFields;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilter;
@@ -1022,5 +1024,23 @@ public class SearchQueryFilterMapper {
         .ifPresent(builder::nameOperations);
 
     return builder.build();
+  }
+
+  public static Either<List<String>, IncidentFilter>
+      toIncidentProcessInstanceStatisticsByDefinitionFilter(
+          final IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    if (filter.equals(
+        SearchQueryRequestMapper.EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER)) {
+      return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+
+    return Either.right(
+        FilterBuilders.incident()
+            .states(IncidentState.ACTIVE.name())
+            .errorMessageHashes(filter.getErrorHashCode())
+            .build());
   }
 }

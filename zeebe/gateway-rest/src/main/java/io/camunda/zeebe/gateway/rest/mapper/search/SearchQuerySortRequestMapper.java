@@ -20,6 +20,7 @@ import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
+import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
@@ -240,6 +241,14 @@ public class SearchQuerySortRequestMapper {
           SearchQuerySortRequest<IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum>>
       fromIncidentProcessInstanceStatisticsQuerySortRequest(
           final List<IncidentProcessInstanceStatisticsQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<
+          SearchQuerySortRequest<
+              IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest.FieldEnum>>
+      fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
+          final List<IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -893,6 +902,26 @@ public class SearchQuerySortRequestMapper {
     } else {
       switch (field) {
         case ERROR_MESSAGE -> builder.errorMessage();
+        case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  public static List<String> applyIncidentProcessInstanceStatisticsByDefinitionSortField(
+      final IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest.FieldEnum field,
+      final IncidentProcessInstanceStatisticsByDefinitionSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
+        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
+        case TENANT_ID -> builder.tenantId();
         case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

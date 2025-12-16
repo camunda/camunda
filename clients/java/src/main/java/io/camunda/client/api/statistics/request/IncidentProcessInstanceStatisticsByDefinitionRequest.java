@@ -18,16 +18,17 @@ package io.camunda.client.api.statistics.request;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestOffsetPage;
 import io.camunda.client.api.search.request.TypedSortableRequest;
-import io.camunda.client.api.statistics.response.IncidentStatisticsByErrorHashCode;
-import io.camunda.client.api.statistics.sort.IncidentStatisticsByErrorHashCodeSort;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByDefinition;
+import io.camunda.client.api.statistics.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import java.util.function.Consumer;
 
-public interface IncidentStatisticsByErrorHashCodeRequest
+public interface IncidentProcessInstanceStatisticsByDefinitionRequest
     extends TypedSortableRequest<
-            IncidentStatisticsByErrorHashCodeSort, IncidentStatisticsByErrorHashCodeRequest>,
-        FinalSearchRequestStep<IncidentStatisticsByErrorHashCode> {
+            IncidentProcessInstanceStatisticsByDefinitionSort,
+            IncidentProcessInstanceStatisticsByDefinitionRequest>,
+        FinalSearchRequestStep<IncidentProcessInstanceStatisticsByDefinition> {
 
-  IncidentStatisticsByErrorHashCodeRequest page(SearchRequestOffsetPage value);
+  IncidentProcessInstanceStatisticsByDefinitionRequest page(SearchRequestOffsetPage value);
 
-  IncidentStatisticsByErrorHashCodeRequest page(Consumer<SearchRequestOffsetPage> fn);
+  IncidentProcessInstanceStatisticsByDefinitionRequest page(Consumer<SearchRequestOffsetPage> fn);
 }

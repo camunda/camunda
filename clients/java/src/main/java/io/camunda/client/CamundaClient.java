@@ -165,8 +165,8 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsRequest;
-import io.camunda.client.api.statistics.request.IncidentStatisticsByErrorHashCodeRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -3126,18 +3126,27 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   EvaluateExpressionCommandStep1 newEvaluateExpressionCommand();
 
   /**
-   * Executes a search request to query incident statistics by error hash code.
+   * Executes a statistics request that returns counts of active process instances with active
+   * incidents, grouped by process definition.
+   *
+   * <p>The statistics are scoped to a specific incident error and therefore require an error hash
+   * code to be provided.
+   *
+   * <p>Each result item represents a single process definition (including version and tenant) and
+   * contains the number of active process instances that currently have an incident with the given
+   * error hash code.
    *
    * <pre>
    * camundaClient
-   *  .newIncidentStatisticsByErrorHashCodeRequest()
+   *  .newIncidentProcessInstanceStatisticsByDefinitionRequest(errorHashCode)
    *  .page(p -> p.limit(50))
    *  .sort(s -> s.activeInstancesWithErrorCount().desc())
    *  .send();
    * </pre>
    *
-   * @return a builder for the incident statistics by error hash code request
+   * @param errorHashCode the error hash code to filter the incidents by
+   * @return a builder for the incident process instance statistics request grouped by definition
    */
-  IncidentStatisticsByErrorHashCodeRequest newIncidentStatisticsByErrorHashCodeRequest(
-      String errorHashCode);
+  IncidentProcessInstanceStatisticsByDefinitionRequest
+      newIncidentProcessInstanceStatisticsByDefinitionRequest(int errorHashCode);
 }

@@ -308,4 +308,18 @@ public final class SortOptionBuilders {
               fn) {
     return fn.apply(new ProcessDefinitionInstanceVersionStatisticsSort.Builder()).build();
   }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionSort.Builder
+      incidentProcessInstanceStatisticsByDefinition() {
+    return new IncidentProcessInstanceStatisticsByDefinitionSort.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionSort
+      incidentProcessInstanceStatisticsByDefinition(
+          final Function<
+                  IncidentProcessInstanceStatisticsByDefinitionSort.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionSort>>
+              fn) {
+    return fn.apply(new IncidentProcessInstanceStatisticsByDefinitionSort.Builder()).build();
+  }
 }

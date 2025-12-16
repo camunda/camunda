@@ -17,14 +17,18 @@ package io.camunda.client.api.statistics.sort;
 
 import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
 
-public interface IncidentStatisticsByErrorHashCodeSort
-    extends SearchRequestSort<IncidentStatisticsByErrorHashCodeSort> {
+public interface IncidentProcessInstanceStatisticsByDefinitionSort
+    extends SearchRequestSort<IncidentProcessInstanceStatisticsByDefinitionSort> {
 
-  IncidentStatisticsByErrorHashCodeSort processDefinitionName();
+  IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionKey();
 
-  IncidentStatisticsByErrorHashCodeSort processDefinitionVersion();
+  IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionId();
 
-  IncidentStatisticsByErrorHashCodeSort tenantId();
+  IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionName();
 
-  IncidentStatisticsByErrorHashCodeSort activeInstancesWithErrorCount();
+  IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionVersion();
+
+  IncidentProcessInstanceStatisticsByDefinitionSort tenantId();
+
+  IncidentProcessInstanceStatisticsByDefinitionSort activeInstancesWithErrorCount();
 }

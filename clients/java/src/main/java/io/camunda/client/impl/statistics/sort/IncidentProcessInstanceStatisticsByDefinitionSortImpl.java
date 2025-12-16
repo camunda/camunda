@@ -15,35 +15,45 @@
  */
 package io.camunda.client.impl.statistics.sort;
 
-import io.camunda.client.api.statistics.sort.IncidentStatisticsByErrorHashCodeSort;
+import io.camunda.client.api.statistics.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public class IncidentStatisticsByErrorHashCodeSortImpl
-    extends SearchRequestSortBase<IncidentStatisticsByErrorHashCodeSort>
-    implements IncidentStatisticsByErrorHashCodeSort {
+public class IncidentProcessInstanceStatisticsByDefinitionSortImpl
+    extends SearchRequestSortBase<IncidentProcessInstanceStatisticsByDefinitionSort>
+    implements IncidentProcessInstanceStatisticsByDefinitionSort {
 
   @Override
-  public IncidentStatisticsByErrorHashCodeSort processDefinitionName() {
+  public IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionKey() {
+    return field("processDefinitionKey");
+  }
+
+  @Override
+  public IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionId() {
+    return field("processDefinitionId");
+  }
+
+  @Override
+  public IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionName() {
     return field("processDefinitionName");
   }
 
   @Override
-  public IncidentStatisticsByErrorHashCodeSort processDefinitionVersion() {
+  public IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionVersion() {
     return field("processDefinitionVersion");
   }
 
   @Override
-  public IncidentStatisticsByErrorHashCodeSort tenantId() {
+  public IncidentProcessInstanceStatisticsByDefinitionSort tenantId() {
     return field("tenantId");
   }
 
   @Override
-  public IncidentStatisticsByErrorHashCodeSort activeInstancesWithErrorCount() {
+  public IncidentProcessInstanceStatisticsByDefinitionSort activeInstancesWithErrorCount() {
     return field("activeInstancesWithErrorCount");
   }
 
   @Override
-  protected IncidentStatisticsByErrorHashCodeSort self() {
+  protected IncidentProcessInstanceStatisticsByDefinitionSort self() {
     return this;
   }
 }

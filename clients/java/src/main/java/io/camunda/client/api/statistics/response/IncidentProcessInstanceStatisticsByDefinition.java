@@ -15,7 +15,9 @@
  */
 package io.camunda.client.api.statistics.response;
 
-public interface IncidentStatisticsByErrorHashCode {
+public interface IncidentProcessInstanceStatisticsByDefinition {
+
+  String getProcessDefinitionId();
 
   Long getProcessDefinitionKey();
 

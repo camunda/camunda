@@ -17,7 +17,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -31,6 +35,7 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public final class IncidentServiceTest {
 
@@ -114,5 +119,52 @@ public final class IncidentServiceTest {
     verify(securityContextProvider)
         .provideSecurityContext(eq(authentication), eq(Authorizations.INCIDENT_READ_AUTHORIZATION));
     verify(client).incidentProcessInstanceStatistics(eq(query));
+  }
+
+  @Test
+  public void shouldReturnIncidentProcessInstanceStatisticsByDefinition() {
+    // given
+    final var errorHashCode = 12345;
+    final var statisticsEntity =
+        new IncidentProcessInstanceStatisticsByDefinitionEntity.Builder()
+            .processDefinitionId("test-process-id")
+            .processDefinitionKey(1L)
+            .processDefinitionName("Test Process")
+            .tenantId("<default>")
+            .processDefinitionVersion(1)
+            .activeInstancesWithErrorCount(3L)
+            .build();
+
+    final var originalQuery =
+        new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
+            .filter(f -> f.errorMessageHashes(errorHashCode).states(IncidentState.ACTIVE.name()))
+            .build();
+
+    final var statisticsResult =
+        new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsByDefinitionEntity>()
+            .total(1L)
+            .items(java.util.List.of(statisticsEntity))
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(client.searchIncidentProcessInstanceStatisticsByDefinition(originalQuery))
+        .thenReturn(statisticsResult);
+
+    // when
+    final var result = services.searchIncidentProcessInstanceStatisticsByDefinition(originalQuery);
+
+    // then
+    assertThat(result).isEqualTo(statisticsResult);
+    verify(securityContextProvider)
+        .provideSecurityContext(eq(authentication), eq(Authorizations.INCIDENT_READ_AUTHORIZATION));
+
+    final var queryCaptor =
+        ArgumentCaptor.forClass(IncidentProcessInstanceStatisticsByDefinitionQuery.class);
+    verify(client).searchIncidentProcessInstanceStatisticsByDefinition(queryCaptor.capture());
+
+    final var capturedQuery = queryCaptor.getValue();
+    assertThat(capturedQuery.filter().errorMessageHashOperations())
+        .extracting(Operation::value)
+        .containsExactly(errorHashCode);
   }
 }

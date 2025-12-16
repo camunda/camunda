@@ -12,6 +12,8 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQuery;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
@@ -94,6 +96,17 @@ public class IncidentController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getIncidentProcessInstanceStatistics);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/process-instances-by-definition")
+  public ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
+      incidentProcessInstanceStatisticsByDefinition(
+          @RequestBody() final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
+    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            this::searchIncidentProcessInstanceStatisticsByDefinition);
+  }
+
   private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
     try {
       final var result =
@@ -129,6 +142,29 @@ public class IncidentController {
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Validation failed for Incident Statistics Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
+      searchIncidentProcessInstanceStatisticsByDefinition(
+          final io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery query) {
+    try {
+      final var result =
+          incidentServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .searchIncidentProcessInstanceStatisticsByDefinition(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
+              result));
+    } catch (final ValidationException e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Validation failed for Incident Process Instance Statistics By Definition Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
