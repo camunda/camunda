@@ -73,16 +73,16 @@ class StateUpdateKeyCommandTest {
             "--runtime=" + tempDir.resolve("runtime"));
 
     // then
-    assertThat(exitCode).isZero();
+    assertThat(exitCode).withFailMessage(err.toString()).isZero();
 
     // open the snapshot and verify the key
-    // find the new snapshot id
+    // the new snapshot has the same id as the one before
     final var newSnapshotPath =
         Files.list(partitionRoot.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY))
             .filter(Files::isDirectory)
             .filter(
                 directoryName ->
-                    !directoryName.getFileName().toString().equals(initialSnapshot.getId()))
+                    directoryName.getFileName().toString().equals(initialSnapshot.getId()))
             .findFirst()
             .get();
 
@@ -109,7 +109,8 @@ class StateUpdateKeyCommandTest {
 
     assertThat(keyGen.nextKey()).isEqualTo(Protocol.encodePartitionId(1, 1L));
 
-    return new SnapshotUtil().takeSnapshot(initialRuntime, partitionRoot, "1-1-1-1-1", 1L);
+    return new SnapshotUtil()
+        .takeSnapshot(initialRuntime, partitionRoot, "1-1-1-1-1", 1L, new PrintWriter(err));
   }
 
   @ParameterizedTest

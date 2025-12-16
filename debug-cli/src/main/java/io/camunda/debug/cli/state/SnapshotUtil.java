@@ -20,8 +20,10 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
+import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -52,35 +54,57 @@ public class SnapshotUtil {
       final ZeebeDb runtime,
       final Path rootDirectory,
       final String stringSnapshotId,
-      final long lastFollowupEventPosition) {
-    final var snapshotStore =
+      final long lastFollowupEventPosition,
+      final PrintWriter err) {
+    try (final var snapshotStore =
         new FileBasedSnapshotStoreImpl(
             0,
             rootDirectory,
             new ChecksumProviderRocksDBImpl(),
             new CurrentThreadConcurrencyControl(),
-            new SnapshotMetrics(new SimpleMeterRegistry()));
+            new SnapshotMetrics(new SimpleMeterRegistry()))) {
 
-    final var snapshotId = FileBasedSnapshotId.ofFileName(stringSnapshotId).get();
+      final var snapshotId = FileBasedSnapshotId.ofFileName(stringSnapshotId).get();
 
-    final var transientSnapshot =
-        snapshotStore
-            .newTransientSnapshot(
-                snapshotId.getIndex(),
-                snapshotId.getTerm(),
-                snapshotId.getProcessedPosition(),
-                snapshotId.getExportedPosition())
-            .get();
+      // delete the last persisted snapshot
+      // the new snapshot will have the same name as it refers to the same positions
+      // the snapshot checksum is part of the name only from 8.8+
+      snapshotStore.start();
+      snapshotStore
+          .getLatestSnapshot()
+          .ifPresent(
+              snapshot -> {
+                try {
+                  err.println("Deleting previous snapshot at path " + snapshot.getPath());
+                  FileUtil.deleteFolder(snapshot.getPath());
+                  Files.delete(snapshot.getChecksumPath());
+                  snapshotStore.close();
+                  // start it again to load the snapshots (no snapshot is found)
+                  snapshotStore.start();
+                } catch (final IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
-    transientSnapshot
-        .withLastFollowupEventPosition(lastFollowupEventPosition)
-        .take(
-            path -> {
-              runtime.createSnapshot(path.toFile());
-            })
-        .join();
+      final var transientSnapshot =
+          snapshotStore
+              .newTransientSnapshot(
+                  snapshotId.getIndex(),
+                  snapshotId.getTerm(),
+                  snapshotId.getProcessedPosition(),
+                  snapshotId.getExportedPosition())
+              .get();
 
-    return transientSnapshot.persist().join();
+      transientSnapshot
+          .withLastFollowupEventPosition(lastFollowupEventPosition)
+          .take(
+              path -> {
+                runtime.createSnapshot(path.toFile());
+              })
+          .join();
+
+      return transientSnapshot.persist().join();
+    }
   }
 
   public static long getLastFollowupEventPosition(final Path snapshotPath) throws IOException {
