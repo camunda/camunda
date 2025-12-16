@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class FileBasedSnapshotStoreImpl {
+public final class FileBasedSnapshotStoreImpl implements AutoCloseable {
   public static final String SNAPSHOTS_DIRECTORY = "snapshots";
   public static final String PENDING_DIRECTORY = "pending";
   // When sorted with other files in the snapshot, the metadata file must be ordered at the end.
@@ -110,6 +110,7 @@ public final class FileBasedSnapshotStoreImpl {
     purgePendingSnapshotsDirectory();
   }
 
+  @Override
   public void close() {
     listeners.clear();
   }
