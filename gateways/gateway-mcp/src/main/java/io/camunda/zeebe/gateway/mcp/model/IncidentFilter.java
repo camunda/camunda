@@ -68,24 +68,24 @@ public record IncidentFilter(
             name = "incidentKey",
             description = "The assigned key, which acts as a unique identifier for this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        String incidentKey,
+        AdvancedStringFilter incidentKey,
     @Schema(
             name = "processDefinitionKey",
             description = "The process definition key associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        String processDefinitionKey,
+        AdvancedStringFilter processDefinitionKey,
     @Schema(
             name = "processInstanceKey",
             description = "The process instance key associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        String processInstanceKey,
+        AdvancedStringFilter processInstanceKey,
     @Schema(
             name = "elementInstanceKey",
             description = "The element instance key associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        String elementInstanceKey,
+        AdvancedStringFilter elementInstanceKey,
     @Schema(
             name = "jobKey",
             description = "The job key, if exists, associated with this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        String jobKey) {}
+        AdvancedStringFilter jobKey) {}
