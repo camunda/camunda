@@ -23,7 +23,6 @@ import {
   processInstancesStore,
 } from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processesStore} from 'modules/stores/processes/processes.list';
 
 import {batchModificationStore} from 'modules/stores/batchModification';
 
@@ -46,9 +45,9 @@ const InstancesTable: React.FC = observer(() => {
   /**
    * Is true if at least one process instances from the store has a version tag.
    */
-  const hasVersionTags = processInstances.some(({processId}) => {
-    return processesStore.getVersionTag(processId);
-  });
+  const hasVersionTags = processInstances.some(
+    ({processVersionTag}) => !!processVersionTag,
+  );
 
   const filters = useFilters();
   const location = useLocation();
@@ -153,8 +152,6 @@ const InstancesTable: React.FC = observer(() => {
           processInstancesStore.fetchNextInstances();
         }}
         rows={processInstances.map((instance) => {
-          const versionTag = processesStore.getVersionTag(instance.processId);
-
           return {
             id: instance.id,
             processName: (
@@ -190,7 +187,7 @@ const InstancesTable: React.FC = observer(() => {
               </Link>
             ),
             processVersion: instance.processVersion,
-            versionTag: versionTag ?? '--',
+            versionTag: instance.processVersionTag ?? '--',
             tenant: isTenantColumnVisible ? instance.tenantId : undefined,
             startDate: formatDate(instance.startDate),
             endDate: formatDate(instance.endDate),
