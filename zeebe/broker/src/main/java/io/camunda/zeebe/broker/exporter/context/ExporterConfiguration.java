@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.util.ReflectUtil;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   public static final ObjectMapper MAPPER =
       JsonMapper.builder()
           .addModule(new JavaTimeModule())
+          .addModule(createPathModule())
           .addModule(
               new SimpleModule()
                   .addDeserializer(List.class, new ExporterConfigurationListDeserializer<>()))
@@ -38,6 +40,40 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
           .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
           .build();
+
+  /**
+   * Creates a Jackson module for Path serialization/deserialization that preserves the original
+   * path representation (relative vs absolute). This prevents relative paths from being converted
+   * to absolute paths during serialization.
+   */
+  private static SimpleModule createPathModule() {
+    return new SimpleModule()
+        .addSerializer(
+            Path.class,
+            new com.fasterxml.jackson.databind.JsonSerializer<Path>() {
+              @Override
+              public void serialize(
+                  final Path value,
+                  final com.fasterxml.jackson.core.JsonGenerator gen,
+                  final com.fasterxml.jackson.databind.SerializerProvider serializers)
+                  throws java.io.IOException {
+                // Serialize Path as string, preserving relative/absolute representation
+                gen.writeString(value.toString());
+              }
+            })
+        .addDeserializer(
+            Path.class,
+            new com.fasterxml.jackson.databind.JsonDeserializer<Path>() {
+              @Override
+              public Path deserialize(
+                  final com.fasterxml.jackson.core.JsonParser p,
+                  final com.fasterxml.jackson.databind.DeserializationContext ctxt)
+                  throws java.io.IOException {
+                // Deserialize string back to Path, preserving relative/absolute representation
+                return Path.of(p.getText());
+              }
+            });
+  }
 
   @Override
   public String getId() {
@@ -68,7 +104,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
    * Creates a fluent API wrapper for convenient configuration mapping. Enables chaining operations
    * like: <code>
    * ExporterConfiguration.of(ConfigClass.class, args)
-   *     .map(config -> { config.setSomething(...); return config; })
+   *     .apply(config -> config.setSomething(...))
    *     .toArgs()
    * </code>
    */
@@ -92,8 +128,15 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
       this.config = config;
     }
 
-    public ConfigurationMapper apply(final java.util.function.Consumer<T> mapper) {
-      mapper.accept(config);
+    /**
+     * Applies a transformation to the configuration using a Consumer. Useful for modifying the
+     * configuration without needing to return it.
+     *
+     * @param consumer the consumer that modifies the configuration
+     * @return this mapper for method chaining
+     */
+    public ConfigurationMapper<T> apply(final java.util.function.Consumer<T> consumer) {
+      consumer.accept(config);
       return this;
     }
 
