@@ -81,6 +81,18 @@ public class MemberBuilder extends NodeBuilder {
   }
 
   /**
+   * Sets the nodeVersion used to discriminate different instances for the same node, where a static
+   * node id is not provided.
+   *
+   * @param nodeVersion the node version to set
+   * @return the member builder
+   */
+  public MemberBuilder withNodeVersion(final long nodeVersion) {
+    config.setNodeVersion(nodeVersion);
+    return this;
+  }
+
+  /**
    * Sets the zone to which the member belongs.
    *
    * @param zoneId the zone to which the member belongs

@@ -37,11 +37,14 @@ import io.atomix.cluster.discovery.NodeDiscoveryService;
 import io.atomix.cluster.impl.DefaultNodeDiscoveryService;
 import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
+import io.atomix.cluster.protocol.SwimMembershipProtocol.ImmutableMember;
+import io.atomix.cluster.protocol.SwimMembershipProtocol.SwimMember;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -52,10 +55,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.awaitility.Awaitility;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** SWIM membership protocol test. */
 public class SwimProtocolTest extends ConcurrentTestCase {
@@ -65,22 +68,30 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   private static final Duration PROBE_TIMEOUT = Duration.ofMillis(200);
   private static final Duration FAILURE_INTERVAL = Duration.ofMillis(1000);
   private static final Duration SYNC_INTERVAL = Duration.ofMillis(1000);
+  private Map<String, Long> versions;
   private final Version version1 = Version.from("1.0.0");
   private final Version version2 = Version.from("2.0.0");
   private final Map<MemberId, SwimMembershipProtocol> protocols = Maps.newConcurrentMap();
   private TestMessagingServiceFactory messagingServiceFactory = new TestMessagingServiceFactory();
   private TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-  private Member member1;
-  private Member member2;
-  private Member member3;
+  private SwimMember member1;
+  private SwimMember member2;
+  private SwimMember member3;
+  private boolean withVersions;
   private Collection<Member> members;
   private Collection<Node> nodes;
   private Map<MemberId, TestGroupMembershipEventListener> listeners = Maps.newConcurrentMap();
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-  private Member member(final String id, final String host, final int port, final Version version) {
+  private SwimMember member(
+      final String id,
+      final Long nodeVersion,
+      final String host,
+      final int port,
+      final Version version) {
     return new SwimMembershipProtocol.SwimMember(
         MemberId.from(id),
+        nodeVersion != null ? nodeVersion : 0L,
         new Address(host, port),
         null,
         null,
@@ -90,28 +101,35 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         System.currentTimeMillis());
   }
 
-  @Before
   @SuppressWarnings("unchecked")
-  public void reset() {
+  public void reset(final boolean withVersions) {
+    this.withVersions = withVersions;
+    if (withVersions) {
+      versions = Map.of("1", 32L, "2", 19L, "3", 14L);
+    } else {
+      versions = Map.of();
+    }
     messagingServiceFactory = new TestMessagingServiceFactory();
     unicastServiceFactory = new TestUnicastServiceFactory();
 
-    member1 = member("1", "localhost", 5001, version1);
-    member2 = member("2", "localhost", 5002, version1);
-    member3 = member("3", "localhost", 5003, version1);
+    member1 = member("1", versions.get("1"), "localhost", 5001, version1);
+    member2 = member("2", versions.get("2"), "localhost", 5002, version1);
+    member3 = member("3", versions.get("3"), "localhost", 5003, version1);
     members = Arrays.asList(member1, member2, member3);
     nodes = (Collection) members;
     listeners = Maps.newConcurrentMap();
   }
 
-  @After
+  @AfterEach
   public void cleanup() {
     members.forEach(this::stopProtocol);
   }
 
-  @Test
-  public void shouldReceiveMemberAddedOnSingleNode() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldReceiveMemberAddedOnSingleNode(final boolean withVersions) throws Exception {
     // given
+    reset(withVersions);
 
     // when
     startProtocol(member1, member1.id().toString());
@@ -121,9 +139,12 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     checkMembers(member1, member1);
   }
 
-  @Test
-  public void shouldReceiveMultipleEventsOnTwoNodeCluster() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldReceiveMultipleEventsOnTwoNodeCluster(final boolean withVersions)
+      throws Exception {
     // given
+    reset(withVersions);
     startProtocol(member1, member1.id().toString());
 
     // when
@@ -139,9 +160,12 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     checkMembers(member1, member1, member2);
   }
 
-  @Test
-  public void shouldReceiveMultipleEventsOnThreeNodeCluster() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldReceiveMultipleEventsOnThreeNodeCluster(final boolean withVersions)
+      throws Exception {
     // given
+    reset(withVersions);
     startProtocol(member1, member1.id().toString());
     startProtocol(member2, member2.id().toString());
 
@@ -165,9 +189,11 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     checkMembers(member3, member1, member2, member3);
   }
 
-  @Test
-  public void shouldRemoveNodeOnPartition() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRemoveNodeOnPartition(final boolean withVersions) throws Exception {
     // Start a node and check its events.
+    reset(withVersions);
     startProtocol(member1, member1.id().toString());
     startProtocol(member2, member2.id().toString());
     startProtocol(member3, member3.id().toString());
@@ -189,9 +215,11 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     checkEvent(member2, MEMBER_REMOVED, member3);
   }
 
-  @Test
-  public void testSwimProtocol() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testSwimProtocol(final boolean withVersions) throws Exception {
     // Start a node and check its events.
+    reset(withVersions);
     startProtocol(member1, member1.id().toString());
     startProtocol(member2, member2.id().toString());
     startProtocol(member3, member3.id().toString());
@@ -247,9 +275,12 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     checkEvent(member3, METADATA_CHANGED, member1);
   }
 
-  @Test
-  public void shouldRemoveOldMemberVersions() throws InterruptedException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRemoveOldMemberVersions(final boolean withVersions)
+      throws InterruptedException {
     // given
+    reset(withVersions);
     startProtocol(member1, member1.id().toString());
     startProtocol(member2, member2.id().toString());
 
@@ -260,8 +291,16 @@ public class SwimProtocolTest extends ConcurrentTestCase {
 
     // when - starting a member with new version
     stopProtocol(member2);
-    final Member member =
-        member(member2.id().id(), member2.address().host(), member2.address().port(), version2);
+    final var currentVersion = versions.get(member2.id().id());
+    // version can be null
+    final var nextVersion = currentVersion != null ? currentVersion + 1 : 0;
+    final var member =
+        member(
+            member2.id().id(),
+            nextVersion,
+            member2.address().host(),
+            member2.address().port(),
+            version2);
     startProtocol(member, "member2-" + member2.id().id());
 
     // then - verify that version 1 is removed and version 2 is added.
@@ -269,11 +308,29 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         .atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
     checkEvent(member1, MEMBER_ADDED, member);
+
+    final var versionsFromOthers = new ArrayList<Long>(3);
+    for (final var entry : protocols.entrySet()) {
+      final var id = entry.getKey();
+      if (!id.equals(member.id())) {
+        final var memberView = ((SwimMember) entry.getValue().getMember(member.id()));
+        versionsFromOthers.add(memberView.nodeVersion());
+      }
+    }
+    Awaitility.await("Until only the new node is present")
+        .untilAsserted(
+            () ->
+                assertThat(versionsFromOthers)
+                    .hasSize(protocols.size() - 1)
+                    .allSatisfy(v -> assertThat(v).isEqualTo(nextVersion)));
   }
 
-  @Test
-  public void shouldSynchronizePeriodically() throws InterruptedException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldSynchronizePeriodically(final boolean withVersions)
+      throws InterruptedException {
     // given
+    reset(withVersions);
     startProtocol(member1, member1.id().toString());
     startProtocol(member2, member2.id().toString());
     final SwimMembershipProtocol protocol3 = startProtocol(member3, member3.id().toString());
@@ -343,12 +400,12 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   }
 
   private SwimMembershipProtocol startProtocol(
-      final Member member, final String actorSchedulerName) {
+      final SwimMember member, final String actorSchedulerName) {
     return startProtocol(member, UnaryOperator.identity(), actorSchedulerName);
   }
 
   private SwimMembershipProtocol startProtocol(
-      final Member member,
+      final SwimMember member,
       final UnaryOperator<SwimMembershipProtocolConfig> configurator,
       final String actorSchedulerName) {
     final SwimMembershipProtocol protocol =
@@ -374,7 +431,10 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     final NodeDiscoveryService discovery =
         new DefaultNodeDiscoveryService(bootstrap, member, provider).start().join();
     protocol.join(bootstrap, discovery, member).join();
-    protocols.put(member.id(), protocol);
+    final var previous = protocols.put(member.id(), protocol);
+    if (previous != null) {
+      previous.leave(member);
+    }
     return protocol;
   }
 
@@ -407,7 +467,20 @@ public class SwimProtocolTest extends ConcurrentTestCase {
 
   private void checkMembers(final Member member, final Member... members) {
     final SwimMembershipProtocol protocol = protocols.get(member.id());
-    assertThat(protocol.getMembers()).isEqualTo(Sets.newHashSet(members));
+    assertThat(protocol.getMembers())
+        .isEqualTo(Sets.newHashSet(members))
+        .allSatisfy(
+            m -> {
+              if (withVersions) {
+                var version = 0L;
+                if (m instanceof final SwimMember swim) {
+                  version = swim.nodeVersion();
+                } else if (m instanceof final ImmutableMember immutable) {
+                  version = immutable.nodeVersion();
+                }
+                assertThat(version).isPositive();
+              }
+            });
   }
 
   private void awaitMembers(final Member member, final Member... members) {

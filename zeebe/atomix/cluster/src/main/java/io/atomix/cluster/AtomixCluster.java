@@ -353,6 +353,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     final Member localMember =
         Member.builder()
             .withId(config.getNodeConfig().getId())
+            .withNodeVersion(config.getNodeConfig().getNodeVersion())
             .withAddress(config.getNodeConfig().getAddress())
             .withHostId(config.getNodeConfig().getHostId())
             .withRackId(config.getNodeConfig().getRackId())
