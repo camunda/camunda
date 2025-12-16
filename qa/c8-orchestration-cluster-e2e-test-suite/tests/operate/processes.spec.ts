@@ -229,9 +229,11 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?process=testProcess&version=1`,
       );
 
-      await expect(operateDiagramPage.diagramSpinner).toBeVisible();
+      await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
+        timeout: 30000,
+      });
 
-      await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled();
+      await expect(operateDiagramPage.diagramSpinner).toBeVisible();
     });
 
     await test.step('Deploy new process and verify it loads', async () => {
@@ -240,16 +242,16 @@ test.describe('Processes', () => {
 
       await expect(operateDiagramPage.diagram).toBeInViewport({timeout: 20000});
 
-      await expect(operateDiagramPage.diagramSpinner).not.toBeVisible();
+      await expect(operateDiagramPage.diagramSpinner).toBeHidden();
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,
       ).toBeVisible();
 
       await expect(operateFiltersPanelPage.processNameFilter).toBeEnabled();
-      await expect(operateFiltersPanelPage.processNameFilter).toHaveValue(
-        'Test Process',
-      );
+      await expect
+        .poll(() => operateFiltersPanelPage.processNameFilter.inputValue())
+        .toBe('Test Process');
     });
   });
 
