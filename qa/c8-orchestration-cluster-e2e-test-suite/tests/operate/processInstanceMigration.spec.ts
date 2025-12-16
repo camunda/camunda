@@ -595,7 +595,7 @@ test.describe.serial('Process Instance Migration', () => {
         maxRetries: 4,
       });
 
-      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessesPage.clickProcessInstanceLink(targetBpmnProcessId);
       await operateDiagramPage.resetDiagramZoomButton.click();
     });
 
@@ -645,7 +645,7 @@ test.describe.serial('Process Instance Migration', () => {
         maxRetries: 4,
       });
 
-      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessesPage.clickProcessInstanceLink(targetBpmnProcessId);
       await operateDiagramPage.resetDiagramZoomButton.click();
     });
 
@@ -713,7 +713,7 @@ test.describe.serial('Process Instance Migration', () => {
         maxRetries: 4,
       });
 
-      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessesPage.clickProcessInstanceLink(targetBpmnProcessId);
       await operateDiagramPage.resetDiagramZoomButton.click();
     });
 
@@ -756,7 +756,7 @@ test.describe.serial('Process Instance Migration', () => {
         maxRetries: 4,
       });
 
-      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessesPage.clickProcessInstanceLink(targetBpmnProcessId);
       await operateDiagramPage.resetDiagramZoomButton.click();
     });
 
@@ -795,7 +795,7 @@ test.describe.serial('Process Instance Migration', () => {
         },
       });
 
-      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessesPage.clickProcessInstanceLink(targetBpmnProcessId);
       await operateDiagramPage.resetDiagramZoomButton.click();
     });
 
@@ -834,7 +834,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Open first migrated instance', async () => {
-      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessesPage.clickProcessInstanceLink(targetBpmnProcessId);
     });
 
     await test.step('Verify migrated tag is visible on the instance', async () => {

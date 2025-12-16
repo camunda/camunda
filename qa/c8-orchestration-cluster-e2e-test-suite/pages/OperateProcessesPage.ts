@@ -64,6 +64,7 @@ class OperateProcessesPage {
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly processInstanceLinkByName: (name: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -194,6 +195,12 @@ class OperateProcessesPage {
       page.getByRole('link', {
         name: processInstanceKey,
       });
+    this.processInstanceLinkByName = (name: string) =>
+      page
+        .getByRole('row')
+        .filter({hasText: name})
+        .first()
+        .getByRole('link', {name: /^View instance \d+/});
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -203,13 +210,20 @@ class OperateProcessesPage {
     await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
   }
 
-  async clickProcessInstanceLink(): Promise<void> {
+  async clickProcessInstanceLink(processName?: string): Promise<void> {
     const maxRetries = 3;
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
         await sleep(5_000);
-        await this.processInstanceLink.click();
+        if (processName) {
+          await expect(
+            this.processInstanceLinkByName(processName),
+          ).toBeVisible();
+          await this.processInstanceLinkByName(processName).click();
+        } else {
+          await this.processInstanceLink.click();
+        }
         return;
       } catch {
         retryCount++;
@@ -382,7 +396,7 @@ class OperateProcessesPage {
             .locator('label');
 
           // Wait for the element to be attached and stable
-          await checkbox.waitFor({state: 'attached', timeout: 5000});
+          await checkbox.waitFor({state: 'attached'});
           if (!(await checkbox.isChecked())) {
             await checkbox.click({timeout: 10000});
           }
