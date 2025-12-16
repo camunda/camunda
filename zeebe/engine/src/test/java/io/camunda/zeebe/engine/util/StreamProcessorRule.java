@@ -53,7 +53,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.broker.test");
 
-  private static final int PARTITION_ID = 0;
+  private static final int PARTITION_ID = 1;
 
   // environment
   private final TemporaryFolder tempFolder;

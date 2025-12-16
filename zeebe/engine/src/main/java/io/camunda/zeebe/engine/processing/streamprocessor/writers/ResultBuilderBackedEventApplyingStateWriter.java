@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.KeyValidator;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import java.util.function.Supplier;
 
@@ -28,6 +29,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
     implements StateWriter {
 
   private final EventApplier eventApplier;
+  private KeyValidator keyValidator;
 
   public ResultBuilderBackedEventApplyingStateWriter(
       final Supplier<ProcessingResultBuilder> resultBuilderSupplier,
@@ -36,8 +38,13 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
     this.eventApplier = eventApplier;
   }
 
+  public void setKeyValidator(final KeyValidator keyValidator) {
+    this.keyValidator = keyValidator;
+  }
+
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
+    // key is validated in appendFollowUpEvent
     final int latestVersion = eventApplier.getLatestVersion(intent);
     appendFollowUpEvent(key, intent, value, latestVersion);
   }
@@ -45,6 +52,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
+    validateKey(key);
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.EVENT)
@@ -59,5 +67,11 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return resultBuilder().canWriteEventOfLength(eventLength);
+  }
+
+  private void validateKey(final long key) {
+    if (keyValidator != null) {
+      keyValidator.validateKey(key);
+    }
   }
 }
