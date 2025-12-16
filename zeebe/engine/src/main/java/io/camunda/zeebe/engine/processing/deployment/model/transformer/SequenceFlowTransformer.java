@@ -38,9 +38,25 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
       final ExecutableProcess process,
       final ExecutableSequenceFlow sequenceFlow) {
     final ExecutableFlowNode source =
+        element.getSource()==null ? null :
         process.getElementById(element.getSource().getId(), ExecutableFlowNode.class);
     final ExecutableFlowNode target =
+        element.getTarget()==null ? null :
         process.getElementById(element.getTarget().getId(), ExecutableFlowNode.class);
+
+
+
+    if(source==null){
+
+      throw new IllegalStateException("SequenceFlow '%s' has unresolved SourceRef".formatted(element.getId()));
+    }
+
+    if(target==null){
+
+     throw new IllegalStateException("SequenceFlow '%s' has unresolved TargetRef".formatted(element.getId()));
+    }
+
+
 
     source.addOutgoing(sequenceFlow);
     target.addIncoming(sequenceFlow);

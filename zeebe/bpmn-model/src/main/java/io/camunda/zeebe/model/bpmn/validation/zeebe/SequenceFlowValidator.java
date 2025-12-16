@@ -34,6 +34,34 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
       final SequenceFlow element, final ValidationResultCollector validationResultCollector) {
     IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
+    final String sourceRef= element.getAttributeValue("sourceRef");
+    final String targetRef=element.getAttributeValue("targetRef");
+
+    if(sourceRef==null || sourceRef.trim().isEmpty()){
+
+      validationResultCollector.addError(0,"SequenceFlow is missing required attribute sourceRef");
+
+    } else if(element.getSource()==null){
+
+
+      validationResultCollector.addError(0,String.format("SequenceFlow has sourceRef '%s' which cannot be resolved",sourceRef));
+
+    }
+
+    if(targetRef==null || targetRef.trim().isEmpty()){
+
+
+      validationResultCollector.addError(0,"SequenceFlow is missing required attribute targetRef");
+
+    } else if(element.getTarget()==null){
+
+
+      validationResultCollector.addError(0,String.format("SequenceFlow has targetRef '%s'  which cannot be resolved",targetRef));
+
+    }
+
+
+
     if (element.getSource() instanceof ExclusiveGateway) {
       final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();
       if (gateway.getOutgoing().size() > 1
