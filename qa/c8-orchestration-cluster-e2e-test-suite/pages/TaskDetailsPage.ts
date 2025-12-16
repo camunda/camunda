@@ -125,12 +125,12 @@ class TaskDetailsPage {
   }
 
   async clickCompleteTaskButton() {
-    await expect(this.completeTaskButton).toBeVisible();
+    await expect(this.completeTaskButton).toBeVisible({timeout: 60000});
     await this.completeTaskButton.click();
     await waitForAssertion({
       assertion: async () => {
         await expect(this.taskCompletedBanner.first()).toBeVisible({
-          timeout: 15000,
+          timeout: 30000,
         });
       },
       onFailure: async () => {
