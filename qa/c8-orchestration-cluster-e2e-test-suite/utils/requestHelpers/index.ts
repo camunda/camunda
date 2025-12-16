@@ -42,3 +42,8 @@ export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {setupProcessInstanceForTests} from './job-requestHelpers';
 export {activateJobToObtainAValidJobKey} from './job-requestHelpers';
+export {createProcessInstanceWithAJob} from './incident-requestHelpers';
+export {createSingleIncidentProcessInstance} from './incident-requestHelpers';
+export {createTwoIncidentsInOneProcess} from './incident-requestHelpers';
+export {createIncidentsInTwoProcesses} from './incident-requestHelpers';
+export {createTwoDifferentIncidentsInOneProcess} from './incident-requestHelpers';
