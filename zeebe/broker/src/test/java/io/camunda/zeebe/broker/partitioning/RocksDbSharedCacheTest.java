@@ -49,6 +49,50 @@ class RocksDbSharedCacheTest {
   }
 
   @Test
+  void shouldNotThrowIfMemoryAllocationBelowOrEqualHalfOfRam() {
+    // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryLimit(DataSize.ofBytes(64L * 1024 * 1024)); // 64MB
+    final int partitionsCount = 2;
+    // then we expect no exception when getting the shared cache since we only allocate 50% of ram
+    // memory. 2 * 64MB = 128MB which is 50% of 256MB. The default memory allocation strategy is per
+    // partition.
+    try (final var managementFactoryMock = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB
+      assertThatCode(
+              () -> {
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), partitionsCount);
+              })
+          .doesNotThrowAnyException();
+    }
+  }
+
+  @Test
+  void shouldThrowIfTriesToAllocateMoreThanHalfOfRam() {
+    // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryLimit(DataSize.ofBytes(200L * 1024 * 1024)); // 200MB
+    // then when we allocate more than half of the memory to rocks db, we expect an exception
+    try (final var managementFactoryMock = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB
+      final var throwable =
+          catchThrowable(
+              () -> {
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
+              });
+
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Expected the allocated memory for RocksDB to be below or equal 50.00 % of ram memory, but was 78.13 %");
+    }
+  }
+
+  @Test
   void shouldThrowIfMemoryPerPartitionTooSmall() {
     // when
     // we only give half of the minimum required memory per partition
@@ -106,6 +150,34 @@ class RocksDbSharedCacheTest {
               () -> {
                 RocksDbSharedCache.validateRocksDbMemory(
                     brokerCfg.getExperimental().getRocksdb(), morePartitionsCount);
+              })
+          .doesNotThrowAnyException();
+    }
+  }
+
+  @Test
+  void shouldNotFailAllocatingMoreThanHalfOfRamIfAuto() {
+    // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
+    brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(0.500);
+    final int partitionsCount = 1;
+
+    // we have broker with 1024mb of ram, where:
+    // - max heap is 128mb
+    // - max non-heap is 128mb
+    // so available memory is 1024 - 128 - 128 = 768mb with a
+    // ROCKSDB_OVERHEAD_FACTOR of 0.15 we can allocate  652.8mb to rocksdb. This is more than half
+    // of the
+    // ram, but since we are in AUTO mode it should be allowed.
+    try (final var managementFactoryMock =
+        mockMemoryEnvironment(1024L * 1024 * 1024, 128L * 1024 * 1024, 128L * 1024 * 1024)) {
+      assertThatCode(
+              () -> {
+                RocksDbSharedCache.validateRocksDbMemory(
+                    brokerCfg.getExperimental().getRocksdb(), partitionsCount);
               })
           .doesNotThrowAnyException();
     }
