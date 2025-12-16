@@ -26,7 +26,6 @@ public record IncidentFilter(
         @Valid
         @Schema(
             name = "errorType",
-            description = "Incident error type with a defined set of values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         IncidentErrorTypeFilter errorType,
     @Nullable
@@ -54,7 +53,6 @@ public record IncidentFilter(
         @Valid
         @Schema(
             name = "state",
-            description = "State of this incident with a defined set of values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         IncidentStateFilter state,
     @Nullable
