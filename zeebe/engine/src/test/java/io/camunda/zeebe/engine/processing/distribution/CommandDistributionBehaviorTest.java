@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
@@ -33,7 +32,6 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
@@ -79,7 +77,9 @@ class CommandDistributionBehaviorTest {
     intent = DeploymentIntent.CREATE;
     command =
         new MockTypedRecord<>(
-            keyGenerator.nextKey(), new RecordMetadata().valueType(valueType).intent(intent), new DeploymentRecord());
+            keyGenerator.nextKey(),
+            new RecordMetadata().valueType(valueType).intent(intent),
+            new DeploymentRecord());
   }
 
   @Test
