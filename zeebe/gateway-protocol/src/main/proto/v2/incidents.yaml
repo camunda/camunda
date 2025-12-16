@@ -109,27 +109,29 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
-  /incidents/statistics:
+  /incidents/statistics/process-instances:
     post:
       x-eventually-consistent: true
       tags:
         - Incident
-      operationId: getIncidentStatistics
-      summary: Get incident statistics
-      description: Returns aggregated statistics for active incidents, grouped by error code and message.
+      operationId: getIncidentProcessInstanceStatistics
+      summary: Get incident process instance statistics
+      description: |
+        Returns aggregated statistics for process instances with active incidents,
+        grouped by error code and message.
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IncidentStatisticsQuery'
+              $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQuery'
       responses:
         "200":
           description: The incident statistics result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IncidentStatisticsQueryResult'
+                $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQueryResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -409,20 +411,21 @@ components:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
 
-    IncidentStatisticsQuery:
+    IncidentProcessInstanceStatisticsQuery:
       type: object
       additionalProperties: false
       properties:
         page:
+          description: Pagination parameters for process instance statistics with active incidents.
           allOf:
             - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array
           items:
-            $ref: '#/components/schemas/IncidentStatisticsQuerySortRequest'
+            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQuerySortRequest'
 
-    IncidentStatisticsQueryResult:
+    IncidentProcessInstanceStatisticsQueryResult:
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -431,9 +434,9 @@ components:
           description: The incident statistics results.
           type: array
           items:
-            $ref: '#/components/schemas/IncidentStatisticsResult'
+            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsResult'
 
-    IncidentStatisticsResult:
+    IncidentProcessInstanceStatisticsResult:
       type: object
       properties:
         errorHashCode:
@@ -447,7 +450,7 @@ components:
           format: int64
           description: The number of active process instances with this error.
 
-    IncidentStatisticsQuerySortRequest:
+    IncidentProcessInstanceStatisticsQuerySortRequest:
       type: object
       properties:
         field:

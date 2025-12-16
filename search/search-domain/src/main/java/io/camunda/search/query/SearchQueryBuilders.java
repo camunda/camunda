@@ -213,13 +213,17 @@ public final class SearchQueryBuilders {
     return fn.apply(incidentSearchQuery()).build();
   }
 
-  public static IncidentStatisticsQuery.Builder incidentStatisticsQuery() {
-    return new IncidentStatisticsQuery.Builder();
+  public static IncidentProcessInstanceStatisticsQuery.Builder
+      incidentProcessInstanceStatisticsQuery() {
+    return new IncidentProcessInstanceStatisticsQuery.Builder();
   }
 
-  public static IncidentStatisticsQuery incidentStatisticsQuery(
-      final Function<IncidentStatisticsQuery.Builder, ObjectBuilder<IncidentStatisticsQuery>> fn) {
-    return fn.apply(incidentStatisticsQuery()).build();
+  public static IncidentProcessInstanceStatisticsQuery incidentProcessInstanceStatisticsQuery(
+      final Function<
+              IncidentProcessInstanceStatisticsQuery.Builder,
+              ObjectBuilder<IncidentProcessInstanceStatisticsQuery>>
+          fn) {
+    return fn.apply(incidentProcessInstanceStatisticsQuery()).build();
   }
 
   public static BatchOperationQuery.Builder batchOperationQuery() {

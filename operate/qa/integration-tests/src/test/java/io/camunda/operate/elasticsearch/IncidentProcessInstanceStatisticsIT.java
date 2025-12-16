@@ -43,7 +43,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-public class IncidentStatisticsIT extends OperateAbstractIT {
+public class IncidentProcessInstanceStatisticsIT extends OperateAbstractIT {
 
   public static final String LOAN_BPMN_PROCESS_ID = "loanProcess";
   public static final String LOAN_PROCESS_NAME = "Loan process";

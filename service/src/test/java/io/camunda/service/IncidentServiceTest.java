@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
-import io.camunda.search.query.IncidentStatisticsQuery;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -100,19 +100,19 @@ public final class IncidentServiceTest {
   }
 
   @Test
-  public void shouldReturnIncidentStatistics() {
+  public void shouldReturnIncidentProcessInstanceStatistics() {
     // given
     final var statisticsResult = mock(SearchQueryResult.class);
-    when(client.incidentStatistics(any())).thenReturn(statisticsResult);
-    final var query = new IncidentStatisticsQuery.Builder().build();
+    when(client.incidentProcessInstanceStatistics(any())).thenReturn(statisticsResult);
+    final var query = new IncidentProcessInstanceStatisticsQuery.Builder().build();
 
     // when
-    final var result = services.incidentStatistics(query);
+    final var result = services.incidentProcessInstanceStatistics(query);
 
     // then
     assertThat(result).isEqualTo(statisticsResult);
     verify(securityContextProvider)
         .provideSecurityContext(eq(authentication), eq(Authorizations.INCIDENT_READ_AUTHORIZATION));
-    verify(client).incidentStatistics(eq(query));
+    verify(client).incidentProcessInstanceStatistics(eq(query));
   }
 }

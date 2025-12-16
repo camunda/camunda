@@ -24,7 +24,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
-import io.camunda.search.entities.IncidentStatisticsEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -58,8 +58,8 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.search.query.IncidentQuery;
-import io.camunda.search.query.IncidentStatisticsQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
@@ -194,8 +194,8 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<IncidentStatisticsEntity> incidentStatistics(
-      final IncidentStatisticsQuery query) {
+  public SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
+      incidentProcessInstanceStatistics(final IncidentProcessInstanceStatisticsQuery query) {
     return SearchQueryResult.empty();
   }
 

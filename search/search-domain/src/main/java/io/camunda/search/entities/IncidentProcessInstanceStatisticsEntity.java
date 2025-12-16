@@ -11,10 +11,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record IncidentStatisticsEntity(
+public record IncidentProcessInstanceStatisticsEntity(
     String errorHashCode, String errorMessage, Long activeInstancesWithErrorCount) {
 
-  public static final class Builder implements ObjectBuilder<IncidentStatisticsEntity> {
+  public static final class Builder
+      implements ObjectBuilder<IncidentProcessInstanceStatisticsEntity> {
     private String errorHashCode;
     private String errorMessage;
     private Long activeInstancesWithErrorCount;
@@ -35,8 +36,8 @@ public record IncidentStatisticsEntity(
     }
 
     @Override
-    public IncidentStatisticsEntity build() {
-      return new IncidentStatisticsEntity(
+    public IncidentProcessInstanceStatisticsEntity build() {
+      return new IncidentProcessInstanceStatisticsEntity(
           errorHashCode, errorMessage, activeInstancesWithErrorCount);
     }
   }

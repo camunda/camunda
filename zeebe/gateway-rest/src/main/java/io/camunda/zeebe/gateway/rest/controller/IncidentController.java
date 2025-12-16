@@ -12,12 +12,12 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentStatisticsQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -87,11 +87,11 @@ public class IncidentController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/statistics")
-  public ResponseEntity<IncidentStatisticsQueryResult> statistics(
-      @RequestBody(required = false) final IncidentStatisticsQuery query) {
-    return SearchQueryRequestMapper.toIncidentStatisticsQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getStatistics);
+  @CamundaPostMapping(path = "/statistics/process-instances")
+  public ResponseEntity<IncidentProcessInstanceStatisticsQueryResult> processInstanceStatistics(
+      @RequestBody(required = false) final IncidentProcessInstanceStatisticsQuery query) {
+    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getIncidentProcessInstanceStatistics);
   }
 
   private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
@@ -113,14 +113,16 @@ public class IncidentController {
     }
   }
 
-  private ResponseEntity<IncidentStatisticsQueryResult> getStatistics(
-      final io.camunda.search.query.IncidentStatisticsQuery query) {
+  private ResponseEntity<IncidentProcessInstanceStatisticsQueryResult>
+      getIncidentProcessInstanceStatistics(
+          final io.camunda.search.query.IncidentProcessInstanceStatisticsQuery query) {
     try {
       final var result =
           incidentServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .incidentStatistics(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentStatisticsResult(result));
+              .incidentProcessInstanceStatistics(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toIncidentProcessInstanceStatisticsResult(result));
     } catch (final ValidationException e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(

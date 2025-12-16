@@ -15,24 +15,25 @@
  */
 package io.camunda.client.impl.statistics.sort;
 
-import io.camunda.client.api.statistics.sort.IncidentStatisticsSort;
+import io.camunda.client.api.statistics.sort.IncidentProcessInstanceStatisticsSort;
 import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public final class IncidentStatisticsSortImpl extends SearchRequestSortBase<IncidentStatisticsSort>
-    implements IncidentStatisticsSort {
+public final class IncidentProcessInstanceStatisticsSortImpl
+    extends SearchRequestSortBase<IncidentProcessInstanceStatisticsSort>
+    implements IncidentProcessInstanceStatisticsSort {
 
   @Override
-  public IncidentStatisticsSort errorMessage() {
+  public IncidentProcessInstanceStatisticsSort errorMessage() {
     return field("errorMessage");
   }
 
   @Override
-  public IncidentStatisticsSort activeInstancesWithErrorCount() {
+  public IncidentProcessInstanceStatisticsSort activeInstancesWithErrorCount() {
     return field("activeInstancesWithErrorCount");
   }
 
   @Override
-  protected IncidentStatisticsSort self() {
+  protected IncidentProcessInstanceStatisticsSort self() {
     return this;
   }
 }

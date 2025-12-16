@@ -15,17 +15,19 @@
  */
 package io.camunda.client.impl.statistics.response;
 
-import io.camunda.client.api.statistics.response.IncidentStatistics;
-import io.camunda.client.protocol.rest.IncidentStatisticsResult;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatistics;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsResult;
 import java.util.Objects;
 
-public final class IncidentStatisticsImpl implements IncidentStatistics {
+public final class IncidentProcessInstanceStatisticsImpl
+    implements IncidentProcessInstanceStatistics {
 
   private final String errorHashCode;
   private final String errorMessage;
   private final Long activeInstancesWithErrorCount;
 
-  public IncidentStatisticsImpl(final IncidentStatisticsResult result) {
+  public IncidentProcessInstanceStatisticsImpl(
+      final IncidentProcessInstanceStatisticsResult result) {
     errorHashCode = result.getErrorHashCode();
     errorMessage = result.getErrorMessage();
     activeInstancesWithErrorCount = result.getActiveInstancesWithErrorCount();
@@ -59,7 +61,7 @@ public final class IncidentStatisticsImpl implements IncidentStatistics {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final IncidentStatisticsImpl that = (IncidentStatisticsImpl) o;
+    final IncidentProcessInstanceStatisticsImpl that = (IncidentProcessInstanceStatisticsImpl) o;
     return Objects.equals(errorHashCode, that.errorHashCode)
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(activeInstancesWithErrorCount, that.activeInstancesWithErrorCount);
@@ -67,7 +69,7 @@ public final class IncidentStatisticsImpl implements IncidentStatistics {
 
   @Override
   public String toString() {
-    return "IncidentStatisticsImpl{"
+    return "IncidentProcessInstanceStatisticsImpl{"
         + "errorHashCode='"
         + errorHashCode
         + '\''

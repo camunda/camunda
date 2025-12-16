@@ -20,7 +20,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
-import io.camunda.client.api.statistics.response.IncidentStatistics;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -29,7 +29,7 @@ import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.search.response.SearchResponseImpl;
-import io.camunda.client.protocol.rest.IncidentStatisticsQueryResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
@@ -127,11 +127,12 @@ public class StatisticsResponseMapper {
     return new SearchResponseImpl<>(items, page);
   }
 
-  public static SearchResponse<IncidentStatistics> toIncidentStatisticsResponse(
-      final IncidentStatisticsQueryResult response) {
+  public static SearchResponse<IncidentProcessInstanceStatistics>
+      toIncidentProcessInstanceStatisticsResponse(
+          final IncidentProcessInstanceStatisticsQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
-    final List<IncidentStatistics> items =
-        toSearchResponseInstances(response.getItems(), IncidentStatisticsImpl::new);
+    final List<IncidentProcessInstanceStatistics> items =
+        toSearchResponseInstances(response.getItems(), IncidentProcessInstanceStatisticsImpl::new);
     return new SearchResponseImpl<>(items, page);
   }
 
