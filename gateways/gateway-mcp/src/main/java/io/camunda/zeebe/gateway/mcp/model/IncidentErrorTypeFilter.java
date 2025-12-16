@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 
 @Schema(
     name = "IncidentErrorTypeFilter",
-    description = "IncidentErrorType filter with different filter operations (can be combined).")
+    description = "Incident error type filter with different filter operations (can be combined).")
 public record IncidentErrorTypeFilter(
     @Nullable
         @Schema(
