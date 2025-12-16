@@ -45,7 +45,7 @@ import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
-import io.camunda.db.rdbms.write.service.RdbmsModelWriter;
+import io.camunda.db.rdbms.write.service.RdbmsWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RoleWriter;
 import io.camunda.db.rdbms.write.service.SequenceFlowWriter;
@@ -66,7 +66,7 @@ public class RdbmsWriters {
 
   private final RdbmsWriterMetrics metrics;
 
-  private final Map<Class<?>, RdbmsModelWriter> writers = new HashMap<>();
+  private final Map<Class<?>, RdbmsWriter> writers = new HashMap<>();
 
   public RdbmsWriters(
       final RdbmsWriterConfig config,

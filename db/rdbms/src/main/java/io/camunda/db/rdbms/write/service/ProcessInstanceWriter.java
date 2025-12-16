@@ -23,7 +23,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
-public class ProcessInstanceWriter implements RdbmsModelWriter {
+public class ProcessInstanceWriter implements RdbmsWriter {
 
   private final ProcessInstanceMapper mapper;
   private final ExecutionQueue executionQueue;

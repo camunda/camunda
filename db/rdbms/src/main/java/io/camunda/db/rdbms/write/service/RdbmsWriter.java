@@ -7,4 +7,4 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-public interface RdbmsModelWriter {}
+public interface RdbmsWriter {}
