@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.DateUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -142,6 +143,11 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  @VisibleForTesting
+  public AuditLogTransformer<?, ?> getTransformer() {
+    return transformer;
   }
 
   private AuditLogEntityType mapEntityType(final AuditLogInfo info) {

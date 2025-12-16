@@ -15,53 +15,54 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class ProcessInstanceCreatedAuditLogHandlerTest {
+class ProcessInstanceCancelAuditLogHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final ProcessInstanceCreationAuditLogTransformer transformer =
-      new ProcessInstanceCreationAuditLogTransformer();
+  private final ProcessInstanceCancelAuditLogTransformer transformer =
+      new ProcessInstanceCancelAuditLogTransformer();
 
   public static Stream<Arguments> getIntentMappings() {
     return Stream.of(
-        Arguments.of(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE));
+        Arguments.of(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
+        Arguments.of(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL));
   }
 
   @MethodSource("getIntentMappings")
   @ParameterizedTest
-  void shouldTransformProcessInstanceCreationRecord(
-      final ProcessInstanceCreationIntent intent, final AuditLogOperationType operationType) {
+  void shouldTransformProcessInstanceCancelRecord(
+      final ProcessInstanceIntent intent, final AuditLogOperationType operationType) {
     // given
-    final ProcessInstanceCreationRecordValue recordValue =
-        ImmutableProcessInstanceCreationRecordValue.builder()
-            .from(factory.generateObject(ProcessInstanceCreationRecordValue.class))
-            .withProcessDefinitionKey(456L)
-            .withBpmnProcessId("test-process")
+    final ProcessInstanceRecordValue recordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withProcessDefinitionKey(123L)
+            .withBpmnProcessId("bpmn-process-id")
+            .withProcessInstanceKey(234L)
             .withTenantId("tenant-1")
-            .withProcessInstanceKey(123L)
             .build();
 
-    final Record<ProcessInstanceCreationRecordValue> record =
+    final Record<ProcessInstanceRecordValue> record =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_CREATION, r -> r.withIntent(intent).withValue(recordValue));
+            ValueType.PROCESS_INSTANCE, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final AuditLogEntity entity = new AuditLogEntity();
     transformer.transform(record, entity);
 
     // then
-    assertThat(entity.getProcessDefinitionKey()).isEqualTo(456L);
+    assertThat(entity.getProcessDefinitionId()).isEqualTo("bpmn-process-id");
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(123L);
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(234L);
     assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getProcessDefinitionId()).isEqualTo("test-process");
-    assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
     assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
 
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);

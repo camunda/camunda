@@ -17,12 +17,18 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
+import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -73,19 +79,30 @@ class RdbmsExporterWrapperTest {
     // then - verify that audit log handlers are registered
     final var registeredHandlers = exporterWrapper.getExporter().getRegisteredHandlers();
 
-    final Set<ValueType> expectedRegisteredTransformers =
-        Set.of(
-            ValueType.BATCH_OPERATION_CREATION,
-            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            ValueType.DECISION_EVALUATION,
-            ValueType.PROCESS_INSTANCE_CREATION,
-            ValueType.PROCESS_INSTANCE_MIGRATION,
-            ValueType.PROCESS_INSTANCE_MODIFICATION);
+    final Map<Class<?>, ValueType> expectedTransformers =
+        Map.ofEntries(
+            Map.entry(
+                BatchOperationCreationAuditLogTransformer.class,
+                ValueType.BATCH_OPERATION_CREATION),
+            Map.entry(
+                BatchOperationLifecycleManagementAuditLogTransformer.class,
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
+            Map.entry(DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
+            Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
+            Map.entry(
+                ProcessInstanceCreationAuditLogTransformer.class,
+                ValueType.PROCESS_INSTANCE_CREATION),
+            Map.entry(
+                ProcessInstanceMigrationAuditLogTransformer.class,
+                ValueType.PROCESS_INSTANCE_MIGRATION),
+            Map.entry(
+                ProcessInstanceModificationAuditLogTransformer.class,
+                ValueType.PROCESS_INSTANCE_MODIFICATION));
 
     // Check that all expected AuditLogExportHandlers are registered
-    assertAuditLogExportPresent(registeredHandlers, expectedRegisteredTransformers);
+    assertAuditLogExportPresent(registeredHandlers, expectedTransformers);
 
-    // Verify that exactly 2 audit log handlers are registered
+    // Verify that the exact number audit log handlers are registered
     final long auditLogHandlerCount =
         registeredHandlers.values().stream()
             .flatMap(java.util.List::stream)
@@ -93,21 +110,31 @@ class RdbmsExporterWrapperTest {
             .count();
 
     assertThat(auditLogHandlerCount)
-        .as("Should have exactly 3 audit log handlers registered")
-        .isEqualTo(expectedRegisteredTransformers.size());
+        .as("Should have exactly " + expectedTransformers.size() + " audit log handlers registered")
+        .isEqualTo(expectedTransformers.size());
   }
 
   private void assertAuditLogExportPresent(
       final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers,
-      final Set<?> batchOperationCreation) {
-    assertThat(registeredHandlers)
-        .containsKey(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT)
-        .extracting(map -> map.get(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT))
-        .satisfies(
-            handlers ->
-                assertThat(handlers)
-                    .isNotEmpty()
-                    .anySatisfy(
-                        handler -> assertThat(handler).isInstanceOf(AuditLogExportHandler.class)));
+      final Map<Class<?>, ValueType> expectedRegisteredTransformers) {
+    expectedRegisteredTransformers.forEach(
+        (auditLogTransformerClass, valueType) -> {
+          // check whether value type exists and contains the expected transformer class
+          assertThat(registeredHandlers)
+              .containsKey(valueType)
+              .extracting(map -> map.get(valueType))
+              .satisfies(
+                  handlerList -> {
+                    assertThat(handlerList)
+                        .filteredOn(AuditLogExportHandler.class::isInstance)
+                        .extracting(
+                            exportHandler ->
+                                (Class)
+                                    ((AuditLogExportHandler<?>) exportHandler)
+                                        .getTransformer()
+                                        .getClass())
+                        .contains(auditLogTransformerClass);
+                  });
+        });
   }
 }
