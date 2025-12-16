@@ -18,6 +18,7 @@ import TextField from "src/components/form/TextField";
 import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
+import { getIdPattern } from "src/utility/validate";
 
 type SelectionProps = {
   type: OwnerType;
@@ -67,7 +68,9 @@ const Selection: FC<SelectionProps> = ({
               isEmpty
                 ? t("usernameRequired")
                 : isInvalidId
-                  ? t("pleaseEnterValidUsername")
+                  ? t("pleaseEnterValidUsername", {
+                      pattern: getIdPattern().toString(),
+                    })
                   : ""
             }
           />
@@ -110,7 +113,9 @@ const Selection: FC<SelectionProps> = ({
             isEmpty
               ? t("groupIdRequired")
               : isInvalidId
-                ? t("pleaseEnterValidGroupId")
+                ? t("pleaseEnterValidGroupId", {
+                    pattern: getIdPattern().toString(),
+                  })
                 : ""
           }
         />
@@ -154,7 +159,9 @@ const Selection: FC<SelectionProps> = ({
             isEmpty
               ? t("ownerRequired")
               : isInvalidId
-                ? t("pleaseEnterValidClientId")
+                ? t("pleaseEnterValidClientId", {
+                    pattern: getIdPattern().toString(),
+                  })
                 : ""
           }
         />

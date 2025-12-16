@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const getIdPattern = (): RegExp => {
+export const getIdPattern = (): RegExp => {
   const configuredPattern = window.clientConfig?.idPattern;
   if (!configuredPattern) {
     // Keep in sync with `io.camunda.security.configuration.SecurityConfiguration.DEFAULT_ID_REGEX`
