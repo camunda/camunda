@@ -38,9 +38,9 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -164,7 +164,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected OperationExecutor operationExecutor;
   protected OperateTester tester;
-  private ZeebeContainer zeebeContainer;
+  private TestStandaloneBroker zeebeBroker;
   @Autowired private TestSearchRepository testSearchRepository;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
@@ -178,8 +178,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   public void before() {
     super.before();
 
-    zeebeContainer = zeebeRule.getZeebeContainer();
-    assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
+    zeebeBroker = zeebeRule.getZeebeBroker();
+    assertThat(zeebeBroker).as("zeebeContainer is not null").isNotNull();
 
     camundaClient = getClient();
     operateServicesAdapter =
