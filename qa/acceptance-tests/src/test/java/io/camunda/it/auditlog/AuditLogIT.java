@@ -19,7 +19,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashSet;
@@ -78,28 +78,20 @@ public class AuditLogIT {
   }
 
   @Test
-  void shouldCreateAuditLogEntryFromPIModification() {
-    // given
-    // a process instance
+  void shouldCreateAuditLogEntryFromPICreation() {
+    // when
+    // a process instance is created
     final var processInstanceEvent = startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
     final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
 
-    // when
-    // the process instance is modified
-    adminClient
-        .newModifyProcessInstanceCommand(processInstanceKey)
-        .activateElement("taskB")
-        .send()
-        .join();
-
     // then
     // wait for the audit log entry to be created and available
-    final var piModified =
-        RecordingExporter.processInstanceModificationRecords(
-                ProcessInstanceModificationIntent.MODIFIED)
-            .withProcessInstanceKey(processInstanceKey)
+    final var piCreated =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withKey(processInstanceKey)
             .exists();
-    if (piModified) {
+    if (piCreated) {
       Awaitility.await("Audit log entry is created for process instance modification")
           .ignoreExceptionsInstanceOf(ProblemException.class)
           .untilAsserted(
@@ -110,7 +102,7 @@ public class AuditLogIT {
                         .filter(
                             fn ->
                                 fn.processInstanceKey(String.valueOf(processInstanceKey))
-                                    .operationType(AuditLogOperationTypeEnum.MODIFY))
+                                    .operationType(AuditLogOperationTypeEnum.CREATE))
                         .send()
                         .join();
 
@@ -118,7 +110,7 @@ public class AuditLogIT {
                 final var auditLog = auditLogItems.items().get(0);
 
                 assertThat(auditLog).isNotNull();
-                assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.MODIFY);
+                assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
                 assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.OPERATOR);
                 assertThat(auditLog.getProcessDefinitionId())
                     .isEqualTo(processInstanceEvent.getBpmnProcessId());
@@ -127,6 +119,53 @@ public class AuditLogIT {
                 assertThat(auditLog.getProcessInstanceKey()).isEqualTo(processInstanceKey);
                 assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
                 assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+              });
+    }
+  }
+
+  @Test
+  void shouldFetchAuditLogEntryById() {
+    // when
+    // a process instance is created
+    final var processInstanceEvent = startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+
+    // then
+    // wait for the audit log entry to be created and available
+    final var piCreated =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withKey(processInstanceKey)
+            .exists();
+    if (piCreated) {
+      Awaitility.await("Audit log entry is created and can be fetched by ID")
+          .ignoreExceptionsInstanceOf(ProblemException.class)
+          .untilAsserted(
+              () -> {
+                // First, search for the audit log entry to get its ID
+                final var auditLogItems = adminClient.newAuditLogSearchRequest().send().join();
+
+                assertThat(auditLogItems.items().size()).isGreaterThan(0);
+                final var searchedAuditLog = auditLogItems.items().get(0);
+                final String auditLogKey = searchedAuditLog.getAuditLogKey();
+
+                // Fetch the audit log entry by ID
+                final var fetchedAuditLog =
+                    adminClient.newAuditLogGetRequest(auditLogKey).send().join();
+
+                // Verify the fetched audit log entry matches the searched one
+                assertThat(fetchedAuditLog).isNotNull();
+                assertThat(fetchedAuditLog.getAuditLogKey()).isEqualTo(auditLogKey);
+                assertThat(fetchedAuditLog.getOperationType())
+                    .isEqualTo(AuditLogOperationTypeEnum.CREATE);
+                assertThat(fetchedAuditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.OPERATOR);
+                assertThat(fetchedAuditLog.getProcessDefinitionId())
+                    .isEqualTo(processInstanceEvent.getBpmnProcessId());
+                assertThat(fetchedAuditLog.getProcessDefinitionKey())
+                    .isEqualTo(processInstanceEvent.getProcessDefinitionKey());
+                assertThat(fetchedAuditLog.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+                assertThat(fetchedAuditLog.getTenantId()).isEqualTo(TENANT_A);
+                assertThat(fetchedAuditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
               });
     }
   }
