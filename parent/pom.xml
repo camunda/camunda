@@ -2201,7 +2201,13 @@
       <dependency>
         <groupId>com.github.wnameless.json</groupId>
         <artifactId>json-base</artifactId>
-        <version>2.5.1</version>
+        <version>3.0.0</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.wnameless.json</groupId>
+        <artifactId>json-flattener</artifactId>
+        <version>0.18.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

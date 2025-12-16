@@ -319,7 +319,6 @@
     <dependency>
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-flattener</artifactId>
-      <version>0.18.0</version>
     </dependency>
 
     <dependency>
