@@ -14,6 +14,7 @@ import {TabView} from 'modules/components/TabView';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
+import {DetailsContent} from './DetailsContent';
 import {Listeners, type ListenerTypeFilter} from './Listeners';
 import {OperationsLog} from './OperationsLog';
 import {WarningFilled} from './styled';
@@ -21,6 +22,7 @@ import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 const tabIds = {
+  details: 'details',
   variables: 'variables',
   inputMappings: 'input-mappings',
   outputMappings: 'output-mappings',
@@ -74,6 +76,19 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     <TabView
       onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
+        ...(isRootNodeSelected
+          ? []
+          : [
+              {
+                id: tabIds.details,
+                label: 'Details',
+                content: <DetailsContent />,
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                },
+              },
+            ]),
         {
           id: tabIds.variables,
           label: 'Variables',

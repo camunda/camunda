@@ -29,7 +29,6 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
-import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
@@ -421,11 +420,7 @@ const TopPanel: React.FC = observer(() => {
                     : flowNodeStateOverlays
                 }
                 selectedFlowNodeOverlay={
-                  isModificationModeEnabled ? (
-                    <ModificationDropdown />
-                  ) : (
-                    !isIncidentBarOpen && <MetadataPopover />
-                  )
+                  isModificationModeEnabled ? <ModificationDropdown /> : false
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
                 highlightedFlowNodeIds={highlightedSequenceFlowIds}
