@@ -36,7 +36,7 @@ public class ExpressionBehavior {
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
   }
 
-  private Either<Rejection, EvaluationResult> mapResultFailure(
+  private Either<Rejection, EvaluationResult> rejectIfEvaluationFailed(
       final EvaluationResult evaluationResult) {
     if (evaluationResult.isFailure()) {
       return Either.left(
@@ -53,7 +53,7 @@ public class ExpressionBehavior {
     return clusterExpressionProcessor
         .evaluateRawExpression(expression, -1, tenantId)
         .mapLeft(this::mapEvaluationFailure)
-        .flatMap(this::mapResultFailure);
+        .flatMap(this::rejectIfEvaluationFailed);
   }
 
   private Rejection mapEvaluationFailure(final Failure failure) {

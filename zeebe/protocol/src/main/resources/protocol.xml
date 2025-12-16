@@ -186,8 +186,7 @@
     <!-- populated when the client passes an operation reference to the gateway-->
     <field name="operationReference" id="12" type="uint64" presence="optional" sinceVersion="5"/>
     <!-- populated when the record was created as part of a batch operation -->
-    <field name="batchOperationReference" id="13" type="uint64" presence="optional"
-      sinceVersion="6"/>
+    <field name="batchOperationReference" id="13" type="uint64" presence="optional" sinceVersion="6"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
