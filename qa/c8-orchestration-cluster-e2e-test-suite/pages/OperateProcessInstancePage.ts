@@ -67,8 +67,6 @@ class OperateProcessInstancePage {
   readonly addVariableModificationButton: Locator;
   readonly modalDialog: Locator;
   readonly noVariablesText: Locator;
-  readonly popover: Locator;
-  readonly viewRootCauseDecisionLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -166,10 +164,6 @@ class OperateProcessInstancePage {
     });
     this.modalDialog = page.getByRole('dialog');
     this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
-    this.viewRootCauseDecisionLink = page.getByRole('link').filter({
-      hasText: /view root cause decision/i,
-    });
-    this.popover = page.getByTestId('popover');
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {

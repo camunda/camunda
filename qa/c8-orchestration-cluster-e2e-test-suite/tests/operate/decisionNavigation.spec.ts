@@ -82,7 +82,7 @@ test.describe('Decision Navigation', () => {
     });
 
     await test.step('Verify popover appears and navigate to decision', async () => {
-      await expect(operateProcessInstancePage.popover).toBeVisible();
+      await expect(operateDiagramPage.popover).toBeVisible();
       await operateDiagramPage.clickViewRootCauseDecisionLink();
     });
 

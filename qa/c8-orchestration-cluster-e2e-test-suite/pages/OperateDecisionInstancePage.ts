@@ -11,7 +11,7 @@ import {Page, Locator} from '@playwright/test';
 class OperateDecisionInstancePage {
   private page: Page;
   readonly decisionPanel: Locator;
-  readonly popover: Locator;
+
   readonly closeDrdPanelButton: Locator;
   readonly instanceHeader: Locator;
   readonly viewProcessInstanceLink: (processInstanceKey: string) => Locator;
@@ -19,7 +19,6 @@ class OperateDecisionInstancePage {
   constructor(page: Page) {
     this.page = page;
     this.decisionPanel = page.getByTestId('decision-panel');
-    this.popover = page.getByTestId('popover');
     this.closeDrdPanelButton = page.getByRole('button', {
       name: /close drd panel/i,
     });
@@ -35,7 +34,7 @@ class OperateDecisionInstancePage {
   }
 
   async getDecisionInstanceId(): Promise<string> {
-    return this.instanceHeader.getByRole('cell').nth(6).innerText();
+    return this.instanceHeader.getByRole('cell').nth(1).innerText();
   }
 
   async gotoDecisionInstancePage(options: {id: string}): Promise<void> {
