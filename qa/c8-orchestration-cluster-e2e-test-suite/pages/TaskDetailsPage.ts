@@ -62,6 +62,7 @@ class TaskDetailsPage {
   readonly addDynamicListRowButton: Locator;
   readonly processTab: Locator;
   readonly bpmnDiagram: Locator;
+  readonly assignedToMeText: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -108,10 +109,15 @@ class TaskDetailsPage {
       name: 'show associated bpmn process',
     });
     this.bpmnDiagram = page.getByTestId('diagram');
+    this.assignedToMeText = this.page
+      .getByTestId('assignee')
+      .getByText('Assigned to me');
   }
 
   async clickAssignToMeButton() {
-    await this.assignToMeButton.click({timeout: 60000});
+    if (!(await this.assignedToMeText.isVisible())) {
+      await this.assignToMeButton.click({timeout: 60000});
+    }
   }
 
   async clickUnassignButton() {
@@ -119,10 +125,13 @@ class TaskDetailsPage {
   }
 
   async clickCompleteTaskButton() {
-    await this.completeTaskButton.click({timeout: 60000});
+    await expect(this.completeTaskButton).toBeVisible();
+    await this.completeTaskButton.click();
     await waitForAssertion({
       assertion: async () => {
-        await expect(this.taskCompletedBanner).toBeVisible({timeout: 120000});
+        await expect(this.taskCompletedBanner.first()).toBeVisible({
+          timeout: 15000,
+        });
       },
       onFailure: async () => {
         console.log('Task completed banner not visible, retrying...');
