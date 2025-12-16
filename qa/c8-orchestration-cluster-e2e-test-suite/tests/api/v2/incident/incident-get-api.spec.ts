@@ -27,7 +27,10 @@ test.describe.parallel('Search Incidents API Tests', () => {
   const processInstanceKeys: string[] = [];
 
   test.beforeAll(async () => {
-    await deploy(['./resources/MultipleErrorTypesProcess.bpmn']);
+    await deploy([
+      './resources/MultipleErrorTypesProcess.bpmn',
+      './resources/processWithAnError.bpmn',
+    ]);
   });
 
   test.afterAll(async () => {
