@@ -49,11 +49,13 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
     final var info = AuditLogInfo.of(record);
 
     if (info.actor() == null) {
-      LOG.warn(
-          "Record {}/{} at position {} cannot be audited because actor information is missing.",
-          record.getValueType(),
-          record.getIntent(),
-          record.getPosition());
+      // TODO: enable logging after ensuring all expected events are correctly captured
+      //      LOG.warn(
+      //          "Record {}/{} at position {} cannot be audited because actor information is
+      // missing.",
+      //          record.getValueType(),
+      //          record.getIntent(),
+      //          record.getPosition());
 
       return false;
     }
