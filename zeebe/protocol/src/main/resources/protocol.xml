@@ -80,8 +80,8 @@
       <validValue name="HISTORY_DELETION">62</validValue>
       <validValue name="CONDITIONAL_SUBSCRIPTION">63</validValue>
       <validValue name="CONDITIONAL_EVALUATION">64</validValue>
-      <validValue name="EXPRESSION">65</validValue>
-      <validValue name="GLOBAL_LISTENER_BATCH">66</validValue>
+      <validValue name="GLOBAL_LISTENER_BATCH">65</validValue>
+      <validValue name="EXPRESSION">66</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
@@ -186,7 +186,8 @@
     <!-- populated when the client passes an operation reference to the gateway-->
     <field name="operationReference" id="12" type="uint64" presence="optional" sinceVersion="5"/>
     <!-- populated when the record was created as part of a batch operation -->
-    <field name="batchOperationReference" id="13" type="uint64" presence="optional" sinceVersion="6"/>
+    <field name="batchOperationReference" id="13" type="uint64" presence="optional"
+      sinceVersion="6"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
