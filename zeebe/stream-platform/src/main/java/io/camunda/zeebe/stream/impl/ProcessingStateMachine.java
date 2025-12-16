@@ -163,6 +163,7 @@ public final class ProcessingStateMachine {
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
+  private String currentStateDescription = "idle";
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -199,6 +200,10 @@ public final class ProcessingStateMachine {
     clock = context.getClock();
   }
 
+  String describeCurrentState() {
+    return currentStateDescription;
+  }
+
   private void skipRecord() {
     notifySkippedListener(currentRecord);
     markProcessingCompleted();
@@ -207,6 +212,7 @@ public final class ProcessingStateMachine {
   }
 
   void markProcessingCompleted() {
+    currentStateDescription = String.format("finished processing '%s %s'", currentRecord, metadata);
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
@@ -262,6 +268,7 @@ public final class ProcessingStateMachine {
 
     metadata.reset();
     loggedEvent.readMetadata(metadata);
+    currentStateDescription = String.format("processing '%s %s'", currentRecord, metadata);
 
     try {
       // Here we need to get the current time, since we want to calculate
@@ -788,6 +795,12 @@ public final class ProcessingStateMachine {
   }
 
   private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {
+    if (errorHandlingPhase != ErrorHandlingPhase.NO_ERROR) {
+      currentStateDescription =
+          String.format(
+              "in error handling phase %s for '%s %s'",
+              errorHandlingPhase, currentRecord, metadata);
+    }
     this.errorHandlingPhase = errorHandlingPhase;
     processingMetrics.errorHandlingPhase(errorHandlingPhase);
   }
