@@ -8,8 +8,12 @@
 
 import {notificationsStore} from 'modules/stores/notifications';
 
-const handleOperationError = (statusCode?: number) => {
-  if (statusCode === 403) {
+const handleMutationError = (options: {
+  statusCode: number;
+  title: string;
+  subtitle?: string;
+}) => {
+  if (options.statusCode === 403) {
     return notificationsStore.displayNotification({
       kind: 'warning',
       title: "You don't have permission to perform this operation",
@@ -19,9 +23,17 @@ const handleOperationError = (statusCode?: number) => {
   }
   notificationsStore.displayNotification({
     kind: 'error',
-    title: 'Operation could not be created',
+    title: options.title,
+    subtitle: options.subtitle,
     isDismissable: true,
   });
 };
 
-export {handleOperationError};
+const handleOperationError = (statusCode?: number) => {
+  handleMutationError({
+    statusCode: statusCode ?? 0,
+    title: 'Operation could not be created',
+  });
+};
+
+export {handleOperationError, handleMutationError};
