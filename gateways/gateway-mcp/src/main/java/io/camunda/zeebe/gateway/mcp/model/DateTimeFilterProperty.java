@@ -14,10 +14,10 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 @Schema(
-    name = "DateTimeFilter",
+    name = "DateTimeFilterProperty",
     description =
-        "Filter date-time values with different filter operations (can be combined). All date-time values must be in RFC 3339 format.")
-public record DateTimeFilter(
+        "Date-time property with full advanced search capabilities. All date-time values must be in RFC 3339 format.")
+public record DateTimeFilterProperty(
     @Nullable
         @Schema(
             name = "eq",
@@ -26,32 +26,44 @@ public record DateTimeFilter(
         OffsetDateTime eq,
     @Nullable
         @Schema(
+            name = "neq",
             description = "Checks for inequality with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         OffsetDateTime neq,
     @Nullable
         @Schema(
+            name = "exists",
+            description = "Checks if the current property exists.",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        Boolean exists,
+    @Nullable
+        @Schema(
+            name = "gt",
             description = "Greater than comparison with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         OffsetDateTime gt,
     @Nullable
         @Schema(
+            name = "gte",
             description = "Greater than or equal comparison with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         OffsetDateTime gte,
     @Nullable
         @Schema(
+            name = "lt",
             description = "Lower than comparison with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         OffsetDateTime lt,
     @Nullable
         @Schema(
+            name = "lte",
             description = "Lower than or equal comparison with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         OffsetDateTime lte,
     @Nullable
         @Valid
         @Schema(
+            name = "in",
             description = "Checks if the property matches any of the provided values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         List<OffsetDateTime> in) {}

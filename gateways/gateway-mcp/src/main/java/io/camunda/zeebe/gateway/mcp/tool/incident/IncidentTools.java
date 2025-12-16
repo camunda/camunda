@@ -21,7 +21,7 @@ import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.zeebe.gateway.mcp.model.IncidentFilter;
 import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
-import io.camunda.zeebe.gateway.mcp.model.PageRequest;
+import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -56,7 +56,8 @@ public class IncidentTools {
       @McpToolParam(required = false) final IncidentFilter filter,
       @McpToolParam(description = "Sort criteria", required = false) @Valid
           final List<@Valid IncidentSearchQuerySortRequest> sort,
-      @McpToolParam(description = "Pagination criteria", required = false) final PageRequest page) {
+      @McpToolParam(description = "Pagination criteria", required = false)
+          final SearchQueryPageRequest page) {
 
     try {
       final var result =
@@ -78,7 +79,7 @@ public class IncidentTools {
     return SortOptionBuilders.incident().build();
   }
 
-  private SearchQueryPage toSearchPage(final PageRequest page) {
+  private SearchQueryPage toSearchPage(final SearchQueryPageRequest page) {
     return SearchQueryPageBuilders.page().build();
   }
 

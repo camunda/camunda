@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/** Incident error type with a defined set of values. */
 @Schema(
     name = "IncidentErrorType",
     description = "Incident error type with a defined set of values.")

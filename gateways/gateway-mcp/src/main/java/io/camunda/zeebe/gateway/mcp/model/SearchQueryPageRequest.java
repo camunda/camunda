@@ -15,10 +15,10 @@ import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 
 @Schema(
-    name = "PageRequest",
+    name = "SearchQueryPageRequest",
     description =
         "Pagination configuration for search queries. Supports cursor-based pagination (before/after), offset-based pagination (from), or simple limit-based pagination.")
-public record PageRequest(
+public record SearchQueryPageRequest(
     @Nullable
         @Pattern(regexp = "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=)?$")
         @Size(min = 2, max = 300)
