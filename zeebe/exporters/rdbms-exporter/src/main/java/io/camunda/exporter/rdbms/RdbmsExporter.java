@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -39,6 +40,9 @@ public final class RdbmsExporter {
   private final RdbmsWriter rdbmsWriter;
   private final RdbmsSchemaManager rdbmsSchemaManager;
 
+  // services
+  private final HistoryCleanupService historyCleanupService;
+
   // configuration
   private final Duration flushInterval;
   private final int queueSize;
@@ -59,7 +63,9 @@ public final class RdbmsExporter {
       final int queueSize,
       final RdbmsWriter rdbmsWriter,
       final Map<ValueType, List<RdbmsExportHandler>> handlers,
-      final RdbmsSchemaManager rdbmsSchemaManager) {
+      final RdbmsSchemaManager rdbmsSchemaManager,
+      final HistoryCleanupService historyCleanupService) {
+    this.historyCleanupService = historyCleanupService;
     this.rdbmsWriter = rdbmsWriter;
     registeredHandlers = handlers;
 
@@ -258,16 +264,13 @@ public final class RdbmsExporter {
   }
 
   private void cleanupHistory() {
-    final var newDuration =
-        rdbmsWriter.getHistoryCleanupService().cleanupHistory(partitionId, OffsetDateTime.now());
+    final var newDuration = historyCleanupService.cleanupHistory(partitionId, OffsetDateTime.now());
     currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
   }
 
   private void cleanupUsageMetricsHistory() {
     final var newDuration =
-        rdbmsWriter
-            .getHistoryCleanupService()
-            .cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
+        historyCleanupService.cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
     currentUsageMetricsCleanupTask =
         controller.scheduleCancellableTask(newDuration, this::cleanupUsageMetricsHistory);
   }
@@ -295,6 +298,7 @@ public final class RdbmsExporter {
     private RdbmsWriter rdbmsWriter;
     private RdbmsSchemaManager rdbmsSchemaManager;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
+    private HistoryCleanupService historyCleanupService;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -335,9 +339,20 @@ public final class RdbmsExporter {
       return this;
     }
 
+    public Builder historyCleanupService(final HistoryCleanupService historyCleanupService) {
+      this.historyCleanupService = historyCleanupService;
+      return this;
+    }
+
     public RdbmsExporter build() {
       return new RdbmsExporter(
-          partitionId, flushInterval, queueSize, rdbmsWriter, handlers, rdbmsSchemaManager);
+          partitionId,
+          flushInterval,
+          queueSize,
+          rdbmsWriter,
+          handlers,
+          rdbmsSchemaManager,
+          historyCleanupService);
     }
   }
 }

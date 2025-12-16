@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.exporter.rdbms.RdbmsExporter.Builder;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
@@ -105,8 +106,8 @@ public class RdbmsExporterWrapper implements Exporter {
     config.validate(); // throws exception if configuration is invalid
 
     final int partitionId = context.getPartitionId();
-    final RdbmsWriter rdbmsWriter =
-        rdbmsService.createWriter(config.createRdbmsWriterConfig(partitionId));
+    final var rdbmsWriterConfig = config.createRdbmsWriterConfig(partitionId);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =
         new RdbmsExporter.Builder()
@@ -134,8 +135,11 @@ public class RdbmsExporterWrapper implements Exporter {
             new RdbmsBatchOperationCacheLoader(rdbmsService.getBatchOperationReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
-    createHandlers(partitionId, rdbmsWriter, builder, config);
-    createBatchOperationHandlers(rdbmsWriter, builder);
+    final var historyCleanupService = new HistoryCleanupService(rdbmsWriterConfig, rdbmsWriter);
+    builder.historyCleanupService(historyCleanupService);
+
+    createHandlers(partitionId, rdbmsWriter, builder, config, historyCleanupService);
+    createBatchOperationHandlers(rdbmsWriter, builder, historyCleanupService);
 
     exporter = builder.rdbmsSchemaManager(rdbmsSchemaManager).build();
   }
@@ -169,15 +173,18 @@ public class RdbmsExporterWrapper implements Exporter {
       final long partitionId,
       final RdbmsWriter rdbmsWriter,
       final Builder builder,
-      final ExporterConfiguration config) {
+      final ExporterConfiguration config,
+      final HistoryCleanupService historyCleanupService) {
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       builder.withHandler(
           ValueType.PROCESS,
           new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
-          ValueType.MAPPING_RULE, new MappingRuleExportHandler(rdbmsWriter.getMappingRuleWriter()));
-      builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
+          ValueType.MAPPING_RULE,
+          new MappingRuleExportHandler(rdbmsWriter.getMappingRuleWriter()));
+      builder.withHandler(
+          ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
       builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriter.getRoleWriter()));
       builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriter.getUserWriter()));
       builder.withHandler(
@@ -208,9 +215,7 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceExportHandler(
-            rdbmsWriter.getProcessInstanceWriter(),
-            rdbmsWriter.getHistoryCleanupService(),
-            processCache));
+            rdbmsWriter.getProcessInstanceWriter(), historyCleanupService, processCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter(), processCache));
@@ -250,7 +255,9 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createBatchOperationHandlers(
-      final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
+      final RdbmsWriter rdbmsWriter,
+      final Builder builder,
+      final HistoryCleanupService historyCleanupService) {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CREATION,
         new BatchOperationCreatedExportHandler(
@@ -261,9 +268,7 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         new BatchOperationLifecycleManagementExportHandler(
-            rdbmsWriter.getBatchOperationWriter(),
-            rdbmsWriter.getHistoryCleanupService(),
-            batchOperationCache));
+            rdbmsWriter.getBatchOperationWriter(), historyCleanupService, batchOperationCache));
 
     // Handlers per batch operation to track status
     builder.withHandler(
