@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.mcp.tool.cluster;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -17,9 +18,13 @@ import org.springframework.stereotype.Component;
 public class ClusterTools {
 
   private final TopologyServices topologyServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public ClusterTools(final TopologyServices topologyServices) {
+  public ClusterTools(
+      final TopologyServices topologyServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.topologyServices = topologyServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @McpTool(
@@ -27,13 +32,21 @@ public class ClusterTools {
           "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getClusterStatus() {
-    return CallToolResultMapper.fromPrimitive(topologyServices.getStatus(), Enum::name);
+    return CallToolResultMapper.fromPrimitive(
+        topologyServices
+            .withAuthentication(authenticationProvider.getCamundaAuthentication())
+            .getStatus(),
+        Enum::name);
   }
 
   @McpTool(
       description = "Obtains the current topology of the cluster the gateway is part of.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getTopology() {
-    return CallToolResultMapper.from(topologyServices.getTopology(), t -> t);
+    return CallToolResultMapper.from(
+        topologyServices
+            .withAuthentication(authenticationProvider.getCamundaAuthentication())
+            .getTopology(),
+        t -> t);
   }
 }
