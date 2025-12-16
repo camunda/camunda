@@ -1,13 +1,27 @@
 # Camunda Key Recovery Procedure
 
-Recovery procedure for fixing corrupted key values in Camunda partitions.
+Recovery procedure for fixing invalid key values in a partition.
+
+You want to use this procedure if for some reason the key of a partition jumped to an extremely high value which might eventually overflow into another partition key space.
+
+Note that this operation requires the cluster to be shut down while the recovery is performed.
+
+> [!IMPORTANT]
+> Cold backups are required from all the brokers
 
 ## Prerequisites
 
+- `bash` and common `unix` commands
 - Kubectl access to the cluster
 - `jq` installed for JSON parsing
 - **Cold backup of all broker data** (PVC snapshots or volume backups)
 - Cluster must be shut down during recovery
+
+## Steps summary
+
+The recovery procedure consists in running a K8S job that performs the actual change in the partition state.
+The recovery job yaml should be generated using [generate-recovery-job](./generate-recovery-job.sh) script.
+
 
 ## Required Information
 
@@ -21,11 +35,79 @@ Before starting, you need:
 - **CONTAINER_IMAGE**: The Camunda container image (e.g., "camunda/camunda:8.6.1")
 - **SNAPSHOT_ID**: Specific snapshot to use (optional - required only if multiple snapshots exist)
 
-**Tip:** Use `../detect-config.sh <namespace>` to auto-detect most of these values (namespace, broker count, pod prefix, PVC prefix, container image, etc.)
+> [!NOTE]
+> You can use [../detect-config.sh](../detect-config.sh) && [identify-partition-brokers](../identify-partition-brokers.sh) to auto-detect all required parameters except for `NEW_KEY` and `PARTITION_ID`
 
 ## Recovery Steps
 
-### 1. Identify Partition Leader and Replicas
+### 1. Detect cluster configuration
+Run `../detect-config.sh <NAMESPACE>` which will output some environment variable to export:
+
+```bash
+/detect-config.sh cs-key-recovery
+==========================================
+Detecting configuration for namespace: cs-key-recovery
+==========================================
+
+[1/6] Finding StatefulSet...
+  StatefulSet: camunda
+
+[2/6] Getting broker count...
+  Broker Count: 3
+
+[3/6] Detecting pod prefix...
+  Pod Prefix: camunda
+
+[4/6] Verifying pods...
+  Found 3 pods matching prefix 'camunda'
+
+[5/6] Detecting PVC prefix...
+  PVC Prefix: data-camunda
+
+[6/6] Verifying PVCs...
+  ✓ data-camunda-0 exists
+  ✓ data-camunda-1 exists
+  ✓ data-camunda-2 exists
+
+[7/8] Detecting actuator port...
+  Actuator Port: 9600 (detected or default)
+
+[8/8] Detecting container image...
+  Container Image: gcr.io/zeebe-io/zeebe:cs-key-recovery-fa5e126a
+
+==========================================
+Configuration Summary
+==========================================
+
+Namespace:         cs-key-recovery
+StatefulSet:       camunda
+Pod Prefix:        camunda
+PVC Prefix:        data-camunda
+Broker Count:      3
+Actuator Port:     9600
+Container Image:   gcr.io/zeebe-io/zeebe:cs-key-recovery-fa5e126a
+
+==========================================
+Environment Variables
+==========================================
+
+Copy and paste these to configure the recovery scripts:
+
+export NAMESPACE="cs-key-recovery"
+export STATEFULSET_NAME="camunda"
+export POD_PREFIX="camunda"
+export PVC_PREFIX="data-camunda"
+export BROKER_COUNT="3"
+export ACTUATOR_PORT="9600"
+export CONTAINER_IMAGE="gcr.io/zeebe-io/zeebe:cs-key-recovery-fa5e126a"
+
+Then run:
+  ./identify-partition-brokers.sh  # Identify partition leader and replicas
+  ./generate-recovery-job.sh       # Generate recovery Job YAML
+
+```
+
+### 2. Identify Partition Leader and Replicas
 
 Use the [helper script](../identify-partition-brokers.sh) to identify which brokers host the partition  before shutting down the broker.
 In this example partition we run the script for partition 1:
@@ -56,7 +138,7 @@ export PARTITION_BROKER_IDS="0 1 2"
 
 (Your output will vary based on which brokers actually host the partition)
 
-### 2. Shut Down the Cluster
+### 3. Shut Down the Cluster
 
 Scale the StatefulSet to 0 replicas:
 
@@ -74,7 +156,7 @@ kubectl get pods -n $NAMESPACE | grep $POD_PREFIX
 # Should show no running pods
 ```
 
-### 3. Take a Cold Backup
+### 4. Take a Cold Backup
 
 **CRITICAL**: Backup your data before proceeding!
 
@@ -84,16 +166,27 @@ kubectl get pods -n $NAMESPACE | grep $POD_PREFIX
 
 This is a **manual prerequisite** step. Follow your organization's backup procedures.
 
-### 4. Generate Recovery Job YAML
+### 5. Generate Recovery Job YAML
 
 Use the generator script to create the recovery Job YAML:
 
+If you run the scripts in steps [1](#1-detect-cluster-configuration) and [2](#2-identify-partition-leader-and-replicas) then you only need to set the following variables.:
+
 ```bash
+export PARTITION_ID="1"
+export NEW_KEY="2251800000000000"
+export NEW_MAX_KEY="2251900000000000"            # Optional
+```
+
+
+If you didn't run the scripts in the previous steps, you need to export all the required environment variables and verify that the optional environment variables match your cluster:
+```bash
+
 # Set required variables
 export NAMESPACE="camunda"
 export PARTITION_ID="1"
-export LAST_LEADER_BROKER="$LEADER"              # From step 1
-export PARTITION_BROKER_IDS="$REPLICAS"          # From step 1 (space-separated)
+export LAST_LEADER_BROKER="0"                    # From step 2
+export PARTITION_BROKER_IDS="0 1 2"              # From step 2 (space-separated)
 export NEW_KEY="2251800000000000"
 export NEW_MAX_KEY="2251900000000000"            # Optional
 export CONTAINER_IMAGE="camunda/camunda:8.6.1"
@@ -112,17 +205,12 @@ export CONTAINER_FS_GROUP="1001"                 # default: 1001
 
 #### Calculating Key Values
 
-Camunda keys are: `((long) partitionId << 51) + key`
+Choosing the right `NEW_KEY` and `NEW_MAX_KEY` is not straightforward as it's important to select a new key range `[NEW_KEY, NEW_MAX_KEY)` that does not overlap with existing records.
 
-For partition 1:
-- Base: `1 << 51 = 2251799813685248`
-- Range: `2251799813685248` to `4503599627370495`
+> [!IMPORTANT]
+> If there's overlap with existing records there is risk of data corruption!
 
-**Example values:**
-- `NEW_KEY`: `2251800000000000` (high safe value)
-- `NEW_MAX_KEY`: `2251900000000000` (higher than NEW_KEY with growth room)
-
-### 5. Review the Generated YAML
+### 6. Review the Generated YAML
 
 ```bash
 cat generated/recovery-job-partition-1-*.yaml
@@ -137,11 +225,11 @@ The Job will:
 
 **Important:**
 - Backups are stored on each broker's PVC at `snapshots-backup/`, not in ephemeral `/tmp`
-- Backups are NOT automatically deleted - you must clean them up manually after verifying recovery (see Step 11)
+- Backups are NOT automatically deleted - you must clean them up manually after verifying recovery (see Step 12)
 
-### 6. Apply the Recovery Job
+### 7. Apply the Recovery Job
 
-**NOTE**: if you recreate the job more than once, you need to first delete the previous versions (see [here](#8-clean-up-recovery-job))
+**NOTE**: if you recreate the job more than once, you need to first delete the previous versions (see [here](#9-clean-up-recovery-job))
 
 ```bash
 kubectl apply -f generated/recovery-job-partition-1-*.yaml
@@ -159,7 +247,7 @@ Wait for completion:
 kubectl wait --for=condition=complete --timeout=600s job/key-recovery-job -n $NAMESPACE
 ```
 
-### 7. Verify Job Success
+### 8. Verify Job Success
 
 Check job status:
 
@@ -174,13 +262,13 @@ If failed, check logs:
 kubectl logs job/key-recovery-job -n $NAMESPACE
 ```
 
-### 8. Clean Up Recovery Job
+### 9. Clean Up Recovery Job
 
 ```bash
 kubectl delete job key-recovery-job -n $NAMESPACE
 ```
 
-### 9. Restart the Cluster
+### 10. Restart the Cluster
 
 Scale back to original replica count:
 
@@ -194,7 +282,7 @@ for i in $(seq 0 $((BROKER_COUNT - 1))); do
 done
 ```
 
-### 10. Verify Recovery
+### 11. Verify Recovery
 
 Monitor partition health using Grafana or check broker logs:
 
@@ -226,20 +314,33 @@ Expected outcome:
 - One broker is LEADER, others are FOLLOWER
 - No errors in logs related to the partition
 
-### 11. Clean Up Backups (Optional)
+### 12. Clean Up Snapshot Backups (After Verification)
 
-After verifying successful recovery, you can remove the backups from each broker's PVC:
+After verifying successful recovery, you can remove the backups from each broker's PVC.
+Depending on the camunda version it's mounted at:
+- 8.8+: `/usr/local/camunda`
+- < 8.8: `/usr/local/zeebe`
+
+Set `MOUNT_POINT` variable accordingly:
+
+```bash
+# For Camunda 8.8+
+export MOUNT_POINT="/usr/local/camunda"
+
+# For Camunda < 8.8
+export MOUNT_POINT="/usr/local/zeebe"
+```
+
+Then remove the backups:
 
 ```bash
 # For each broker that hosted the partition, exec into the pod and remove backup
 for broker_id in $PARTITION_BROKER_IDS; do
   echo "Removing backup from broker $broker_id..."
   kubectl exec -n $NAMESPACE ${POD_PREFIX}-${broker_id} -- \
-    rm -rf /usr/local/zeebe/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
+    rm -rf $MOUNT_POINT/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
 done
 ```
-
-**Note:** Adjust the path `/usr/local/zeebe/data` if your Camunda installation uses a different data directory.
 
 ## What the Recovery Script Does
 
@@ -258,8 +359,8 @@ The `recovery-script.sh` (embedded in the generated Job YAML) performs:
 The recovery script will **fail** if `snapshots-backup` directories already exist from a previous run. This prevents accidental data loss.
 
 **Important:** Backups are **never** automatically deleted by the recovery script. After successful recovery:
-1. Verify the cluster is healthy (Step 10)
-2. Manually clean up backups (Step 11)
+1. Verify the cluster is healthy (Step 11)
+2. Manually clean up backups (Step 12)
 
 To retry recovery after a failure:
 1. Review logs of the failed job
@@ -301,13 +402,19 @@ env:
 **Solution:** Review the backups and manually remove if appropriate:
 
 ```bash
+# Set MOUNT_POINT based on your Camunda version
+# For Camunda 8.8+:
+export MOUNT_POINT="/usr/local/camunda"
+# For Camunda < 8.8:
+# export MOUNT_POINT="/usr/local/zeebe"
+
 # Check what's in the backup (replace broker_id with actual broker, e.g., 0, 1, 2)
 kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
-  ls -la /usr/local/zeebe/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
+  ls -la $MOUNT_POINT/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
 
 # Remove if safe
 kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
-  rm -rf /usr/local/zeebe/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
+  rm -rf $MOUNT_POINT/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
 ```
 
 ### Job Fails: "Snapshot directory does not exist"
@@ -322,7 +429,7 @@ kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
 
 **Solution:**
 1. Check broker logs: `kubectl logs ${POD_PREFIX}-0 -n $NAMESPACE`
-2. Restore from cold backup (Step 3)
+2. Restore from cold backup (Step 4)
 3. Retry recovery with different key values
 
 ### Partition Shows UNHEALTHY
