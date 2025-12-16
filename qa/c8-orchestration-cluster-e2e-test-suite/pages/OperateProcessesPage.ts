@@ -203,13 +203,21 @@ class OperateProcessesPage {
     await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
   }
 
-  async clickProcessInstanceLink(): Promise<void> {
+  async clickProcessInstanceLink(processName?: string): Promise<void> {
     const maxRetries = 3;
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
         await sleep(5_000);
-        await this.processInstanceLink.click();
+        if (processName) {
+          const process = this.page
+            .locator('td:right-of(:text("' + processName + '"))')
+            .first();
+          await expect(process).toBeVisible();
+          await process.click();
+        } else {
+          await this.processInstanceLink.click();
+        }
         return;
       } catch {
         retryCount++;
