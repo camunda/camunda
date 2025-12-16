@@ -7,6 +7,7 @@
  */
 
 import {expect, type Locator, type Page} from '@playwright/test';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 export class OperateDiagramPage {
   private page: Page;
@@ -66,8 +67,17 @@ export class OperateDiagramPage {
     await this.page.mouse.up();
   }
 
-  clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).first().click({timeout: 20000});
+  async clickFlowNode(flowNodeName: string) {
+    const flowNode = this.getFlowNode(flowNodeName).first();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(flowNode).toBeVisible();
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
+    return flowNode.click({timeout: 20000});
   }
 
   clickSubProcess(subProcessName: string) {
