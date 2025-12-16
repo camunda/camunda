@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -17,13 +18,24 @@ import org.springframework.http.ProblemDetail;
 public class ExpressionValidator {
 
   public static Optional<ProblemDetail> validateExpressionEvaluationRequest(
-      final String expression) {
-    return validate(violations -> validateExpression(expression, violations));
+      final String expression, final String tenantId) {
+    return validate(
+        violations -> {
+          validateExpression(expression, violations);
+          validateTenantId(tenantId, violations);
+        });
   }
 
   private static void validateExpression(final String expression, final List<String> violations) {
     if (expression == null || expression.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("expression"));
+    }
+  }
+
+  private static void validateTenantId(final String tenantId, final List<String> violations) {
+    if (tenantId != null) {
+      IdentifierValidator.validateTenantId(
+          tenantId, violations, TenantOwned.DEFAULT_TENANT_IDENTIFIER::equals);
     }
   }
 }

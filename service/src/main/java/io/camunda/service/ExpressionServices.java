@@ -12,6 +12,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerExpressionEvaluationRequest;
+import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.concurrent.CompletableFuture;
 
 public final class ExpressionServices extends ApiServices<ExpressionServices> {
@@ -40,9 +41,8 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
         brokerRequestAuthorizationConverter);
   }
 
-  public CompletableFuture<
-          io.camunda.zeebe.protocol.impl.record.value.feelexpression.ExpressionRecord>
-      evaluateExpression(final ExpressionEvaluationRequest request) {
+  public CompletableFuture<ExpressionRecord> evaluateExpression(
+      final ExpressionEvaluationRequest request) {
     final var brokerRequest =
         new BrokerExpressionEvaluationRequest().setExpression(request.expression());
     if (request.tenantId() != null && !request.tenantId().isEmpty()) {

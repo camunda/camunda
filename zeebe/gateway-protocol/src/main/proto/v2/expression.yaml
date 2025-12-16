@@ -4,11 +4,11 @@ paths:
   /expression/evaluation:
     post:
       operationId: evaluateExpression
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Expression
-      summary: Evaluate a FEEL expression
-      description: Evaluates a FEEL expression with optional context variables and scope. Requires EXPRESSION:EVALUATE permission.
+      summary: Evaluate an expression
+      description: Evaluates an expression with optional context variables and scope.
       requestBody:
         required: true
         content:
@@ -40,7 +40,7 @@ components:
       properties:
         expression:
           type: string
-          description: The FEEL expression to evaluate (e.g., "=x + y")
+          description: The expression to evaluate (e.g., "=x + y")
           example: "=x + y"
         tenantId:
           type: string
@@ -57,7 +57,7 @@ components:
           description: The evaluated expression
           example: "=x + y"
         result:
-          description: The result value. Type depends on the result type (String, Boolean, Number, or Object)
+          description: The result value. Its type can vary.
           type: object
           example: 30
         warnings:

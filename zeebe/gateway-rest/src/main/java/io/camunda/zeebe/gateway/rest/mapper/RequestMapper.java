@@ -746,7 +746,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
       final String expression, final String tenantId) {
     return getResult(
-        validateExpressionEvaluationRequest(expression),
+        validateExpressionEvaluationRequest(expression, tenantId),
         () -> new ExpressionEvaluationRequest(expression, tenantId));
   }
 
