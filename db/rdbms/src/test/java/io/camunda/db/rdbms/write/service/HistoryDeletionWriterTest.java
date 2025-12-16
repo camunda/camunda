@@ -10,9 +10,9 @@ package io.camunda.db.rdbms.write.service;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -27,8 +27,13 @@ class HistoryDeletionWriterTest {
 
   @Test
   void shouldInsertHistoryDeletion() {
-    final var model = mock(HistoryDeletionDbModel.class);
-    when(model.getId()).thenReturn("2251799813685385");
+    final var model =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(2251799813685385L)
+            .resourceType(HistoryDeletionTypeDbModel.PROCESS_INSTANCE)
+            .batchOperationKey(2251799813685312L)
+            .partitionId(1)
+            .build();
 
     writer.create(model);
 
@@ -38,7 +43,7 @@ class HistoryDeletionWriterTest {
                 new QueueItem(
                     ContextType.HISTORY_DELETION,
                     WriteStatementType.INSERT,
-                    "2251799813685385",
+                    model.getId(),
                     "io.camunda.db.rdbms.sql.HistoryDeletionMapper.insert",
                     model)));
   }

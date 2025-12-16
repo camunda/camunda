@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.exporter.rdbms.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.zeebe.protocol.record.Record;
@@ -41,7 +42,7 @@ class HistoryDeletionDeletedHandlerTest {
 
   @Captor private ArgumentCaptor<HistoryDeletionDbModel> historyDeletionCaptor;
 
-  private final Record authorizedRecord =
+  private final Record handledRecord =
       factory.generateRecord(
           ValueType.HISTORY_DELETION,
           r ->
@@ -54,7 +55,7 @@ class HistoryDeletionDeletedHandlerTest {
                   .withIntent(HistoryDeletionIntent.DELETED)
                   .withPartitionId(PARTITION_ID));
 
-  private final Record unauthorizedRecord =
+  private final Record unhandledRecord =
       factory.generateRecordWithIntent(ValueType.HISTORY_DELETION, HistoryDeletionIntent.DELETE);
 
   @BeforeEach
@@ -65,22 +66,22 @@ class HistoryDeletionDeletedHandlerTest {
 
   @Test
   void shouldHandleHistoryDeletionDeleted() {
-    assertThat(handler.canExport(authorizedRecord)).isTrue();
+    assertThat(handler.canExport(handledRecord)).isTrue();
   }
 
   @Test
   void shouldNotHandleHistoryDeletionDeleted() {
-    assertThat(handler.canExport(unauthorizedRecord)).isFalse();
+    assertThat(handler.canExport(unhandledRecord)).isFalse();
   }
 
   @Test
   void shouldExportHistoryDeletion() {
-    handler.export(authorizedRecord);
+    handler.export(handledRecord);
     verify(writer).create(historyDeletionCaptor.capture());
 
     final HistoryDeletionDbModel capturedModel = historyDeletionCaptor.getValue();
     assertThat(capturedModel.resourceKey()).isEqualTo(RESOURCE_KEY);
-    assertThat(capturedModel.resourceType()).isEqualTo(HistoryDeletionType.PROCESS_INSTANCE);
+    assertThat(capturedModel.resourceType()).isEqualTo(HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
     assertThat(capturedModel.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(capturedModel.partitionId()).isEqualTo(PARTITION_ID);
   }

@@ -867,10 +867,6 @@
       </column>
     </createTable>
 
-    <createIndex tableName="${prefix}HISTORY_DELETION" indexName="${prefix}IDX_HISTORY_DELETION_PARTITION_ID">
-      <column name="PARTITION_ID"/>
-    </createIndex>
-
   </changeSet>
 
 </databaseChangeLog>

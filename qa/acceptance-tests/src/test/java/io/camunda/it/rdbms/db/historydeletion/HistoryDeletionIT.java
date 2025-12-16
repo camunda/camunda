@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.historydeletion;
 
-import static io.camunda.zeebe.protocol.record.value.HistoryDeletionType.PROCESS_INSTANCE;
+import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.PROCESS_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -46,34 +46,23 @@ public class HistoryDeletionIT {
 
   @AfterEach
   void tearDown() {
-    historyDeletionWriter.delete(RESOURCE_KEY, BATCH_OPERATION_KEY);
-    rdbmsWriter.flush();
-  }
-
-  private void writeHistoryDeletion(final HistoryDeletionWriter historyDeletionWriter) {
-    historyDeletionWriter.create(
-        new HistoryDeletionDbModel.Builder()
-            .resourceKey(RESOURCE_KEY)
-            .resourceType(PROCESS_INSTANCE)
-            .batchOperationKey(BATCH_OPERATION_KEY)
-            .partitionId(PARTITION_ID)
-            .build());
+    rdbmsWriter.getRdbmsPurger().purgeRdbms();
   }
 
   @TestTemplate
   public void shouldInsertHistoryDeletion() {
     // given
-    writeHistoryDeletion(historyDeletionWriter);
+    final var model =
+        new HistoryDeletionDbModel(
+            RESOURCE_KEY, PROCESS_INSTANCE, BATCH_OPERATION_KEY, PARTITION_ID);
+    historyDeletionWriter.create(model);
     rdbmsWriter.flush();
 
     // when
     final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 1);
 
     // then
-    assertThat(actual)
-        .containsExactly(
-            new HistoryDeletionDbModel(
-                RESOURCE_KEY, PROCESS_INSTANCE, BATCH_OPERATION_KEY, PARTITION_ID));
+    assertThat(actual).containsExactly(model);
   }
 
   @TestTemplate
@@ -83,5 +72,122 @@ public class HistoryDeletionIT {
 
     // then
     assertThat(actual).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldInsertAndRetrieveMultipleModels() {
+    // given
+    final var model1 =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(1L)
+            .resourceType(PROCESS_INSTANCE)
+            .batchOperationKey(10L)
+            .partitionId(PARTITION_ID)
+            .build();
+    final var model2 =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(2L)
+            .resourceType(PROCESS_INSTANCE)
+            .batchOperationKey(11L)
+            .partitionId(PARTITION_ID)
+            .build();
+    historyDeletionWriter.create(model1);
+    historyDeletionWriter.create(model2);
+    rdbmsWriter.flush();
+
+    // when
+    final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 10);
+
+    // then
+    assertThat(actual).containsExactlyInAnyOrder(model1, model2);
+  }
+
+  @TestTemplate
+  public void shouldFilterByPartition() {
+    // given
+    final var modelPartition0 =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(1L)
+            .resourceType(PROCESS_INSTANCE)
+            .batchOperationKey(10L)
+            .partitionId(0)
+            .build();
+    final var modelPartition1 =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(2L)
+            .resourceType(PROCESS_INSTANCE)
+            .batchOperationKey(11L)
+            .partitionId(1)
+            .build();
+    historyDeletionWriter.create(modelPartition0);
+    historyDeletionWriter.create(modelPartition1);
+    rdbmsWriter.flush();
+
+    // when
+    final var actualPartition0 = historyDeletionReader.getNextBatch(0, 10);
+    final var actualPartition1 = historyDeletionReader.getNextBatch(1, 10);
+
+    // then
+    assertThat(actualPartition0).containsExactly(modelPartition0);
+    assertThat(actualPartition1).containsExactly(modelPartition1);
+  }
+
+  @TestTemplate
+  public void shouldSortByBatchOperationKeyAndResourceKey() {
+    // given
+    final var modelA =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(2L)
+            .resourceType(PROCESS_INSTANCE)
+            .batchOperationKey(10L)
+            .partitionId(PARTITION_ID)
+            .build();
+    final var modelB =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(1L)
+            .resourceType(PROCESS_INSTANCE)
+            .batchOperationKey(10L)
+            .partitionId(PARTITION_ID)
+            .build();
+    final var modelC =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(3L)
+            .resourceType(PROCESS_INSTANCE)
+            .batchOperationKey(9L)
+            .partitionId(PARTITION_ID)
+            .build();
+    historyDeletionWriter.create(modelA);
+    historyDeletionWriter.create(modelB);
+    historyDeletionWriter.create(modelC);
+    rdbmsWriter.flush();
+
+    // when
+    final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 10);
+
+    // then
+    assertThat(actual)
+        .containsExactly(
+            modelC, // batchOperationKey=9, resourceKey=3
+            modelB, // batchOperationKey=10, resourceKey=1
+            modelA // batchOperationKey=10, resourceKey=2
+            );
+  }
+
+  @TestTemplate
+  public void shouldDeleteHistoryDeletion() {
+    // given
+    final var model =
+        new HistoryDeletionDbModel(
+            RESOURCE_KEY, PROCESS_INSTANCE, BATCH_OPERATION_KEY, PARTITION_ID);
+    historyDeletionWriter.create(model);
+    rdbmsWriter.flush();
+    assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1)).isNotEmpty();
+
+    // when
+    historyDeletionWriter.delete(RESOURCE_KEY, BATCH_OPERATION_KEY);
+    rdbmsWriter.flush();
+
+    // then
+    assertThat(historyDeletionReader.getNextBatch(PARTITION_ID, 1)).isEmpty();
   }
 }

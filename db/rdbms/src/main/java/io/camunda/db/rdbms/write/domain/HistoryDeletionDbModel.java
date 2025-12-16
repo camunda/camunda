@@ -8,11 +8,10 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 
 public record HistoryDeletionDbModel(
     Long resourceKey,
-    HistoryDeletionType resourceType,
+    HistoryDeletionTypeDbModel resourceType,
     Long batchOperationKey,
     Integer partitionId) {
 
@@ -25,7 +24,7 @@ public record HistoryDeletionDbModel(
   public static class Builder implements ObjectBuilder<HistoryDeletionDbModel> {
 
     private long resourceKey;
-    private HistoryDeletionType resourceType;
+    private HistoryDeletionTypeDbModel resourceType;
     private long batchOperationKey;
     private int partitionId;
 
@@ -34,7 +33,7 @@ public record HistoryDeletionDbModel(
       return this;
     }
 
-    public Builder resourceType(final HistoryDeletionType resourceType) {
+    public Builder resourceType(final HistoryDeletionTypeDbModel resourceType) {
       this.resourceType = resourceType;
       return this;
     }
@@ -53,5 +52,12 @@ public record HistoryDeletionDbModel(
     public HistoryDeletionDbModel build() {
       return new HistoryDeletionDbModel(resourceKey, resourceType, batchOperationKey, partitionId);
     }
+  }
+
+  public enum HistoryDeletionTypeDbModel {
+    PROCESS_INSTANCE,
+    PROCESS_DEFINITION,
+    DECISION_INSTANCE,
+    DECISION_DEFINITION
   }
 }

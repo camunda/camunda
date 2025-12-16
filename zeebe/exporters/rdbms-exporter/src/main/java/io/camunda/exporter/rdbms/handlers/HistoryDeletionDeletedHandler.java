@@ -7,13 +7,20 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.DECISION_DEFINITION;
+import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.DECISION_INSTANCE;
+import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.PROCESS_DEFINITION;
+import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.PROCESS_INSTANCE;
+
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,13 +40,22 @@ public record HistoryDeletionDeletedHandler(HistoryDeletionWriter historyDeletio
     final HistoryDeletionRecordValue value = record.getValue();
     LOGGER.trace("Export History Deletion Record: {}", value);
 
-    var historyDeletionDbModel =
+    final var historyDeletionDbModel =
         new HistoryDeletionDbModel.Builder()
             .resourceKey(value.getResourceKey())
             .batchOperationKey(record.getBatchOperationReference())
-            .resourceType(value.getResourceType())
+            .resourceType(mapResourceType(value.getResourceType()))
             .partitionId(record.getPartitionId())
             .build();
     historyDeletionWriter.create(historyDeletionDbModel);
+  }
+
+  private HistoryDeletionTypeDbModel mapResourceType(final HistoryDeletionType resourceType) {
+    return switch (resourceType) {
+      case PROCESS_INSTANCE -> PROCESS_INSTANCE;
+      case PROCESS_DEFINITION -> PROCESS_DEFINITION;
+      case DECISION_INSTANCE -> DECISION_INSTANCE;
+      case DECISION_DEFINITION -> DECISION_DEFINITION;
+    };
   }
 }
