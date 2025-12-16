@@ -447,7 +447,9 @@ public final class ExpressionProcessor {
       final Expression expression, final long variableScopeKey, final String tenantId) {
 
     final EvaluationContext context;
-    if (variableScopeKey < 0) {
+    if (variableScopeKey < 0 && (tenantId == null || tenantId.isEmpty())) {
+      context = scopedEvaluationContext;
+    } else if (variableScopeKey < 0) {
       context = scopedEvaluationContext.tenantScoped(tenantId);
     } else {
       context = scopedEvaluationContext.processScoped(variableScopeKey).tenantScoped(tenantId);
