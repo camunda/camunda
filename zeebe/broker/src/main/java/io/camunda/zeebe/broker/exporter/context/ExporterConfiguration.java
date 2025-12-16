@@ -91,8 +91,6 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   }
 
   public static <T> Map<String, Object> asArgs(final T config) {
-    // Use ReflectUtil to extract fields, preserving all object types (Duration, Path, etc.)
-    // This avoids Jackson's serialization which would cause infinite recursion
     return MAPPER.convertValue(config, Map.class);
   }
 
