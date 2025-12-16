@@ -565,6 +565,10 @@ class OperateProcessInstancePage {
     return this.diagram.locator(`[data-element-id="${elementId}"]`);
   }
 
+  async clickDiagramElement(elementId: string): Promise<void> {
+    await this.getDiagramElement(elementId).click();
+  }
+
   async getDiagramElementBadge(elementId: string) {
     return this.page.$(`[data-element-id="${elementId}"] .badge`);
   }
