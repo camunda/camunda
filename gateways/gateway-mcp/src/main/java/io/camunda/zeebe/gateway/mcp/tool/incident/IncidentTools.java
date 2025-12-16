@@ -7,14 +7,29 @@
  */
 package io.camunda.zeebe.gateway.mcp.tool.incident;
 
+import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
+import io.camunda.zeebe.gateway.mcp.model.IncidentFilter;
+import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.mcp.model.PageRequest;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
+import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Component
 @Validated
 public class IncidentTools {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentTools.class);
+
   private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
@@ -25,25 +40,18 @@ public class IncidentTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  //  @McpTool(
-  //      description = "Search for incidents based on given criteria. " +
-  // EVENTUAL_CONSISTENCY_NOTE,
-  //      annotations = @McpAnnotations(readOnlyHint = true))
-  //  public CallToolResult searchIncidents(
-  //      @McpToolParam(required = false) final IncidentFilter filter,
-  //      @McpToolParam(description = "Sort criteria", required = false) @Valid
-  //          final List<@Valid IncidentSearchQuerySortRequest> sort,
-  //      @McpToolParam(description = "Pagination criteria", required = false)
-  //          final SearchQueryPageRequest page) {
-  //
-  //    final var query = new IncidentSearchQuery();
-  //    query.setFilter(filter);
-  //    query.setSort(sort);
-  //    query.setPage(page);
-  //
-  //    return SearchQueryRequestMapper.toIncidentQuery(query)
-  //        .fold(CallToolResultMapper::mapProblemToResult, this::searchIncidents);
-  //  }
+  @McpTool(
+      description = "Search for incidents based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
+      annotations = @McpAnnotations(readOnlyHint = true))
+  public String searchIncidents(
+      @McpToolParam(required = false) final IncidentFilter filter,
+      @McpToolParam(description = "Sort criteria", required = false) @Valid
+          final List<@Valid IncidentSearchQuerySortRequest> sort,
+      @McpToolParam(description = "Pagination criteria", required = false) final PageRequest page) {
+    LOGGER.info("MCP filter: {}", filter);
+    return "Test";
+  }
+
   //
   //  private CallToolResult searchIncidents(final IncidentQuery query) {
   //    try {
