@@ -453,8 +453,6 @@ class RdbmsExporterTest {
     when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
         .thenReturn(Duration.ofSeconds(1));
 
-    when(rdbmsWriters.getHistoryCleanupService()).thenReturn(historyCleanupService);
-
     when(rdbmsWriters.getExporterPositionService()).thenReturn(positionService);
     when(rdbmsWriters.getExecutionQueue()).thenReturn(executionQueue);
     when(rdbmsWriters.getRdbmsPurger()).thenReturn(rdbmsPurger);
@@ -476,7 +474,8 @@ class RdbmsExporterTest {
             .partitionId(0)
             .flushInterval(Duration.ofMillis(500))
             .queueSize(100)
-            .rdbmsSchemaManager(schemaManager);
+            .rdbmsSchemaManager(schemaManager)
+            .historyCleanupService(historyCleanupService);
 
     exporter = builderFunction.apply(builder).build();
     if (openExporter) {

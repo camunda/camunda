@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
@@ -66,8 +67,9 @@ public class HistoryCleanupIT {
 
   @BeforeEach
   void setUp() {
-    rdbmsWriters = rdbmsService.createWriter(0);
-    historyCleanupService = rdbmsWriters.getHistoryCleanupService();
+    final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
+    rdbmsWriters = rdbmsService.createWriter(config);
+    historyCleanupService = new HistoryCleanupService(config, rdbmsWriters);
   }
 
   @Test

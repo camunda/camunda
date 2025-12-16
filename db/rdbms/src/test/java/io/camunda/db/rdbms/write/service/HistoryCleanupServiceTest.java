@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -95,23 +96,25 @@ class HistoryCleanupServiceTest {
     when(historyConfig.usageMetricsCleanup()).thenReturn(Duration.ofDays(1));
     when(historyConfig.usageMetricsTTL()).thenReturn(Duration.ofDays(730));
 
-    historyCleanupService =
-        new HistoryCleanupService(
-            config,
-            processInstanceWriter,
-            incidentWriter,
-            flowNodeInstanceWriter,
-            userTaskWriter,
-            variableInstanceWriter,
-            decisionInstanceWriter,
-            jobWriter,
-            sequenceFlowWriter,
-            batchOperationWriter,
-            messageSubscriptionWriter,
-            correlatedMessageSubscriptionWriter,
-            mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS),
-            usageMetricWriter,
-            usageMetricTUWriter);
+    final var rdbmsWriters = mock(RdbmsWriters.class);
+    when(rdbmsWriters.getProcessInstanceWriter()).thenReturn(processInstanceWriter);
+    when(rdbmsWriters.getIncidentWriter()).thenReturn(incidentWriter);
+    when(rdbmsWriters.getFlowNodeInstanceWriter()).thenReturn(flowNodeInstanceWriter);
+    when(rdbmsWriters.getUserTaskWriter()).thenReturn(userTaskWriter);
+    when(rdbmsWriters.getVariableWriter()).thenReturn(variableInstanceWriter);
+    when(rdbmsWriters.getDecisionInstanceWriter()).thenReturn(decisionInstanceWriter);
+    when(rdbmsWriters.getJobWriter()).thenReturn(jobWriter);
+    when(rdbmsWriters.getSequenceFlowWriter()).thenReturn(sequenceFlowWriter);
+    when(rdbmsWriters.getBatchOperationWriter()).thenReturn(batchOperationWriter);
+    when(rdbmsWriters.getMessageSubscriptionWriter()).thenReturn(messageSubscriptionWriter);
+    when(rdbmsWriters.getCorrelatedMessageSubscriptionWriter())
+        .thenReturn(correlatedMessageSubscriptionWriter);
+    when(rdbmsWriters.getUsageMetricWriter()).thenReturn(usageMetricWriter);
+    when(rdbmsWriters.getUsageMetricTUWriter()).thenReturn(usageMetricTUWriter);
+    when(rdbmsWriters.getMetrics())
+        .thenReturn(mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
+
+    historyCleanupService = new HistoryCleanupService(config, rdbmsWriters);
   }
 
   @Test
