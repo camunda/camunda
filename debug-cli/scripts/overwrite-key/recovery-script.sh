@@ -25,9 +25,10 @@
 set -euo pipefail
 
 # Configuration from environment variables
-PARTITION_ID="${PARTITION_ID}"
+: "${PARTITION_ID:?PARTITION_ID must be set}"
+: "${LAST_LEADER_BROKER:?LAST_LEADER_BROKER must be set}"
+: "${NEW_KEY:?NEW_KEY must be set}"
 LEADER_BROKER="$LAST_LEADER_BROKER"
-NEW_KEY="${NEW_KEY}"
 NEW_MAX_KEY="${NEW_MAX_KEY:-}"                   # Optional
 SNAPSHOT_ID="${SNAPSHOT_ID:-}"                   # Optional override
 PARTITION_BROKER_IDS="${PARTITION_BROKER_IDS:-}" # Space-separated broker IDs
@@ -65,7 +66,15 @@ if [ -n "${SNAPSHOT_ID}" ]; then
         SELECTED_SNAPSHOT="${SNAPSHOT_ID}"
 else
         # Auto-detect snapshot (exclude .checksum files)
-        SNAPSHOT_COUNT=$(ls -1 ${LEADER_PATH}/snapshots/ 2>/dev/null | grep -v ".checksum" | wc -l)
+        snapshots=()
+        for snap in "${LEADER_PATH}/snapshots/"*/; do
+                # skip it if it's not a directory
+                [ -d "$snap" ] || continue
+                # skip it if it's a checksum file
+                [[ "$(basename "$snap")" == *.checksum ]] && continue
+                snapshots+=("$snap")
+        done
+        SNAPSHOT_COUNT=${#snapshots[@]}
 
         if [ "$SNAPSHOT_COUNT" -eq 0 ]; then
                 echo "ERROR: No snapshots found in ${LEADER_PATH}/snapshots/"
@@ -74,22 +83,23 @@ else
                 echo "ERROR: Multiple snapshots found, but SNAPSHOT_ID not specified"
                 echo ""
                 echo "Available snapshots:"
-                ls -1t ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | while read snapshot; do
-                        SIZE=$(du -sh "${LEADER_PATH}/snapshots/${snapshot}" 2>/dev/null | cut -f1)
-                        MODIFIED=$(stat -c %y "${LEADER_PATH}/snapshots/${snapshot}" 2>/dev/null | cut -d'.' -f1)
-                        echo "  - ${snapshot} (${SIZE}, modified: ${MODIFIED})"
+                for snapshot in "${snapshots[@]}"; do
+                        snapshot_name=$(basename "$snapshot")
+                        SIZE=$(du -sh "$snapshot" 2>/dev/null | cut -f1)
+                        MODIFIED=$(stat -c %y "$snapshot" 2>/dev/null | cut -d'.' -f1)
+                        echo "  - ${snapshot_name} (${SIZE}, modified: ${MODIFIED})"
                 done
                 echo ""
                 echo "Please set SNAPSHOT_ID environment variable to specify which snapshot to use:"
                 echo "  SNAPSHOT_ID=<snapshot-name>"
                 echo ""
                 echo "Example:"
-                EXAMPLE_SNAPSHOT=$(ls -1t ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | head -1)
+                EXAMPLE_SNAPSHOT=$(basename "${snapshots[0]}")
                 echo "  SNAPSHOT_ID=${EXAMPLE_SNAPSHOT}"
                 exit 1
         else
                 # Exactly one snapshot found
-                SELECTED_SNAPSHOT=$(ls -1 ${LEADER_PATH}/snapshots/ | grep -v ".checksum" | head -1)
+                SELECTED_SNAPSHOT=$(basename "${snapshots[0]}")
                 echo "Auto-detected snapshot: ${SELECTED_SNAPSHOT}"
         fi
 fi
@@ -98,7 +108,7 @@ echo "Snapshot details:"
 ls -la "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}"
 echo "snapshot metadata:"
 cat "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}/zeebe.metadata"
-echo "\n"
+printf "\n"
 echo ""
 
 # Step 3: Create backups of all broker partition data to temporary location
@@ -139,7 +149,7 @@ for broker_id in $PARTITION_BROKER_IDS; do
                 # Verify backup was created
                 if [ -d "${BROKER_BACKUP_PATH}" ]; then
                         BACKUP_SIZE=$(du -sh "${BROKER_BACKUP_PATH}" | cut -f1)
-                        BACKUP_COUNT=$(ls -1 "${BROKER_BACKUP_PATH}" 2>/dev/null | grep -v ".checksum" | wc -l)
+                        BACKUP_COUNT=$(find "${BROKER_BACKUP_PATH}" -maxdepth 1 -type d ! -name "$(basename "${BROKER_BACKUP_PATH}")" ! -name "*.checksum" 2>/dev/null | wc -l)
                         echo "    ${BACKUP_SIZE} (${BACKUP_COUNT} snapshots)"
                 else
                         echo "    ERROR: Backup failed for Broker ${broker_id}"
@@ -201,7 +211,7 @@ for broker_id in $PARTITION_BROKER_IDS; do
                 sync # Ensure replicated snapshots are persisted to disk
 
                 # Verify copy
-                REPLICA_SNAPSHOT_COUNT=$(ls -1 "${REPLICA_PATH}/snapshots/" 2>/dev/null | grep -v ".checksum" | wc -l)
+                REPLICA_SNAPSHOT_COUNT=$(find "${REPLICA_PATH}/snapshots/" -maxdepth 1 -type d ! -name "snapshots" ! -name "*.checksum" 2>/dev/null | wc -l)
                 echo "    Updated (${REPLICA_SNAPSHOT_COUNT} snapshots)"
         fi
 done
