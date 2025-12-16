@@ -20,6 +20,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,17 +47,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public class CommandDistributionScalingTest {
+  private static final int PARTITION_ID = 1;
   /* Injected from {@link ProcessingStateExtension} */
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableProcessingState state;
   private TransactionContext transactionContext;
-
   private DistributionState distributionState;
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
   private Writers writers;
 
-  private long key;
+  private KeyGenerator keyGenerator;
   private ValueType valueType;
   private DeploymentIntent intent;
   private MockTypedRecord<DeploymentRecord> command;
@@ -68,14 +69,17 @@ public class CommandDistributionScalingTest {
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
     final var eventAppliers = new EventAppliers().registerEventAppliers(state);
+    keyGenerator = new AtomicKeyGenerator(1);
     writers = new Writers(() -> fakeProcessingResultBuilder, eventAppliers);
+    writers.setKeyValidator(keyGenerator);
 
-    key = Protocol.encodePartitionId(1, 100);
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     command =
         new MockTypedRecord<>(
-            key, new RecordMetadata().valueType(valueType).intent(intent), new DeploymentRecord());
+            keyGenerator.getCurrentKey(),
+            new RecordMetadata().valueType(valueType).intent(intent),
+            new DeploymentRecord());
 
     // given a scale operation ongoing to transition to 3 partitions
     state.getRoutingState().initializeRoutingInfo(2);
@@ -94,6 +98,7 @@ public class CommandDistributionScalingTest {
   public void shouldWaitInQueueDuringScaling() {
 
     // when distributing first command in queue to all partitions
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).inQueue("test-queue").distribute(command);
 
     // then command distribution is started on partition 1, distribution is enqueued and triggered
@@ -122,7 +127,8 @@ public class CommandDistributionScalingTest {
     // given
 
     // when a distribution command is sent for two records
-    final var otherKey = Protocol.encodePartitionId(1, 101);
+    final var key = keyGenerator.getCurrentKey();
+    final var otherKey = keyGenerator.nextKey();
     behavior.withKey(key).inQueue("test-queue").distribute(command);
     behavior.withKey(otherKey).inQueue("test-queue").distribute(command);
 
@@ -171,8 +177,9 @@ public class CommandDistributionScalingTest {
     // given
 
     // when a distribution command is sent for two records
-    final var otherKey = Protocol.encodePartitionId(1, 101);
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).inQueue("test-queue").distribute(command);
+    final var otherKey = keyGenerator.nextKey();
     behavior.withKey(otherKey).inQueue("test-queue").forPartition(2).distribute(command);
 
     // then command distribution is started on partition 1

@@ -18,12 +18,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -57,13 +58,14 @@ import org.junit.jupiter.api.Test;
  */
 class CommandDistributionBehaviorTest {
 
+  private static final int PARTITION_ID = 1;
   private DistributionState mockDistributionState;
   private DistributionMetrics mockDistributionMetrics;
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
   private Writers writers;
 
-  private long key;
+  private KeyGenerator keyGenerator;
   private ValueType valueType;
   private DeploymentIntent intent;
   private MockTypedRecord<DeploymentRecord> command;
@@ -76,8 +78,9 @@ class CommandDistributionBehaviorTest {
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
     writers = new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+    keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
+    writers.setKeyValidator(keyGenerator);
 
-    key = Protocol.encodePartitionId(1, 100);
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
     authInfo =
@@ -88,7 +91,7 @@ class CommandDistributionBehaviorTest {
 
     command =
         new MockTypedRecord<>(
-            key,
+            keyGenerator.nextKey(),
             new RecordMetadata().valueType(valueType).intent(intent).authorization(authInfo),
             new DeploymentRecord());
   }
@@ -106,7 +109,7 @@ class CommandDistributionBehaviorTest {
             mockDistributionMetrics);
 
     // when distributing to all partitions
-    behavior.withKey(key).unordered().distribute(command);
+    behavior.withKey(keyGenerator.nextKey()).unordered().distribute(command);
 
     // then no command distribution is started
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords()).isEmpty();
@@ -129,6 +132,7 @@ class CommandDistributionBehaviorTest {
             mockDistributionMetrics);
 
     // when distributing to all partitions
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).unordered().distribute(command);
 
     // then command distribution is started on partition 1 and distributing to all other partitions
@@ -166,6 +170,7 @@ class CommandDistributionBehaviorTest {
             mockDistributionMetrics);
 
     // when distributing to partitions 1 and 3
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).unordered().forPartitions(Set.of(1, 3)).distribute(command);
 
     // then command distribution is started on partition 2 and distributing to all other partitions
@@ -208,6 +213,8 @@ class CommandDistributionBehaviorTest {
             .setFormat(AuthDataFormat.JWT)
             .setAuthData("some-jwt-token")
             .setClaims(Map.of("a", "b", "c", 3));
+
+    final var key = keyGenerator.nextKey();
     final var command =
         new MockTypedRecord<>(
             key,
@@ -252,6 +259,7 @@ class CommandDistributionBehaviorTest {
             mockDistributionMetrics);
 
     // when distributing first command in queue to all partitions
+    final var key = keyGenerator.nextKey();
     behavior.withKey(key).inQueue("test-queue").distribute(command);
 
     // then command distribution is started on partition 1, distribution is enqueued and triggered
@@ -286,8 +294,8 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender,
             mockDistributionMetrics);
 
-    final var firstKey = Protocol.encodePartitionId(1, 100);
-    final var secondKey = Protocol.encodePartitionId(1, 101);
+    final var firstKey = keyGenerator.nextKey();
+    final var secondKey = keyGenerator.nextKey();
 
     // when adding two distributions to the same queue
     behavior.withKey(firstKey).inQueue("test-queue").distribute(command);
@@ -329,7 +337,7 @@ class CommandDistributionBehaviorTest {
           new CommandDistributionBehavior(
               mockDistributionState,
               writers,
-              1,
+              PARTITION_ID,
               RoutingInfo.forStaticPartitions(2),
               mockInterpartitionCommandSender,
               mockDistributionMetrics);
@@ -339,28 +347,30 @@ class CommandDistributionBehaviorTest {
     public void shouldAcknowledgeCommandAndFinishDistribution() {
       final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
 
-      when(mockDistributionState.hasPendingDistribution(123L)).thenReturn(false);
+      final var key = keyGenerator.nextKey();
+      when(mockDistributionState.hasPendingDistribution(key)).thenReturn(false);
 
-      behavior.onAcknowledgeDistribution(123L, record);
+      behavior.onAcknowledgeDistribution(key, record);
 
       Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
           .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
           .containsExactly(
-              tuple(123L, CommandDistributionIntent.ACKNOWLEDGED, 2),
-              tuple(123L, CommandDistributionIntent.FINISH, 1));
+              tuple(key, CommandDistributionIntent.ACKNOWLEDGED, 2),
+              tuple(key, CommandDistributionIntent.FINISH, 1));
     }
 
     @Test
     public void shouldAcknowledgeCommandAndNotFinishDistribution() {
       final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
 
-      when(mockDistributionState.hasPendingDistribution(123L)).thenReturn(true);
+      final var key = keyGenerator.nextKey();
+      when(mockDistributionState.hasPendingDistribution(key)).thenReturn(true);
 
-      behavior.onAcknowledgeDistribution(123L, record);
+      behavior.onAcknowledgeDistribution(key, record);
 
       Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
           .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
-          .containsExactly(tuple(123L, CommandDistributionIntent.ACKNOWLEDGED, 2));
+          .containsExactly(tuple(key, CommandDistributionIntent.ACKNOWLEDGED, 2));
     }
 
     @Test
@@ -369,20 +379,22 @@ class CommandDistributionBehaviorTest {
       final CommandDistributionRecord otherRecord =
           new CommandDistributionRecord().setPartitionId(2);
 
-      when(mockDistributionState.getQueueIdForDistribution(123L)).thenReturn(Optional.of("queue"));
+      final var key = keyGenerator.nextKey();
+      final var nextKey = keyGenerator.nextKey();
+      when(mockDistributionState.getQueueIdForDistribution(key)).thenReturn(Optional.of("queue"));
       when(mockDistributionState.getNextQueuedDistributionKey("queue", 2))
-          .thenReturn(Optional.of(124L));
-      when(mockDistributionState.getCommandDistributionRecord(124L, 2)).thenReturn(otherRecord);
-      when(mockDistributionState.hasPendingDistribution(123L)).thenReturn(false);
+          .thenReturn(Optional.of(nextKey));
+      when(mockDistributionState.getCommandDistributionRecord(nextKey, 2)).thenReturn(otherRecord);
+      when(mockDistributionState.hasPendingDistribution(key)).thenReturn(false);
 
-      behavior.onAcknowledgeDistribution(123L, record);
+      behavior.onAcknowledgeDistribution(key, record);
 
       Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
           .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
           .containsExactly(
-              tuple(123L, CommandDistributionIntent.ACKNOWLEDGED, 2),
-              tuple(124L, CommandDistributionIntent.DISTRIBUTING, 2),
-              tuple(123L, CommandDistributionIntent.FINISH, 1));
+              tuple(key, CommandDistributionIntent.ACKNOWLEDGED, 2),
+              tuple(nextKey, CommandDistributionIntent.DISTRIBUTING, 2),
+              tuple(key, CommandDistributionIntent.FINISH, 1));
     }
   }
 }
