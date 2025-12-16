@@ -1211,7 +1211,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, EvaluateConditionalRequest> toEvaluateConditionalRequest(
       final ConditionalEvaluationInstruction request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Conditional Event")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Conditional")
             .flatMap(
                 tenantId ->
                     validateConditionalEvaluationRequest(request)

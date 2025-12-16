@@ -41,6 +41,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -53,6 +55,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceReference;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
@@ -443,6 +446,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
     handle(request, responseObserver);
   }
 
+  @Override
+  public void evaluateConditional(
+      final EvaluateConditionalRequest request,
+      final StreamObserver<EvaluateConditionalResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
   public void onTopologyRequest(
       final int clusterSize,
       final int partitionsCount,
@@ -532,6 +542,26 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setKey(key)
                 .setTenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
                 .build());
+  }
+
+  public void onEvaluateConditionalRequest(
+      final long processDefinitionKey, final long processInstanceKey) {
+    addRequestHandler(
+        EvaluateConditionalRequest.class,
+        request ->
+            EvaluateConditionalResponse.newBuilder()
+                .addProcessInstances(
+                    ProcessInstanceReference.newBuilder()
+                        .setProcessDefinitionKey(processDefinitionKey)
+                        .setProcessInstanceKey(processInstanceKey)
+                        .build())
+                .build());
+  }
+
+  public void onEvaluateConditionalRequest() {
+    addRequestHandler(
+        EvaluateConditionalRequest.class,
+        request -> EvaluateConditionalResponse.newBuilder().build());
   }
 
   public void onCreateProcessInstanceWithResultRequest(

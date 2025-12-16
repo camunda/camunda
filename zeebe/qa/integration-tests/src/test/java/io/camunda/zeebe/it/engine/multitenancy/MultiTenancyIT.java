@@ -21,6 +21,7 @@ import io.camunda.client.api.response.CompleteUserTaskResponse;
 import io.camunda.client.api.response.CorrelateMessageResponse;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateConditionalResponse;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.client.api.response.ModifyProcessInstanceResponse;
@@ -1593,6 +1594,126 @@ public class MultiTenancyIT {
           .havingCause()
           .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
           .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
+
+  @Test
+  void shouldStartInstanceWhenEvaluatingConditionalForTenant() {
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateConditionalResponse> result =
+          client
+              .newEvaluateConditionalCommand()
+              .variables(Map.of("x", 100))
+              .tenantId(TENANT_A)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that conditional can be evaluated and a process instance can be started as the client has access to the process of 'tenant-a'")
+          .succeedsWithin(Duration.ofSeconds(20))
+          .satisfies(
+              response -> {
+                assertThat(response.getProcessInstances()).hasSize(1);
+                assertThat(response.getProcessInstances().getFirst().getProcessDefinitionKey())
+                    .isPositive();
+              });
+    }
+  }
+
+  @Test
+  void shouldRejectEvaluateConditionalWhenUnauthorized() {
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      final Future<EvaluateConditionalResponse> result =
+          client
+              .newEvaluateConditionalCommand()
+              .variables(Map.of("x", 100))
+              .tenantId(TENANT_A)
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("FORBIDDEN")
+          .withMessageContaining(
+              "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant."
+                  .formatted(TENANT_A));
+    }
+  }
+
+  @Test
+  void shouldStartInstanceWhenEvaluatingConditionalForDefaultTenant() {
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      // when
+      final Future<EvaluateConditionalResponse> result =
+          client.newEvaluateConditionalCommand().variables(Map.of("x", 100)).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that conditional can be evaluated and a process instance can be started for the default tenant")
+          .succeedsWithin(Duration.ofSeconds(20))
+          .satisfies(
+              response -> {
+                assertThat(response.getProcessInstances()).hasSize(1);
+                assertThat(response.getProcessInstances().getFirst().getProcessDefinitionKey())
+                    .isPositive();
+              });
+    }
+  }
+
+  @Test
+  void shouldRejectEvaluateConditionalForDefaultTenantWhenUnauthorized() {
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    }
+
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_A_WITHOUT_DEFAULT_TENANT)) {
+      final Future<EvaluateConditionalResponse> result =
+          client.newEvaluateConditionalCommand().variables(Map.of("x", 100)).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("FORBIDDEN")
+          .withMessageContaining(
+              "Expected to evaluate conditional for tenant '%s', but user is not assigned to this tenant."
+                  .formatted(DEFAULT_TENANT));
     }
   }
 
