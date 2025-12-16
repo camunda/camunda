@@ -9,6 +9,7 @@ package io.camunda.it.auditlog;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.AUDIT_LOG;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +56,8 @@ public class AuditLogIT {
   private static final String DEFAULT_USERNAME = "demo";
   private static final String USER_A_USERNAME = "userA";
   private static final String USER_B_USERNAME = "userB";
+  private static final String USER_C_USERNAME = "userC";
+  private static final String USER_D_USERNAME = "userD";
   private static final String PASSWORD = "password";
   private static CamundaClient adminClient;
 
@@ -101,6 +104,23 @@ public class AuditLogIT {
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of(PROCESS_ID_B)),
               new Permissions(AUDIT_LOG, READ, List.of("*"))));
 
+  @UserDefinition
+  private static final TestUser USER_C =
+      new TestUser(
+          USER_C_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of(PROCESS_ID_A)),
+              new Permissions(AUDIT_LOG, READ, List.of("ADMIN"))));
+
+  @UserDefinition
+  private static final TestUser USER_D =
+      new TestUser(
+          USER_D_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_A))));
+
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final Set<Long> STARTED_PROCESS_INSTANCES = new HashSet<>();
@@ -114,6 +134,8 @@ public class AuditLogIT {
     assignUserToTenant(adminClient, DEFAULT_USERNAME, TENANT_B);
     assignUserToTenant(adminClient, USER_A_USERNAME, TENANT_A);
     assignUserToTenant(adminClient, USER_B_USERNAME, TENANT_B);
+    assignUserToTenant(adminClient, USER_C_USERNAME, TENANT_A);
+    assignUserToTenant(adminClient, USER_D_USERNAME, TENANT_A);
 
     deployResource(adminClient, "testProcess.bpmn", PROCESS, TENANT_A);
     deployResource(adminClient, "processA.bpmn", PROCESS_A, TENANT_A);
@@ -221,7 +243,7 @@ public class AuditLogIT {
     }
   }
 
-  @Disabled("WIP")
+  @Disabled("https://github.com/camunda/camunda/issues/42789")
   @Test
   void shouldIsolateAuditLogsByTenant(
       @Authenticated(USER_A_USERNAME) final CamundaClient userAClient,
@@ -291,6 +313,127 @@ public class AuditLogIT {
                       userBAuditLogs.items().stream()
                           .noneMatch(log -> PROCESS_ID_A.equals(log.getProcessDefinitionId())))
                   .isTrue();
+            });
+  }
+
+  @Disabled("https://github.com/camunda/camunda/issues/41120")
+  @Test
+  void shouldNotSeeOperatorAuditLogsWithOnlyAdminCategoryPermission(
+      @Authenticated(USER_C_USERNAME) final CamundaClient userCClient) {
+    // given
+    // User C has permission to create process instances but only has READ permission for ADMIN
+    // category audit logs
+
+    // when
+    // User C starts a process instance of Process A (this creates an OPERATOR category audit log)
+    final var processInstanceA =
+        userCClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID_A)
+            .latestVersion()
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+    STARTED_PROCESS_INSTANCES.add(processInstanceA.getProcessInstanceKey());
+
+    // Wait for the audit log entry to be created
+    RecordingExporter.processInstanceCreationRecords()
+        .withIntent(ProcessInstanceCreationIntent.CREATED)
+        .withKey(processInstanceA.getProcessInstanceKey())
+        .exists();
+
+    // then
+    // User C should not see any OPERATOR category audit logs (process instance operations)
+    Awaitility.await("Audit logs are exported to Elasticsearch")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var userCAuditLogs = userCClient.newAuditLogSearchRequest().send().join();
+
+              // User C should see no audit logs since they only have access to ADMIN category
+              // and process instance creation is OPERATOR category
+              assertThat(userCAuditLogs.items()).isEmpty();
+
+              // Verify that the audit log entry exists for admin
+              final var adminAuditLogs =
+                  adminClient
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          fn ->
+                              fn.processInstanceKey(
+                                      String.valueOf(processInstanceA.getProcessInstanceKey()))
+                                  .operationType(AuditLogOperationTypeEnum.CREATE))
+                      .send()
+                      .join();
+
+              // Admin should see the OPERATOR category audit log
+              assertThat(adminAuditLogs.items()).isNotEmpty();
+              assertThat(adminAuditLogs.items().get(0).getCategory())
+                  .isEqualTo(AuditLogCategoryEnum.OPERATOR);
+            });
+  }
+
+  @Disabled("https://github.com/camunda/camunda/issues/41120")
+  @Test
+  void shouldOnlySeeAuditLogsForAuthorizedProcessDefinition(
+      @Authenticated(USER_D_USERNAME) final CamundaClient userDClient) {
+    // given
+    // User D has READ_PROCESS_INSTANCE permission for PROCESS_ID_A only
+    // User D has full READ permission for all audit log categories
+
+    // when
+    // Admin creates process instances for both PROCESS_ID and PROCESS_ID_A
+    final var processInstanceDefault = startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    final var processInstanceA = startProcessInstance(adminClient, PROCESS_ID_A, TENANT_A);
+
+    // Wait for the audit log entries to be created
+    RecordingExporter.processInstanceCreationRecords()
+        .withIntent(ProcessInstanceCreationIntent.CREATED)
+        .limit(2);
+
+    // then
+    // User D should only see audit logs from PROCESS_ID_A (the one they're authorized for)
+    Awaitility.await("Audit logs are exported to Elasticsearch")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var userDAuditLogs =
+                  userDClient
+                      .newAuditLogSearchRequest()
+                      .filter(fn -> fn.operationType(AuditLogOperationTypeEnum.CREATE))
+                      .send()
+                      .join();
+
+              // User D should only see audit logs from PROCESS_ID_A
+              assertThat(userDAuditLogs.items()).isNotEmpty();
+              assertThat(
+                      userDAuditLogs.items().stream()
+                          .allMatch(log -> PROCESS_ID_A.equals(log.getProcessDefinitionId())))
+                  .isTrue();
+
+              // Verify they cannot see audit logs from PROCESS_ID (modifiableProcess)
+              assertThat(
+                      userDAuditLogs.items().stream()
+                          .noneMatch(log -> PROCESS_ID.equals(log.getProcessDefinitionId())))
+                  .isTrue();
+
+              // Verify that the audit log entry for PROCESS_ID exists for admin
+              final var adminAuditLogs =
+                  adminClient
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          fn ->
+                              fn.processInstanceKey(
+                                      String.valueOf(
+                                          processInstanceDefault.getProcessInstanceKey()))
+                                  .operationType(AuditLogOperationTypeEnum.CREATE))
+                      .send()
+                      .join();
+
+              // Admin should see both audit logs
+              assertThat(adminAuditLogs.items()).isNotEmpty();
+              assertThat(adminAuditLogs.items().get(0).getProcessDefinitionId())
+                  .isEqualTo(PROCESS_ID);
             });
   }
 
