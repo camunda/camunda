@@ -10,6 +10,8 @@ package io.camunda.zeebe.backup.common;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -66,6 +68,19 @@ public class LoggingBackupStore implements BackupStore {
       final BackupIdentifier id, final String failureReason) {
     logger.atLevel(level).log("Marking {} as failed: {}", id, failureReason);
     return store.markFailed(id, failureReason);
+  }
+
+  @Override
+  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+    logger.atLevel(level).log("Storing index {}", indexFile);
+    return store.storeIndex(indexFile);
+  }
+
+  @Override
+  public CompletableFuture<BackupIndexFile> restoreIndex(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    logger.atLevel(level).log("Restoring index {} to {}", id, targetPath);
+    return store.restoreIndex(id, targetPath);
   }
 
   @Override

@@ -14,6 +14,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -84,6 +86,7 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
+  private final S3IndexManager indexManager;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -93,6 +96,7 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
+    indexManager = new S3IndexManager(client, config);
     final var basePath = config.basePath();
     backupIdentifierPattern =
         Pattern.compile(
@@ -248,6 +252,25 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+    if (!(indexFile instanceof final S3BackupIndexFile s3IndexFile)) {
+      throw new IllegalArgumentException(
+          "Expected index file of type %s but got %s: %s"
+              .formatted(
+                  S3BackupIndexFile.class.getSimpleName(),
+                  indexFile.getClass().getSimpleName(),
+                  indexFile));
+    }
+    return indexManager.upload(s3IndexFile);
+  }
+
+  @Override
+  public CompletableFuture<BackupIndexFile> restoreIndex(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    return indexManager.download(id, targetPath);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
@@ -287,7 +310,7 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private SdkPublisher<BackupIdentifier> findBackupIds(final BackupIdentifierWildcard wildcard) {
+  SdkPublisher<BackupIdentifier> findBackupIds(final BackupIdentifierWildcard wildcard) {
     final var prefix = wildcardPrefix(wildcard);
     LOG.debug("Using prefix {} to search for manifest files matching {}", prefix, wildcard);
     return client
@@ -301,7 +324,7 @@ public final class S3BackupStore implements BackupStore {
         .filter(wildcard::matches);
   }
 
-  private CompletableFuture<Collection<Manifest>> readManifestObjects(
+  CompletableFuture<Collection<Manifest>> readManifestObjects(
       final BackupIdentifierWildcard wildcard) {
     final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
     final var publisher = findBackupIds(wildcard).map(this::readManifestObject);

@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.backup;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -73,6 +75,17 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
     throw new UnsupportedOperationException("Not yet implemented; implemented it when required");
+  }
+
+  @Override
+  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+    throw new UnsupportedOperationException("Not yet implemented; implement it when required");
+  }
+
+  @Override
+  public CompletableFuture<BackupIndexFile> restoreIndex(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 
   @Override

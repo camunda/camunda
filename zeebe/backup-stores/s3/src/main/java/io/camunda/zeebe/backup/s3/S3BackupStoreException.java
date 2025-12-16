@@ -36,6 +36,12 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
     }
   }
 
+  public static final class IndexReadException extends S3BackupStoreException {
+    public IndexReadException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
   /**
    * Thrown when the backup is in an invalid state, for example when attempting to restore a failed
    * backup or deleting an in progress backup.
