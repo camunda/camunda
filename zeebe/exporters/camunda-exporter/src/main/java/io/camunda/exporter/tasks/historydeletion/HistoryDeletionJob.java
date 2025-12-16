@@ -106,7 +106,7 @@ public class HistoryDeletionJob implements BackgroundTask {
     return CompletableFuture.allOf(deletionFutures.toArray(CompletableFuture[]::new))
         .thenCompose(
             ignored -> {
-              final var dependentSourceIdx = listViewTemplate.getFullQualifiedName();
+              final var dependentSourceIdx = listViewTemplate.getIndexPattern();
               final var dependentIdFieldName = ListViewTemplate.PROCESS_INSTANCE_KEY;
               return deleterRepository.deleteDocumentsByField(
                   dependentSourceIdx, dependentIdFieldName, processInstanceKeys);

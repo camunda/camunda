@@ -39,6 +39,7 @@ final class HistoryDeletionJobTest {
   private final Executor executor = Runnable::run;
   private List<ProcessInstanceDependant> dependants;
   private HistoryDeletionIndex historyDeletionIndex;
+  private ListViewTemplate listViewTemplate;
 
   @BeforeEach
   void setUp() {
@@ -46,8 +47,7 @@ final class HistoryDeletionJobTest {
     final TestExporterResourceProvider resourceProvider =
         new TestExporterResourceProvider("", true);
     historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
-    final ListViewTemplate listViewTemplate =
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     dependants =
         resourceProvider.getIndexTemplateDescriptors().stream()
             .filter(ProcessInstanceDependant.class::isInstance)
@@ -110,12 +110,17 @@ final class HistoryDeletionJobTest {
                         dependant.getProcessInstanceDependantField(),
                         List.of(entity1.getResourceKey(), entity2.getResourceKey())));
     verify(repository)
+        .deleteDocumentsByField(
+            listViewTemplate.getIndexPattern(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            List.of(entity1.getResourceKey(), entity2.getResourceKey()));
+    verify(repository)
         .deleteDocumentsById(
             historyDeletionIndex.getFullQualifiedName(), List.of(entity1.getId(), entity2.getId()));
   }
 
   @Test
-  void shouldNotDeleteFromDeletionIndexIfPiDeletionFailed() {
+  void shouldNotDeleteFromDeletionIndexIfPiDependantDeletionFailed() {
     // given
     final var entity =
         new HistoryDeletionEntity()
@@ -142,6 +147,54 @@ final class HistoryDeletionJobTest {
                         dependant.getFullQualifiedName() + "*",
                         dependant.getProcessInstanceDependantField(),
                         List.of(entity.getResourceKey())));
+
+    verify(repository, never())
+        .deleteDocumentsByField(
+            listViewTemplate.getIndexPattern(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            List.of(entity.getResourceKey()));
+    verify(repository, never()).deleteDocumentsById(any(), any());
+  }
+
+  @Test
+  void shouldNotDeleteFromDeletionIndexIfPiListViewDeletionFailed() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsByField(
+            listViewTemplate.getIndexPattern(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            List.of(entity.getResourceKey())))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    dependants.stream()
+        .filter(t -> !(t instanceof OperationTemplate))
+        .forEach(
+            dependant ->
+                verify(repository)
+                    .deleteDocumentsByField(
+                        dependant.getFullQualifiedName() + "*",
+                        dependant.getProcessInstanceDependantField(),
+                        List.of(entity.getResourceKey())));
+
+    verify(repository)
+        .deleteDocumentsByField(
+            listViewTemplate.getIndexPattern(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            List.of(entity.getResourceKey()));
     verify(repository, never()).deleteDocumentsById(any(), any());
   }
 }
