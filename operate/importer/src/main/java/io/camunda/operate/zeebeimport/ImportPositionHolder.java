@@ -18,6 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
@@ -35,7 +36,8 @@ public class ImportPositionHolder {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImportPositionHolder.class);
 
   // this is the in-memory only storage
-  private final Map<String, ImportPositionEntity> lastScheduledPositions = new HashMap<>();
+  private final Map<String, ImportPositionEntity> lastScheduledPositions =
+      new ConcurrentHashMap<>();
 
   private final Map<String, ImportPositionEntity> pendingImportPositionUpdates = new HashMap<>();
   private final Map<String, ImportPositionEntity> inflightImportPositions = new HashMap<>();
