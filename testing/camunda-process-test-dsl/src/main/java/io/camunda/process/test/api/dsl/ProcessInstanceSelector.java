@@ -15,9 +15,19 @@
  */
 package io.camunda.process.test.api.dsl;
 
-/** A collection of supported test case instruction types. */
-public class TestCaseInstructionType {
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Optional;
+import org.immutables.value.Value;
 
-  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
-  public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
+/** A selector to identify a process instance. */
+@Value.Immutable
+@JsonDeserialize(builder = ImmutableProcessInstanceSelector.Builder.class)
+public interface ProcessInstanceSelector {
+
+  /**
+   * The process definition ID of the process instance.
+   *
+   * @return the process definition id
+   */
+  Optional<String> getProcessDefinitionId();
 }

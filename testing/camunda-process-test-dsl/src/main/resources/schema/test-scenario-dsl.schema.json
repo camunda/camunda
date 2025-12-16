@@ -49,6 +49,9 @@
       "oneOf": [
         {
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
+        },
+        {
+          "$ref": "#/definitions/AssertProcessInstanceInstruction"
         }
       ]
     },
@@ -138,6 +141,58 @@
           "additionalProperties": false
         }
       ]
+    },
+    "AssertProcessInstanceInstruction": {
+      "description": "An instruction to assert the state of a process instance.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_PROCESS_INSTANCE"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "state": {
+          "description": "The expected state of the process instance.",
+          "type": "string",
+          "enum": [
+            "IS_ACTIVE",
+            "IS_COMPLETED",
+            "IS_TERMINATED",
+            "IS_CREATED"
+          ]
+        },
+        "hasActiveIncidents": {
+          "description": "Whether the process instance has active incidents.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector"
+      ],
+      "additionalProperties": false
+    },
+    "ProcessInstanceSelector": {
+      "description": "A selector to identify a process instance.",
+      "type": "object",
+      "properties": {
+        "processDefinitionId": {
+          "description": "The process definition ID of the process instance.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "processDefinitionId"
+          ]
+        }
+      ],
+      "additionalProperties": false
     }
   }
 }

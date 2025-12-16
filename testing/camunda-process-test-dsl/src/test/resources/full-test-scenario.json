@@ -23,6 +23,13 @@
               "afterElementId": "task2"
             }
           ]
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "state": "IS_COMPLETED"
         }
       ]
     }

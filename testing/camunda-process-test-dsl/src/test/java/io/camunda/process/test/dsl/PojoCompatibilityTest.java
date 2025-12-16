@@ -26,11 +26,14 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
+import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.ImmutableTestScenario;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
@@ -132,6 +135,26 @@ public class PojoCompatibilityTest {
                         ImmutableCreateProcessInstanceTerminateRuntimeInstruction.builder()
                             .afterElementId("task2")
                             .build())
+                    .build())),
+        Arguments.of(
+            "assert process instance: minimal",
+            singleTestCase(
+                ImmutableAssertProcessInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert process instance: full",
+            singleTestCase(
+                ImmutableAssertProcessInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .state(ProcessInstanceState.IS_COMPLETED)
+                    .hasActiveIncidents(false)
                     .build())));
   }
 

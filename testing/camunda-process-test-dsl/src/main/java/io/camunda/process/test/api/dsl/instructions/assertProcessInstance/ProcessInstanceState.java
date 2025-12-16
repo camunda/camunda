@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.dsl;
+package io.camunda.process.test.api.dsl.instructions.assertProcessInstance;
 
-/** A collection of supported test case instruction types. */
-public class TestCaseInstructionType {
-
-  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
-  public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
+/** The possible states of a process instance to assert. */
+public enum ProcessInstanceState {
+  IS_ACTIVE,
+  IS_COMPLETED,
+  IS_TERMINATED,
+  IS_CREATED
 }
