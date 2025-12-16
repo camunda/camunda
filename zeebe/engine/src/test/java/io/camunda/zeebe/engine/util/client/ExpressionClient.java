@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.protocol.impl.record.value.feelexpression.ExpressionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
