@@ -9,34 +9,34 @@ package io.camunda.zeebe.gateway.mcp.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 @Schema(
-    name = "AdvancedStringFilter",
-    description = "Filter strings with different filter operations (can be combined).")
-public record AdvancedStringFilter(
+    name = "IncidentStateFilter",
+    description = "IncidentState filter with different filter operations (can be combined).")
+public record IncidentStateFilter(
     @Nullable
         @Schema(
             name = "eq",
             description = "Checks for equality with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        String eq,
+        IncidentState eq,
     @Nullable
         @Schema(
             description = "Checks for inequality with the provided value.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        String neq,
+        IncidentState neq,
     @Nullable
         @Valid
         @Schema(
             description = "Checks if the property matches any of the provided values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        List<@NotBlank String> in,
+        List<@NotNull IncidentState> in,
     @Nullable
         @Valid
         @Schema(
             description = "Checks if the property matches none of the provided values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        List<@NotBlank String> notIn) {}
+        List<@NotNull IncidentState> notIn) {}

@@ -21,71 +21,71 @@ public record IncidentFilter(
             name = "processDefinitionId",
             description = "The process definition ID associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter processDefinitionId,
+        StringFilter processDefinitionId,
     @Nullable
         @Valid
         @Schema(
             name = "errorType",
             description = "Incident error type with a defined set of values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedIncidentErrorTypeFilter errorType,
+        IncidentErrorTypeFilter errorType,
     @Nullable
         @Valid
         @Schema(
             name = "errorMessage",
             description = "Error message filter.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter errorMessage,
+        StringFilter errorMessage,
     @Nullable
         @Valid
         @Schema(
             name = "elementId",
             description = "The element ID associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter elementId,
+        StringFilter elementId,
     @Nullable
         @Valid
         @Schema(
             name = "creationTime",
             description = "Date of incident creation.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedDateTimeFilter creationTime,
+        DateTimeFilter creationTime,
     @Nullable
         @Valid
         @Schema(
             name = "state",
             description = "State of this incident with a defined set of values.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedIncidentStateFilter state,
+        IncidentStateFilter state,
     @Nullable
         @Valid
         @Schema(
             name = "tenantId",
             description = "The tenant ID of the incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter tenantId,
+        StringFilter tenantId,
     @Schema(
             name = "incidentKey",
             description = "The assigned key, which acts as a unique identifier for this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter incidentKey,
+        StringFilter incidentKey,
     @Schema(
             name = "processDefinitionKey",
             description = "The process definition key associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter processDefinitionKey,
+        StringFilter processDefinitionKey,
     @Schema(
             name = "processInstanceKey",
             description = "The process instance key associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter processInstanceKey,
+        StringFilter processInstanceKey,
     @Schema(
             name = "elementInstanceKey",
             description = "The element instance key associated to this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter elementInstanceKey,
+        StringFilter elementInstanceKey,
     @Schema(
             name = "jobKey",
             description = "The job key, if exists, associated with this incident.",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        AdvancedStringFilter jobKey) {}
+        StringFilter jobKey) {}
