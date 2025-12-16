@@ -754,9 +754,10 @@ public class WebSecurityConfig {
     @Bean
     public OidcUserService oidcUserService() {
       final var userService = new OidcUserService();
-      // disable fetching user info from the IdP, as we never use it, and this can cause rate
-      // limiting issues with some IdPs
-      userService.setRetrieveUserInfo(ignored -> false);
+      // We need to consume the userinfo endpoint to support retrieving additional information about
+      // the principal (e.g., email, groups, etc.) in case the access token does not contain them
+      // Remove when https://github.com/camunda/camunda/issues/42751 is completed
+      userService.setRetrieveUserInfo(ignored -> true);
       return userService;
     }
 
