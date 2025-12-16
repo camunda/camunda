@@ -31,26 +31,26 @@ echo "=========================================="
 echo ""
 
 # Check if namespace exists
-if ! kubectl get namespace $NAMESPACE &>/dev/null; then
-        echo "ERROR: Namespace '$NAMESPACE' does not exist"
-        echo ""
-        echo "Available namespaces:"
-        kubectl get namespaces -o custom-columns=NAME:.metadata.name --no-headers | grep -E "camunda|zeebe" || echo "  (no camunda/zeebe namespaces found)"
-        echo ""
-        echo "All namespaces:"
-        kubectl get namespaces -o custom-columns=NAME:.metadata.name --no-headers
-        exit 1
+if ! kubectl get namespace "$NAMESPACE" &>/dev/null; then
+	echo "ERROR: Namespace '$NAMESPACE' does not exist"
+	echo ""
+	echo "Available namespaces:"
+	kubectl get namespaces -o custom-columns=NAME:.metadata.name --no-headers | grep -E "camunda|zeebe" || echo "  (no camunda/zeebe namespaces found)"
+	echo ""
+	echo "All namespaces:"
+	kubectl get namespaces -o custom-columns=NAME:.metadata.name --no-headers
+	exit 1
 fi
 
 # Find StatefulSet (look for zeebe or camunda)
 echo "[1/6] Finding StatefulSet..."
-STS=$(kubectl get statefulsets -n $NAMESPACE -o name 2>/dev/null | grep -E "camunda|zeebe" | head -1 | cut -d'/' -f2 || echo "")
+STS=$(kubectl get statefulsets -n "$NAMESPACE" -o name 2>/dev/null | grep -E "camunda|zeebe" | head -1 | cut -d'/' -f2 || echo "")
 
 if [ -z "$STS" ]; then
-        echo "  ERROR: No StatefulSet found with 'camunda' or 'zeebe' in the name"
-        echo "  Available StatefulSets:"
-        kubectl get statefulsets -n $NAMESPACE -o name 2>/dev/null || echo "    (none)"
-        exit 1
+	echo "  ERROR: No StatefulSet found with 'camunda' or 'zeebe' in the name"
+	echo "  Available StatefulSets:"
+	kubectl get statefulsets -n "$NAMESPACE" -o name 2>/dev/null || echo "    (none)"
+	exit 1
 fi
 
 echo "  StatefulSet: $STS"
@@ -58,7 +58,7 @@ echo "  StatefulSet: $STS"
 # Get replica count
 echo ""
 echo "[2/6] Getting broker count..."
-REPLICAS=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+REPLICAS=$(kubectl get statefulset "$STS" -n "$NAMESPACE" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
 echo "  Broker Count: $REPLICAS"
 
 # Get pod prefix (same as StatefulSet name)
@@ -70,11 +70,11 @@ echo "  Pod Prefix: $POD_PREFIX"
 # Verify pods exist
 echo ""
 echo "[4/6] Verifying pods..."
-POD_COUNT=$(kubectl get pods -n $NAMESPACE -l $BROKER_COMPONENT_LABEL -o name 2>/dev/null | wc -l || echo "0")
+POD_COUNT=$(kubectl get pods -n "$NAMESPACE" -l "$BROKER_COMPONENT_LABEL" -o name 2>/dev/null | wc -l || echo "0")
 if [ "$POD_COUNT" -eq "0" ]; then
-        # Try without label selector
-        echo "Getting POD_COUNT without label selector"
-        POD_COUNT=$(kubectl get pods -n $NAMESPACE 2>/dev/null | grep "^${POD_PREFIX}-" | wc -l || echo "0")
+	# Try without label selector
+	echo "Getting POD_COUNT without label selector"
+	POD_COUNT=$(kubectl get pods -n "$NAMESPACE" 2>/dev/null | grep -c "^${POD_PREFIX}-" || echo "0")
 fi
 echo "  Found $POD_COUNT pods matching prefix '$POD_PREFIX'"
 
@@ -85,58 +85,58 @@ fi
 # Find PVC prefix
 echo ""
 echo "[5/6] Detecting PVC prefix..."
-PVC=$(kubectl get pvc -n $NAMESPACE -l $BROKER_COMPONENT_LABEL -o name 2>/dev/null | head -1 | cut -d'/' -f2 || echo "")
+PVC=$(kubectl get pvc -n "$NAMESPACE" -l "$BROKER_COMPONENT_LABEL" -o name 2>/dev/null | head -1 | cut -d'/' -f2 || echo "")
 
 if [ -z "$PVC" ]; then
-        echo "  ERROR: No PVC found with label $BROKER_COMPONENT_LABEL "
-        echo "  Available PVCs:"
-        kubectl get pvc -n $NAMESPACE -o name 2>/dev/null || echo "    (none)"
-        exit 1
+	echo "  ERROR: No PVC found with label $BROKER_COMPONENT_LABEL "
+	echo "  Available PVCs:"
+	kubectl get pvc -n "$NAMESPACE" -o name 2>/dev/null || echo "    (none)"
+	exit 1
 fi
 
 # Remove the broker number suffix (e.g., "-0", "-1", "-2")
-PVC_PREFIX=$(echo $PVC | sed 's/-[0-9]*$//')
+PVC_PREFIX="${PVC%-[0-9]*}"
 echo "  PVC Prefix: $PVC_PREFIX"
 
 # Verify PVCs
 echo ""
 echo "[6/6] Verifying PVCs..."
 for i in $(seq 0 $((REPLICAS - 1))); do
-        PVC_NAME="${PVC_PREFIX}-${i}"
-        if kubectl get pvc $PVC_NAME -n $NAMESPACE &>/dev/null; then
-                echo "  ✓ $PVC_NAME exists"
-        else
-                echo "  ✗ $PVC_NAME NOT FOUND"
-        fi
+	PVC_NAME="${PVC_PREFIX}-${i}"
+	if kubectl get pvc "$PVC_NAME" -n "$NAMESPACE" &>/dev/null; then
+		echo "  ✓ $PVC_NAME exists"
+	else
+		echo "  ✗ $PVC_NAME NOT FOUND"
+	fi
 done
 
 # Try to detect actuator port
 echo ""
 echo "[7/8] Detecting actuator port..."
 # Try management/monitoring port names first (actuator is typically on port 9600)
-ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="management")].containerPort}' 2>/dev/null || echo "")
+ACTUATOR_PORT=$(kubectl get statefulset "$STS" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="management")].containerPort}' 2>/dev/null || echo "")
 if [ -z "$ACTUATOR_PORT" ]; then
-        ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="http-management")].containerPort}' 2>/dev/null || echo "")
+	ACTUATOR_PORT=$(kubectl get statefulset "$STS" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="http-management")].containerPort}' 2>/dev/null || echo "")
 fi
 if [ -z "$ACTUATOR_PORT" ]; then
-        ACTUATOR_PORT=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="monitoring")].containerPort}' 2>/dev/null || echo "")
+	ACTUATOR_PORT=$(kubectl get statefulset "$STS" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].ports[?(@.name=="monitoring")].containerPort}' 2>/dev/null || echo "")
 fi
 # Default to 9600 if not found
 if [ -z "$ACTUATOR_PORT" ]; then
-        ACTUATOR_PORT="9600"
+	ACTUATOR_PORT="9600"
 fi
 echo "  Actuator Port: $ACTUATOR_PORT (detected or default)"
 
 # Detect container image
 echo ""
 echo "[8/8] Detecting container image..."
-CONTAINER_IMAGE=$(kubectl get statefulset $STS -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
+CONTAINER_IMAGE=$(kubectl get statefulset "$STS" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
 
 if [ -z "$CONTAINER_IMAGE" ]; then
-        echo "  WARNING: Could not detect container image from StatefulSet"
-        echo "  You will need to set CONTAINER_IMAGE manually"
+	echo "  WARNING: Could not detect container image from StatefulSet"
+	echo "  You will need to set CONTAINER_IMAGE manually"
 else
-        echo "  Container Image: $CONTAINER_IMAGE"
+	echo "  Container Image: $CONTAINER_IMAGE"
 fi
 
 echo ""
