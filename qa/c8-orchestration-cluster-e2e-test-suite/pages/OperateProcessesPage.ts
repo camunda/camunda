@@ -64,6 +64,7 @@ class OperateProcessesPage {
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly processInstanceLinkByName: (name: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -194,6 +195,12 @@ class OperateProcessesPage {
       page.getByRole('link', {
         name: processInstanceKey,
       });
+    this.processInstanceLinkByName = (name: string) =>
+      page
+        .getByRole('row')
+        .filter({hasText: name})
+        .first()
+        .getByRole('link', {name: /^View instance \d+/});
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -210,11 +217,10 @@ class OperateProcessesPage {
       try {
         await sleep(5_000);
         if (processName) {
-          const process = this.page
-            .locator('td:right-of(:text("' + processName + '"))')
-            .first();
-          await expect(process).toBeVisible();
-          await process.click();
+          await expect(
+            this.processInstanceLinkByName(processName),
+          ).toBeVisible();
+          await this.processInstanceLinkByName(processName).click();
         } else {
           await this.processInstanceLink.click();
         }
