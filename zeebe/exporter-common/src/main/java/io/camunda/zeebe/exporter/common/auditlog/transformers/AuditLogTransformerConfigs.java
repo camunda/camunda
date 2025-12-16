@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
+import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
 
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import java.util.Set;
 
 public class AuditLogTransformerConfigs {
@@ -65,4 +67,8 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig PROCESS_INSTANCE_MODIFICATION_CONFIG =
       TransformerConfig.with(PROCESS_INSTANCE_MODIFICATION).withIntents(MODIFIED);
+
+  public static final TransformerConfig USER_CONFIG =
+      TransformerConfig.with(USER)
+          .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED);
 }
