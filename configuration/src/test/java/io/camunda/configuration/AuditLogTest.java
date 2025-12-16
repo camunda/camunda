@@ -97,12 +97,12 @@ class AuditLogTest {
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=rdbms",
-        "camunda.data.export.audit-log.enabled=false",
-        "camunda.data.export.audit-log.user.categories[0]=OPERATOR",
-        "camunda.data.export.audit-log.user.categories[1]=USER_TASK",
-        "camunda.data.export.audit-log.user.excludes[0]=VARIABLE",
-        "camunda.data.export.audit-log.client.categories[0]=ADMIN",
-        "camunda.data.export.audit-log.client.excludes[0]=PROCESS_INSTANCE"
+        "camunda.data.audit-log.enabled=false",
+        "camunda.data.audit-log.user.categories[0]=OPERATOR",
+        "camunda.data.audit-log.user.categories[1]=USER_TASK",
+        "camunda.data.audit-log.user.excludes[0]=VARIABLE",
+        "camunda.data.audit-log.client.categories[0]=ADMIN",
+        "camunda.data.audit-log.client.excludes[0]=PROCESS_INSTANCE"
       })
   class RDBMSExporterTest {
     @Test
@@ -136,12 +136,12 @@ class AuditLogTest {
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
-        "camunda.data.export.audit-log.enabled=true",
-        "camunda.data.export.audit-log.user.categories[0]=OPERATOR",
-        "camunda.data.export.audit-log.user.categories[1]=ADMIN",
-        "camunda.data.export.audit-log.user.excludes[0]=INCIDENT",
-        "camunda.data.export.audit-log.client.categories[0]=USER_TASK",
-        "camunda.data.export.audit-log.client.excludes[0]=USER"
+        "camunda.data.audit-log.enabled=true",
+        "camunda.data.audit-log.user.categories[0]=OPERATOR",
+        "camunda.data.audit-log.user.categories[1]=ADMIN",
+        "camunda.data.audit-log.user.excludes[0]=INCIDENT",
+        "camunda.data.audit-log.client.categories[0]=USER_TASK",
+        "camunda.data.audit-log.client.excludes[0]=USER"
       })
   class CamundaExporterTest {
     @Test

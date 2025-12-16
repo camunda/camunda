@@ -12,7 +12,6 @@ import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DE
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.Set;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.core.ResolvableType;
 
 public class Export {
@@ -21,8 +20,6 @@ public class Export {
       Set.of("zeebe.broker.exporting.distributionInterval");
   private static final Set<String> LEGACY_SKIP_RECORDS_PROPERTIES =
       Set.of("zeebe.broker.exporting.skipRecords");
-
-  @NestedConfigurationProperty private AuditLog auditLog = new AuditLog();
 
   /**
    * Configures the rate at which exporter positions are distributed to the followers. This is
@@ -40,14 +37,6 @@ public class Export {
    * The value is a comma-separated list of records ids to skip. Whitespace is ignored.
    */
   private Set<Long> skipRecords = Set.of();
-
-  public AuditLog getAuditLog() {
-    return auditLog;
-  }
-
-  public void setAuditLog(final AuditLog auditLog) {
-    this.auditLog = auditLog;
-  }
 
   public Duration getDistributionInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

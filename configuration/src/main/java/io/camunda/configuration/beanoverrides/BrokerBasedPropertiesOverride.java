@@ -892,7 +892,7 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "bulk.size", database.getBulk().getSize());
     setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
 
-    final var auditLog = unifiedConfiguration.getCamunda().getData().getExport().getAuditLog();
+    final var auditLog = unifiedConfiguration.getCamunda().getData().getAuditLog();
     exporter.setArgs(
         ExporterConfiguration.of(io.camunda.exporter.config.ExporterConfiguration.class, args)
             .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
@@ -975,7 +975,7 @@ public class BrokerBasedPropertiesOverride {
     setArgIfNotNull(
         args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
 
-    final var auditLog = unifiedConfiguration.getCamunda().getData().getExport().getAuditLog();
+    final var auditLog = unifiedConfiguration.getCamunda().getData().getAuditLog();
     exporter.setArgs(
         ExporterConfiguration.of(io.camunda.exporter.rdbms.ExporterConfiguration.class, args)
             .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
