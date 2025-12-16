@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class StartEventSubscriptionManager {
@@ -86,7 +87,7 @@ public class StartEventSubscriptionManager {
 
   private void closeMessageExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastMsgProcess =
-        findLastStartProcess(processRecord, ExecutableCatchEventElement::isMessage);
+        findPreviousVersionOfProcess(processRecord, ExecutableCatchEventElement::isMessage);
     if (lastMsgProcess == null) {
       return;
     }
@@ -106,7 +107,7 @@ public class StartEventSubscriptionManager {
 
   private void closeSignalExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastSignalProcess =
-        findLastStartProcess(processRecord, ExecutableCatchEventElement::isSignal);
+        findPreviousVersionOfProcess(processRecord, ExecutableCatchEventElement::isSignal);
     if (lastSignalProcess == null) {
       return;
     }
@@ -122,21 +123,30 @@ public class StartEventSubscriptionManager {
                 subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord()));
   }
 
-  private DeployedProcess findLastStartProcess(
+  private DeployedProcess findPreviousVersionOfProcess(
       final ProcessMetadata processRecord,
       final Predicate<ExecutableCatchEventElement> hasStartEventMatching) {
-    for (int version = processRecord.getVersion() - 1; version > 0; --version) {
-      final DeployedProcess lastStartProcess =
-          processState.getProcessByProcessIdAndVersion(
-              processRecord.getBpmnProcessIdBuffer(), version, processRecord.getTenantId());
-      if (lastStartProcess != null
-          && lastStartProcess.getProcess().getStartEvents().stream()
-              .anyMatch(hasStartEventMatching)) {
-        return lastStartProcess;
-      }
+    final Optional<Integer> processVersionBefore =
+        processState.findProcessVersionBefore(
+            processRecord.getBpmnProcessId(),
+            processRecord.getVersion(),
+            processRecord.getTenantId());
+    if (processVersionBefore.isEmpty()) {
+      return null;
     }
 
-    return null;
+    final var previousVersionOfProcess =
+        processState.getProcessByProcessIdAndVersion(
+            processRecord.getBpmnProcessIdBuffer(),
+            processVersionBefore.get(),
+            processRecord.getTenantId());
+    final var hasMatchingStartEvent =
+        previousVersionOfProcess.getProcess().getStartEvents().stream()
+            .anyMatch(hasStartEventMatching);
+    if (!hasMatchingStartEvent) {
+      return null;
+    }
+    return previousVersionOfProcess;
   }
 
   private void openStartEventSubscriptions(final ProcessMetadata processRecord) {
