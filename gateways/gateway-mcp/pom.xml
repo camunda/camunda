@@ -22,20 +22,20 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <!-- MCP dependencies -->
