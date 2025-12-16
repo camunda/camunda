@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.identity.initialize;
+package io.camunda.security.validation;
 
 public class IdentityInitializationException extends RuntimeException {
 
