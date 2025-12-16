@@ -18,11 +18,11 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
-import io.camunda.zeebe.engine.processing.feelexpressionresolution.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -37,7 +37,7 @@ import java.time.InstantSource;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
-  private final ExpressionProcessor expressionBehavior;
+  private final ExpressionProcessor expressionProcessor;
   private final BpmnDecisionBehavior bpmnDecisionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
@@ -60,7 +60,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
-  private final ExpressionBehavior feelResolverBehavior;
+  private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
 
   public BpmnBehaviorsImpl(
@@ -108,13 +108,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock));
 
-    expressionBehavior =
+    expressionProcessor =
         new ExpressionProcessor(
             expressionLanguage,
             CombinedEvaluationContext.withContexts(
                 processVariableContext, namespaceFullClusterContext));
 
-    feelResolverBehavior = new ExpressionBehavior(namespaceFullClusterContext, expressionLanguage);
+    expressionBehavior = new ExpressionBehavior(namespaceFullClusterContext, expressionLanguage);
 
     variableBehavior =
         new VariableBehavior(
@@ -124,7 +124,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new CatchEventBehavior(
             processingState,
             processingState.getKeyGenerator(),
-            expressionBehavior,
+            expressionProcessor,
             subscriptionCommandSender,
             writers,
             timerChecker,
@@ -149,14 +149,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             writers.state(),
             processingState.getKeyGenerator(),
-            expressionBehavior,
+            expressionProcessor,
             stateBehavior);
 
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
 
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(
-            expressionBehavior, processingState, variableBehavior, eventTriggerBehavior);
+            expressionProcessor, processingState, variableBehavior, eventTriggerBehavior);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
@@ -198,7 +198,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
-            expressionBehavior, stateBehavior, writers.state());
+            expressionProcessor, stateBehavior, writers.state());
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
 
@@ -215,13 +215,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             processingState.getVariableState(),
             writers,
-            expressionBehavior);
+            expressionProcessor);
 
     userTaskBehavior =
         new BpmnUserTaskBehavior(
             processingState.getKeyGenerator(),
             writers,
-            expressionBehavior,
+            expressionProcessor,
             stateBehavior,
             processingState.getFormState(),
             processingState.getUserTaskState(),
@@ -235,7 +235,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             processingState.getJobState(),
             writers,
-            expressionBehavior,
+            expressionProcessor,
             stateBehavior,
             processingState.getResourceState(),
             incidentBehavior,
@@ -261,7 +261,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   @Override
   public ExpressionProcessor expressionBehavior() {
-    return expressionBehavior;
+    return expressionProcessor;
   }
 
   @Override
@@ -375,7 +375,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   }
 
   public ExpressionBehavior feelResolverBehavior() {
-    return feelResolverBehavior;
+    return expressionBehavior;
   }
 
   public ExpressionLanguage expressionLanguage() {

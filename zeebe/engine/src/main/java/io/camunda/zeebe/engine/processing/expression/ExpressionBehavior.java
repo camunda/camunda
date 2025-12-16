@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.feelexpressionresolution;
+package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.EvaluationWarning;
@@ -14,7 +14,6 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
 import io.camunda.zeebe.protocol.impl.record.value.feelexpression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
@@ -51,7 +50,7 @@ public class ExpressionBehavior {
   private Either<Rejection, EvaluationResult> evaluate(
       final Expression expression, final String tenantId) {
     return clusterExpressionProcessor
-        .evaluateRawExpression(expression, -1, tenantId)
+        .evaluateAnyExpression(expression, -1, tenantId)
         .mapLeft(this::mapEvaluationFailure)
         .flatMap(this::rejectIfEvaluationFailed);
   }

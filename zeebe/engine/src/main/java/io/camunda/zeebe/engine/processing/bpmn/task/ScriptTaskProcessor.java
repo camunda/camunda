@@ -181,7 +181,7 @@ public final class ScriptTaskProcessor
   private Either<Failure, DirectBuffer> evaluateScript(
       final ExecutableScriptTask element, final BpmnElementContext context) {
     final var resultOrFailure =
-        expressionProcessor.evaluateAnyExpression(
+        expressionProcessor.evaluateAnyExpressionToBuffer(
             element.getExpression(), context.getElementInstanceKey(), context.getTenantId());
 
     resultOrFailure.ifRight(

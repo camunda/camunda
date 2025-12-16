@@ -297,7 +297,7 @@ public class AdHocSubProcessProcessor
 
     final Expression outputElementExpression = outputElementOptional.get();
     return expressionProcessor
-        .evaluateAnyExpression(
+        .evaluateAnyExpressionToBuffer(
             outputElementExpression,
             childContext.getElementInstanceKey(),
             childContext.getTenantId())

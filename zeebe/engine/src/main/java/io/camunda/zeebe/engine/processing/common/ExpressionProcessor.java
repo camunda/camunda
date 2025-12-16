@@ -254,13 +254,26 @@ public final class ExpressionProcessor {
    *     empty variable context)
    * @return either the evaluation result as buffer, or a failure if the evaluation fails
    */
-  public Either<Failure, DirectBuffer> evaluateAnyExpression(
+  public Either<Failure, DirectBuffer> evaluateAnyExpressionToBuffer(
       final Expression expression, final long scopeKey, final String tenantId) {
     final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
     return evaluationResult.map(EvaluationResult::toBuffer);
   }
 
-  public Either<Failure, EvaluationResult> evaluateRawExpression(
+  /**
+   * Evaluates the given expression and returns the raw {@link EvaluationResult}, regardless of its
+   * type.
+   *
+   * <p>This method is useful when the caller needs access to the full evaluation result, including
+   * type information and any warnings, rather than a specific typed value.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
+   * @return either the evaluation result, or a failure if the evaluation fails
+   */
+  public Either<Failure, EvaluationResult> evaluateAnyExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
     return evaluateExpressionAsEither(expression, scopeKey, tenantId);
   }

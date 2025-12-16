@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.feelexpressionresolution;
+package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
