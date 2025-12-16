@@ -8,9 +8,13 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
+import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 public interface HistoryDeletionMapper {
+
+  List<HistoryDeletionDbModel> getHistoryDeletionBatch(
+      @Param("partitionId") int partitionId, @Param("limit") int limit);
 
   void insert(HistoryDeletionDbModel historyDeletion);
 

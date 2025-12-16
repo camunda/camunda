@@ -12,6 +12,15 @@
 
 <mapper namespace="io.camunda.db.rdbms.sql.HistoryDeletionMapper">
 
+  <resultMap id="historyDeletionResultMap" type="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel">
+    <constructor>
+      <idArg column="RESOURCE_KEY" javaType="java.lang.Long"/>
+      <arg column="RESOURCE_TYPE" javaType="io.camunda.zeebe.protocol.record.value.HistoryDeletionType"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel">
     INSERT INTO ${prefix}HISTORY_DELETION (
       RESOURCE_KEY,
@@ -25,6 +34,29 @@
       #{partitionId}
     )
   </insert>
+
+  <select id="getHistoryDeletionBatch" resultMap="historyDeletionResultMap">
+    SELECT *
+    FROM ${prefix}HISTORY_DELETION
+    WHERE PARTITION_ID = #{partitionId}
+    ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+    LIMIT #{limit}
+  </select>
+
+  <select id="getHistoryDeletionBatch" databaseId="mssql" resultMap="historyDeletionResultMap">
+    SELECT TOP (#{limit}) *
+    FROM ${prefix}HISTORY_DELETION
+    WHERE PARTITION_ID = #{partitionId}
+    ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+  </select>
+
+  <select id="getHistoryDeletionBatch" databaseId="oracle" resultMap="historyDeletionResultMap">
+    SELECT *
+    FROM ${prefix}HISTORY_DELETION
+    WHERE PARTITION_ID = #{partitionId}
+      AND ROWNUM &lt;= #{limit}
+    ORDER BY BATCH_OPERATION_KEY, RESOURCE_KEY
+  </select>
 
   <delete id="delete">
     DELETE FROM ${prefix}HISTORY_DELETION

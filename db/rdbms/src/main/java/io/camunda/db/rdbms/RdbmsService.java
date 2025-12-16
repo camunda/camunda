@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
+import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
@@ -84,6 +85,7 @@ public class RdbmsService {
       processDefinitionInstanceStatisticsDbReader;
   private final ProcessDefinitionInstanceVersionStatisticsDbReader
       processDefinitionInstanceVersionStatisticsDbReader;
+  private final HistoryDeletionDbReader historyDeletionDbReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -120,7 +122,8 @@ public class RdbmsService {
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
-          processDefinitionInstanceVersionStatisticsDbReader) {
+          processDefinitionInstanceVersionStatisticsDbReader,
+      final HistoryDeletionDbReader historyDeletionDbReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -156,6 +159,7 @@ public class RdbmsService {
     this.processDefinitionInstanceStatisticsDbReader = processDefinitionInstanceStatisticsDbReader;
     this.processDefinitionInstanceVersionStatisticsDbReader =
         processDefinitionInstanceVersionStatisticsDbReader;
+    this.historyDeletionDbReader = historyDeletionDbReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -291,6 +295,10 @@ public class RdbmsService {
   public ProcessDefinitionInstanceVersionStatisticsDbReader
       getProcessDefinitionInstanceVersionStatisticsReader() {
     return processDefinitionInstanceVersionStatisticsDbReader;
+  }
+
+  public HistoryDeletionDbReader getHistoryDeletionDbReader() {
+    return historyDeletionDbReader;
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
