@@ -50,3 +50,9 @@ export {
   deleteTenantClusterVariable,
   assertClusterVariableInResponse,
 } from './cluster-variable-requestHelpers';
+export {
+  createProcessInstanceWithAJob,
+  createSingleIncidentProcessInstance,
+  createTwoIncidentsInOneProcess,
+  createIncidentsInTwoProcesses,
+  createTwoDifferentIncidentsInOneProcess} from './incident-requestHelpers';
