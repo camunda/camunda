@@ -7,6 +7,10 @@
  */
 package io.camunda.it.auditlog;
 
+import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.ResourceType.AUDIT_LOG;
+import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -15,6 +19,10 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.protocol.rest.AuditLogResultEnum;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TestUser;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -23,10 +31,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -43,9 +53,12 @@ public class AuditLogIT {
           .withAuthenticatedAccess();
 
   private static final String DEFAULT_USERNAME = "demo";
+  private static final String USER_A_USERNAME = "userA";
+  private static final String USER_B_USERNAME = "userB";
+  private static final String PASSWORD = "password";
   private static CamundaClient adminClient;
 
-  private static final String PROCESS_ID = "testProcess";
+  private static final String PROCESS_ID = "modifiableProcess";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -54,19 +67,57 @@ public class AuditLogIT {
           .endEvent()
           .done();
 
+  private static final String PROCESS_ID_A = "processA";
+  private static final BpmnModelInstance PROCESS_A =
+      Bpmn.createExecutableProcess(PROCESS_ID_A)
+          .startEvent()
+          .serviceTask("taskA", t -> t.zeebeJobType("taskA"))
+          .endEvent()
+          .done();
+
+  private static final String PROCESS_ID_B = "processB";
+  private static final BpmnModelInstance PROCESS_B =
+      Bpmn.createExecutableProcess(PROCESS_ID_B)
+          .startEvent()
+          .serviceTask("taskB", t -> t.zeebeJobType("taskB"))
+          .endEvent()
+          .done();
+
+  @UserDefinition
+  private static final TestUser USER_A =
+      new TestUser(
+          USER_A_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of(PROCESS_ID_A)),
+              new Permissions(AUDIT_LOG, READ, List.of("*"))));
+
+  @UserDefinition
+  private static final TestUser USER_B =
+      new TestUser(
+          USER_B_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of(PROCESS_ID_B)),
+              new Permissions(AUDIT_LOG, READ, List.of("*"))));
+
   private static final String TENANT_A = "tenantA";
+  private static final String TENANT_B = "tenantB";
   private static final Set<Long> STARTED_PROCESS_INSTANCES = new HashSet<>();
 
   @BeforeAll
   static void setUp() {
     createTenant(adminClient, TENANT_A);
-    adminClient
-        .newAssignUserToTenantCommand()
-        .username(DEFAULT_USERNAME)
-        .tenantId(TENANT_A)
-        .send()
-        .join();
+    createTenant(adminClient, TENANT_B);
+
+    assignUserToTenant(adminClient, DEFAULT_USERNAME, TENANT_A);
+    assignUserToTenant(adminClient, DEFAULT_USERNAME, TENANT_B);
+    assignUserToTenant(adminClient, USER_A_USERNAME, TENANT_A);
+    assignUserToTenant(adminClient, USER_B_USERNAME, TENANT_B);
+
     deployResource(adminClient, "testProcess.bpmn", PROCESS, TENANT_A);
+    deployResource(adminClient, "processA.bpmn", PROCESS_A, TENANT_A);
+    deployResource(adminClient, "processB.bpmn", PROCESS_B, TENANT_B);
   }
 
   @AfterEach
@@ -170,8 +221,86 @@ public class AuditLogIT {
     }
   }
 
+  @Disabled("WIP")
+  @Test
+  void shouldIsolateAuditLogsByTenant(
+      @Authenticated(USER_A_USERNAME) final CamundaClient userAClient,
+      @Authenticated(USER_B_USERNAME) final CamundaClient userBClient) {
+    // when
+    // User A starts a process instance of Process A
+    final var processInstanceA =
+        userAClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID_A)
+            .latestVersion()
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+    STARTED_PROCESS_INSTANCES.add(processInstanceA.getProcessInstanceKey());
+
+    // User B starts a process instance of Process B
+    final var processInstanceB =
+        userBClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID_B)
+            .latestVersion()
+            .tenantId(TENANT_B)
+            .send()
+            .join();
+    STARTED_PROCESS_INSTANCES.add(processInstanceB.getProcessInstanceKey());
+
+    // then
+    // Wait for audit log entries to be created
+    RecordingExporter.processInstanceCreationRecords()
+        .withIntent(ProcessInstanceCreationIntent.CREATED)
+        .limit(2L);
+    Awaitility.await("Audit logs are created for both process instances")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              // User A should only see audit logs from Process A
+              final var userAAuditLogs = userAClient.newAuditLogSearchRequest().send().join();
+
+              assertThat(userAAuditLogs.items()).isNotEmpty();
+              assertThat(
+                      userAAuditLogs.items().stream()
+                          .allMatch(log -> TENANT_A.equals(log.getTenantId())))
+                  .isTrue();
+              assertThat(
+                      userAAuditLogs.items().stream()
+                          .anyMatch(log -> PROCESS_ID_A.equals(log.getProcessDefinitionId())))
+                  .isTrue();
+              assertThat(
+                      userAAuditLogs.items().stream()
+                          .noneMatch(log -> PROCESS_ID_B.equals(log.getProcessDefinitionId())))
+                  .isTrue();
+
+              // User B should only see audit logs from Process B
+              final var userBAuditLogs = userBClient.newAuditLogSearchRequest().send().join();
+
+              assertThat(userBAuditLogs.items()).isNotEmpty();
+              assertThat(
+                      userBAuditLogs.items().stream()
+                          .allMatch(log -> TENANT_B.equals(log.getTenantId())))
+                  .isTrue();
+              assertThat(
+                      userBAuditLogs.items().stream()
+                          .anyMatch(log -> PROCESS_ID_B.equals(log.getProcessDefinitionId())))
+                  .isTrue();
+              assertThat(
+                      userBAuditLogs.items().stream()
+                          .noneMatch(log -> PROCESS_ID_A.equals(log.getProcessDefinitionId())))
+                  .isTrue();
+            });
+  }
+
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
     camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
+  }
+
+  private static void assignUserToTenant(
+      final CamundaClient camundaClient, final String username, final String tenant) {
+    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
   private static void deployResource(
