@@ -22,7 +22,6 @@ Note that this operation requires the cluster to be shut down while the recovery
 The recovery procedure consists in running a K8S job that performs the actual change in the partition state.
 The recovery job yaml should be generated using [generate-recovery-job](./generate-recovery-job.sh) script.
 
-
 ## Required Information
 
 Before starting, you need:
@@ -41,6 +40,7 @@ Before starting, you need:
 ## Recovery Steps
 
 ### 1. Detect cluster configuration
+
 Run `../detect-config.sh <NAMESPACE>` which will output some environment variable to export:
 
 ```bash
@@ -178,8 +178,8 @@ export NEW_KEY="2251800000000000"
 export NEW_MAX_KEY="2251900000000000"            # Optional
 ```
 
-
 If you didn't run the scripts in the previous steps, you need to export all the required environment variables and verify that the optional environment variables match your cluster:
+
 ```bash
 
 # Set required variables
@@ -223,7 +223,6 @@ If for some reason the key for partition 2 jumped from 4503599627370496 to 67553
 - `NEW_MAX_KEY`: lower than the key it jumped to, such as `6755399000000000`
 
 It's ok to leave a lot of room between the keys for extra safety, the key space is quite big.
-
 
 ### 6. Review the Generated YAML
 
