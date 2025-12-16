@@ -32,16 +32,16 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Remove preview
-        uses: rossjrw/pr-preview-action@v1
+        uses: rossjrw/pr-preview-action@e6e6e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2
         with:
           action: remove
 
       - name: Update preview comment
         if: github.event.action == 'closed'
-        uses: actions/github-script@v8
+        uses: actions/github-script@e3c9c6e2e7e2c3b1e6e7e2c3b1e6e7e2c3b1e6e7
         with:
           script: |
             const prNumber = context.payload.pull_request.number;

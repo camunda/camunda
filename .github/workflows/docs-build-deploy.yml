@@ -42,10 +42,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -61,15 +61,15 @@ jobs:
         run: npm run build
 
       - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@e6c1b7b2e2e1e1e6e2e1e1e6e2e1e1e6e2e1e1e6
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@e6c9c3e2e6e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2
         with:
           path: monorepo-docs-site/build
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@e6a1bdfb7e2e1e6e3c2e2e2e2e2e2e2e2e2e2e2e2
 
       - name: Observe build status
         if: always()
