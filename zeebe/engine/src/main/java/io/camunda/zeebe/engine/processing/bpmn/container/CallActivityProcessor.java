@@ -58,7 +58,7 @@ public final class CallActivityProcessor
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
       final int maxProcessDepth) {
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.stateTransitionBehavior = stateTransitionBehavior;
     stateBehavior = bpmnBehaviors.stateBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();

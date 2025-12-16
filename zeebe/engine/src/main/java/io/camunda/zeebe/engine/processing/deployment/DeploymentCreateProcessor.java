@@ -111,7 +111,7 @@ public final class DeploymentCreateProcessor
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     deploymentTransformer =

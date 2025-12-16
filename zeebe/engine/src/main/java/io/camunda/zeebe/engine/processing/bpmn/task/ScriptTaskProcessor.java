@@ -51,7 +51,7 @@ public final class ScriptTaskProcessor
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }

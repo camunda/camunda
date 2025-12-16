@@ -71,7 +71,7 @@ public class AdHocSubProcessProcessor
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     this.stateTransitionBehavior = stateTransitionBehavior;
     adHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();

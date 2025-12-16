@@ -375,7 +375,7 @@ public final class EngineProcessors {
         keyGenerator,
         typedRecordProcessors,
         writers,
-        bpmnBehaviors.feelResolverBehavior(),
+        bpmnBehaviors.expressionBehavior(),
         bpmnBehaviors.expressionLanguage(),
         authCheckBehavior);
 
@@ -643,7 +643,7 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             authCheckBehavior,
-            bpmnBehaviors.expressionBehavior());
+            bpmnBehaviors.expressionProcessor());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

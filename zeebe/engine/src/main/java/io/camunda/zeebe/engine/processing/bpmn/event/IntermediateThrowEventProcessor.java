@@ -55,7 +55,7 @@ public class IntermediateThrowEventProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     signalBehavior = bpmnBehaviors.signalBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }

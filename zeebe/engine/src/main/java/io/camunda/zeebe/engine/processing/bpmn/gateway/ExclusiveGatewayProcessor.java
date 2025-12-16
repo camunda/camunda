@@ -37,7 +37,7 @@ public final class ExclusiveGatewayProcessor
   public ExclusiveGatewayProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     this.stateTransitionBehavior = stateTransitionBehavior;
-    expressionBehavior = behaviors.expressionBehavior();
+    expressionBehavior = behaviors.expressionProcessor();
     incidentBehavior = behaviors.incidentBehavior();
     jobBehavior = behaviors.jobBehavior();
   }

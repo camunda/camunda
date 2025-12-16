@@ -106,7 +106,7 @@ public class ResourceDeletionDeleteProcessor
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     startEventSubscriptions =
         new StartEventSubscriptions(
-            bpmnBehaviors.expressionBehavior(), catchEventBehavior, startEventSubscriptionManager);
+            bpmnBehaviors.expressionProcessor(), catchEventBehavior, startEventSubscriptionManager);
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();

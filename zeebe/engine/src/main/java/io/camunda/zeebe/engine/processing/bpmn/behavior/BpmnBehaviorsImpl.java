@@ -200,7 +200,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new MultiInstanceInputCollectionBehavior(
             expressionProcessor, stateBehavior, writers.state());
     multiInstanceOutputCollectionBehavior =
-        new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
+        new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionProcessor());
 
     elementActivationBehavior =
         new ElementActivationBehavior(
@@ -260,7 +260,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   }
 
   @Override
-  public ExpressionProcessor expressionBehavior() {
+  public ExpressionProcessor expressionProcessor() {
     return expressionProcessor;
   }
 
@@ -374,7 +374,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     return adHocSubProcessBehavior;
   }
 
-  public ExpressionBehavior feelResolverBehavior() {
+  public ExpressionBehavior expressionBehavior() {
     return expressionBehavior;
   }
 
