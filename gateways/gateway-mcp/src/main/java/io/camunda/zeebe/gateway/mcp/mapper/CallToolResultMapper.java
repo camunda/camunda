@@ -8,11 +8,57 @@
 package io.camunda.zeebe.gateway.mcp.mapper;
 
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public class CallToolResultMapper {
   public static CallToolResult from(final Object content) {
     return CallToolResult.builder().structuredContent(content).build();
+  }
+
+  public static CallToolResult fromPrimitive(final String content) {
+    return CallToolResult.builder().addTextContent(content).build();
+  }
+
+  public static <T> CallToolResult fromPrimitive(
+      final CompletableFuture<T> content, final Function<T, String> resultMapper) {
+    return content
+        .handleAsync(
+            (resp, error) -> {
+              if (error != null) {
+                return mapErrorToResult(error);
+              }
+              return fromPrimitive(resultMapper.apply(resp));
+            })
+        .completeOnTimeout(
+            mapProblemToResult(
+                ProblemDetail.forStatusAndDetail(
+                    HttpStatus.GATEWAY_TIMEOUT, "Didn't receive a response within 10 seconds.")),
+            10L,
+            TimeUnit.SECONDS)
+        .join();
+  }
+
+  public static <T> CallToolResult from(
+      final CompletableFuture<T> content, final Function<T, Object> resultMapper) {
+    return content
+        .handleAsync(
+            (resp, error) -> {
+              if (error != null) {
+                return mapErrorToResult(error);
+              }
+              return from(resultMapper.apply(resp));
+            })
+        .completeOnTimeout(
+            mapProblemToResult(
+                ProblemDetail.forStatusAndDetail(
+                    HttpStatus.GATEWAY_TIMEOUT, "Didn't receive a response within 10 seconds.")),
+            10L,
+            TimeUnit.SECONDS)
+        .join();
   }
 
   public static CallToolResult mapErrorToResult(final Throwable error) {

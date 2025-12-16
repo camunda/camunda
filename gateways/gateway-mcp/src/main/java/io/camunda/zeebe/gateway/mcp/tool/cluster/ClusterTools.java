@@ -8,7 +8,8 @@
 package io.camunda.zeebe.gateway.mcp.tool.cluster;
 
 import io.camunda.service.TopologyServices;
-import io.camunda.service.TopologyServices.Topology;
+import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
@@ -25,14 +26,14 @@ public class ClusterTools {
       description =
           "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
-  public String getClusterStatus() {
-    return topologyServices.getStatus().name();
+  public CallToolResult getClusterStatus() {
+    return CallToolResultMapper.fromPrimitive(topologyServices.getStatus(), Enum::name);
   }
 
   @McpTool(
       description = "Obtains the current topology of the cluster the gateway is part of.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
-  public Topology getTopology() {
-    return topologyServices.getTopology();
+  public CallToolResult getTopology() {
+    return CallToolResultMapper.from(topologyServices.getTopology(), t -> t);
   }
 }
