@@ -56,3 +56,4 @@ export {
   createTwoIncidentsInOneProcess,
   createIncidentsInTwoProcesses,
   createTwoDifferentIncidentsInOneProcess} from './incident-requestHelpers';
+export {deployMammalDecisionAndStoreResponse} from './decision-requirement-requestHelper';
