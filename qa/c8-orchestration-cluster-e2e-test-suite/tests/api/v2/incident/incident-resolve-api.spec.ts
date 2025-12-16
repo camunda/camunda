@@ -27,9 +27,8 @@ import {waitForAssertion} from 'utils/waitForAssertion';
 
 const INCIDENT_SEARCH_ENDPOINT = '/incidents/search';
 
-test.describe.parallel('Search Incidents API Tests', () => {
+test.describe.parallel('Resolve Incidents API Tests', () => {
   const processInstanceKeys: string[] = [];
-  const state: Record<string, unknown> = {};
 
   test.beforeAll(async () => {
     await deploy([
