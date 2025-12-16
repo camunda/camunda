@@ -38,7 +38,14 @@ public final class AuditLogConfiguration {
 
   @Override
   public String toString() {
-    return "AuditLogConfiguration{" + "user=" + user + ", client=" + client + '}';
+    return "AuditLogConfiguration{"
+        + "enabled="
+        + enabled
+        + ", user="
+        + user
+        + ", client="
+        + client
+        + '}';
   }
 
   public boolean isEnabled() {

@@ -157,6 +157,8 @@ public class ExporterConfiguration {
         + postExport
         + ", batchOperation="
         + batchOperation
+        + ", auditLog="
+        + auditLog
         + '}';
   }
 

@@ -22,7 +22,6 @@ public class ExporterConfiguration {
 
   // AuditLog
   private AuditLogConfiguration auditLog = new AuditLogConfiguration();
-
   private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
   private int queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
   private int queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
@@ -205,6 +204,32 @@ public class ExporterConfiguration {
     if (duration.isNegative() || duration.isZero()) {
       errors.add(String.format("%s must be a positive duration but was %s", name, duration));
     }
+  }
+
+  @Override
+  public String toString() {
+    return "ExporterConfiguration{"
+        + "auditLog="
+        + auditLog
+        + ", flushInterval="
+        + flushInterval
+        + ", queueSize="
+        + queueSize
+        + ", queueMemoryLimit="
+        + queueMemoryLimit
+        + ", history="
+        + history
+        + ", exportBatchOperationItemsOnCreation="
+        + exportBatchOperationItemsOnCreation
+        + ", batchOperationItemInsertBlockSize="
+        + batchOperationItemInsertBlockSize
+        + ", processCache="
+        + processCache
+        + ", decisionRequirementsCache="
+        + decisionRequirementsCache
+        + ", batchOperationCache="
+        + batchOperationCache
+        + '}';
   }
 
   public static class CacheConfiguration {
