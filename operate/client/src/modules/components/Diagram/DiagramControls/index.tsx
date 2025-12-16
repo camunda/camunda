@@ -6,12 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Add, CenterCircle, Subtract} from '@carbon/react/icons';
+import {Add, CenterCircle, Subtract, Maximize, Minimize} from '@carbon/react/icons';
+// @ts-expect-error MapIdentify icon may not be in type definitions but exists in Carbon
+import {MapIdentify} from '@carbon/react/icons';
 import {
   ButtonContainer,
+  FullscreenButton,
   ZoomResetButton,
   ZoomOutButton,
   ZoomInButton,
+  MinimapButton,
   DownloadBPMNDefinitionXML,
 } from './styled';
 
@@ -19,6 +23,10 @@ type Props = {
   handleZoomReset: () => void;
   handleZoomIn: () => void;
   handleZoomOut: () => void;
+  handleFullscreen: () => void;
+  isFullscreen: boolean;
+  handleMinimapToggle: () => void;
+  isMinimapOpen: boolean;
   processDefinitionKey?: string;
 };
 
@@ -26,10 +34,35 @@ const DiagramControls: React.FC<Props> = ({
   handleZoomReset,
   handleZoomIn,
   handleZoomOut,
+  handleFullscreen,
+  isFullscreen,
+  handleMinimapToggle,
+  isMinimapOpen,
   processDefinitionKey,
 }) => {
   return (
     <ButtonContainer>
+      <FullscreenButton
+        size="sm"
+        kind="tertiary"
+        align="left"
+        label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        onClick={handleFullscreen}
+      >
+        {isFullscreen ? <Minimize /> : <Maximize />}
+      </FullscreenButton>
+      <MinimapButton
+        size="sm"
+        kind="tertiary"
+        align="left"
+        label={isMinimapOpen ? 'Hide minimap' : 'Show minimap'}
+        aria-label={isMinimapOpen ? 'Hide minimap' : 'Show minimap'}
+        onClick={handleMinimapToggle}
+        isSelected={isMinimapOpen}
+      >
+        <MapIdentify />
+      </MinimapButton>
       <ZoomResetButton
         size="sm"
         kind="tertiary"

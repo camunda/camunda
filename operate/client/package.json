@@ -20,6 +20,7 @@
     "bpmn-js": "18.6.2",
     "bpmn-moddle": "9.0.2",
     "date-fns": "4.1.0",
+    "diagram-js-minimap": "^5.2.0",
     "dmn-js": "17.3.0",
     "dmn-js-decision-table": "17.3.0",
     "dmn-js-drd": "17.3.0",

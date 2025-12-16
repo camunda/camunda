@@ -12,19 +12,24 @@ import {DownloadBPMNDefinitionXML as BaseDownloadBPMNDefinitionXML} from 'module
 
 const ButtonContainer = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   position: absolute;
   right: var(--cds-spacing-05);
   bottom: var(--cds-spacing-05);
+  gap: var(--cds-spacing-02);
 `;
 
 const buttonStyles = css`
   background-color: var(--cds-background);
 `;
 
+const FullscreenButton = styled(IconButton)`
+  ${buttonStyles}
+`;
+
 const ZoomResetButton = styled(IconButton)`
   ${buttonStyles}
-  margin-bottom: var(--cds-spacing-02);
+  margin-left: var(--cds-spacing-03);
 `;
 
 const ZoomInButton = styled(IconButton)`
@@ -33,18 +38,29 @@ const ZoomInButton = styled(IconButton)`
 
 const ZoomOutButton = styled(IconButton)`
   ${buttonStyles}
-  border-top: none;
-  margin-bottom: var(--cds-spacing-02);
+`;
+
+const MinimapButton = styled(IconButton)<{isSelected?: boolean}>`
+  ${buttonStyles}
+  ${({isSelected}) =>
+    isSelected
+      ? `
+    background-color: var(--cds-layer-selected);
+  `
+      : ''}
 `;
 
 const DownloadBPMNDefinitionXML = styled(BaseDownloadBPMNDefinitionXML)`
   ${buttonStyles}
+  margin-left: var(--cds-spacing-03);
 `;
 
 export {
   ButtonContainer,
+  FullscreenButton,
   ZoomResetButton,
   ZoomInButton,
   ZoomOutButton,
+  MinimapButton,
   DownloadBPMNDefinitionXML,
 };

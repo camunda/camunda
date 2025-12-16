@@ -15,6 +15,7 @@ const BottomPanel = styled.div`
   width: 100%;
   position: relative;
   z-index: 1;
+  border-top: 1px solid var(--cds-border-subtle-01);
 `;
 
 const BottomPanelStacked = styled.div`
@@ -22,6 +23,7 @@ const BottomPanelStacked = styled.div`
   flex-direction: column;
   height: 100%;
   width: 100%;
+  border-top: 1px solid var(--cds-border-subtle-01);
 `;
 
 const ModificationFooter = styled.div`
