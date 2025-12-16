@@ -10,7 +10,6 @@ import {test} from '../visual-fixtures';
 import * as path from 'path';
 
 import {
-  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockMigrationOperation,
   mockOrderProcessInstancesWithFailedOperations,
@@ -37,9 +36,6 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses.filter((process) => {
-          return process.bpmnProcessId === 'orderProcess';
-        }),
         processDefinitions: mockProcessDefinitions.filter(
           (d) => d.processDefinitionId === 'orderProcess',
         ),

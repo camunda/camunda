@@ -13,15 +13,14 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {
-  groupedProcessesMock,
   mockProcessStatisticsV2 as mockProcessStatistics,
   mockProcessInstances,
   mockMultipleStatesStatistics,
   mockProcessXML,
+  mockProcessDefinitions,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {useEffect} from 'react';
@@ -33,6 +32,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/bpmn-js/utils/isProcessEndEvent', () => ({
@@ -77,7 +77,7 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 describe('DiagramPanel', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess('');
 

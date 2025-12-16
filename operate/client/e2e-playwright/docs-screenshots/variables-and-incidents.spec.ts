@@ -26,23 +26,6 @@ test.describe('variables and incidents', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: [
-          {
-            bpmnProcessId: 'order-process',
-            name: null,
-            permissions: [],
-            processes: [
-              {
-                id: '2251799813686456',
-                name: 'order-process',
-                version: 1,
-                bpmnProcessId: 'order-process',
-                versionTag: null,
-              },
-            ],
-            tenantId: '<default>',
-          },
-        ],
         processDefinitions: [
           {
             processDefinitionId: 'order-process',

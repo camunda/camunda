@@ -8,7 +8,6 @@
 
 import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
-import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
@@ -16,6 +15,7 @@ import type {
   CurrentUser,
   Incident,
   ProcessDefinition,
+  QueryProcessDefinitionsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
@@ -198,105 +198,91 @@ const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
   ...options,
 });
 
-/**
- * A hard coded object to use when mocking fetchGroupedProcesses api/instances.js
- */
-const groupedProcessesMock: ProcessDto[] = [
-  {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    tenantId: '<default>',
-    processes: [
-      {
-        id: 'demoProcess3',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess',
-        versionTag: null,
-      },
-      {
-        id: 'demoProcess2',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess',
-        versionTag: null,
-      },
-      {
-        id: 'demoProcess1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess',
-        versionTag: null,
-      },
-    ],
-    permissions: ['UPDATE_PROCESS_INSTANCE'],
-  },
-  {
-    bpmnProcessId: 'eventBasedGatewayProcess',
-    name: null,
-    tenantId: '<default>',
-    processes: [
-      {
-        id: '2251799813696866',
-        name: 'Event based gateway with timer start',
-        version: 2,
-        bpmnProcessId: 'eventBasedGatewayProcess',
-        versionTag: null,
-      },
-      {
-        id: '2251799813685911',
-        name: 'Event based gateway with message start',
-        version: 1,
-        bpmnProcessId: 'eventBasedGatewayProcess',
-        versionTag: null,
-      },
-    ],
-    permissions: ['DELETE'],
-  },
-  {
-    bpmnProcessId: 'bigVarProcess',
-    name: 'Big variable process',
-    tenantId: '<default>',
-    processes: [
-      {
-        id: '2251799813685892',
-        name: 'Big variable process',
-        version: 1,
-        bpmnProcessId: 'bigVarProcess',
-        versionTag: 'MyVersionTag',
-      },
-    ],
-    permissions: ['DELETE_PROCESS_INSTANCE'],
-  },
-  {
-    bpmnProcessId: 'bigVarProcess',
-    name: 'Big variable process',
-    tenantId: '<tenant-A>',
-    processes: [
-      {
-        id: '2251799813685893',
-        name: 'Big variable process',
-        version: 2,
-        bpmnProcessId: 'bigVarProcess',
-        versionTag: null,
-      },
-      {
-        id: '2251799813685894',
-        name: 'Big variable process',
-        version: 1,
-        bpmnProcessId: 'bigVarProcess',
-        versionTag: null,
-      },
-    ],
-    permissions: ['DELETE_PROCESS_INSTANCE'],
-  },
-  {
-    bpmnProcessId: 'orderProcess',
-    tenantId: '<default>',
-    name: 'Order',
-    processes: [],
-  },
-];
+const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
+  searchResult([
+    {
+      name: 'New demo process',
+      processDefinitionId: 'demoProcess',
+      processDefinitionKey: 'demoProcess3',
+      resourceName: 'processes/process.bpmn',
+      version: 3,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Demo process',
+      processDefinitionId: 'demoProcess',
+      processDefinitionKey: 'demoProcess2',
+      resourceName: 'processes/process.bpmn',
+      version: 2,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Demo process',
+      processDefinitionId: 'demoProcess',
+      processDefinitionKey: 'demoProcess1',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: undefined,
+      processDefinitionId: 'eventBasedGatewayProcess',
+      processDefinitionKey: '2251799813696866',
+      resourceName: 'processes/process.bpmn',
+      version: 2,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Event based gateway with message start',
+      processDefinitionId: 'eventBasedGatewayProcess',
+      processDefinitionKey: '2251799813685911',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Big variable process',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionKey: '2251799813685892',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      versionTag: 'MyVersionTag',
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Big variable process',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionKey: '2251799813685893',
+      resourceName: 'processes/process.bpmn',
+      version: 2,
+      tenantId: '<tenant-A>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Big variable process',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionKey: '2251799813685894',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<tenant-A>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Order',
+      processDefinitionId: 'orderProcess',
+      processDefinitionKey: 'orderProcess1',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+  ]);
 
 /**
  * @returns a mocked process Object with a unique id
@@ -1108,7 +1094,8 @@ export {
   searchResult,
   createIncident,
   createEnhancedIncident,
-  groupedProcessesMock,
+  createOperation,
+  mockProcessDefinitions,
   createProcess,
   createInstanceByProcess,
   createIncidentByError,

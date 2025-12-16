@@ -30,7 +30,6 @@ vi.mock('modules/stores/processes/processes.list', () => {
 
   return {
     processesStore: {
-      getPermissions: vi.fn(),
       state: {processes: []},
       versionsByProcessAndTenant: {
         [`{${PROCESS_ID}}-{<default>}`]: [
