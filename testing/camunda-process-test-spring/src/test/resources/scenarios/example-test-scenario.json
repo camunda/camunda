@@ -12,6 +12,13 @@
           "variables": {
             "order_id": "order-1"
           }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "state": "IS_COMPLETED"
         }
       ]
     }
