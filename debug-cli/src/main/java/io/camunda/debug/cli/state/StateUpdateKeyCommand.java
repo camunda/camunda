@@ -102,7 +102,7 @@ public class StateUpdateKeyCommand implements Callable<Integer> {
       err.println("\nTaking new snapshot...");
     }
     final var persistedSnapshot =
-        snapshotUtil.takeSnapshot(db, root, snapshotId, lastFollowupEventPosition);
+        snapshotUtil.takeSnapshot(db, root, snapshotId, lastFollowupEventPosition, err);
 
     out.println("\n=== Key update completed successfully ===");
     out.println("Created new snapshot with updated key at: " + persistedSnapshot.getPath());
