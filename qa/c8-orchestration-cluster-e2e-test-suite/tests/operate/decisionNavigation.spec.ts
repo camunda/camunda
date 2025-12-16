@@ -49,6 +49,7 @@ test.describe('Decision Navigation', () => {
     operateDecisionInstancePage,
     operateDecisionsPage,
     operateHomePage,
+    operateDiagramPage,
   }) => {
     const processInstanceKey =
       processInstanceWithFailedDecision.processInstanceKey;
@@ -84,7 +85,7 @@ test.describe('Decision Navigation', () => {
     await test.step('Verify popover appears and navigate to decision', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessInstancePage.popover).toBeVisible();
+          await expect(operateDiagramPage.popover).toBeVisible();
         },
         onFailure: async () => {
           await operateProcessInstancePage.clickDiagramElement(
@@ -98,7 +99,7 @@ test.describe('Decision Navigation', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessInstancePage.viewRootCauseDecisionLink,
+            operateDiagramPage.viewRootCauseDecisionLink,
           ).toBeVisible();
         },
         onFailure: async () => {
@@ -110,7 +111,7 @@ test.describe('Decision Navigation', () => {
           );
         },
       });
-      await operateProcessInstancePage.clickViewRootCauseDecisionLink();
+      await operateDiagramPage.clickViewRootCauseDecisionLink();
     });
 
     await test.step('Verify decision panel is visible', async () => {
