@@ -202,7 +202,14 @@ public class Member extends Node {
     return result.omitNullValues().toString();
   }
 
-  public Long nodeVersion() {
+  /**
+   * The nodeVersion is > 0 only when the broker is deployed without a static node id, such as AWS
+   * ECS. It is used to differentiate different "incarnation" of a broker. It's a strictly
+   * increasing number.
+   *
+   * @return the nodeVersion
+   */
+  public long nodeVersion() {
     return nodeVersion;
   }
 

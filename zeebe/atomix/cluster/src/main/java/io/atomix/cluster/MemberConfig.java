@@ -181,11 +181,11 @@ public class MemberConfig extends NodeConfig {
     return this;
   }
 
-  public Long getNodeVersion() {
+  public long getNodeVersion() {
     return nodeVersion;
   }
 
-  public MemberConfig setNodeVersion(final Long nodeVersion) {
+  public MemberConfig setNodeVersion(final long nodeVersion) {
     this.nodeVersion = nodeVersion;
     return this;
   }
