@@ -39,6 +39,7 @@ public class TestContext<T extends TestContext<T>> {
   private String internalZeebeContactPoint;
 
   private String zeebeIndexPrefix = "zeebe-record";
+  private String indexPrefix;
 
   private String externalOperateHost;
   private Integer externalOperatePort;
@@ -55,8 +56,9 @@ public class TestContext<T extends TestContext<T>> {
     return databaseType;
   }
 
-  public void setDatabaseType(final String databaseType) {
+  public T setDatabaseType(final String databaseType) {
     this.databaseType = databaseType;
+    return (T) this;
   }
 
   public File getZeebeDataFolder() {
@@ -245,6 +247,15 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setZeebeIndexPrefix(final String zeebeIndexPrefix) {
     this.zeebeIndexPrefix = zeebeIndexPrefix;
+    return (T) this;
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  public T setIndexPrefix(final String indexPrefix) {
+    this.indexPrefix = indexPrefix;
     return (T) this;
   }
 
