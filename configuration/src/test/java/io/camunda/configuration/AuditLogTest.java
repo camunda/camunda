@@ -26,47 +26,50 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 class AuditLogTest {
 
   @Test
-  void isEnabled() {
+  void shouldBeEnabledByDefault() {
     final AuditLog auditLog = new AuditLog();
+
     assertThat(auditLog.isEnabled()).as("AuditLog should be enabled by default").isTrue();
   }
 
   @Test
-  void getClient() {
+  void shouldHaveClientDefaults() {
     final AuditLog auditLog = new AuditLog();
-    final Set<AuditLogOperationCategory> expectedCategories =
-        Set.of(
-            AuditLogOperationCategory.OPERATOR,
-            AuditLogOperationCategory.USER_TASK,
-            AuditLogOperationCategory.ADMIN);
+
     assertThat(auditLog.getClient().getCategories())
         .as("All categories should be enabled for client by default")
-        .isEqualTo(expectedCategories);
+        .isEqualTo(
+            Set.of(
+                AuditLogOperationCategory.OPERATOR,
+                AuditLogOperationCategory.USER_TASK,
+                AuditLogOperationCategory.ADMIN));
     assertThat(auditLog.getClient().getExcludes())
         .as("No excludes should be set for client by default")
         .isEmpty();
   }
 
   @Test
-  void getUser() {
+  void shouldHaveUserDefaults() {
     final AuditLog auditLog = new AuditLog();
-    final Set<AuditLogOperationCategory> expectedCategories =
-        Set.of(
-            AuditLogOperationCategory.OPERATOR,
-            AuditLogOperationCategory.USER_TASK,
-            AuditLogOperationCategory.ADMIN);
+
     assertThat(auditLog.getUser().getCategories())
         .as("All categories should be enabled for user by default")
-        .isEqualTo(expectedCategories);
+        .isEqualTo(
+            Set.of(
+                AuditLogOperationCategory.OPERATOR,
+                AuditLogOperationCategory.USER_TASK,
+                AuditLogOperationCategory.ADMIN));
     assertThat(auditLog.getUser().getExcludes())
         .as("No excludes should be set for user by default")
         .isEmpty();
   }
 
   @Test
-  void toConfiguration() {
+  void shouldConvertToAuditLogConfiguration() {
     final AuditLog auditLog = new AuditLog();
+
     final AuditLogConfiguration config = auditLog.toConfiguration();
+
     assertThat(config.isEnabled())
         .as("AuditLogConfiguration should be enabled by default")
         .isEqualTo(auditLog.isEnabled());
