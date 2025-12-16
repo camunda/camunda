@@ -169,7 +169,7 @@ export async function createSingleIncidentProcessInstance(
 export async function createProcessInstanceWithAJob(
   localState: Record<string, unknown>,
 ) {
-  await test.step('Create process instance with single incidents', async () => {
+  await test.step('Create process instance with a job', async () => {
     const instance = await createSingleInstance('ProcessFlakyWorker', 1);
     localState['processInstanceKey'] = instance.processInstanceKey;
   });

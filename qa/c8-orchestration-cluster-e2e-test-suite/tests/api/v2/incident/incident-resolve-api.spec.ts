@@ -83,7 +83,7 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    await test.step('Update  element instance variables', async () => {
+    await test.step('Update element instance variables', async () => {
       const updateRes = await request.put(
         buildUrl(`/element-instances/${elementInstanceKey['key']}/variables`),
         {
@@ -176,10 +176,10 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
   });
 
   test('Resolve Incident - unauthorized', async ({request}) => {
-    const someNotExistingvalue = '9999999999999999';
+    const someNotExistingValue = '9999999999999999';
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/incidents/${someNotExistingvalue}/resolution`),
+        buildUrl(`/incidents/${someNotExistingValue}/resolution`),
         {
           headers: {
             'Content-Type': 'application/json',
