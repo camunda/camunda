@@ -78,7 +78,6 @@ final class TestSupport {
       case CLUSTER_VARIABLE -> config.clusterVariable = value;
       case CONDITIONAL_SUBSCRIPTION -> config.conditionalSubscription = value;
       case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
-      case EXPRESSION -> config.expression = value;
       case GLOBAL_LISTENER_BATCH -> config.globalListenerBatch = value;
       default ->
           throw new IllegalArgumentException(

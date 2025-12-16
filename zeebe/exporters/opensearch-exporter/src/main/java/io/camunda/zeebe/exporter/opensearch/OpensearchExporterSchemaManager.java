@@ -174,9 +174,6 @@ public class OpensearchExporterSchemaManager {
       if (index.globalListenerBatch) {
         createValueIndexTemplate(ValueType.GLOBAL_LISTENER_BATCH, version);
       }
-      if (index.expression) {
-        createValueIndexTemplate(ValueType.EXPRESSION, version);
-      }
     }
 
     indexTemplatesCreated.add(version);
