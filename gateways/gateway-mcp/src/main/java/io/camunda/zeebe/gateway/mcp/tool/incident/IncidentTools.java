@@ -7,13 +7,22 @@
  */
 package io.camunda.zeebe.gateway.mcp.tool.incident;
 
+import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.page.SearchQueryPageBuilders;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
+import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.zeebe.gateway.mcp.model.IncidentFilter;
 import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
 import io.camunda.zeebe.gateway.mcp.model.PageRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.slf4j.Logger;
@@ -43,13 +52,38 @@ public class IncidentTools {
   @McpTool(
       description = "Search for incidents based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
-  public String searchIncidents(
+  public CallToolResult searchIncidents(
       @McpToolParam(required = false) final IncidentFilter filter,
       @McpToolParam(description = "Sort criteria", required = false) @Valid
           final List<@Valid IncidentSearchQuerySortRequest> sort,
       @McpToolParam(description = "Pagination criteria", required = false) final PageRequest page) {
-    LOGGER.info("MCP filter: {}", filter);
-    return "Test";
+
+    try {
+      final var result =
+          incidentServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(
+                  SearchQueryBuilders.incidentSearchQuery()
+                      .filter(toSearchFilter(filter))
+                      .page(toSearchPage(page))
+                      .sort(toSearchSort(sort))
+                      .build());
+      return CallToolResultMapper.from(result);
+    } catch (final Exception e) {
+      return mapErrorToResult(e);
+    }
+  }
+
+  private IncidentSort toSearchSort(final List<IncidentSearchQuerySortRequest> sort) {
+    return SortOptionBuilders.incident().build();
+  }
+
+  private SearchQueryPage toSearchPage(final PageRequest page) {
+    return SearchQueryPageBuilders.page().build();
+  }
+
+  private io.camunda.search.filter.IncidentFilter toSearchFilter(final IncidentFilter filter) {
+    return FilterBuilders.incident().build();
   }
 
   //
