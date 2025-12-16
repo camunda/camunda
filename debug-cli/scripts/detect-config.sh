@@ -22,6 +22,9 @@ fi
 
 NAMESPACE="$1"
 
+BROKER_COMPONENT_NAME=${BROKER_COMPONENT_NAME:-zeebe-broker}
+BROKER_COMPONENT_LABEL="app.kubernetes.io/component=${BROKER_COMPONENT_NAME}"
+
 echo "=========================================="
 echo "Detecting configuration for namespace: $NAMESPACE"
 echo "=========================================="
@@ -67,9 +70,10 @@ echo "  Pod Prefix: $POD_PREFIX"
 # Verify pods exist
 echo ""
 echo "[4/6] Verifying pods..."
-POD_COUNT=$(kubectl get pods -n $NAMESPACE -l "app.kubernetes.io/name=${POD_PREFIX}" -o name 2>/dev/null | wc -l || echo "0")
+POD_COUNT=$(kubectl get pods -n $NAMESPACE -l $BROKER_COMPONENT_LABEL -o name 2>/dev/null | wc -l || echo "0")
 if [ "$POD_COUNT" -eq "0" ]; then
         # Try without label selector
+        echo "Getting POD_COUNT without label selector"
         POD_COUNT=$(kubectl get pods -n $NAMESPACE 2>/dev/null | grep "^${POD_PREFIX}-" | wc -l || echo "0")
 fi
 echo "  Found $POD_COUNT pods matching prefix '$POD_PREFIX'"
@@ -81,10 +85,10 @@ fi
 # Find PVC prefix
 echo ""
 echo "[5/6] Detecting PVC prefix..."
-PVC=$(kubectl get pvc -n $NAMESPACE -o name 2>/dev/null | grep -E "camunda|zeebe" | head -1 | cut -d'/' -f2 || echo "")
+PVC=$(kubectl get pvc -n $NAMESPACE -l $BROKER_COMPONENT_LABEL -o name 2>/dev/null | head -1 | cut -d'/' -f2 || echo "")
 
 if [ -z "$PVC" ]; then
-        echo "  ERROR: No PVC found with 'camunda' or 'zeebe' in the name"
+        echo "  ERROR: No PVC found with label $BROKER_COMPONENT_LABEL "
         echo "  Available PVCs:"
         kubectl get pvc -n $NAMESPACE -o name 2>/dev/null || echo "    (none)"
         exit 1
