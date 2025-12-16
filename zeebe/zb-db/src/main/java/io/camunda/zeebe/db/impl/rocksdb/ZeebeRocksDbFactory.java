@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -231,14 +230,8 @@ public final class ZeebeRocksDbFactory<
    * centralizes memory calculations to avoid duplication.
    */
   MemoryConfiguration calculateMemoryConfiguration() {
-    // the total memory budget per PARTITION depends on the allocation strategy, if per partition,
-    // the memory limit is already correct, if the strategy is BROKER, the limit configured is for
-    // all configured partitions.
-    // if AUTO we need to get the limit based on the available memory and partition count.
     final var totalMemoryBudgetPerPartition =
-        rocksDbConfiguration.getMemoryAllocationStrategy() == MemoryAllocationStrategy.PARTITION
-            ? rocksDbConfiguration.getMemoryLimit()
-            : rocksDbConfiguration.getMemoryLimit() / partitionCount;
+        sharedRocksDbResources.reservedMemory / partitionCount;
 
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
