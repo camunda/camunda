@@ -21,8 +21,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManager;
-import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.PostFlushListener;
 import io.camunda.db.rdbms.write.queue.PreFlushListener;

@@ -82,7 +82,8 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
   }
 
   public static void createAndSaveDecisionDefinitions(
-      final RdbmsWriters rdbmsWriters, final List<DecisionDefinitionDbModel> decisionDefinitionList) {
+      final RdbmsWriters rdbmsWriters,
+      final List<DecisionDefinitionDbModel> decisionDefinitionList) {
     for (final DecisionDefinitionDbModel decisionDefinition : decisionDefinitionList) {
       rdbmsWriters.getDecisionDefinitionWriter().create(decisionDefinition);
     }

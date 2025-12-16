@@ -224,7 +224,9 @@ public class RoleSpecificFilterIT {
   }
 
   private void addRoleToTenant(final String tenantId, final String roleId) {
-    rdbmsWriters.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, roleId, ROLE.name()));
+    rdbmsWriters
+        .getTenantWriter()
+        .addMember(new TenantMemberDbModel(tenantId, roleId, ROLE.name()));
     rdbmsWriters.flush();
   }
 }

@@ -40,10 +40,10 @@ import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import java.util.function.Consumer;
 
 /** A holder for all rdbms services */

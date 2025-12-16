@@ -378,7 +378,9 @@ public class ProcessInstanceIT {
                     .partitionId(PARTITION_ID));
 
     // set cleanup dates
-    rdbmsWriters.getProcessInstanceWriter().scheduleForHistoryCleanup(pi1.processInstanceKey(), NOW);
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .scheduleForHistoryCleanup(pi1.processInstanceKey(), NOW);
     rdbmsWriters
         .getProcessInstanceWriter()
         .scheduleForHistoryCleanup(pi2.processInstanceKey(), NOW.minusDays(2));
