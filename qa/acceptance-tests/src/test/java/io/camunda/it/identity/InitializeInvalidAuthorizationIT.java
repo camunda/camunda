@@ -20,11 +20,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
 
-/**
- * Acceptance test to verify that Basic Authentication fails fast when configured with no secondary
- * storage. This test validates that the application startup fails with a clear error when
- * database.type=none and Basic Authentication is configured.
- */
 @ZeebeIntegration
 public class InitializeInvalidAuthorizationIT {
 
