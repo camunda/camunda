@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -49,6 +50,11 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
           .withIntents(DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED);
+
+  public static final TransformerConfig INCIDENT_RESOLUTION_CONFIG =
+      TransformerConfig.with(ValueType.INCIDENT)
+          .withIntents(IncidentIntent.RESOLVED)
+          .withRejections(IncidentIntent.RESOLVE, RejectionType.INVALID_STATE);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)

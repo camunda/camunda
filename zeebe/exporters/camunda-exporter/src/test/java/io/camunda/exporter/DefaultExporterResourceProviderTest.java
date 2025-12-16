@@ -17,6 +17,7 @@ import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.IncidentResolutionAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
@@ -175,6 +176,7 @@ public class DefaultExporterResourceProviderTest {
                 BatchOperationLifecycleManagementAuditLogTransformer.class,
                 ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
             Map.entry(DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
+            Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
             Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
             Map.entry(
                 ProcessInstanceCreationAuditLogTransformer.class,
