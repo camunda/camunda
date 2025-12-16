@@ -14,7 +14,9 @@ public enum BatchOperationSearchColumn implements SearchColumn<BatchOperationEnt
   STATE("state"),
   OPERATION_TYPE("operationType"),
   START_DATE("startDate"),
-  END_DATE("endDate");
+  END_DATE("endDate"),
+  ACTOR_TYPE("actorType"),
+  ACTOR_ID("actorId");
 
   private final String property;
 

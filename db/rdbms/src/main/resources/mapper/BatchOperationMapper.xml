@@ -316,6 +316,18 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.actorTypeOperations != null and !filter.actorTypeOperations.isEmpty()">
+      <foreach collection="filter.actorTypeOperations" item="operation">
+        AND ACTOR_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.actorIdOperations != null and !filter.actorIdOperations.isEmpty()">
+      <foreach collection="filter.actorIdOperations" item="operation">
+        AND ACTOR_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <select id="countItems" resultType="java.lang.Long">
