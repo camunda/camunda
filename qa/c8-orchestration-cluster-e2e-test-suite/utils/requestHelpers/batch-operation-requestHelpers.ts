@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {APIRequestContext, expect} from '@playwright/test';
+import {APIRequestContext, APIResponse, expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from 'utils/http';
 import {createCancellationBatch} from '@requestHelpers';
 import {defaultAssertionOptions} from 'utils/constants';
@@ -23,6 +23,23 @@ export async function cancelBatchOperation(
   );
 }
 
+export async function suspendBatchOperation(
+  request: APIRequestContext,
+  batchOperationKey: string,
+) {
+  const result: Record<string, unknown> = {};
+  await expect(async () => {
+    const res = await request.post(
+      buildUrl(`/batch-operations/${batchOperationKey}/suspension`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    result.response = res;
+  }).toPass(defaultAssertionOptions);
+  return result.response as APIResponse;
+}
+
 export async function createCompletedBatchOperation(
   request: APIRequestContext,
 ) {
@@ -35,7 +52,31 @@ export async function createCompletedBatchOperation(
     await assertStatusCode(res, 200);
     const json = await res.json();
     expect(json.state).toBe('COMPLETED');
-  }).toPass(defaultAssertionOptions);
+  }).toPass({
+    intervals: [5_000, 10_000, 10_000, 15_000, 20_000],
+    timeout: 60_000,
+  });
 
   return key;
 }
+
+export async function expectBatchState(
+  request: APIRequestContext,
+  batchOperationKey: string,
+  expectedState: string,
+) {
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl(`/batch-operations/${batchOperationKey}`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(statusRes, 200);
+    const body = await statusRes.json();
+    expect(body.state).toBe(expectedState);
+  }).toPass(defaultAssertionOptions);
+}
+
+export const notFoundDetail = (key: string) =>
+  `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;
