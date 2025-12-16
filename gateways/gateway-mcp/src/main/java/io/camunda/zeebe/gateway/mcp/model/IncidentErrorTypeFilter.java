@@ -14,10 +14,9 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 @Schema(
-    name = "AdvancedIncidentErrorTypeFilter",
-    description =
-        "Advanced IncidentErrorType filter with different filter operations (can be combined).")
-public record AdvancedIncidentErrorTypeFilter(
+    name = "IncidentErrorTypeFilter",
+    description = "IncidentErrorType filter with different filter operations (can be combined).")
+public record IncidentErrorTypeFilter(
     @Nullable
         @Schema(
             name = "eq",

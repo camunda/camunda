@@ -14,10 +14,10 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 @Schema(
-    name = "AdvancedDateTimeFilter",
+    name = "DateTimeFilter",
     description =
         "Filter date-time values with different filter operations (can be combined). All date-time values must be in RFC 3339 format.")
-public record AdvancedDateTimeFilter(
+public record DateTimeFilter(
     @Nullable
         @Schema(
             name = "eq",
