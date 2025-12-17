@@ -66,7 +66,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
             <Description>
               <DescriptionTitle>Process ID</DescriptionTitle>
               <DescriptionData>
-                <CopiableProcessID bpmnProcessId={bpmnProcessId} />
+                <CopiableProcessID processDefinitionId={bpmnProcessId} />
               </DescriptionData>
             </Description>
 

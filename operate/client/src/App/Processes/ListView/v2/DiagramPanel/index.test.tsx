@@ -13,19 +13,17 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {
-  mockProcessDefinitions,
   mockProcessStatisticsV2 as mockProcessStatistics,
-  mockProcessInstances,
   mockMultipleStatesStatistics,
   mockProcessXML,
   mockProcessInstancesV2,
+  searchResult,
+  createProcessDefinition,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -41,12 +39,13 @@ vi.mock('modules/bpmn-js/utils/isProcessEndEvent', () => ({
   isProcessOrSubProcessEndEvent: vi.fn(() => true),
 }));
 
-function getWrapper(initialPath: string = Paths.dashboard()) {
+function getWrapper(queryParams?: Record<string, string>) {
+  const initialPath = `${Paths.processes()}?${new URLSearchParams(queryParams).toString()}`;
+
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       processInstancesSelectionStore.init();
       return () => {
-        processesStore.reset();
         batchModificationStore.reset();
         processInstancesSelectionStore.reset();
       };
@@ -78,26 +77,27 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 
 describe('DiagramPanel', () => {
   beforeEach(() => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchProcessInstances().withSuccess(mockProcessInstancesV2);
-
-    processesStore.fetchProcesses();
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          name: 'Big variable process',
+          processDefinitionId: 'bigVarProcess',
+          version: 1,
+          versionTag: 'MyVersionTag',
+          processDefinitionKey: '123',
+        }),
+      ]),
+    );
   });
 
   it('should render header', async () => {
-    const queryString = '?process=bigVarProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-    vi.stubGlobal('prompt', vi.fn());
+    const queryParams = {process: 'bigVarProcess', version: '1'};
 
     const {user} = render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
@@ -117,17 +117,11 @@ describe('DiagramPanel', () => {
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
-    const queryString = '?process=bigVarProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
+    const queryParams = {process: 'bigVarProcess', version: '1'};
     mockFetchProcessInstancesStatistics().withDelay(mockProcessStatistics);
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
@@ -154,15 +148,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should show a message when no process version is selected', async () => {
-    const queryString = '?process=bigVarProcess&version=all';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {process: 'bigVarProcess', version: 'all'};
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(
@@ -178,15 +167,19 @@ describe('DiagramPanel', () => {
   });
 
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
-    const queryString = '?process=eventBasedGatewayProcess&version=all';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {process: 'eventBasedGatewayProcess', version: 'all'};
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionId: 'eventBasedGatewayProcess',
+          name: undefined,
+          processDefinitionKey: '123',
+        }),
+      ]),
+    );
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(
@@ -197,40 +190,32 @@ describe('DiagramPanel', () => {
   });
 
   it('should show an error message', async () => {
-    const consoleErrorMock = vi
-      .spyOn(global.console, 'error')
-      .mockImplementation(() => {});
+    const queryParams = {process: 'bigVarProcess', version: '1'};
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(),
+      wrapper: getWrapper(queryParams),
     });
 
+    expect(await screen.findByText('Big variable process')).toBeInTheDocument();
     expect(
       await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
-
-    consoleErrorMock.mockRestore();
   });
 
   it('should render statistics', async () => {
-    const queryString = '?process=bigVarProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
+    const queryParams = {process: 'bigVarProcess', version: '1'};
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -238,12 +223,7 @@ describe('DiagramPanel', () => {
   });
 
   it('should not fetch batch modification data outside batch modification mode', async () => {
-    const queryString = '?process=bigVarProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {process: 'bigVarProcess', version: '1'};
 
     const mockProcessInstancesStatisticsResolver = vi.fn();
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics, {
@@ -252,7 +232,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
 
     const {user} = render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     // Expect fetching initial statistics
@@ -303,18 +283,13 @@ describe('DiagramPanel', () => {
   });
 
   it('should still render diagram when useProcessInstancesOverlayData fails', async () => {
-    const queryString = '?process=bigVarProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {process: 'bigVarProcess', version: '1'};
 
     mockFetchProcessInstancesStatistics().withServerError();
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -322,18 +297,13 @@ describe('DiagramPanel', () => {
   });
 
   it('should still render diagram when useBatchModificationOverlayData fails', async () => {
-    const queryString = '?process=bigVarProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {process: 'bigVarProcess', version: '1'};
 
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstancesStatistics().withServerError();
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -341,13 +311,12 @@ describe('DiagramPanel', () => {
   });
 
   it('should display statistics when active and incidents are selected in the filter', async () => {
-    const queryString =
-      '?process=bigVarProcess&version=1&active=true&incidents=true';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {
+      process: 'bigVarProcess',
+      version: '1',
+      active: 'true',
+      incidents: 'true',
+    };
 
     mockFetchProcessInstancesStatistics().withSuccess(
       mockMultipleStatesStatistics,
@@ -355,7 +324,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -368,13 +337,12 @@ describe('DiagramPanel', () => {
   });
 
   it('should display statistics when completed and canceled are selected in the filter', async () => {
-    const queryString =
-      '?process=bigVarProcess&version=1&completed=true&canceled=true';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {
+      process: 'bigVarProcess',
+      version: '1',
+      completed: 'true',
+      canceled: 'true',
+    };
 
     mockFetchProcessInstancesStatistics().withSuccess(
       mockMultipleStatesStatistics,
@@ -382,7 +350,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -397,13 +365,14 @@ describe('DiagramPanel', () => {
   });
 
   it('should display statistics when all states are selected', async () => {
-    const queryString =
-      '?process=bigVarProcess&version=1&active=true&incidents=true&completed=true&canceled=true';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
+    const queryParams = {
+      process: 'bigVarProcess',
+      version: '1',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+    };
 
     mockFetchProcessInstancesStatistics().withSuccess(
       mockMultipleStatesStatistics,
@@ -411,7 +380,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      wrapper: getWrapper(queryParams),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
