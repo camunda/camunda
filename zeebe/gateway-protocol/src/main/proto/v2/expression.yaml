@@ -8,7 +8,7 @@ paths:
       tags:
         - Expression
       summary: Evaluate an expression
-      description: Evaluates an expression with optional context variables and scope.
+      description: Evaluates an expression.
       requestBody:
         required: true
         content:
@@ -51,6 +51,7 @@ components:
       required:
         - expression
         - result
+        - warnings
       properties:
         expression:
           type: string
