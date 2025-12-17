@@ -106,4 +106,11 @@ public class CallToolResultMapper {
             HttpStatus.BAD_REQUEST, "Validation errors: " + violations);
     return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
   }
+
+  public static CallToolResult mapViolationsToResult(final List<String> violations) {
+    final ProblemDetail problemDetail =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST, "Validation errors: " + violations);
+    return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
+  }
 }
