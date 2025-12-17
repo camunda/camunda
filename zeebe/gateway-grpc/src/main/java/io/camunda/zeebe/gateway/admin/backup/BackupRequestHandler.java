@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Comparator;
@@ -147,7 +148,8 @@ public final class BackupRequestHandler implements BackupApi {
     return takeBackup(checkpointId, checkpointType);
   }
 
-  private CompletionStage<Long> takeBackup(
+  @VisibleForTesting
+  public CompletionStage<Long> takeBackup(
       final long backupId, final CheckpointType checkpointType) {
     return checkTopologyComplete()
         .thenCompose(
