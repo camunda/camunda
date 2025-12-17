@@ -66,7 +66,7 @@ public final class IncidentProcessInstanceStatisticsRequestImpl
     final HttpCamundaFuture<SearchResponse<IncidentProcessInstanceStatistics>> result =
         new HttpCamundaFuture<>();
     httpClient.post(
-        "/incidents/statistics",
+        "/incidents/statistics/process-instances",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         IncidentProcessInstanceStatisticsQueryResult.class,
