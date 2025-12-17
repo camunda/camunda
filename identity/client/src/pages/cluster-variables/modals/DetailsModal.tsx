@@ -10,26 +10,13 @@ import { FC } from "react";
 import { UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import PassiveModal from "src/components/modal/PassiveModal.tsx";
-import TextField from "src/components/form/TextField.tsx";
-import { Button } from "@carbon/react";
-import { Copy } from "@carbon/react/icons";
-import { useNotifications } from "src/components/notifications";
+import { beautify } from "src/utility/components/editor/jsonUtils.ts";
+import JSONEditor from "src/components/form/JSONEditor.tsx";
 
 const DetailsModal: FC<
   UseEntityModalProps<{ name: string; value: string }>
 > = ({ open, onClose, entity: clusterVariable }) => {
   const { t } = useTranslate("clusterVariables");
-  const { enqueueNotification } = useNotifications();
-
-  const onCopy = async () => {
-    await navigator.clipboard.writeText(clusterVariable.value);
-    enqueueNotification({
-      kind: "info",
-      title: t("copiedClusterVariableValue", {
-        name: clusterVariable.name,
-      }),
-    });
-  };
 
   return (
     <PassiveModal
@@ -39,23 +26,16 @@ const DetailsModal: FC<
       headline={clusterVariable.name}
       size="md"
     >
-      <TextField
+      <JSONEditor
         readOnly
-        label={t("clusterVariableValue")}
-        value={clusterVariable.value}
-        cols={2}
-        autoFocus
-        decorator={
-          <Button
-            kind="ghost"
-            size="sm"
-            hasIconOnly
-            renderIcon={Copy}
-            tooltipPosition="bottom"
-            iconDescription="Copy"
-            onClick={onCopy}
-          />
-        }
+        label={t("clusterVariableDetailsValue")}
+        value={beautify(clusterVariable.value)}
+        copy
+        copyProps={{
+          notificationText: t("copiedClusterVariableValue", {
+            name: clusterVariable.name,
+          }),
+        }}
       />
     </PassiveModal>
   );

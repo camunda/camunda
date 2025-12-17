@@ -80,7 +80,7 @@ export default function List() {
           clusterVariables?.items.map((clusterVar) => {
             return {
               ...clusterVar,
-              value: JSON.parse(clusterVar.value),
+              value: clusterVar.value,
               scopeValue:
                 clusterVar.scope === ScopeType.GLOBAL
                   ? t("clusterVariableScopeTypeGlobal")

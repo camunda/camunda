@@ -20,6 +20,8 @@ import useTranslate from "src/utility/localization";
 import { useApiCall, usePaginatedApi } from "src/utility/api";
 import TextField from "src/components/form/TextField.tsx";
 import { searchTenant } from "src/utility/api/tenants";
+import JSONEditor from "src/components/form/JSONEditor.tsx";
+import { isValid } from "src/utility/components/editor/jsonUtils.ts";
 
 type FormData = {
   name: string;
@@ -68,7 +70,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const onSubmit = async (data: FormData) => {
     const { success } = await callAddClusterVariable({
       name: data.name.trim(),
-      value: data.value.trim(),
+      value: JSON.parse(data.value.trim()),
       scope: data.scope,
       tenantId: data.tenantId,
     });
@@ -166,15 +168,22 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           name="value"
           control={control}
           rules={{
-            required: t("clusterVariableValueRequired"),
+            validate: (value) => {
+              if (!value || !value.trim()) {
+                return t("clusterVariableValueRequired");
+              } else if (!isValid(value.trim())) {
+                return t("clusterVariableValueInvalid");
+              }
+
+              return true;
+            },
           }}
           render={({ field, fieldState }) => (
-            <TextField
+            <JSONEditor
               {...field}
-              label={t("clusterVariableValue")}
-              placeholder={t("clusterVariableValuePlaceholder")}
+              label={t("clusterVariableCreateValue")}
               errors={fieldState.error?.message}
-              cols={2}
+              beautify
             />
           )}
         />
