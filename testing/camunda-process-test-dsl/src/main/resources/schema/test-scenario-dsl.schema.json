@@ -127,20 +127,20 @@
     "ProcessDefinitionSelector": {
       "description": "A selector to identify a process definition.",
       "type": "object",
+      "properties": {
+        "processDefinitionId": {
+          "description": "The ID of the process definition.",
+          "type": "string"
+        }
+      },
       "anyOf": [
         {
-          "properties": {
-            "processDefinitionId": {
-              "description": "The ID of the process definition.",
-              "type": "string"
-            }
-          },
           "required": [
             "processDefinitionId"
-          ],
-          "additionalProperties": false
+          ]
         }
-      ]
+      ],
+      "additionalProperties": false
     },
     "AssertProcessInstanceInstruction": {
       "description": "An instruction to assert the state of a process instance.",
