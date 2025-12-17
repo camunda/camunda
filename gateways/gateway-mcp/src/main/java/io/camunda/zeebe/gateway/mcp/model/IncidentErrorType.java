@@ -9,11 +9,7 @@ package io.camunda.zeebe.gateway.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(
-    name = "IncidentErrorType",
-    description = "Incident error type with a defined set of values.")
 public enum IncidentErrorType {
   AD_HOC_SUB_PROCESS_NO_RETRIES("AD_HOC_SUB_PROCESS_NO_RETRIES"),
   CALLED_DECISION_ERROR("CALLED_DECISION_ERROR"),

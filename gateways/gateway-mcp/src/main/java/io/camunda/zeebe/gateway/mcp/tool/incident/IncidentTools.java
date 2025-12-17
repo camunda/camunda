@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.mcp.tool.incident;
 
 import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
-import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -22,8 +21,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springaicommunity.mcp.annotation.McpTool;
-import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -43,9 +40,6 @@ public class IncidentTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @McpTool(
-      description = "Search for incidents based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(@Valid final IncidentSearchQuery request) {
     try {
       final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(request.sort());

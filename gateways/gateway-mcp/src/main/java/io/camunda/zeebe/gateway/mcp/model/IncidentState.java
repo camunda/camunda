@@ -9,10 +9,7 @@ package io.camunda.zeebe.gateway.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.swagger.v3.oas.annotations.media.Schema;
 
-/** Incident states with a defined set of values. */
-@Schema(name = "IncidentState", description = "Incident states with a defined set of values.")
 public enum IncidentState {
   ACTIVE("ACTIVE"),
   MIGRATED("MIGRATED"),
