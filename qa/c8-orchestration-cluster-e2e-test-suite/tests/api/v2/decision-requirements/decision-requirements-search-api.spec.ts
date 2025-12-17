@@ -14,7 +14,6 @@ import {
   assertBadRequest,
   assertStatusCode,
   assertEqualsForKeys,
-  assertRequiredFields,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
