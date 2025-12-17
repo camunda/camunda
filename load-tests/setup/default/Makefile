@@ -12,7 +12,8 @@ install: install-platform install-load-test
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
 install-platform: setup-leader-balancer
-	helm upgrade --install $(namespace) camunda/$(helm_chart) \
+	helm upgrade $(namespace) camunda/$(helm_chart) \
+		--install \
 		--namespace $(namespace) \
 		--wait --timeout 35m0s \
 		--reset-then-reuse-values \
@@ -22,7 +23,8 @@ install-platform: setup-leader-balancer
 # Install/upgrade Camunda Platform on stable VMs
 .PHONY: install-platform-stable
 install-platform-stable: setup-leader-balancer
-	helm upgrade --install $(namespace) camunda/$(helm_chart) \
+	helm upgrade $(namespace) camunda/$(helm_chart) \
+		--install \
 		--namespace $(namespace) \
 		--wait --timeout 35m0s \
 		--reset-then-reuse-values \
@@ -33,7 +35,8 @@ install-platform-stable: setup-leader-balancer
 # Install/upgrade load test helm chart
 .PHONY: install-load-test
 install-load-test:
-	helm upgrade --install $(namespace)-test camunda-load-tests/camunda-load-tests \
+	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
+		--install \
 		--namespace $(namespace) \
 		--wait --timeout 35m0s \
 		--reuse-values \
