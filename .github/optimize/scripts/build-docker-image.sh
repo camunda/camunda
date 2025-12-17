@@ -22,7 +22,7 @@ docker buildx create --use
 export VERSION="${VERSION}"
 export DATE="$(date +%FT%TZ)"
 export REVISION="${REVISION}"
-export BASE_IMAGE=docker.io/library/alpine:3.21.3
+export BASE_IMAGE=docker.io/library/alpine:3.23.0
 
 # if CI (GHA) export the variables for pushing in a later step
 if [ "${CI}" = "true" ]; then
