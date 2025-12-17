@@ -151,7 +151,7 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
         responseDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
         return responseDecoder;
       } catch (final IllegalStateException e) {
-        log.warn("Unable to decode heartbeat response, heartbeats are disabled.", e);
+        log.info("Unable to decode heartbeat response, heartbeats are disabled.", e);
         return null;
       }
     }
