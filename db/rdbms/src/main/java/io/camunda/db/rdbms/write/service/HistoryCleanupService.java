@@ -226,7 +226,7 @@ public class HistoryCleanupService {
     return usageMetricsCleanup;
   }
 
-  private static void logCleanUpInfo(
+  private void logCleanUpInfo(
       final String cleanupType,
       final int partitionId,
       final HashMap<String, Integer> numDeletedRecords,
@@ -238,6 +238,7 @@ public class HistoryCleanupService {
     LOG.debug("Deleted {}history records: {}", cleanupType, numDeletedRecords);
     for (final var entry : numDeletedRecords.entrySet()) {
       LOG.debug("    Deleted {}s: {}", entry.getKey(), entry.getValue());
+      metrics.recordHistoryCleanupBulkSize(entry.getValue(), entry.getKey());
     }
 
     LOG.debug(
@@ -259,14 +260,15 @@ public class HistoryCleanupService {
   @VisibleForTesting
   Duration calculateNewDuration(
       final Duration lastDuration, final Map<String, Integer> numDeletedRecords) {
-    final var deletedNothing = numDeletedRecords.values().stream().allMatch(i -> i == 0);
+    final var deletedLessThanHalf =
+        numDeletedRecords.values().stream().allMatch(i -> i < cleanupBatchSize / 2);
     final var exceededBatchSize =
         numDeletedRecords.values().stream().anyMatch(i -> i >= cleanupBatchSize);
     Duration nextDuration;
 
     if (lastDuration == null) {
       nextDuration = minCleanupInterval;
-    } else if (deletedNothing) {
+    } else if (deletedLessThanHalf) {
       nextDuration = lastDuration.multipliedBy(2);
       nextDuration =
           nextDuration.compareTo(maxCleanupInterval) < 0 ? nextDuration : maxCleanupInterval;
