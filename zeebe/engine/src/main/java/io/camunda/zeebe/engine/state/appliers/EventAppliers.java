@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
+import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -155,8 +156,13 @@ public final class EventAppliers implements EventApplier {
     registerHistoryDeletionAppliers();
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
+    registerExpressionEvaluationEventAppliers();
     registerGlobalListenersEventAppliers(state);
     return this;
+  }
+
+  private void registerExpressionEvaluationEventAppliers() {
+    register(ExpressionIntent.EVALUATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerConditionalSubscriptionAppliers(final MutableProcessingState state) {

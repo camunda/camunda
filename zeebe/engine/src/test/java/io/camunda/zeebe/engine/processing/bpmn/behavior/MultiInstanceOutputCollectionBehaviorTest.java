@@ -64,7 +64,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
         .thenReturn(collectionWithSize1);
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
-    when(mockExpressionProcessor.evaluateAnyExpression(
+    when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
             eq(outputElementExpression), anyLong(), anyString()))
         .thenReturn(Either.right(elementToAdd));
 
@@ -115,7 +115,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
         .thenReturn(unexpectedValueType);
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
-    when(mockExpressionProcessor.evaluateAnyExpression(
+    when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
             eq(outputElementExpression), anyLong(), anyString()))
         .thenReturn(Either.right(elementToAdd));
 

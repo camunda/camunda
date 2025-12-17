@@ -36,7 +36,6 @@ public final class ExpressionProcessor {
   private static final List<ResultType> NULLABLE_DATE_TIME_RESULT_TYPES =
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
-  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> Either.left(null);
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
@@ -254,10 +253,28 @@ public final class ExpressionProcessor {
    *     empty variable context)
    * @return either the evaluation result as buffer, or a failure if the evaluation fails
    */
-  public Either<Failure, DirectBuffer> evaluateAnyExpression(
+  public Either<Failure, DirectBuffer> evaluateAnyExpressionToBuffer(
       final Expression expression, final long scopeKey, final String tenantId) {
     final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
     return evaluationResult.map(EvaluationResult::toBuffer);
+  }
+
+  /**
+   * Evaluates the given expression and returns the raw {@link EvaluationResult}, regardless of its
+   * type.
+   *
+   * <p>This method is useful when the caller needs access to the full evaluation result, including
+   * type information and any warnings, rather than a specific typed value.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
+   * @return either the evaluation result, or a failure if the evaluation fails
+   */
+  public Either<Failure, EvaluationResult> evaluateAnyExpression(
+      final Expression expression, final long scopeKey, final String tenantId) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId);
   }
 
   /**
@@ -425,12 +442,56 @@ public final class ExpressionProcessor {
                     scopeKey)));
   }
 
+  /**
+   * Evaluates an expression within the appropriate evaluation context based on the provided scope
+   * key and tenant identifier.
+   *
+   * <p>The evaluation context determines which variables are available during expression
+   * evaluation. The context is selected based on the following rules:
+   *
+   * <h3>Case 1: No scoping required ({@code variableScopeKey < 0} and tenant is null/empty)</h3>
+   *
+   * <p>When there is no variable scope key (indicated by a negative value, typically {@code -1})
+   * and no tenant identifier, the expression is evaluated against the base {@link
+   * ScopedEvaluationContext} without any additional scoping. This is used for evaluating
+   * expressions that don't require access to process instance variables or tenant-specific cluster
+   * variables (e.g., static expressions, globally scoped cluster variables or expressions using
+   * only literal values).
+   *
+   * <h3>Case 2: Tenant-scoped only ({@code variableScopeKey < 0} with a valid tenant)</h3>
+   *
+   * <p>When there is no variable scope key but a tenant identifier is provided, the context is
+   * scoped to the tenant via {@link ScopedEvaluationContext#tenantScoped(String)}. This allows
+   * access to tenant-specific cluster variables without binding to a specific process instance.
+   * This case is typically used when evaluating expressions outside of a process instance context
+   * but still within a tenant boundary.
+   *
+   * <h3>Case 3: Process and tenant scoped ({@code variableScopeKey >= 0})</h3>
+   *
+   * <p>When a valid variable scope key is provided (non-negative), the context must be scoped to
+   * both the process instance AND the tenant. The tenant identifier is always required in this
+   * case. The context is first scoped to the process via {@link
+   * ScopedEvaluationContext#processScoped(long)}, then to the tenant via {@link
+   * ScopedEvaluationContext#tenantScoped(String)}. This enables access to process instance
+   * variables as well as tenant-specific cluster variables.
+   *
+   * @param expression the FEEL expression to evaluate
+   * @param variableScopeKey the scope key for variable resolution (typically a process instance or
+   *     element instance key); use {@code -1} if no process scope is needed
+   * @param tenantId the tenant identifier for tenant-scoped variable resolution; may be {@code
+   *     null}, empty, or a specific tenant ID
+   * @return the result of evaluating the expression
+   * @see ScopedEvaluationContext#processScoped(long)
+   * @see ScopedEvaluationContext#tenantScoped(String)
+   */
   private EvaluationResult evaluateExpression(
       final Expression expression, final long variableScopeKey, final String tenantId) {
 
     final EvaluationContext context;
-    if (variableScopeKey < 0) {
-      context = EMPTY_EVALUATION_CONTEXT;
+    if (variableScopeKey < 0 && (tenantId == null || tenantId.isEmpty())) {
+      context = scopedEvaluationContext;
+    } else if (variableScopeKey < 0) {
+      context = scopedEvaluationContext.tenantScoped(tenantId);
     } else {
       context = scopedEvaluationContext.processScoped(variableScopeKey).tenantScoped(tenantId);
     }

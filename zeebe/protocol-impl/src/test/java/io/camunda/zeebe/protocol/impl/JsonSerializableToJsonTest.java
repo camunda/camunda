@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -623,6 +624,32 @@ final class JsonSerializableToJsonTest {
               return record;
             },
         errorRecordAsJson(-1)
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// ExpressionRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ///////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "ExpressionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final ExpressionRecord record = new ExpressionRecord();
+              record
+                  .setExpression("=10 + 5")
+                  .setResultValue(wrapString("15"))
+                  .setTenantId("test-tenant")
+                  .setWarnings(List.of("warning1", "warning2"));
+              return record;
+            },
+        """
+                {
+                  "tenantId":"test-tenant",
+                  "expression":"=10 + 5",
+                  "resultValue":49,
+                  "warnings":["warning1","warning2"]
+                }
+                """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// IncidentRecord

@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluateProcessor;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessors;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenersProcessors;
 import io.camunda.zeebe.engine.processing.historydeletion.HistoryDeletionProcessors;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
@@ -370,6 +371,14 @@ public final class EngineProcessors {
         config,
         processingState);
 
+    ExpressionProcessors.addProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        writers,
+        bpmnBehaviors.expressionBehavior(),
+        bpmnBehaviors.expressionLanguage(),
+        authCheckBehavior);
+
     return typedRecordProcessors;
   }
 
@@ -634,7 +643,7 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             authCheckBehavior,
-            bpmnBehaviors.expressionBehavior());
+            bpmnBehaviors.expressionProcessor());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

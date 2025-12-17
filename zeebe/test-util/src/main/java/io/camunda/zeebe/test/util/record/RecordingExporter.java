@@ -73,6 +73,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
@@ -388,6 +389,10 @@ public final class RecordingExporter implements Exporter {
   public static ClusterVariableRecordStream clusterVariableRecords() {
     return new ClusterVariableRecordStream(
         records(ValueType.CLUSTER_VARIABLE, ClusterVariableRecordValue.class));
+  }
+
+  public static ExpressionRecordStream expressionRecords() {
+    return new ExpressionRecordStream(records(ValueType.EXPRESSION, ExpressionRecordValue.class));
   }
 
   public static VariableRecordStream variableRecords(final VariableIntent intent) {
