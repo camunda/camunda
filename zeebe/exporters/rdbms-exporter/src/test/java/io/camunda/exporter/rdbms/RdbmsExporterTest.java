@@ -392,6 +392,44 @@ class RdbmsExporterTest {
     verify(schemaManager).isInitialized();
   }
 
+  @Test
+  void shouldRescheduleTaskAfterSuccessfulFlush() {
+    // given
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+    final var initialScheduleCount = 3; // flush + 2 cleanup tasks
+
+    // when
+    exporter.flushAndReschedule();
+
+    // then - a new task should be scheduled
+    verify(controller, times(initialScheduleCount + 1))
+        .scheduleCancellableTask(any(Duration.class), any());
+  }
+
+  @Test
+  void shouldRescheduleTaskEvenWhenFlushThrowsException() {
+    // given
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+    final var initialScheduleCount = 3; // flush + 2 cleanup tasks
+
+    // Mock the rdbmsWriter to throw an exception on flush
+    doAnswer(
+            invocation -> {
+              throw new RuntimeException("Simulated flush failure");
+            })
+        .when(rdbmsWriters)
+        .flush(true);
+
+    // when + then
+    assertThatThrownBy(() -> exporter.flushAndReschedule())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Simulated flush failure");
+
+    // then - a new task should still be scheduled (thanks to the finally block)
+    verify(controller, times(initialScheduleCount + 1))
+        .scheduleCancellableTask(any(Duration.class), any());
+  }
+
   // ------------------------------------------------
   // mocks and stubs
   // ------------------------------------------------

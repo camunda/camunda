@@ -129,12 +129,19 @@ public final class RdbmsExporter {
         currentUsageMetricsCleanupTask.cancel();
       }
 
-      rdbmsWriters.flush(true);
+      try {
+        rdbmsWriters.flush(true);
+      } catch (final Exception e) {
+        LOG.warn(
+            "[RDBMS Exporter] Failed to execute final flush on close for partition {}",
+            lastPosition);
+        throw e;
+      }
     } catch (final Exception e) {
       LOG.warn("[RDBMS Exporter] Failed to flush records before closing exporter.", e);
     }
 
-    LOG.info("[RDBMS Exporter] Exporter closed");
+    LOG.info("[RDBMS Exporter] Exporter closed at position {}", lastPosition);
   }
 
   public void export(final Record<?> record) {
@@ -176,7 +183,14 @@ public final class RdbmsExporter {
       }
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here.
-      rdbmsWriters.flush(flushAfterEachRecord());
+      try {
+        rdbmsWriters.flush(flushAfterEachRecord());
+      } catch (final Exception e) {
+        LOG.warn(
+            "[RDBMS Exporter] Failed to flush record for position {} to the database.",
+            lastPosition);
+        throw e;
+      }
     } else {
       LOG.trace(
           "[RDBMS Exporter] Record with key {} and original partitionId {} could not be exported {}.",
@@ -258,9 +272,17 @@ public final class RdbmsExporter {
     return flushInterval.isZero() || queueSize <= 0;
   }
 
-  private void flushAndReschedule() {
-    flushExecutionQueue();
-    currentFlushTask = controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+  @VisibleForTesting
+  void flushAndReschedule() {
+    try {
+      flushExecutionQueue();
+    } catch (final Exception e) {
+      LOG.warn("[RDBMS Exporter] Failed to flush records for position {}", lastPosition);
+      throw e;
+    } finally {
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
   }
 
   private void cleanupHistory() {
