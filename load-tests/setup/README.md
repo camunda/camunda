@@ -82,6 +82,11 @@ make install-platform
 make install-load-test
 ```
 
+Optionally, set up leader balancing (runs every 10 minutes to rebalance cluster leaders):
+```shell
+make setup-leader-balancer
+```
+
 This will deploy the Camunda Platform (including `orchestration cluster`, `elastic`) and load test applications (e.g. `starter` and `worker`).
 
 ### How to clean up a load test

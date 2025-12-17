@@ -37,6 +37,20 @@ install-load-test:
 		--reuse-values \
 		--render-subchart-notes
 
+# Setup leader balancing cronjob (optional)
+.PHONY: setup-leader-balancer
+setup-leader-balancer:
+	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) &>/dev/null; then \
+		kubectl create cronjob leader-balancer \
+			--namespace $(namespace) \
+			--image=curlimages/curl:7.87.0 \
+			--schedule="*/10 * * * *" \
+			-- curl -L -v -X POST http://camunda:9600/actuator/rebalance; \
+		echo "Leader balancer cronjob created"; \
+	else \
+		echo "Leader balancer cronjob already exists"; \
+	fi
+
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
