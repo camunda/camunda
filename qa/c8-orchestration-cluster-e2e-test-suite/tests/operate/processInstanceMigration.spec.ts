@@ -261,6 +261,18 @@ test.describe.serial('Process Instance Migration', () => {
           targetValue: 'SequentialMultiInstanceAdHocSubProcess',
         },
         {label: 'target element for task k', targetValue: 'TaskK'},
+        {
+          label: 'target element for ai agent task',
+          targetValue: 'AIAgentTask',
+        },
+        {
+          label: 'target element for agent tools',
+          targetValue: 'AgentTools',
+        },
+        {
+          label: 'target element for ai agent sub process',
+          targetValue: 'AIAgentsubprocess',
+        },
       ]);
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
@@ -371,6 +383,46 @@ test.describe.serial('Process Instance Migration', () => {
         );
 
         await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
+      });
+    }
+  });
+
+  test('Migrated ai agent task and ad hoc sub processes', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateOperationPanelPage,
+  }) => {
+    const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
+    const targetVersion = testProcesses.processV2.version.toString();
+
+    await test.step('Navigate to processes and expand operations panel', async () => {
+      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
+
+      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+        timeout: 30000,
+      });
+
+      await operateOperationPanelPage.expandOperationIdField();
+    });
+
+    const tasksToVerify = ['AIAgentTask', 'AIAgentsubprocess'];
+    for (const taskId of tasksToVerify) {
+      await test.step(`Get migration operation ID and verify ${taskId} instances`, async () => {
+        const operationId =
+          await operateOperationPanelPage.getMigrationOperationId();
+
+        await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+        await operateFiltersPanelPage.selectVersion(targetVersion);
+
+        await page.goto(
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&operationId=${operationId}&flowNodeId=${taskId}`,
+        );
+
+        await expect(page.getByText('6 results')).toBeVisible({
+          timeout: 90000,
+        });
       });
     }
   });
@@ -542,6 +594,18 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessMigrationModePage.mapFlowNode(
         'Sequential multi instance Ad hoc sub process',
         'Sequential multi instance Ad hoc sub process 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI agent Task',
+        'AI agent Task 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'Agent tools',
+        'Agent tools 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI Agent sub process',
+        'AI Agent sub process 2',
       );
     });
 
