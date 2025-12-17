@@ -63,6 +63,10 @@ class OperateProcessesPage {
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
   processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  getOperationAndResultsContainer: (
+    operation: string,
+    resultCount?: number,
+  ) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -192,6 +196,15 @@ class OperateProcessesPage {
       page.getByRole('link', {
         name: processInstanceKey,
       });
+    this.getOperationAndResultsContainer = (
+      operation: string,
+      resultCount?: number,
+    ) => {
+      const pattern = resultCount
+        ? new RegExp(`${operation}.*${resultCount} results`)
+        : new RegExp(`${operation}.*\\d+ results`);
+      return page.locator('div').filter({hasText: pattern});
+    };
   }
 
   async filterByProcessName(name: string): Promise<void> {
