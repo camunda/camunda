@@ -175,7 +175,6 @@ const orderProcessInstance: {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '<default>',
     },
     detailV2: {
@@ -436,7 +435,6 @@ const orderProcessInstance: {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '<default>',
     },
     detailV2: {
@@ -673,7 +671,6 @@ const orderProcessInstance: {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '<default>',
     },
     detailV2: {

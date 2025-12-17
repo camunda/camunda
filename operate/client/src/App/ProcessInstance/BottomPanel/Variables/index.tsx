@@ -12,7 +12,6 @@ import {observer} from 'mobx-react';
 import {reaction} from 'mobx';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useForm, useFormState} from 'react-final-form';
-import {Restricted} from 'modules/components/Restricted';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useFieldArray} from 'react-final-form-arrays';
 import {type VariableFormValues} from 'modules/types/variables';
@@ -21,7 +20,6 @@ import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
-import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
@@ -41,7 +39,6 @@ const Variables: React.FC<Props> = observer(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
-    const {data: permissions} = usePermissions();
     const isRootNodeSelected = useIsRootNodeSelected();
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
@@ -121,16 +118,7 @@ const Variables: React.FC<Props> = observer(
           />
         )}
 
-        {!isModificationModeEnabled && (
-          <Restricted
-            resourceBasedRestrictions={{
-              scopes: ['UPDATE_PROCESS_INSTANCE'],
-              permissions: permissions,
-            }}
-          >
-            <Footer variant={footerVariant} />
-          </Restricted>
-        )}
+        {!isModificationModeEnabled && <Footer variant={footerVariant} />}
       </VariablesContent>
     );
   },

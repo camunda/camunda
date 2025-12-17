@@ -30,7 +30,6 @@ type ProcessDto = {
   bpmnProcessId: string;
   name: string | null;
   processes: ProcessVersionDto[];
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 };
 
@@ -76,12 +75,6 @@ interface InstanceOperationEntity {
   completedDate: null | string;
 }
 
-type ResourceBasedPermissionDto =
-  | 'READ'
-  | 'DELETE'
-  | 'UPDATE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_INSTANCE';
-
 interface ProcessInstanceEntity {
   id: string;
   processId: string;
@@ -100,7 +93,6 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 }
 
@@ -280,7 +272,6 @@ type DecisionDto = {
     version: number;
     decisionId: string;
   }[];
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
 };
 

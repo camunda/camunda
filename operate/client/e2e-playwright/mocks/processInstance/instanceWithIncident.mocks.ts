@@ -42,7 +42,6 @@ const instanceWithIncident: InstanceMock = {
       },
     ],
     sortValues: [],
-    permissions: [],
     tenantId: '',
   },
   detailV2: {

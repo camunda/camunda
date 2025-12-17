@@ -751,7 +751,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -826,7 +825,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -844,7 +842,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -862,7 +859,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -880,7 +876,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -898,7 +893,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -916,7 +910,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -934,7 +927,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -952,7 +944,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -970,7 +961,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -988,7 +978,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1006,7 +995,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1024,7 +1012,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062811',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1051,7 +1038,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062811',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1069,7 +1055,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062811',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1096,7 +1081,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1114,7 +1098,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1132,7 +1115,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831341',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1150,7 +1132,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831341',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1168,7 +1149,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831341',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1186,7 +1166,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1204,7 +1183,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1222,7 +1200,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062775',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1240,7 +1217,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062775',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1258,7 +1234,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062775',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1276,7 +1251,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1294,7 +1268,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1312,7 +1285,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831303',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1330,7 +1302,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831303',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1348,7 +1319,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831303',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1366,7 +1336,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1384,7 +1353,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1402,7 +1370,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062739',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1420,7 +1387,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062739',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1438,7 +1404,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062739',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1456,7 +1421,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1474,7 +1438,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1492,7 +1455,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831264',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1510,7 +1472,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831264',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1528,7 +1489,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831264',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1546,7 +1506,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1564,7 +1523,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1582,7 +1540,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062705',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1600,7 +1557,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062705',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1618,7 +1574,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '6755399441062705',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1636,7 +1591,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1654,7 +1608,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1672,7 +1625,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831225',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1690,7 +1642,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831225',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1708,7 +1659,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: '2251799813831225',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1726,7 +1676,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1744,7 +1693,6 @@ const mockProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
   ],
@@ -1777,7 +1725,6 @@ const mockProcessInstancesWithOperationError: ProcessInstancesDto = {
       rootInstanceId: '6755399441062811',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1804,7 +1751,6 @@ const mockProcessInstancesWithOperationError: ProcessInstancesDto = {
       rootInstanceId: '6755399441062812',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
   ],
@@ -1828,7 +1774,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1903,7 +1848,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1921,7 +1865,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1939,7 +1882,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1957,7 +1899,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1975,7 +1916,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -1993,7 +1933,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2011,7 +1950,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2029,7 +1967,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2047,7 +1984,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2065,7 +2001,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2083,7 +2018,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2101,7 +2035,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062811',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2128,7 +2061,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062811',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2146,7 +2078,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062811',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2173,7 +2104,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2191,7 +2121,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2209,7 +2138,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831341',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2227,7 +2155,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831341',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2245,7 +2172,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831341',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2263,7 +2189,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2281,7 +2206,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2299,7 +2223,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062775',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2317,7 +2240,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062775',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2335,7 +2257,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062775',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2353,7 +2274,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2371,7 +2291,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2389,7 +2308,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831303',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2407,7 +2325,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831303',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2425,7 +2342,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831303',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2443,7 +2359,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2461,7 +2376,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2479,7 +2393,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062739',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2497,7 +2410,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062739',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2515,7 +2427,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062739',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2533,7 +2444,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2551,7 +2461,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2569,7 +2478,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831264',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2587,7 +2495,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831264',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2605,7 +2512,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831264',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2623,7 +2529,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2641,7 +2546,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2659,7 +2563,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062705',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2677,7 +2580,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062705',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2695,7 +2597,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '6755399441062705',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2713,7 +2614,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2731,7 +2631,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2749,7 +2648,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831225',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2767,7 +2665,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831225',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
     {
@@ -2785,7 +2682,6 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
       rootInstanceId: '2251799813831225',
       callHierarchy: [],
       sortValues: [],
-      permissions: [],
       tenantId: '',
     },
   ],
@@ -2835,7 +2731,6 @@ const mockOrderProcessInstances: ProcessInstancesDto = {
         callHierarchy: [],
         tenantId: '<default>',
         sortValues: [],
-        permissions: [],
       };
     }),
 };
@@ -2908,7 +2803,6 @@ const mockOrderProcessV2Instances: ProcessInstancesDto = {
         callHierarchy: [],
         tenantId: '<default>',
         sortValues: [],
-        permissions: [],
       };
     }),
 };
@@ -2951,7 +2845,6 @@ const mockAhspProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: ['', ''],
-      permissions: [],
       tenantId: '<default>',
     },
     {
@@ -2969,7 +2862,6 @@ const mockAhspProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: ['', ''],
-      permissions: [],
       tenantId: '<default>',
     },
     {
@@ -2987,7 +2879,6 @@ const mockAhspProcessInstances: ProcessInstancesDto = {
       rootInstanceId: null,
       callHierarchy: [],
       sortValues: ['', ''],
-      permissions: [],
       tenantId: '<default>',
     },
   ],
