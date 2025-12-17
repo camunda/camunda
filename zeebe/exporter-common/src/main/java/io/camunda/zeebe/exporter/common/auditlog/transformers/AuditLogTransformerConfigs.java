@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
@@ -21,6 +22,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificatio
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -33,6 +35,13 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Set;
 
 public class AuditLogTransformerConfigs {
+  public static final TransformerConfig AUTHORIZATION_CONFIG =
+      TransformerConfig.with(AUTHORIZATION)
+          .withIntents(
+              AuthorizationIntent.CREATED,
+              AuthorizationIntent.UPDATED,
+              AuthorizationIntent.DELETED);
+
   public static final TransformerConfig BATCH_OPERATION_CREATION_CONFIG =
       TransformerConfig.with(BATCH_OPERATION_CREATION).withIntents(BatchOperationIntent.CREATED);
 

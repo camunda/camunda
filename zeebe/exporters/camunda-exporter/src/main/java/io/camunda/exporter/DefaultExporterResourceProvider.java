@@ -67,6 +67,7 @@ import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.auditlog.AuthorizationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
@@ -462,6 +463,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
 
       AuditLogHandler.builder(indexName, auditLog)
+          .addHandler(new AuthorizationAuditLogTransformer())
           .addHandler(new BatchOperationCreationAuditLogTransformer())
           .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
           .addHandler(new DecisionEvaluationAuditLogTransformer())

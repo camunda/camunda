@@ -15,6 +15,7 @@ import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -65,9 +66,9 @@ public record AuditLogInfo(
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
         return AuditLogOperationCategory.OPERATOR;
+      case AUTHORIZATION:
       case USER:
       case MAPPING_RULE:
-      case AUTHORIZATION:
       case GROUP:
       case ROLE:
       case TENANT:
@@ -81,6 +82,8 @@ public record AuditLogInfo(
 
   private static AuditLogEntityType getEntityType(final ValueType valueType) {
     switch (valueType) {
+      case AUTHORIZATION:
+        return AuditLogEntityType.AUTHORIZATION;
       case PROCESS_INSTANCE:
       case PROCESS_INSTANCE_CREATION:
       case PROCESS_INSTANCE_MODIFICATION:
@@ -99,8 +102,6 @@ public record AuditLogInfo(
         return AuditLogEntityType.USER;
       case MAPPING_RULE:
         return AuditLogEntityType.MAPPING_RULE;
-      case AUTHORIZATION:
-        return AuditLogEntityType.AUTHORIZATION;
       case GROUP:
         return AuditLogEntityType.GROUP;
       case ROLE:
@@ -120,6 +121,13 @@ public record AuditLogInfo(
     }
 
     switch (intent) {
+      case AuthorizationIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case AuthorizationIntent.UPDATED:
+        return AuditLogOperationType.UPDATE;
+      case AuthorizationIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+
       case BatchOperationIntent.CREATED:
       case BatchOperationIntent.CREATE:
         return AuditLogOperationType.CREATE;
