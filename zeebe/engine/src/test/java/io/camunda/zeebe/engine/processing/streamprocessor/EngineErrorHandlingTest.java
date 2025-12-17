@@ -71,10 +71,10 @@ import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
@@ -105,7 +105,7 @@ public final class EngineErrorHandlingTest {
     streams.createLogStream(STREAM_NAME, PARTITION_ID);
   }
 
-  @AfterEach
+  @After
   public void tearDown() {
     CloseHelper.close(streamProcessor);
   }
