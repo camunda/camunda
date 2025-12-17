@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.opensearch;
 
-import io.camunda.operate.elasticsearch.IncidentProcessInstanceStatisticsIT;
+import io.camunda.operate.elasticsearch.IncidentStatisticsIT;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(properties = {"camunda.data.secondary-storage.type=opensearch"})
-public class OpensearchStatisticsIT extends IncidentProcessInstanceStatisticsIT {}
+public class OpensearchStatisticsIT extends IncidentStatisticsIT {}
