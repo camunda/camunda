@@ -109,6 +109,38 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
+  /incidents/statistics/process-instances:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Incident
+      operationId: getIncidentProcessInstanceStatistics
+      summary: Get incident process instance statistics
+      description: |
+        Returns aggregated statistics for process instances with active incidents,
+        grouped by error hash code.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQuery'
+      responses:
+        "200":
+          description: The incident statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
 ## Schema definitions
 
 components:
@@ -378,3 +410,57 @@ components:
       properties:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+
+    IncidentProcessInstanceStatisticsQuery:
+      type: object
+      additionalProperties: false
+      properties:
+        page:
+          description: Pagination parameters for process instance statistics with active incidents.
+          allOf:
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQuerySortRequest'
+
+    IncidentProcessInstanceStatisticsQueryResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The incident statistics results.
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsResult'
+
+    IncidentProcessInstanceStatisticsResult:
+      type: object
+      properties:
+        errorHashCode:
+          type: integer
+          format: int32
+          description: A hash code representing the error details of an incident.
+        errorMessage:
+          type: string
+          description: Error message which describes the error in more detail.
+        activeInstancesWithErrorCount:
+          type: integer
+          format: int64
+          description: The number of active process instances with this error.
+
+    IncidentProcessInstanceStatisticsQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - errorMessage
+            - activeInstancesWithErrorCount
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field

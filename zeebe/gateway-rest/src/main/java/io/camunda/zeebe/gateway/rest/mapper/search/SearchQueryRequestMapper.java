@@ -677,6 +677,26 @@ public final class SearchQueryRequestMapper {
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceVersionStatisticsQuery);
   }
 
+  public static Either<
+          ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsQuery>
+      toIncidentProcessInstanceStatisticsQuery(
+          final IncidentProcessInstanceStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.incidentProcessInstanceStatisticsQuery().build());
+    }
+
+    final var page = toOffsetPagination(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromIncidentProcessInstanceStatisticsQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::incidentProcessInstanceStatistics,
+            SearchQuerySortRequestMapper::applyIncidentProcessInstanceStatisticsSortField);
+    final var filter = FilterBuilders.incident().build();
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::incidentProcessInstanceStatisticsQuery);
+  }
+
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final SearchQueryPageRequest requestedPage) {
     if (requestedPage == null) {

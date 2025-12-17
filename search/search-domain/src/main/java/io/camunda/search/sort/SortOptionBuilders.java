@@ -195,6 +195,18 @@ public final class SortOptionBuilders {
     return fn.apply(incident()).build();
   }
 
+  public static IncidentProcessInstanceStatisticsSort.Builder incidentProcessInstanceStatistics() {
+    return new IncidentProcessInstanceStatisticsSort.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsSort incidentProcessInstanceStatistics(
+      final Function<
+              IncidentProcessInstanceStatisticsSort.Builder,
+              ObjectBuilder<IncidentProcessInstanceStatisticsSort>>
+          fn) {
+    return fn.apply(incidentProcessInstanceStatistics()).build();
+  }
+
   public static BatchOperationSort.Builder batchOperation() {
     return new BatchOperationSort.Builder();
   }

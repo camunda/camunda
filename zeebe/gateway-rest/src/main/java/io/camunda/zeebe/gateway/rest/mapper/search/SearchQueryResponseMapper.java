@@ -32,6 +32,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -101,6 +102,8 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
@@ -304,6 +307,26 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersion(result.processDefinitionVersion())
         .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
         .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
+  }
+
+  public static IncidentProcessInstanceStatisticsQueryResult
+      toIncidentProcessInstanceStatisticsResult(
+          final SearchQueryResult<IncidentProcessInstanceStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentProcessInstanceStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsResult)
+                .toList());
+  }
+
+  private static IncidentProcessInstanceStatisticsResult toIncidentProcessInstanceStatisticsResult(
+      final IncidentProcessInstanceStatisticsEntity result) {
+    return new IncidentProcessInstanceStatisticsResult()
+        .errorHashCode(result.errorHashCode())
+        .errorMessage(result.errorMessage())
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 
   public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(

@@ -10,14 +10,18 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -32,17 +36,21 @@ public final class IncidentServiceTest {
 
   private IncidentServices services;
   private IncidentSearchClient client;
+  private SecurityContextProvider securityContextProvider;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(IncidentSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    securityContextProvider = mock(SecurityContextProvider.class);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new IncidentServices(
             mock(BrokerClient.class),
-            mock(SecurityContextProvider.class),
+            securityContextProvider,
             client,
-            null,
+            authentication,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -89,5 +97,22 @@ public final class IncidentServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+  }
+
+  @Test
+  public void shouldReturnIncidentProcessInstanceStatistics() {
+    // given
+    final var statisticsResult = mock(SearchQueryResult.class);
+    when(client.incidentProcessInstanceStatistics(any())).thenReturn(statisticsResult);
+    final var query = new IncidentProcessInstanceStatisticsQuery.Builder().build();
+
+    // when
+    final var result = services.incidentProcessInstanceStatistics(query);
+
+    // then
+    assertThat(result).isEqualTo(statisticsResult);
+    verify(securityContextProvider)
+        .provideSecurityContext(eq(authentication), eq(Authorizations.INCIDENT_READ_AUTHORIZATION));
+    verify(client).incidentProcessInstanceStatistics(eq(query));
   }
 }

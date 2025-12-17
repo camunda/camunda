@@ -175,6 +175,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -332,6 +333,7 @@ import io.camunda.client.impl.search.request.UsersByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
+import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
@@ -1537,6 +1539,17 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient, jsonMapper, processDefinitionId);
   }
 
+  @Override
+  public EvaluateConditionalCommandStep1 newEvaluateConditionalCommand() {
+    return new EvaluateConditionalCommandImpl(
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest, httpClient);
+  }
+
+  @Override
+  public IncidentProcessInstanceStatisticsRequest newIncidentProcessInstanceStatisticsRequest() {
+    return new IncidentProcessInstanceStatisticsRequestImpl(httpClient, jsonMapper);
+  }
+
   private JobClient newJobClient() {
     return new JobClientImpl(
         asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
@@ -1581,11 +1594,5 @@ public final class CamundaClientImpl implements CamundaClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
-  }
-
-  @Override
-  public EvaluateConditionalCommandStep1 newEvaluateConditionalCommand() {
-    return new EvaluateConditionalCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest, httpClient);
   }
 }
