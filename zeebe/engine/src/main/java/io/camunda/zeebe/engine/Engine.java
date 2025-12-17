@@ -79,6 +79,7 @@ public class Engine implements RecordProcessor {
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(recordProcessorContext, writers, config);
     processingState = typedProcessorContext.getProcessingState();
+    writers.setKeyValidator(processingState.getKeyGenerator());
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
