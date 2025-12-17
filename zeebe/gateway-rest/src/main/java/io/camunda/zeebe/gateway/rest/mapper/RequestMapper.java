@@ -15,6 +15,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ConditionalEvaluationReque
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -33,6 +34,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
@@ -48,6 +50,7 @@ import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
+import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.JobServices.ActivateJobsRequest;
@@ -741,6 +744,21 @@ public class RequestMapper {
         ClusterVariableRequestValidator.validateTenantClusterVariableRequest(
             name, tenantId, identifierPattern),
         () -> new ClusterVariableRequest(name, null, tenantId));
+  }
+
+  public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
+      final String expression, final String tenantId, final boolean isMultiTenancyEnabled) {
+    final var validator =
+        validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation");
+    if (expression == null || expression.isBlank()) {
+      return Either.left(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("expression"),
+              INVALID_ARGUMENT.name()));
+    }
+    return validator.map(
+        validTenantId -> new ExpressionEvaluationRequest(expression, validTenantId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
