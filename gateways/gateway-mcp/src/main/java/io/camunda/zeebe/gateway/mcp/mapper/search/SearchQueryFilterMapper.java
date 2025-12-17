@@ -22,36 +22,36 @@ public class SearchQueryFilterMapper {
   public static IncidentFilter toIncidentFilter(final IncidentSearchQuery request) {
     final var builder = FilterBuilders.incident();
 
-    ofNullable(createEqualOperation(request.processDefinitionId()))
+    ofNullable(request.processDefinitionId())
+        .map(SearchQueryFilterMapper::createEqualOperation)
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(createEnumEqualOperation(request.errorType()))
+    ofNullable(request.errorType())
+        .map(SearchQueryFilterMapper::createEnumEqualOperation)
         .ifPresent(builder::errorTypeOperations);
-    ofNullable(createEqualOperation(request.elementId())).ifPresent(builder::flowNodeIdOperations);
+    ofNullable(request.elementId())
+        .map(SearchQueryFilterMapper::createEqualOperation)
+        .ifPresent(builder::flowNodeIdOperations);
     ofNullable(createDateTimeFilterOperation(request.creationTimeFrom(), request.creationTimeTo()))
         .ifPresent(builder::creationTimeOperations);
-    ofNullable(createEnumEqualOperation(request.state())).ifPresent(builder::stateOperations);
-    ofNullable(createEqualOperation(request.processDefinitionKey()))
+    ofNullable(request.state())
+        .map(SearchQueryFilterMapper::createEnumEqualOperation)
+        .ifPresent(builder::stateOperations);
+    ofNullable(request.processDefinitionKey())
+        .map(SearchQueryFilterMapper::createEqualOperation)
         .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(createEqualOperation(request.processInstanceKey()))
+    ofNullable(request.processInstanceKey())
+        .map(SearchQueryFilterMapper::createEqualOperation)
         .ifPresent(builder::processInstanceKeyOperations);
 
     return builder.build();
   }
 
   private static <T> List<Operation<T>> createEqualOperation(final T value) {
-    if (value == null) {
-      return null;
-    }
-
     return List.of(Operation.eq(value));
   }
 
   private static <E extends Enum<E>> List<Operation<String>> createEnumEqualOperation(
       final E value) {
-    if (value == null) {
-      return null;
-    }
-
     return List.of(Operation.eq(value.name()));
   }
 
