@@ -17,6 +17,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRAT
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
 
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Set;
 
@@ -110,6 +112,13 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig USER_CONFIG =
       TransformerConfig.with(USER)
           .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED);
+
+  public static final TransformerConfig USER_TASK_CONFIG =
+      new TransformerConfig(
+          USER_TASK,
+          Set.of(UserTaskIntent.UPDATED, UserTaskIntent.ASSIGNED, UserTaskIntent.COMPLETED),
+          Set.of(UserTaskIntent.UPDATE, UserTaskIntent.ASSIGN, UserTaskIntent.COMPLETE),
+          Set.of(RejectionType.INVALID_STATE));
 
   public static final TransformerConfig VARIABLE_ADD_UPDATE_CONFIG =
       TransformerConfig.with(VARIABLE).withIntents(VariableIntent.CREATED, VariableIntent.UPDATED);

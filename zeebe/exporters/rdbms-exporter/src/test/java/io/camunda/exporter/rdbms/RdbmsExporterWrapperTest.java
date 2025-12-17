@@ -31,6 +31,7 @@ import io.camunda.exporter.rdbms.handlers.auditlog.ResourceAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantEntityAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.UserAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.UserTaskAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -114,6 +115,7 @@ class RdbmsExporterWrapperTest {
             Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),
+            Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
             Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Check that all expected AuditLogExportHandlers are registered

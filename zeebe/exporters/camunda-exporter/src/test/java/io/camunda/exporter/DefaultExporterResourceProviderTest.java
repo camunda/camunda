@@ -28,6 +28,7 @@ import io.camunda.exporter.handlers.auditlog.ResourceAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.TenantAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.TenantEntityAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.UserAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.UserTaskAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -198,6 +199,7 @@ public class DefaultExporterResourceProviderTest {
             Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),
+            Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
             Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Verify that all expected AuditLogHandler transformers are present
