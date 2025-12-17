@@ -150,6 +150,7 @@ jobs:
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
+          API_TESTS_ONLY: true
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then

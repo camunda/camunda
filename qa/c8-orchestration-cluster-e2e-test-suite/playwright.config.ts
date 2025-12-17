@@ -24,7 +24,8 @@ function getTestTypeLabel(): string {
   if (isApiTestsOnly) {
     return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}`;
   }
-  return `Nightly Test Results for Mono Repo - ${process.env.VERSION}`;
+  const tasklistMode = isV2ModeEnabled ? 'V2' : 'V1';
+  return `Nightly Test Results for Mono Repo - ${process.env.VERSION} (Tasklist ${tasklistMode})`;
 }
 
 
