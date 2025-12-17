@@ -30,7 +30,7 @@ git_author=$(git config user.name || echo "unknown")
 kubectl label namespace $namespace created-by="${git_author}" --overwrite
 
 # Label namespace with TTL deadline (default: 7 days from now)
-ttl_days=${2:-7}
+ttl_days="${2:-7}"
 # Try GNU date format first (Linux), then BSD/macOS format
 if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
   : # GNU date succeeded
