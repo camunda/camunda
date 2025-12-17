@@ -50,7 +50,6 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
     this.clock = Objects.requireNonNull(clock, "clock cannot be null");
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
-    Objects.requireNonNull(leaseAcquireMaxDelay, "leaseAcquireMaxDelay cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseAcquireMaxDelay);

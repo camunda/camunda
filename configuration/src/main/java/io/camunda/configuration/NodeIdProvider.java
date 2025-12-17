@@ -93,11 +93,8 @@ public class NodeIdProvider {
     /** Lease duration before expiry */
     private Duration leaseDuration;
 
-    /**
-     * Maximum duration for retrying lease acquire operations. When lease renewal fails, exponential
-     * backoff retries will be attempted up to this limit.
-     */
-    private Duration leaseAcquireMaxDelay = Duration.ofSeconds(60);
+    /** Maximum delay for exponential backoff when retrying failed lease renewals. */
+    private Duration leaseAcquireMaxDelay = Duration.ofSeconds(30);
 
     /**
      * Timeout for updating node ID version mappings in S3. If a node's mapping is not updated

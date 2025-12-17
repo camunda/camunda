@@ -87,22 +87,6 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   @Override
-  public void release(final StoredLease.Initialized lease) {
-    final var nodeId = lease.lease().nodeInstance().id();
-    final PutObjectRequest putRequest =
-        createPutObjectRequest(
-                nodeId, Optional.of(lease.metadata().forRelease()), Optional.of(lease.eTag()))
-            .build();
-    try {
-      LOG.info("Release lease {}", lease);
-      client.putObject(putRequest, RequestBody.empty());
-      LOG.debug("Lease released gracefully: {}", lease);
-    } catch (final Exception e) {
-      LOG.warn("Failed to release the lease gracefully {}", lease, e);
-    }
-  }
-
-  @Override
   public StoredLease.Initialized acquire(final Lease lease, final String previousETag) {
     if (lease == null) {
       throw new IllegalArgumentException("lease is null");
@@ -124,6 +108,22 @@ public class S3NodeIdRepository implements NodeIdRepository {
     } catch (final Exception e) {
       LOG.warn("Failed to acquire the lease {}", lease, e);
       throw e;
+    }
+  }
+
+  @Override
+  public void release(final StoredLease.Initialized lease) {
+    final var nodeId = lease.lease().nodeInstance().id();
+    final PutObjectRequest putRequest =
+        createPutObjectRequest(
+                nodeId, Optional.of(lease.metadata().forRelease()), Optional.of(lease.eTag()))
+            .build();
+    try {
+      LOG.info("Release lease {}", lease);
+      client.putObject(putRequest, RequestBody.empty());
+      LOG.debug("Lease released gracefully: {}", lease);
+    } catch (final Exception e) {
+      LOG.warn("Failed to release the lease gracefully {}", lease, e);
     }
   }
 
@@ -206,7 +206,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
       if (nodeIdMappingUpdateTimeout.toMillis() <= 0) {
         throw new IllegalArgumentException("nodeIdMappingUpdateTimeout must be greater than 0");
       }
-      if (nodeIdMappingUpdateTimeout.toMillis() < leaseDuration.toMillis()) {
+      if (nodeIdMappingUpdateTimeout.toMillis() <= leaseDuration.toMillis()) {
         throw new IllegalArgumentException(
             "Expected nodeIdMappingUpdateTimeout to be greater than leaseDuration (%s), but got %s."
                 .formatted(leaseDuration, nodeIdMappingUpdateTimeout));
