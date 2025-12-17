@@ -7,7 +7,7 @@ set -exo pipefail
 
 if [ -z $1 ]
 then
-  echo "Please provide an namespace name!"
+  echo "Please provide a namespace name!"
   exit 1
 fi
 
@@ -18,13 +18,29 @@ fi
 
 namespace=$1
 
+# Create K8 namespace
 kubectl create namespace $namespace
+
+# Label namespace with author
+kubectl label namespace $namespace created-by=${USER:-unknown} --overwrite
+
+# Label namespace with TTL (default 7 days)
+TTL=${TTL:-7}
+deadlineDate=$(date -d "+${TTL} days" +%Y-%m-%d 2>/dev/null || date -v +${TTL}d +%Y-%m-%d)
+kubectl label namespace $namespace deadline-date="$deadlineDate" --overwrite
+
+# Copy default folder to new namespace folder
 cp -rv default/ $namespace
+
+# Copy camunda-platform-values.yaml to new folder
+cp -v ../camunda-platform-values.yaml $namespace/
+
 cd $namespace
 
 # calls OS specific sed inplace function
 sed_inplace "s/default/$namespace/g" Makefile
 
-# get latest updates from zeebe repo
-helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm # skips if already exists
+# get latest updates from helm repos
+helm repo add camunda https://helm.camunda.io/ # skips if already exists
+helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ # skips if already exists
 helm repo update
