@@ -43,12 +43,10 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
 
   public CompletableFuture<ExpressionRecord> evaluateExpression(
       final ExpressionEvaluationRequest request) {
-    final var brokerRequest =
-        new BrokerExpressionEvaluationRequest().setExpression(request.expression());
-    if (request.tenantId() != null && !request.tenantId().isEmpty()) {
-      brokerRequest.setTenantId(request.tenantId());
-    }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(
+        new BrokerExpressionEvaluationRequest()
+            .setExpression(request.expression())
+            .setTenantId(request.tenantId()));
   }
 
   public record ExpressionEvaluationRequest(String expression, String tenantId) {}

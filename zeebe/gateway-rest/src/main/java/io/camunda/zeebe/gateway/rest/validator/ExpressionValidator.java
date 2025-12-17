@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -18,11 +17,11 @@ import org.springframework.http.ProblemDetail;
 public class ExpressionValidator {
 
   public static Optional<ProblemDetail> validateExpressionEvaluationRequest(
-      final String expression, final String tenantId) {
+      final String expression, final String tenantId, final boolean isMultiTenancyEnabled) {
     return validate(
         violations -> {
           validateExpression(expression, violations);
-          validateTenantId(tenantId, violations);
+          validateTenantId(tenantId, isMultiTenancyEnabled, violations);
         });
   }
 
@@ -32,10 +31,9 @@ public class ExpressionValidator {
     }
   }
 
-  private static void validateTenantId(final String tenantId, final List<String> violations) {
-    if (tenantId != null) {
-      IdentifierValidator.validateTenantId(
-          tenantId, violations, TenantOwned.DEFAULT_TENANT_IDENTIFIER::equals);
-    }
+  private static void validateTenantId(
+      final String tenantId, final boolean isMultiTenancyEnabled, final List<String> violations) {
+    MultiTenancyValidator.validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation")
+        .ifLeft(problemDetail -> violations.add(problemDetail.getDetail()));
   }
 }

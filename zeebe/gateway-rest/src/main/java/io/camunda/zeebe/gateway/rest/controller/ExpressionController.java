@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
 import io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -25,19 +26,22 @@ public class ExpressionController {
 
   private final ExpressionServices expressionServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
   public ExpressionController(
       final ExpressionServices expressionServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final MultiTenancyConfiguration multiTenancyCfg) {
     this.expressionServices = expressionServices;
     this.authenticationProvider = authenticationProvider;
+    this.multiTenancyCfg = multiTenancyCfg;
   }
 
   @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluateExpression(
       @RequestBody final ExpressionEvaluationRequest request) {
     return RequestMapper.toExpressionEvaluationRequest(
-            request.getExpression(), request.getTenantId())
+            request.getExpression(), request.getTenantId(), multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateExpression);
   }
 

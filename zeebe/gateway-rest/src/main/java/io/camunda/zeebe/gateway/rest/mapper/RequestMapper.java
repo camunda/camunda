@@ -744,9 +744,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
-      final String expression, final String tenantId) {
+      final String expression, final String tenantId, final boolean multiTenancyEnabled) {
     return getResult(
-        validateExpressionEvaluationRequest(expression, tenantId),
+        validateExpressionEvaluationRequest(expression, tenantId, multiTenancyEnabled),
         () -> new ExpressionEvaluationRequest(expression, tenantId));
   }
 
