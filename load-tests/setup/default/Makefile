@@ -15,7 +15,7 @@ install-platform: setup-leader-balancer
 	helm upgrade --install $(namespace) camunda/$(helm_chart) \
 		--namespace $(namespace) \
 		--wait --timeout 35m0s \
-		--reuse-values \
+		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml
 
@@ -25,7 +25,7 @@ install-platform-stable: setup-leader-balancer
 	helm upgrade --install $(namespace) camunda/$(helm_chart) \
 		--namespace $(namespace) \
 		--wait --timeout 35m0s \
-		--reuse-values \
+		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
 		-f values-stable.yaml
