@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -55,6 +57,11 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(ValueType.INCIDENT)
           .withIntents(IncidentIntent.RESOLVED)
           .withRejections(IncidentIntent.RESOLVE, RejectionType.INVALID_STATE);
+
+  public static final TransformerConfig MAPPING_RULE_CONFIG =
+      TransformerConfig.with(MAPPING_RULE)
+          .withIntents(
+              MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)

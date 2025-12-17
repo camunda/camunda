@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -139,6 +140,13 @@ public record AuditLogInfo(
       case IncidentIntent.RESOLVED:
       case IncidentIntent.RESOLVE:
         return AuditLogOperationType.RESOLVE;
+
+      case MappingRuleIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case MappingRuleIntent.UPDATED:
+        return AuditLogOperationType.UPDATE;
+      case MappingRuleIntent.DELETED:
+        return AuditLogOperationType.DELETE;
 
       case ProcessInstanceCreationIntent.CREATED:
         return AuditLogOperationType.CREATE;
