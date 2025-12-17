@@ -132,7 +132,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
     private ProtocolMessage createHeartbeat(final long id) {
       final byte[] payload =
           sendHeartbeatPayload ? writeHeartbeatResponse() : EMPTY_HEARTBEAT_PAYLOAD;
-      log.debug("Heartbeat response payload for req id={} is {}", id, payload);
+      log.trace("Heartbeat response payload for req id={} is {}", id, payload);
       return new ProtocolReply(id, payload, Status.OK);
     }
 
