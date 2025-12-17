@@ -24,10 +24,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
     </dependency>
-    <!--<dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
-    </dependency>-->
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
