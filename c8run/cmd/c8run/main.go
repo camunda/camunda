@@ -55,6 +55,13 @@ func validateKeystore(settings types.C8RunSettings, parentDir string) error {
 	return nil
 }
 
+func validatePort(port int) error {
+	if port < 1 || port > 65535 {
+		return fmt.Errorf("--port must be between 1 and 65535 (got %d)", port)
+	}
+	return nil
+}
+
 func runDockerCommand(composeExtractedFolder string, args ...string) error {
 	err := os.Chdir(composeExtractedFolder)
 	if err != nil {
@@ -183,6 +190,9 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 			return settings, startupURLProvided, fmt.Errorf("error parsing start argument: %w", err)
 		}
 		startupURLProvided = flagPassed(startFlagSet, "startup-url")
+		if err := validatePort(settings.Port); err != nil {
+			return settings, startupURLProvided, err
+		}
 	case "stop":
 		err := stopFlagSet.Parse(os.Args[2:])
 		if err != nil {
