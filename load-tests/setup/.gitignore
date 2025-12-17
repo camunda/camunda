@@ -7,6 +7,3 @@ cloudcredentials.yaml
 */
 !default/
 !cloud-default/
-*.yaml
-!default/*.yaml
-!cloud-default/*.yaml
