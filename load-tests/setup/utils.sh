@@ -25,9 +25,9 @@ function sed_inplace() {
   detect_os
 
   if [ "${GO_OS}" == "darwin" ]; then
-    sed -i '' -e $@ 
+    sed -i '' -e "$@" 
   else
-    sed -i -e $@
+    sed -i -e "$@"
   fi
 
 }

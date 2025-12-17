@@ -1,3 +1,12 @@
 
 #!!! DO NOT ADD CREDENTIALS TO THE REPO !!!
 cloudcredentials.yaml
+
+# Ignore dynamically created namespace folders
+# Keep only default and cloud-default templates
+*/
+!default/
+!cloud-default/
+*.yaml
+!default/*.yaml
+!cloud-default/*.yaml
