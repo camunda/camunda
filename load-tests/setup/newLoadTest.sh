@@ -69,6 +69,10 @@ cp -v ../camunda-platform-values.yaml $namespace/
 
 cd $namespace
 
+# Clone Platform Helm so we can run the latest chart
+
+git clone https://github.com/camunda/camunda-platform-helm.git
+
 # Update Makefile to use the namespace
 sed_inplace "s/default/$namespace/g" Makefile
 
