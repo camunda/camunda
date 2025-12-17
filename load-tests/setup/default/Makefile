@@ -1,37 +1,60 @@
 namespace ?= default
+helm_chart ?= camunda-platform-8.9
 
 .PHONY: all
-all: load-test
+all: install
 
-.PHONY: load-test
-load-test:
-	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark --skip-crds
+.PHONY: install
+install: install-platform install-load-test
 
-# To deploy the Zeebe pods on stable nodes, use this job
-.PHONY: load-test-stable
-load-test-stable:
-	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark -f values-stable.yaml --skip-crds
+# Install/upgrade Camunda Platform helm chart
+.PHONY: install-platform
+install-platform:
+	helm upgrade --install $(namespace) camunda/$(helm_chart) \
+		--namespace $(namespace) \
+		--wait --timeout 35m0s \
+		--reuse-values \
+		--render-subchart-notes \
+		-f camunda-platform-values.yaml
 
-# Generates templates from the zeebe helm charts, useful to make some more specific changes which are not doable by the values file.
-# To apply the templates use k apply -f zeebe-benchmark/templates/
+# Install/upgrade Camunda Platform on stable VMs
+.PHONY: install-platform-stable
+install-platform-stable:
+	helm upgrade --install $(namespace) camunda/$(helm_chart) \
+		--namespace $(namespace) \
+		--wait --timeout 35m0s \
+		--reuse-values \
+		--render-subchart-notes \
+		-f camunda-platform-values.yaml \
+		-f values-stable.yaml
+
+# Install/upgrade load test helm chart
+.PHONY: install-load-test
+install-load-test:
+	helm upgrade --install $(namespace)-test camunda-load-tests/camunda-load-tests \
+		--namespace $(namespace) \
+		--wait --timeout 35m0s \
+		--reuse-values \
+		--render-subchart-notes
+
+# Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
-	helm template $(namespace) zeebe-benchmark/zeebe-benchmark --skip-crds --output-dir .
+	helm template $(namespace) camunda/$(helm_chart) \
+		-f camunda-platform-values.yaml \
+		--output-dir .
 
 .PHONY: template-stable
 template-stable:
-	helm template $(namespace) zeebe-benchmark/zeebe-benchmark -f values-stable.yaml --skip-crds --output-dir .
-
-.PHONY: update
-update:
-	helm upgrade --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark --reuse-values
-
-.PHONY: update-stable
-update-stable:
-	helm upgrade --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark --reuse-values -f values-stable.yaml
+	helm template $(namespace) camunda/$(helm_chart) \
+		-f camunda-platform-values.yaml \
+		-f values-stable.yaml \
+		--output-dir .
 
 .PHONY: clean
 clean:
 	-helm --namespace $(namespace) uninstall $(namespace)
+	-helm --namespace $(namespace) uninstall $(namespace)-test
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
+	-kubectl delete -n $(namespace) cronjob leader-balancer
