@@ -70,6 +70,7 @@ class OperateProcessInstancePage {
   readonly addVariableModificationButton: Locator;
   readonly modalDialog: Locator;
   readonly noVariablesText: Locator;
+  readonly variableCellByName: (name: string | RegExp) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -175,6 +176,9 @@ class OperateProcessInstancePage {
     });
     this.modalDialog = page.getByRole('dialog');
     this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
+
+    this.variableCellByName = (name) =>
+      this.variablesList.getByRole('cell', {name});
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {

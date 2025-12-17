@@ -17,9 +17,6 @@ import {
 import {waitForProcessInstances} from 'utils/incidentsHelper';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {sleep} from 'utils/sleep';
-
-// Set secure connection to false for this test only
 
 let instanceIds: string[] = [];
 
@@ -75,13 +72,6 @@ test.beforeAll(async ({request}) => {
 
   // Wait for instances to be created (40 total: 4+8+10+5+10+1+1+1 = 40)
   await waitForProcessInstances(request, instanceIds, 40);
-
-  // Additional sleep to ensure incidents are generated and UI is updated
-  console.log('Waiting for incidents to be created...');
-  await sleep(10000);
-
-  // Log to see if incidents were created
-  console.log('Total instances created:', instanceIds.length);
 });
 
 test.beforeEach(async ({page, loginPage, operateHomePage}) => {
@@ -97,202 +87,165 @@ test.afterEach(async ({page}, testInfo) => {
 
 test.describe('Dashboard', () => {
   test('Statistics', async ({operateDashboardPage}) => {
-    const incidentInstancesCount = Number(
-      await operateDashboardPage.incidentInstancesBadge.innerText(),
-    );
+    await test.step('Verify total count equals sum of active and incident instances', async () => {
+      const incidentInstancesCount = Number(
+        await operateDashboardPage.incidentInstancesBadge.innerText(),
+      );
+      const activeProcessInstancesCount = Number(
+        await operateDashboardPage.activeInstancesBadge.innerText(),
+      );
+      const totalInstancesCount = operateDashboardPage.totalInstancesLink;
 
-    const activeProcessInstancesCount = Number(
-      await operateDashboardPage.activeInstancesBadge.innerText(),
-    );
-
-    const totalInstancesCount = operateDashboardPage.totalInstancesLink;
-
-    await expect(totalInstancesCount).toHaveText(
-      `${
-        incidentInstancesCount + activeProcessInstancesCount
-      } Running Process Instances in total`,
-    );
+      await expect(totalInstancesCount).toHaveText(
+        `${
+          incidentInstancesCount + activeProcessInstancesCount
+        } Running Process Instances in total`,
+      );
+    });
   });
 
-  test('Navigation to Processes View', async ({operateDashboardPage, page}) => {
-    const activeProcessInstancesCount = await page
-      .getByTestId('active-instances-badge')
-      .nth(0)
-      .innerText();
+  test('Navigation to Processes View', async ({operateDashboardPage}) => {
+    await test.step('Navigate to active instances and verify count', async () => {
+      const activeProcessInstancesCount =
+        await operateDashboardPage.activeInstancesBadge.innerText();
 
-    const instancesWithIncidentCount = await page
-      .getByTestId('incident-instances-badge')
-      .nth(0)
-      .innerText();
+      await operateDashboardPage.clickActiveInstancesLink();
 
-    await operateDashboardPage.activeInstancesLink.click();
+      await expect(
+        operateDashboardPage.processInstancesHeading(
+          activeProcessInstancesCount,
+          Number(activeProcessInstancesCount) > 1,
+        ),
+      ).toBeVisible();
+    });
 
-    await expect(
-      page.getByRole('heading', {
-        name: `Process Instances - ${activeProcessInstancesCount} result${
-          Number(activeProcessInstancesCount) > 1 ? 's' : ''
-        }`,
-      }),
-    ).toBeVisible();
+    await test.step('Navigate to incident instances and verify count', async () => {
+      await operateDashboardPage.gotoDashboardPage();
 
-    await operateDashboardPage.gotoDashboardPage();
+      const instancesWithIncidentCount =
+        await operateDashboardPage.incidentInstancesBadge.innerText();
 
-    await operateDashboardPage.incidentInstancesLink.click();
+      await operateDashboardPage.clickIncidentInstancesLink();
 
-    await expect(
-      page.getByRole('heading', {
-        name: `Process Instances - ${instancesWithIncidentCount} result${
-          Number(instancesWithIncidentCount) > 1 ? 's' : ''
-        }`,
-      }),
-    ).toBeVisible();
+      await expect(
+        operateDashboardPage.processInstancesHeading(
+          instancesWithIncidentCount,
+          Number(instancesWithIncidentCount) > 1,
+        ),
+      ).toBeVisible();
+    });
   });
 
   test('Navigate to processes view (same truncated error message)', async ({
-    page,
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
-    // Select incident type a from the incidents list
-    await page
-      .getByRole('link', {
-        name: /type a/i,
-      })
-      .click();
-    await expect(
-      page.getByRole('heading', {
-        name: 'Process Instances - 1 result',
-      }),
-    ).toBeVisible();
+    await test.step('Select incident type A and verify details', async () => {
+      await operateDashboardPage.clickIncidentByType(/type a/i);
+      await expect(
+        operateDashboardPage.processInstancesHeading(1, false),
+      ).toBeVisible();
 
-    await page
-      .getByRole('link', {
-        name: /view instance/i,
-      })
-      .click();
+      await operateDashboardPage.clickViewInstanceLink();
+      await expect(
+        operateProcessInstancePage.variableCellByName(/incident type a/i),
+      ).toBeVisible();
+    });
 
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('cell', {
-        name: /incident type a/i,
-      }),
-    ).toBeVisible();
+    await test.step('Select incident type B and verify details', async () => {
+      await operateDashboardPage.gotoDashboardPage();
+      await operateDashboardPage.clickIncidentByType(/type b/i);
+      await expect(
+        operateDashboardPage.processInstancesHeading(1, false),
+      ).toBeVisible();
 
-    await operateDashboardPage.gotoDashboardPage();
-
-    // Select incident type b from the incidents list
-    await page
-      .getByRole('link', {
-        name: /type b/i,
-      })
-      .click();
-
-    await expect(
-      page.getByRole('heading', {
-        name: 'Process Instances - 1 result',
-      }),
-    ).toBeVisible();
-
-    await page
-      .getByRole('link', {
-        name: /view instance/i,
-      })
-      .click();
-
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('cell', {
-        name: /incident type b/i,
-      }),
-    ).toBeVisible();
+      await operateDashboardPage.clickViewInstanceLink();
+      await expect(
+        operateProcessInstancePage.variableCellByName(/incident type b/i),
+      ).toBeVisible();
+    });
   });
 
-  test('Select process instances by name', async ({
-    page,
-    operateDashboardPage,
-  }) => {
-    await expect(operateDashboardPage.instancesByProcess).toBeVisible();
+  test('Select process instances by name', async ({operateDashboardPage}) => {
+    await test.step('Select first process and verify total count', async () => {
+      await expect(operateDashboardPage.instancesByProcess).toBeVisible();
 
-    const firstInstanceByProcess =
-      operateDashboardPage.getInstancesByProcessItem(0);
+      const firstInstanceByProcess =
+        operateDashboardPage.instancesByProcessItem(0);
 
-    const incidentCount = Number(
-      await firstInstanceByProcess
-        .getByTestId('incident-instances-badge')
-        .innerText(),
-    );
-    const runningInstanceCount = Number(
-      await firstInstanceByProcess
-        .getByTestId('active-instances-badge')
-        .innerText(),
-    );
+      const incidentCount = Number(
+        await operateDashboardPage
+          .incidentBadgeFromItem(firstInstanceByProcess)
+          .innerText(),
+      );
 
-    const totalInstanceCount = incidentCount + runningInstanceCount;
+      const runningInstanceCount = Number(
+        await operateDashboardPage
+          .activeBadgeFromItem(firstInstanceByProcess)
+          .innerText(),
+      );
 
-    await firstInstanceByProcess.click();
+      const totalInstanceCount = incidentCount + runningInstanceCount;
 
-    await expect(
-      page.getByRole('heading', {
-        name: `Process Instances - ${totalInstanceCount} result${
-          Number(totalInstanceCount) > 1 ? 's' : ''
-        }`,
-      }),
-    ).toBeVisible();
+      await operateDashboardPage.clickItem(firstInstanceByProcess);
+
+      await expect(
+        operateDashboardPage.processInstancesHeading(
+          totalInstanceCount,
+          Number(totalInstanceCount) > 1,
+        ),
+      ).toBeVisible();
+    });
   });
 
   test('Select process instances by error message', async ({
-    page,
     operateDashboardPage,
   }) => {
-    await expect(operateDashboardPage.incidentsByError).toBeVisible();
+    await test.step('Select first error and verify incident count', async () => {
+      await expect(operateDashboardPage.incidentsByError).toBeVisible();
 
-    const firstInstanceByError =
-      operateDashboardPage.getIncidentsByErrorItem(0);
+      const firstInstanceByError = operateDashboardPage.incidentsByErrorItem(0);
 
-    const incidentCount = Number(
-      await firstInstanceByError
-        .getByTestId('incident-instances-badge')
-        .innerText(),
-    );
+      const incidentCount = Number(
+        await operateDashboardPage
+          .incidentBadgeFromItem(firstInstanceByError)
+          .innerText(),
+      );
 
-    await firstInstanceByError.click();
+      await operateDashboardPage.clickItem(firstInstanceByError);
 
-    await expect(
-      page.getByRole('heading', {
-        name: `Process Instances - ${incidentCount} result${
-          Number(incidentCount) > 1 ? 's' : ''
-        }`,
-      }),
-    ).toBeVisible();
+      await expect(
+        operateDashboardPage.processInstancesHeading(
+          incidentCount,
+          Number(incidentCount) > 1,
+        ),
+      ).toBeVisible();
+    });
   });
 
   test('Select process instances by error message (expanded)', async ({
-    page,
     operateDashboardPage,
   }) => {
-    await expect(operateDashboardPage.incidentsByError).toBeVisible();
+    await test.step('Expand first error and navigate to verify incident count', async () => {
+      await expect(operateDashboardPage.incidentsByError).toBeVisible();
 
-    const firstInstanceByError =
-      operateDashboardPage.getIncidentsByErrorItem(0);
+      const firstInstanceByError = operateDashboardPage.incidentsByErrorItem(0);
 
-    const incidentCount = Number(
-      await firstInstanceByError
-        .getByTestId('incident-instances-badge')
-        .innerText(),
-    );
+      const incidentCount = Number(
+        await operateDashboardPage
+          .incidentBadgeFromItem(firstInstanceByError)
+          .innerText(),
+      );
 
-    await firstInstanceByError
-      .getByRole('button', {
-        name: 'Expand current row',
-      })
-      .click();
+      await operateDashboardPage.expandItem(firstInstanceByError);
+      await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
 
-    await firstInstanceByError.getByRole('link').nth(0).click();
-
-    await expect(
-      page.getByRole('heading', {
-        name: `Process Instances - ${incidentCount} result${
-          Number(incidentCount) > 1 ? 's' : ''
-        }`,
-      }),
-    ).toBeVisible();
+      await expect(
+        operateDashboardPage.processInstancesHeading(
+          incidentCount,
+          Number(incidentCount) > 1,
+        ),
+      ).toBeVisible();
+    });
   });
 });
