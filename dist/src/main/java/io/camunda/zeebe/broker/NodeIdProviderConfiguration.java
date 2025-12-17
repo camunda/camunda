@@ -56,10 +56,12 @@ public class NodeIdProviderConfiguration {
       case FIXED -> null;
       case S3 -> {
         final var clientConfig = makeS3ClientConfig(cluster.getNodeIdProvider().s3());
+        final var s3Config = cluster.getNodeIdProvider().s3();
         final var config =
             new S3NodeIdRepository.Config(
-                cluster.getNodeIdProvider().s3().getBucketName(),
-                cluster.getNodeIdProvider().s3().getLeaseDuration());
+                s3Config.getBucketName(),
+                s3Config.getLeaseDuration(),
+                s3Config.getNodeIdMappingUpdateTimeout());
         yield S3NodeIdRepository.of(clientConfig, config, Clock.systemUTC());
       }
     };
@@ -87,6 +89,7 @@ public class NodeIdProviderConfiguration {
                 nodeIdRepository.get(),
                 Clock.systemUTC(),
                 config.getLeaseDuration(),
+                config.getLeaseAcquireMaxDelay(),
                 taskId,
                 () -> {
                   LOG.warn("NodeIdProvider terminating the process");

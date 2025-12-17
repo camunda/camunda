@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -91,6 +92,16 @@ public class NodeIdProvider {
 
     /** Lease duration before expiry */
     private Duration leaseDuration;
+
+    /** Maximum delay for exponential backoff when retrying failed lease renewals. */
+    private Duration leaseAcquireMaxDelay = Duration.ofSeconds(30);
+
+    /**
+     * Timeout for updating node ID version mappings in S3. If a node's mapping is not updated
+     * within this timeout, the node is assumed to be down and its mapping may be ignored. Must be
+     * greater than leaseDuration.
+     */
+    private Duration nodeIdMappingUpdateTimeout = Duration.ofMinutes(2);
 
     /**
      * Name of the bucket where the leases will be stored. The bucket must be already created. The
@@ -209,7 +220,7 @@ public class NodeIdProvider {
     }
 
     public void setLeaseDuration(final Duration leaseDuration) {
-      this.leaseDuration = leaseDuration;
+      this.leaseDuration = Objects.requireNonNull(leaseDuration, "leaseDuration cannot be null");
     }
 
     public Optional<String> getTaskId() {
@@ -218,6 +229,24 @@ public class NodeIdProvider {
 
     public void setTaskId(final String taskId) {
       this.taskId = Optional.ofNullable(taskId);
+    }
+
+    public Duration getLeaseAcquireMaxDelay() {
+      return leaseAcquireMaxDelay;
+    }
+
+    public void setLeaseAcquireMaxDelay(final Duration leaseAcquireMaxDelay) {
+      this.leaseAcquireMaxDelay = leaseAcquireMaxDelay;
+    }
+
+    public Duration getNodeIdMappingUpdateTimeout() {
+      return nodeIdMappingUpdateTimeout;
+    }
+
+    public void setNodeIdMappingUpdateTimeout(final Duration nodeIdMappingUpdateTimeout) {
+      this.nodeIdMappingUpdateTimeout =
+          Objects.requireNonNull(
+              nodeIdMappingUpdateTimeout, "nodeIdMappingUpdateTimeout cannot be null");
     }
   }
 
