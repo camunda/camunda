@@ -869,4 +869,11 @@
 
   </changeSet>
 
+  <changeSet id="add_actor_columns_to_batch_operations" author="camunda">
+    <addColumn tableName="${prefix}BATCH_OPERATION">
+      <column name="ACTOR_TYPE" type="VARCHAR(50)"/>
+      <column name="ACTOR_ID" type="VARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

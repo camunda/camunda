@@ -20,6 +20,8 @@ public class BatchOperationEntityMapper {
         dbModel.operationType(),
         dbModel.startDate(),
         dbModel.endDate(),
+        dbModel.actorType(),
+        dbModel.actorId(),
         dbModel.operationsTotalCount(),
         dbModel.operationsFailedCount(),
         dbModel.operationsCompletedCount(),
