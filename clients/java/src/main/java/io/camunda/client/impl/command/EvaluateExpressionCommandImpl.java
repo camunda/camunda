@@ -15,8 +15,10 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.EvaluateExpressionCommandStep1.EvaluateExpressionCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
@@ -38,11 +40,35 @@ public class EvaluateExpressionCommandImpl
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
+  public EvaluateExpressionCommandImpl(
+      final CamundaClientConfiguration config,
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    request = new ExpressionEvaluationRequest();
+    tenantId(config.getDefaultTenantId());
+  }
+
+  /**
+   * A constructor that provides an instance with the <code><default></code> tenantId set.
+   *
+   * <p>From version 8.8.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.8.0, use {@link
+   *     EvaluateExpressionCommandImpl#EvaluateExpressionCommandImpl(CamundaClientConfiguration,
+   *     HttpClient, JsonMapper)}
+   */
+  @Deprecated
   public EvaluateExpressionCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new ExpressionEvaluationRequest();
+    request.setTenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override

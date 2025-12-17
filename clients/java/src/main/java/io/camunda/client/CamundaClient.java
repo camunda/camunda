@@ -3110,7 +3110,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   IncidentProcessInstanceStatisticsRequest newIncidentProcessInstanceStatisticsRequest();
 
   /**
-   * Command to evaluate a FEEL expression.
+   * Command to evaluate an expression.
    *
    * <pre>
    * camundaClient

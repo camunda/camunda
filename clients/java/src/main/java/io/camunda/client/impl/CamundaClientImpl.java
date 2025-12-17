@@ -1554,7 +1554,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public EvaluateExpressionCommandStep1 newEvaluateExpressionCommand() {
-    return new EvaluateExpressionCommandImpl(httpClient, jsonMapper);
+    return new EvaluateExpressionCommandImpl(config, httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

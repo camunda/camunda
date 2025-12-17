@@ -17,28 +17,18 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 
-/** Command to evaluate a FEEL expression. */
+/** Command to evaluate an expression. */
 public interface EvaluateExpressionCommandStep1 {
 
   /**
-   * Sets the FEEL expression to evaluate.
+   * Sets the expression to evaluate.
    *
-   * @param expression the FEEL expression to evaluate (e.g., "=x + y")
+   * @param expression the expression to evaluate (e.g., "=x + y")
    * @return the builder for this command
    */
   EvaluateExpressionCommandStep2 expression(String expression);
 
   interface EvaluateExpressionCommandStep2
       extends CommandWithTenantStep<EvaluateExpressionCommandStep2>,
-          FinalCommandStep<EvaluateExpressionResponse> {
-
-    /**
-     * Sets the tenant ID for multi-tenant environments.
-     *
-     * @param tenantId the tenant ID
-     * @return the builder for this command
-     */
-    @Override
-    EvaluateExpressionCommandStep2 tenantId(String tenantId);
-  }
+          FinalCommandStep<EvaluateExpressionResponse> {}
 }
