@@ -21,9 +21,8 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 let instanceIds: string[] = [];
 
 test.beforeAll(async ({request}) => {
-  test.setTimeout(180000); // 3 minutes timeout
+  test.setTimeout(180000);
 
-  // Deploy processes
   await deploy([
     './resources/withoutInstancesProcess_v_1.bpmn',
     './resources/withoutIncidentsProcess_v_1.bpmn',
@@ -39,7 +38,6 @@ test.beforeAll(async ({request}) => {
     './resources/onlyIncidentsProcess_v_2.bpmn',
   ]);
 
-  // Create worker for incident generation (replicating dashboard.mocks.ts)
   createWorker('incidentGenerator', true, {}, (job) => {
     const BASE_ERROR_MESSAGE =
       'This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.';
@@ -51,7 +49,6 @@ test.beforeAll(async ({request}) => {
     }
   });
 
-  // Create instances exactly like dashboard.mocks.ts
   const instancesList = await Promise.all([
     createInstances('withoutIncidentsProcess', 1, 4),
     createInstances('withoutIncidentsProcess', 2, 8),

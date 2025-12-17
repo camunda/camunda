@@ -28,14 +28,14 @@ let instanceToCancel: ProcessInstance;
 let deployedProcess: DeployedProcess | undefined;
 
 test.beforeAll(async () => {
-  await deploy(['./resources/orderProcess_v_1.bpmn']);
+  await deploy(['./resources/orderProcess_processes.bpmn']);
   deployedProcess = {
     version: 1,
-    bpmnProcessId: 'orderProcess',
+    bpmnProcessId: 'orderProcessProcessesTest',
   };
 
   const instanceWithoutAnIncidentResponse = await createSingleInstance(
-    'orderProcess',
+    'orderProcessProcessesTest',
     1,
   );
   instanceWithoutAnIncident = {
@@ -164,7 +164,9 @@ test.describe('Processes', () => {
         instanceWithoutAnIncident.processInstanceKey,
       );
 
-      await operateFiltersPanelPage.selectProcess('Order process');
+      await operateFiltersPanelPage.selectProcess(
+        'Order process processes test',
+      );
       await waitForAssertion({
         assertion: async () => {
           await expect
@@ -175,7 +177,9 @@ test.describe('Processes', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.selectProcess('Order process');
+          await operateFiltersPanelPage.selectProcess(
+            'Order process processes test',
+          );
         },
       });
 
