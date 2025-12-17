@@ -20,6 +20,7 @@ import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.zeebe.gateway.mcp.mapper.McpErrorMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryFilterMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryPageMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQuerySortRequestMapper;
@@ -28,11 +29,8 @@ import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
 import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
-<<<<<<< HEAD
-import java.util.List;
-=======
 import jakarta.validation.constraints.Positive;
->>>>>>> 3624e2f52ba (feat: get and resolve incidents)
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.annotation.McpTool;
@@ -103,10 +101,9 @@ public class IncidentTools {
           final Long incidentKey) {
     try {
       return CallToolResultMapper.from(
-          CallToolResultMapper.from(
-              incidentServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(incidentKey)));
+          incidentServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getByKey(incidentKey));
     } catch (final Exception e) {
       return mapErrorToResult(e);
     }
@@ -117,17 +114,20 @@ public class IncidentTools {
       @McpToolParam(description = "Key of the incident to resolve.") @Positive
           final Long incidentKey) {
     try {
-      incidentServices
-          .withAuthentication(authenticationProvider.getCamundaAuthentication())
-          .resolveIncident(incidentKey, null);
-      return CallToolResultMapper.fromPrimitive("RESOLVED");
-    } catch (final ServiceException se) {
-      if (Status.INVALID_STATE.equals(se.getStatus())
-          && se.getMessage().contains("no retries left")) {
-        // no retries left for a job incident
-        return resolveJobIncident(incidentKey);
-      }
-      return mapErrorToResult(se);
+      return CallToolResultMapper.fromPrimitive(
+          incidentServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .resolveIncident(incidentKey, null),
+          error -> {
+            if (McpErrorMapper.unwrapError(error) instanceof final ServiceException se
+                && Status.INVALID_STATE.equals(se.getStatus())
+                && se.getMessage().contains("no retries left")) {
+              // no retries left for a job incident
+              return resolveJobIncident(incidentKey);
+            }
+            return mapErrorToResult(error);
+          },
+          r -> "RESOLVED");
     } catch (final Exception e) {
       return mapErrorToResult(e);
     }
@@ -147,13 +147,14 @@ public class IncidentTools {
             "Cannot retrieve job key for job-based incident.", Status.INVALID_STATE);
       }
       // update retries for the job to 1
-      jobServices
-          .withAuthentication(camundaAuthentication)
-          .updateJob(jobKey, null, new UpdateJobChangeset(1, null));
+      CallToolResultMapper.from(
+          jobServices
+              .withAuthentication(camundaAuthentication)
+              .updateJob(jobKey, null, new UpdateJobChangeset(1, null)),
+          r -> r);
       // resolve incident again
-      incidentServices.resolveIncident(incidentKey, null);
-
-      return CallToolResultMapper.fromPrimitive("RESOLVED");
+      return CallToolResultMapper.fromPrimitive(
+          incidentServices.resolveIncident(incidentKey, null), r -> "RESOLVED");
     } catch (final Exception e) {
       return mapErrorToResult(e);
     }

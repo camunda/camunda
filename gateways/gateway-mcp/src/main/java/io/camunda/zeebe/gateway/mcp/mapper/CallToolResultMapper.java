@@ -37,7 +37,30 @@ public class CallToolResultMapper {
         .completeOnTimeout(
             mapProblemToResult(
                 ProblemDetail.forStatusAndDetail(
-                    HttpStatus.GATEWAY_TIMEOUT, "Didn't receive a response within 10 seconds.")),
+                    HttpStatus.GATEWAY_TIMEOUT,
+                    "Didn't receive a response from the engine within 10 seconds.")),
+            10L,
+            TimeUnit.SECONDS)
+        .join();
+  }
+
+  public static <T> CallToolResult fromPrimitive(
+      final CompletableFuture<T> content,
+      final Function<Throwable, CallToolResult> errorMapper,
+      final Function<T, String> resultMapper) {
+    return content
+        .handleAsync(
+            (resp, error) -> {
+              if (error != null) {
+                return errorMapper.apply(error);
+              }
+              return fromPrimitive(resultMapper.apply(resp));
+            })
+        .completeOnTimeout(
+            mapProblemToResult(
+                ProblemDetail.forStatusAndDetail(
+                    HttpStatus.GATEWAY_TIMEOUT,
+                    "Didn't receive a response from the engine within 10 seconds.")),
             10L,
             TimeUnit.SECONDS)
         .join();

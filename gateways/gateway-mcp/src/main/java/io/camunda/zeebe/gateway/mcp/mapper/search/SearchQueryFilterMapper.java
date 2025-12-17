@@ -22,27 +22,28 @@ public class SearchQueryFilterMapper {
   public static IncidentFilter toIncidentFilter(final IncidentSearchFilter filter) {
     final var builder = FilterBuilders.incident();
 
-    ofNullable(filter.processDefinitionId())
-        .map(SearchQueryFilterMapper::createEqualOperation)
-        .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(filter.errorType())
-        .map(SearchQueryFilterMapper::createEnumEqualOperation)
-        .ifPresent(builder::errorTypeOperations);
-    ofNullable(filter.elementId())
-        .map(SearchQueryFilterMapper::createEqualOperation)
-        .ifPresent(builder::flowNodeIdOperations);
-    ofNullable(createDateTimeFilterOperation(filter.creationTimeFrom(), filter.creationTimeTo()))
-        .ifPresent(builder::creationTimeOperations);
-    ofNullable(filter.state())
-        .map(SearchQueryFilterMapper::createEnumEqualOperation)
-        .ifPresent(builder::stateOperations);
-    ofNullable(filter.processDefinitionKey())
-        .map(SearchQueryFilterMapper::createEqualOperation)
-        .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(filter.processInstanceKey())
-        .map(SearchQueryFilterMapper::createEqualOperation)
-        .ifPresent(builder::processInstanceKeyOperations);
-
+    if (filter != null) {
+      ofNullable(filter.processDefinitionId())
+          .map(SearchQueryFilterMapper::createEqualOperation)
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.errorType())
+          .map(SearchQueryFilterMapper::createEnumEqualOperation)
+          .ifPresent(builder::errorTypeOperations);
+      ofNullable(filter.elementId())
+          .map(SearchQueryFilterMapper::createEqualOperation)
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(createDateTimeFilterOperation(filter.creationTimeFrom(), filter.creationTimeTo()))
+          .ifPresent(builder::creationTimeOperations);
+      ofNullable(filter.state())
+          .map(SearchQueryFilterMapper::createEnumEqualOperation)
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.processDefinitionKey())
+          .map(SearchQueryFilterMapper::createEqualOperation)
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.processInstanceKey())
+          .map(SearchQueryFilterMapper::createEqualOperation)
+          .ifPresent(builder::processInstanceKeyOperations);
+    }
     return builder.build();
   }
 

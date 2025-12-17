@@ -45,10 +45,8 @@ public class McpErrorMapper {
       return null;
     }
     // SeviceExceptions can be wrapped in Java exceptions because they are handled in Java futures
-    if (error instanceof CompletionException || error instanceof ExecutionException) {
-      return mapErrorToProblem(error.getCause());
-    }
-    if (error instanceof final ServiceException se) {
+
+    if (unwrapError(error) instanceof final ServiceException se) {
       return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
@@ -57,6 +55,13 @@ public class McpErrorMapper {
           "Unexpected error occurred during the request processing: " + error.getMessage(),
           error.getClass().getName());
     }
+  }
+
+  public static Throwable unwrapError(final Throwable throwable) {
+    if (throwable instanceof CompletionException || throwable instanceof ExecutionException) {
+      return throwable.getCause();
+    }
+    return throwable;
   }
 
   public static <T> ResponseEntity<T> mapErrorToResponse(@NotNull final Throwable error) {
