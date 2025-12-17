@@ -31,6 +31,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveIns
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.SourceElementIdInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.SourceElementInstanceKeyInstruction;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper;
 import java.util.List;
 import java.util.Optional;
@@ -238,12 +240,27 @@ public class ProcessInstanceRequestValidator {
   private static void validateMoveInstructions(
       final List<ProcessInstanceModificationMoveInstruction> instructions,
       final List<String> violations) {
-    validateInstructions(
-        instructions,
-        instruction ->
-            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isBlank(),
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
+    instructions.forEach(
+        instruction -> {
+          switch (instruction.getSourceElementInstruction()) {
+            case final SourceElementIdInstruction byId -> {
+              if (byId.getSourceElementId() == null || byId.getSourceElementId().isBlank()) {
+                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
+              }
+            }
+            case final SourceElementInstanceKeyInstruction byKey -> {
+              validateKeyFormat(
+                  byKey.getSourceElementInstanceKey(), "sourceElementInstanceKey", violations);
+            }
+            case null -> {
+              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementInstruction"));
+            }
+            default -> {
+              // no-op for forward compatibility
+            }
+          }
+        });
+
     validateInstructions(
         instructions,
         instruction ->

@@ -791,19 +791,21 @@ message ModifyProcessInstanceRequest {
   }
 
   message MoveInstruction {
+    // the key of the element instance that should be moved
+    int64 sourceElementInstanceKey = 1;
     // the id of the elements that should be moved
-    string sourceElementId = 1;
+    string sourceElementId = 2;
     // the id of the element scope that the elements should be moved to
-    string targetElementId = 2;
+    string targetElementId = 3;
     // instructions describing which variables should be created
-    repeated VariableInstruction variableInstructions = 3;
+    repeated VariableInstruction variableInstructions = 4;
     // the key of the ancestor scope the element instance should be created in;
     // set to -1 to create the new element instance within an existing element
     // instance of the flow scope
-    int64 ancestorElementInstanceKey = 4;
-    // whether to use the source element's parent key as the ancestor element
+    int64 ancestorElementInstanceKey = 5;
+    // whether to use the source element hierarchy to infer the ancestor element
     // instance key
-    bool useSourceParentKeyAsAncestorScopeKey = 5;
+    bool inferAncestorScopeFromSourceHierarchy = 6;
   }
 }
 

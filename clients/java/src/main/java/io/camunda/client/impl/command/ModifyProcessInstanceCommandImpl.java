@@ -34,6 +34,7 @@ import io.camunda.client.protocol.rest.ProcessInstanceModificationActivateInstru
 import io.camunda.client.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.client.protocol.rest.SourceElementInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
@@ -139,7 +140,8 @@ public final class ModifyProcessInstanceCommandImpl
             .setAncestorElementInstanceKey(ancestorElementInstanceKey)
             .build(),
         new ProcessInstanceModificationMoveInstruction()
-            .sourceElementId(sourceElementId)
+            .sourceElementInstruction(
+                new SourceElementInstruction().sourceType("byId").sourceElementId(sourceElementId))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
                 new AncestorScopeInstruction()
@@ -149,19 +151,69 @@ public final class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep3 moveElementsWithSourceParentAsAncestor(
+  public ModifyProcessInstanceCommandStep3 moveElementsWithInferredAncestor(
       final String sourceElementId, final String targetElementId) {
     return addMoveInstruction(
         MoveInstruction.newBuilder()
             .setSourceElementId(sourceElementId)
             .setTargetElementId(targetElementId)
-            .setUseSourceParentKeyAsAncestorScopeKey(true)
+            .setInferAncestorScopeFromSourceHierarchy(true)
             .build(),
         new ProcessInstanceModificationMoveInstruction()
-            .sourceElementId(sourceElementId)
+            .sourceElementInstruction(
+                new SourceElementInstruction().sourceType("byId").sourceElementId(sourceElementId))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
-                new AncestorScopeInstruction().ancestorScopeType("sourceParent")));
+                new AncestorScopeInstruction().ancestorScopeType("inferred")));
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey, final String targetElementId) {
+    return moveElement(sourceElementInstanceKey, targetElementId, EMPTY_ANCESTOR_KEY);
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey,
+      final String targetElementId,
+      final long ancestorElementInstanceKey) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementInstanceKey(sourceElementInstanceKey)
+            .setTargetElementId(targetElementId)
+            .setAncestorElementInstanceKey(ancestorElementInstanceKey)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstruction(
+                new SourceElementInstruction()
+                    .sourceType("byKey")
+                    .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey)))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction()
+                    .ancestorScopeType("direct")
+                    .ancestorElementInstanceKey(
+                        ParseUtil.keyToString(ancestorElementInstanceKey))));
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElementWithInferredAncestor(
+      final long sourceElementInstanceKey, final String targetElementId) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementInstanceKey(sourceElementInstanceKey)
+            .setTargetElementId(targetElementId)
+            .setInferAncestorScopeFromSourceHierarchy(true)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstruction(
+                new SourceElementInstruction()
+                    .sourceType("byKey")
+                    .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey)))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction().ancestorScopeType("inferred")));
   }
 
   private ModifyProcessInstanceCommandStep3 addActivateInstruction(

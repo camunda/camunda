@@ -513,7 +513,7 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
     // when
     client
         .newModifyProcessInstanceCommand(PI_KEY)
-        .moveElementsWithSourceParentAsAncestor(ELEMENT_ID_A, ELEMENT_ID_B)
+        .moveElementsWithInferredAncestor(ELEMENT_ID_A, ELEMENT_ID_B)
         .send()
         .join();
 
@@ -662,7 +662,9 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
       final long expectedAncestorKey,
       final boolean expectedUseParentScope,
       final int expectedVariableInstructions) {
-    assertThat(moveInstruction.getSourceElementId()).isEqualTo(expectedSourceElementId);
+    assertThat(moveInstruction.getSourceElementInstruction().getSourceType()).isEqualTo("byId");
+    assertThat(moveInstruction.getSourceElementInstruction().getSourceElementId())
+        .isEqualTo(expectedSourceElementId);
     assertThat(moveInstruction.getTargetElementId()).isEqualTo(expectedTargetElementId);
     if (expectedUseParentScope) {
       assertThat(moveInstruction.getAncestorScopeInstruction())
@@ -670,7 +672,7 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
           .extracting(
               AncestorScopeInstruction::getAncestorScopeType,
               AncestorScopeInstruction::getAncestorElementInstanceKey)
-          .containsExactly("sourceParent", null);
+          .containsExactly("inferred", null);
     } else {
       assertThat(moveInstruction.getAncestorScopeInstruction())
           .isNotNull()

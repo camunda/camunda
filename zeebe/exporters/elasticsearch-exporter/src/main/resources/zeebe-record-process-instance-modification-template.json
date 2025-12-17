@@ -39,6 +39,9 @@
                 "sourceElementId": {
                   "type": "keyword"
                 },
+                "sourceElementInstanceKey": {
+                  "type": "long"
+                },
                 "targetElementId": {
                   "type": "keyword"
                 },
@@ -55,7 +58,7 @@
                 "ancestorScopeKey": {
                   "type": "long"
                 },
-                "useSourceParentKeyAsAncestorScope": {
+                "inferAncestorScopeFromSourceHierarchy": {
                   "type": "boolean"
                 }
               }

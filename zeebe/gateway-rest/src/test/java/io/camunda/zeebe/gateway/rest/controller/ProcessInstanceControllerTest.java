@@ -952,7 +952,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                     .setSourceElementId("sourceElementId")
                     .setTargetElementId("targetElementId")
                     .setAncestorScopeKey(123456L)
-                    .setUseSourceParentKeyAsAncestorScope(false)
+                    .setInferAncestorScopeFromSourceHierarchy(false)
                     .addVariableInstruction(
                         new ProcessInstanceModificationVariableInstruction()
                             .setVariables(variables)
@@ -964,27 +964,27 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                     .setSourceElementId("sourceElementId2")
                     .setTargetElementId("targetElementId2")
                     .setAncestorScopeKey(654321L)
-                    .setUseSourceParentKeyAsAncestorScope(false),
+                    .setInferAncestorScopeFromSourceHierarchy(false),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId3")
                     .setTargetElementId("targetElementId3")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(false),
+                    .setInferAncestorScopeFromSourceHierarchy(false),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId4")
                     .setTargetElementId("targetElementId4")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(true),
+                    .setInferAncestorScopeFromSourceHierarchy(true),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId5")
                     .setTargetElementId("targetElementId5")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(false),
+                    .setInferAncestorScopeFromSourceHierarchy(false),
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId6")
                     .setTargetElementId("targetElementId6")
                     .setAncestorScopeKey(-1L)
-                    .setUseSourceParentKeyAsAncestorScope(false)
+                    .setInferAncestorScopeFromSourceHierarchy(false)
                     .addVariableInstruction(
                         new ProcessInstanceModificationVariableInstruction()
                             .setVariables(variables)
@@ -1045,7 +1045,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               ],
               "moveInstructions": [
                 {
-                  "sourceElementId": "sourceElementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId"
+                  },
                   "targetElementId": "targetElementId",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "direct",
@@ -1066,7 +1069,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   ]
                 },
                 {
-                  "sourceElementId": "sourceElementId2",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId2"
+                  },
                   "targetElementId": "targetElementId2",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "direct",
@@ -1074,25 +1080,37 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   }
                 },
                 {
-                  "sourceElementId": "sourceElementId3",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId3"
+                  },
                   "targetElementId": "targetElementId3",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "direct"
                   }
                 },
                 {
-                  "sourceElementId": "sourceElementId4",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId4"
+                  },
                   "targetElementId": "targetElementId4",
                   "ancestorScopeInstruction": {
-                    "ancestorScopeType": "sourceParent"
+                    "ancestorScopeType": "inferred"
                   }
                 },
                 {
-                  "sourceElementId": "sourceElementId5",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId5"
+                  },
                   "targetElementId": "targetElementId5"
                 },
                 {
-                  "sourceElementId": "sourceElementId6",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId6"
+                  },
                   "targetElementId": "targetElementId6",
                   "variableInstructions": [
                     {
@@ -1228,7 +1246,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  },
                   "targetElementId": "elementId2"
                 }
               ],
@@ -1348,7 +1369,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  },
                   "targetElementId": "elementId2",
                   "variableInstructions": [
                     {
@@ -1473,7 +1497,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId",
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  },
                   "targetElementId": "elementId2",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "unknown"
@@ -1490,7 +1517,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "title":"Bad Request",
                 "status":400,
                 "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
-            Use any of the following values: [direct, sourceParent]", \
+            Use any of the following values: [direct, inferred]",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 
@@ -1518,7 +1545,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "moveInstructions": [
                 {
-                  "sourceElementId": "elementId"
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "elementId"
+                  }
                 }
               ],
               "operationReference": 123
@@ -1570,7 +1600,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail": "No sourceElementId provided.",
+                "detail": "No sourceElementInstruction provided.",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 

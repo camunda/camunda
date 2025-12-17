@@ -1510,4 +1510,135 @@ public class ModifyProcessInstanceRejectionTest {
                     + "with identical source element ids: '%s', '%s'")
                 .formatted(PROCESS_ID, "A", "B"));
   }
+
+  @Test
+  public void shouldRejectMoveWithBothSourceElementIdAndInstanceKeyDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElements(
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("A")
+                    .setSourceElementInstanceKey(12345L)
+                    .setTargetElementId("B"))
+            .moveElements(
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("B")
+                    .setSourceElementInstanceKey(67890L)
+                    .setTargetElementId("A"))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that move is rejected when both source element id and instance key are provided")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move instructions "
+                    + "with both source element instance key and source element id, but only one of them is allowed: '(A/12345, B)', '(B/67890, A)'")
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectMoveWithSourceElementInstanceKeyNotFound() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final long unknownElementInstanceKey = 12345L;
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElementInstance(unknownElementInstanceKey, "A")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that move is rejected when source element instance does not exist")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move "
+                    + "instructions with a source element instance that could not be found: '%s'")
+                .formatted(PROCESS_ID, unknownElementInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectMoveWithSourceElementInstanceKeyFromDifferentProcessInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    // Create two process instances
+    final var processInstanceKey1 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey2 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // Get element instance key from first process instance
+    final var taskAFromProcess1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey1)
+            .withElementId("A")
+            .getFirst()
+            .getKey();
+
+    // when: try to use element instance from process 1 to modify process 2
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey2)
+            .modification()
+            .moveElementInstance(taskAFromProcess1, "A")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that move is rejected when source element instance belongs to different process")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move "
+                    + "instructions with a source element instance that does not belong to the "
+                    + "modified process instance: '%s'")
+                .formatted(PROCESS_ID, taskAFromProcess1));
+  }
 }

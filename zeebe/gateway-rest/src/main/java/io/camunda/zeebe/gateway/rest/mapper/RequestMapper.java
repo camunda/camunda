@@ -115,6 +115,8 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SourceElementIdInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.SourceElementInstanceKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -1271,14 +1273,25 @@ public class RequestMapper {
             instruction -> {
               final var mappedInstruction =
                   new ProcessInstanceModificationMoveInstruction()
-                      .setSourceElementId(instruction.getSourceElementId())
                       .setTargetElementId(instruction.getTargetElementId());
+
+              switch (instruction.getSourceElementInstruction()) {
+                case final SourceElementIdInstruction byId ->
+                    mappedInstruction.setSourceElementId(byId.getSourceElementId());
+                case final SourceElementInstanceKeyInstruction byKey ->
+                    mappedInstruction.setSourceElementInstanceKey(
+                        KeyUtil.keyToLong(byKey.getSourceElementInstanceKey()));
+                default ->
+                    throw new IllegalStateException(
+                        "Unexpected value: " + instruction.getSourceElementInstruction());
+              }
+
               switch (instruction.getAncestorScopeInstruction()) {
                 case null -> mappedInstruction.setAncestorScopeKey(-1);
                 case final DirectAncestorKeyInstruction direct ->
                     mappedInstruction.setAncestorScopeKey(
                         getAncestorKey(direct.getAncestorElementInstanceKey()));
-                default -> mappedInstruction.setUseSourceParentKeyAsAncestorScope(true);
+                default -> mappedInstruction.setInferAncestorScopeFromSourceHierarchy(true);
               }
               instruction.getVariableInstructions().stream()
                   .map(RequestMapper::mapVariableInstruction)
@@ -1297,7 +1310,7 @@ public class RequestMapper {
                 new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId(instruction.getSourceElementId())
                     .setTargetElementId(instruction.getTargetElementId())
-                    .setUseSourceParentKeyAsAncestorScope(true))
+                    .setInferAncestorScopeFromSourceHierarchy(true))
         .toList();
   }
 
