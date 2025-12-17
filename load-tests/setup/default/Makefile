@@ -1,37 +1,89 @@
 namespace ?= default
+helm_chart ?= camunda-platform-8.9
 
 .PHONY: all
-all: load-test
+all: install
 
-.PHONY: load-test
-load-test:
-	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark --skip-crds
+# Install both Camunda Platform and load test
+.PHONY: install
+install: install-platform install-load-test
 
-# To deploy the Zeebe pods on stable nodes, use this job
-.PHONY: load-test-stable
-load-test-stable:
-	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark -f values-stable.yaml --skip-crds
+# Install Camunda Platform helm chart
+.PHONY: install-platform
+install-platform:
+	@echo "Adding Camunda Helm repo..."
+	helm repo add camunda https://helm.camunda.io/
+	helm repo update
+	@echo "Installing Camunda Platform..."
+	helm upgrade --install $(namespace) camunda/$(helm_chart) \
+		--wait --timeout 35m0s \
+		--namespace $(namespace) \
+		--create-namespace \
+		--render-subchart-notes \
+		-f camunda-platform-values.yaml
 
-# Generates templates from the zeebe helm charts, useful to make some more specific changes which are not doable by the values file.
-# To apply the templates use k apply -f zeebe-benchmark/templates/
-.PHONY: template
-template:
-	helm template $(namespace) zeebe-benchmark/zeebe-benchmark --skip-crds --output-dir .
+# Install Camunda Platform with stable VMs
+.PHONY: install-platform-stable
+install-platform-stable:
+	@echo "Adding Camunda Helm repo..."
+	helm repo add camunda https://helm.camunda.io/
+	helm repo update
+	@echo "Installing Camunda Platform on stable VMs..."
+	helm upgrade --install $(namespace) camunda/$(helm_chart) \
+		--wait --timeout 35m0s \
+		--namespace $(namespace) \
+		--create-namespace \
+		--render-subchart-notes \
+		-f camunda-platform-values.yaml \
+		-f values-stable.yaml
 
-.PHONY: template-stable
-template-stable:
-	helm template $(namespace) zeebe-benchmark/zeebe-benchmark -f values-stable.yaml --skip-crds --output-dir .
+# Install load test helm chart
+.PHONY: install-load-test
+install-load-test:
+	@echo "Adding Load test Helm repo..."
+	helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
+	helm repo update
+	@echo "Installing load test..."
+	helm upgrade --install $(namespace)-test camunda-load-tests/camunda-load-tests \
+		--wait --timeout 35m0s \
+		--namespace $(namespace) \
+		--reuse-values \
+		--render-subchart-notes
+	@echo "Setting up leader balancing cronjob..."
+	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) &>/dev/null; then \
+		kubectl create cronjob leader-balancer \
+			--namespace $(namespace) \
+			--image=curlimages/curl:7.87.0 \
+			--schedule="*/10 * * * *" \
+			-- curl -L -v -X POST http://camunda:9600/actuator/rebalance; \
+	else \
+		echo "Leader balancer cronjob already exists"; \
+	fi
 
-.PHONY: update
-update:
-	helm upgrade --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark --reuse-values
+# Update Camunda Platform
+.PHONY: update-platform
+update-platform:
+	helm repo update
+	helm upgrade --namespace $(namespace) $(namespace) camunda/$(helm_chart) \
+		--reuse-values \
+		-f camunda-platform-values.yaml
 
-.PHONY: update-stable
-update-stable:
-	helm upgrade --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark --reuse-values -f values-stable.yaml
+# Update load test
+.PHONY: update-load-test
+update-load-test:
+	helm repo update
+	helm upgrade --namespace $(namespace) $(namespace)-test camunda-load-tests/camunda-load-tests \
+		--reuse-values
 
+# Uninstall both platform and load test
 .PHONY: clean
 clean:
+	@echo "Uninstalling load test..."
+	-helm --namespace $(namespace) uninstall $(namespace)-test
+	@echo "Uninstalling Camunda Platform..."
 	-helm --namespace $(namespace) uninstall $(namespace)
+	@echo "Deleting cronjobs..."
+	-kubectl delete cronjob leader-balancer --namespace $(namespace)
+	@echo "Deleting PVCs..."
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
