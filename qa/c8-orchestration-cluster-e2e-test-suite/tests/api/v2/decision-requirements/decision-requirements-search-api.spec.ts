@@ -39,7 +39,7 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT, {}),
+        buildUrl(DECISION_REQUIREMENTS_SEARCH_ENDPOINT),
         {
           headers: jsonHeaders(),
           data: {},
