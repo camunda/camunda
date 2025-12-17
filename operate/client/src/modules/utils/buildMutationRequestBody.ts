@@ -20,6 +20,7 @@ type BuildMutationRequestBodyParams = {
   includeIds?: string[];
   excludeIds?: string[];
   variableFilter?: Variable;
+  processDefinitionKey?: string;
 };
 
 const buildMutationRequestBody = ({
@@ -27,6 +28,7 @@ const buildMutationRequestBody = ({
   includeIds = [],
   excludeIds = [],
   variableFilter,
+  processDefinitionKey,
 }: BuildMutationRequestBodyParams) => {
   const baseFilter = parseProcessInstancesSearchFilter(searchParams);
 
@@ -36,6 +38,13 @@ const buildMutationRequestBody = ({
 
   if (keyCriterion) {
     filter = {...filter, processInstanceKey: keyCriterion};
+  }
+
+  if (processDefinitionKey !== undefined) {
+    filter = {
+      ...filter,
+      processDefinitionKey: processDefinitionKey,
+    };
   }
 
   if (variableFilter?.name && variableFilter?.values) {
