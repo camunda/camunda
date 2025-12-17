@@ -42,7 +42,7 @@ install-load-test:
 # Setup leader balancing cronjob
 .PHONY: setup-leader-balancer
 setup-leader-balancer:
-	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) &>/dev/null; then \
+	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) >/dev/null 2>&1; then \
 		kubectl create cronjob leader-balancer \
 			--namespace $(namespace) \
 			--image=$(curl_image) \

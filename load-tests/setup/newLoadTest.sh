@@ -5,7 +5,7 @@
 
 set -exo pipefail
 
-if [ -z $1 ]
+if [ -z "$1" ]
 then
   echo "Please provide a namespace name!"
   exit 1
@@ -25,9 +25,28 @@ else
   echo "Namespace '$namespace' already exists"
 fi
 
+# Sanitize a string to be a valid Kubernetes label value
+sanitize_k8s_label() {
+  local value="$1"
+  # Replace invalid characters with hyphens
+  value=$(echo "$value" | sed 's/[^A-Za-z0-9_.-]/-/g')
+  # Remove leading non-alphanumeric characters
+  value=$(echo "$value" | sed 's/^[^A-Za-z0-9]\+//')
+  # Remove trailing non-alphanumeric characters
+  value=$(echo "$value" | sed 's/[^A-Za-z0-9]\+$//')
+  # Truncate to 63 characters as required by Kubernetes label values
+  value=${value:0:63}
+  # Fallback if the result is empty
+  if [ -z "$value" ]; then
+    value="unknown"
+  fi
+  echo "$value"
+}
+
 # Label namespace with author (based on git author)
-git_author=$(git config user.name || echo "unknown")
-kubectl label namespace $namespace created-by="${git_author}" --overwrite
+raw_git_author=$(git config user.name || echo "unknown")
+git_author=$(sanitize_k8s_label "$raw_git_author")
+kubectl label namespace "$namespace" created-by="$git_author" --overwrite
 
 # Label namespace with TTL deadline (default: 7 days from now)
 ttl_days="${2:-7}"
