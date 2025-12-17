@@ -27,13 +27,18 @@ import io.camunda.process.test.api.dsl.TestCaseInstruction;
 public interface TestCaseInstructionHandler<T extends TestCaseInstruction> {
 
   /**
-   * Executes the given instruction using the provided context and the Camunda client.
+   * Executes the given instruction.
    *
    * @param instruction the instruction to execute
    * @param context the test context with utilities
    * @param camundaClient the Camunda client to send commands
+   * @param assertionFacade the facade to perform assertions
    */
-  void execute(T instruction, CamundaProcessTestContext context, final CamundaClient camundaClient);
+  void execute(
+      final T instruction,
+      final CamundaProcessTestContext context,
+      final CamundaClient camundaClient,
+      final AssertionFacade assertionFacade);
 
   /**
    * Gets the type of instruction this handler can execute.

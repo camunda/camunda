@@ -16,7 +16,10 @@
 package io.camunda.process.test.impl.dsl;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
@@ -41,6 +44,8 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     // register instruction handlers here
     registerHandler(new CreateProcessInstanceInstructionHandler());
   }
+
+  private final AssertionFacade assertionFacade = new TestScenarioAssertionFacade();
 
   private final CamundaProcessTestContext context;
 
@@ -79,7 +84,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
 
     try {
       //noinspection unchecked
-      instructionHandler.execute(instruction, context, camundaClient);
+      instructionHandler.execute(instruction, context, camundaClient, assertionFacade);
 
     } catch (final Exception e) {
       throw new TestScenarioRunException(
@@ -107,5 +112,13 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
             () ->
                 new RuntimeException(
                     "Could not determine instruction interface of: " + instruction));
+  }
+
+  private static final class TestScenarioAssertionFacade implements AssertionFacade {
+
+    @Override
+    public ProcessInstanceAssert assertThatProcessInstance(final ProcessInstanceSelector selector) {
+      return CamundaAssert.assertThatProcessInstance(selector);
+    }
   }
 }
