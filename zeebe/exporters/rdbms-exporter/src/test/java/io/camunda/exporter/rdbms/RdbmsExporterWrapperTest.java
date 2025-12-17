@@ -25,6 +25,7 @@ import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditL
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.UserAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
@@ -99,7 +100,8 @@ class RdbmsExporterWrapperTest {
             Map.entry(
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
-            Map.entry(UserAuditLogTransformer.class, ValueType.USER));
+            Map.entry(UserAuditLogTransformer.class, ValueType.USER),
+            Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Check that all expected AuditLogExportHandlers are registered
     assertAuditLogExportPresent(registeredHandlers, expectedTransformers);
