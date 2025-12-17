@@ -151,8 +151,7 @@ public class RdbmsWriters {
     writers.put(
         ClusterVariableWriter.class,
         new ClusterVariableWriter(executionQueue, vendorDatabaseProperties));
-    writers.put(
-        HistoryDeletionWriter.class, new HistoryDeletionWriter(executionQueue));
+    writers.put(HistoryDeletionWriter.class, new HistoryDeletionWriter(executionQueue));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
