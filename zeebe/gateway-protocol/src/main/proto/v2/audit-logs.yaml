@@ -337,8 +337,8 @@ components:
     AuditLogCategoryEnum:
       type: string
       enum:
-        - OPERATOR
-        - USER_TASK
+        - DEPLOYED_RESOURCES
+        - USER_TASKS
         - ADMIN
 
     ## Filters

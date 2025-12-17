@@ -277,8 +277,8 @@ public record AuditLogEntity(
   public enum AuditLogOperationCategory {
     UNKNOWN,
     ADMIN,
-    OPERATOR,
-    USER_TASK
+    DEPLOYED_RESOURCES,
+    USER_TASKS
   }
 
   public enum AuditLogOperationResult {

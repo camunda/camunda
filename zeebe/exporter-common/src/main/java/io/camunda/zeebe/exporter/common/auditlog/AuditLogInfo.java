@@ -65,8 +65,7 @@ public record AuditLogInfo(
       case DECISION_EVALUATION:
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
-        return AuditLogOperationCategory.OPERATOR;
-      case AUTHORIZATION:
+        return AuditLogOperationCategory.DEPLOYED_RESOURCES;
       case USER:
       case MAPPING_RULE:
       case GROUP:
@@ -74,7 +73,7 @@ public record AuditLogInfo(
       case TENANT:
         return AuditLogOperationCategory.ADMIN;
       case USER_TASK:
-        return AuditLogOperationCategory.USER_TASK;
+        return AuditLogOperationCategory.USER_TASKS;
       default:
         return AuditLogOperationCategory.UNKNOWN;
     }

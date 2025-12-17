@@ -144,7 +144,7 @@ class AuditLogHandlerTest {
     assertThat(entity.entityKey()).isEqualTo(String.valueOf(record.getKey()));
     assertThat(entity.entityType()).isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
     assertThat(entity.operationType()).isEqualTo(AuditLogOperationType.MODIFY);
-    assertThat(entity.category()).isEqualTo(AuditLogOperationCategory.OPERATOR);
+    assertThat(entity.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
     assertThat(entity.actorType()).isEqualTo(AuditLogActorType.USER);
     assertThat(entity.actorId()).isEqualTo(USERNAME);
     assertThat(entity.entityVersion()).isEqualTo(record.getRecordVersion());

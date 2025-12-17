@@ -42,7 +42,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private OffsetDateTime timestamp;
 
-  // the category of the operation (ADMIN, OPERATOR, USER_TASK)
+  // the category of the operation (ADMIN, DEPLOYED_RESOURCES, USER_TASKS)
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationCategory category;
 

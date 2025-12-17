@@ -72,8 +72,8 @@ public final class AuditLogConfiguration {
     private Set<AuditLogOperationCategory> categories =
         Set.of(
             AuditLogOperationCategory.ADMIN,
-            AuditLogOperationCategory.OPERATOR,
-            AuditLogOperationCategory.USER_TASK);
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogOperationCategory.USER_TASKS);
     private Set<AuditLogEntityType> excludes = Set.of();
 
     public Set<AuditLogEntityType> getExcludes() {

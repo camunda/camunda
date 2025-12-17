@@ -40,8 +40,8 @@ class AuditLogTest {
         .as("All categories should be enabled for client by default")
         .isEqualTo(
             Set.of(
-                AuditLogOperationCategory.OPERATOR,
-                AuditLogOperationCategory.USER_TASK,
+                AuditLogOperationCategory.DEPLOYED_RESOURCES,
+                AuditLogOperationCategory.USER_TASKS,
                 AuditLogOperationCategory.ADMIN));
     assertThat(auditLog.getClient().getExcludes())
         .as("No excludes should be set for client by default")
@@ -56,8 +56,8 @@ class AuditLogTest {
         .as("All categories should be enabled for user by default")
         .isEqualTo(
             Set.of(
-                AuditLogOperationCategory.OPERATOR,
-                AuditLogOperationCategory.USER_TASK,
+                AuditLogOperationCategory.DEPLOYED_RESOURCES,
+                AuditLogOperationCategory.USER_TASKS,
                 AuditLogOperationCategory.ADMIN));
     assertThat(auditLog.getUser().getExcludes())
         .as("No excludes should be set for user by default")
@@ -98,8 +98,8 @@ class AuditLogTest {
       properties = {
         "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.audit-log.enabled=false",
-        "camunda.data.audit-log.user.categories[0]=OPERATOR",
-        "camunda.data.audit-log.user.categories[1]=USER_TASK",
+        "camunda.data.audit-log.user.categories[0]=DEPLOYED_RESOURCES",
+        "camunda.data.audit-log.user.categories[1]=USER_TASKS",
         "camunda.data.audit-log.user.excludes[0]=VARIABLE",
         "camunda.data.audit-log.client.categories[0]=ADMIN",
         "camunda.data.audit-log.client.excludes[0]=PROCESS_INSTANCE"
@@ -116,7 +116,7 @@ class AuditLogTest {
       assertThat(config.getAuditLog().isEnabled()).isFalse();
       assertThat(config.getAuditLog().getUser().getCategories())
           .containsExactlyInAnyOrder(
-              AuditLogOperationCategory.OPERATOR, AuditLogOperationCategory.USER_TASK);
+              AuditLogOperationCategory.DEPLOYED_RESOURCES, AuditLogOperationCategory.USER_TASKS);
       assertThat(config.getAuditLog().getUser().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.VARIABLE);
       assertThat(config.getAuditLog().getClient().getCategories())
@@ -137,10 +137,10 @@ class AuditLogTest {
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
         "camunda.data.audit-log.enabled=true",
-        "camunda.data.audit-log.user.categories[0]=OPERATOR",
+        "camunda.data.audit-log.user.categories[0]=DEPLOYED_RESOURCES",
         "camunda.data.audit-log.user.categories[1]=ADMIN",
         "camunda.data.audit-log.user.excludes[0]=INCIDENT",
-        "camunda.data.audit-log.client.categories[0]=USER_TASK",
+        "camunda.data.audit-log.client.categories[0]=USER_TASKS",
         "camunda.data.audit-log.client.excludes[0]=USER"
       })
   class CamundaExporterTest {
@@ -155,11 +155,11 @@ class AuditLogTest {
       assertThat(config.getAuditLog().isEnabled()).isTrue();
       assertThat(config.getAuditLog().getUser().getCategories())
           .containsExactlyInAnyOrder(
-              AuditLogOperationCategory.OPERATOR, AuditLogOperationCategory.ADMIN);
+              AuditLogOperationCategory.DEPLOYED_RESOURCES, AuditLogOperationCategory.ADMIN);
       assertThat(config.getAuditLog().getUser().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.INCIDENT);
       assertThat(config.getAuditLog().getClient().getCategories())
-          .containsExactlyInAnyOrder(AuditLogOperationCategory.USER_TASK);
+          .containsExactlyInAnyOrder(AuditLogOperationCategory.USER_TASKS);
       assertThat(config.getAuditLog().getClient().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.USER);
     }

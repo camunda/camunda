@@ -18,8 +18,8 @@ import java.util.Set;
 public class AuditLogEntry {
   private Set<AuditLogOperationCategory> categories =
       Set.of(
-          AuditLogOperationCategory.OPERATOR,
-          AuditLogOperationCategory.USER_TASK,
+          AuditLogOperationCategory.DEPLOYED_RESOURCES,
+          AuditLogOperationCategory.USER_TASKS,
           AuditLogOperationCategory.ADMIN);
   private Set<AuditLogEntityType> excludes = Set.of(); // e.g. AuditLogEntityType.VARIABLE
 

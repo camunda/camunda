@@ -62,7 +62,7 @@ public class AuditLogControllerTest extends RestControllerTest {
             "tenantId": "tenant",
             "result": "SUCCESS",
             "annotation": "annotation",
-            "category": "OPERATOR",
+            "category": "DEPLOYED_RESOURCES",
             "processDefinitionId": "processDefinitionId",
             "processDefinitionKey": "789",
             "processInstanceKey": "987",
@@ -98,7 +98,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         "tenantId": "tenant",
         "result": "SUCCESS",
         "annotation": "annotation",
-        "category": "OPERATOR",
+        "category": "DEPLOYED_RESOURCES",
         "processDefinitionId": "processDefinitionId",
         "processDefinitionKey": "789",
         "processInstanceKey": "987",
@@ -127,7 +127,7 @@ public class AuditLogControllerTest extends RestControllerTest {
           .tenantId("tenant")
           .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
           .annotation("annotation")
-          .category(AuditLogEntity.AuditLogOperationCategory.OPERATOR)
+          .category(AuditLogEntity.AuditLogOperationCategory.DEPLOYED_RESOURCES)
           .processDefinitionId("processDefinitionId")
           .processDefinitionKey(789L)
           .processInstanceKey(987L)
@@ -205,7 +205,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                 "operationType": "CREATE",
                 "entityType": "USER",
                 "result": "SUCCESS",
-                "category": "OPERATOR"
+                "category": "DEPLOYED_RESOURCES"
             }
         }
         """;
@@ -234,7 +234,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                 AuditLogEntityTypeConverter.toInternalEntityTypeAsString(
                     AuditLogEntityTypeEnum.USER))
             .categories(
-                AuditLogCategoryConverter.toInternalCategoryAsString(AuditLogCategoryEnum.OPERATOR))
+                AuditLogCategoryConverter.toInternalCategoryAsString(AuditLogCategoryEnum.DEPLOYED_RESOURCES))
             .results(AuditLogOperationResult.SUCCESS.name())
             .build();
     verify(auditLogServices).search(new AuditLogQuery.Builder().filter(filter).build());
@@ -258,7 +258,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [OPERATOR, USER_TASK, ADMIN]",
+                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [DEPLOYED_RESOURCES, USER_TASKS, ADMIN]",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);

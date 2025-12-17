@@ -51,7 +51,7 @@ class AuditLogServicesTest {
           .tenantId("tenant-1")
           .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
           .annotation("annotation")
-          .category(AuditLogEntity.AuditLogOperationCategory.OPERATOR)
+          .category(AuditLogEntity.AuditLogOperationCategory.DEPLOYED_RESOURCES)
           .processDefinitionId("processDefinitionId")
           .processDefinitionKey(789L)
           .processInstanceKey(987L)
