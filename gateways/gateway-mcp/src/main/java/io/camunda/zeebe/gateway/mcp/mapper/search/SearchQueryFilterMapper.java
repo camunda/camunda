@@ -17,68 +17,61 @@ import io.camunda.zeebe.gateway.mcp.model.IncidentState;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 public class SearchQueryFilterMapper {
 
   public static IncidentFilter toIncidentFilter(
-      final List<String> processDefinitionId,
-      final List<IncidentErrorType> errorType,
-      final List<String> errorMessage,
-      final List<String> elementId,
+      final String processDefinitionId,
+      final IncidentErrorType errorType,
+      final String errorMessage,
+      final String elementId,
       final OffsetDateTime creationTimeFrom,
       final OffsetDateTime creationTimeTo,
-      final List<IncidentState> state,
-      final List<String> tenantId,
-      final List<Long> incidentKey,
-      final List<Long> processDefinitionKey,
-      final List<Long> processInstanceKey,
-      final List<Long> elementInstanceKey,
-      final List<Long> jobKey) {
+      final IncidentState state,
+      final String tenantId,
+      final Long incidentKey,
+      final Long processDefinitionKey,
+      final Long processInstanceKey,
+      final Long elementInstanceKey,
+      final Long jobKey) {
     final var builder = FilterBuilders.incident();
 
-    ofNullable(createListFilterOperation(processDefinitionId))
+    ofNullable(createEqualOperation(processDefinitionId))
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(createEnumListFilterOperation(errorType)).ifPresent(builder::errorTypeOperations);
-    ofNullable(createListFilterOperation(errorMessage)).ifPresent(builder::errorMessageOperations);
-    ofNullable(createListFilterOperation(elementId)).ifPresent(builder::flowNodeIdOperations);
+    ofNullable(createEnumEqualOperation(errorType)).ifPresent(builder::errorTypeOperations);
+    ofNullable(createEqualOperation(errorMessage)).ifPresent(builder::errorMessageOperations);
+    ofNullable(createEqualOperation(elementId)).ifPresent(builder::flowNodeIdOperations);
     ofNullable(createDateTimeFilterOperation(creationTimeFrom, creationTimeTo))
         .ifPresent(builder::creationTimeOperations);
-    ofNullable(createEnumListFilterOperation(state)).ifPresent(builder::stateOperations);
-    ofNullable(createListFilterOperation(tenantId)).ifPresent(builder::tenantIdOperations);
-    ofNullable(createListFilterOperation(incidentKey)).ifPresent(builder::incidentKeyOperations);
-    ofNullable(createListFilterOperation(processDefinitionKey))
+    ofNullable(createEnumEqualOperation(state)).ifPresent(builder::stateOperations);
+    ofNullable(createEqualOperation(tenantId)).ifPresent(builder::tenantIdOperations);
+    ofNullable(createEqualOperation(incidentKey)).ifPresent(builder::incidentKeyOperations);
+    ofNullable(createEqualOperation(processDefinitionKey))
         .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(createListFilterOperation(processInstanceKey))
+    ofNullable(createEqualOperation(processInstanceKey))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(createListFilterOperation(elementInstanceKey))
+    ofNullable(createEqualOperation(elementInstanceKey))
         .ifPresent(builder::flowNodeInstanceKeyOperations);
-    ofNullable(createListFilterOperation(jobKey)).ifPresent(builder::jobKeyOperations);
+    ofNullable(createEqualOperation(jobKey)).ifPresent(builder::jobKeyOperations);
 
     return builder.build();
   }
 
-  private static <T> List<Operation<T>> createListFilterOperation(final List<T> values) {
-    return createListFilterOperation(values, Function.identity());
-  }
-
-  private static <T, F> List<Operation<F>> createListFilterOperation(
-      final List<T> values, final Function<T, F> valueMapper) {
-    if (values == null || values.isEmpty()) {
+  private static <T> List<Operation<T>> createEqualOperation(final T value) {
+    if (value == null) {
       return null;
     }
 
-    final var mappedValues = values.stream().map(valueMapper).toList();
-    if (mappedValues.size() == 1) {
-      return List.of(Operation.eq(mappedValues.getFirst()));
-    }
-
-    return List.of(Operation.in(mappedValues));
+    return List.of(Operation.eq(value));
   }
 
-  private static <E extends Enum<E>> List<Operation<String>> createEnumListFilterOperation(
-      final List<E> values) {
-    return createListFilterOperation(values, Enum::name);
+  private static <E extends Enum<E>> List<Operation<String>> createEnumEqualOperation(
+      final E value) {
+    if (value == null) {
+      return null;
+    }
+
+    return List.of(Operation.eq(value.name()));
   }
 
   private static List<Operation<OffsetDateTime>> createDateTimeFilterOperation(

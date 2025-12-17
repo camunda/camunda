@@ -54,23 +54,17 @@ public class IncidentTools {
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
       @McpToolParam(
-              description =
-                  "The process definition ID(s) associated to the incident. Matches any of the provided IDs.",
+              description = "The process definition ID associated to the incident.",
               required = false)
-          final List<String> processDefinitionId,
-      @McpToolParam(
-              description = "Incident error type(s). Matches any of the provided types.",
-              required = false)
-          final List<IncidentErrorType> errorType,
-      @McpToolParam(
-              description = "Error message(s). Matches any of the provided messages.",
-              required = false)
-          final List<String> errorMessage,
+          final String processDefinitionId,
+      @McpToolParam(description = "Incident error type.", required = false)
+          final IncidentErrorType errorType,
+      @McpToolParam(description = "Error message.", required = false) final String errorMessage,
       @McpToolParam(
               description =
-                  "The element ID(s) associated to the incident - the BPMN element ID in the process. Matches any of the provided IDs.",
+                  "The element ID associated to the incident - the BPMN element ID in the process.",
               required = false)
-          final List<String> elementId,
+          final String elementId,
       @McpToolParam(
               description =
                   "Date of incident creation - filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00').",
@@ -81,40 +75,31 @@ public class IncidentTools {
                   "Date of incident creation - filter before this time (exclusive). RFC 3339 format (e.g., '2024-12-17T23:59:59Z' or '2024-12-17T23:59:59-05:00').",
               required = false)
           final OffsetDateTime creationTimeTo,
-      @McpToolParam(
-              description = "State of the incident(s). Matches any of the provided states.",
-              required = false)
-          final List<IncidentState> state,
-      @McpToolParam(
-              description =
-                  "The tenant ID(s) of the incident. Matches any of the provided tenant IDs.",
-              required = false)
-          final List<String> tenantId,
+      @McpToolParam(description = "State of the incident.", required = false)
+          final IncidentState state,
+      @McpToolParam(description = "The tenant ID of the incident.", required = false)
+          final String tenantId,
       @McpToolParam(
               description =
-                  "The assigned key(s), which act as unique identifiers for incidents. Matches any of the provided keys.",
+                  "The assigned key, which acts as a unique identifier for this incident.",
               required = false)
-          final List<Long> incidentKey,
+          final Long incidentKey,
       @McpToolParam(
-              description =
-                  "The process definition key(s) associated to the incident. Matches any of the provided keys.",
+              description = "The process definition key associated to the incident.",
               required = false)
-          final List<Long> processDefinitionKey,
+          final Long processDefinitionKey,
       @McpToolParam(
-              description =
-                  "The process instance key(s) associated to the incident. Matches any of the provided keys.",
+              description = "The process instance key associated to the incident.",
               required = false)
-          final List<Long> processInstanceKey,
+          final Long processInstanceKey,
       @McpToolParam(
-              description =
-                  "The element instance key(s) associated to the incident. Matches any of the provided keys.",
+              description = "The element instance key associated to the incident.",
               required = false)
-          final List<Long> elementInstanceKey,
+          final Long elementInstanceKey,
       @McpToolParam(
-              description =
-                  "The job key(s), if exist, associated with the incident. Matches any of the provided keys.",
+              description = "The job key, if exists, associated with the incident.",
               required = false)
-          final List<Long> jobKey,
+          final Long jobKey,
       @McpToolParam(description = "Sort criteria", required = false) @Valid
           final List<@Valid IncidentSearchQuerySortRequest> sort,
       @McpToolParam(description = "Pagination criteria", required = false)
