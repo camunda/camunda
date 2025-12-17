@@ -26,22 +26,14 @@ public class SearchQueryFilterMapper {
         .ifPresent(builder::processDefinitionIdOperations);
     ofNullable(createEnumEqualOperation(request.errorType()))
         .ifPresent(builder::errorTypeOperations);
-    ofNullable(createEqualOperation(request.errorMessage()))
-        .ifPresent(builder::errorMessageOperations);
     ofNullable(createEqualOperation(request.elementId())).ifPresent(builder::flowNodeIdOperations);
     ofNullable(createDateTimeFilterOperation(request.creationTimeFrom(), request.creationTimeTo()))
         .ifPresent(builder::creationTimeOperations);
     ofNullable(createEnumEqualOperation(request.state())).ifPresent(builder::stateOperations);
-    ofNullable(createEqualOperation(request.tenantId())).ifPresent(builder::tenantIdOperations);
-    ofNullable(createEqualOperation(request.incidentKey()))
-        .ifPresent(builder::incidentKeyOperations);
     ofNullable(createEqualOperation(request.processDefinitionKey()))
         .ifPresent(builder::processDefinitionKeyOperations);
     ofNullable(createEqualOperation(request.processInstanceKey()))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(createEqualOperation(request.elementInstanceKey()))
-        .ifPresent(builder::flowNodeInstanceKeyOperations);
-    ofNullable(createEqualOperation(request.jobKey())).ifPresent(builder::jobKeyOperations);
 
     return builder.build();
   }
