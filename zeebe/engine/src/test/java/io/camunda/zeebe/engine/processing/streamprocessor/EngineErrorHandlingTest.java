@@ -18,7 +18,6 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -69,12 +68,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
+import org.agrona.collections.MutableLong;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
@@ -105,7 +105,7 @@ public final class EngineErrorHandlingTest {
     streams.createLogStream(STREAM_NAME, PARTITION_ID);
   }
 
-  @AfterEach
+  @After
   public void tearDown() {
     CloseHelper.close(streamProcessor);
   }
@@ -113,12 +113,17 @@ public final class EngineErrorHandlingTest {
   @Test
   public void shouldAutoRejectCommandOnProcessingFailure() {
     // given
+    final MutableLong failingKey = new MutableLong();
+    final MutableLong secondKey = new MutableLong();
     streamProcessor =
         streams.startStreamProcessor(
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
               processingState = processingContext.getProcessingState();
+              keyGenerator = processingContext.getProcessingState().getKeyGenerator();
+              failingKey.set(keyGenerator.getCurrentKey());
+              secondKey.set(keyGenerator.nextKey());
               return TypedRecordProcessors.processors(
                       processingState.getKeyGenerator(), processingContext.getWriters())
                   .onCommand(
@@ -139,8 +144,6 @@ public final class EngineErrorHandlingTest {
                       });
             });
 
-    keyGenerator = processingState.getKeyGenerator();
-    final long failingKey = keyGenerator.getCurrentKey();
     streams
         .newRecord(STREAM_NAME)
         .event(deployment("foo"))
@@ -148,16 +151,16 @@ public final class EngineErrorHandlingTest {
         .intent(DeploymentIntent.CREATE)
         .requestId(255L)
         .requestStreamId(99)
-        .key(failingKey)
+        .key(failingKey.get())
         .write();
-    final var secondKey = keyGenerator.nextKey();
+
     final long secondEventPosition =
         streams
             .newRecord(STREAM_NAME)
             .event(deployment("foo2"))
             .recordType(RecordType.COMMAND)
             .intent(DeploymentIntent.CREATE)
-            .key(secondKey)
+            .key(secondKey.get())
             .write();
 
     // when
@@ -173,7 +176,7 @@ public final class EngineErrorHandlingTest {
             .get();
 
     // then
-    assertThat(writtenEvent.getKey()).isEqualTo(secondKey);
+    assertThat(writtenEvent.getKey()).isEqualTo(secondKey.get());
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
 
     // error response
@@ -186,7 +189,7 @@ public final class EngineErrorHandlingTest {
             .withIntent(DeploymentIntent.CREATE)
             .getFirst();
 
-    assertThat(deploymentRejection.getKey()).isEqualTo(failingKey);
+    assertThat(deploymentRejection.getKey()).isEqualTo(failingKey.get());
     assertThat(deploymentRejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
   }
 
@@ -248,7 +251,6 @@ public final class EngineErrorHandlingTest {
             .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-            .key(keyGenerator.nextKey())
             .write();
 
     // then
@@ -289,7 +291,6 @@ public final class EngineErrorHandlingTest {
             .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-            .key(keyGenerator.nextKey())
             .write();
 
     // when
@@ -336,7 +337,6 @@ public final class EngineErrorHandlingTest {
             .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-            .key(keyGenerator.nextKey())
             .write();
 
     // when
@@ -381,14 +381,12 @@ public final class EngineErrorHandlingTest {
         .event(Records.processInstance(1))
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-        .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
         .event(Records.processInstance(1))
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.COMPLETE_ELEMENT)
-        .key(keyGenerator.nextKey())
         .write();
 
     // other instance
@@ -397,7 +395,6 @@ public final class EngineErrorHandlingTest {
         .event(Records.processInstance(2))
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.COMPLETE_ELEMENT)
-        .key(keyGenerator.nextKey())
         .write();
 
     // when
@@ -423,14 +420,12 @@ public final class EngineErrorHandlingTest {
   @Test
   public void shouldBanInstanceOnReplay() throws Exception {
     // given
-    keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
     final long failedPos =
         streams
             .newRecord(STREAM_NAME)
             .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-            .key(keyGenerator.nextKey())
             .write();
     streams
         .newRecord(STREAM_NAME)
@@ -438,7 +433,6 @@ public final class EngineErrorHandlingTest {
         .recordType(RecordType.EVENT)
         .sourceRecordPosition(failedPos)
         .intent(ErrorIntent.CREATED)
-        .key(keyGenerator.nextKey())
         .write();
 
     final CountDownLatch latch = new CountDownLatch(1);
@@ -524,14 +518,12 @@ public final class EngineErrorHandlingTest {
         .event(Records.job(1))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.COMPLETE)
-        .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
         .event(Records.job(1))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.THROW_ERROR)
-        .key(keyGenerator.nextKey())
         .write();
 
     // other instance
@@ -540,7 +532,6 @@ public final class EngineErrorHandlingTest {
         .event(Records.job(2))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.THROW_ERROR)
-        .key(keyGenerator.nextKey())
         .write();
 
     // when
