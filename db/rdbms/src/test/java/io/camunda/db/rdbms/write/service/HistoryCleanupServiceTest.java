@@ -246,6 +246,31 @@ class HistoryCleanupServiceTest {
   }
 
   @Test
+  void testCalculateNewDurationWhenLowCleanup() {
+    // given
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 20);
+    numDeletedRecords.put("flowNodeInstance", 20);
+    numDeletedRecords.put("incident", 20);
+    numDeletedRecords.put("userTask", 20);
+    numDeletedRecords.put("variable", 20);
+    numDeletedRecords.put("decisionInstance", 20);
+    numDeletedRecords.put("job", 20);
+    numDeletedRecords.put("sequenceFlow", 20);
+    numDeletedRecords.put("batchOperation", 20);
+    numDeletedRecords.put("messageSubscription", 20);
+    numDeletedRecords.put("correlatedMessageSubscription", 20);
+
+    // when
+    final Duration nextDuration =
+        historyCleanupService.calculateNewDuration(Duration.ofHours(4), numDeletedRecords);
+
+    // then
+    assertThat(nextDuration)
+        .isEqualTo(Duration.ofHours(8)); // assuming minCleanupInterval is 1 hour
+  }
+
+  @Test
   void testResolveBatchOperationTTL() {
     assertThat(
             historyCleanupService.resolveBatchOperationTTL(

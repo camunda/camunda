@@ -108,11 +108,11 @@ public record RdbmsWriterConfig(
 
     public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
     public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
-    public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
+    public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofSeconds(5);
     public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
     public static final Duration DEFAULT_USAGE_METRICS_CLEANUP = Duration.ofDays(1);
     public static final Duration DEFAULT_USAGE_METRICS_TTL = Duration.ofDays(730);
-    public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
+    public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 10000;
 
     public static RdbmsWriterConfig.Builder builder() {
       return new RdbmsWriterConfig.Builder();
