@@ -47,7 +47,6 @@ install-load-test:
 	helm upgrade --install $(namespace)-test camunda-load-tests/camunda-load-tests \
 		--wait --timeout 35m0s \
 		--namespace $(namespace) \
-		--reuse-values \
 		--render-subchart-notes
 	@echo "Setting up leader balancing cronjob..."
 	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) &>/dev/null; then \
