@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -42,6 +43,7 @@ public final class RdbmsExporter {
 
   // services
   private final HistoryCleanupService historyCleanupService;
+  private final HistoryDeletionService historyDeletionService;
 
   // configuration
   private final Duration flushInterval;
@@ -53,6 +55,7 @@ public final class RdbmsExporter {
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
   private ScheduledTask currentUsageMetricsCleanupTask = null;
+  private ScheduledTask currentHistoryDeletionTask = null;
 
   // Track the oldest record timestamp in the current batch for exporting latency calculation
   private long oldestRecordTimestampInBatch = -1;
@@ -64,7 +67,8 @@ public final class RdbmsExporter {
       final RdbmsWriters rdbmsWriters,
       final Map<ValueType, List<RdbmsExportHandler>> handlers,
       final RdbmsSchemaManager rdbmsSchemaManager,
-      final HistoryCleanupService historyCleanupService) {
+      final HistoryCleanupService historyCleanupService,
+      final HistoryDeletionService historyDeletionService) {
     this.historyCleanupService = historyCleanupService;
     this.rdbmsWriters = rdbmsWriters;
     registeredHandlers = handlers;
@@ -73,6 +77,7 @@ public final class RdbmsExporter {
     this.flushInterval = flushInterval;
     this.queueSize = queueSize;
     this.rdbmsSchemaManager = rdbmsSchemaManager;
+    this.historyDeletionService = historyDeletionService;
 
     LOG.info(
         "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
@@ -113,6 +118,8 @@ public final class RdbmsExporter {
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
     currentUsageMetricsCleanupTask =
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupUsageMetricsHistory);
+    currentHistoryDeletionTask =
+        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::deleteHistory);
 
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
@@ -127,6 +134,9 @@ public final class RdbmsExporter {
       }
       if (currentUsageMetricsCleanupTask != null) {
         currentUsageMetricsCleanupTask.cancel();
+      }
+      if (currentHistoryDeletionTask != null) {
+        currentHistoryDeletionTask.cancel();
       }
 
       try {
@@ -209,6 +219,9 @@ public final class RdbmsExporter {
     }
     if (currentUsageMetricsCleanupTask != null) {
       currentUsageMetricsCleanupTask.cancel();
+    }
+    if (currentHistoryDeletionTask != null) {
+      currentHistoryDeletionTask.cancel();
     }
 
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
@@ -297,6 +310,12 @@ public final class RdbmsExporter {
         controller.scheduleCancellableTask(newDuration, this::cleanupUsageMetricsHistory);
   }
 
+  private void deleteHistory() {
+    final var newDuration = historyDeletionService.deleteHistory(partitionId);
+    currentHistoryDeletionTask =
+        controller.scheduleCancellableTask(newDuration, this::deleteHistory);
+  }
+
   @VisibleForTesting(
       "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
   public void flushExecutionQueue() {
@@ -321,6 +340,7 @@ public final class RdbmsExporter {
     private RdbmsSchemaManager rdbmsSchemaManager;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
     private HistoryCleanupService historyCleanupService;
+    private HistoryDeletionService historyDeletionService;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -366,6 +386,11 @@ public final class RdbmsExporter {
       return this;
     }
 
+    public Builder historyDeletionService(final HistoryDeletionService historyDeletionService) {
+      this.historyDeletionService = historyDeletionService;
+      return this;
+    }
+
     public RdbmsExporter build() {
       return new RdbmsExporter(
           partitionId,
@@ -374,7 +399,8 @@ public final class RdbmsExporter {
           rdbmsWriters,
           handlers,
           rdbmsSchemaManager,
-          historyCleanupService);
+          historyCleanupService,
+          historyDeletionService);
     }
   }
 }
