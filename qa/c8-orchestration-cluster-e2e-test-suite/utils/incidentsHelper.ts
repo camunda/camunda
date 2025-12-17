@@ -90,35 +90,3 @@ export async function waitForProcessInstances(
 
   await sleep(2000);
 }
-
-export async function waitForIncidentsToBeResolved(
-  request: APIRequestContext,
-  processInstanceKey: string,
-  timeout = 120000,
-): Promise<void> {
-  const requestHeaders = getAuthHeaders();
-
-  await expect
-    .poll(
-      async () => {
-        const response = await request.post('/v1/incidents/search', {
-          ...requestHeaders,
-          data: {
-            filter: {
-              processInstanceKey: parseInt(processInstanceKey),
-            },
-          },
-        });
-        const incidents: {items: [{state: string}]; total: number} =
-          await response.json();
-        return (
-          incidents.total > 0 &&
-          incidents.items.filter(({state}) => state === 'PENDING').length === 0
-        );
-      },
-      {timeout},
-    )
-    .toBeTruthy();
-
-  await sleep(2000);
-}
