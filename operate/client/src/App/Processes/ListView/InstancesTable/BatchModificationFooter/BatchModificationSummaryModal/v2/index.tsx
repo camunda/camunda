@@ -11,10 +11,7 @@ import {observer} from 'mobx-react';
 import {Modal} from '@carbon/react';
 import {useLocation} from 'react-router-dom';
 import {type StateProps} from 'modules/components/ModalStateManager';
-import {
-  getProcessInstanceFilters,
-  getProcessInstancesRequestFilters,
-} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from '../styled';
@@ -26,13 +23,19 @@ import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml'
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
+<<<<<<< HEAD:operate/client/src/App/Processes/ListView/InstancesTable/BatchModificationFooter/BatchModificationSummaryModal/v2/index.tsx
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
+=======
+import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
+>>>>>>> 5550fed8 (fix: variable filter in migration and modification batch operations):operate/client/src/App/Processes/ListView/v2/InstancesTable/BatchModificationFooter/BatchModificationSummaryModal/index.tsx
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
     const location = useLocation();
+    const batchOperationMutationRequestBody =
+      useBatchOperationMutationRequestBody();
 
     const processInstancesFilters = getProcessInstanceFilters(location.search);
     const {flowNodeId: sourceElementId, process: bpmnProcessId} =
@@ -40,16 +43,6 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const process = processesStore.getProcess({bpmnProcessId});
     const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
     const {selectedTargetElementId} = batchModificationStore.state;
-    const {selectedProcessInstanceIds, excludedProcessInstanceIds} =
-      processInstancesSelectionStore;
-
-    const query = getProcessInstancesRequestFilters();
-    const filterIds = query.ids || [];
-
-    const ids: string[] =
-      selectedProcessInstanceIds.length > 0
-        ? selectedProcessInstanceIds
-        : filterIds;
 
     const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processDefinitionData} = useListViewXml({
@@ -138,6 +131,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
           setOpen(false);
           batchModificationStore.reset();
 
+<<<<<<< HEAD:operate/client/src/App/Processes/ListView/InstancesTable/BatchModificationFooter/BatchModificationSummaryModal/v2/index.tsx
           if (selectedProcessInstanceIds.length > 0) {
             processInstancesStore.markProcessInstancesWithActiveOperations({
               ids: selectedProcessInstanceIds,
@@ -156,17 +150,16 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
             excludedProcessInstanceIds,
           );
 
+=======
+>>>>>>> 5550fed8 (fix: variable filter in migration and modification batch operations):operate/client/src/App/Processes/ListView/v2/InstancesTable/BatchModificationFooter/BatchModificationSummaryModal/index.tsx
           batchModifyProcessInstances({
+            ...batchOperationMutationRequestBody,
             moveInstructions: [
               {
                 sourceElementId,
                 targetElementId: selectedTargetElementId,
               },
             ],
-            filter: {
-              processDefinitionKey,
-              processInstanceKey: keyCriterion,
-            },
           });
 
           setOpen(false);

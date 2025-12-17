@@ -17,6 +17,7 @@ import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
+<<<<<<< HEAD
 import {notificationsStore} from 'modules/stores/notifications';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
@@ -24,6 +25,15 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 
 const Footer: React.FC = observer(() => {
   const baseFilter = useProcessInstanceFilters().filter;
+=======
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {handleOperationError} from 'modules/utils/notifications';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody.ts';
+
+const Footer: React.FC = observer(() => {
+  const [searchParams] = useSearchParams();
+>>>>>>> 5550fed8 (fix: variable filter in migration and modification batch operations)
 
   const navigate = useNavigate();
 
@@ -151,16 +161,28 @@ const Footer: React.FC = observer(() => {
                     'excludeIds' in batchOperationQuery
                       ? batchOperationQuery.excludeIds
                       : [];
+                  const variable =
+                    'variable' in batchOperationQuery
+                      ? batchOperationQuery.variable
+                      : undefined;
 
-                  const filter = buildMigrationBatchOperationFilter({
-                    baseFilter,
+                  const requestBody = buildMutationRequestBody({
+                    searchParams,
                     includeIds,
                     excludeIds,
-                    processDefinitionKey: sourceProcessDefinitionKey,
+                    variableFilter:
+                      variable !== undefined
+                        ? {
+                            name: variable.name,
+                            values: variable.values.join(','),
+                          }
+                        : undefined,
+                    processDefinitionKey:
+                      sourceProcessDefinitionKey ?? undefined,
                   });
 
                   migrateProcess({
-                    filter,
+                    ...requestBody,
                     migrationPlan: {
                       targetProcessDefinitionKey,
                       mappingInstructions: Object.entries(elementMapping).map(
