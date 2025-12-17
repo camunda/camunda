@@ -229,18 +229,32 @@ class ClusterVariableAuthorizationIT {
 
   @Test
   void createGloballyScopedVariableShouldSucceedWithCreatePermission(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(CREATE_USER) final CamundaClient userClient) {
-    // when
-    final var result =
-        userClient
-            .newGloballyScopedClusterVariableCreateRequest()
-            .create("newGlobalVar" + UUID.randomUUID(), "newValue")
-            .send()
-            .join();
+    // given
+    final var variableName = "newGlobalVar" + UUID.randomUUID();
 
-    // then
-    assertThat(result).isNotNull();
-    assertThat(result.getName()).isNotEmpty();
+    try {
+      // when
+      final var result =
+          userClient
+              .newGloballyScopedClusterVariableCreateRequest()
+              .create(variableName, "newValue")
+              .send()
+              .join();
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.getName()).isNotEmpty();
+    } finally {
+      // cleanup
+      adminClient
+          .newGloballyScopedClusterVariableDeleteRequest()
+          .delete(variableName)
+          .send()
+          .join();
+      waitForClusterVariableToBeDeleted(adminClient, variableName, null);
+    }
   }
 
   @Test
@@ -299,18 +313,32 @@ class ClusterVariableAuthorizationIT {
 
   @Test
   void createTenantScopedVariableShouldSucceedWithCreatePermission(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(CREATE_USER) final CamundaClient userClient) {
-    // when
-    final var result =
-        userClient
-            .newTenantScopedClusterVariableCreateRequest(TEST_TENANT_ID)
-            .create("newTenantVar" + UUID.randomUUID(), "newValue")
-            .send()
-            .join();
+    // given
+    final var variableName = "newTenantVar" + UUID.randomUUID();
 
-    // then
-    assertThat(result).isNotNull();
-    assertThat(result.getName()).isNotEmpty();
+    try {
+      // when
+      final var result =
+          userClient
+              .newTenantScopedClusterVariableCreateRequest(TEST_TENANT_ID)
+              .create(variableName, "newValue")
+              .send()
+              .join();
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.getName()).isNotEmpty();
+    } finally {
+      // cleanup
+      adminClient
+          .newTenantScopedClusterVariableDeleteRequest(TEST_TENANT_ID)
+          .delete(variableName)
+          .send()
+          .join();
+      waitForClusterVariableToBeDeleted(adminClient, variableName, TEST_TENANT_ID);
+    }
   }
 
   @Test
@@ -385,6 +413,7 @@ class ClusterVariableAuthorizationIT {
     userClient.newGloballyScopedClusterVariableDeleteRequest().delete(variableName).send().join();
 
     // then - verify the variable was deleted
+    waitForClusterVariableToBeDeleted(adminClient, variableName, null);
     final var result =
         adminClient
             .newClusterVariableSearchRequest()
@@ -468,6 +497,7 @@ class ClusterVariableAuthorizationIT {
         .send()
         .join();
 
+    waitForClusterVariableToBeDeleted(adminClient, variableName, TEST_TENANT_ID);
     // then - verify the variable was deleted
     final var result =
         adminClient
@@ -543,6 +573,29 @@ class ClusterVariableAuthorizationIT {
             () -> {
               final var result = camundaClient.newClusterVariableSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
+            });
+  }
+
+  private static void waitForClusterVariableToBeDeleted(
+      final CamundaClient camundaClient, final String variableName, final String tenantId) {
+    Awaitility.await("should have cluster variable deleted")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newClusterVariableSearchRequest()
+                      .filter(
+                          f -> {
+                            if (tenantId != null) {
+                              f.tenantId(tenantId);
+                            }
+                            f.name(variableName);
+                          })
+                      .send()
+                      .join();
+              assertThat(result.items()).isEmpty();
             });
   }
 }
