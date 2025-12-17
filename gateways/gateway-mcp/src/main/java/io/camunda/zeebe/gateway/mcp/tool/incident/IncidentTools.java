@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.mcp.tool.incident;
 
 import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
+import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -16,11 +17,17 @@ import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryFilterMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryPageMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQuerySortRequestMapper;
-import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuery;
+import io.camunda.zeebe.gateway.mcp.model.IncidentSearchFilter;
+import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
+import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -40,9 +47,18 @@ public class IncidentTools {
     this.authenticationProvider = authenticationProvider;
   }
 
-  public CallToolResult searchIncidents(@Valid final IncidentSearchQuery request) {
+  @McpTool(
+      description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
+      annotations = @McpAnnotations(readOnlyHint = true))
+  public CallToolResult searchIncidents(
+      @McpToolParam(description = "Filter search by the given fields", required = false) @Valid
+          final IncidentSearchFilter filter,
+      @McpToolParam(description = "Sort criteria", required = false)
+          final List<@Valid IncidentSearchQuerySortRequest> sort,
+      @McpToolParam(description = "Pagination criteria", required = false) @Valid
+          final SearchQueryPageRequest page) {
     try {
-      final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(request.sort());
+      final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(sort);
       if (sortRequest.isLeft()) {
         return sortRequest.mapLeft(CallToolResultMapper::mapViolationsToResult).getLeft();
       }
@@ -52,8 +68,8 @@ public class IncidentTools {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(
                   SearchQueryBuilders.incidentSearchQuery()
-                      .filter(SearchQueryFilterMapper.toIncidentFilter(request))
-                      .page(SearchQueryPageMapper.toSearchQueryPage(request.page()))
+                      .filter(SearchQueryFilterMapper.toIncidentFilter(filter))
+                      .page(SearchQueryPageMapper.toSearchQueryPage(page))
                       .sort(sortRequest.get())
                       .build());
 

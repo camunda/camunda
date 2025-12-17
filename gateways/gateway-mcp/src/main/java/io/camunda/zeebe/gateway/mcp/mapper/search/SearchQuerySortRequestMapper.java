@@ -100,4 +100,6 @@ public class SearchQuerySortRequestMapper {
       builder.asc();
     }
   }
+
+  public record SearchQuerySortRequest<T>(T field, SortOrderEnum order) {}
 }

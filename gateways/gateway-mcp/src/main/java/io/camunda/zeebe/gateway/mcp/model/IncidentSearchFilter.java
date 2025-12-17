@@ -10,12 +10,10 @@ package io.camunda.zeebe.gateway.mcp.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.time.OffsetDateTime;
-import java.util.List;
 
-public record IncidentSearchQuery(
+public record IncidentSearchFilter(
     @JsonProperty @JsonPropertyDescription("The process definition ID associated to the incident.")
         String processDefinitionId,
     @JsonProperty @JsonPropertyDescription("Incident error type.") IncidentErrorType errorType,
@@ -41,7 +39,4 @@ public record IncidentSearchQuery(
     @JsonProperty
         @JsonPropertyDescription("The process instance key associated to the incident.")
         @Positive
-        Long processInstanceKey,
-    @JsonProperty @JsonPropertyDescription("Sort criteria") @Valid
-        List<@Valid IncidentSearchQuerySortRequest> sort,
-    @JsonProperty SearchQueryPageRequest page) {}
+        Long processInstanceKey) {}

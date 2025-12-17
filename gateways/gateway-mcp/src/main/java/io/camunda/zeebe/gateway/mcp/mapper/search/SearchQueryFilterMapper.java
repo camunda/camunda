@@ -12,34 +12,34 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
-import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuery;
+import io.camunda.zeebe.gateway.mcp.model.IncidentSearchFilter;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SearchQueryFilterMapper {
 
-  public static IncidentFilter toIncidentFilter(final IncidentSearchQuery request) {
+  public static IncidentFilter toIncidentFilter(final IncidentSearchFilter filter) {
     final var builder = FilterBuilders.incident();
 
-    ofNullable(request.processDefinitionId())
+    ofNullable(filter.processDefinitionId())
         .map(SearchQueryFilterMapper::createEqualOperation)
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(request.errorType())
+    ofNullable(filter.errorType())
         .map(SearchQueryFilterMapper::createEnumEqualOperation)
         .ifPresent(builder::errorTypeOperations);
-    ofNullable(request.elementId())
+    ofNullable(filter.elementId())
         .map(SearchQueryFilterMapper::createEqualOperation)
         .ifPresent(builder::flowNodeIdOperations);
-    ofNullable(createDateTimeFilterOperation(request.creationTimeFrom(), request.creationTimeTo()))
+    ofNullable(createDateTimeFilterOperation(filter.creationTimeFrom(), filter.creationTimeTo()))
         .ifPresent(builder::creationTimeOperations);
-    ofNullable(request.state())
+    ofNullable(filter.state())
         .map(SearchQueryFilterMapper::createEnumEqualOperation)
         .ifPresent(builder::stateOperations);
-    ofNullable(request.processDefinitionKey())
+    ofNullable(filter.processDefinitionKey())
         .map(SearchQueryFilterMapper::createEqualOperation)
         .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(request.processInstanceKey())
+    ofNullable(filter.processInstanceKey())
         .map(SearchQueryFilterMapper::createEqualOperation)
         .ifPresent(builder::processInstanceKeyOperations);
 
