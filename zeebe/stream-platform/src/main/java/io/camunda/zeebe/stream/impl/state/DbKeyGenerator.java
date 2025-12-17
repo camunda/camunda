@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 
 public final class DbKeyGenerator implements KeyGeneratorControls {
@@ -50,6 +49,11 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
   }
 
   @Override
+  public int partitionId() {
+    return partitionId;
+  }
+
+  @Override
   public long nextKey() {
     final var nextKey = nextValueManager.getNextValue();
     if (Protocol.decodePartitionId(nextKey) != partitionId) {
@@ -68,7 +72,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
    *
    * @return the current key from the state
    */
-  @VisibleForTesting
+  @Override
   public long getCurrentKey() {
     return nextValueManager.getCurrentValue();
   }

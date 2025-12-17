@@ -124,6 +124,7 @@ public class Engine implements RecordProcessor {
         new TypedRecordProcessorContextImpl(
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
+    writers.setKeyValidator(processingState.getKeyGenerator());
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
