@@ -10,45 +10,43 @@ import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {processesStore} from 'modules/stores/processes/processes.list';
-import {mockProcessDefinitions} from 'modules/testUtils';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {searchResult} from 'modules/testUtils';
+import type {ProcessDefinitionSelection} from 'modules/hooks/processDefinitions';
 
-function getWrapper() {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    return (
-      <QueryClientProvider client={new QueryClient()}>
-        {children}
-      </QueryClientProvider>
-    );
-  };
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return (
+    <QueryClientProvider client={new QueryClient()}>
+      {children}
+    </QueryClientProvider>
+  );
+};
 
-  return Wrapper;
-}
+const singleVersionSelection: ProcessDefinitionSelection = {
+  kind: 'single-version',
+  definition: {
+    processDefinitionId: 'MyProcess',
+    processDefinitionKey: '123',
+    name: 'My Process',
+    version: 1,
+    versionTag: 'MyVersionTag',
+    hasStartForm: false,
+    tenantId: '<default>',
+  },
+};
+
+const noMatchSelection: ProcessDefinitionSelection = {
+  kind: 'no-match',
+};
 
 describe('DiagramHeader', () => {
   beforeEach(() => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
-
-    processesStore.fetchProcesses();
+    mockSearchProcessInstances().withSuccess(searchResult([]));
   });
 
   it('should render header with full data', async () => {
     render(
-      <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-          bpmnProcessId: 'MyProcess',
-          version: '1',
-          versionTag: 'MyVersionTag',
-        }}
-        processDefinitionKey="123"
-      />,
-      {wrapper: getWrapper()},
+      <DiagramHeader processDefinitionSelection={singleVersionSelection} />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -68,14 +66,17 @@ describe('DiagramHeader', () => {
   it('should render header without version tag', async () => {
     render(
       <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-          bpmnProcessId: 'MyProcess',
-          version: '1',
+        processDefinitionSelection={{
+          ...singleVersionSelection,
+          definition: {
+            ...singleVersionSelection.definition,
+            versionTag: undefined,
+          },
         }}
-        processDefinitionKey="123"
       />,
-      {wrapper: getWrapper()},
+      {
+        wrapper: Wrapper,
+      },
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -92,15 +93,9 @@ describe('DiagramHeader', () => {
   });
 
   it('should render header without data', async () => {
-    render(
-      <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-        }}
-        processDefinitionKey=""
-      />,
-      {wrapper: getWrapper()},
-    );
+    render(<DiagramHeader processDefinitionSelection={noMatchSelection} />, {
+      wrapper: Wrapper,
+    });
 
     expect(screen.queryByText(/^process name$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^process id$/i)).not.toBeInTheDocument();
@@ -117,15 +112,8 @@ describe('DiagramHeader', () => {
     });
 
     render(
-      <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-          bpmnProcessId: 'MyProcess',
-          version: '1',
-        }}
-        processDefinitionKey="123"
-      />,
-      {wrapper: getWrapper()},
+      <DiagramHeader processDefinitionSelection={singleVersionSelection} />,
+      {wrapper: Wrapper},
     );
 
     const deleteButton = await screen.findByRole('button', {
@@ -141,15 +129,8 @@ describe('DiagramHeader', () => {
 
   it('should enable delete button when running instances count is 0', async () => {
     render(
-      <DiagramHeader
-        processDetails={{
-          processName: 'My Process',
-          bpmnProcessId: 'MyProcess',
-          version: '1',
-        }}
-        processDefinitionKey="123"
-      />,
-      {wrapper: getWrapper()},
+      <DiagramHeader processDefinitionSelection={singleVersionSelection} />,
+      {wrapper: Wrapper},
     );
 
     const deleteButton = await screen.findByRole('button', {
