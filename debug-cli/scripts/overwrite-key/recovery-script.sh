@@ -166,7 +166,7 @@ echo ""
 echo "[4/5] Updating key values using cdbg on leader broker ${LEADER_BROKER}..."
 
 # Build the cdbg command
-CDBG_CMD="/usr/local/camunda/bin/cdbg state update-key"
+CDBG_CMD="cdbg state update-key"
 CDBG_CMD="${CDBG_CMD} --root ${LEADER_PATH}"
 CDBG_CMD="${CDBG_CMD} --runtime ${RUNTIME_PATH}"
 CDBG_CMD="${CDBG_CMD} --snapshot ${SELECTED_SNAPSHOT}"
