@@ -66,6 +66,7 @@ public record AuditLogInfo(
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
         return AuditLogOperationCategory.DEPLOYED_RESOURCES;
+      case AUTHORIZATION:
       case USER:
       case MAPPING_RULE:
       case GROUP:
