@@ -31,7 +31,15 @@ kubectl label namespace $namespace created-by="${git_author}" --overwrite
 
 # Label namespace with TTL deadline (default: 7 days from now)
 ttl_days=${2:-7}
-deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null || date -v +${ttl_days}d +%Y-%m-%d)
+# Try GNU date format first (Linux), then BSD/macOS format
+if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
+  : # GNU date succeeded
+elif deadline_date=$(date -v +${ttl_days}d +%Y-%m-%d 2>/dev/null); then
+  : # BSD/macOS date succeeded
+else
+  echo "Warning: Could not calculate deadline date. Supported on Linux and macOS only."
+  deadline_date="unknown"
+fi
 kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
 
 # Copy default folder to new namespace folder

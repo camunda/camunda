@@ -1,5 +1,7 @@
 namespace ?= default
 helm_chart ?= camunda-platform-8.9
+curl_image ?= curlimages/curl:7.87.0
+camunda_management_url ?= http://camunda:9600
 
 .PHONY: all
 all: install
@@ -43,9 +45,9 @@ setup-leader-balancer:
 	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) &>/dev/null; then \
 		kubectl create cronjob leader-balancer \
 			--namespace $(namespace) \
-			--image=curlimages/curl:7.87.0 \
+			--image=$(curl_image) \
 			--schedule="*/10 * * * *" \
-			-- curl -L -v -X POST http://camunda:9600/actuator/rebalance; \
+			-- curl -L -v -X POST $(camunda_management_url)/actuator/rebalance; \
 		echo "Leader balancer cronjob created"; \
 	else \
 		echo "Leader balancer cronjob already exists"; \
