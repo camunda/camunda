@@ -125,8 +125,6 @@ public final class FollowerRole extends ActiveRole {
       return;
     }
 
-    log.info("Sending poll requests to all active members: {}", votingMembers);
-
     final var quorum =
         raft.getCluster()
             .getVoteQuorum(
@@ -141,6 +139,7 @@ public final class FollowerRole extends ActiveRole {
                     electionTimer.reset();
                   }
                 });
+    log.info("Sending poll requests to all active members: {}", quorum.participants());
 
     // First, load the last log entry to get its term. We load the entry
     // by its index since the index is required by the protocol.
