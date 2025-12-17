@@ -111,5 +111,51 @@
       <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-stream-platform</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-snapshots</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <dependency>io.camunda:zeebe-protocol</dependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>

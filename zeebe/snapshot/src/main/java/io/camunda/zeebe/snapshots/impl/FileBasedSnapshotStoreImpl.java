@@ -42,12 +42,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class FileBasedSnapshotStoreImpl {
+public final class FileBasedSnapshotStoreImpl implements AutoCloseable {
   public static final String SNAPSHOTS_DIRECTORY = "snapshots";
   public static final String PENDING_DIRECTORY = "pending";
-
-  static final int VERSION = 1;
-
   // When sorted with other files in the snapshot, the metadata file must be ordered at the end.
   // This is required for backward compatibility of checksum calculation. Otherwise, the older
   // versions, which are not aware of the metadata will calculate the checksum using a different
@@ -55,7 +52,8 @@ public final class FileBasedSnapshotStoreImpl {
   // lexicographically greater than all other snapshot files. We can change the name in later
   // versions, because the new checksum calculation already order the metadata file explicitly
   // instead of using the implicit sort order.
-  static final String METADATA_FILE_NAME = "zeebe.metadata";
+  public static final String METADATA_FILE_NAME = "zeebe.metadata";
+  static final int VERSION = 1;
   // first is the metadata and the second the received snapshot count
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStoreImpl.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
@@ -112,6 +110,7 @@ public final class FileBasedSnapshotStoreImpl {
     purgePendingSnapshotsDirectory();
   }
 
+  @Override
   public void close() {
     listeners.clear();
   }
