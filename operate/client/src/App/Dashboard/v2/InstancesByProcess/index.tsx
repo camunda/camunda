@@ -23,7 +23,6 @@ import {generateProcessKey} from 'modules/utils/generateProcessKey';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatistics';
-import {useVersionCounts} from 'modules/queries/processDefinitionStatistics/useVersionCounts';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
 import {DEFAULT_TENANT} from 'modules/constants';
 
@@ -35,8 +34,6 @@ const InstancesByProcess: React.FC = () => {
     : undefined;
   const tenantsById = useAvailableTenants();
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
-
-  const versionCountsMap = useVersionCounts(result.data?.items ?? []);
 
   if (result.status === 'pending' && !result.data) {
     return <Skeleton />;
@@ -98,10 +95,6 @@ const InstancesByProcess: React.FC = () => {
 
           const normalizedTenantId = tenantId ?? DEFAULT_TENANT;
 
-          const versionsCount =
-            versionCountsMap.get(processDefinitionId) ??
-            (hasMultipleVersions ? 2 : 1);
-
           const name = latestProcessDefinitionName || processDefinitionId;
           const version = hasMultipleVersions ? 'all' : '1';
           const totalInstancesCount =
@@ -145,7 +138,7 @@ const InstancesByProcess: React.FC = () => {
                 title={getAccordionTitle({
                   processName: name,
                   instancesCount: totalInstancesCount,
-                  versionsCount,
+                  hasMultipleVersions,
                   ...(isMultiTenancyEnabled
                     ? {
                         tenant: tenantName,
@@ -160,7 +153,7 @@ const InstancesByProcess: React.FC = () => {
                     text: getAccordionLabel({
                       name,
                       instancesCount: totalInstancesCount,
-                      versionsCount,
+                      hasMultipleVersions,
                       ...(isMultiTenancyEnabled
                         ? {
                             tenant: tenantName,

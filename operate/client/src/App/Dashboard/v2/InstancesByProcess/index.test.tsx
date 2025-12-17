@@ -130,15 +130,6 @@ describe('InstancesByProcess', () => {
       mockWithMultipleVersions,
     );
 
-    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess({
-      items: [],
-      page: {totalItems: 2},
-    });
-
-    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess(
-      mockOrderProcessVersions,
-    );
-
     mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess(
       mockOrderProcessVersions,
     );
@@ -152,7 +143,8 @@ describe('InstancesByProcess', () => {
     );
 
     const processLink = withinIncident.getByRole('link', {
-      description: /View 201 Instances in 2 Versions of Process Order process/,
+      description:
+        /View 201 Instances in 2\+ Versions of Process Order process/,
     });
 
     expect(processLink).toHaveAttribute(

@@ -11,18 +11,17 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 function getAccordionTitle({
   processName,
   instancesCount,
-  versionsCount,
+  hasMultipleVersions,
   tenant,
 }: {
   processName: string;
   instancesCount: number;
-  versionsCount: number;
+  hasMultipleVersions: boolean;
   tenant?: string;
 }) {
-  return `View ${pluralSuffix(instancesCount, 'Instance')} in ${pluralSuffix(
-    versionsCount,
-    'Version',
-  )} of Process ${processName}${tenant ? ` – ${tenant}` : ''}`;
+  const versionsText = hasMultipleVersions ? '2+ Versions' : '1 Version';
+
+  return `View ${pluralSuffix(instancesCount, 'Instance')} in ${versionsText} of Process ${processName}${tenant ? ` – ${tenant}` : ''}`;
 }
 
 export {getAccordionTitle};
