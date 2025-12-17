@@ -11,15 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.it.util.TestHelper;
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
@@ -28,7 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -136,6 +141,46 @@ public class DynamicNodeIdIT {
     }
   }
 
+  @Test
+  public void shouldReacquireSameLeaseAfterGracefulRestart() {
+    final var broker = testCluster.brokers().values().iterator().next();
+    final int nodeIdBeforeRestart =
+        broker.bean(BrokerBasedProperties.class).getCluster().getNodeId();
+    final Lease leaseBeforeRestart = awaitValidLease(nodeIdBeforeRestart);
+
+    // create some state, to ensure the cluster continues functioning after restart
+    try (final CamundaClient client = testCluster.newClientBuilder().build()) {
+      TestHelper.deployResource(client, "process/service_tasks_v1.bpmn");
+      TestHelper.startProcessInstance(client, "service_tasks_v1");
+    }
+
+    broker.stop();
+
+    // the S3 lease should be released on graceful shutdown (empty payload)
+    Awaitility.await("Until lease is released")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(readLeaseObjectBytes(nodeIdBeforeRestart)).isEmpty());
+
+    broker.start().await(TestHealthProbe.READY);
+    testCluster.awaitCompleteTopology();
+
+    final int nodeIdAfterRestart =
+        broker.bean(BrokerBasedProperties.class).getCluster().getNodeId();
+    assertThat(nodeIdAfterRestart).isEqualTo(nodeIdBeforeRestart);
+
+    final Lease leaseAfterRestart = awaitValidLease(nodeIdAfterRestart);
+    assertThat(leaseAfterRestart.nodeInstance().id()).isEqualTo(nodeIdBeforeRestart);
+    assertThat(leaseAfterRestart.nodeInstance().version().version())
+        .isGreaterThan(leaseBeforeRestart.nodeInstance().version().version());
+    assertThat(leaseAfterRestart.taskId()).isEqualTo(leaseBeforeRestart.taskId());
+
+    // no data corruption: the process is still executable after restart
+    try (final CamundaClient client = testCluster.newClientBuilder().build()) {
+      assertThatNoException()
+          .isThrownBy(() -> TestHelper.startProcessInstance(client, "service_tasks_v1"));
+    }
+  }
+
   private List<Lease> readLeases(final List<S3Object> objectsInBucket) throws IOException {
     final var leases = new ArrayList<Lease>();
     for (final var object : objectsInBucket) {
@@ -150,5 +195,28 @@ public class DynamicNodeIdIT {
     }
 
     return leases;
+  }
+
+  private byte[] readLeaseObjectBytes(final int nodeId) throws IOException {
+    try (final var stream =
+        s3Client.getObject(b -> b.bucket(BUCKET_NAME).key(S3NodeIdRepository.objectKey(nodeId)))) {
+      return stream.readAllBytes();
+    }
+  }
+
+  private Lease awaitValidLease(final int nodeId) {
+    final AtomicReference<Lease> lease = new AtomicReference<>();
+    Awaitility.await("Until lease is valid")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var bytes = readLeaseObjectBytes(nodeId);
+              assertThat(bytes).isNotEmpty();
+              final var parsed = Lease.fromJsonBytes(OBJECT_MAPPER, bytes);
+              assertThat(parsed.isStillValid(System.currentTimeMillis())).isTrue();
+              lease.set(parsed);
+            });
+
+    return lease.get();
   }
 }
