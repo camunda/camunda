@@ -1,9 +1,9 @@
 #!/bin/bash
 set -exo pipefail
 
-if [ -z $1 ]
+if [ -z "$1" ]
 then
-  echo "Please provide an namespace name!"
+  echo "Please provide a namespace name!"
   exit 1
 fi
 
@@ -14,6 +14,5 @@ fi
 
 namespace=${1//\//} # remove trailing slashes
 
-kubens default
-kubectl delete namespace $namespace --wait=false
-rm -r $namespace
+kubectl delete namespace "$namespace" --wait=false
+rm -r "$namespace"

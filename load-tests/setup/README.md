@@ -4,111 +4,124 @@ Welcome to the manual set up of a load test. :wave:
 
 There are two targets to run a load test against:
 
-* [Self-Managed Zeebe Cluster](#load-testing-self-managed-zeebe-cluster)
+* [Self-Managed Camunda Platform](#load-testing-self-managed-camunda-platform)
 * [Camunda Cloud Cluster](#load-testing-camunda-cloud-saas)
 
 All guides are targeted at a Linux system.
 
 ## Requirements
 
-Make sure you have the following installed: docker, gcloud, kubectl, kubens and helm
+Make sure you have the following installed: docker, gcloud, kubectl, and helm
 
-## Load testing Self-Managed Zeebe Cluster
+## Load testing Self-Managed Camunda Platform
 
 ### How to set up a load test namespace
 
-Just run the `newLoadTest.sh` with your preferred new namespace name.
+Run the `newLoadTest.sh` script with your preferred namespace name:
 
-Like:
-
-```
-. ./newLoadTest.sh my-load-test-name
+```bash
+./newLoadTest.sh my-load-test-name [author] [ttl-days]
 ```
 
-This will source and run the `newLoadTest.sh` script, which means it will
-create a new k8 namespace and switch to it via `kubens`. Furthermore, a new folder
-will be created with the given name. If you used `.` before `./newLoadTest.sh`
-the script will also change your directory after running, so you can directly start
-to configure your load test.
+**Parameters:**
+- `namespace` (required): The name of the load test namespace
+- `author` (optional): Your username (defaults to `whoami`)
+- `ttl-days` (optional): Number of days before namespace deletion (defaults to 7)
+
+**What it does:**
+1. Creates a new Kubernetes namespace
+2. Labels the namespace with creator and deadline date
+3. Creates a new folder with the namespace name
+4. Copies the `default` configuration template to the new folder
+5. Copies `camunda-platform-values.yaml` to the new folder
+6. Updates the Makefile with the namespace name
+7. Adds required Helm repositories
 
 ### How to configure a load test
 
-The load test configuration is completely done via the `values.yaml` file.
-If there is a property missing that you want to change please open an issue at https://github.com/camunda/zeebe-benchmark-helm
+The load test configuration is done via the `camunda-platform-values.yaml` file in your namespace folder. You can modify this file to customize:
+- Resource requests and limits
+- Cluster size and partitions
+- Elasticsearch configuration
+- Other platform settings
 
-#### Use different Zeebe Snapshot
+If there is a property missing that you want to change, please open an issue at https://github.com/camunda/camunda-platform-helm
 
-If you want to use your own or a different Zeebe snapshot then you could do the following.
+#### Use different Docker Image
+
+If you want to use your own or a different Docker image:
 
 **Build the docker image:**
 
 ```bash
 # builds the dist
-mvn clean install -T1C -DskipTests -pl dist -am
-# builds the a new zeebe docker image
-docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app .
+./mvnw clean install -T1C -DskipTests -pl dist -am
+# builds the a new docker image
+docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app -f camunda.Dockerfile .
 # pushes the image to our docker registry
 docker push gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
-Create a `values.yaml` file and set the newly created image.
+Then set the image tag when deploying:
 
-The changes should look similar to this:
-
-```yaml
-camunda-platform:
-  zeebe:
-    image:
-      repository: gcr.io/zeebe-io/zeebe
-      tag: <TAG>
-      pullPolicy: Always
+```bash
+make deploy IMAGE_TAG=SNAPSHOT-2024-01-15-abc12345
 ```
 
 ### How to run a load test
 
-After you have set up your load test namespace and make changes to your configuration.
-You can start your load test just with `make load-test`.
+After you have set up your load test namespace and made changes to your configuration, deploy the load test:
 
-This will deploy the `camunda`, `elastic` and load tests applications (e.g. `starter` and `worker`).
+```bash
+cd my-load-test-name
+make deploy
+```
+
+This will:
+1. Install the Camunda Platform helm chart
+2. Install the load test helm chart (starter, worker)
+3. Set up a leader balancer cronjob
+
+**Available make targets:**
+- `make deploy` - Deploy both platform and load test
+- `make deploy-stable` - Deploy on stable (non-spot) VMs
+- `make install-platform` - Install only the Camunda Platform
+- `make install-load-test` - Install only the load test components
+- `make update-platform` - Update the platform helm release
+- `make update-load-test` - Update the load test helm release
+- `make clean` - Remove all resources
 
 ### How to clean up a load test
 
-After you're done with your load test you should remove the remaining namespace.
-In order to do this easily, just run:
+After you're done with your load test, remove the namespace and folder:
 
-```
+```bash
 ./deleteLoadTest.sh my-load-test-name
 ```
 
-This will switch to the default namespace, delete the given namespace, and delete the corresponding folder.
+This will delete the namespace and the corresponding folder.
 
 ## Running on stable/non-spot VMs
 
 You may sometimes want to run load tests on non-spot (or non-preemptible) VMs, for example, if you
 want to test for slow memory leaks.
 
-To do this, simply pass the copied `values-stable.yaml` file as an additional argument to
-Helm. For example:
+To do this, use the `deploy-stable` target:
 
 ```shell
-helm install myRelease zeebe-benchmark/zeebe-benchmark -f values-stable.yaml
+make deploy-stable
 ```
 
-You can also use the `*-stable` Makefile jobs, namely:
+Or install the platform with the stable values file:
 
 ```shell
-# Deploys the Zeebe pods on stable nodes
-make load-test-stable
-# Spits out the rendered templates targeting stable nodes
-make template-stable
-# Updates a load test targeting stable nodes
-make update-stable
+make install-platform-stable
 ```
 
-The `clean` job works regardless.
+The `values-stable.yaml` file configures the deployment to use stable VMs with appropriate tolerations.
 
 ## Load testing Camunda Cloud SaaS
 
 _You need a Kubernetes Cluster at your disposal to run the load test itself, which then connects to your Camunda Cloud Cluster._
 
-Follow the guide [here](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/README.md#running-against-saas).
+Follow the guide [here](https://github.com/camunda/camunda-load-tests-helm).
