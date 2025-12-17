@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getAccordionItemTitle} from '../InstancesByProcess/utils/getAccordionItemTitle';
-import {getAccordionItemLabel} from '../InstancesByProcess/utils/getAccordionItemLabel';
+import {getAccordionItemTitle} from './utils/getAccordionItemTitle';
+import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
@@ -17,6 +17,7 @@ import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitionVersionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionVersionStatistics';
 import {InlineLoading} from '@carbon/react';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
+import {DEFAULT_TENANT} from 'modules/constants';
 
 type Props = {
   processDefinitionId: string;
@@ -36,13 +37,22 @@ const Details: React.FC<Props> = ({
 
   const result = useProcessDefinitionVersionStatistics(processDefinitionId, {
     payload:
-      isMultiTenancyEnabled && tenantId !== '<default>'
+      isMultiTenancyEnabled && tenantId !== DEFAULT_TENANT
         ? {
+            sort: [
+              {field: 'activeInstancesWithIncidentCount', order: 'desc'},
+              {field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
+            ],
             filter: {
               tenantId: {$eq: tenantId},
             },
           }
-        : undefined,
+        : {
+            sort: [
+              {field: 'activeInstancesWithIncidentCount', order: 'desc'},
+              {field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
+            ],
+          },
   });
 
   if (result.status === 'pending' && !result.data) {
@@ -79,7 +89,7 @@ const Details: React.FC<Props> = ({
             tenantId: itemTenantId,
           } = versionItem;
 
-          const normalizedTenantId = itemTenantId ?? '<default>';
+          const normalizedTenantId = itemTenantId ?? DEFAULT_TENANT;
           const tenantName =
             tenantsById[normalizedTenantId] ?? normalizedTenantId;
 

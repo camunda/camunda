@@ -15,6 +15,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {queryKeys} from '../queryKeys';
 import {getClientConfig} from '../../utils/getClientConfig.ts';
+import {DEFAULT_TENANT} from 'modules/constants';
 
 const useVersionCounts = (
   processItems: ProcessDefinitionInstanceStatistics[],
@@ -36,8 +37,9 @@ const useVersionCounts = (
     queries: processIdsWithMultipleVersions.map(
       ({processDefinitionId, tenantId}) => {
         const payload: GetProcessDefinitionInstanceVersionStatisticsRequestBody =
-          isMultiTenancyEnabled && tenantId && tenantId !== '<default>'
+          isMultiTenancyEnabled && tenantId && tenantId !== DEFAULT_TENANT
             ? {
+                page: {limit: 0},
                 sort: [
                   {field: 'activeInstancesWithIncidentCount', order: 'desc'},
                   {
@@ -50,6 +52,7 @@ const useVersionCounts = (
                 },
               }
             : {
+                page: {limit: 0},
                 sort: [
                   {field: 'activeInstancesWithIncidentCount', order: 'desc'},
                   {

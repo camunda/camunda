@@ -130,6 +130,15 @@ describe('InstancesByProcess', () => {
       mockWithMultipleVersions,
     );
 
+    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess({
+      items: [],
+      page: {totalItems: 2},
+    });
+
+    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess(
+      mockOrderProcessVersions,
+    );
+
     mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess(
       mockOrderProcessVersions,
     );

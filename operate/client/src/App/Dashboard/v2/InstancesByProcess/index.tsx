@@ -11,8 +11,8 @@ import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {getAccordionTitle} from '../InstancesByProcess/utils/getAccordionTitle';
-import {getAccordionLabel} from '../InstancesByProcess/utils/getAccordionLabel';
+import {getAccordionTitle} from './utils/getAccordionTitle';
+import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {LinkWrapper, ErrorMessage} from '../../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
@@ -25,6 +25,7 @@ import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatistics';
 import {useVersionCounts} from 'modules/queries/processDefinitionStatistics/useVersionCounts';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
+import {DEFAULT_TENANT} from 'modules/constants';
 
 const InstancesByProcess: React.FC = () => {
   const result = useProcessDefinitionStatistics();
@@ -95,7 +96,7 @@ const InstancesByProcess: React.FC = () => {
             tenantId,
           } = item;
 
-          const normalizedTenantId = tenantId ?? '<default>';
+          const normalizedTenantId = tenantId ?? DEFAULT_TENANT;
 
           const versionsCount =
             versionCountsMap.get(processDefinitionId) ??
@@ -186,7 +187,7 @@ const InstancesByProcess: React.FC = () => {
           tenantId,
         } = item;
 
-        const normalizedTenantId = tenantId ?? '<default>';
+        const normalizedTenantId = tenantId ?? DEFAULT_TENANT;
         const rowKey = generateProcessKey(
           processDefinitionId,
           normalizedTenantId,
