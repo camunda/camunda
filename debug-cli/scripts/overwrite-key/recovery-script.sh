@@ -185,14 +185,6 @@ echo ""
 echo "Key update completed successfully!"
 echo ""
 
-# Delete the original snapshot since cdbg created a new one
-echo "Removing original snapshot: ${SELECTED_SNAPSHOT}"
-rm -rf "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}"
-# Also remove the checksum file if it exists
-[ -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum" ] && rm -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum"
-echo "Original snapshot removed"
-echo ""
-
 echo "Updated snapshot location: ${LEADER_PATH}/snapshots/"
 ls -la "${LEADER_PATH}/snapshots/"
 echo ""
