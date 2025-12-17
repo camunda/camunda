@@ -31,8 +31,12 @@ const PanelHeader = styled(BasePanelHeader)`
   justify-content: flex-start;
 `;
 
+const TogglesWrapper = styled.div`
+  margin-left: auto;
+`;
+
 const ErrorMessage = styled(BaseErrorMessage)`
   margin: auto;
 `;
 
-export {PanelHeader, Container, ErrorMessage};
+export {PanelHeader, Container, ErrorMessage, TogglesWrapper};

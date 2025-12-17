@@ -16,7 +16,7 @@ const Content = styled.div`
 `;
 
 const FilterContainer = styled.div`
-  padding: var(--cds-spacing-03) var(--cds-spacing-05);
+  padding: var(--cds-spacing-03) var(--cds-spacing-05) var(--cds-spacing-03) 0;
   border-bottom: 1px solid var(--cds-border-subtle-01);
 `;
 

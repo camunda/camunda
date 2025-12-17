@@ -12,12 +12,14 @@ type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
   onExecute: () => void;
   disabled?: boolean;
+  useIcons?: boolean;
 };
 
 const ResolveIncident: React.FC<Props> = ({
   processInstanceKey,
   onExecute,
   disabled = false,
+  useIcons = false,
 }) => {
   return (
     <OperationItem
@@ -26,6 +28,7 @@ const ResolveIncident: React.FC<Props> = ({
       title={`Retry Instance ${processInstanceKey}`}
       disabled={disabled}
       size="sm"
+      useIcons={useIcons}
     />
   );
 };

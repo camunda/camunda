@@ -52,6 +52,7 @@ const IncidentOperation: React.FC<IncidentOperationProps> = (props) => {
           title="Retry Incident"
           disabled={isPending}
           size="sm"
+          useIcons={true}
         />
       </OperationItems>
     </Container>

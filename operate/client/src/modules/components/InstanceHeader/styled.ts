@@ -15,12 +15,16 @@ import {
 import {BREAKPOINTS} from 'modules/constants';
 
 const Table = styled.table`
-  width: 100%;
   padding-left: var(--cds-spacing-05);
-  table-layout: fixed;
+  table-layout: auto;
   border-collapse: separate;
-  border-spacing: var(--cds-spacing-01);
+  border-spacing: 0 var(--cds-spacing-01);
   color: var(--cds-text-secondary);
+  
+  th:not(:first-child),
+  td:not(:first-child) {
+    padding-left: var(--cds-spacing-07);
+  }
 
   @media (max-width: ${BREAKPOINTS.lg - 1}px) {
     th:nth-child(n + 3),
@@ -76,6 +80,10 @@ const Container = styled.header<ContainerProps>`
   }}
 `;
 
+const AdditionalContentWrapper = styled.div`
+  margin-left: auto;
+`;
+
 const SkeletonText = styled(BaseSkeletonText)`
   margin: 0;
 `;
@@ -85,4 +93,4 @@ const SkeletonIcon = styled(BaseSkeletonIcon)`
   height: var(--cds-spacing-06);
 `;
 
-export {Table, Td, Th, Container, SkeletonText, SkeletonIcon};
+export {Table, Td, Th, Container, AdditionalContentWrapper, SkeletonText, SkeletonIcon};

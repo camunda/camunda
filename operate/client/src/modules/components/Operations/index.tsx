@@ -17,6 +17,7 @@ type Props = {
   processInstanceKey: string;
   isLoading?: boolean;
   loadingMessage?: string;
+  useIcons?: boolean;
 };
 
 const Operations: React.FC<Props> = ({
@@ -24,6 +25,7 @@ const Operations: React.FC<Props> = ({
   processInstanceKey,
   isLoading = false,
   loadingMessage,
+  useIcons = false,
 }) => {
   return (
     <OperationsContainer orientation="horizontal">
@@ -42,6 +44,7 @@ const Operations: React.FC<Props> = ({
             key={operation.type}
             operation={operation}
             processInstanceKey={processInstanceKey}
+            useIcons={useIcons}
           />
         ))}
       </OperationItems>

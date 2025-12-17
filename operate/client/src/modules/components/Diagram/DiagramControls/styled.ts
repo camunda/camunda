@@ -10,57 +10,80 @@ import {IconButton} from '@carbon/react';
 import styled, {css} from 'styled-components';
 import {DownloadBPMNDefinitionXML as BaseDownloadBPMNDefinitionXML} from 'modules/components/DownloadBPMNDefinitionXML';
 
-const ButtonContainer = styled.div`
+const ControlsContainer = styled.div`
   display: flex;
   flex-direction: row;
   position: absolute;
   right: var(--cds-spacing-05);
   bottom: var(--cds-spacing-05);
+  gap: var(--cds-spacing-03);
+  align-items: center;
+`;
+
+const ButtonsGroup = styled.div`
+  display: flex;
+  flex-direction: row;
   gap: var(--cds-spacing-02);
+  background-color: var(--cds-layer-01);
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const DownloadGroup = styled.div`
+  display: flex;
+  flex-direction: row;
+  background-color: var(--cds-layer-01);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 `;
 
 const buttonStyles = css`
-  background-color: var(--cds-background);
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  
+  &:hover {
+    background-color: var(--cds-layer-hover);
+    color: inherit;
+  }
+  
+  &:active {
+    background-color: var(--cds-layer-active);
+    color: inherit;
+  }
+  
+  svg {
+    fill: currentColor;
+  }
 `;
 
-const FullscreenButton = styled(IconButton)`
+const ControlButton = styled(IconButton)`
   ${buttonStyles}
 `;
 
-const ZoomResetButton = styled(IconButton)`
-  ${buttonStyles}
-  margin-left: var(--cds-spacing-03);
-`;
+type MinimapButtonProps = {
+  $isSelected?: boolean;
+};
 
-const ZoomInButton = styled(IconButton)`
+const MinimapButton = styled(IconButton)<MinimapButtonProps>`
   ${buttonStyles}
-`;
-
-const ZoomOutButton = styled(IconButton)`
-  ${buttonStyles}
-`;
-
-const MinimapButton = styled(IconButton)<{isSelected?: boolean}>`
-  ${buttonStyles}
-  ${({isSelected}) =>
-    isSelected
-      ? `
-    background-color: var(--cds-layer-selected);
-  `
+  ${({$isSelected}) =>
+    $isSelected
+      ? css`
+          background-color: var(--cds-layer-selected);
+        `
       : ''}
 `;
 
 const DownloadBPMNDefinitionXML = styled(BaseDownloadBPMNDefinitionXML)`
   ${buttonStyles}
-  margin-left: var(--cds-spacing-03);
 `;
 
 export {
-  ButtonContainer,
-  FullscreenButton,
-  ZoomResetButton,
-  ZoomInButton,
-  ZoomOutButton,
+  ControlsContainer,
+  ButtonsGroup,
+  DownloadGroup,
+  ControlButton,
   MinimapButton,
   DownloadBPMNDefinitionXML,
 };

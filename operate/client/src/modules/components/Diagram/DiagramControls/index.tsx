@@ -6,15 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Add, CenterCircle, Subtract, Maximize, Minimize} from '@carbon/react/icons';
-// @ts-expect-error MapIdentify icon may not be in type definitions but exists in Carbon
-import {MapIdentify} from '@carbon/react/icons';
+import {Add, CenterCircle, Subtract, Maximize, Minimize, Plan} from '@carbon/react/icons';
 import {
-  ButtonContainer,
-  FullscreenButton,
-  ZoomResetButton,
-  ZoomOutButton,
-  ZoomInButton,
+  ControlsContainer,
+  ButtonsGroup,
+  DownloadGroup,
+  ControlButton,
   MinimapButton,
   DownloadBPMNDefinitionXML,
 } from './styled';
@@ -41,64 +38,68 @@ const DiagramControls: React.FC<Props> = ({
   processDefinitionKey,
 }) => {
   return (
-    <ButtonContainer>
-      <FullscreenButton
-        size="sm"
-        kind="tertiary"
-        align="left"
-        label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-        aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-        onClick={handleFullscreen}
-      >
-        {isFullscreen ? <Minimize /> : <Maximize />}
-      </FullscreenButton>
-      <MinimapButton
-        size="sm"
-        kind="tertiary"
-        align="left"
-        label={isMinimapOpen ? 'Hide minimap' : 'Show minimap'}
-        aria-label={isMinimapOpen ? 'Hide minimap' : 'Show minimap'}
-        onClick={handleMinimapToggle}
-        isSelected={isMinimapOpen}
-      >
-        <MapIdentify />
-      </MinimapButton>
-      <ZoomResetButton
-        size="sm"
-        kind="tertiary"
-        align="left"
-        label="Reset diagram zoom"
-        aria-label="Reset diagram zoom"
-        onClick={handleZoomReset}
-      >
-        <CenterCircle />
-      </ZoomResetButton>
-      <ZoomInButton
-        size="sm"
-        kind="tertiary"
-        align="left"
-        label="Zoom in diagram"
-        aria-label="Zoom in diagram"
-        onClick={handleZoomIn}
-      >
-        <Add />
-      </ZoomInButton>
-      <ZoomOutButton
-        size="sm"
-        kind="tertiary"
-        align="left"
-        label="Zoom out diagram"
-        aria-label="Zoom out diagram"
-        onClick={handleZoomOut}
-      >
-        <Subtract />
-      </ZoomOutButton>
-      {processDefinitionKey === undefined ? null : (
-        <DownloadBPMNDefinitionXML
-          processDefinitionKey={processDefinitionKey}
-        />
+    <ControlsContainer>
+      <ButtonsGroup>
+        <ControlButton
+          size="sm"
+          kind="tertiary"
+          align="top"
+          label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          onClick={handleFullscreen}
+        >
+          {isFullscreen ? <Minimize /> : <Maximize />}
+        </ControlButton>
+        <MinimapButton
+          size="sm"
+          kind="tertiary"
+          align="top"
+          label={isMinimapOpen ? 'Hide minimap' : 'Show minimap'}
+          aria-label={isMinimapOpen ? 'Hide minimap' : 'Show minimap'}
+          onClick={handleMinimapToggle}
+          $isSelected={isMinimapOpen}
+        >
+          <Plan />
+        </MinimapButton>
+        <ControlButton
+          size="sm"
+          kind="tertiary"
+          align="top"
+          label="Reset zoom"
+          aria-label="Reset zoom"
+          onClick={handleZoomReset}
+        >
+          <CenterCircle />
+        </ControlButton>
+        <ControlButton
+          size="sm"
+          kind="tertiary"
+          align="top"
+          label="Zoom out"
+          aria-label="Zoom out"
+          onClick={handleZoomOut}
+        >
+          <Subtract />
+        </ControlButton>
+        <ControlButton
+          size="sm"
+          kind="tertiary"
+          align="top"
+          label="Zoom in"
+          aria-label="Zoom in"
+          onClick={handleZoomIn}
+        >
+          <Add />
+        </ControlButton>
+      </ButtonsGroup>
+      {processDefinitionKey !== undefined && (
+        <DownloadGroup>
+          <DownloadBPMNDefinitionXML
+            processDefinitionKey={processDefinitionKey}
+          />
+        </DownloadGroup>
       )}
-    </ButtonContainer>
+    </ControlsContainer>
   );
 };
 

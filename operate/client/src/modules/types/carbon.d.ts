@@ -314,6 +314,7 @@ declare module '@carbon/react/icons' {
   >;
 
   export const ArrowRight: Icon;
+  export const ArrowLeft: Icon;
   export const RowExpand: Icon;
   export const RowCollapse: Icon;
   export const CheckmarkOutline: Icon;
@@ -338,6 +339,7 @@ declare module '@carbon/react/icons' {
   export const Maximize: Icon;
   export const Minimize: Icon;
   export const MigrateAlt: Icon;
+  export const Plan: Icon;
   export const Move: Icon;
   export const Copy: Icon;
   export const Launch: Icon;

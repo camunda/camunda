@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Container, Stack, Layer} from './styled';
+import {Container, StyledMultiSelect} from './styled';
 import {observer} from 'mobx-react';
-import {tracking} from 'modules/tracking';
-import {Button, MultiSelect} from '@carbon/react';
+import {MultiSelect} from '@carbon/react';
 import {
   availableErrorTypes,
   getIncidentErrorName,
@@ -18,40 +17,22 @@ import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 const IncidentsFilter: React.FC = observer(() => {
   return (
-    <Layer>
-      <Container>
-        <Stack orientation="horizontal" gap={5}>
-          <MultiSelect
-            id="incidents-by-errorType"
-            data-testid="incidents-by-errorType"
-            items={availableErrorTypes}
-            selectedItems={incidentsPanelStore.state.selectedErrorTypes}
-            itemToString={(selectedItem) => getIncidentErrorName(selectedItem)}
-            label="Incident Type"
-            titleText="Incident Type"
-            hideLabel
-            onChange={({selectedItems}) => {
-              incidentsPanelStore.setErrorTypeSelection(selectedItems);
-            }}
-            size="sm"
-          />
-          <Button
-            kind="ghost"
-            onClick={() => {
-              incidentsPanelStore.clearSelection();
-              tracking.track({
-                eventName: 'incident-filters-cleared',
-              });
-            }}
-            disabled={!incidentsPanelStore.hasActiveFilters}
-            title="Reset"
-            size="sm"
-          >
-            Reset
-          </Button>
-        </Stack>
-      </Container>
-    </Layer>
+    <Container>
+      <StyledMultiSelect
+        id="incidents-by-errorType"
+        data-testid="incidents-by-errorType"
+        items={availableErrorTypes}
+        selectedItems={incidentsPanelStore.state.selectedErrorTypes}
+        itemToString={(selectedItem) => getIncidentErrorName(selectedItem)}
+        label="Incident Type"
+        titleText="Incident Type"
+        hideLabel
+        onChange={({selectedItems}) => {
+          incidentsPanelStore.setErrorTypeSelection(selectedItems);
+        }}
+        size="sm"
+      />
+    </Container>
   );
 });
 

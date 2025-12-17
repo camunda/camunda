@@ -15,16 +15,19 @@ import type {OperationConfig} from './types';
 type Props = {
   operation: OperationConfig;
   processInstanceKey: string;
+  useIcons?: boolean;
 };
 
 const OperationRenderer: React.FC<Props> = ({
   operation,
   processInstanceKey,
+  useIcons = false,
 }) => {
   const baseProps = {
     processInstanceKey,
     onExecute: operation.onExecute,
     disabled: operation.disabled,
+    useIcons,
   };
 
   switch (operation.type) {
@@ -42,6 +45,7 @@ const OperationRenderer: React.FC<Props> = ({
           title={operation.label || `Modify Instance ${processInstanceKey}`}
           disabled={operation.disabled}
           size="sm"
+          useIcons={useIcons}
         />
       );
     default:

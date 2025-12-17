@@ -16,15 +16,25 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {VersionTag} from './styled';
+import {
+  VersionTag,
+  ProcessNameContainer,
+  ProcessNameLabel,
+  IncidentCount,
+  HeaderContent,
+} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
+import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
+import {useNavigate} from 'react-router-dom';
+import {Button} from '@carbon/react';
+import {ArrowLeft} from '@carbon/react/icons';
+import {styles} from '@carbon/elements';
 
 const headerColumns = [
-  'Process Name',
   'Process Instance Key',
   'Version',
   'Version Tag',
@@ -39,10 +49,6 @@ const skeletonColumns: {
   name: (typeof headerColumns)[number];
   skeletonWidth: string;
 }[] = [
-  {
-    name: 'Process Name',
-    skeletonWidth: '94px',
-  },
   {
     name: 'Process Instance Key',
     skeletonWidth: '136px',
@@ -88,12 +94,17 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   } = processInstance;
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
+  const navigate = useNavigate();
 
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
+  });
+
+  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceKey, {
+    enabled: hasIncident,
   });
 
   if (processInstance === null || isPending) {
@@ -107,10 +118,26 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
   const processInstanceState = hasIncident ? 'INCIDENT' : state;
+  const hasEndDate = state === 'COMPLETED' || state === 'TERMINATED';
+
+  const processName = getProcessDefinitionName(processInstance);
 
   return (
     <InstanceHeader
       state={processInstanceState}
+      backButton={
+        <Button
+          kind="ghost"
+          size="sm"
+          hasIconOnly
+          iconDescription="Back"
+          tooltipPosition="bottom"
+          aria-label="Back to processes"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft />
+        </Button>
+      }
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;
@@ -118,13 +145,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         if (name === 'Version Tag') {
           return hasVersionTag;
         }
+        if (name === 'End Date') {
+          return hasEndDate;
+        }
         return true;
       })}
       bodyColumns={[
-        {
-          title: getProcessDefinitionName(processInstance),
-          content: getProcessDefinitionName(processInstance),
-        },
         {title: processInstanceKey, content: processInstanceKey},
         {
           hideOverflowingContent: false,
@@ -179,11 +205,15 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
           content: formatDate(startDate),
           dataTestId: 'start-date',
         },
-        {
-          title: formatDate(endDate ?? null) ?? '--',
-          content: formatDate(endDate ?? null),
-          dataTestId: 'end-date',
-        },
+        ...(hasEndDate
+          ? [
+              {
+                title: formatDate(endDate ?? null) ?? '--',
+                content: formatDate(endDate ?? null),
+                dataTestId: 'end-date',
+              },
+            ]
+          : []),
         {
           title: parentProcessInstanceKey ?? 'None',
           hideOverflowingContent: false,
@@ -245,6 +275,24 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
       ]}
       additionalContent={
         <ProcessInstanceOperations processInstance={processInstance} />
+      }
+      customContent={
+        <HeaderContent>
+          <ProcessNameContainer $hasIncident={hasIncident}>
+            {hasIncident ? (
+              <>
+                <ProcessNameLabel>{processName}</ProcessNameLabel>
+                <IncidentCount>
+                  {incidentsCount === 1
+                    ? '1 incident'
+                    : `${incidentsCount} incidents`}
+                </IncidentCount>
+              </>
+            ) : (
+              processName
+            )}
+          </ProcessNameContainer>
+        </HeaderContent>
       }
     />
   );

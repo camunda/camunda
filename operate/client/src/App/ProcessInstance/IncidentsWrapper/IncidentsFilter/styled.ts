@@ -7,21 +7,17 @@
  */
 
 import styled from 'styled-components';
-import {Stack as BaseStack, Layer as BaseLayer} from '@carbon/react';
+import {MultiSelect as BaseMultiSelect} from '@carbon/react';
 
 const Container = styled.div`
   display: flex;
   width: 100%;
-  justify-content: flex-end;
+  justify-content: flex-start;
   padding: var(--cds-spacing-01) var(--cds-spacing-05);
 `;
 
-const Stack = styled(BaseStack)`
-  align-items: center;
+const StyledMultiSelect = styled(BaseMultiSelect)`
+  width: 300px;
 `;
 
-const Layer = styled(BaseLayer)`
-  margin-left: auto;
-`;
-
-export {Container, Stack, Layer};
+export {Container, StyledMultiSelect};
