@@ -53,18 +53,18 @@ public class SearchQuerySortRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case INCIDENT_KEY -> builder.incidentKey();
-        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
-        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
-        case ERROR_TYPE -> builder.errorType();
-        case ERROR_MESSAGE -> builder.errorMessage();
-        case ELEMENT_ID -> builder.flowNodeId();
-        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
-        case CREATION_TIME -> builder.creationTime();
-        case STATE -> builder.state();
-        case JOB_KEY -> builder.jobKey();
-        case TENANT_ID -> builder.tenantId();
+        case incidentKey -> builder.incidentKey();
+        case processDefinitionKey -> builder.processDefinitionKey();
+        case processDefinitionId -> builder.processDefinitionId();
+        case processInstanceKey -> builder.processInstanceKey();
+        case errorType -> builder.errorType();
+        case errorMessage -> builder.errorMessage();
+        case elementId -> builder.flowNodeId();
+        case elementInstanceKey -> builder.flowNodeInstanceKey();
+        case creationTime -> builder.creationTime();
+        case state -> builder.state();
+        case jobKey -> builder.jobKey();
+        case tenantId -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
