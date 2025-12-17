@@ -319,7 +319,6 @@
     <dependency>
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-flattener</artifactId>
-      <version>0.18.0</version>
     </dependency>
 
     <dependency>
@@ -725,6 +724,12 @@
       <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.liquibase</groupId>
+          <artifactId>liquibase-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
