@@ -11,6 +11,10 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import java.util.Set;
 
+/**
+ * Configuration for audit log filtering by operation categories and entity type exclusions. Used
+ * for both user and client audit logging.
+ */
 public class AuditLogEntry {
   private Set<AuditLogOperationCategory> categories =
       Set.of(

@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+/** Configuration for audit logging, including separate settings for user and client operations. */
 public class AuditLog {
   private boolean enabled = true;
 
@@ -40,6 +41,7 @@ public class AuditLog {
     this.user = user;
   }
 
+  /** Converts this configuration to an {@link AuditLogConfiguration} for the exporter. */
   public AuditLogConfiguration toConfiguration() {
     final AuditLogConfiguration auditLogConfiguration = new AuditLogConfiguration();
     auditLogConfiguration.setEnabled(isEnabled());
