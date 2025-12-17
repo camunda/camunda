@@ -64,7 +64,10 @@ public class BackupRestoreTest {
 
   @Before
   public void setup() {
-    testContext = new BackupRestoreTestContext().setZeebeIndexPrefix(INDEX_PREFIX);
+    testContext =
+        new BackupRestoreTestContext()
+            .setZeebeIndexPrefix(INDEX_PREFIX)
+            .setIndexPrefix(INDEX_PREFIX);
     testContext.setDatabaseType(ConnectionTypes.ELASTICSEARCH.getType());
   }
 
