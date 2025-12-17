@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -18,7 +19,6 @@ public record IncidentSearchQuery(
     @JsonProperty @JsonPropertyDescription("The process definition ID associated to the incident.")
         String processDefinitionId,
     @JsonProperty @JsonPropertyDescription("Incident error type.") IncidentErrorType errorType,
-    @JsonProperty @JsonPropertyDescription("Error message.") String errorMessage,
     @JsonProperty
         @JsonPropertyDescription(
             "The element ID associated to the incident - the BPMN element ID in the process.")
@@ -34,19 +34,14 @@ public record IncidentSearchQuery(
                 + ToolDescriptions.DATE_TIME_FORMAT)
         OffsetDateTime creationTimeTo,
     @JsonProperty @JsonPropertyDescription("State of the incident.") IncidentState state,
-    @JsonProperty @JsonPropertyDescription("The tenant ID of the incident.") String tenantId,
     @JsonProperty
-        @JsonPropertyDescription(
-            "The assigned key, which acts as a unique identifier for this incident.")
-        Long incidentKey,
-    @JsonProperty @JsonPropertyDescription("The process definition key associated to the incident.")
+        @JsonPropertyDescription("The process definition key associated to the incident.")
+        @Positive
         Long processDefinitionKey,
-    @JsonProperty @JsonPropertyDescription("The process instance key associated to the incident.")
+    @JsonProperty
+        @JsonPropertyDescription("The process instance key associated to the incident.")
+        @Positive
         Long processInstanceKey,
-    @JsonProperty @JsonPropertyDescription("The element instance key associated to the incident.")
-        Long elementInstanceKey,
-    @JsonProperty @JsonPropertyDescription("The job key, if exists, associated with the incident.")
-        Long jobKey,
     @JsonProperty @JsonPropertyDescription("Sort criteria") @Valid
         List<@Valid IncidentSearchQuerySortRequest> sort,
     @JsonProperty SearchQueryPageRequest page) {}
