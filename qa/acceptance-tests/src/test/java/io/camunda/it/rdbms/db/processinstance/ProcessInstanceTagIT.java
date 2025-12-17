@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -36,12 +36,12 @@ public class ProcessInstanceTagIT {
   public void shouldSaveAndFindProcessInstanceByTag(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final var processDefinitionId = "test-process-" + nextKey();
     createAndSaveProcessInstance(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processDefinitionId(processDefinitionId)
@@ -65,24 +65,24 @@ public class ProcessInstanceTagIT {
   public void shouldSaveAndFindProcessInstanceWithMultipleTags(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final var processDefinitionId = "test-process-" + nextKey();
 
     // Create process instances with different tag combinations
     createAndSaveProcessInstance(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessInstanceFixtures.createRandomized(
             b -> b.processDefinitionId(processDefinitionId).tags(Set.of(TAG_VALUE_FOO))));
 
     createAndSaveProcessInstance(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessInstanceFixtures.createRandomized(
             b -> b.processDefinitionId(processDefinitionId).tags(Set.of(TAG_VALUE_BAR))));
 
     createAndSaveProcessInstance(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processDefinitionId(processDefinitionId)

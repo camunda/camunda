@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -63,38 +63,38 @@ public final class AuditLogFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomAuditLogs(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomAuditLogs(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomAuditLogs(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b);
   }
 
   public static void createAndSaveRandomAuditLogs(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<AuditLogDbModel.Builder, AuditLogDbModel.Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getAuditLogWriter().create(AuditLogFixtures.createRandomized(builderFunction));
+      rdbmsWriters.getAuditLogWriter().create(AuditLogFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static AuditLogDbModel createAndSaveAuditLog(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<AuditLogDbModel.Builder, AuditLogDbModel.Builder> builderFunction) {
     final AuditLogDbModel randomized = createRandomized(builderFunction);
-    createAndSaveAuditLogs(rdbmsWriter, List.of(randomized));
+    createAndSaveAuditLogs(rdbmsWriters, List.of(randomized));
     return randomized;
   }
 
   public static void createAndSaveAuditLog(
-      final RdbmsWriter rdbmsWriter, final AuditLogDbModel auditLog) {
-    createAndSaveAuditLogs(rdbmsWriter, List.of(auditLog));
+      final RdbmsWriters rdbmsWriters, final AuditLogDbModel auditLog) {
+    createAndSaveAuditLogs(rdbmsWriters, List.of(auditLog));
   }
 
   public static void createAndSaveAuditLogs(
-      final RdbmsWriter rdbmsWriter, final List<AuditLogDbModel> auditLogList) {
+      final RdbmsWriters rdbmsWriters, final List<AuditLogDbModel> auditLogList) {
     for (final AuditLogDbModel auditLog : auditLogList) {
-      rdbmsWriter.getAuditLogWriter().create(auditLog);
+      rdbmsWriters.getAuditLogWriter().create(auditLog);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

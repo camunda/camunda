@@ -38,7 +38,6 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
-import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.JobWriter;
@@ -47,6 +46,7 @@ import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
+import io.camunda.db.rdbms.write.service.RdbmsWriter;
 import io.camunda.db.rdbms.write.service.RoleWriter;
 import io.camunda.db.rdbms.write.service.SequenceFlowWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
@@ -55,43 +55,20 @@ import io.camunda.db.rdbms.write.service.UsageMetricWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
+import java.util.HashMap;
+import java.util.Map;
 
-public class RdbmsWriter {
+public class RdbmsWriters {
 
   private final RdbmsPurger rdbmsPurger;
   private final ExecutionQueue executionQueue;
-  private final AuditLogWriter auditLogWriter;
-  private final AuthorizationWriter authorizationWriter;
-  private final DecisionDefinitionWriter decisionDefinitionWriter;
-  private final DecisionInstanceWriter decisionInstanceWriter;
-  private final DecisionRequirementsWriter decisionRequirementsWriter;
   private final ExporterPositionService exporterPositionService;
-  private final FlowNodeInstanceWriter flowNodeInstanceWriter;
-  private final GroupWriter groupWriter;
-  private final IncidentWriter incidentWriter;
-  private final ProcessDefinitionWriter processDefinitionWriter;
-  private final ProcessInstanceWriter processInstanceWriter;
-  private final TenantWriter tenantWriter;
-  private final VariableWriter variableWriter;
-  private final ClusterVariableWriter clusterVariableWriter;
-  private final RoleWriter roleWriter;
-  private final UserWriter userWriter;
-  private final UserTaskWriter userTaskWriter;
-  private final FormWriter formWriter;
-  private final MappingRuleWriter mappingRuleWriter;
-  private final BatchOperationWriter batchOperationWriter;
-  private final JobWriter jobWriter;
-  private final SequenceFlowWriter sequenceFlowWriter;
-  private final UsageMetricWriter usageMetricWriter;
-  private final UsageMetricTUWriter usageMetricTUWriter;
-  private final MessageSubscriptionWriter messageSubscriptionWriter;
-  private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
-  private final HistoryDeletionWriter historyDeletionWriter;
 
-  private final HistoryCleanupService historyCleanupService;
   private final RdbmsWriterMetrics metrics;
 
-  public RdbmsWriter(
+  private final Map<Class<?>, RdbmsWriter> writers = new HashMap<>();
+
+  public RdbmsWriters(
       final RdbmsWriterConfig config,
       final ExecutionQueue executionQueue,
       final ExporterPositionService exporterPositionService,
@@ -118,165 +95,171 @@ public class RdbmsWriter {
     this.exporterPositionService = exporterPositionService;
     this.metrics = metrics;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
-    auditLogWriter = new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties);
-    authorizationWriter = new AuthorizationWriter(executionQueue);
-    decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
-    decisionInstanceWriter =
+
+    writers.put(
+        AuditLogWriter.class,
+        new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties));
+    writers.put(AuthorizationWriter.class, new AuthorizationWriter(executionQueue));
+    writers.put(DecisionDefinitionWriter.class, new DecisionDefinitionWriter(executionQueue));
+    writers.put(
+        DecisionInstanceWriter.class,
         new DecisionInstanceWriter(
-            decisionInstanceMapper, executionQueue, vendorDatabaseProperties, config);
-    decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
-    flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper);
-    groupWriter = new GroupWriter(executionQueue);
-    incidentWriter = new IncidentWriter(executionQueue, incidentMapper, vendorDatabaseProperties);
-    processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
-    processInstanceWriter = new ProcessInstanceWriter(processInstanceMapper, executionQueue);
-    tenantWriter = new TenantWriter(executionQueue);
-    variableWriter = new VariableWriter(executionQueue, variableMapper, vendorDatabaseProperties);
-    roleWriter = new RoleWriter(executionQueue);
-    userWriter = new UserWriter(executionQueue);
-    userTaskWriter = new UserTaskWriter(executionQueue, userTaskMapper);
-    formWriter = new FormWriter(executionQueue);
-    mappingRuleWriter = new MappingRuleWriter(executionQueue);
-    batchOperationWriter =
+            decisionInstanceMapper, executionQueue, vendorDatabaseProperties, config));
+    writers.put(DecisionRequirementsWriter.class, new DecisionRequirementsWriter(executionQueue));
+    writers.put(
+        FlowNodeInstanceWriter.class,
+        new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper));
+    writers.put(GroupWriter.class, new GroupWriter(executionQueue));
+    writers.put(
+        IncidentWriter.class,
+        new IncidentWriter(executionQueue, incidentMapper, vendorDatabaseProperties));
+    writers.put(ProcessDefinitionWriter.class, new ProcessDefinitionWriter(executionQueue));
+    writers.put(
+        ProcessInstanceWriter.class,
+        new ProcessInstanceWriter(processInstanceMapper, executionQueue));
+    writers.put(TenantWriter.class, new TenantWriter(executionQueue));
+    writers.put(
+        VariableWriter.class,
+        new VariableWriter(executionQueue, variableMapper, vendorDatabaseProperties));
+    writers.put(RoleWriter.class, new RoleWriter(executionQueue));
+    writers.put(UserWriter.class, new UserWriter(executionQueue));
+    writers.put(UserTaskWriter.class, new UserTaskWriter(executionQueue, userTaskMapper));
+    writers.put(FormWriter.class, new FormWriter(executionQueue));
+    writers.put(MappingRuleWriter.class, new MappingRuleWriter(executionQueue));
+    writers.put(
+        BatchOperationWriter.class,
         new BatchOperationWriter(
             batchOperationReader,
             executionQueue,
             batchOperationMapper,
             config,
-            vendorDatabaseProperties);
-    jobWriter = new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties);
-    sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
-    usageMetricWriter = new UsageMetricWriter(executionQueue, usageMetricMapper);
-    usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);
-    messageSubscriptionWriter =
-        new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper);
-    correlatedMessageSubscriptionWriter =
+            vendorDatabaseProperties));
+    writers.put(
+        JobWriter.class, new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties));
+    writers.put(
+        SequenceFlowWriter.class, new SequenceFlowWriter(executionQueue, sequenceFlowMapper));
+    writers.put(UsageMetricWriter.class, new UsageMetricWriter(executionQueue, usageMetricMapper));
+    writers.put(
+        UsageMetricTUWriter.class, new UsageMetricTUWriter(executionQueue, usageMetricTUMapper));
+    writers.put(
+        MessageSubscriptionWriter.class,
+        new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper));
+    writers.put(
+        CorrelatedMessageSubscriptionWriter.class,
         new CorrelatedMessageSubscriptionWriter(
-            executionQueue, correlatedMessageSubscriptionMapper);
-    clusterVariableWriter = new ClusterVariableWriter(executionQueue, vendorDatabaseProperties);
-    historyDeletionWriter = new HistoryDeletionWriter(executionQueue);
-
-    historyCleanupService =
-        new HistoryCleanupService(
-            config,
-            processInstanceWriter,
-            incidentWriter,
-            flowNodeInstanceWriter,
-            userTaskWriter,
-            variableWriter,
-            decisionInstanceWriter,
-            jobWriter,
-            sequenceFlowWriter,
-            batchOperationWriter,
-            messageSubscriptionWriter,
-            correlatedMessageSubscriptionWriter,
-            metrics,
-            usageMetricWriter,
-            usageMetricTUWriter);
+            executionQueue, correlatedMessageSubscriptionMapper));
+    writers.put(
+        ClusterVariableWriter.class,
+        new ClusterVariableWriter(executionQueue, vendorDatabaseProperties));
+    writers.put(HistoryDeletionWriter.class, new HistoryDeletionWriter(executionQueue));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
-    return authorizationWriter;
+    return getWriter(AuthorizationWriter.class);
   }
 
   public AuditLogWriter getAuditLogWriter() {
-    return auditLogWriter;
+    return getWriter(AuditLogWriter.class);
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
-    return decisionDefinitionWriter;
+    return getWriter(DecisionDefinitionWriter.class);
   }
 
   public DecisionInstanceWriter getDecisionInstanceWriter() {
-    return decisionInstanceWriter;
+    return getWriter(DecisionInstanceWriter.class);
   }
 
   public DecisionRequirementsWriter getDecisionRequirementsWriter() {
-    return decisionRequirementsWriter;
+    return getWriter(DecisionRequirementsWriter.class);
   }
 
   public FlowNodeInstanceWriter getFlowNodeInstanceWriter() {
-    return flowNodeInstanceWriter;
+    return getWriter(FlowNodeInstanceWriter.class);
   }
 
   public GroupWriter getGroupWriter() {
-    return groupWriter;
+    return getWriter(GroupWriter.class);
   }
 
   public IncidentWriter getIncidentWriter() {
-    return incidentWriter;
+    return getWriter(IncidentWriter.class);
   }
 
   public ProcessDefinitionWriter getProcessDefinitionWriter() {
-    return processDefinitionWriter;
+    return getWriter(ProcessDefinitionWriter.class);
   }
 
   public ProcessInstanceWriter getProcessInstanceWriter() {
-    return processInstanceWriter;
+    return getWriter(ProcessInstanceWriter.class);
   }
 
   public TenantWriter getTenantWriter() {
-    return tenantWriter;
+    return getWriter(TenantWriter.class);
   }
 
   public VariableWriter getVariableWriter() {
-    return variableWriter;
+    return getWriter(VariableWriter.class);
   }
 
   public ClusterVariableWriter getClusterVariableWriter() {
-    return clusterVariableWriter;
+    return getWriter(ClusterVariableWriter.class);
   }
 
   public RoleWriter getRoleWriter() {
-    return roleWriter;
+    return getWriter(RoleWriter.class);
   }
 
   public UserWriter getUserWriter() {
-    return userWriter;
+    return getWriter(UserWriter.class);
   }
 
   public UserTaskWriter getUserTaskWriter() {
-    return userTaskWriter;
+    return getWriter(UserTaskWriter.class);
   }
 
   public FormWriter getFormWriter() {
-    return formWriter;
+    return getWriter(FormWriter.class);
   }
 
   public MappingRuleWriter getMappingRuleWriter() {
-    return mappingRuleWriter;
+    return getWriter(MappingRuleWriter.class);
   }
 
   public BatchOperationWriter getBatchOperationWriter() {
-    return batchOperationWriter;
+    return getWriter(BatchOperationWriter.class);
   }
 
   public JobWriter getJobWriter() {
-    return jobWriter;
+    return getWriter(JobWriter.class);
   }
 
   public SequenceFlowWriter getSequenceFlowWriter() {
-    return sequenceFlowWriter;
+    return getWriter(SequenceFlowWriter.class);
   }
 
   public UsageMetricWriter getUsageMetricWriter() {
-    return usageMetricWriter;
+    return getWriter(UsageMetricWriter.class);
   }
 
   public UsageMetricTUWriter getUsageMetricTUWriter() {
-    return usageMetricTUWriter;
+    return getWriter(UsageMetricTUWriter.class);
   }
 
   public MessageSubscriptionWriter getMessageSubscriptionWriter() {
-    return messageSubscriptionWriter;
+    return getWriter(MessageSubscriptionWriter.class);
   }
 
   public CorrelatedMessageSubscriptionWriter getCorrelatedMessageSubscriptionWriter() {
-    return correlatedMessageSubscriptionWriter;
+    return getWriter(CorrelatedMessageSubscriptionWriter.class);
   }
 
   public HistoryDeletionWriter getHistoryDeletionWriter() {
-    return historyDeletionWriter;
+    return getWriter(HistoryDeletionWriter.class);
+  }
+
+  private <W> W getWriter(final Class<W> writerClass) {
+    return (W) writers.get(writerClass);
   }
 
   public ExporterPositionService getExporterPositionService() {
@@ -285,10 +268,6 @@ public class RdbmsWriter {
 
   public RdbmsPurger getRdbmsPurger() {
     return rdbmsPurger;
-  }
-
-  public HistoryCleanupService getHistoryCleanupService() {
-    return historyCleanupService;
   }
 
   public ExecutionQueue getExecutionQueue() {

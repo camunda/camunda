@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -71,12 +71,12 @@ public class BatchOperationItemSortIT {
       final Function<BatchOperationItemSort.Builder, ObjectBuilder<BatchOperationItemSort>>
           sortBuilder,
       final Comparator<BatchOperationItemEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final BatchOperationItemDbReader reader = rdbmsService.getBatchOperationItemReader();
 
-    final var batchOperation = createAndSaveBatchOperation(rdbmsWriter, b -> b);
+    final var batchOperation = createAndSaveBatchOperation(rdbmsWriters, b -> b);
 
-    createAndSaveRandomBatchOperationItems(rdbmsWriter, batchOperation.batchOperationKey(), 20);
+    createAndSaveRandomBatchOperationItems(rdbmsWriters, batchOperation.batchOperationKey(), 20);
 
     final var searchResult =
         reader

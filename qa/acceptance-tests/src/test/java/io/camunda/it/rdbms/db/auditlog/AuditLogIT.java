@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -37,11 +37,11 @@ public class AuditLogIT {
   public void shouldSaveAndFindAuditLogByEntityKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
-    createAndSaveAuditLog(rdbmsWriter, original);
+    createAndSaveAuditLog(rdbmsWriters, original);
 
     final var instance = auditLogReader.findByEntityKey(original.entityKey()).orElse(null);
 
@@ -51,11 +51,11 @@ public class AuditLogIT {
   @TestTemplate
   public void shouldFindAuditLogByEntityType(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
-    createAndSaveAuditLog(rdbmsWriter, original);
+    createAndSaveAuditLog(rdbmsWriters, original);
 
     final var searchResult =
         auditLogReader.search(
@@ -76,11 +76,11 @@ public class AuditLogIT {
   public void shouldFindAuditLogByProcessInstanceKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
-    createAndSaveAuditLog(rdbmsWriter, original);
+    createAndSaveAuditLog(rdbmsWriters, original);
 
     final var searchResult =
         auditLogReader.search(
@@ -103,12 +103,12 @@ public class AuditLogIT {
   public void shouldFindAuditLogByAuthorizedTenantId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
-    createAndSaveAuditLog(rdbmsWriter, original);
-    createAndSaveRandomAuditLogs(rdbmsWriter);
+    createAndSaveAuditLog(rdbmsWriters, original);
+    createAndSaveRandomAuditLogs(rdbmsWriters);
 
     final var searchResult =
         auditLogReader.search(
@@ -124,11 +124,11 @@ public class AuditLogIT {
   @TestTemplate
   public void shouldFindAllAuditLogsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final Long processInstanceKey = nextKey();
-    createAndSaveRandomAuditLogs(rdbmsWriter, b -> b.processInstanceKey(processInstanceKey));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
 
     final var searchResult =
         auditLogReader.search(
@@ -146,12 +146,12 @@ public class AuditLogIT {
   @TestTemplate
   public void shouldFindAuditLogWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var original = AuditLogFixtures.createRandomized(b -> b);
-    createAndSaveAuditLog(rdbmsWriter, original);
-    createAndSaveRandomAuditLogs(rdbmsWriter);
+    createAndSaveAuditLog(rdbmsWriters, original);
+    createAndSaveRandomAuditLogs(rdbmsWriters);
 
     final var searchResult =
         auditLogReader.search(
@@ -181,11 +181,11 @@ public class AuditLogIT {
   @TestTemplate
   public void shouldFindAuditLogWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
     final var processInstanceKey = nextKey();
-    createAndSaveRandomAuditLogs(rdbmsWriter, b -> b.processInstanceKey(processInstanceKey));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
     final var sort = AuditLogSort.of(s -> s.timestamp().asc().entityType().asc().entityKey().asc());
     final var searchResult =
         auditLogReader.search(

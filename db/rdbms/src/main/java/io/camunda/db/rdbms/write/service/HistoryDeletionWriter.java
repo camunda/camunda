@@ -14,7 +14,7 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.Map;
 
-public class HistoryDeletionWriter {
+public class HistoryDeletionWriter implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
 

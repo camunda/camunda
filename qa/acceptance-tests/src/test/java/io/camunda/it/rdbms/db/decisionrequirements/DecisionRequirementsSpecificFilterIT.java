@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.DecisionRequirementsFilter;
@@ -44,19 +44,19 @@ public class DecisionRequirementsSpecificFilterIT {
 
   @Autowired private DecisionRequirementsDbReader decisionRequirementsReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final DecisionRequirementsFilter filter) {
-    createAndSaveRandomDecisionRequirements(rdbmsWriter);
+    createAndSaveRandomDecisionRequirements(rdbmsWriters);
     createAndSaveDecisionRequirement(
-        rdbmsWriter,
+        rdbmsWriters,
         DecisionRequirementsFixtures.createRandomized(
             b ->
                 b.decisionRequirementsKey(1337L)

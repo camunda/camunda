@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel.ProcessDefinitionDbModelBuilder;
 import java.util.List;
@@ -36,54 +36,54 @@ public final class ProcessDefinitionFixtures extends CommonFixtures {
   }
 
   public static ProcessDefinitionDbModel createAndSaveRandomProcessDefinition(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<ProcessDefinitionDbModelBuilder, ProcessDefinitionDbModelBuilder>
           builderFunction) {
     final ProcessDefinitionDbModel randomized =
         ProcessDefinitionFixtures.createRandomized(builderFunction);
-    rdbmsWriter.getProcessDefinitionWriter().create(randomized);
+    rdbmsWriters.getProcessDefinitionWriter().create(randomized);
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     return randomized;
   }
 
-  public static void createAndSaveRandomProcessDefinitions(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomProcessDefinitions(rdbmsWriter, b -> b.processDefinitionId(nextStringId()));
+  public static void createAndSaveRandomProcessDefinitions(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomProcessDefinitions(rdbmsWriters, b -> b.processDefinitionId(nextStringId()));
   }
 
   public static void createAndSaveRandomProcessDefinitions(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<ProcessDefinitionDbModelBuilder, ProcessDefinitionDbModelBuilder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter
+      rdbmsWriters
           .getProcessDefinitionWriter()
           .create(ProcessDefinitionFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static ProcessDefinitionDbModel createAndSaveProcessDefinition(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<ProcessDefinitionDbModelBuilder, ProcessDefinitionDbModelBuilder>
           builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveProcessDefinitions(rdbmsWriter, List.of(definition));
+    createAndSaveProcessDefinitions(rdbmsWriters, List.of(definition));
     return definition;
   }
 
   public static void createAndSaveProcessDefinition(
-      final RdbmsWriter rdbmsWriter, final ProcessDefinitionDbModel processDefinition) {
-    createAndSaveProcessDefinitions(rdbmsWriter, List.of(processDefinition));
+      final RdbmsWriters rdbmsWriters, final ProcessDefinitionDbModel processDefinition) {
+    createAndSaveProcessDefinitions(rdbmsWriters, List.of(processDefinition));
   }
 
   public static void createAndSaveProcessDefinitions(
-      final RdbmsWriter rdbmsWriter, final List<ProcessDefinitionDbModel> processDefinitionList) {
+      final RdbmsWriters rdbmsWriters, final List<ProcessDefinitionDbModel> processDefinitionList) {
     for (final ProcessDefinitionDbModel processDefinition : processDefinitionList) {
-      rdbmsWriter.getProcessDefinitionWriter().create(processDefinition);
+      rdbmsWriters.getProcessDefinitionWriter().create(processDefinition);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

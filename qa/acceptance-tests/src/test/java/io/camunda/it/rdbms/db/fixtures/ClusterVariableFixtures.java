@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.db.fixtures;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel.ClusterVariableDbModelBuilder;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -52,52 +52,52 @@ public final class ClusterVariableFixtures extends CommonFixtures {
 
   public static void createAndSaveVariables(
       final RdbmsService rdbmsService, final ClusterVariableDbModel clusterVariableDbModel) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
-    rdbmsWriter.getClusterVariableWriter().create(clusterVariableDbModel);
-    rdbmsWriter.flush();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
+    rdbmsWriters.getClusterVariableWriter().create(clusterVariableDbModel);
+    rdbmsWriters.flush();
   }
 
   public static void createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
       final RdbmsService rdbmsService, final String tenantId) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
 
     for (int i = 0; i < 20; i++) {
       final ClusterVariableDbModel randomized =
           createRandomizedTenantClusterVariable(b -> b.tenantId(tenantId));
-      rdbmsWriter.getClusterVariableWriter().create(randomized);
+      rdbmsWriters.getClusterVariableWriter().create(randomized);
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static void createAndSaveRandomsTenantClusterVariablesWithFixedTenantAndValue(
       final RdbmsService rdbmsService, final String tenantId, final String value) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
 
     for (int i = 0; i < 20; i++) {
       final ClusterVariableDbModel randomized =
           createRandomizedTenantClusterVariable(b -> b.tenantId(tenantId).value(value));
-      rdbmsWriter.getClusterVariableWriter().create(randomized);
+      rdbmsWriters.getClusterVariableWriter().create(randomized);
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   private static List<ClusterVariableDbModel> createAndSaveRandomsTenantClusterVariables(
       final RdbmsService rdbmsService,
       final Function<ClusterVariableDbModelBuilder, ClusterVariableDbModelBuilder>
           builderFunction) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
 
     final List<ClusterVariableDbModel> models = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       final ClusterVariableDbModel randomized =
           createRandomizedTenantClusterVariable(builderFunction);
       models.add(randomized);
-      rdbmsWriter.getClusterVariableWriter().create(randomized);
+      rdbmsWriters.getClusterVariableWriter().create(randomized);
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     return models;
   }
@@ -106,17 +106,17 @@ public final class ClusterVariableFixtures extends CommonFixtures {
       final RdbmsService rdbmsService,
       final Function<ClusterVariableDbModelBuilder, ClusterVariableDbModelBuilder>
           builderFunction) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
 
     final List<ClusterVariableDbModel> models = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       final ClusterVariableDbModel randomized =
           createRandomizedGlobalClusterVariable(builderFunction);
       models.add(randomized);
-      rdbmsWriter.getClusterVariableWriter().create(randomized);
+      rdbmsWriters.getClusterVariableWriter().create(randomized);
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     return models;
   }

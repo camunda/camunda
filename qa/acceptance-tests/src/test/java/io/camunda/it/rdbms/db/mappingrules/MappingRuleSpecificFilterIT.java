@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
@@ -53,11 +53,11 @@ public class MappingRuleSpecificFilterIT {
 
   @Autowired private MappingRuleDbReader mappingRuleReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @Test
@@ -66,14 +66,14 @@ public class MappingRuleSpecificFilterIT {
     final var mappingRule1 = MappingRuleFixtures.createRandomized();
     final var mappingRule2 = MappingRuleFixtures.createRandomized();
     final var mappingRule3 = MappingRuleFixtures.createRandomized();
-    createAndSaveMappingRule(rdbmsWriter, mappingRule1);
-    createAndSaveMappingRule(rdbmsWriter, mappingRule2);
-    createAndSaveMappingRule(rdbmsWriter, mappingRule3);
+    createAndSaveMappingRule(rdbmsWriters, mappingRule1);
+    createAndSaveMappingRule(rdbmsWriters, mappingRule2);
+    createAndSaveMappingRule(rdbmsWriters, mappingRule3);
 
     final var group = GroupFixtures.createRandomized(b -> b);
     final var anotherGroup = GroupFixtures.createRandomized(b -> b);
-    createAndSaveGroup(rdbmsWriter, group);
-    createAndSaveGroup(rdbmsWriter, anotherGroup);
+    createAndSaveGroup(rdbmsWriters, group);
+    createAndSaveGroup(rdbmsWriters, anotherGroup);
 
     assignMappingRuleToGroup(group.groupId(), mappingRule1.mappingRuleId());
     assignMappingRuleToGroup(group.groupId(), mappingRule2.mappingRuleId());
@@ -93,8 +93,8 @@ public class MappingRuleSpecificFilterIT {
   public void shouldFilterMappingRulesForRole() {
     final var role = RoleFixtures.createRandomized(b -> b);
     final var anotherRole = RoleFixtures.createRandomized(b -> b);
-    createAndSaveRole(rdbmsWriter, role);
-    createAndSaveRole(rdbmsWriter, anotherRole);
+    createAndSaveRole(rdbmsWriters, role);
+    createAndSaveRole(rdbmsWriters, anotherRole);
 
     final var mappingRuleId1 = nextStringId();
     final var mappingRuleId2 = nextStringId();
@@ -103,7 +103,7 @@ public class MappingRuleSpecificFilterIT {
         .forEach(
             mappingId ->
                 createAndSaveMappingRule(
-                    rdbmsWriter, createRandomized(m -> m.mappingRuleId(mappingId))));
+                    rdbmsWriters, createRandomized(m -> m.mappingRuleId(mappingId))));
 
     assignMappingRuleToRole(role.roleId(), mappingRuleId1);
     assignMappingRuleToRole(anotherRole.roleId(), mappingRuleId2);
@@ -129,12 +129,12 @@ public class MappingRuleSpecificFilterIT {
     final var mappingRule1 = MappingRuleFixtures.createRandomized();
     final var mappingRule2 = MappingRuleFixtures.createRandomized();
     final var mappingRule3 = MappingRuleFixtures.createRandomized();
-    createAndSaveMappingRule(rdbmsWriter, mappingRule1);
-    createAndSaveMappingRule(rdbmsWriter, mappingRule2);
-    createAndSaveMappingRule(rdbmsWriter, mappingRule3);
+    createAndSaveMappingRule(rdbmsWriters, mappingRule1);
+    createAndSaveMappingRule(rdbmsWriters, mappingRule2);
+    createAndSaveMappingRule(rdbmsWriters, mappingRule3);
 
-    final var tenant1 = TenantFixtures.createAndSaveTenant(rdbmsWriter);
-    final var tenant2 = TenantFixtures.createAndSaveTenant(rdbmsWriter);
+    final var tenant1 = TenantFixtures.createAndSaveTenant(rdbmsWriters);
+    final var tenant2 = TenantFixtures.createAndSaveTenant(rdbmsWriters);
 
     assignMappingRuleToTenant(tenant1.tenantId(), mappingRule1.mappingRuleId());
     assignMappingRuleToTenant(tenant2.tenantId(), mappingRule2.mappingRuleId());
@@ -151,23 +151,23 @@ public class MappingRuleSpecificFilterIT {
   }
 
   private void assignMappingRuleToGroup(final String groupId, final String mappingRuleId) {
-    rdbmsWriter
+    rdbmsWriters
         .getGroupWriter()
         .addMember(new GroupMemberDbModel(groupId, mappingRuleId, MAPPING_RULE.name()));
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   private void assignMappingRuleToRole(final String roledId, final String mappingRuleId) {
-    rdbmsWriter
+    rdbmsWriters
         .getRoleWriter()
         .addMember(new RoleMemberDbModel(roledId, mappingRuleId, MAPPING_RULE.name()));
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   private void assignMappingRuleToTenant(final String tenantId, final String mappingRuleId) {
-    rdbmsWriter
+    rdbmsWriters
         .getTenantWriter()
         .addMember(new TenantMemberDbModel(tenantId, mappingRuleId, MAPPING_RULE.name()));
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

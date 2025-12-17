@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -51,19 +51,19 @@ public class AuthorizationSpecificFilterIT {
 
   @Autowired private AuthorizationDbReader authorizationReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final AuthorizationFilter filter) {
-    createAndSaveRandomAuthorizations(rdbmsWriter);
+    createAndSaveRandomAuthorizations(rdbmsWriters);
     createAndSaveAuthorization(
-        rdbmsWriter,
+        rdbmsWriters,
         AuthorizationFixtures.createRandomized(
             b ->
                 b.authorizationKey(100L)
@@ -84,9 +84,9 @@ public class AuthorizationSpecificFilterIT {
   @ParameterizedTest
   @CsvSource({"USER, 1", "GROUP, 0"})
   public void shouldFindWithOwnerType(final EntityType ownerType, final int expectedCpount) {
-    createAndSaveRandomAuthorizations(rdbmsWriter);
+    createAndSaveRandomAuthorizations(rdbmsWriters);
     createAndSaveAuthorization(
-        rdbmsWriter,
+        rdbmsWriters,
         AuthorizationFixtures.createRandomized(
             b ->
                 b.authorizationKey(100L)
@@ -110,14 +110,14 @@ public class AuthorizationSpecificFilterIT {
   @Test
   public void shouldFindByResourcePropertyName() {
     // given
-    createAndSaveRandomAuthorizations(rdbmsWriter);
+    createAndSaveRandomAuthorizations(rdbmsWriters);
     final AuthorizationDbModel authDbModel =
         AuthorizationFixtures.createRandomized(
             b ->
                 b.resourceMatcher(AuthorizationResourceMatcher.PROPERTY.value())
                     .resourcePropertyName("priority_prop"));
 
-    createAndSaveAuthorization(rdbmsWriter, authDbModel);
+    createAndSaveAuthorization(rdbmsWriters, authDbModel);
 
     // when
     final var searchResult =

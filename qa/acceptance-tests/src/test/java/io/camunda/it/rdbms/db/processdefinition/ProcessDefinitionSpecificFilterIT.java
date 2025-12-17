@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -45,19 +45,19 @@ public class ProcessDefinitionSpecificFilterIT {
 
   @Autowired private ProcessDefinitionDbReader processDefinitionReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindProcessDefinitionWithSpecificFilterParameters")
   public void shouldFindProcessDefinitionWithSpecificFilter(final ProcessDefinitionFilter filter) {
-    createAndSaveRandomProcessDefinitions(rdbmsWriter);
+    createAndSaveRandomProcessDefinitions(rdbmsWriters);
     createAndSaveProcessDefinition(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessDefinitionFixtures.createRandomized(
             b ->
                 b.processDefinitionKey(1337L)
@@ -83,7 +83,7 @@ public class ProcessDefinitionSpecificFilterIT {
   @Test
   public void shouldFindProcessDefinitionWithLatestVersion() {
     createAndSaveProcessDefinition(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessDefinitionFixtures.createRandomized(
             b ->
                 b.processDefinitionKey(4711L)
@@ -95,7 +95,7 @@ public class ProcessDefinitionSpecificFilterIT {
                     .tenantId("sorting-tenant1")));
 
     createAndSaveProcessDefinition(
-        rdbmsWriter,
+        rdbmsWriters,
         ProcessDefinitionFixtures.createRandomized(
             b ->
                 b.processDefinitionKey(4712L)

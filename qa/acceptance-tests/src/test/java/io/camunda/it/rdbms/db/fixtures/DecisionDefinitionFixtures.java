@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel.DecisionDefinitionDbModelBuilder;
 import java.util.List;
@@ -39,53 +39,54 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomDecisionDefinitions(final RdbmsWriter rdbmsWriter) {
+  public static void createAndSaveRandomDecisionDefinitions(final RdbmsWriters rdbmsWriters) {
     createAndSaveRandomDecisionDefinitions(
-        rdbmsWriter, b -> b.decisionDefinitionId(nextStringId()));
+        rdbmsWriters, b -> b.decisionDefinitionId(nextStringId()));
   }
 
   public static DecisionDefinitionDbModel createAndSaveRandomDecisionDefinition(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
           builderFunction) {
     final var definition = DecisionDefinitionFixtures.createRandomized(builderFunction);
-    rdbmsWriter.getDecisionDefinitionWriter().create(definition);
-    rdbmsWriter.flush();
+    rdbmsWriters.getDecisionDefinitionWriter().create(definition);
+    rdbmsWriters.flush();
     return definition;
   }
 
   public static void createAndSaveRandomDecisionDefinitions(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter
+      rdbmsWriters
           .getDecisionDefinitionWriter()
           .create(DecisionDefinitionFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static DecisionDefinitionDbModel createAndSaveDecisionDefinition(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
           builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveDecisionDefinitions(rdbmsWriter, List.of(definition));
+    createAndSaveDecisionDefinitions(rdbmsWriters, List.of(definition));
     return definition;
   }
 
   public static void createAndSaveDecisionDefinition(
-      final RdbmsWriter rdbmsWriter, final DecisionDefinitionDbModel decisionDefinition) {
-    createAndSaveDecisionDefinitions(rdbmsWriter, List.of(decisionDefinition));
+      final RdbmsWriters rdbmsWriters, final DecisionDefinitionDbModel decisionDefinition) {
+    createAndSaveDecisionDefinitions(rdbmsWriters, List.of(decisionDefinition));
   }
 
   public static void createAndSaveDecisionDefinitions(
-      final RdbmsWriter rdbmsWriter, final List<DecisionDefinitionDbModel> decisionDefinitionList) {
+      final RdbmsWriters rdbmsWriters,
+      final List<DecisionDefinitionDbModel> decisionDefinitionList) {
     for (final DecisionDefinitionDbModel decisionDefinition : decisionDefinitionList) {
-      rdbmsWriter.getDecisionDefinitionWriter().create(decisionDefinition);
+      rdbmsWriters.getDecisionDefinitionWriter().create(decisionDefinition);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

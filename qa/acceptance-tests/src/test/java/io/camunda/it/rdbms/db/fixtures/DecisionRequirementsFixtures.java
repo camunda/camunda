@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel.Builder;
 import java.util.List;
@@ -34,40 +34,40 @@ public final class DecisionRequirementsFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomDecisionRequirements(final RdbmsWriter rdbmsWriter) {
+  public static void createAndSaveRandomDecisionRequirements(final RdbmsWriters rdbmsWriters) {
     createAndSaveRandomDecisionRequirements(
-        rdbmsWriter, b -> b.decisionRequirementsId(nextStringId()));
+        rdbmsWriters, b -> b.decisionRequirementsId(nextStringId()));
   }
 
   public static void createAndSaveRandomDecisionRequirements(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter
+      rdbmsWriters
           .getDecisionRequirementsWriter()
           .create(DecisionRequirementsFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static DecisionRequirementsDbModel createAndSaveDecisionRequirement(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveDecisionRequirements(rdbmsWriter, List.of(definition));
+    createAndSaveDecisionRequirements(rdbmsWriters, List.of(definition));
     return definition;
   }
 
   public static void createAndSaveDecisionRequirement(
-      final RdbmsWriter rdbmsWriter, final DecisionRequirementsDbModel decisionRequirements) {
-    createAndSaveDecisionRequirements(rdbmsWriter, List.of(decisionRequirements));
+      final RdbmsWriters rdbmsWriters, final DecisionRequirementsDbModel decisionRequirements) {
+    createAndSaveDecisionRequirements(rdbmsWriters, List.of(decisionRequirements));
   }
 
   public static void createAndSaveDecisionRequirements(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final List<DecisionRequirementsDbModel> decisionRequirementsList) {
     for (final DecisionRequirementsDbModel decisionRequirements : decisionRequirementsList) {
-      rdbmsWriter.getDecisionRequirementsWriter().create(decisionRequirements);
+      rdbmsWriters.getDecisionRequirementsWriter().create(decisionRequirements);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

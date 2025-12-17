@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -83,7 +83,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(
             writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null).operationsTotalCount(0));
@@ -117,7 +117,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(
             writer,
@@ -183,7 +183,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(
             writer,
@@ -240,7 +240,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer =
+    final RdbmsWriters writer =
         rdbmsService.createWriter(b -> b.partitionId(0).exportBatchOperationItemsOnCreation(false));
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
@@ -288,7 +288,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(
             writer,
@@ -352,7 +352,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(
             writer,
@@ -417,7 +417,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
@@ -456,7 +456,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
@@ -480,7 +480,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
@@ -507,7 +507,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
@@ -534,7 +534,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
@@ -588,7 +588,7 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
@@ -761,7 +761,7 @@ public class BatchOperationIT {
   public void shouldFindAllBatchOperationItemsPaged(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
 
     final var batchOperation = createAndSaveBatchOperation(writer, b -> b);
 
@@ -788,7 +788,7 @@ public class BatchOperationIT {
   public void shouldFindBatchOperationItemsWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
 
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));

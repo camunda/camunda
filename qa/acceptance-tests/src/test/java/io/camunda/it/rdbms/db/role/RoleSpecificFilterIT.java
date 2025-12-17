@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
@@ -73,11 +73,11 @@ public class RoleSpecificFilterIT {
 
   @Autowired private RoleDbReader roleReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @Test
@@ -87,14 +87,14 @@ public class RoleSpecificFilterIT {
     final var group = GroupFixtures.createRandomized(b -> b);
     final var userId = Strings.newRandomValidIdentityId();
     createAndSaveUser(
-        rdbmsWriter,
+        rdbmsWriters,
         UserFixtures.createRandomized(
             b -> b.username(userId).name("User 1337").password("password")));
-    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriters, group);
     createAndSaveRole(
-        rdbmsWriter, RoleFixtures.createRandomized(b -> b.roleId(roleId).name("Role 1337")));
+        rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(roleId).name("Role 1337")));
     createAndSaveRole(
-        rdbmsWriter,
+        rdbmsWriters,
         RoleFixtures.createRandomized(b -> b.roleId(anotherRoleId).name("Another Role 1337")));
 
     addUserToRole(roleId, userId);
@@ -123,15 +123,15 @@ public class RoleSpecificFilterIT {
     final var otherGroup = GroupFixtures.createRandomized(b -> b);
     final var userId = Strings.newRandomValidIdentityId();
     createAndSaveUser(
-        rdbmsWriter,
+        rdbmsWriters,
         UserFixtures.createRandomized(
             b -> b.username(userId).name("User 1337").password("password")));
-    createAndSaveGroup(rdbmsWriter, group);
-    createAndSaveGroup(rdbmsWriter, otherGroup);
+    createAndSaveGroup(rdbmsWriters, group);
+    createAndSaveGroup(rdbmsWriters, otherGroup);
     createAndSaveRole(
-        rdbmsWriter, RoleFixtures.createRandomized(b -> b.roleId(roleId).name("Role 1337")));
+        rdbmsWriters, RoleFixtures.createRandomized(b -> b.roleId(roleId).name("Role 1337")));
     createAndSaveRole(
-        rdbmsWriter,
+        rdbmsWriters,
         RoleFixtures.createRandomized(b -> b.roleId(anotherRoleId).name("Another Role 1337")));
 
     addUserToRole(roleId, userId);
@@ -157,8 +157,8 @@ public class RoleSpecificFilterIT {
   public void shouldFilterRolesForTenant() {
     final var tenant = TenantFixtures.createRandomized(b -> b);
     final var anotherTenant = TenantFixtures.createRandomized(b -> b);
-    createAndSaveTenant(rdbmsWriter, tenant);
-    createAndSaveTenant(rdbmsWriter, anotherTenant);
+    createAndSaveTenant(rdbmsWriters, tenant);
+    createAndSaveTenant(rdbmsWriters, anotherTenant);
 
     final var roleId1 = nextStringId();
     final var roleId2 = nextStringId();
@@ -167,7 +167,7 @@ public class RoleSpecificFilterIT {
         .forEach(
             roleId ->
                 RoleFixtures.createAndSaveRole(
-                    rdbmsWriter, RoleFixtures.createRandomized(r -> r.roleId(roleId))));
+                    rdbmsWriters, RoleFixtures.createRandomized(r -> r.roleId(roleId))));
 
     addRoleToTenant(tenant.tenantId(), roleId1);
     addRoleToTenant(anotherTenant.tenantId(), roleId2);
@@ -187,14 +187,14 @@ public class RoleSpecificFilterIT {
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final RoleFilter filter) {
-    createAndSaveRandomRolesWithMembers(rdbmsWriter);
+    createAndSaveRandomRolesWithMembers(rdbmsWriters);
     createAndSaveRole(
-        rdbmsWriter,
+        rdbmsWriters,
         RoleFixtures.createRandomized(
             b ->
                 b.roleId(ROLE_ID).description(ROLE_DESCRIPTION).roleKey(ROLE_KEY).name(ROLE_NAME)));
     RoleMemberFixtures.createAndSaveRandomRoleMember(
-        rdbmsWriter, b -> b.roleId(ROLE_ID).entityId(ENTITY_ID).entityType(ENTITY_TYPE.name()));
+        rdbmsWriters, b -> b.roleId(ROLE_ID).entityId(ENTITY_ID).entityType(ENTITY_TYPE.name()));
 
     final var searchResult =
         roleReader.search(
@@ -214,17 +214,19 @@ public class RoleSpecificFilterIT {
   }
 
   private void addGroupToRole(final String roleId, final String entityId) {
-    rdbmsWriter.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "GROUP"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "GROUP"));
+    rdbmsWriters.flush();
   }
 
   private void addUserToRole(final String roleId, final String entityId) {
-    rdbmsWriter.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "USER"));
-    rdbmsWriter.flush();
+    rdbmsWriters.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "USER"));
+    rdbmsWriters.flush();
   }
 
   private void addRoleToTenant(final String tenantId, final String roleId) {
-    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, roleId, ROLE.name()));
-    rdbmsWriter.flush();
+    rdbmsWriters
+        .getTenantWriter()
+        .addMember(new TenantMemberDbModel(tenantId, roleId, ROLE.name()));
+    rdbmsWriters.flush();
   }
 }
