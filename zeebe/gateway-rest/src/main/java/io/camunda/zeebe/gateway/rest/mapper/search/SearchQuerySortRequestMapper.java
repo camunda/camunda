@@ -21,7 +21,7 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
-import io.camunda.search.sort.IncidentProcessInstanceStatisticsSort;
+import io.camunda.search.sort.IncidentProcessInstanceStatisticsByErrorSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
@@ -238,9 +238,10 @@ public class SearchQuerySortRequestMapper {
   }
 
   public static List<
-          SearchQuerySortRequest<IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum>>
-      fromIncidentProcessInstanceStatisticsQuerySortRequest(
-          final List<IncidentProcessInstanceStatisticsQuerySortRequest> requests) {
+          SearchQuerySortRequest<
+              IncidentProcessInstanceStatisticsByErrorQuerySortRequest.FieldEnum>>
+      fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(
+          final List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -895,9 +896,9 @@ public class SearchQuerySortRequestMapper {
     return validationErrors;
   }
 
-  public static List<String> applyIncidentProcessInstanceStatisticsSortField(
-      final IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum field,
-      final IncidentProcessInstanceStatisticsSort.Builder builder) {
+  public static List<String> applyIncidentProcessInstanceStatisticsByErrorSortField(
+      final IncidentProcessInstanceStatisticsByErrorQuerySortRequest.FieldEnum field,
+      final IncidentProcessInstanceStatisticsByErrorSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);

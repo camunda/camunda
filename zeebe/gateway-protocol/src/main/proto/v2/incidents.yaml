@@ -109,29 +109,31 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
-  /incidents/statistics/process-instances:
+  /incidents/statistics/process-instances-by-error:
     post:
       x-eventually-consistent: true
       tags:
         - Incident
-      operationId: getIncidentProcessInstanceStatistics
-      summary: Get incident process instance statistics
+      operationId: getIncidentProcessInstanceStatisticsByError
+      summary: Get statistics about active process instances grouped by incident error.
       description: |
-        Returns aggregated statistics for process instances with active incidents,
-        grouped by error hash code.
+        Returns statistics for active process instances that currently have active incidents,
+        grouped by incident error hash code.
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQuery'
+              $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQuery'
       responses:
         "200":
-          description: The incident statistics result.
+          description: |
+            The statistics about process instances with incident, grouped by error hash code are
+            successfully returned.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQueryResult'
+                $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQueryResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -446,51 +448,54 @@ components:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
 
-    IncidentProcessInstanceStatisticsQuery:
+    IncidentProcessInstanceStatisticsByErrorQuery:
       type: object
       additionalProperties: false
       properties:
         page:
-          description: Pagination parameters for process instance statistics with active incidents.
+          description: |
+            Pagination parameters for process instance statistics grouped by incident error.
           allOf:
             - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
-          description: Sort field criteria.
+          description: Sorting criteria for process instance statistics grouped by incident error.
           type: array
           items:
-            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsQuerySortRequest'
+            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQuerySortRequest'
 
-    IncidentProcessInstanceStatisticsQueryResult:
+    IncidentProcessInstanceStatisticsByErrorQueryResult:
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
-          description: The incident statistics results.
+          description: |
+            Statistics of active process instances grouped by incident error.
           type: array
           items:
-            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsResult'
+            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorResult'
 
-    IncidentProcessInstanceStatisticsResult:
+    IncidentProcessInstanceStatisticsByErrorResult:
       type: object
       properties:
         errorHashCode:
           type: integer
           format: int32
-          description: A hash code representing the error details of an incident.
+          description: The hash code identifying a specific incident error..
         errorMessage:
           type: string
-          description: Error message which describes the error in more detail.
+          description: The error message associated with the incident error hash code.
         activeInstancesWithErrorCount:
           type: integer
           format: int64
-          description: The number of active process instances with this error.
+          description: |
+            The number of active process instances that currently have an active incident with this error.
 
-    IncidentProcessInstanceStatisticsQuerySortRequest:
+    IncidentProcessInstanceStatisticsByErrorQuerySortRequest:
       type: object
       properties:
         field:
-          description: The field to sort by.
+          description: The field to sort the incident error statistics by.
           type: string
           enum:
             - errorMessage

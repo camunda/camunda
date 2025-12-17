@@ -17,7 +17,7 @@ package io.camunda.client.impl.statistics.request;
 
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest;
-import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQuerySortRequest;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQuerySortRequest;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQuerySortRequest;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuerySortRequest;
 import java.util.List;
@@ -58,15 +58,16 @@ public class StatisticsRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<IncidentProcessInstanceStatisticsQuerySortRequest>
-      toIncidentProcessInstanceStatisticsSortRequests(final List<SearchRequestSort> requests) {
+  public static List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest>
+      toIncidentProcessInstanceStatisticsByErrorSortRequests(
+          final List<SearchRequestSort> requests) {
     return requests.stream()
         .map(
             r -> {
-              final IncidentProcessInstanceStatisticsQuerySortRequest request =
-                  new IncidentProcessInstanceStatisticsQuerySortRequest();
+              final IncidentProcessInstanceStatisticsByErrorQuerySortRequest request =
+                  new IncidentProcessInstanceStatisticsByErrorQuerySortRequest();
               request.setField(
-                  IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum.fromValue(
+                  IncidentProcessInstanceStatisticsByErrorQuerySortRequest.FieldEnum.fromValue(
                       r.getField()));
               request.setOrder(r.getOrder());
               return request;

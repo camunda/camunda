@@ -22,7 +22,7 @@ import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionE
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -105,20 +105,20 @@ public final class IncidentServiceTest {
   }
 
   @Test
-  public void shouldReturnIncidentProcessInstanceStatistics() {
+  public void shouldReturnIncidentProcessInstanceStatisticsByError() {
     // given
     final var statisticsResult = mock(SearchQueryResult.class);
-    when(client.incidentProcessInstanceStatistics(any())).thenReturn(statisticsResult);
-    final var query = new IncidentProcessInstanceStatisticsQuery.Builder().build();
+    when(client.incidentProcessInstanceStatisticsByError(any())).thenReturn(statisticsResult);
+    final var query = new IncidentProcessInstanceStatisticsByErrorQuery.Builder().build();
 
     // when
-    final var result = services.incidentProcessInstanceStatistics(query);
+    final var result = services.incidentProcessInstanceStatisticsByError(query);
 
     // then
     assertThat(result).isEqualTo(statisticsResult);
     verify(securityContextProvider)
         .provideSecurityContext(eq(authentication), eq(Authorizations.INCIDENT_READ_AUTHORIZATION));
-    verify(client).incidentProcessInstanceStatistics(eq(query));
+    verify(client).incidentProcessInstanceStatisticsByError(eq(query));
   }
 
   @Test

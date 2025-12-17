@@ -166,7 +166,7 @@ import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
-import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -3096,19 +3096,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   EvaluateConditionalCommandStep1 newEvaluateConditionalCommand();
 
   /**
-   * Get statistics about process instances with active incidents, grouped by error hash code.
+   * Retrieves statistics about active process instances that currently have active incidents,
+   * grouped by incident error hash code.
    *
    * <pre>
    * camundaClient
-   *  .newIncidentProcessInstanceStatisticsRequest()
+   *  .newIncidentProcessInstanceStatisticsByErrorRequest()
    *  .page(p -> p.limit(50))
    *  .sort(s -> s.activeInstancesWithErrorCount().desc())
    *  .send();
    * </pre>
    *
-   * @return a builder for the incident statistics request
+   * @return a builder for querying process instance statistics grouped by incident error
    */
-  IncidentProcessInstanceStatisticsRequest newIncidentProcessInstanceStatisticsRequest();
+  IncidentProcessInstanceStatisticsByErrorRequest newIncidentProcessInstanceStatisticsByErrorRequest();
 
   /**
    * Command to evaluate an expression.

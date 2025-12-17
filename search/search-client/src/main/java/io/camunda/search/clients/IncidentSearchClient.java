@@ -9,9 +9,9 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
-import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
+import io.camunda.search.entities.IncidentStatisticsEntity;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
@@ -22,8 +22,8 @@ public interface IncidentSearchClient {
 
   SearchQueryResult<IncidentEntity> searchIncidents(IncidentQuery filter);
 
-  SearchQueryResult<IncidentProcessInstanceStatisticsEntity> incidentProcessInstanceStatistics(
-      IncidentProcessInstanceStatisticsQuery query);
+  SearchQueryResult<IncidentStatisticsEntity> incidentProcessInstanceStatisticsByError(
+      IncidentProcessInstanceStatisticsByErrorQuery query);
 
   IncidentSearchClient withSecurityContext(SecurityContext securityContext);
 

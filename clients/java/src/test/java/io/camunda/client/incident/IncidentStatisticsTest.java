@@ -22,51 +22,53 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
-import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQuery;
-import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQuery;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorResult;
 import io.camunda.client.protocol.rest.OffsetPagination;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.instancio.Instancio;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class IncidentStatisticsTest extends ClientRestTest {
 
-  @Test
-  void shouldRequestIncidentProcessInstanceStatistics() {
-    // given
-    gatewayService.onIncidentProcessInstanceStatisticsRequest(
-        Instancio.create(IncidentProcessInstanceStatisticsQueryResult.class));
+  @BeforeEach
+  void setup() {
+    gatewayService.onIncidentProcessInstanceStatisticsByErrorRequest(
+        Instancio.create(IncidentProcessInstanceStatisticsByErrorQueryResult.class)
+            .items(getIncidentProcessInstanceStatisticsByErrorResults()));
+  }
 
+  @Test
+  void shouldRequestIncidentProcessInstanceStatisticsByError() {
     // when
-    client.newIncidentProcessInstanceStatisticsRequest().send().join();
+    client.newIncidentProcessInstanceStatisticsByErrorRequest().send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/incidents/statistics/process-instances");
+    assertThat(request.getUrl()).isEqualTo("/v2/incidents/statistics/process-instances-by-error");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(request.getBodyAsString()).isEqualTo("{\"sort\":[]}");
   }
 
   @Test
-  void shouldRequestIncidentProcessInstanceStatisticsWithPagination() {
-    // given
-    gatewayService.onIncidentProcessInstanceStatisticsRequest(
-        Instancio.create(IncidentProcessInstanceStatisticsQueryResult.class));
-
+  void shouldRequestIncidentProcessInstanceStatisticsByErrorWithPagination() {
     // when
     client
-        .newIncidentProcessInstanceStatisticsRequest()
+        .newIncidentProcessInstanceStatisticsByErrorRequest()
         .page(p -> p.from(5).limit(10))
         .send()
         .join();
 
     // then
-    final IncidentProcessInstanceStatisticsQuery request =
-        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsQuery.class);
+    final IncidentProcessInstanceStatisticsByErrorQuery request =
+        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsByErrorQuery.class);
     final OffsetPagination page = request.getPage();
     assertThat(page).isNotNull();
     assertThat(page.getFrom()).isEqualTo(5);
@@ -74,26 +76,31 @@ public class IncidentStatisticsTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRequestIncidentProcessInstanceStatisticsWithSorting() {
-    // given
-    gatewayService.onIncidentProcessInstanceStatisticsRequest(
-        Instancio.create(IncidentProcessInstanceStatisticsQueryResult.class));
-
+  void shouldRequestIncidentProcessInstanceStatisticsByErrorWithSorting() {
     // when
     client
-        .newIncidentProcessInstanceStatisticsRequest()
+        .newIncidentProcessInstanceStatisticsByErrorRequest()
         .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
         .send()
         .join();
 
     // then
-    final IncidentProcessInstanceStatisticsQuery request =
-        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsQuery.class);
+    final IncidentProcessInstanceStatisticsByErrorQuery request =
+        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsByErrorQuery.class);
     final List<SearchRequestSort> sorts =
-        SearchRequestSortMapper.fromIncidentProcessInstanceStatisticsQuerySortRequest(
+        SearchRequestSortMapper.fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(2);
     assertSort(sorts.get(0), "errorMessage", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "activeInstancesWithErrorCount", SortOrderEnum.DESC);
+  }
+
+  private static List<IncidentProcessInstanceStatisticsByErrorResult>
+      getIncidentProcessInstanceStatisticsByErrorResults() {
+    final IncidentProcessInstanceStatisticsByErrorResult item =
+        Instancio.create(IncidentProcessInstanceStatisticsByErrorResult.class);
+    final List<IncidentProcessInstanceStatisticsByErrorResult> resultList = new ArrayList<>();
+    resultList.add(item);
+    return resultList;
   }
 }

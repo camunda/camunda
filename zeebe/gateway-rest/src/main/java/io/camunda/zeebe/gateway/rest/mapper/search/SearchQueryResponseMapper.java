@@ -33,7 +33,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
-import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
+import io.camunda.search.entities.IncidentStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -106,8 +106,8 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
@@ -313,21 +313,21 @@ public final class SearchQueryResponseMapper {
         .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
   }
 
-  public static IncidentProcessInstanceStatisticsQueryResult
-      toIncidentProcessInstanceStatisticsResult(
-          final SearchQueryResult<IncidentProcessInstanceStatisticsEntity> result) {
+  public static IncidentProcessInstanceStatisticsByErrorQueryResult
+      toIncidentProcessInstanceStatisticsByErrorResult(
+          final SearchQueryResult<IncidentStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new IncidentProcessInstanceStatisticsQueryResult()
+    return new IncidentProcessInstanceStatisticsByErrorQueryResult()
         .page(page)
         .items(
             result.items().stream()
-                .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsResult)
+                .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsByErrorResult)
                 .toList());
   }
 
-  private static IncidentProcessInstanceStatisticsResult toIncidentProcessInstanceStatisticsResult(
-      final IncidentProcessInstanceStatisticsEntity result) {
-    return new IncidentProcessInstanceStatisticsResult()
+  private static IncidentProcessInstanceStatisticsByErrorResult
+      toIncidentProcessInstanceStatisticsByErrorResult(final IncidentStatisticsEntity result) {
+    return new IncidentProcessInstanceStatisticsByErrorResult()
         .errorHashCode(result.errorHashCode())
         .errorMessage(result.errorMessage())
         .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());

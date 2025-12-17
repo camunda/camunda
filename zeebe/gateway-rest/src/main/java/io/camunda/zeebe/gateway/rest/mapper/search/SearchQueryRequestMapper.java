@@ -684,23 +684,24 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<
-          ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsQuery>
-      toIncidentProcessInstanceStatisticsQuery(
-          final IncidentProcessInstanceStatisticsQuery request) {
+          ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery>
+      toIncidentProcessInstanceStatisticsByErrorQuery(
+          final IncidentProcessInstanceStatisticsByErrorQuery request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.incidentProcessInstanceStatisticsQuery().build());
+      return Either.right(
+          SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build());
     }
 
     final var page = toOffsetPagination(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromIncidentProcessInstanceStatisticsQuerySortRequest(
-                request.getSort()),
-            SortOptionBuilders::incidentProcessInstanceStatistics,
-            SearchQuerySortRequestMapper::applyIncidentProcessInstanceStatisticsSortField);
+            SearchQuerySortRequestMapper
+                .fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(request.getSort()),
+            SortOptionBuilders::incidentProcessInstanceStatisticsByError,
+            SearchQuerySortRequestMapper::applyIncidentProcessInstanceStatisticsByErrorSortField);
     final var filter = FilterBuilders.incident().build();
     return buildSearchQuery(
-        filter, sort, page, SearchQueryBuilders::incidentProcessInstanceStatisticsQuery);
+        filter, sort, page, SearchQueryBuilders::incidentProcessInstanceStatisticsByErrorQuery);
   }
 
   public static Either<

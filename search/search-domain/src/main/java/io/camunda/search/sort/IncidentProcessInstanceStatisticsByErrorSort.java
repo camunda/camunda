@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record IncidentProcessInstanceStatisticsSort(List<FieldSorting> orderings)
+public record IncidentProcessInstanceStatisticsByErrorSort(List<FieldSorting> orderings)
     implements SortOption {
 
   @Override
@@ -19,14 +19,14 @@ public record IncidentProcessInstanceStatisticsSort(List<FieldSorting> orderings
     return orderings;
   }
 
-  public static IncidentProcessInstanceStatisticsSort of(
-      final Function<Builder, ObjectBuilder<IncidentProcessInstanceStatisticsSort>> fn) {
-    return SortOptionBuilders.incidentProcessInstanceStatistics(fn);
+  public static IncidentProcessInstanceStatisticsByErrorSort of(
+      final Function<Builder, ObjectBuilder<IncidentProcessInstanceStatisticsByErrorSort>> fn) {
+    return SortOptionBuilders.incidentProcessInstanceStatisticsByError(fn);
   }
 
   public static final class Builder
-      extends SortOption.AbstractBuilder<IncidentProcessInstanceStatisticsSort.Builder>
-      implements ObjectBuilder<IncidentProcessInstanceStatisticsSort> {
+      extends SortOption.AbstractBuilder<IncidentProcessInstanceStatisticsByErrorSort.Builder>
+      implements ObjectBuilder<IncidentProcessInstanceStatisticsByErrorSort> {
 
     public Builder errorMessage() {
       currentOrdering = new FieldSorting("errorMessage", null);
@@ -44,8 +44,8 @@ public record IncidentProcessInstanceStatisticsSort(List<FieldSorting> orderings
     }
 
     @Override
-    public IncidentProcessInstanceStatisticsSort build() {
-      return new IncidentProcessInstanceStatisticsSort(orderings);
+    public IncidentProcessInstanceStatisticsByErrorSort build() {
+      return new IncidentProcessInstanceStatisticsByErrorSort(orderings);
     }
   }
 }

@@ -28,7 +28,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
-import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
+import io.camunda.search.entities.IncidentStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -69,7 +69,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
@@ -284,8 +284,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
-      incidentProcessInstanceStatistics(final IncidentProcessInstanceStatisticsQuery query) {
+  public SearchQueryResult<IncidentStatisticsEntity> incidentProcessInstanceStatisticsByError(
+      final IncidentProcessInstanceStatisticsByErrorQuery query) {
     // TODO will be implemented by the following tasks:
     // https://github.com/camunda/camunda/issues/42650
     // https://github.com/camunda/camunda/issues/42652

@@ -15,19 +15,19 @@
  */
 package io.camunda.client.impl.statistics.response;
 
-import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatistics;
-import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsResult;
+import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByError;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorResult;
 import java.util.Objects;
 
-public final class IncidentProcessInstanceStatisticsImpl
-    implements IncidentProcessInstanceStatistics {
+public final class IncidentProcessInstanceStatisticsByErrorImpl
+    implements IncidentProcessInstanceStatisticsByError {
 
   private final Integer errorHashCode;
   private final String errorMessage;
   private final Long activeInstancesWithErrorCount;
 
-  public IncidentProcessInstanceStatisticsImpl(
-      final IncidentProcessInstanceStatisticsResult result) {
+  public IncidentProcessInstanceStatisticsByErrorImpl(
+      final IncidentProcessInstanceStatisticsByErrorResult result) {
     errorHashCode = result.getErrorHashCode();
     errorMessage = result.getErrorMessage();
     activeInstancesWithErrorCount = result.getActiveInstancesWithErrorCount();
@@ -61,7 +61,8 @@ public final class IncidentProcessInstanceStatisticsImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final IncidentProcessInstanceStatisticsImpl that = (IncidentProcessInstanceStatisticsImpl) o;
+    final IncidentProcessInstanceStatisticsByErrorImpl that =
+        (IncidentProcessInstanceStatisticsByErrorImpl) o;
     return Objects.equals(errorHashCode, that.errorHashCode)
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(activeInstancesWithErrorCount, that.activeInstancesWithErrorCount);
@@ -69,7 +70,7 @@ public final class IncidentProcessInstanceStatisticsImpl
 
   @Override
   public String toString() {
-    return "IncidentProcessInstanceStatisticsImpl{"
+    return "IncidentProcessInstanceStatisticsByErrorImpl{"
         + "errorHashCode='"
         + errorHashCode
         + '\''

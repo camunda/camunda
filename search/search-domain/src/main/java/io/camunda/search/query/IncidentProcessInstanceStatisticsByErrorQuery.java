@@ -10,34 +10,34 @@ package io.camunda.search.query;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.IncidentProcessInstanceStatisticsSort;
+import io.camunda.search.sort.IncidentProcessInstanceStatisticsByErrorSort;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record IncidentProcessInstanceStatisticsQuery(
-    IncidentFilter filter, IncidentProcessInstanceStatisticsSort sort, SearchQueryPage page)
-    implements TypedSearchQuery<IncidentFilter, IncidentProcessInstanceStatisticsSort> {
+public record IncidentProcessInstanceStatisticsByErrorQuery(
+    IncidentFilter filter, IncidentProcessInstanceStatisticsByErrorSort sort, SearchQueryPage page)
+    implements TypedSearchQuery<IncidentFilter, IncidentProcessInstanceStatisticsByErrorSort> {
 
-  public static IncidentProcessInstanceStatisticsQuery of(
-      final Function<Builder, ObjectBuilder<IncidentProcessInstanceStatisticsQuery>> fn) {
+  public static IncidentProcessInstanceStatisticsByErrorQuery of(
+      final Function<Builder, ObjectBuilder<IncidentProcessInstanceStatisticsByErrorQuery>> fn) {
     return fn.apply(new Builder()).build();
   }
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
-          IncidentProcessInstanceStatisticsQuery,
-          IncidentProcessInstanceStatisticsQuery.Builder,
+          IncidentProcessInstanceStatisticsByErrorQuery,
+          IncidentProcessInstanceStatisticsByErrorQuery.Builder,
           IncidentFilter,
-          IncidentProcessInstanceStatisticsSort> {
+          IncidentProcessInstanceStatisticsByErrorSort> {
 
     private static final IncidentFilter EMPTY_FILTER = FilterBuilders.incident().build();
-    private static final IncidentProcessInstanceStatisticsSort EMPTY_SORT =
-        SortOptionBuilders.incidentProcessInstanceStatistics().build();
+    private static final IncidentProcessInstanceStatisticsByErrorSort EMPTY_SORT =
+        SortOptionBuilders.incidentProcessInstanceStatisticsByError().build();
 
     private IncidentFilter filter;
-    private IncidentProcessInstanceStatisticsSort sort;
+    private IncidentProcessInstanceStatisticsByErrorSort sort;
 
     @Override
     protected Builder self() {
@@ -51,7 +51,7 @@ public record IncidentProcessInstanceStatisticsQuery(
     }
 
     @Override
-    public Builder sort(final IncidentProcessInstanceStatisticsSort value) {
+    public Builder sort(final IncidentProcessInstanceStatisticsByErrorSort value) {
       sort = value;
       return this;
     }
@@ -63,17 +63,17 @@ public record IncidentProcessInstanceStatisticsQuery(
 
     public Builder sort(
         final Function<
-                IncidentProcessInstanceStatisticsSort.Builder,
-                ObjectBuilder<IncidentProcessInstanceStatisticsSort>>
+                IncidentProcessInstanceStatisticsByErrorSort.Builder,
+                ObjectBuilder<IncidentProcessInstanceStatisticsByErrorSort>>
             fn) {
-      return sort(SortOptionBuilders.incidentProcessInstanceStatistics(fn));
+      return sort(SortOptionBuilders.incidentProcessInstanceStatisticsByError(fn));
     }
 
     @Override
-    public IncidentProcessInstanceStatisticsQuery build() {
+    public IncidentProcessInstanceStatisticsByErrorQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new IncidentProcessInstanceStatisticsQuery(filter, sort, page());
+      return new IncidentProcessInstanceStatisticsByErrorQuery(filter, sort, page());
     }
   }
 }
