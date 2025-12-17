@@ -14,15 +14,15 @@ import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
@@ -62,17 +62,76 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             (response) -> {
               final var hits = response.hits().hits();
               if (hits.isEmpty()) {
-                return CompletableFuture.completedFuture(new HistoryDeletionBatch(Map.of()));
+                return CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of()));
               }
-              final var ids =
-                  hits.stream()
-                      .collect(
-                          Collectors.toMap(
-                              Hit::id,
-                              hit -> Objects.requireNonNull(hit.source()).getResourceType()));
-              return CompletableFuture.completedFuture(new HistoryDeletionBatch(ids));
+              final var deletionEntities = hits.stream().map(Hit::source).toList();
+              return CompletableFuture.completedFuture(new HistoryDeletionBatch(deletionEntities));
             },
             executor);
+  }
+
+  @Override
+  public CompletableFuture<List<Long>> deleteDocumentsByField(
+      final String sourceIndexName, final String idFieldName, final List<Long> fieldValues) {
+    final var deleteRequest =
+        new DeleteByQueryRequest.Builder()
+            .index(sourceIndexName)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(
+                q ->
+                    q.terms(
+                        t ->
+                            t.field(idFieldName)
+                                .terms(
+                                    v ->
+                                        v.value(
+                                            fieldValues.stream().map(FieldValue::of).toList()))))
+            .build();
+
+    return sendRequestAsync(
+        () ->
+            client
+                .deleteByQuery(deleteRequest)
+                .thenComposeAsync(
+                    (response) -> {
+                      if (!response.failures().isEmpty()) {
+                        final var errorMessage =
+                            "Deleting documents from index '%s' by field '%s' failed with failures: %s"
+                                .formatted(sourceIndexName, idFieldName, response.failures());
+                        logger.error(errorMessage);
+                        return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+                      }
+                      return CompletableFuture.completedFuture(fieldValues);
+                    },
+                    executor));
+  }
+
+  @Override
+  public CompletableFuture<Integer> deleteDocumentsById(
+      final String sourceIndexName, final List<String> ids) {
+    final var bulkRequestBuilder = new BulkRequest.Builder();
+
+    ids.forEach(
+        id -> bulkRequestBuilder.operations(op -> op.delete(d -> d.index(sourceIndexName).id(id))));
+
+    return sendRequestAsync(
+        () ->
+            client
+                .bulk(bulkRequestBuilder.build())
+                .thenComposeAsync(
+                    response -> {
+                      if (response.errors()) {
+                        final var errorMessage =
+                            "Bulk deleting documents from index '%s' by ids '%s' failed with errors: %s"
+                                .formatted(sourceIndexName, ids, response.items());
+                        logger.error(errorMessage);
+                        return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+                      }
+                      final var deleted = response.items().size();
+                      return CompletableFuture.completedFuture(deleted);
+                    },
+                    executor));
   }
 
   private SearchRequest createSearchRequest() {

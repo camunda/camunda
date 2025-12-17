@@ -7,12 +7,28 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
+import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
-import java.util.Map;
+import java.util.List;
 
 /**
- * Represents a batch of resource IDs to be deleted from the history.
+ * Represents a batch of entities to be deleted from the history.
  *
- * @param ids Map of resource IDs marked for deletion and their corresponding deletion type.
+ * @param historyDeletionEntities List of entities marked for deletion
  */
-public record HistoryDeletionBatch(Map<String, HistoryDeletionType> ids) {}
+public record HistoryDeletionBatch(List<HistoryDeletionEntity> historyDeletionEntities) {
+
+  List<Long> getResourceKeys(final HistoryDeletionType historyDeletionType) {
+    return historyDeletionEntities.stream()
+        .filter(entity -> entity.getResourceType().equals(historyDeletionType))
+        .map(HistoryDeletionEntity::getResourceKey)
+        .toList();
+  }
+
+  List<String> getHistoryDeletionIds(final HistoryDeletionType historyDeletionType) {
+    return historyDeletionEntities.stream()
+        .filter(entity -> entity.getResourceType().equals(historyDeletionType))
+        .map(HistoryDeletionEntity::getId)
+        .toList();
+  }
+}
