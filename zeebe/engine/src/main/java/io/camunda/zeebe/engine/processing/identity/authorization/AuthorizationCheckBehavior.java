@@ -42,9 +42,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class AuthorizationCheckBehavior {
-
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
+  private static final Either<Rejection, Void> AUTHORIZED = Either.right(null);
+
   private final MappingRuleState mappingRuleState;
   private final ClaimsExtractor claimsExtractor;
   private final TenantResolver tenantResolver;
@@ -134,7 +135,7 @@ public final class AuthorizationCheckBehavior {
     for (final var request : requests) {
       final var result = isAuthorized(request);
       if (result.isRight()) {
-        return Either.right(null);
+        return AUTHORIZED;
       }
       rejections.add(result.getLeft());
     }
@@ -172,7 +173,7 @@ public final class AuthorizationCheckBehavior {
     // bypass authorization if any request is from an internal command
     for (final var request : requests) {
       if (request.isTriggeredByInternalCommand()) {
-        return Either.right(null);
+        return AUTHORIZED;
       }
     }
 
@@ -182,7 +183,7 @@ public final class AuthorizationCheckBehavior {
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
 
     if (shouldSkipAuthorization(request)) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     final List<AuthorizationRejection> aggregatedRejections = new ArrayList<>();
@@ -191,14 +192,14 @@ public final class AuthorizationCheckBehavior {
         checkPrimaryAuthorization(request, aggregatedRejections);
 
     if (primaryResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     final AuthorizationResult mappingRuleResult =
         checkMappingRuleAuthorization(request, primaryResult, aggregatedRejections);
 
     if (mappingRuleResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     return Either.left(RejectionAggregator.aggregate(aggregatedRejections));
