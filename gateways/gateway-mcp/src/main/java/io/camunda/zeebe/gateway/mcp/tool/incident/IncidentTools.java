@@ -17,11 +17,13 @@ import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryFilterMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryPageMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQuerySortRequestMapper;
-import io.camunda.zeebe.gateway.mcp.model.IncidentFilter;
+import io.camunda.zeebe.gateway.mcp.model.IncidentErrorType;
 import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.mcp.model.IncidentState;
 import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,68 @@ public class IncidentTools {
       description = "Search for incidents based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
-      @McpToolParam(required = false) final IncidentFilter filter,
+      @McpToolParam(
+              description =
+                  "The process definition ID(s) associated to the incident. Matches any of the provided IDs.",
+              required = false)
+          final List<String> processDefinitionId,
+      @McpToolParam(
+              description = "Incident error type(s). Matches any of the provided types.",
+              required = false)
+          final List<IncidentErrorType> errorType,
+      @McpToolParam(
+              description = "Error message(s). Matches any of the provided messages.",
+              required = false)
+          final List<String> errorMessage,
+      @McpToolParam(
+              description =
+                  "The element ID(s) associated to the incident - the BPMN element ID in the process. Matches any of the provided IDs.",
+              required = false)
+          final List<String> elementId,
+      @McpToolParam(
+              description =
+                  "Date of incident creation - filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00').",
+              required = false)
+          final OffsetDateTime creationTimeFrom,
+      @McpToolParam(
+              description =
+                  "Date of incident creation - filter before this time (exclusive). RFC 3339 format (e.g., '2024-12-17T23:59:59Z' or '2024-12-17T23:59:59-05:00').",
+              required = false)
+          final OffsetDateTime creationTimeTo,
+      @McpToolParam(
+              description = "State of the incident(s). Matches any of the provided states.",
+              required = false)
+          final List<IncidentState> state,
+      @McpToolParam(
+              description =
+                  "The tenant ID(s) of the incident. Matches any of the provided tenant IDs.",
+              required = false)
+          final List<String> tenantId,
+      @McpToolParam(
+              description =
+                  "The assigned key(s), which act as unique identifiers for incidents. Matches any of the provided keys.",
+              required = false)
+          final List<Long> incidentKey,
+      @McpToolParam(
+              description =
+                  "The process definition key(s) associated to the incident. Matches any of the provided keys.",
+              required = false)
+          final List<Long> processDefinitionKey,
+      @McpToolParam(
+              description =
+                  "The process instance key(s) associated to the incident. Matches any of the provided keys.",
+              required = false)
+          final List<Long> processInstanceKey,
+      @McpToolParam(
+              description =
+                  "The element instance key(s) associated to the incident. Matches any of the provided keys.",
+              required = false)
+          final List<Long> elementInstanceKey,
+      @McpToolParam(
+              description =
+                  "The job key(s), if exist, associated with the incident. Matches any of the provided keys.",
+              required = false)
+          final List<Long> jobKey,
       @McpToolParam(description = "Sort criteria", required = false) @Valid
           final List<@Valid IncidentSearchQuerySortRequest> sort,
       @McpToolParam(description = "Pagination criteria", required = false)
@@ -68,7 +131,21 @@ public class IncidentTools {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(
                   SearchQueryBuilders.incidentSearchQuery()
-                      .filter(SearchQueryFilterMapper.toIncidentFilter(filter))
+                      .filter(
+                          SearchQueryFilterMapper.toIncidentFilter(
+                              processDefinitionId,
+                              errorType,
+                              errorMessage,
+                              elementId,
+                              creationTimeFrom,
+                              creationTimeTo,
+                              state,
+                              tenantId,
+                              incidentKey,
+                              processDefinitionKey,
+                              processInstanceKey,
+                              elementInstanceKey,
+                              jobKey))
                       .page(SearchQueryPageMapper.toSearchQueryPage(page))
                       .sort(sortRequest.get())
                       .build());

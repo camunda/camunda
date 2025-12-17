@@ -7,60 +7,91 @@
  */
 package io.camunda.zeebe.gateway.mcp.mapper.search;
 
-import static io.camunda.zeebe.gateway.mcp.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.Operation;
+import io.camunda.zeebe.gateway.mcp.model.IncidentErrorType;
+import io.camunda.zeebe.gateway.mcp.model.IncidentState;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 public class SearchQueryFilterMapper {
 
   public static IncidentFilter toIncidentFilter(
-      final io.camunda.zeebe.gateway.mcp.model.IncidentFilter filter) {
+      final List<String> processDefinitionId,
+      final List<IncidentErrorType> errorType,
+      final List<String> errorMessage,
+      final List<String> elementId,
+      final OffsetDateTime creationTimeFrom,
+      final OffsetDateTime creationTimeTo,
+      final List<IncidentState> state,
+      final List<String> tenantId,
+      final List<Long> incidentKey,
+      final List<Long> processDefinitionKey,
+      final List<Long> processInstanceKey,
+      final List<Long> elementInstanceKey,
+      final List<Long> jobKey) {
     final var builder = FilterBuilders.incident();
 
-    if (filter == null) {
-      return builder.build();
-    }
-
-    ofNullable(filter.incidentKey())
-        .map(mapToOperations(Long.class))
-        .ifPresent(builder::incidentKeyOperations);
-    ofNullable(filter.processDefinitionKey())
-        .map(mapToOperations(Long.class))
-        .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(filter.processDefinitionId())
-        .map(mapToOperations(String.class))
+    ofNullable(createListFilterOperation(processDefinitionId))
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(filter.processInstanceKey())
-        .map(mapToOperations(Long.class))
-        .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(filter.errorType())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::errorTypeOperations);
-    ofNullable(filter.errorMessage())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::errorMessageOperations);
-    ofNullable(filter.elementId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::flowNodeIdOperations);
-    ofNullable(filter.elementInstanceKey())
-        .map(mapToOperations(Long.class))
-        .ifPresent(builder::flowNodeInstanceKeyOperations);
-    ofNullable(filter.creationTime())
-        .map(mapToOperations(OffsetDateTime.class))
+    ofNullable(createEnumListFilterOperation(errorType)).ifPresent(builder::errorTypeOperations);
+    ofNullable(createListFilterOperation(errorMessage)).ifPresent(builder::errorMessageOperations);
+    ofNullable(createListFilterOperation(elementId)).ifPresent(builder::flowNodeIdOperations);
+    ofNullable(createDateTimeFilterOperation(creationTimeFrom, creationTimeTo))
         .ifPresent(builder::creationTimeOperations);
-    ofNullable(filter.state())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::stateOperations);
-    ofNullable(filter.jobKey())
-        .map(mapToOperations(Long.class))
-        .ifPresent(builder::jobKeyOperations);
-    ofNullable(filter.tenantId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::tenantIdOperations);
+    ofNullable(createEnumListFilterOperation(state)).ifPresent(builder::stateOperations);
+    ofNullable(createListFilterOperation(tenantId)).ifPresent(builder::tenantIdOperations);
+    ofNullable(createListFilterOperation(incidentKey)).ifPresent(builder::incidentKeyOperations);
+    ofNullable(createListFilterOperation(processDefinitionKey))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(createListFilterOperation(processInstanceKey))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(createListFilterOperation(elementInstanceKey))
+        .ifPresent(builder::flowNodeInstanceKeyOperations);
+    ofNullable(createListFilterOperation(jobKey)).ifPresent(builder::jobKeyOperations);
 
     return builder.build();
+  }
+
+  private static <T> List<Operation<T>> createListFilterOperation(final List<T> values) {
+    return createListFilterOperation(values, Function.identity());
+  }
+
+  private static <T, F> List<Operation<F>> createListFilterOperation(
+      final List<T> values, final Function<T, F> valueMapper) {
+    if (values == null || values.isEmpty()) {
+      return null;
+    }
+
+    final var mappedValues = values.stream().map(valueMapper).toList();
+    if (mappedValues.size() == 1) {
+      return List.of(Operation.eq(mappedValues.getFirst()));
+    }
+
+    return List.of(Operation.in(mappedValues));
+  }
+
+  private static <E extends Enum<E>> List<Operation<String>> createEnumListFilterOperation(
+      final List<E> values) {
+    return createListFilterOperation(values, Enum::name);
+  }
+
+  private static List<Operation<OffsetDateTime>> createDateTimeFilterOperation(
+      final OffsetDateTime from, final OffsetDateTime to) {
+    final List<Operation<OffsetDateTime>> operations = new ArrayList<>();
+    if (from != null) {
+      operations.add(Operation.gte(from));
+    }
+
+    if (to != null) {
+      operations.add(Operation.lt(to));
+    }
+
+    return operations.isEmpty() ? null : operations;
   }
 }
