@@ -15,12 +15,16 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {InstancesByProcess} from './index';
-import {mockWithSingleVersion, mockWithMultipleVersions} from './index.setup';
+import {
+  mockWithSingleVersion,
+  mockWithMultipleVersions,
+  mockOrderProcessVersions,
+} from './index.setup';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
-import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
-import {createUser} from 'modules/testUtils';
+import {mockFetchProcessDefinitionStatistics} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionStatistics';
+import {mockFetchProcessDefinitionVersionStatistics} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionVersionStatistics';
+import {createUser, searchResult} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
@@ -32,7 +36,6 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
     useEffect(() => {
       return () => {
         panelStatesStore.reset();
-        processInstancesByNameStore.reset();
       };
     }, []);
 
@@ -56,11 +59,11 @@ describe('InstancesByProcess', () => {
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
     mockMe().withSuccess(createUser());
+    mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
   });
 
   it('should display skeleton when loading', async () => {
-    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -76,8 +79,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should handle server errors', async () => {
-    mockFetchProcessInstancesByName().withServerError();
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withServerError();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -93,8 +95,7 @@ describe('InstancesByProcess', () => {
       .spyOn(global.console, 'error')
       .mockImplementation(() => {});
 
-    mockFetchProcessInstancesByName().withNetworkError();
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withNetworkError();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -108,8 +109,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should display information message when there are no processes', async () => {
-    mockFetchProcessInstancesByName().withSuccess([]);
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -126,8 +126,22 @@ describe('InstancesByProcess', () => {
   });
 
   it('should render items with more than one processes versions', async () => {
-    mockFetchProcessInstancesByName().withSuccess(mockWithMultipleVersions);
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withSuccess(
+      mockWithMultipleVersions,
+    );
+
+    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess({
+      items: [],
+      page: {totalItems: 2},
+    });
+
+    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess(
+      mockOrderProcessVersions,
+    );
+
+    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess(
+      mockOrderProcessVersions,
+    );
 
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -202,8 +216,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should render items with one process version', async () => {
-    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -242,8 +255,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
 
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -272,9 +284,7 @@ describe('InstancesByProcess', () => {
   it('should update after next poll', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
-    processInstancesByNameStore.init();
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withSuccess(mockWithSingleVersion);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -288,9 +298,15 @@ describe('InstancesByProcess', () => {
       withinIncident.getByText('loanProcess – 138 Instances in 1 Version'),
     ).toBeInTheDocument();
 
-    mockFetchProcessInstancesByName().withSuccess([
-      {...mockWithSingleVersion[0]!, activeInstancesCount: 142},
-    ]);
+    mockFetchProcessDefinitionStatistics().withSuccess({
+      items: [
+        {
+          ...mockWithSingleVersion.items[0]!,
+          activeInstancesWithoutIncidentCount: 142,
+        },
+      ],
+      page: {totalItems: 1},
+    });
 
     vi.runOnlyPendingTimers();
 
@@ -305,14 +321,12 @@ describe('InstancesByProcess', () => {
   });
 
   it('should render modeler button', async () => {
-    mockFetchProcessInstancesByName().withSuccess([]);
+    mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
     mockMe().withSuccess(
       createUser({
         c8Links: [{name: 'modeler', link: 'https://link-to-modeler'}],
       }),
     );
-
-    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -328,13 +342,13 @@ describe('InstancesByProcess', () => {
   });
 
   it('should not render modeler button', async () => {
-    mockFetchProcessInstancesByName().withSuccess([]);
-
-    processInstancesByNameStore.getProcessInstancesByName();
+    mockFetchProcessDefinitionStatistics().withSuccess(searchResult([]));
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+
+    await screen.findByText('Start by deploying a process');
 
     expect(
       screen.queryByRole('button', {name: 'Go to Modeler'}),

@@ -6,25 +6,68 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createProcess, createInstanceByProcess} from 'modules/testUtils';
+import type {
+  GetProcessDefinitionInstanceStatisticsResponseBody,
+  GetProcessDefinitionInstanceVersionStatisticsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const mockWithSingleVersion = [
-  createInstanceByProcess({
-    processes: [createProcess()],
-  }),
-];
-
-const mockWithMultipleVersions = [
-  createInstanceByProcess({
-    instancesWithActiveIncidentsCount: 65,
-    activeInstancesCount: 136,
-    processName: 'Order process',
-    bpmnProcessId: 'orderProcess',
-    processes: [
-      createProcess({name: 'First Version', version: 1}),
-      createProcess({name: 'Second Version', version: 2}),
+const mockWithSingleVersion: GetProcessDefinitionInstanceStatisticsResponseBody =
+  {
+    items: [
+      {
+        processDefinitionId: 'loanProcess',
+        latestProcessDefinitionName: 'loanProcess',
+        hasMultipleVersions: false,
+        activeInstancesWithIncidentCount: 16,
+        activeInstancesWithoutIncidentCount: 122,
+        tenantId: '<default>',
+      },
     ],
-  }),
-];
+    page: {totalItems: 1},
+  };
 
-export {mockWithSingleVersion, mockWithMultipleVersions};
+const mockWithMultipleVersions: GetProcessDefinitionInstanceStatisticsResponseBody =
+  {
+    items: [
+      {
+        processDefinitionId: 'orderProcess',
+        latestProcessDefinitionName: 'Order process',
+        hasMultipleVersions: true,
+        activeInstancesWithIncidentCount: 65,
+        activeInstancesWithoutIncidentCount: 136,
+        tenantId: '<default>',
+      },
+    ],
+    page: {totalItems: 1},
+  };
+
+const mockOrderProcessVersions: GetProcessDefinitionInstanceVersionStatisticsResponseBody =
+  {
+    items: [
+      {
+        processDefinitionId: 'mockProcess',
+        processDefinitionKey: 'mockProcess-1',
+        processDefinitionName: 'First Version',
+        processDefinitionVersion: 1,
+        activeInstancesWithIncidentCount: 37,
+        activeInstancesWithoutIncidentCount: 5,
+        tenantId: '<default>',
+      },
+      {
+        processDefinitionId: 'mockProcess',
+        processDefinitionKey: 'mockProcess-2',
+        processDefinitionName: 'Second Version',
+        processDefinitionVersion: 2,
+        activeInstancesWithIncidentCount: 37,
+        activeInstancesWithoutIncidentCount: 5,
+        tenantId: '<default>',
+      },
+    ],
+    page: {totalItems: 2},
+  };
+
+export {
+  mockWithSingleVersion,
+  mockWithMultipleVersions,
+  mockOrderProcessVersions,
+};

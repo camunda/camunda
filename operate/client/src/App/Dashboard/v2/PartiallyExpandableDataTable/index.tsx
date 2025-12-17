@@ -80,13 +80,13 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                       ))}
                     </TableExpandRow>
 
-                    {isExpandable && (
+                    {isExpandable && row.isExpanded && (
                       <TableExpandedRow
                         colSpan={headers.length + 1}
                         id={`expanded-row-${row.id}`}
                       >
                         {React.cloneElement(expandedContent, {
-                          tabIndex: row.isExpanded ? 0 : -1,
+                          tabIndex: 0,
                         })}
                       </TableExpandedRow>
                     )}
