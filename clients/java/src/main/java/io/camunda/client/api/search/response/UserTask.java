@@ -49,6 +49,9 @@ public interface UserTask {
   /** BPMN process id of the process associated with this task */
   String getBpmnProcessId();
 
+  /** Name of the process definition */
+  String getProcessName();
+
   /** Key of the process definition */
   Long getProcessDefinitionKey();
 
