@@ -440,7 +440,8 @@ components:
       type: object
       properties:
         errorHashCode:
-          type: string
+          type: integer
+          format: int32
           description: A hash code representing the error details of an incident.
         errorMessage:
           type: string
