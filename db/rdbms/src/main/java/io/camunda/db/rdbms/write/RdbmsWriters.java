@@ -155,108 +155,111 @@ public class RdbmsWriters {
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
-    return (AuthorizationWriter) writers.get(AuthorizationWriter.class);
+    return getWriter(AuthorizationWriter.class);
   }
 
   public AuditLogWriter getAuditLogWriter() {
-    return (AuditLogWriter) writers.get(AuditLogWriter.class);
+    return getWriter(AuditLogWriter.class);
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
-    return (DecisionDefinitionWriter) writers.get(DecisionDefinitionWriter.class);
+    return getWriter(DecisionDefinitionWriter.class);
   }
 
   public DecisionInstanceWriter getDecisionInstanceWriter() {
-    return (DecisionInstanceWriter) writers.get(DecisionInstanceWriter.class);
+    return getWriter(DecisionInstanceWriter.class);
   }
 
   public DecisionRequirementsWriter getDecisionRequirementsWriter() {
-    return (DecisionRequirementsWriter) writers.get(DecisionRequirementsWriter.class);
+    return getWriter(DecisionRequirementsWriter.class);
   }
 
   public FlowNodeInstanceWriter getFlowNodeInstanceWriter() {
-    return (FlowNodeInstanceWriter) writers.get(FlowNodeInstanceWriter.class);
+    return getWriter(FlowNodeInstanceWriter.class);
   }
 
   public GroupWriter getGroupWriter() {
-    return (GroupWriter) writers.get(GroupWriter.class);
+    return getWriter(GroupWriter.class);
   }
 
   public IncidentWriter getIncidentWriter() {
-    return (IncidentWriter) writers.get(IncidentWriter.class);
+    return getWriter(IncidentWriter.class);
   }
 
   public ProcessDefinitionWriter getProcessDefinitionWriter() {
-    return (ProcessDefinitionWriter) writers.get(ProcessDefinitionWriter.class);
+    return getWriter(ProcessDefinitionWriter.class);
   }
 
   public ProcessInstanceWriter getProcessInstanceWriter() {
-    return (ProcessInstanceWriter) writers.get(ProcessInstanceWriter.class);
+    return getWriter(ProcessInstanceWriter.class);
   }
 
   public TenantWriter getTenantWriter() {
-    return (TenantWriter) writers.get(TenantWriter.class);
+    return getWriter(TenantWriter.class);
   }
 
   public VariableWriter getVariableWriter() {
-    return (VariableWriter) writers.get(VariableWriter.class);
+    return getWriter(VariableWriter.class);
   }
 
   public ClusterVariableWriter getClusterVariableWriter() {
-    return (ClusterVariableWriter) writers.get(ClusterVariableWriter.class);
+    return getWriter(ClusterVariableWriter.class);
   }
 
   public RoleWriter getRoleWriter() {
-    return (RoleWriter) writers.get(RoleWriter.class);
+    return getWriter(RoleWriter.class);
   }
 
   public UserWriter getUserWriter() {
-    return (UserWriter) writers.get(UserWriter.class);
+    return getWriter(UserWriter.class);
   }
 
   public UserTaskWriter getUserTaskWriter() {
-    return (UserTaskWriter) writers.get(UserTaskWriter.class);
+    return getWriter(UserTaskWriter.class);
   }
 
   public FormWriter getFormWriter() {
-    return (FormWriter) writers.get(FormWriter.class);
+    return getWriter(FormWriter.class);
   }
 
   public MappingRuleWriter getMappingRuleWriter() {
-    return (MappingRuleWriter) writers.get(MappingRuleWriter.class);
+    return getWriter(MappingRuleWriter.class);
   }
 
   public BatchOperationWriter getBatchOperationWriter() {
-    return (BatchOperationWriter) writers.get(BatchOperationWriter.class);
+    return getWriter(BatchOperationWriter.class);
   }
 
   public JobWriter getJobWriter() {
-    return (JobWriter) writers.get(JobWriter.class);
+    return getWriter(JobWriter.class);
   }
 
   public SequenceFlowWriter getSequenceFlowWriter() {
-    return (SequenceFlowWriter) writers.get(SequenceFlowWriter.class);
+    return getWriter(SequenceFlowWriter.class);
   }
 
   public UsageMetricWriter getUsageMetricWriter() {
-    return (UsageMetricWriter) writers.get(UsageMetricWriter.class);
+    return getWriter(UsageMetricWriter.class);
   }
 
   public UsageMetricTUWriter getUsageMetricTUWriter() {
-    return (UsageMetricTUWriter) writers.get(UsageMetricTUWriter.class);
+    return getWriter(UsageMetricTUWriter.class);
   }
 
   public MessageSubscriptionWriter getMessageSubscriptionWriter() {
-    return (MessageSubscriptionWriter) writers.get(MessageSubscriptionWriter.class);
+    return getWriter(MessageSubscriptionWriter.class);
   }
 
   public CorrelatedMessageSubscriptionWriter getCorrelatedMessageSubscriptionWriter() {
-    return (CorrelatedMessageSubscriptionWriter)
-        writers.get(CorrelatedMessageSubscriptionWriter.class);
+    return getWriter(CorrelatedMessageSubscriptionWriter.class);
   }
 
   public HistoryDeletionWriter getHistoryDeletionWriter() {
-    return (HistoryDeletionWriter) writers.get(HistoryDeletionWriter.class);
+    return getWriter(HistoryDeletionWriter.class);
+  }
+
+  private <W> W getWriter(final Class<W> writerClass) {
+    return (W) writers.get(writerClass);
   }
 
   public ExporterPositionService getExporterPositionService() {
