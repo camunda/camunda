@@ -1603,18 +1603,22 @@ public class MultiTenancyIT {
         Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
     try (final var client = createCamundaClient(USER_TENANT_A)) {
       // given
-      client
-          .newDeployResourceCommand()
-          .addProcessModel(process, "process.bpmn")
-          .tenantId(TENANT_A)
-          .send()
-          .join();
+      final DeploymentEvent deployment =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join();
+
+      final long processDefinitionKey = deployment.getProcesses().get(0).getProcessDefinitionKey();
 
       // when
       final Future<EvaluateConditionalResponse> result =
           client
               .newEvaluateConditionalCommand()
               .variables(Map.of("x", 100))
+              .processDefinitionKey(processDefinitionKey)
               .tenantId(TENANT_A)
               .send();
 
@@ -1672,11 +1676,18 @@ public class MultiTenancyIT {
         Bpmn.createExecutableProcess(processId).startEvent().condition("x > 50").endEvent().done();
     try (final var client = createCamundaClient(USER_TENANT_A)) {
       // given
-      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+      final DeploymentEvent deployment =
+          client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      final long processDefinitionKey = deployment.getProcesses().get(0).getProcessDefinitionKey();
 
       // when
       final Future<EvaluateConditionalResponse> result =
-          client.newEvaluateConditionalCommand().variables(Map.of("x", 100)).send();
+          client
+              .newEvaluateConditionalCommand()
+              .variables(Map.of("x", 100))
+              .processDefinitionKey(processDefinitionKey)
+              .send();
 
       // then
       assertThat(result)
