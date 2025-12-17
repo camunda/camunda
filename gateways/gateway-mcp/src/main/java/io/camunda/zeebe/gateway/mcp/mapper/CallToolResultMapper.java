@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.mcp.mapper;
 
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -67,6 +68,13 @@ public class CallToolResultMapper {
 
   public static CallToolResult mapProblemToResult(final ProblemDetail problemDetail) {
     // TODO how widely supported is structured content in MCP clients?
+    return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
+  }
+
+  public static CallToolResult mapViolationsToResult(final List<String> violations) {
+    final ProblemDetail problemDetail =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST, "Validation errors: " + violations);
     return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
   }
 }

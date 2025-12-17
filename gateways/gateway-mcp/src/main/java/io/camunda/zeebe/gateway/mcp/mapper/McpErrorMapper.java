@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.gateway.mcp.mapper;
 
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -58,6 +61,15 @@ public class McpErrorMapper {
 
   public static <T> ResponseEntity<T> mapErrorToResponse(@NotNull final Throwable error) {
     return mapProblemToResponse(mapErrorToProblem(error));
+  }
+
+  public static ProblemDetail createProblemDetail(final List<String> violations) {
+    String problems = String.join(". ", violations);
+    if (!problems.endsWith(".")) {
+      problems = problems + ".";
+    }
+
+    return createProblemDetail(HttpStatus.BAD_REQUEST, problems, INVALID_ARGUMENT.name());
   }
 
   public static ProblemDetail createProblemDetail(

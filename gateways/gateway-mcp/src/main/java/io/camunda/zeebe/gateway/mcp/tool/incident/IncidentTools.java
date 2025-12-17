@@ -10,15 +10,13 @@ package io.camunda.zeebe.gateway.mcp.tool.incident;
 import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
-import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.search.sort.IncidentSort;
-import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryFilterMapper;
+import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryPageMapper;
+import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.gateway.mcp.model.IncidentFilter;
 import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
 import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
@@ -60,53 +58,27 @@ public class IncidentTools {
           final SearchQueryPageRequest page) {
 
     try {
+      final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(sort);
+      if (sortRequest.isLeft()) {
+        return sortRequest.mapLeft(CallToolResultMapper::mapViolationsToResult).getLeft();
+      }
+
       final var result =
           incidentServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(
                   SearchQueryBuilders.incidentSearchQuery()
-                      .filter(toSearchFilter(filter))
-                      .page(toSearchPage(page))
-                      .sort(toSearchSort(sort))
+                      .filter(SearchQueryFilterMapper.toIncidentFilter(filter))
+                      .page(SearchQueryPageMapper.toSearchQueryPage(page))
+                      .sort(sortRequest.get())
                       .build());
+
       return CallToolResultMapper.from(result);
     } catch (final Exception e) {
       return mapErrorToResult(e);
     }
   }
 
-  private IncidentSort toSearchSort(final List<IncidentSearchQuerySortRequest> sort) {
-    return SortOptionBuilders.incident().build();
-  }
-
-  private SearchQueryPage toSearchPage(final SearchQueryPageRequest page) {
-    return SearchQueryPageBuilders.page().build();
-  }
-
-  private io.camunda.search.filter.IncidentFilter toSearchFilter(final IncidentFilter filter) {
-    return FilterBuilders.incident().build();
-  }
-
-  //
-  //  private CallToolResult searchIncidents(final IncidentQuery query) {
-  //    try {
-  //      final var result =
-  //          incidentServices
-  //              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-  //              .search(query);
-  //      return CallToolResultMapper.from(
-  //          SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
-  //    } catch (final ValidationException e) {
-  //      final var problemDetail =
-  //          RestErrorMapper.createProblemDetail(
-  //              HttpStatus.BAD_REQUEST,
-  //              e.getMessage(),
-  //              "Validation failed for Incident Search Query");
-  //      return mapProblemToResult(problemDetail);
-  //    } catch (final Exception e) {
-  //      return mapErrorToResult(e);
-  //    }
-  //  }
   //
   //  @McpTool(
   //      description = "Get incident by key. " + EVENTUAL_CONSISTENCY_NOTE,
