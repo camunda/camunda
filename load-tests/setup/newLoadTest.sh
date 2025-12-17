@@ -5,7 +5,7 @@
 
 set -exo pipefail
 
-if [ -z $1 ]
+if [ -z "$1" ]
 then
   echo "Please provide a namespace name!"
   exit 1
@@ -19,23 +19,23 @@ fi
 namespace=$1
 
 # Create K8 namespace
-kubectl create namespace $namespace
+kubectl create namespace "$namespace"
 
 # Label namespace with author
-kubectl label namespace $namespace created-by=${USER:-unknown} --overwrite
+kubectl label namespace "$namespace" created-by="${USER:-unknown}" --overwrite
 
 # Label namespace with TTL (default 7 days)
 TTL=${TTL:-7}
-deadlineDate=$(date -d "+${TTL} days" +%Y-%m-%d 2>/dev/null || date -v +${TTL}d +%Y-%m-%d)
-kubectl label namespace $namespace deadline-date="$deadlineDate" --overwrite
+deadlineDate=$(date -d "+${TTL} days" +%Y-%m-%d 2>/dev/null || date -v +"${TTL}"d +%Y-%m-%d)
+kubectl label namespace "$namespace" deadline-date="$deadlineDate" --overwrite
 
 # Copy default folder to new namespace folder
-cp -rv default/ $namespace
+cp -rv default/ "$namespace"
 
 # Copy camunda-platform-values.yaml to new folder
-cp -v ../camunda-platform-values.yaml $namespace/
+cp -v ../camunda-platform-values.yaml "$namespace"/
 
-cd $namespace
+cd "$namespace"
 
 # calls OS specific sed inplace function
 sed_inplace "s/default/$namespace/g" Makefile
