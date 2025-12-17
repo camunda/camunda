@@ -48,7 +48,8 @@ public class Cluster implements Cloneable {
           "clusterSize", "zeebe.broker.cluster.clusterSize",
           "messageCompression", "zeebe.broker.cluster.messageCompression",
           "clusterName", "zeebe.broker.cluster.clusterName",
-          "initialContactPoints", "zeebe.broker.cluster.initialContactPoints");
+          "initialContactPoints", "zeebe.broker.cluster.initialContactPoints",
+          "clusterId", "zeebe.broker.cluster.clusterId");
 
   static {
     LEGACY_INITIAL_CONTACT_POINTS_PROPERTY =
@@ -100,6 +101,12 @@ public class Cluster implements Cloneable {
 
   /** Set the name of the cluster */
   private String name = DEFAULT_CLUSTER_NAME;
+
+  /**
+   * Set the cluster id of the cluster. This setting is used to identify the cluster and should be
+   * unique across clusters. If not configured, the cluster ID will be set with a new random UUID.
+   */
+  private String clusterId;
 
   /** Configuration for the Raft protocol in the cluster. */
   @NestedConfigurationProperty private Raft raft = new Raft();
@@ -238,6 +245,19 @@ public class Cluster implements Cloneable {
 
   public void setName(final String name) {
     this.name = name;
+  }
+
+  public String getClusterId() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".cluster-id",
+        clusterId,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("clusterId")));
+  }
+
+  public void setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
   }
 
   public Raft getRaft() {
