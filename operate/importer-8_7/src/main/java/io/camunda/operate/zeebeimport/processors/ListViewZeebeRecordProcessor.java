@@ -442,7 +442,8 @@ public class ListViewZeebeRecordProcessor {
     if (parentTreePath != null) {
       final String flowNodeInstanceId =
           ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey());
-      final String callActivityId = getCallActivityId(flowNodeInstanceId);
+      final String callActivityId =
+          getCallActivityId(recordValue.getParentProcessInstanceKey(), flowNodeInstanceId);
       final String treePath =
           new TreePath(parentTreePath)
               .appendEntries(
@@ -467,10 +468,11 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private String getCallActivityId(final String flowNodeInstanceId) {
+  private String getCallActivityId(final long processInstanceId, final String flowNodeInstanceId) {
     String callActivityId = getCallActivityIdCache().get(flowNodeInstanceId);
     if (callActivityId == null) {
-      callActivityId = flowNodeStore.getFlowNodeIdByFlowNodeInstanceId(flowNodeInstanceId);
+      callActivityId =
+          flowNodeStore.getFlowNodeIdByFlowNodeInstanceId(processInstanceId, flowNodeInstanceId);
       getCallActivityIdCache().put(flowNodeInstanceId, callActivityId);
     }
     return callActivityId;

@@ -7,18 +7,18 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.operate.util.OpensearchUtil;
 import io.camunda.operate.util.ThreadUtil;
 import java.util.HashMap;
 import java.util.List;
@@ -43,24 +43,25 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public String getFlowNodeIdByFlowNodeInstanceId(final String flowNodeInstanceId) {
-    record Result(String activityId) {}
+  public String getFlowNodeIdByFlowNodeInstanceId(
+      final long processInstanceId, final String flowNodeInstanceId) {
     final RequestDSL.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
             ? RequestDSL.QueryType.ALL
             : RequestDSL.QueryType.ONLY_RUNTIME;
-    final var searchRequestBuilder =
-        searchRequestBuilder(listViewTemplate, queryType)
-            .query(
-                withTenantCheck(
-                    and(
-                        term(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
-                        term(ListViewTemplate.ID, flowNodeInstanceId))));
-
-    return richOpenSearchClient
-        .doc()
-        .searchUnique(searchRequestBuilder, Result.class, flowNodeInstanceId)
-        .activityId();
+    final String routing = String.valueOf(processInstanceId);
+    final Map<String, Object> flowNodeInstance =
+        OpensearchUtil.getByIdOrSearchArchives(
+            richOpenSearchClient,
+            listViewTemplate,
+            flowNodeInstanceId,
+            routing,
+            queryType,
+            ListViewTemplate.ACTIVITY_ID);
+    if (flowNodeInstance != null) {
+      return (String) flowNodeInstance.get(ListViewTemplate.ACTIVITY_ID);
+    }
+    throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
   }
 
   @Override
