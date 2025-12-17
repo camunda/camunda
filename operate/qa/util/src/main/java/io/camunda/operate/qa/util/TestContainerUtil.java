@@ -494,10 +494,16 @@ public class TestContainerUtil {
       final String connectionType) {
     final TestContext testContext =
         new TestContext()
+            .setIndexPrefix(prefix)
             .setZeebeIndexPrefix(prefix)
             .setPartitionCount(partitionCount)
             .setMultitenancyEnabled(multitenancyEnabled)
-            .setConnectionType(connectionType);
+            .setConnectionType(connectionType)
+            .setDatabaseType(connectionType)
+            .setExternalElsHost("host.testcontainers.internal")
+            .setExternalElsPort(9200)
+            .setInternalElsHost(ELS_NETWORK_ALIAS)
+            .setInternalElsPort(ELS_PORT);
     return startZeebe(testContext);
   }
 
