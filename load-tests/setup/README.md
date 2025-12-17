@@ -69,11 +69,13 @@ orchestration:
 After you have set up your load test namespace and made changes to your configuration, you can start your load test.
 
 To install/upgrade both the Camunda Platform and the load test:
+
 ```shell
 make install
 ```
 
 Or install/upgrade them separately:
+
 ```shell
 # Install/upgrade the Camunda Platform (includes leader balancer cronjob)
 make install-platform
