@@ -12,47 +12,36 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
-import io.camunda.zeebe.gateway.mcp.model.IncidentErrorType;
-import io.camunda.zeebe.gateway.mcp.model.IncidentState;
+import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuery;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SearchQueryFilterMapper {
 
-  public static IncidentFilter toIncidentFilter(
-      final String processDefinitionId,
-      final IncidentErrorType errorType,
-      final String errorMessage,
-      final String elementId,
-      final OffsetDateTime creationTimeFrom,
-      final OffsetDateTime creationTimeTo,
-      final IncidentState state,
-      final String tenantId,
-      final Long incidentKey,
-      final Long processDefinitionKey,
-      final Long processInstanceKey,
-      final Long elementInstanceKey,
-      final Long jobKey) {
+  public static IncidentFilter toIncidentFilter(final IncidentSearchQuery request) {
     final var builder = FilterBuilders.incident();
 
-    ofNullable(createEqualOperation(processDefinitionId))
+    ofNullable(createEqualOperation(request.processDefinitionId()))
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(createEnumEqualOperation(errorType)).ifPresent(builder::errorTypeOperations);
-    ofNullable(createEqualOperation(errorMessage)).ifPresent(builder::errorMessageOperations);
-    ofNullable(createEqualOperation(elementId)).ifPresent(builder::flowNodeIdOperations);
-    ofNullable(createDateTimeFilterOperation(creationTimeFrom, creationTimeTo))
+    ofNullable(createEnumEqualOperation(request.errorType()))
+        .ifPresent(builder::errorTypeOperations);
+    ofNullable(createEqualOperation(request.errorMessage()))
+        .ifPresent(builder::errorMessageOperations);
+    ofNullable(createEqualOperation(request.elementId())).ifPresent(builder::flowNodeIdOperations);
+    ofNullable(createDateTimeFilterOperation(request.creationTimeFrom(), request.creationTimeTo()))
         .ifPresent(builder::creationTimeOperations);
-    ofNullable(createEnumEqualOperation(state)).ifPresent(builder::stateOperations);
-    ofNullable(createEqualOperation(tenantId)).ifPresent(builder::tenantIdOperations);
-    ofNullable(createEqualOperation(incidentKey)).ifPresent(builder::incidentKeyOperations);
-    ofNullable(createEqualOperation(processDefinitionKey))
+    ofNullable(createEnumEqualOperation(request.state())).ifPresent(builder::stateOperations);
+    ofNullable(createEqualOperation(request.tenantId())).ifPresent(builder::tenantIdOperations);
+    ofNullable(createEqualOperation(request.incidentKey()))
+        .ifPresent(builder::incidentKeyOperations);
+    ofNullable(createEqualOperation(request.processDefinitionKey()))
         .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(createEqualOperation(processInstanceKey))
+    ofNullable(createEqualOperation(request.processInstanceKey()))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(createEqualOperation(elementInstanceKey))
+    ofNullable(createEqualOperation(request.elementInstanceKey()))
         .ifPresent(builder::flowNodeInstanceKeyOperations);
-    ofNullable(createEqualOperation(jobKey)).ifPresent(builder::jobKeyOperations);
+    ofNullable(createEqualOperation(request.jobKey())).ifPresent(builder::jobKeyOperations);
 
     return builder.build();
   }

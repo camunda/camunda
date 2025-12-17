@@ -17,19 +17,13 @@ import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryFilterMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryPageMapper;
 import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQuerySortRequestMapper;
-import io.camunda.zeebe.gateway.mcp.model.IncidentErrorType;
-import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
-import io.camunda.zeebe.gateway.mcp.model.IncidentState;
-import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
+import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuery;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
-import java.time.OffsetDateTime;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
-import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -52,61 +46,9 @@ public class IncidentTools {
   @McpTool(
       description = "Search for incidents based on given criteria. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
-  public CallToolResult searchIncidents(
-      @McpToolParam(
-              description = "The process definition ID associated to the incident.",
-              required = false)
-          final String processDefinitionId,
-      @McpToolParam(description = "Incident error type.", required = false)
-          final IncidentErrorType errorType,
-      @McpToolParam(description = "Error message.", required = false) final String errorMessage,
-      @McpToolParam(
-              description =
-                  "The element ID associated to the incident - the BPMN element ID in the process.",
-              required = false)
-          final String elementId,
-      @McpToolParam(
-              description =
-                  "Date of incident creation - filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00').",
-              required = false)
-          final OffsetDateTime creationTimeFrom,
-      @McpToolParam(
-              description =
-                  "Date of incident creation - filter before this time (exclusive). RFC 3339 format (e.g., '2024-12-17T23:59:59Z' or '2024-12-17T23:59:59-05:00').",
-              required = false)
-          final OffsetDateTime creationTimeTo,
-      @McpToolParam(description = "State of the incident.", required = false)
-          final IncidentState state,
-      @McpToolParam(description = "The tenant ID of the incident.", required = false)
-          final String tenantId,
-      @McpToolParam(
-              description =
-                  "The assigned key, which acts as a unique identifier for this incident.",
-              required = false)
-          final Long incidentKey,
-      @McpToolParam(
-              description = "The process definition key associated to the incident.",
-              required = false)
-          final Long processDefinitionKey,
-      @McpToolParam(
-              description = "The process instance key associated to the incident.",
-              required = false)
-          final Long processInstanceKey,
-      @McpToolParam(
-              description = "The element instance key associated to the incident.",
-              required = false)
-          final Long elementInstanceKey,
-      @McpToolParam(
-              description = "The job key, if exists, associated with the incident.",
-              required = false)
-          final Long jobKey,
-      @McpToolParam(description = "Sort criteria", required = false) @Valid
-          final List<@Valid IncidentSearchQuerySortRequest> sort,
-      @McpToolParam(description = "Pagination criteria", required = false)
-          final SearchQueryPageRequest page) {
-
+  public CallToolResult searchIncidents(@Valid final IncidentSearchQuery request) {
     try {
-      final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(sort);
+      final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(request.sort());
       if (sortRequest.isLeft()) {
         return sortRequest.mapLeft(CallToolResultMapper::mapViolationsToResult).getLeft();
       }
@@ -116,22 +58,8 @@ public class IncidentTools {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(
                   SearchQueryBuilders.incidentSearchQuery()
-                      .filter(
-                          SearchQueryFilterMapper.toIncidentFilter(
-                              processDefinitionId,
-                              errorType,
-                              errorMessage,
-                              elementId,
-                              creationTimeFrom,
-                              creationTimeTo,
-                              state,
-                              tenantId,
-                              incidentKey,
-                              processDefinitionKey,
-                              processInstanceKey,
-                              elementInstanceKey,
-                              jobKey))
-                      .page(SearchQueryPageMapper.toSearchQueryPage(page))
+                      .filter(SearchQueryFilterMapper.toIncidentFilter(request))
+                      .page(SearchQueryPageMapper.toSearchQueryPage(request.page()))
                       .sort(sortRequest.get())
                       .build());
 
