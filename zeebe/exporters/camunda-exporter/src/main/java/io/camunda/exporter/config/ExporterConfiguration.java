@@ -10,6 +10,7 @@ package io.camunda.exporter.config;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 
 public class ExporterConfiguration {
 
@@ -24,7 +25,16 @@ public class ExporterConfiguration {
   private PostExportConfiguration postExport = new PostExportConfiguration();
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
+  private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private boolean createSchema = true;
+
+  public AuditLogConfiguration getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLogConfiguration auditLog) {
+    this.auditLog = auditLog;
+  }
 
   public ConnectConfiguration getConnect() {
     return connect;
@@ -147,6 +157,8 @@ public class ExporterConfiguration {
         + postExport
         + ", batchOperation="
         + batchOperation
+        + ", auditLog="
+        + auditLog
         + '}';
   }
 

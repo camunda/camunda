@@ -42,6 +42,7 @@ import io.camunda.configuration.Write;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
@@ -890,6 +891,12 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "bulk.delay", database.getBulk().getDelay().getSeconds());
     setArg(args, "bulk.size", database.getBulk().getSize());
     setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
+
+    final var auditLog = unifiedConfiguration.getCamunda().getData().getAuditLog();
+    exporter.setArgs(
+        ExporterConfiguration.of(io.camunda.exporter.config.ExporterConfiguration.class, args)
+            .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
+            .toArgs());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
@@ -968,7 +975,11 @@ public class BrokerBasedPropertiesOverride {
     setArgIfNotNull(
         args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
 
-    exporter.setArgs(args);
+    final var auditLog = unifiedConfiguration.getCamunda().getData().getAuditLog();
+    exporter.setArgs(
+        ExporterConfiguration.of(io.camunda.exporter.rdbms.ExporterConfiguration.class, args)
+            .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
+            .toArgs());
   }
 
   private void populateFromMonitoring(final BrokerBasedProperties override) {

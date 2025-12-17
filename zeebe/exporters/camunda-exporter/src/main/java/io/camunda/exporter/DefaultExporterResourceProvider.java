@@ -355,7 +355,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
-    addAuditLogHandlers(new AuditLogConfiguration());
+
+    addAuditLogHandlers(configuration.getAuditLog());
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

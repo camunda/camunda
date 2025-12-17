@@ -13,6 +13,8 @@ import java.util.Set;
 
 public final class AuditLogConfiguration {
 
+  private boolean enabled = true;
+
   private ActorAuditLogConfiguration user = new ActorAuditLogConfiguration();
   private ActorAuditLogConfiguration client = new ActorAuditLogConfiguration();
 
@@ -36,11 +38,23 @@ public final class AuditLogConfiguration {
 
   @Override
   public String toString() {
-    return "AuditLogConfiguration{" + "user=" + user + ", client=" + client + '}';
+    return "AuditLogConfiguration{"
+        + "enabled="
+        + enabled
+        + ", user="
+        + user
+        + ", client="
+        + client
+        + '}';
   }
 
   public boolean isEnabled() {
-    return !(getUser().getCategories().isEmpty() && getClient().getCategories().isEmpty());
+    return enabled
+        && !(getUser().getCategories().isEmpty() && getClient().getCategories().isEmpty());
+  }
+
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
   }
 
   public boolean isEnabled(final AuditLogInfo auditLog) {
@@ -57,10 +71,10 @@ public final class AuditLogConfiguration {
   public static final class ActorAuditLogConfiguration {
     private Set<AuditLogOperationCategory> categories =
         Set.of(
+            AuditLogOperationCategory.ADMIN,
             AuditLogOperationCategory.OPERATOR,
-            AuditLogOperationCategory.USER_TASK,
-            AuditLogOperationCategory.ADMIN);
-    private Set<AuditLogEntityType> excludes = Set.of(AuditLogEntityType.VARIABLE);
+            AuditLogOperationCategory.USER_TASK);
+    private Set<AuditLogEntityType> excludes = Set.of();
 
     public Set<AuditLogEntityType> getExcludes() {
       return excludes;

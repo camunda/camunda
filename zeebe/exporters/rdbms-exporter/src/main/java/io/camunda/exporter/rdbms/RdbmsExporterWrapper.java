@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.exporter.rdbms.RdbmsExporter.Builder;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
@@ -60,7 +61,6 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModifica
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -134,7 +134,7 @@ public class RdbmsExporterWrapper implements Exporter {
             new RdbmsBatchOperationCacheLoader(rdbmsService.getBatchOperationReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
-    createHandlers(partitionId, rdbmsWriter, builder);
+    createHandlers(partitionId, rdbmsWriter, builder, config);
     createBatchOperationHandlers(rdbmsWriter, builder);
 
     exporter = builder.rdbmsSchemaManager(rdbmsSchemaManager).build();
@@ -166,7 +166,10 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createHandlers(
-      final long partitionId, final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
+      final long partitionId,
+      final RdbmsWriter rdbmsWriter,
+      final Builder builder,
+      final ExporterConfiguration config) {
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       builder.withHandler(
@@ -243,7 +246,7 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.HISTORY_DELETION,
         new HistoryDeletionDeletedHandler(rdbmsWriter.getHistoryDeletionWriter()));
 
-    registerAuditLogHandlers(rdbmsWriter, builder);
+    registerAuditLogHandlers(rdbmsWriter, builder, config);
   }
 
   private void createBatchOperationHandlers(
@@ -282,7 +285,7 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void registerAuditLogHandlers(
-      final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
+      final RdbmsWriter rdbmsWriter, final Builder builder, final ExporterConfiguration config) {
     Set.of(
             new BatchOperationCreationAuditLogTransformer(),
             new BatchOperationLifecycleManagementAuditLogTransformer(),
@@ -302,6 +305,6 @@ public class RdbmsExporterWrapper implements Exporter {
                         rdbmsWriter.getAuditLogWriter(),
                         vendorDatabaseProperties,
                         transformer,
-                        new AuditLogConfiguration()))); // TODO figure the correct configuration
+                        config.getAuditLog())));
   }
 }

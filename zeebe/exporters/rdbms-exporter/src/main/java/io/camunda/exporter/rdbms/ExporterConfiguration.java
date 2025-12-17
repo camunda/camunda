@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,22 +20,29 @@ public class ExporterConfiguration {
   public static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
   public static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
 
+  // AuditLog
+  private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
   private int queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
   private int queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
-
   private HistoryConfiguration history = new HistoryConfiguration();
-
   // batch operation configuration
   private boolean exportBatchOperationItemsOnCreation =
       RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
   private int batchOperationItemInsertBlockSize =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
-
   // caches
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
+
+  public AuditLogConfiguration getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLogConfiguration auditLog) {
+    this.auditLog = auditLog;
+  }
 
   public Duration getFlushInterval() {
     return flushInterval;
@@ -196,6 +204,32 @@ public class ExporterConfiguration {
     if (duration.isNegative() || duration.isZero()) {
       errors.add(String.format("%s must be a positive duration but was %s", name, duration));
     }
+  }
+
+  @Override
+  public String toString() {
+    return "ExporterConfiguration{"
+        + "auditLog="
+        + auditLog
+        + ", flushInterval="
+        + flushInterval
+        + ", queueSize="
+        + queueSize
+        + ", queueMemoryLimit="
+        + queueMemoryLimit
+        + ", history="
+        + history
+        + ", exportBatchOperationItemsOnCreation="
+        + exportBatchOperationItemsOnCreation
+        + ", batchOperationItemInsertBlockSize="
+        + batchOperationItemInsertBlockSize
+        + ", processCache="
+        + processCache
+        + ", decisionRequirementsCache="
+        + decisionRequirementsCache
+        + ", batchOperationCache="
+        + batchOperationCache
+        + '}';
   }
 
   public static class CacheConfiguration {
