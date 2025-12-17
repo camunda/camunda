@@ -8,7 +8,7 @@ paths:
       tags:
         - Expression
       summary: Evaluate an expression
-      description: Evaluates an expression.
+      description: Evaluates a FEEL expression and returns the result. Supports references to tenant scoped cluster variables when a tenant ID is provided.
       requestBody:
         required: true
         content:
@@ -44,7 +44,7 @@ components:
           example: "=x + y"
         tenantId:
           type: string
-          description: The tenant ID for multi-tenant environments
+          description: Required when the expression references tenant-scoped cluster variables
           example: "tenant_123"
     ExpressionEvaluationResult:
       type: object
