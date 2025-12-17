@@ -46,7 +46,7 @@ public class IncidentProcessInstanceStatisticsTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/incidents/statistics");
+    assertThat(request.getUrl()).isEqualTo("/v2/incidents/statistics/process-instances");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(request.getBodyAsString()).isEqualTo("{\"sort\":[]}");
   }
