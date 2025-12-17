@@ -139,7 +139,8 @@ public class RdbmsExporterWrapper implements Exporter {
 
     final var historyCleanupService = new HistoryCleanupService(rdbmsWriterConfig, rdbmsWriters);
     builder.historyCleanupService(historyCleanupService);
-    final var historyDeletionService = new HistoryDeletionService();
+    final var historyDeletionService =
+        new HistoryDeletionService(rdbmsWriters, rdbmsService.getHistoryDeletionDbReader());
     builder.historyDeletionService(historyDeletionService);
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);

@@ -7,22 +7,31 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This service is for deleting history on user request. For data retention see {@link
  * HistoryCleanupService}.
  */
 public class HistoryDeletionService {
+  private static final Logger LOG = LoggerFactory.getLogger(HistoryDeletionService.class);
 
-  public HistoryDeletionService() {
-    // TODO add history deletion reader to constructor
-    // TODO add history deletion writer to constructor
+  private final RdbmsWriters rdbmsWriters;
+  private final HistoryDeletionDbReader historyDeletionDbReader;
 
+  public HistoryDeletionService(
+      final RdbmsWriters rdbmsWriters, final HistoryDeletionDbReader historyDeletionDbReader) {
+    this.rdbmsWriters = rdbmsWriters;
+    this.historyDeletionDbReader = historyDeletionDbReader;
   }
 
   public Duration deleteHistory(final int partitionId) {
-    System.out.println("DELETE HISTORY FOR PARTITION " + partitionId);
+    final var batch = historyDeletionDbReader.getNextBatch(partitionId, 100);
+    LOG.trace("Deleting historic data for entities: {}", batch);
     return Duration.ofSeconds(1);
   }
 }
