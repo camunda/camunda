@@ -118,7 +118,7 @@ paths:
       summary: Get incident process instance statistics
       description: |
         Returns aggregated statistics for process instances with active incidents,
-        grouped by error code and message.
+        grouped by error hash code.
       requestBody:
         required: false
         content:
