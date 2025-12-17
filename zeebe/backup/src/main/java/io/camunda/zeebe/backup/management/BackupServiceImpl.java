@@ -167,6 +167,7 @@ final class BackupServiceImpl {
   private void confirmBackup(final InProgressBackup inProgressBackup) {
     final var checkpointId = inProgressBackup.id().checkpointId();
     final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
+    final var checkpointType = inProgressBackup.backupDescriptor().checkpointType();
     final var confirmationWritten =
         logStreamWriter.tryWrite(
             WriteContext.internal(),
@@ -177,7 +178,8 @@ final class BackupServiceImpl {
                     .intent(CheckpointIntent.CONFIRM_BACKUP),
                 new CheckpointRecord()
                     .setCheckpointId(checkpointId)
-                    .setCheckpointPosition(checkpointPosition)));
+                    .setCheckpointPosition(checkpointPosition)
+                    .setCheckpointType(checkpointType)));
     switch (confirmationWritten) {
       case Either.Left(final var error) ->
           LOG.warn(
