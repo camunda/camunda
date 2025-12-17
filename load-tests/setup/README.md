@@ -75,17 +75,14 @@ make install
 
 Or install/upgrade them separately:
 ```shell
-# Install/upgrade the Camunda Platform
+# Install/upgrade the Camunda Platform (includes leader balancer cronjob)
 make install-platform
 
 # Install/upgrade the load test (starter, worker, etc.)
 make install-load-test
 ```
 
-Optionally, set up leader balancing (runs every 10 minutes to rebalance cluster leaders):
-```shell
-make setup-leader-balancer
-```
+The Camunda Platform deployment automatically sets up a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
 
 This will deploy the Camunda Platform (including `orchestration cluster`, `elastic`) and load test applications (e.g. `starter` and `worker`).
 

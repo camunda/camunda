@@ -11,7 +11,7 @@ install: install-platform install-load-test
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
-install-platform:
+install-platform: setup-leader-balancer
 	helm upgrade --install $(namespace) camunda/$(helm_chart) \
 		--namespace $(namespace) \
 		--wait --timeout 35m0s \
@@ -21,7 +21,7 @@ install-platform:
 
 # Install/upgrade Camunda Platform on stable VMs
 .PHONY: install-platform-stable
-install-platform-stable:
+install-platform-stable: setup-leader-balancer
 	helm upgrade --install $(namespace) camunda/$(helm_chart) \
 		--namespace $(namespace) \
 		--wait --timeout 35m0s \
@@ -39,7 +39,7 @@ install-load-test:
 		--reuse-values \
 		--render-subchart-notes
 
-# Setup leader balancing cronjob (optional)
+# Setup leader balancing cronjob
 .PHONY: setup-leader-balancer
 setup-leader-balancer:
 	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) &>/dev/null; then \
