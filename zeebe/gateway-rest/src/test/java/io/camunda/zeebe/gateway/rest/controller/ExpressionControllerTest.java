@@ -109,7 +109,7 @@ public class ExpressionControllerTest extends RestControllerTest {
               "type": "about:blank",
               "title": "INVALID_ARGUMENT",
               "status": 400,
-              "detail": "No expression provided.",
+              "detail": "No expression provided",
               "instance": "%s"
             }"""
             .formatted(EXPRESSION_URL);

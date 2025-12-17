@@ -15,7 +15,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ConditionalEvaluationReque
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
-import static io.camunda.zeebe.gateway.rest.validator.ExpressionValidator.validateExpressionEvaluationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -34,6 +34,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
@@ -744,10 +745,18 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
-      final String expression, final String tenantId, final boolean multiTenancyEnabled) {
-    return getResult(
-        validateExpressionEvaluationRequest(expression, tenantId, multiTenancyEnabled),
-        () -> new ExpressionEvaluationRequest(expression, tenantId));
+      final String expression, final String tenantId, final boolean isMultiTenancyEnabled) {
+    final var validator =
+        validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation");
+    if (expression == null || expression.isBlank()) {
+      return Either.left(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("expression"),
+              INVALID_ARGUMENT.name()));
+    }
+    return validator.map(
+        validTenantId -> new ExpressionEvaluationRequest(expression, validTenantId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
