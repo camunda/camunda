@@ -73,6 +73,6 @@ cd $namespace
 sed_inplace "s/default/$namespace/g" Makefile
 
 # Add/update helm repositories
-helm repo add camunda https://helm.camunda.io/
-helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
+helm repo add camunda https://helm.camunda.io/ --force-update
+helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
 helm repo update
