@@ -350,6 +350,8 @@ test.describe.serial('Process Instance Migration', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
         },
         maxRetries: 4,
       });
