@@ -229,6 +229,9 @@ public final class RaftClusterContext
   public Set<RaftMember> getVotingMembers() {
     return remoteActiveMembers.stream()
         .map(RaftMemberContext::getMember)
+        .filter(
+            member ->
+                groupMembershipState.map(s -> s.members().contains(member.memberId())).orElse(true))
         .collect(Collectors.toSet());
   }
 
