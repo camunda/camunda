@@ -1,0 +1,23 @@
+camunda:
+  mcp:
+    server:
+      enabled: true
+
+spring:
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: Camunda 8 Orchestration API Test MCP Server
+        version: '${project.version}'
+        type: sync
+        protocol: stateless
+        annotation-scanner:
+          enabled: true
+        streamable-http:
+          mcp-endpoint: /mcp
+        capabilities:
+          completion: false
+          prompt: false
+          resource: false
+          tool: true
