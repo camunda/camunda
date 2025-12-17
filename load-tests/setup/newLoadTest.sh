@@ -19,7 +19,11 @@ fi
 namespace=$1
 
 # Create K8 namespace
-kubectl create namespace "$namespace"
+if ! kubectl get namespace "$namespace" >/dev/null 2>&1; then
+  kubectl create namespace "$namespace"
+else
+  echo "Namespace '$namespace' already exists"
+fi
 
 # Label namespace with author
 kubectl label namespace "$namespace" created-by="${USER:-unknown}" --overwrite
