@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
+import static java.util.stream.Collectors.toMap;
 
 import com.nimbusds.jose.JOSEObjectType;
 import io.camunda.authentication.CamundaUserDetailsService;
@@ -95,6 +96,8 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
@@ -659,10 +662,30 @@ public class WebSecurityConfig {
 
     @Bean
     public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
-        final TokenValidatorFactory tokenValidatorFactory) {
+        final TokenValidatorFactory tokenValidatorFactory,
+        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
+        final ClientRegistrationRepository clientRegistrationRepository) {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
       decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
+
+      final Map<String, OidcAuthenticationConfiguration> oidcAuthenticationConfigurations =
+          oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
+      final Map<ClientRegistration, JwsAlgorithm> clientRegistrationToAlgorithmMap =
+          oidcAuthenticationConfigurations.entrySet().stream()
+              .collect(
+                  toMap(
+                      e -> clientRegistrationRepository.findByRegistrationId(e.getKey()),
+                      e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
+      decoderFactory.setJwsAlgorithmResolver(clientRegistrationToAlgorithmMap::get);
       return decoderFactory;
+    }
+
+    private SignatureAlgorithm parseAlgorithm(final String algorithm) {
+      final SignatureAlgorithm value = SignatureAlgorithm.from(algorithm);
+      if (value == null) {
+        throw new IllegalStateException("Unsupported signature algorithm: " + algorithm);
+      }
+      return value;
     }
 
     @Bean

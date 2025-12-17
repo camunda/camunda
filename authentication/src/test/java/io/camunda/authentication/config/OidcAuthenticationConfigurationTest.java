@@ -62,6 +62,14 @@ public class OidcAuthenticationConfigurationTest {
             OidcAuthenticationConfiguration.builder().clientSecret("cs").build(),
             true),
         Arguments.of(
+            "idTokenAlgorithm is set",
+            OidcAuthenticationConfiguration.builder().idTokenAlgorithm("PS256").build(),
+            true),
+        Arguments.of(
+            "default idTokenAlgorithm is set",
+            OidcAuthenticationConfiguration.builder().idTokenAlgorithm("RS256").build(),
+            false),
+        Arguments.of(
             "authorizeRequestConfiguration is set to null",
             OidcAuthenticationConfiguration.builder().authorizeRequestConfiguration(null).build(),
             true),

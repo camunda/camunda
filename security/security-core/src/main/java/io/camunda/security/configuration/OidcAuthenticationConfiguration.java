@@ -34,6 +34,7 @@ public class OidcAuthenticationConfiguration {
   private String clientName;
   private String clientId;
   private String clientSecret;
+  private String idTokenAlgorithm = "RS256";
   private String grantType = "authorization_code";
   private String redirectUri;
   private List<String> scope = Arrays.asList("openid", "profile");
@@ -72,6 +73,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setIssuerUri(final String issuerUri) {
     this.issuerUri = issuerUri;
+  }
+
+  public String getIdTokenAlgorithm() {
+    return idTokenAlgorithm;
+  }
+
+  public void setIdTokenAlgorithm(final String idTokenAlgorithm) {
+    this.idTokenAlgorithm = idTokenAlgorithm;
   }
 
   public String getClientName() {
@@ -237,6 +246,7 @@ public class OidcAuthenticationConfiguration {
         || clientId != null
         || clientName != null
         || clientSecret != null
+        || !"RS256".equals(idTokenAlgorithm)
         || !"authorization_code".equals(grantType)
         || redirectUri != null
         || !Arrays.asList("openid", "profile").equals(scope)
@@ -272,6 +282,7 @@ public class OidcAuthenticationConfiguration {
     private String clientId;
     private String clientName;
     private String clientSecret;
+    private String idTokenAlgorithm = "RS256";
     private String grantType = "authorization_code";
     private String redirectUri;
     private List<String> scope = Arrays.asList("openid", "profile");
@@ -307,6 +318,11 @@ public class OidcAuthenticationConfiguration {
 
     public Builder clientSecret(final String clientSecret) {
       this.clientSecret = clientSecret;
+      return this;
+    }
+
+    public Builder idTokenAlgorithm(final String idTokenAlgorithm) {
+      this.idTokenAlgorithm = idTokenAlgorithm;
       return this;
     }
 
@@ -398,6 +414,7 @@ public class OidcAuthenticationConfiguration {
       config.setClientId(clientId);
       config.setClientName(clientName);
       config.setClientSecret(clientSecret);
+      config.setIdTokenAlgorithm(idTokenAlgorithm);
       config.setGrantType(grantType);
       config.setRedirectUri(redirectUri);
       config.setScope(scope);
