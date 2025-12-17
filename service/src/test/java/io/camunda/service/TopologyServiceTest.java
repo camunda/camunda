@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.TopologyServices.Broker;
@@ -133,6 +134,22 @@ public class TopologyServiceTest {
     verify(brokerClient).getTopologyManager();
     verify(topologyManager).getTopology();
     verify(clusterState).getPartitions();
+  }
+
+  @Test
+  void shouldReturnUnhealthyWhenNoTopologyExist() {
+    // given
+    when(topologyManager.getTopology()).thenReturn(null);
+
+    // when
+    final var status = services.getStatus().join();
+
+    // then
+    Assertions.assertThat(status).isEqualTo(ClusterStatus.UNHEALTHY);
+
+    verify(brokerClient).getTopologyManager();
+    verify(topologyManager).getTopology();
+    verifyNoInteractions(clusterState);
   }
 
   @Test

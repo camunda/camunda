@@ -65,6 +65,11 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
 
   private boolean hasAPartitionWithAHealthyLeader() {
     final var topology = brokerClient.getTopologyManager().getTopology();
+
+    if (topology == null) {
+      return false;
+    }
+
     final var partitions = topology.getPartitions();
 
     return partitions.stream()
