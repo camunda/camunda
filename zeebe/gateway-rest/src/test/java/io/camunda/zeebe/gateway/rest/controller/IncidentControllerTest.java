@@ -41,7 +41,8 @@ public class IncidentControllerTest extends RestControllerTest {
 
   static final String INCIDENT_BASE_URL = "/v2/incidents";
   static final String INCIDENT_SEARCH_URL = INCIDENT_BASE_URL + "/search";
-  static final String INCIDENT_STATISTICS_URL = INCIDENT_BASE_URL + "/statistics";
+  static final String INCIDENT_PROCESS_INSTANCE_STATISTICS_URL =
+      INCIDENT_BASE_URL + "/statistics/process-instances";
   private static final SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
       INCIDENT_STATISTICS_RESULT =
           new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsEntity>()
@@ -136,7 +137,7 @@ public class IncidentControllerTest extends RestControllerTest {
 
     webClient
         .post()
-        .uri(INCIDENT_STATISTICS_URL)
+        .uri(INCIDENT_PROCESS_INSTANCE_STATISTICS_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
