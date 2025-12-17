@@ -20,7 +20,10 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Comparators;
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.protocol.GroupMembershipEventListener.GroupMembershipState;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
@@ -47,7 +50,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** Manages the persistent state of the Raft cluster from the perspective of a single server. */
-public final class RaftClusterContext implements RaftCluster, AutoCloseable {
+public final class RaftClusterContext
+    implements RaftCluster, AutoCloseable, ClusterMembershipEventListener {
   private final RaftContext raft;
   private final DefaultRaftMember localMember;
   private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new HashMap<>();
@@ -55,6 +59,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private final Set<RaftMemberContext> remoteActiveMembers = new HashSet<>();
   private boolean hasRemoteActiveMembers = false;
   private Configuration configuration;
+  private Optional<GroupMembershipState> groupMembershipState = Optional.empty();
 
   public RaftClusterContext(final MemberId localMemberId, final RaftContext raft) {
     final Instant time = Instant.now();
@@ -274,6 +279,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               callback,
               configuration.newMembers().stream()
                   .map(RaftMember::memberId)
+                  .filter(
+                      member ->
+                          groupMembershipState.map(s -> s.members().contains(member)).orElse(true))
                   .collect(Collectors.toSet()));
     }
     quorum.succeed(localMember.memberId());
@@ -411,5 +419,19 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   public void close() {
     remoteMemberContexts.values().forEach(RaftMemberContext::close);
     localMember.close();
+  }
+
+  public Optional<GroupMembershipState> getGroupMembershipState() {
+    return groupMembershipState;
+  }
+
+  @Override
+  public void event(final ClusterMembershipEvent event) {
+    groupMembershipState.ifPresent(s -> s.apply(event));
+  }
+
+  @Override
+  public void onState(final GroupMembershipState state) {
+    groupMembershipState = Optional.of(state);
   }
 }
