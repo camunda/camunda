@@ -191,7 +191,6 @@ public final class ClusterConfigurationManagerService
   private CompletableActorFuture<Void> startClusterTopologyServices(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
-
     final var result = new CompletableActorFuture<Void>();
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
         isCoordinator
