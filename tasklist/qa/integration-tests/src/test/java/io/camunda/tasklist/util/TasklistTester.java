@@ -88,6 +88,10 @@ public class TasklistTester {
   private TestCheck processInstanceIsCompletedCheck;
 
   @Autowired
+  @Qualifier(FORM_EXISTS_CHECK)
+  private TestCheck formExistsCheck;
+
+  @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
 
@@ -492,23 +496,15 @@ public class TasklistTester {
     return this;
   }
 
-  //  public TasklistTester failTask(String taskName, String errorMessage) {
-  //    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(),
-  // 3,errorMessage);
-  //    return this;
-  //  }
-  //
-  //  public TasklistTester throwError(String taskName,String errorCode,String errorMessage) {
-  //    ZeebeTestUtil.throwErrorInTask(zeebeClient, taskName, UUID.randomUUID().toString(), 1,
-  // errorCode, errorMessage);
-  //    return this;
-  //  }
-  //
-  //  public TasklistTester incidentIsActive() {
-  //    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
-  //    return this;
-  //  }
-  //
+  public TasklistTester formExists(final String formId) {
+    return formExists(formId, null);
+  }
+
+  public TasklistTester formExists(final String formId, final Long versionId) {
+    databaseTestExtension.processAllRecordsAndWait(
+        formExistsCheck, processDefinitionKey, formId, versionId);
+    return this;
+  }
 
   public TasklistTester taskIsCreated(final String flowNodeBpmnId) {
     databaseTestExtension.processAllRecordsAndWait(
