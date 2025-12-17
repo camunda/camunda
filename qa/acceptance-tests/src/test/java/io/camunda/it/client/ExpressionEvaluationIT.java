@@ -24,6 +24,97 @@ public class ExpressionEvaluationIT {
 
   private static CamundaClient camundaClient;
 
+  // ============ STATIC EXPRESSION TESTS (LITERALS) ============
+
+  @Test
+  void shouldEvaluateStaticStringLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("Hello World").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getExpression()).isEqualTo("Hello World");
+    assertThat(response.getResult()).isEqualTo("Hello World");
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticIntegerLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("42").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(42);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticDoubleLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("3.14").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(3.14);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticBooleanTrueLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("true").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticBooleanFalseLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("false").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(false);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticNullLiteral() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient.newEvaluateExpressionCommand().expression("null").send().join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateStaticNestedStructure() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("{person: {name: \"Bob\", scores: [10, 20, 30]}}")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("{person: {name: \"Bob\", scores: [10, 20, 30]}}");
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
   // ============ BASIC EXPRESSION TESTS (NO VARIABLES) ============
 
   @Test
@@ -649,6 +740,81 @@ public class ExpressionEvaluationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.getResult()).isEqualTo("John Doe");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithNestedFunctionCalls() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=upper case(substring(\"hello world\", 1, 5))")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("HELLO");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithForLoop() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=for i in [1, 2, 3] return i * 2")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(List.of(2, 4, 6));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithSomeQuantifier() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=some x in [1, 2, 3] satisfies x > 2")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithEveryQuantifier() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=every x in [1, 2, 3] satisfies x > 0")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithFilterList() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=[1, 2, 3, 4, 5][item > 2]")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo(List.of(3, 4, 5));
   }
 
   // ============ ERROR HANDLING TESTS ============

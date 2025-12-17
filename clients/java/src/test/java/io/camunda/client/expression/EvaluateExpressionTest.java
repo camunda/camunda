@@ -48,7 +48,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
         .hasMethod(RequestMethod.POST)
         .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
         .extractingBody(ExpressionEvaluationRequest.class)
-        .isEqualTo(new ExpressionEvaluationRequest().expression(expression));
+        .isEqualTo(new ExpressionEvaluationRequest().expression(expression).tenantId("<default>"));
   }
 
   @Test
