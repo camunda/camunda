@@ -24,6 +24,7 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
@@ -304,6 +305,12 @@ public class MyBatisConfiguration {
   MapperFactoryBean<TableMetricsMapper> tableMetricsMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, TableMetricsMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<HistoryDeletionMapper> historyDeletionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, HistoryDeletionMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

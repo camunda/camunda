@@ -25,6 +25,7 @@ import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
+import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
@@ -59,6 +60,7 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
@@ -289,6 +291,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public HistoryDeletionDbReader historyDeletionDbReader(
+      HistoryDeletionMapper historyDeletionMapper) {
+    return new HistoryDeletionDbReader(historyDeletionMapper);
+  }
+
+  @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
   }
@@ -390,7 +398,8 @@ public class RdbmsConfiguration {
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
-          processDefinitionInstanceVersionStatisticsReader) {
+          processDefinitionInstanceVersionStatisticsReader,
+      final HistoryDeletionDbReader historyDeletionDbReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -424,7 +433,8 @@ public class RdbmsConfiguration {
         processDefinitionMessageSubscriptionStatisticsReader,
         correlatedMessageSubscriptionReader,
         processDefinitionInstanceStatisticsReader,
-        processDefinitionInstanceVersionStatisticsReader);
+        processDefinitionInstanceVersionStatisticsReader,
+        historyDeletionDbReader);
   }
 
   @Bean
