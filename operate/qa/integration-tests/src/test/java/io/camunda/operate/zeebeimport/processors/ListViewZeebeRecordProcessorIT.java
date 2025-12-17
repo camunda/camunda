@@ -8,7 +8,9 @@
 package io.camunda.operate.zeebeimport.processors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
+import static io.camunda.operate.util.TestUtil.createVariableForListView;
 import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromPi;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,14 +21,19 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -231,6 +238,20 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     return first.get();
   }
 
+  @NotNull
+  private VariableForListViewEntity variableById(final String id) throws IOException {
+    final List<VariableForListViewEntity> entities =
+        testSearchRepository.searchJoinRelation(
+            listViewTemplate.getFullQualifiedName(),
+            VARIABLES_JOIN_RELATION,
+            VariableForListViewEntity.class,
+            10);
+    final Optional<VariableForListViewEntity> first =
+        entities.stream().filter(p -> p.getId().equals(id)).findFirst();
+    assertThat(first.isPresent()).isTrue();
+    return first.get();
+  }
+
   private void importProcessInstanceZeebeRecord(
       final Record<ProcessInstanceRecordValue> zeebeRecord) throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
@@ -238,6 +259,15 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
         (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)),
         batchRequest,
         mock(ImportBatch.class));
+    batchRequest.execute();
+    searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
+  }
+
+  private void importVariableZeebeRecord(final Record<VariableRecordValue> zeebeRecord)
+      throws PersistenceException {
+    final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
+    listViewZeebeRecordProcessor.processVariableRecords(
+        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
