@@ -47,7 +47,7 @@ public class IncidentControllerTest extends RestControllerTest {
       INCIDENT_STATISTICS_RESULT =
           new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsEntity>()
               .total(1L)
-              .items(List.of(new IncidentProcessInstanceStatisticsEntity("hash", "error", 10L)))
+              .items(List.of(new IncidentProcessInstanceStatisticsEntity(123456, "error", 10L)))
               .startCursor(null)
               .endCursor(null)
               .build();
@@ -150,7 +150,7 @@ public class IncidentControllerTest extends RestControllerTest {
                 {
                   "items": [
                     {
-                      "errorHashCode": "hash",
+                      "errorHashCode": 123456,
                       "errorMessage": "error",
                       "activeInstancesWithErrorCount": 10
                     }

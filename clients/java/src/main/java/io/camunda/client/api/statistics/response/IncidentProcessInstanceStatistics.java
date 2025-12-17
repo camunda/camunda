@@ -17,7 +17,7 @@ package io.camunda.client.api.statistics.response;
 
 public interface IncidentProcessInstanceStatistics {
 
-  String getErrorHashCode();
+  Integer getErrorHashCode();
 
   String getErrorMessage();
 

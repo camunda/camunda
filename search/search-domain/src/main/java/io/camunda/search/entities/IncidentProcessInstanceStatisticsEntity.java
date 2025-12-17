@@ -12,15 +12,15 @@ import io.camunda.util.ObjectBuilder;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentProcessInstanceStatisticsEntity(
-    String errorHashCode, String errorMessage, Long activeInstancesWithErrorCount) {
+    Integer errorHashCode, String errorMessage, Long activeInstancesWithErrorCount) {
 
   public static final class Builder
       implements ObjectBuilder<IncidentProcessInstanceStatisticsEntity> {
-    private String errorHashCode;
+    private Integer errorHashCode;
     private String errorMessage;
     private Long activeInstancesWithErrorCount;
 
-    public Builder errorHashCode(final String value) {
+    public Builder errorHashCode(final Integer value) {
       errorHashCode = value;
       return this;
     }

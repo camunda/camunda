@@ -22,7 +22,7 @@ import java.util.Objects;
 public final class IncidentProcessInstanceStatisticsImpl
     implements IncidentProcessInstanceStatistics {
 
-  private final String errorHashCode;
+  private final Integer errorHashCode;
   private final String errorMessage;
   private final Long activeInstancesWithErrorCount;
 
@@ -34,7 +34,7 @@ public final class IncidentProcessInstanceStatisticsImpl
   }
 
   @Override
-  public String getErrorHashCode() {
+  public Integer getErrorHashCode() {
     return errorHashCode;
   }
 
