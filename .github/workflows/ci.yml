@@ -57,6 +57,7 @@ jobs:
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
       client-components-changes: ${{ steps.filter.outputs.client-components-changes }}
+      docs-changes: ${{ steps.filter.outputs.docs-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
