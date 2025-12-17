@@ -276,7 +276,7 @@ If failed, check logs:
 kubectl logs job/key-recovery-job -n $NAMESPACE
 ```
 
-If the recovery job did not succeeded the best way to understand and fix the problem is to create another job YAML that
+If the recovery job did not succeed, the best way to understand and fix the problem is to create another job YAML that
 mounts all the PVCs as the recovery job, but without actually running the job.
 If you change the container to run this command, it will stay up until it's killed manually.
 
