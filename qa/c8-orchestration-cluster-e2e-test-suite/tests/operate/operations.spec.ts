@@ -231,7 +231,9 @@ test.describe('Operations', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('5 results')).toBeVisible({
+          await expect(
+            operateProcessesPage.getOperationAndResultsContainer('cancel', 5),
+          ).toBeVisible({
             timeout: 30000,
           });
         },
