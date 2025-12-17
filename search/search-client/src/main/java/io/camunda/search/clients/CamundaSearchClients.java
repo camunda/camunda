@@ -284,6 +284,9 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
       incidentProcessInstanceStatistics(final IncidentProcessInstanceStatisticsQuery query) {
+    // TODO will be implemented by the following tasks:
+    // https://github.com/camunda/camunda/issues/42650
+    // https://github.com/camunda/camunda/issues/42652
     return SearchQueryResult.empty();
   }
 

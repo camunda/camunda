@@ -28,11 +28,6 @@ public record IncidentProcessInstanceStatisticsSort(List<FieldSorting> orderings
       extends SortOption.AbstractBuilder<IncidentProcessInstanceStatisticsSort.Builder>
       implements ObjectBuilder<IncidentProcessInstanceStatisticsSort> {
 
-    public Builder errorHashCode() {
-      currentOrdering = new FieldSorting("errorHashCode", null);
-      return this;
-    }
-
     public Builder errorMessage() {
       currentOrdering = new FieldSorting("errorMessage", null);
       return this;

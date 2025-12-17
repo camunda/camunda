@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
-import static io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQuerySortRequest.FieldEnum.ACTIVE_INSTANCES_WITH_ERROR_COUNT;
-import static io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuerySortRequest.FieldEnum.ERROR_MESSAGE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
 
