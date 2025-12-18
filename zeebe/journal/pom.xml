@@ -56,6 +56,16 @@
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-ffi</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-constants</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -157,6 +167,25 @@
             -->
             <dependency>io.camunda:zeebe-protocol</dependency>
           </usedDependencies>
+        </configuration>
+      </plugin>
+
+      <!--      NEED to open java.base for FFI -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- required to access the raw file descriptor from FileDescriptor -->
+          <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <!-- required to access the raw file descriptor from FileDescriptor -->
+          <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
         </configuration>
       </plugin>
     </plugins>
