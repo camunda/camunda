@@ -129,7 +129,6 @@ public record AuditLogInfo(
         return AuditLogOperationType.DELETE;
 
       case BatchOperationIntent.CREATED:
-      case BatchOperationIntent.CREATE:
         return AuditLogOperationType.CREATE;
       case BatchOperationIntent.RESUMED:
       case BatchOperationIntent.RESUME:
