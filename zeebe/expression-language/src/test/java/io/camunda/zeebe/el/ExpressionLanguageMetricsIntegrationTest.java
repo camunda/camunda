@@ -229,6 +229,16 @@ public class ExpressionLanguageMetricsIntegrationTest {
 
     // then - evaluation should be attempted but not recorded since expression is invalid
     assertThat(result.isFailure()).isTrue();
+    final var successParserTimer =
+        getTimerWithOutcome(
+            meterRegistry,
+            ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(),
+            Outcome.SUCCESS);
+    final var failureParserTimer =
+        getTimerWithOutcome(
+            meterRegistry,
+            ExpressionLanguageMetricsDoc.EXPRESSION_PARSING_DURATION.getName(),
+            Outcome.FAILURE);
     final var successTimer =
         getTimerWithOutcome(
             meterRegistry,
@@ -243,6 +253,8 @@ public class ExpressionLanguageMetricsIntegrationTest {
     // Timer exists but has count 0 because invalid expressions don't trigger evaluation
     assertThat(successTimer.count()).isZero();
     assertThat(failureTimer.count()).isZero();
+    assertThat(successParserTimer.count()).isZero();
+    assertThat(failureParserTimer.count()).isOne();
   }
 
   private Timer getTimerWithOutcome(
