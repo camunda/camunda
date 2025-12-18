@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 final class PosixSegmentAllocator implements SegmentAllocator {
   private static final Logger LOGGER = LoggerFactory.getLogger(PosixSegmentAllocator.class);
   private final PosixFs posixFs;
+  // nullable
   private final SegmentAllocator fallback;
 
   PosixSegmentAllocator(final PosixFs posixFs, final SegmentAllocator fallback) {
@@ -33,7 +34,7 @@ final class PosixSegmentAllocator implements SegmentAllocator {
       final FileChannel channel, final FileDescriptor fileDescriptor, final long segmentSize)
       throws IOException {
     if (!posixFs.isPosixFallocateEnabled()) {
-      fallback.allocate(channel, fileDescriptor, segmentSize);
+      getFallback().allocate(channel, fileDescriptor, segmentSize);
       return;
     }
 
@@ -45,7 +46,14 @@ final class PosixSegmentAllocator implements SegmentAllocator {
           fallback,
           e);
       posixFs.disablePosixFallocate();
-      fallback.allocate(channel, fileDescriptor, segmentSize);
+      getFallback().allocate(channel, fileDescriptor, segmentSize);
     }
+  }
+
+  private SegmentAllocator getFallback() {
+    if (fallback == null) {
+      throw new IllegalStateException("Fallback SegmentAllocator is not defined");
+    }
+    return fallback;
   }
 }
