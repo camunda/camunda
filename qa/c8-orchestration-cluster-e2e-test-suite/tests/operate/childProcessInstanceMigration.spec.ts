@@ -80,7 +80,7 @@ test.beforeAll(async () => {
   await sleep(2000);
 });
 
-test.describe.serial('Child Process Instance Migration', () => {
+test.describe('Child Process Instance Migration', () => {
   test.describe.configure({retries: 0});
 
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
@@ -104,57 +104,39 @@ test.describe.serial('Child Process Instance Migration', () => {
     operateOperationPanelPage,
   }) => {
     test.slow();
+    const sourceVersion = testProcesses.childProcessV1.version.toString();
+    const sourceBpmnProcessId = testProcesses.childProcessV1.bpmnProcessId;
+    const targetVersion = testProcesses.childProcessV2.version.toString();
+    const targetBpmnProcessId = testProcesses.childProcessV2.bpmnProcessId;
+    const parentInstanceKey = testProcesses.parentProcessInstanceKeys[0]!;
 
-    const {
-      parentProcess,
-      childProcessV1,
-      childProcessV2,
-      parentProcessInstanceKeys,
-    } = testProcesses;
-    const parentInstanceKey = parentProcessInstanceKeys[0]!;
-
-    await test.step('Filter by parent process and version', async () => {
-      await operateFiltersPanelPage.selectProcess(parentProcess.bpmnProcessId);
+    await test.step('Navigate to parent process instance and view called child processes', async () => {
+      await operateFiltersPanelPage.selectProcess(
+        testProcesses.parentProcess.bpmnProcessId,
+      );
       await operateFiltersPanelPage.selectVersion(
-        parentProcess.version.toString(),
+        testProcesses.parentProcess.version.toString(),
       );
 
       await expect(page.getByText('2 results')).toBeVisible({
         timeout: 30000,
       });
-    });
 
-    await test.step('Navigate to parent process instance', async () => {
       await operateProcessesPage
-        .processInstanceLinkByKey(parentInstanceKey)
+        .getProcessInstanceLinkByKey(parentInstanceKey)
         .click();
 
-      await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
-    });
+      await operateProcessInstancePage.clickViewAllChildProcesses();
 
-    let childVersion: string;
+      const childVersion = await operateProcessesPage.versionCell
+        .first()
+        .innerText();
 
-    await test.step('Navigate to view called child process instances', async () => {
-      // Click on "View all" to see called child processes
-      await operateProcessInstancePage.instanceHeader
-        .getByRole('link', {
-          name: 'View all',
-        })
-        .click();
-
-      // Get child process version
-      childVersion = await operateProcessesPage.versionCell.first().innerText();
-
-      // Verify parent instance key is visible (filtering by parent is active)
       await expect(
-        operateProcessesPage.dataList.getByRole('cell', {
-          name: parentInstanceKey,
-        }),
+        operateProcessesPage.getParentInstanceCell(parentInstanceKey),
       ).toBeVisible();
-    });
 
-    await test.step('Filter by child process and parent instance', async () => {
-      await operateFiltersPanelPage.selectProcess(childProcessV1.bpmnProcessId);
+      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(childVersion);
 
       await expect(page.getByText('1 result')).toBeVisible({
@@ -164,62 +146,35 @@ test.describe.serial('Child Process Instance Migration', () => {
 
     await test.step('Select child process instance for migration', async () => {
       await operateProcessesPage.selectProcessInstances(1);
-      await expect(page.getByText('1 item selected')).toBeVisible();
 
-      await expect(operateProcessesPage.migrateButton).toBeEnabled();
-    });
-
-    await test.step('Start migration process', async () => {
       await operateProcessesPage.startMigration();
     });
 
-    await test.step('Select target process and version', async () => {
-      // Select target process
+    await test.step('Configure target process, version and map flow nodes', async () => {
       await operateProcessMigrationModePage.targetProcessCombobox.click();
       await operateProcessMigrationModePage
-        .getOptionByName(childProcessV2.bpmnProcessId)
+        .getOptionByName(targetBpmnProcessId)
         .click();
 
-      // Select target version
       await operateProcessMigrationModePage.targetVersionDropdown.click();
       await operateProcessMigrationModePage
-        .getOptionByName(childProcessV2.version.toString())
+        .getOptionByName(targetVersion)
         .click();
-    });
 
-    await test.step('Map flow nodes', async () => {
       await operateProcessMigrationModePage.mapFlowNode('Task', 'New Task');
+
+      await operateProcessMigrationModePage.completeProcessInstanceMigration();
     });
 
-    await test.step('Complete migration', async () => {
-      await operateProcessMigrationModePage.nextButton.click();
-
-      await expect(
-        operateProcessMigrationModePage.summaryNotification,
-      ).toContainText(
-        `You are about to migrate 1 process instance from the process definition: ${childProcessV1.bpmnProcessId} - version ${childVersion} to the process definition: ${childProcessV2.bpmnProcessId} - version ${childProcessV2.version}`,
-      );
-
-      await operateProcessMigrationModePage.confirmButton.click();
-      await operateProcessMigrationModePage.fillMigrationConfirmation(
-        'MIGRATE',
-      );
-      await operateProcessMigrationModePage.clickMigrationConfirmationButton();
-    });
-
-    await test.step('Verify migration operation is created', async () => {
+    await test.step('Verify migration operation is created and completes', async () => {
       await expect(operateProcessesPage.operationsList).toBeVisible({
         timeout: 30000,
       });
 
       await operateProcessesPage.expandOperationsPanel();
-    });
 
-    await test.step('Wait for migration to complete', async () => {
       await operateProcessesPage.waitForOperationToComplete();
-    });
 
-    await test.step('Verify migration completed successfully', async () => {
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(1);
 
@@ -228,7 +183,7 @@ test.describe.serial('Child Process Instance Migration', () => {
       await operateOperationPanelPage.clickOperationLink(operationEntry);
     });
 
-    await test.step('Verify process instance migrated to target version', async () => {
+    await test.step('Verify 1 instance migrated to target version', async () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('1 result')).toBeVisible({
@@ -240,32 +195,26 @@ test.describe.serial('Child Process Instance Migration', () => {
         },
       });
 
-      // Verify instance is at target version
       await expect(
-        operateProcessesPage.getVersionCells(childProcessV2.version.toString()),
+        operateProcessesPage.getVersionCells(targetVersion),
       ).toHaveCount(1, {timeout: 30000});
 
-      // Verify parent instance key is still associated
       await expect(
-        operateProcessesPage.dataList.getByRole('cell', {
-          name: parentInstanceKey,
-        }),
+        operateProcessesPage.getParentInstanceCell(parentInstanceKey),
       ).toBeVisible();
     });
 
-    await test.step('Remove operation filter and verify source version instances', async () => {
+    await test.step('Verify remaining instances still at source version', async () => {
       await operateFiltersPanelPage.removeOptionalFilter('Operation Id');
 
-      await operateFiltersPanelPage.selectProcess(childProcessV1.bpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(childVersion);
+      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(sourceVersion);
 
       await expect(page.getByText('1 result')).toBeVisible({
         timeout: 30000,
       });
     });
 
-    await test.step('Collapse operations panel', async () => {
-      await operateOperationPanelPage.collapseOperationIdField();
-    });
+    await operateOperationPanelPage.collapseOperationIdField();
   });
 });

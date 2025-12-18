@@ -62,11 +62,14 @@ class OperateProcessesPage {
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
-  processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  getProcessInstanceLinkByKey: (processInstanceKey: string) => Locator;
   getOperationAndResultsContainer: (
     operation: string,
     resultCount?: number,
   ) => Locator;
+  getMigrationOperationEntry: (successCount: number) => Locator;
+  getParentInstanceCell: (parentInstanceKey: string) => Locator;
+  getVersionCells: (version: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -192,7 +195,7 @@ class OperateProcessesPage {
     this.scheduledOperationsIcons = page.getByTitle(
       /has scheduled operations/i,
     );
-    this.processInstanceLinkByKey = (processInstanceKey: string) =>
+    this.getProcessInstanceLinkByKey = (processInstanceKey: string) =>
       page.getByRole('link', {
         name: processInstanceKey,
       });
@@ -205,6 +208,15 @@ class OperateProcessesPage {
         : new RegExp(`${operation}.*\\d+ results`);
       return page.locator('div').filter({hasText: pattern});
     };
+    this.getMigrationOperationEntry = (successCount: number) =>
+      page
+        .locator('[data-testid="operations-entry"]')
+        .filter({hasText: 'Migrate'})
+        .filter({hasText: `${successCount} operations succeeded`});
+    this.getParentInstanceCell = (parentInstanceKey: string) =>
+      this.dataList.getByRole('cell', {name: parentInstanceKey});
+    this.getVersionCells = (version: string) =>
+      this.dataList.getByRole('cell', {name: version, exact: true});
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -446,10 +458,6 @@ class OperateProcessesPage {
     await this.latestOperationLink.click({timeout: 60000});
   }
 
-  getVersionCells(version: string): Locator {
-    return this.dataList.getByRole('cell', {name: version, exact: true});
-  }
-
   async expandOperationsPanel(): Promise<void> {
     const isCollapsed = await this.collapsedOperationsPanel.isVisible();
     if (isCollapsed) {
@@ -467,13 +475,6 @@ class OperateProcessesPage {
         'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
       );
     }
-  }
-
-  getMigrationOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Migrate'})
-      .filter({hasText: `${successCount} operations succeeded`});
   }
 }
 

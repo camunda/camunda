@@ -247,7 +247,7 @@ test.describe('Operations', () => {
       await Promise.all(
         instances.map((instance) =>
           expect(
-            operateProcessesPage.processInstanceLinkByKey(
+            operateProcessesPage.getProcessInstanceLinkByKey(
               instance.processInstanceKey,
             ),
           ).toBeVisible(),
