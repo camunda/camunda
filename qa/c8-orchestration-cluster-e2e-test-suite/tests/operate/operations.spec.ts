@@ -210,12 +210,12 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.applyButton.click();
 
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
       await sleep(500);
 
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
     });
 
     await test.step('Wait for operation to complete', async () => {
@@ -253,18 +253,18 @@ test.describe('Operations', () => {
     });
 
     await test.step('Cancel all instances', async () => {
-      await operateOperationPanelPage.collapseOperationsPanel();
+      await operateOperationPanelPage.collapseOperationIdField();
       await operateProcessesPage.selectAllRowsCheckbox.click();
 
       await operateProcessesPage.cancelButton.click();
       await operateProcessesPage.applyButton.click();
 
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
       await sleep(500);
 
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
 
       await expect
         .poll(async () => {

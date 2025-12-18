@@ -51,6 +51,7 @@ export class OperateFiltersPanelPage {
   readonly dialogEditVariableValueText: Locator;
   readonly dialogEditMultipleVariableValueText: Locator;
   readonly dialogCancelButton: Locator;
+  readonly getOptionByName: (name: string, exact?: boolean) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -132,6 +133,8 @@ export class OperateFiltersPanelPage {
     this.dialogCancelButton = this.variableEditorDialog.getByRole('button', {
       name: 'cancel',
     });
+    this.getOptionByName = (name: string, exact = true) =>
+      this.page.getByRole('option', {name, exact});
   }
 
   async validateCheckedState(
@@ -163,17 +166,17 @@ export class OperateFiltersPanelPage {
 
   async selectProcess(option: string) {
     await this.processNameFilter.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    await this.getOptionByName(option).click();
   }
 
   async selectVersion(option: string) {
     await this.processVersionFilter.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    await this.getOptionByName(option).click();
   }
 
   async selectFlowNode(option: string) {
     await this.flowNodeFilter.click();
-    await this.page.getByRole('option', {name: option}).click();
+    await this.getOptionByName(option, false).click();
   }
 
   async fillVariableNameFilter(name: string) {

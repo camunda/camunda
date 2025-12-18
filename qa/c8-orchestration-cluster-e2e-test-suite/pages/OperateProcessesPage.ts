@@ -46,17 +46,6 @@ class OperateProcessesPage {
   readonly continueButton: Locator;
   readonly processInstancesPanel: Locator;
   readonly migrateButton: Locator;
-  readonly operationsPanel: Locator;
-  readonly operationsList: Locator;
-  readonly latestOperationEntry: Locator;
-  readonly latestOperationLink: Locator;
-  readonly latestOperationMigrateHeading: Locator;
-  readonly latestOperationProgressBar: Locator;
-  readonly latestOperationEntryBeforeCompletion: Locator;
-  readonly operationSuccessMessage: Locator;
-  readonly collapsedOperationsPanel: Locator;
-  readonly expandOperationsButton: Locator;
-  readonly inProgressBar: Locator;
   readonly selectAllRowsCheckbox: Locator;
   readonly retryButton: Locator;
   readonly cancelButton: Locator;
@@ -64,11 +53,13 @@ class OperateProcessesPage {
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
   readonly processInstanceLinkByName: (name: string) => Locator;
-  processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
   getOperationAndResultsContainer: (
     operation: string,
     resultCount?: number,
   ) => Locator;
+  getParentInstanceCell: (parentInstanceKey: string) => Locator;
+  getVersionCells: (version: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -158,33 +149,6 @@ class OperateProcessesPage {
     this.migrateButton = this.processInstancesPanel.getByRole('button', {
       name: /^migrate$/i,
     });
-    this.operationsPanel = page.getByRole('region', {
-      name: 'Operations',
-    });
-    this.operationsList = page.getByTestId('operations-list');
-    this.latestOperationEntry = this.operationsList
-      .getByRole('listitem')
-      .first();
-    this.latestOperationEntryBeforeCompletion = this.operationsList
-      .getByRole('listitem')
-      .last();
-    this.latestOperationLink = page.getByTestId('operation-id').first();
-    this.latestOperationMigrateHeading = this.latestOperationEntry.getByRole(
-      'heading',
-      {name: 'Migrate'},
-    );
-    this.latestOperationProgressBar =
-      this.latestOperationEntry.getByRole('progressbar');
-    this.operationSuccessMessage = page
-      .getByText(/\d+ operations? succeeded/)
-      .first();
-    this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
-    this.expandOperationsButton = page.getByRole('button', {
-      name: 'Expand Operations',
-    });
-    this.inProgressBar = this.operationsList.locator(
-      '[role="progressbar"][aria-busy="true"]',
-    );
     this.selectAllRowsCheckbox = page.getByRole('columnheader', {
       name: 'Select all rows',
     });
@@ -214,6 +178,10 @@ class OperateProcessesPage {
         : new RegExp(`${operation}.*\\d+ results`);
       return page.locator('div').filter({hasText: pattern});
     };
+    this.getParentInstanceCell = (parentInstanceKey: string) =>
+      this.dataList.getByRole('cell', {name: parentInstanceKey});
+    this.getVersionCells = (version: string) =>
+      this.dataList.getByRole('cell', {name: version, exact: true});
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -223,20 +191,13 @@ class OperateProcessesPage {
     await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
   }
 
-  async clickProcessInstanceLink(processName?: string): Promise<void> {
+  async clickProcessInstanceLink(): Promise<void> {
     const maxRetries = 3;
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
         await sleep(5_000);
-        if (processName) {
-          await expect(
-            this.processInstanceLinkByName(processName),
-          ).toBeVisible();
-          await this.processInstanceLinkByName(processName).click();
-        } else {
-          await this.processInstanceLink.click();
-        }
+        await this.processInstanceLink.click();
         return;
       } catch {
         retryCount++;
@@ -328,16 +289,6 @@ class OperateProcessesPage {
     await button.click({timeout: 30000});
   }
 
-  getScheduledOperationsIcons(): Locator {
-    return this.page.getByTitle(/has scheduled operations/i);
-  }
-
-  getProcessInstanceLink(processInstanceKey: string): Locator {
-    return this.page.getByRole('link', {
-      name: processInstanceKey,
-    });
-  }
-
   static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
     return page
       .getByTestId('data-list')
@@ -409,7 +360,7 @@ class OperateProcessesPage {
             .locator('label');
 
           // Wait for the element to be attached and stable
-          await checkbox.waitFor({state: 'attached'});
+          await checkbox.waitFor({state: 'attached', timeout: 5000});
           if (!(await checkbox.isChecked())) {
             await checkbox.click({timeout: 10000});
           }
@@ -430,8 +381,9 @@ class OperateProcessesPage {
         }
       }
     }
+    const itemText = count === 1 ? 'item' : 'items';
     await expect(
-      this.page.getByText(`${count} items selected`).first(),
+      this.page.getByText(`${count} ${itemText} selected`).first(),
     ).toBeVisible();
   }
 
@@ -465,33 +417,6 @@ class OperateProcessesPage {
   async startMigration(): Promise<void> {
     await this.clickMigrateButton();
     await this.clickContinueButton();
-  }
-
-  async clickLatestOperationLink(): Promise<void> {
-    await this.latestOperationLink.click({timeout: 60000});
-  }
-
-  getVersionCells(version: string): Locator {
-    return this.dataList.getByRole('cell', {name: version, exact: true});
-  }
-
-  async expandOperationsPanel(): Promise<void> {
-    const isCollapsed = await this.collapsedOperationsPanel.isVisible();
-    if (isCollapsed) {
-      await this.expandOperationsButton.click();
-      await this.operationsList.waitFor({state: 'visible', timeout: 10000});
-    }
-  }
-
-  async waitForOperationToComplete(): Promise<void> {
-    try {
-      await expect(this.inProgressBar).toBeVisible({timeout: 5000});
-      await expect(this.inProgressBar).not.toBeVisible({timeout: 120000});
-    } catch {
-      console.log(
-        'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
-      );
-    }
   }
 }
 

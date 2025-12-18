@@ -202,7 +202,7 @@ test.describe('Process Instance', () => {
     page,
     operateProcessInstancePage,
   }) => {
-    const {diagram} = operateProcessInstancePage.diagramPage;
+    const diagram = operateProcessInstancePage.diagram;
 
     await test.step('Navigate to collapsed sub process instance', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({

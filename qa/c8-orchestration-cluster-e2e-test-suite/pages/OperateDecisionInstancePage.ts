@@ -14,6 +14,7 @@ class OperateDecisionInstancePage {
 
   readonly closeDrdPanelButton: Locator;
   readonly instanceHeader: Locator;
+  readonly decisionInstanceIdCell: Locator;
   readonly viewProcessInstanceLink: (processInstanceKey: string) => Locator;
 
   constructor(page: Page) {
@@ -23,6 +24,9 @@ class OperateDecisionInstancePage {
       name: /close drd panel/i,
     });
     this.instanceHeader = page.getByTestId('instance-header');
+    this.decisionInstanceIdCell = this.instanceHeader
+      .locator('tbody td')
+      .nth(1);
     this.viewProcessInstanceLink = (processInstanceKey: string) =>
       page.getByRole('link', {
         name: `View process instance ${processInstanceKey}`,
@@ -34,7 +38,7 @@ class OperateDecisionInstancePage {
   }
 
   async getDecisionInstanceId(): Promise<string> {
-    return this.instanceHeader.getByRole('cell').nth(1).innerText();
+    return this.decisionInstanceIdCell.innerText();
   }
 
   async gotoDecisionInstancePage(options: {id: string}): Promise<void> {

@@ -6,32 +6,58 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 import {OperationEntry} from 'utils/getNewOperationIds';
 
 export class OperateOperationPanelPage {
   private page: Page;
-  readonly expandButton: Locator;
   readonly collapseButton: Locator;
   readonly operationList: Locator;
-  readonly expandedOperationPanel: Locator;
+  readonly operationsPanel: Locator;
+  readonly latestOperationEntry: Locator;
+  readonly latestOperationEntryBeforeCompletion: Locator;
+  readonly latestOperationLink: Locator;
+  readonly latestOperationMigrateHeading: Locator;
+  readonly latestOperationProgressBar: Locator;
+  readonly operationSuccessMessage: Locator;
   readonly collapsedOperationsPanel: Locator;
+  readonly expandOperationsButton: Locator;
+  readonly inProgressBar: Locator;
   beforeOperationOperationPanelEntries: OperationEntry[];
   afterOperationOperationPanelEntries: OperationEntry[];
 
   constructor(page: Page) {
     this.page = page;
-    this.expandButton = page
-      .getByLabel('Operations')
-      .getByRole('button', {name: 'Expand Operations'});
+    this.collapseButton = page.getByRole('button', {
+      name: 'Collapse Operations',
+    });
     this.operationList = page.getByTestId('operations-list');
-    this.expandedOperationPanel = page
-      .getByLabel('Operations')
-      .getByTestId('expanded-panel');
-    this.collapseButton = page
-      .getByLabel('Operations')
-      .getByRole('button', {name: 'Collapse Operations'});
+    this.operationsPanel = page.getByRole('region', {
+      name: 'Operations',
+    });
+    this.latestOperationEntry = this.operationList
+      .getByRole('listitem')
+      .first();
+    this.latestOperationEntryBeforeCompletion = this.operationList
+      .getByRole('listitem')
+      .last();
+    this.latestOperationLink = page.getByTestId('operation-id').first();
+    this.latestOperationMigrateHeading = this.latestOperationEntry.getByRole(
+      'heading',
+      {name: 'Migrate'},
+    );
+    this.latestOperationProgressBar =
+      this.latestOperationEntry.getByRole('progressbar');
+    this.operationSuccessMessage = page
+      .getByText(/\d+ operations? succeeded/)
+      .first();
     this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
+    this.expandOperationsButton = page.getByRole('button', {
+      name: 'Expand Operations',
+    });
+    this.inProgressBar = this.operationList.locator(
+      '[role="progressbar"][aria-busy="true"]',
+    );
     this.beforeOperationOperationPanelEntries = [];
     this.afterOperationOperationPanelEntries = [];
   }
@@ -53,7 +79,7 @@ export class OperateOperationPanelPage {
   }
 
   async expandOperationIdField(): Promise<void> {
-    await this.expandButton.click({timeout: 30000});
+    await this.expandOperationsButton.click({timeout: 30000});
   }
 
   async collapseOperationIdField(): Promise<void> {
@@ -70,37 +96,44 @@ export class OperateOperationPanelPage {
     ).innerText();
   }
 
-  async clickCollapseButton(): Promise<void> {
-    await this.collapseButton.click();
+  getMigrationOperationEntry(successCount: number): Locator {
+    const operationText = successCount === 1 ? 'operation' : 'operations';
+    return this.getAllOperationEntries()
+      .filter({hasText: 'Migrate'})
+      .filter({hasText: `${successCount} ${operationText} succeeded`});
   }
 
-  async clickExpandButton(): Promise<void> {
-    await this.expandButton.click();
+  getRetryOperationEntry(successCount: number): Locator {
+    const retryText = successCount === 1 ? 'retry' : 'retries';
+    return this.getAllOperationEntries()
+      .filter({hasText: 'Retry'})
+      .filter({hasText: `${successCount} ${retryText} succeeded`})
+      .first();
   }
 
-  async collapseOperationsPanel(): Promise<boolean> {
-    const isExpanded = await this.expandedOperationPanel.isVisible();
-    if (isExpanded) {
-      await this.clickCollapseButton();
-      await this.collapsedOperationsPanel.waitFor({state: 'visible'});
-    }
-    return isExpanded;
+  getCancelOperationEntry(successCount: number): Locator {
+    const operationText = successCount === 1 ? 'operation' : 'operations';
+    return this.getAllOperationEntries()
+      .filter({hasText: 'Cancel'})
+      .filter({hasText: `${successCount} ${operationText} succeeded`});
   }
 
-  async expandOperationsPanel(): Promise<boolean> {
+  async clickOperationLink(operationEntry: Locator): Promise<void> {
+    await OperateOperationPanelPage.getOperationID(operationEntry).click({
+      timeout: 30000,
+    });
+  }
+
+  async expandOperationsPanel(): Promise<void> {
     const isCollapsed = await this.collapsedOperationsPanel.isVisible();
     if (isCollapsed) {
-      await this.clickExpandButton();
-      await this.expandedOperationPanel.waitFor({
-        state: 'visible',
-        timeout: 10000,
-      });
+      await this.expandOperationsButton.click();
+      await this.operationList.waitFor({state: 'visible', timeout: 10000});
     }
-    return isCollapsed;
   }
 
   async operationIdsEntries(): Promise<{id: string; type: string}[]> {
-    const wasCollapsed = await this.expandOperationsPanel();
+    await this.expandOperationsPanel();
     const operationEntries = this.getAllOperationEntries();
     const operationIds: OperationEntry[] = [];
 
@@ -111,53 +144,26 @@ export class OperateOperationPanelPage {
         await OperateOperationPanelPage.getOperationID(
           operationEntry,
         ).innerText();
-      const operatioType =
+      const operationType =
         await OperateOperationPanelPage.getOperationType(
           operationEntry,
         ).innerText();
       operationIds.push({
         id: operationId,
-        type: operatioType,
+        type: operationType,
       });
-    }
-    if (wasCollapsed) {
-      await this.collapseOperationsPanel();
     }
     return operationIds;
   }
 
-  async clickOperationEntryById(operationId: string): Promise<void> {
-    const operationEntryById = this.page
-      .getByTestId('operation-id')
-      .filter({hasText: operationId});
-    await operationEntryById.click();
-  }
-
-  getMigrationOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Migrate'})
-      .filter({hasText: `${successCount} operations succeeded`});
-  }
-
-  getRetryOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Retry'})
-      .filter({hasText: `${successCount} retries succeeded`})
-      .first();
-  }
-
-  getCancelOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Cancel'})
-      .filter({hasText: `${successCount} operations succeeded`});
-  }
-
-  async clickOperationLink(operationEntry: Locator): Promise<void> {
-    await operationEntry
-      .locator('[data-testid="operation-id"]')
-      .click({timeout: 30000});
+  async waitForOperationToComplete(): Promise<void> {
+    try {
+      await expect(this.inProgressBar).toBeVisible({timeout: 5000});
+      await expect(this.inProgressBar).not.toBeVisible({timeout: 120000});
+    } catch {
+      console.log(
+        'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
+      );
+    }
   }
 }
