@@ -1,0 +1,410 @@
+# Automatically merges release branch PRs into stable branches after CI passes.
+# This workflow detects PRs from release-* branches targeting stable/** branches,
+# waits for required checks to complete, auto-merges using merge queue or direct merge,
+# and notifies the relevant C8 release process about the merge status.
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+name: Auto-merge release to stable
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - 'stable/**'
+
+jobs:
+  auto-merge:
+    # Only run for PRs from release branches created by release automation
+    if: startsWith(github.head_ref, 'release-') && github.actor == 'camundait'
+    name: Auto-merge release to stable
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_BOT_TOKEN: ${{ secrets.CAMUNDAIT_GITHUB_TOKEN }}
+      DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'true' }}
+      MERGE_QUEUE_TIMEOUT_MINUTES: ${{ vars.MERGE_QUEUE_TIMEOUT_MINUTES || '60' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+      
+      - name: Validate branch matching
+        id: validate_branches
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Ensure release-X.Y.Z targets stable/X.Y (prevents wrong stable branch)
+          if [[ "$HEAD_REF" =~ ^release-([0-9]+)\.([0-9]+)\. ]]; then
+            EXPECTED_BASE="stable/${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+            if [[ "$BASE_REF" != "$EXPECTED_BASE" ]]; then
+              echo "❌ Branch mismatch: $HEAD_REF should target $EXPECTED_BASE, not $BASE_REF"
+              exit 1
+            fi
+            echo "✅ Branch validation passed: $HEAD_REF → $BASE_REF"
+          else
+            echo "❌ Invalid release branch format: $HEAD_REF"
+            exit 1
+          fi
+      
+      - name: Check for merge conflicts
+        id: check_conflicts
+        run: |
+          # GitHub API provides mergeable status
+          MERGEABLE=$(gh pr view ${{ github.event.pull_request.number }} --json mergeable --jq '.mergeable')
+          
+          if [ "$MERGEABLE" = "CONFLICTING" ]; then
+            echo "❌ Merge conflicts detected - manual resolution required"
+            exit 1
+          fi
+          
+          echo "✅ No merge conflicts"
+      
+      - name: Validate changes are version bumps only
+        id: validate_changes
+        run: |
+          # Use glob pattern to capture all pom.xml files at any depth
+          POM_DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- ':(glob)**/pom.xml')
+          
+          # Check only pom.xml files changed
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          if echo "$CHANGED_FILES" | grep -E -v 'pom\.xml$' | grep -q .; then
+            echo "❌ Non-pom.xml files changed. Only version bumps allowed."
+            exit 1
+          fi
+          
+          # Verify all changed pom.xml files are captured in POM_DIFF
+          CHANGED_POM_COUNT=$(echo "$CHANGED_FILES" | grep -c 'pom\.xml$' || true)
+          POM_DIFF_FILE_COUNT=$(echo "$POM_DIFF" | grep -c '^diff --git' || true)
+          
+          if [ "$CHANGED_POM_COUNT" -ne "$POM_DIFF_FILE_COUNT" ]; then
+            echo "❌ Pattern mismatch: GitHub reports $CHANGED_POM_COUNT pom.xml changed, glob captured $POM_DIFF_FILE_COUNT"
+            exit 1
+          fi
+          echo "✅ Validated $CHANGED_POM_COUNT pom.xml files"
+          
+          # Check only version tags modified in pom.xml
+          # Whitelist of allowed property changes in release PRs:
+          # - <version>: Main project version (X.Y.Z-SNAPSHOT)
+          # - <dependency.zeebe.version>: Zeebe dependency version
+          # - <backwards.compat.version>: Java API compatibility version
+          # - <version.identity>: Identity component version (updated by automation)
+          ALLOWED_PATTERNS=(
+            '^\+\+\+'                              # Diff header
+            '^---'                                 # Diff header
+            '^[+-]\s*<version>'                    # Main version tag
+            '^[+-]\s*<dependency\.zeebe\.version>' # Zeebe dependency
+            '^[+-]\s*<backwards\.compat\.version>' # Backwards compatibility version
+            '^[+-]\s*<version\.identity>'          # Identity version
+          )
+          
+          # Build regex from allowed patterns (join with |)
+          ALLOWED_REGEX=$(IFS='|'; echo "${ALLOWED_PATTERNS[*]}")
+          
+          NON_VERSION_CHANGES=$(echo "$POM_DIFF" | grep -E '^[+-]' | grep -vE "($ALLOWED_REGEX)" || true)
+          if [ -n "$NON_VERSION_CHANGES" ]; then
+            echo "❌ Non-version changes in pom.xml:"
+            (echo "$NON_VERSION_CHANGES" | head -10) || true
+            exit 1
+          fi
+          
+          # Validate version increment: X.Y.Z-SNAPSHOT → X.Y.(Z+1)-SNAPSHOT
+          OLD_VER=$( (echo "$POM_DIFF" | grep -E '^-\s*<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/') 2>/dev/null || true)
+          NEW_VER=$( (echo "$POM_DIFF" | grep -E '^\+\s*<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/') 2>/dev/null || true)
+          
+          if [[ -n "$OLD_VER" && -n "$NEW_VER" ]]; then
+            [[ "$OLD_VER" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)-SNAPSHOT$ ]] || { echo "❌ Invalid old version: $OLD_VER"; exit 1; }
+            OLD_MAJ="${BASH_REMATCH[1]}"
+            OLD_MIN="${BASH_REMATCH[2]}"
+            OLD_PAT="${BASH_REMATCH[3]}"
+            
+            [[ "$NEW_VER" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)-SNAPSHOT$ ]] || { echo "❌ Invalid new version: $NEW_VER"; exit 1; }
+            NEW_MAJ="${BASH_REMATCH[1]}"
+            NEW_MIN="${BASH_REMATCH[2]}"
+            NEW_PAT="${BASH_REMATCH[3]}"
+            
+            [[ "$NEW_MAJ" == "$OLD_MAJ" && "$NEW_MIN" == "$OLD_MIN" && "$NEW_PAT" == $((OLD_PAT + 1)) ]] || {
+              echo "❌ Expected ${OLD_MAJ}.${OLD_MIN}.$((OLD_PAT + 1))-SNAPSHOT, got $NEW_VER"
+              exit 1
+            }
+            echo "✅ Version: $OLD_VER → $NEW_VER"
+          fi
+          
+          # Validate dependency.zeebe.version increment: X.Y.Z → X.Y.(Z+1)
+          OLD_ZEEBE=$( (echo "$POM_DIFF" | grep -E '^-\s*<dependency\.zeebe\.version>' | sed -E 's/.*>([^<]+)<.*/\1/') 2>/dev/null || true)
+          NEW_ZEEBE=$( (echo "$POM_DIFF" | grep -E '^\+\s*<dependency\.zeebe\.version>' | sed -E 's/.*>([^<]+)<.*/\1/') 2>/dev/null || true)
+          
+          if [[ -n "$OLD_ZEEBE" && -n "$NEW_ZEEBE" ]]; then
+            [[ "$OLD_ZEEBE" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]] || { echo "❌ Invalid old Zeebe version: $OLD_ZEEBE"; exit 1; }
+            OLD_MAJ="${BASH_REMATCH[1]}" OLD_MIN="${BASH_REMATCH[2]}" OLD_PAT="${BASH_REMATCH[3]}"
+            
+            [[ "$NEW_ZEEBE" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]] || { echo "❌ Invalid new Zeebe version: $NEW_ZEEBE"; exit 1; }
+            NEW_MAJ="${BASH_REMATCH[1]}" NEW_MIN="${BASH_REMATCH[2]}" NEW_PAT="${BASH_REMATCH[3]}"
+            
+            [[ "$NEW_MAJ" == "$OLD_MAJ" && "$NEW_MIN" == "$OLD_MIN" && "$NEW_PAT" == $((OLD_PAT + 1)) ]] || {
+              echo "❌ Expected Zeebe ${OLD_MAJ}.${OLD_MIN}.$((OLD_PAT + 1)), got $NEW_ZEEBE"
+              exit 1
+            }
+            echo "✅ Zeebe dependency: $OLD_ZEEBE → $NEW_ZEEBE"
+          fi
+      
+      - name: Get required status checks from rulesets targeting base branch
+        id: get_required_checks
+        run: |
+          REQUIRED_CHECKS=""
+          BASE_BRANCH="${{ github.base_ref }}"
+          
+          # Get all rulesets (returns empty array [] if none exist)
+          RULESETS_RESPONSE=$(gh api repos/${{ github.repository }}/rulesets 2>&1) || {
+            echo "⚠️  Failed to fetch rulesets: $RULESETS_RESPONSE"
+            echo "Proceeding without required checks validation"
+            echo "checks_pattern=" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          
+          # Check if rulesets array is empty
+          RULESET_COUNT=$(echo "$RULESETS_RESPONSE" | jq '. | length' 2>/dev/null || echo "0")
+          
+          if [ "$RULESET_COUNT" -eq 0 ]; then
+            echo "ℹ️  No rulesets configured for repository"
+            echo "Proceeding without required checks validation"
+            echo "checks_pattern=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Iterate through all rulesets
+          for id in $(echo "$RULESETS_RESPONSE" | jq -r '.[].id'); do
+            # Get the ruleset details
+            RULESET=$(gh api repos/${{ github.repository }}/rulesets/"$id")
+            
+            # Check if this ruleset targets the base branch
+            INCLUDES=$(echo "$RULESET" | jq -r '.conditions.ref_name.include[]? // empty' || echo "")
+            
+            # Match exact branch or wildcard pattern (e.g., refs/heads/stable/8.7 or refs/heads/stable/*)
+            # Use || true to prevent grep from failing with exit code 1 when no matches found
+            if echo "$INCLUDES" | grep -qE "refs/heads/${BASE_BRANCH}\$|refs/heads/${BASE_BRANCH%%/*}/\*" || false; then
+              # Extract required status checks from this ruleset, preserving full check names
+              while IFS= read -r check; do
+                [ -n "$check" ] && REQUIRED_CHECKS="${REQUIRED_CHECKS}${check}"$'\n'
+              done < <(echo "$RULESET" | jq -r '.rules[]? | select(.type == "required_status_checks") | .parameters.required_status_checks[].context' || echo "")
+            fi
+          done
+          
+          # Remove duplicates and format as pipe-delimited pattern
+          CHECKS_PATTERN=$(echo "$REQUIRED_CHECKS" | sort -u | grep -v '^$' | paste -sd '|' - || true)
+          
+          if [ -z "$CHECKS_PATTERN" ]; then
+            echo "No required checks found in rulesets for branch: $BASE_BRANCH"
+            echo "checks_pattern=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Required checks for $BASE_BRANCH: $CHECKS_PATTERN"
+            echo "checks_pattern=$CHECKS_PATTERN" >> "$GITHUB_OUTPUT"
+          fi
+      
+      - name: Wait for required checks
+        id: wait_checks
+        if: steps.get_required_checks.outputs.checks_pattern != ''
+        # Using lewagon/wait-on-check-action - approved in https://github.com/camunda/github-actions-recipes
+        uses: lewagon/wait-on-check-action@v1.4.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          running-workflow-name: 'Auto-merge release to stable'
+          check-regexp: '${{ steps.get_required_checks.outputs.checks_pattern }}'
+          allowed-conclusions: success
+      
+      - name: Approve PR
+        # Proceed when checks pass OR when no required checks configured (skipped outcome)
+        if: steps.wait_checks.outcome != 'failure'
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🔍 [DRY RUN] Would approve PR #${{ github.event.pull_request.number }}"
+          else
+            echo "✅ Approving PR..."
+            gh pr review ${{ github.event.pull_request.number }} --approve --body "Auto-approved: Version bump changes validated successfully."
+          fi
+      
+      - name: Enable auto-merge (for merge queue)
+        # Proceed when checks pass OR when no required checks configured (skipped outcome)
+        if: steps.wait_checks.outcome != 'failure'
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🔍 [DRY RUN] Would enable auto-merge for PR #${{ github.event.pull_request.number }}"
+            echo "🔍 [DRY RUN] Would use CAMUNDAIT_GITHUB_TOKEN to trigger merge queue workflows"
+          else
+            echo "🔀 Enabling auto-merge for merge queue..."
+            # Override GH_TOKEN with bot's PAT to trigger merge queue workflows
+            # GITHUB_TOKEN cannot trigger workflows (security feature), but CAMUNDAIT_GITHUB_TOKEN can
+            GH_TOKEN="$GH_BOT_TOKEN" gh pr merge ${{ github.event.pull_request.number }} --auto --squash
+            echo "✅ Auto-merge enabled - PR will enter merge queue"
+          fi
+      
+      - name: Monitor merge queue status
+        id: monitor_merge
+        if: steps.wait_checks.outcome != 'failure'
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🔍 [DRY RUN] Monitoring merge queue status (read-only) for PR #${{ github.event.pull_request.number }}"
+          else
+            echo "📊 Monitoring merge queue status..."
+          fi
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          TIMEOUT_MINUTES=${MERGE_QUEUE_TIMEOUT_MINUTES:-60}
+          MAX_ATTEMPTS=$((TIMEOUT_MINUTES / 2))  # Check every 2 minutes
+          ATTEMPT=0
+          EVICTION_COUNT=0
+          MAX_EVICTIONS=3
+          PREVIOUS_QUEUE_STATE=""
+          API_FAILURE_COUNT=0
+          MAX_CONSECUTIVE_API_FAILURES=5  # 5 failures × 2 minutes = 10 minutes
+          
+          echo "⏱️  Timeout configured: ${TIMEOUT_MINUTES} minutes (${MAX_ATTEMPTS} attempts)"
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            # Query PR and merge queue status via GraphQL
+            # shellcheck disable=SC2016
+            PR_DATA=$(gh api graphql -f query='
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    state
+                    autoMergeRequest { enabledAt }
+                    mergeStateStatus
+                    mergeQueueEntry {
+                      state
+                      position
+                    }
+                  }
+                }
+              }' -f owner='${{ github.repository_owner }}' -f repo='${{ github.event.repository.name }}' -F number=$PR_NUMBER)
+            
+            # Validate API response and parse PR state
+            if ! PR_STATE=$(echo "$PR_DATA" | jq -e -r '.data.repository.pullRequest.state' 2>/dev/null); then
+              API_FAILURE_COUNT=$((API_FAILURE_COUNT+1))
+              echo "⚠️  API call failed ($API_FAILURE_COUNT/$MAX_CONSECUTIVE_API_FAILURES)"
+              
+              if [ $API_FAILURE_COUNT -ge $MAX_CONSECUTIVE_API_FAILURES ]; then
+                echo "❌ API calls failed $MAX_CONSECUTIVE_API_FAILURES times consecutively (10 minutes) - aborting"
+                exit 1
+              fi
+              
+              ATTEMPT=$((ATTEMPT+1))
+              sleep 120
+              continue
+            fi
+            
+            # API call succeeded - reset failure counter
+            API_FAILURE_COUNT=0
+            
+            AUTO_MERGE=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.autoMergeRequest')
+            MERGE_STATUS=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.mergeStateStatus')
+            QUEUE_STATE=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.mergeQueueEntry.state // "NOT_IN_QUEUE"')
+            QUEUE_POSITION=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.mergeQueueEntry.position // "N/A"')
+            
+            AUTO_MERGE_STATUS="disabled"
+            if [ "$AUTO_MERGE" != "null" ]; then
+              AUTO_MERGE_STATUS="enabled"
+            fi
+            echo "Attempt $((ATTEMPT+1))/$MAX_ATTEMPTS - State: $PR_STATE, Queue: $QUEUE_STATE (pos: $QUEUE_POSITION), Merge Status: $MERGE_STATUS, Auto-merge: $AUTO_MERGE_STATUS"
+            
+            # Check if PR is merged
+            if [ "$PR_STATE" = "MERGED" ]; then
+              echo "✅ PR merged successfully via merge queue"
+              exit 0
+            fi
+            
+            # Check if PR was closed without merging
+            if [ "$PR_STATE" = "CLOSED" ]; then
+              echo "❌ PR was closed without merging"
+              exit 1
+            fi
+            
+            # If in AWAITING_CHECKS or QUEUED state, just wait
+            if [ "$QUEUE_STATE" = "AWAITING_CHECKS" ] || [ "$QUEUE_STATE" = "QUEUED" ]; then
+              echo "⏳ Waiting for checks to complete..."
+              PREVIOUS_QUEUE_STATE="$QUEUE_STATE"
+              ATTEMPT=$((ATTEMPT+1))
+              sleep 120
+              continue
+            fi
+            
+            # Detect eviction: was in queue, now NOT_IN_QUEUE (and PR still open)
+            if [ "$QUEUE_STATE" = "NOT_IN_QUEUE" ] && [ "$PR_STATE" = "OPEN" ] && [ -n "$PREVIOUS_QUEUE_STATE" ] && [ "$PREVIOUS_QUEUE_STATE" != "NOT_IN_QUEUE" ]; then
+              EVICTION_COUNT=$((EVICTION_COUNT+1))
+              echo "⚠️  PR evicted from merge queue (attempt $EVICTION_COUNT/$MAX_EVICTIONS)"
+              
+              if [ $EVICTION_COUNT -ge $MAX_EVICTIONS ]; then
+                echo "❌ PR evicted $MAX_EVICTIONS times - giving up"
+                exit 1
+              fi
+              
+              if [ "$DRY_RUN" = "true" ]; then
+                echo "🔍 [DRY RUN] Would re-enable auto-merge after eviction"
+              else
+                echo "🔄 Re-enabling auto-merge..."
+                # Use bot's PAT to trigger merge queue workflows (GITHUB_TOKEN cannot trigger workflows)
+                GH_TOKEN="$GH_BOT_TOKEN" gh pr merge $PR_NUMBER --auto --squash
+                echo "✅ Auto-merge re-enabled - PR sent back to merge queue"
+              fi
+            fi
+            
+            PREVIOUS_QUEUE_STATE="$QUEUE_STATE"
+            ATTEMPT=$((ATTEMPT+1))
+            sleep 120
+          done
+          
+          echo "⏱️  Timeout waiting for merge (${TIMEOUT_MINUTES} minutes) - manual intervention required"
+          exit 1
+      
+      - name: Report auto-merge result to Zeebe
+        if: always() && env.DRY_RUN != 'true'
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        with:
+          clientConfig: ${{ secrets.TEST_CLUSTER_ZEEBE_CLIENT_CONFIG }}
+          operation: publishMessage
+          messageName: Automerge result Camunda
+          correlationKey: ${{ github.event.pull_request.id }}
+          variables: |
+            {
+              "is_automerge_successful": ${{ steps.monitor_merge.outcome == 'success' }},
+              "pr_number": ${{ github.event.pull_request.number }},
+              "pr_url": "${{ github.event.pull_request.html_url }}",
+              "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+      
+      - name: Dry run summary
+        if: always() && env.DRY_RUN == 'true'
+        run: |
+          echo "🔍 ========================================"
+          echo "🔍 DRY RUN MODE - No actions were executed"
+          echo "🔍 ========================================"
+          echo "🔍 Validation results:"
+          echo "  - Branch matching: ${{ steps.validate_branches.outcome }}"
+          echo "  - Merge conflicts: ${{ steps.check_conflicts.outcome }}"
+          echo "  - Version bump validation: ${{ steps.validate_changes.outcome }}"
+          echo "  - Required checks: ${{ steps.wait_checks.outcome }}"
+          echo "🔍 To enable actual execution, set repository variable AUTO_MERGE_DRY_RUN to 'false'"
+          echo "🔍 ========================================"
+      
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}    
