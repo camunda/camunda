@@ -25,8 +25,8 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final int DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
-  private static final PreAllocateStrategy DEFAULT_PREALLOCATE_SEGMENT_STRATEGY =
-      PreAllocateStrategy.FILL;
+  private static final PreAllocationStrategy DEFAULT_PREALLOCATE_SEGMENT_STRATEGY =
+      PreAllocationStrategy.FILL;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
   private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
@@ -36,7 +36,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private int preferSnapshotReplicationThreshold = DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
 
-  private PreAllocateStrategy segmentPreallocationStrategy = DEFAULT_PREALLOCATE_SEGMENT_STRATEGY;
+  private PreAllocationStrategy segmentPreallocationStrategy = DEFAULT_PREALLOCATE_SEGMENT_STRATEGY;
 
   public Duration getRequestTimeout() {
     return requestTimeout;
@@ -102,18 +102,18 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
     this.preallocateSegmentFiles = preallocateSegmentFiles;
   }
 
-  public PreAllocateStrategy getSegmentPreallocationStrategy() {
+  public PreAllocationStrategy getSegmentPreallocationStrategy() {
     if (!preallocateSegmentFiles) {
-      return PreAllocateStrategy.NOOP;
+      return PreAllocationStrategy.NOOP;
     }
     return segmentPreallocationStrategy;
   }
 
-  public void setSegmentPreallocationStrategy(final PreAllocateStrategy preAllocationStrategy) {
+  public void setSegmentPreallocationStrategy(final PreAllocationStrategy preAllocationStrategy) {
     segmentPreallocationStrategy = preAllocationStrategy;
   }
 
-  public enum PreAllocateStrategy {
+  public enum PreAllocationStrategy {
     NOOP(SegmentAllocator.noop()),
     FILL(SegmentAllocator.fill()),
     POSIX(SegmentAllocator.posix(null)),
@@ -122,7 +122,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
     private final SegmentAllocator segmentAllocator;
 
-    PreAllocateStrategy(final SegmentAllocator segmentAllocator) {
+    PreAllocationStrategy(final SegmentAllocator segmentAllocator) {
       this.segmentAllocator = segmentAllocator;
     }
 
