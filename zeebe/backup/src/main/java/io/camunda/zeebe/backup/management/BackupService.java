@@ -91,17 +91,22 @@ public final class BackupService extends Actor implements BackupManager {
           backupResult.onComplete(
               (ignore, error) -> {
                 if (error != null) {
-                  LOG.warn(
-                      "Failed to take backup {} at position {}",
-                      inProgressBackup.id().checkpointId(),
-                      inProgressBackup.backupDescriptor().checkpointPosition(),
-                      error);
+                  LOG.atWarn()
+                      .addKeyValue("backup", inProgressBackup.id())
+                      .addKeyValue(
+                          "position", inProgressBackup.backupDescriptor().checkpointPosition())
+                      .setCause(error)
+                      .setMessage("Failed to take backup")
+                      .log();
                 } else {
-                  LOG.info(
-                      "Backup {} at position {} completed with {} partitions",
-                      inProgressBackup.id().checkpointId(),
-                      inProgressBackup.backupDescriptor().checkpointPosition(),
-                      inProgressBackup.backupDescriptor().numberOfPartitions());
+                  LOG.atInfo()
+                      .addKeyValue("backup", inProgressBackup.id())
+                      .addKeyValue(
+                          "position", inProgressBackup.backupDescriptor().checkpointPosition())
+                      .addKeyValue(
+                          "partitions", inProgressBackup.backupDescriptor().numberOfPartitions())
+                      .setMessage("Completed backup")
+                      .log();
                 }
               });
           backupResult.onComplete(result);

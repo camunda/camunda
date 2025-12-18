@@ -7,12 +7,9 @@
  */
 package io.camunda.zeebe.backup.api;
 
-import io.camunda.zeebe.backup.common.LoggingBackupStore;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
-import org.slf4j.event.Level;
 
 /** A store where the backup is stored * */
 public interface BackupStore {
@@ -66,8 +63,4 @@ public interface BackupStore {
   CompletableFuture<BackupIndexFile> restoreIndex(BackupIndexIdentifier id, Path targetPath);
 
   CompletableFuture<Void> closeAsync();
-
-  default BackupStore logging(final Logger logger, final Level level) {
-    return new LoggingBackupStore(this, logger, level);
-  }
 }

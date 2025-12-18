@@ -34,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 /**
  * {@link BackupStore} for Azure. Stores all backups in a given bucket.
@@ -301,6 +300,6 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static BackupStore of(final AzureBackupConfig storeConfig) {
-    return new AzureBackupStore(storeConfig).logging(LOG, Level.INFO);
+    return new AzureBackupStore(storeConfig);
   }
 }

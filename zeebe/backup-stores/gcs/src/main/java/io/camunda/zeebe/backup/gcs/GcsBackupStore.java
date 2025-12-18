@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 public final class GcsBackupStore implements BackupStore {
   public static final String ERROR_MSG_BACKUP_NOT_FOUND =
@@ -66,7 +65,7 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
-    return new GcsBackupStore(config).logging(LOG, Level.INFO);
+    return new GcsBackupStore(config);
   }
 
   @Override
@@ -211,8 +210,8 @@ public final class GcsBackupStore implements BackupStore {
         storage.list(config.bucketName(), BlobListOption.pageSize(1));
       } catch (final Exception e) {
         LOG.warn(
-            "Unable to verify that the bucket %s exists, initialization will continue as it can be a transient network issue"
-                .formatted(config.bucketName()),
+            "Unable to verify that the bucket {} exists, initialization will continue as it can be a transient network issue",
+            config.bucketName(),
             e);
       }
     } catch (final Exception e) {

@@ -238,18 +238,20 @@ public class PartitionRestoreService {
   private Backup download(
       final long checkpointId, final Path tempRestoringDirectory, final BackupValidator validator) {
     final var validBackup = findValidBackup(checkpointId, validator);
+    LOG.atInfo().addKeyValue("backup", validBackup).setMessage("Restoring backup").log();
     return backupStore.restore(validBackup, tempRestoringDirectory).join();
   }
 
   private BackupIdentifier findValidBackup(
       final long checkpointId, final BackupValidator validator) {
-    LOG.info("Searching for a completed backup with id {}", checkpointId);
-    final var statuses =
-        backupStore
-            .list(
-                new BackupIdentifierWildcardImpl(
-                    Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId)))
-            .join();
+    final var searchPattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
+    LOG.atInfo()
+        .addKeyValue("pattern", searchPattern)
+        .setMessage("Searching for completed backup")
+        .log();
+    final var statuses = backupStore.list(searchPattern).join();
     final var validStatus =
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
