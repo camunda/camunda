@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -66,6 +68,14 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
           .withIntents(DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED);
+
+  public static final TransformerConfig GROUP_CONFIG =
+      TransformerConfig.with(GROUP)
+          .withIntents(GroupIntent.CREATED, GroupIntent.UPDATED, GroupIntent.DELETED);
+
+  public static final TransformerConfig GROUP_ENTITY_CONFIG =
+      TransformerConfig.with(GROUP)
+          .withIntents(GroupIntent.ENTITY_ADDED, GroupIntent.ENTITY_REMOVED);
 
   public static final TransformerConfig INCIDENT_RESOLUTION_CONFIG =
       TransformerConfig.with(ValueType.INCIDENT)

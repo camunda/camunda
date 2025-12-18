@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -151,6 +152,17 @@ public record AuditLogInfo(
       case DecisionEvaluationIntent.EVALUATED:
       case DecisionEvaluationIntent.FAILED:
         return AuditLogOperationType.EVALUATE;
+
+      case GroupIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case GroupIntent.UPDATED:
+        return AuditLogOperationType.UPDATE;
+      case GroupIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+      case GroupIntent.ENTITY_ADDED:
+        return AuditLogOperationType.ASSIGN;
+      case GroupIntent.ENTITY_REMOVED:
+        return AuditLogOperationType.UNASSIGN;
 
       case IncidentIntent.RESOLVED:
       case IncidentIntent.RESOLVE:

@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -184,6 +185,11 @@ class AuditLogInfoTest {
         Arguments.of(BatchOperationIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
         Arguments.of(DecisionEvaluationIntent.EVALUATED, AuditLogOperationType.EVALUATE),
         Arguments.of(DecisionEvaluationIntent.FAILED, AuditLogOperationType.EVALUATE),
+        Arguments.of(GroupIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(GroupIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(GroupIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(GroupIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
+        Arguments.of(GroupIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
         Arguments.of(IncidentIntent.RESOLVED, AuditLogOperationType.RESOLVE),
         Arguments.of(IncidentIntent.RESOLVE, AuditLogOperationType.RESOLVE),
         Arguments.of(MappingRuleIntent.CREATED, AuditLogOperationType.CREATE),

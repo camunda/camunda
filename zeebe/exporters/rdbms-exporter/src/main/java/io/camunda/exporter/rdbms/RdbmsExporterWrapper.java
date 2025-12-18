@@ -47,6 +47,8 @@ import io.camunda.exporter.rdbms.handlers.auditlog.AuthorizationAuditLogTransfor
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.GroupAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.GroupEntityAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.IncidentResolutionAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.MappingRuleAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
@@ -306,6 +308,8 @@ public class RdbmsExporterWrapper implements Exporter {
             new BatchOperationCreationAuditLogTransformer(),
             new BatchOperationLifecycleManagementAuditLogTransformer(),
             new DecisionEvaluationAuditLogTransformer(),
+            new GroupAuditLogTransformer(),
+            new GroupEntityAuditLogTransformer(),
             new IncidentResolutionAuditLogTransformer(),
             new MappingRuleAuditLogTransformer(),
             new ProcessInstanceCancelAuditLogTransformer(),
