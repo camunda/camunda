@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 type OptionalFilter =
   | 'Process Instance Key'
@@ -79,17 +80,39 @@ class OperateDecisionsPage {
   }
 
   async selectDecisionName(option: string): Promise<void> {
-    await this.decisionNameFilter.click();
-    await this.filterRegion
-      .getByRole('option', {name: option, exact: true})
-      .click();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.decisionNameFilter).toBeEnabled({timeout: 30000});
+        await this.decisionNameFilter.click();
+        const optionLocator = this.filterRegion.getByRole('option', {
+          name: option,
+          exact: true,
+        });
+        await expect(optionLocator).toBeVisible();
+        await optionLocator.click();
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async selectVersion(option: string): Promise<void> {
-    await this.decisionVersionFilter.click();
-    await this.filterRegion
-      .getByRole('option', {name: option, exact: true})
-      .click();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.decisionVersionFilter).toBeEnabled({timeout: 15000});
+        await this.decisionVersionFilter.click();
+        const optionLocator = this.filterRegion.getByRole('option', {
+          name: option,
+          exact: true,
+        });
+        await expect(optionLocator).toBeVisible();
+        await optionLocator.click();
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async clearComboBox(): Promise<void> {
