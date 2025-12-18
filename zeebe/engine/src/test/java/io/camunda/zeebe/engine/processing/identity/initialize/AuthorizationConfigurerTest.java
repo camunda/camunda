@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -39,7 +40,7 @@ class AuthorizationConfigurerTest {
           WILDCARD_CHAR,
           Set.of(PermissionType.READ));
   private static final AuthorizationValidator VALIDATOR =
-      new AuthorizationValidator(Pattern.compile(".*"));
+      new AuthorizationValidator(new IdentifierValidator(Pattern.compile(".*")));
 
   @Test
   void shouldReturnViolationOnValidationFailure() {
