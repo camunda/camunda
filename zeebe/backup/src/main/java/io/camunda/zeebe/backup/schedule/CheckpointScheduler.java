@@ -13,12 +13,12 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.Partition
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,44 +59,87 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private void reschedulingTask() {
 
     acquireEarliestState()
-        .thenApply(checkpointDecider)
-        .thenCompose(this::checkpointIfNeeded)
-        .thenCompose(this::calculateDelay)
-        .thenApply(this::peekDelay)
-        .thenApply(Duration::ofMillis)
-        .exceptionally(this::onError)
-        .thenAccept(delay -> run(() -> schedule(delay, this::reschedulingTask)));
+        .thenApply(checkpointDecider, this)
+        .andThen(this::checkpointIfNeeded, this)
+        .andThen(this::calculateDelay, this)
+        .thenApply(Duration::ofMillis, this)
+        .onComplete(
+            (delay, error) -> {
+              if (error != null) {
+                delay = backOffOnError(error);
+              }
+              LOG.debug("Next checkpoint scheduled in {}ms", delay);
+              schedule(delay, this::reschedulingTask);
+            },
+            this);
   }
 
-  private CompletableFuture<ScheduleInstruction> checkpointIfNeeded(
+  private CompletableActorFuture<ScheduleInstruction> checkpointIfNeeded(
       final ScheduleInstruction instruction) {
     final var now = ActorClock.current().instant();
 
-    return instruction.checkpointTime.isBefore(now) || instruction.checkpointTime.equals(now)
-        ? backupRequestHandler
-            .checkpoint(instruction.type)
-            .toCompletableFuture()
-            .thenApply(
-                id -> {
-                  LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
-                  errorDelayMs = 0;
-                  return instruction.taken();
-                })
-        : CompletableFuture.completedFuture(instruction);
+    final CompletableActorFuture<ScheduleInstruction> future = new CompletableActorFuture<>();
+    if (instruction.checkpointTime.isBefore(now) || instruction.checkpointTime.equals(now)) {
+      backupRequestHandler
+          .checkpoint(instruction.type)
+          .toCompletableFuture()
+          .thenApply(
+              id -> {
+                LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
+                errorDelayMs = 0;
+                return instruction.taken();
+              })
+          .thenAccept(future::complete);
+    } else {
+      future.complete(instruction);
+    }
+    return future;
   }
 
-  private CompletableFuture<Long> calculateDelay(final ScheduleInstruction instruction) {
+  private CompletableActorFuture<Long> calculateDelay(final ScheduleInstruction instruction) {
     final CheckpointState currentState =
         instruction.type == CheckpointType.SCHEDULED_BACKUP
             ? new CheckpointState(instruction.checkpointTime, instruction.checkpointTime)
             : new CheckpointState(instruction.checkpointTime, instruction.state.lastBackup);
 
     return instruction.checkpointTaken
-        ? CompletableFuture.completedFuture(executorDelayProvider.apply(currentState))
-        : CompletableFuture.completedFuture(
+        ? CompletableActorFuture.completed(executorDelayProvider.apply(currentState))
+        : CompletableActorFuture.completed(
             Math.abs(
                 instruction.checkpointTime.toEpochMilli()
                     - ActorClock.current().instant().toEpochMilli()));
+  }
+
+  /**
+   * Acquires the earliest checkpoint and backup state from all partitions.
+   *
+   * @return The current state {@link CheckpointState} containing the earliest checkpoint
+   *     timestamp(left) and earliest backup timestamp(right).
+   */
+  private CompletableActorFuture<CheckpointState> acquireEarliestState() {
+    final CompletableActorFuture<CheckpointState> future = new CompletableActorFuture<>();
+    backupRequestHandler
+        .getCheckpointState()
+        .thenApply(
+            state -> {
+              final Instant minCheckpointTimestamp =
+                  minFromState(state.getCheckpointStates(), checkpointSchedule);
+              final Instant minBackupTimestamp =
+                  minFromState(state.getBackupStates(), backupSchedule);
+              return new CheckpointState(minCheckpointTimestamp, minBackupTimestamp);
+            })
+        .thenAccept(future::complete);
+    return future;
+  }
+
+  private Instant minFromState(
+      final Set<PartitionCheckpointState> states, final Schedule schedule) {
+    final var now = ActorClock.current().instant();
+    return states.stream()
+        .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
+        .map(PartitionCheckpointState::checkpointTimestamp)
+        .map(Instant::ofEpochMilli)
+        .orElseGet(() -> schedule == null ? null : previousExecution(schedule, now));
   }
 
   private Function<CheckpointState, ScheduleInstruction> determineCheckpointDeciderProvider() {
@@ -181,61 +224,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     final var nextBackup = nextExecution(backupSchedule, state.lastBackup);
 
     return nextBackup.toEpochMilli() - now.toEpochMilli();
-  }
-
-  /**
-   * Acquires the earliest checkpoint and backup state from all partitions.
-   *
-   * @return The current state {@link CheckpointState} containing the earliest checkpoint
-   *     timestamp(left) and earliest backup timestamp(right).
-   */
-  private CompletableFuture<CheckpointState> acquireEarliestState() {
-    return backupRequestHandler
-        .getCheckpointState()
-        .thenApply(
-            state -> {
-              final Instant minCheckpointTimestamp =
-                  minFromState(state.getCheckpointStates(), checkpointSchedule);
-              final Instant minBackupTimestamp =
-                  minFromState(state.getBackupStates(), backupSchedule);
-
-              return new CheckpointState(minCheckpointTimestamp, minBackupTimestamp);
-            })
-        .toCompletableFuture();
-  }
-
-  private Instant minFromState(
-      final Set<PartitionCheckpointState> states, final Schedule schedule) {
-    final var now = ActorClock.current().instant();
-    return states.stream()
-        .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
-        .map(PartitionCheckpointState::checkpointTimestamp)
-        .map(Instant::ofEpochMilli)
-        .orElseGet(() -> schedule == null ? null : previousExecution(schedule, now));
-  }
-
-  private Duration onError(final Throwable error) {
-    errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
-    LOG.debug(
-        "Backing off checkpoint scheduling for {} due to : {}", errorDelayMs, error.getMessage());
-    return Duration.ofMillis(errorDelayMs);
-  }
-
-  private Instant nextExecution(final Schedule schedule, final Instant from) {
-    return schedule
-        .nextExecution(from)
-        .orElseThrow(() -> new CouldNotDetermineNextExecution(schedule));
-  }
-
-  private Instant previousExecution(final Schedule schedule, final Instant from) {
-    return schedule
-        .previousExecution(from)
-        .orElseThrow(() -> new CouldNotDetermineNextExecution(schedule));
-  }
-
-  private Long peekDelay(final long delay) {
-    LOG.debug("Next checkpoint scheduled in {}ms", delay);
-    return delay;
   }
 
   private Duration backOffOnError(final Throwable error) {
