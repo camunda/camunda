@@ -115,7 +115,7 @@ paths:
       tags:
         - Incident
       operationId: getProcessInstanceStatisticsByError
-      summary: Get statistics about active process instances grouped by incident error
+      summary: Get process instance statistics by error
       description: |
         Returns statistics for active process instances that currently have active incidents,
         grouped by incident error hash code.
