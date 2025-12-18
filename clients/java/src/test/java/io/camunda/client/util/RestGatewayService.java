@@ -27,6 +27,7 @@ import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
@@ -341,6 +342,10 @@ public class RestGatewayService {
   public void onBatchOperationRequest(
       final String batchOperationKey, final BatchOperationResponse response) {
     registerGet(RestGatewayPaths.getBatchOperationUrl(batchOperationKey), response);
+  }
+
+  public void onSearchBatchOperationsRequest(final BatchOperationSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getBatchOperationsSearchUrl(), response);
   }
 
   public void onVariableRequest(final long variableKey, final VariableResult response) {
