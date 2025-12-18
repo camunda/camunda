@@ -44,6 +44,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/decision-requirements/%s";
   private static final String URL_DEPLOYMENTS = REST_API_PATH + "/deployments";
   private static final String URL_ELEMENT_INSTANCE = REST_API_PATH + "/element-instances/%s";
+  private static final String URL_EXPRESSION_EVALUATION = REST_API_PATH + "/expression/evaluation";
   private static final String URL_GROUP = REST_API_PATH + "/groups/%s";
   private static final String URL_GROUPS = REST_API_PATH + "/groups";
   private static final String URL_INCIDENT = REST_API_PATH + "/incidents/%s";
@@ -197,6 +198,10 @@ public class RestGatewayPaths {
 
   public static String getEvaluateDecisionUrl() {
     return URL_DECISION_EVALUATION;
+  }
+
+  public static String getExpressionEvaluationUrl() {
+    return URL_EXPRESSION_EVALUATION;
   }
 
   /**
