@@ -223,9 +223,9 @@ function getDecisionIds({
   );
 }
 
-function getProcessInstancesRequestFilters(): RequestFilters {
-  const {variable} = variableFilterStore.state;
-
+function getProcessInstancesRequestFilters(
+  variable = variableFilterStore.state.variable,
+): RequestFilters {
   const filters = {
     ...getProcessInstanceFilters(getSearchString()),
     variableName: variable?.name,

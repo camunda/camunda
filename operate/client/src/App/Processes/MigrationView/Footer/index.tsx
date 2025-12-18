@@ -18,13 +18,11 @@ import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody.ts';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter/index.ts';
 
 const Footer: React.FC = observer(() => {
-  const baseFilter = useProcessInstanceFilters().filter;
-
   const navigate = useNavigate();
 
   const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
@@ -151,16 +149,31 @@ const Footer: React.FC = observer(() => {
                     'excludeIds' in batchOperationQuery
                       ? batchOperationQuery.excludeIds
                       : [];
+                  const variable =
+                    'variable' in batchOperationQuery
+                      ? batchOperationQuery.variable
+                      : undefined;
 
-                  const filter = buildMigrationBatchOperationFilter({
+                  const variableFilter =
+                    variable !== undefined
+                      ? {
+                          name: variable.name,
+                          values: variable.values.join(','),
+                        }
+                      : undefined;
+                  const baseFilter =
+                    getProcessInstancesRequestFilters(variableFilter);
+
+                  const requestBody = buildMutationRequestBody({
                     baseFilter,
                     includeIds,
                     excludeIds,
-                    processDefinitionKey: sourceProcessDefinitionKey,
+                    processDefinitionKey:
+                      sourceProcessDefinitionKey ?? undefined,
                   });
 
                   migrateProcess({
-                    filter,
+                    filter: requestBody.filter,
                     migrationPlan: {
                       targetProcessDefinitionKey,
                       mappingInstructions: Object.entries(elementMapping).map(
