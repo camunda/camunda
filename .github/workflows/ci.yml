@@ -440,7 +440,7 @@ jobs:
     secrets: inherit
     with:
       database-type: "opensearch"
-      database-image-version: "2.19.3"
+      database-image-version: "2.17.0"
       it-database-type: "os"
 
   rdbms-h2-integration-tests:
