@@ -178,6 +178,45 @@ public class IndexSchemaValidatorTest {
   }
 
   @Test
+  public void shouldNotSkipIndexDifferenceWhenOnlyActualIndexHasDynamicMapping()
+      throws IOException {
+    // given
+    final var indexMapping = createTestIndexDescriptor("index_name", "/mappings.json");
+    final String fullQualifiedName = indexMapping.getFullQualifiedName();
+    final var currentIndices =
+        Map.of(
+            fullQualifiedName,
+            jsonToDynamicIndexMappingProperties("/mappings-dynamic.json", fullQualifiedName));
+
+    // when
+    // then
+    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(indexMapping)))
+        .isInstanceOf(IndexSchemaValidationException.class)
+        .hasMessageContaining(
+            "Index name: custom-prefix-test-index_name-1.0.0_. Not supported index changes are introduced. Data migration is required.");
+  }
+
+  @Test
+  public void shouldSkipIndexDifferenceWhenOnlyActualIndexHasDynamicMappingIfLegacyMode()
+      throws IOException {
+    // given
+    final var indexMapping = createTestIndexDescriptor("index_name", "/mappings.json");
+    final String fullQualifiedName = indexMapping.getFullQualifiedName();
+    final var currentIndices =
+        Map.of(
+            fullQualifiedName,
+            jsonToDynamicIndexMappingProperties("/mappings-dynamic.json", fullQualifiedName));
+
+    // when
+    final var validator =
+        new IndexSchemaValidator(MAPPER, IndexSchemaValidator.DynamicMappingValidationMode.LEGACY);
+    final var actual = validator.validateIndexMappings(currentIndices, Set.of(indexMapping));
+
+    // then
+    assertThat(actual).hasSize(0);
+  }
+
+  @Test
   void shouldIgnoreARemovedIndexProperty() throws IOException {
     // given
     final var currentIndices =
@@ -296,6 +335,17 @@ public class IndexSchemaValidatorTest {
   @SuppressWarnings("unchecked")
   private IndexMapping jsonToIndexMappingProperties(
       final String mappingsFileName, final String indexName) throws IOException {
+    return jsonToIndexMappingProperties(mappingsFileName, indexName, "strict");
+  }
+
+  private IndexMapping jsonToDynamicIndexMappingProperties(
+      final String mappingsFileName, final String indexName) throws IOException {
+    return jsonToIndexMappingProperties(mappingsFileName, indexName, "true");
+  }
+
+  private IndexMapping jsonToIndexMappingProperties(
+      final String mappingsFileName, final String indexName, final String dynamic)
+      throws IOException {
     final Map<String, Object> jsonMap =
         MAPPER.readValue(
             getClass().getResourceAsStream(mappingsFileName), new TypeReference<>() {});
@@ -308,7 +358,7 @@ public class IndexSchemaValidatorTest {
     return new IndexMapping.Builder()
         .indexName(indexName)
         .properties(properties)
-        .dynamic("strict")
+        .dynamic(dynamic)
         .build();
   }
 }

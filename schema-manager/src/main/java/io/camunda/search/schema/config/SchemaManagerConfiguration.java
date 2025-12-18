@@ -15,6 +15,7 @@ public class SchemaManagerConfiguration {
   private boolean isCreateSchema = true;
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
   private boolean versionCheckRestrictionEnabled = true;
+  private boolean unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
 
   public boolean isCreateSchema() {
     return isCreateSchema;
@@ -38,6 +39,16 @@ public class SchemaManagerConfiguration {
 
   public void setVersionCheckRestrictionEnabled(final boolean versionCheckRestrictionEnabled) {
     this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
+  }
+
+  public boolean isUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings() {
+    return unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
+  }
+
+  public void setUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings(
+      final boolean unsafeIgnoreSchemaFieldDifferencesForDynamicMappings) {
+    this.unsafeIgnoreSchemaFieldDifferencesForDynamicMappings =
+        unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
   }
 
   public static class SchemaManagerRetryConfiguration extends RetryConfiguration {

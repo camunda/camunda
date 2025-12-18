@@ -49,9 +49,17 @@ public class IndexSchemaValidator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
 
   private final ObjectMapper objectMapper;
+  private final DynamicMappingValidationMode dynamicMappingValidationMode;
 
   public IndexSchemaValidator(final ObjectMapper objectMapper) {
+    this(objectMapper, DynamicMappingValidationMode.STRICT);
+  }
+
+  public IndexSchemaValidator(
+      final ObjectMapper objectMapper,
+      final DynamicMappingValidationMode dynamicMappingValidationMode) {
     this.objectMapper = objectMapper;
+    this.dynamicMappingValidationMode = dynamicMappingValidationMode;
   }
 
   /**
@@ -174,8 +182,10 @@ public class IndexSchemaValidator {
 
   private void failIfIndexNotDynamic(
       final IndexMappingDifference difference, final IndexDescriptor indexDescriptor) {
-    if (difference.isLeftDynamic() || difference.isRightDynamic()) {
-      LOGGER.debug(
+    if (difference.isLeftDynamic()
+        || (difference.isRightDynamic()
+            && dynamicMappingValidationMode == DynamicMappingValidationMode.LEGACY)) {
+      LOGGER.warn(
           "Index '{}' is dynamic, ignoring changes found: {}",
           indexDescriptor.getFullQualifiedName(),
           difference.entriesDiffering());
@@ -192,5 +202,10 @@ public class IndexSchemaValidator {
   private boolean isDynamicProperty(final IndexMappingProperty indexMappingProperty) {
     return indexMappingProperty.typeDefinition() instanceof final Map typeDefMap
         && Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
+  }
+
+  public enum DynamicMappingValidationMode {
+    STRICT,
+    LEGACY
   }
 }

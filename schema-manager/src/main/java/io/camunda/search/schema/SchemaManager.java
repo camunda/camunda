@@ -10,6 +10,7 @@ package io.camunda.search.schema;
 import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.schema.IndexSchemaValidator.DynamicMappingValidationMode;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -71,7 +72,7 @@ public class SchemaManager implements CloseableSilently {
         indexOnlyDescriptors,
         indexTemplateDescriptors,
         config,
-        new IndexSchemaValidator(objectMapper),
+        new IndexSchemaValidator(objectMapper, getDynamicMappingValidationMode(config)),
         VersionUtil.getVersion(),
         null);
   }
@@ -512,5 +513,13 @@ public class SchemaManager implements CloseableSilently {
   @Override
   public void close() {
     virtualThreadExecutor.close();
+  }
+
+  private static DynamicMappingValidationMode getDynamicMappingValidationMode(
+      final SearchEngineConfiguration config) {
+    if (config.schemaManager().isUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings()) {
+      return DynamicMappingValidationMode.LEGACY;
+    }
+    return DynamicMappingValidationMode.STRICT;
   }
 }
