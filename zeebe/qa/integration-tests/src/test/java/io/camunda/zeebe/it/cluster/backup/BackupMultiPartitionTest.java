@@ -435,6 +435,7 @@ class BackupMultiPartitionTest {
     final BrokerBackupRequest backupRequest = new BrokerBackupRequest();
     backupRequest.setBackupId(backupId);
     backupRequest.setPartitionId(partitionId);
+    backupRequest.setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     brokerClient.sendRequest(backupRequest).orTimeout(30, TimeUnit.SECONDS).join();
 
