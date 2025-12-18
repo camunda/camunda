@@ -237,4 +237,26 @@ class SearchBatchOperationsTest extends ClientRestTest {
     assertThat(request.getFilter().getActorId().get$Like()).isEqualTo("demo-%");
     assertThat(request.getFilter().getActorId().get$Neq()).isEqualTo("demo-user");
   }
+
+  @Test
+  void shouldSearchBatchOperationWithActorInfoSorting() {
+    // when
+    client
+        .newBatchOperationSearchRequest()
+        .sort(s -> s.actorType().asc().actorId().desc())
+        .send()
+        .join();
+
+    // then
+    final BatchOperationSearchQuery request =
+        gatewayService.getLastRequest(BatchOperationSearchQuery.class);
+
+    assertThat(request.getSort()).hasSize(2);
+    assertThat(request.getSort().get(0).getField())
+        .isEqualTo(BatchOperationSearchQuerySortRequest.FieldEnum.ACTOR_TYPE);
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
+    assertThat(request.getSort().get(1).getField())
+        .isEqualTo(BatchOperationSearchQuerySortRequest.FieldEnum.ACTOR_ID);
+    assertThat(request.getSort().get(1).getOrder()).isEqualTo(SortOrderEnum.DESC);
+  }
 }
