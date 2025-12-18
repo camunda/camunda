@@ -34,4 +34,7 @@ export const Paths = {
   authorizations() {
     return "/authorizations";
   },
+  clusterVariables() {
+    return "/cluster-variables";
+  },
 } as const;

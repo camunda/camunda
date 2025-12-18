@@ -1,0 +1,138 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { TrashCan, View } from "@carbon/react/icons";
+import useTranslate from "src/utility/localization";
+import Page, { PageHeader } from "src/components/layout/Page";
+import EntityList from "src/components/entityList";
+import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import useModal, { useEntityModal } from "src/components/modal/useModal";
+import { usePaginatedApi } from "src/utility/api";
+import {
+  ScopeType,
+  searchClusterVariables,
+} from "src/utility/api/cluster-variables";
+import PageEmptyState from "src/components/layout/PageEmptyState.tsx";
+import AddModal from "src/pages/cluster-variables/modals/AddModal.tsx";
+import DeleteModal from "src/pages/cluster-variables/modals/DeleteModal.tsx";
+import DetailsModal from "src/pages/cluster-variables/modals/DetailsModal.tsx";
+
+export default function List() {
+  const { t } = useTranslate("clusterVariables");
+  const {
+    data: clusterVariables,
+    loading,
+    reload,
+    success,
+    search,
+    ...paginationProps
+  } = usePaginatedApi(searchClusterVariables);
+
+  const [addClusterVariable, addClusterVariableModal] = useModal(
+    AddModal,
+    reload,
+  );
+  const [deleteClusterVariable, deleteClusterVariableModal] = useEntityModal(
+    DeleteModal,
+    reload,
+  );
+  const [viewClusterVariable, viewClusterVariableModal] = useEntityModal(
+    DetailsModal,
+    () => {},
+  );
+
+  const shouldShowEmptyState =
+    success && !search && !clusterVariables?.items.length;
+
+  const pageHeader = (
+    <PageHeader
+      title={t("clusterVariables")}
+      linkText={t("clusterVariables").toLowerCase()}
+      docsLinkPath="/docs/components/identity/cluster-variable/"
+      shouldShowDocumentationLink={!shouldShowEmptyState}
+    />
+  );
+
+  if (shouldShowEmptyState) {
+    return (
+      <Page>
+        {pageHeader}
+        <PageEmptyState
+          resourceTypeTranslationKey={"clusterVariable"}
+          docsLinkPath="/docs/components/identity/cluster-variable/"
+          handleClick={addClusterVariable}
+        />
+        {addClusterVariableModal}
+      </Page>
+    );
+  }
+
+  return (
+    <Page>
+      {pageHeader}
+      <EntityList
+        data={
+          clusterVariables?.items.map((clusterVar) => {
+            return {
+              ...clusterVar,
+              value: clusterVar.value,
+              scopeValue:
+                clusterVar.scope === ScopeType.GLOBAL
+                  ? t("clusterVariableScopeTypeGlobal")
+                  : `${t("clusterVariableScopeTypeTenant")}: ${clusterVar.tenantId}`,
+            };
+          }) || []
+        }
+        headers={[
+          { header: t("name"), key: "name", isSortable: true },
+          { header: t("value"), key: "value" },
+          { header: t("scope"), key: "scopeValue" },
+        ]}
+        addEntityLabel={t("createClusterVariable")}
+        onAddEntity={addClusterVariable}
+        loading={loading}
+        menuItems={[
+          {
+            label: t("view"),
+            icon: View,
+            onClick: ({ name, value }) => {
+              viewClusterVariable({
+                name,
+                value,
+              });
+            },
+          },
+          {
+            label: t("delete"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: ({ name, scope, tenantId }) => {
+              deleteClusterVariable({
+                name,
+                scope,
+                tenantId,
+              });
+            },
+          },
+        ]}
+        searchPlaceholder={t("searchByClusterVariableName")}
+        searchKey="name"
+        {...paginationProps}
+      />
+      {!loading && !success && (
+        <TranslatedErrorInlineNotification
+          title={t("clusterVariablesCouldNotLoad")}
+          actionButton={{ label: t("retry"), onClick: reload }}
+        />
+      )}
+      {addClusterVariableModal}
+      {deleteClusterVariableModal}
+      {viewClusterVariableModal}
+    </Page>
+  );
+}
