@@ -129,35 +129,6 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
         processDefinitionKeyAndTenantAwareSubscriptionKey);
   }
 
-  private void incrementProcessDefinitionKeySubscriptionCount(
-      final ConditionalSubscriptionRecord subscription) {
-    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-    final DbInt dbInt = processDefinitionKeyCountColumnFamily.get(processDefinitionKey);
-    if (dbInt != null) {
-      subscriptionCount.wrapInt(dbInt.getValue() + 1);
-    } else {
-      final DbInt newCount = new DbInt();
-      newCount.wrapInt(1);
-      subscriptionCount.wrapInt(newCount.getValue());
-    }
-    processDefinitionKeyCountColumnFamily.upsert(processDefinitionKey, subscriptionCount);
-  }
-
-  private void decrementProcessDefinitionKeySubscriptionCount(
-      final ConditionalSubscriptionRecord subscription) {
-    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-    final DbInt dbInt = processDefinitionKeyCountColumnFamily.get(processDefinitionKey);
-    if (dbInt != null) {
-      final int newCount = dbInt.getValue() - 1;
-      if (newCount == 0) {
-        processDefinitionKeyCountColumnFamily.deleteExisting(processDefinitionKey);
-      } else {
-        subscriptionCount.wrapInt(newCount);
-        processDefinitionKeyCountColumnFamily.upsert(processDefinitionKey, subscriptionCount);
-      }
-    }
-  }
-
   @Override
   public boolean exists(final String tenantId, final long subscriptionKey) {
     this.subscriptionKey.wrapLong(subscriptionKey);

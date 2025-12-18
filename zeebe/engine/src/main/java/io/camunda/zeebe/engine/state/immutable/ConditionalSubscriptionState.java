@@ -34,19 +34,6 @@ public interface ConditionalSubscriptionState {
   boolean exists(long processDefinitionKey);
 
   /**
-   * Checks whether any conditional subscriptions exist for the given process definition key. Please
-   * note that this DOES NOT include conditional start event subscriptions but only boundary events,
-   * intermediate catch events, and event subprocess start events.
-   *
-   * <p>This is used to quickly check whether any conditional subscriptions need to be visited when
-   * a variable is updated in a given scope.
-   *
-   * @param processDefinitionKey the process definition key
-   * @return true if any conditional start event subscriptions exist, false otherwise
-   */
-  boolean exists(long processDefinitionKey);
-
-  /**
    * Visits all (except start event) conditional subscriptions for the given scope key.
    *
    * @param scopeKey the scope key
