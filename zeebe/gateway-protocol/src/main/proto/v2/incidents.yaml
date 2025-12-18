@@ -114,7 +114,7 @@ paths:
       x-eventually-consistent: true
       tags:
         - Incident
-      operationId: getIncidentProcessInstanceStatisticsByError
+      operationId: getProcessInstanceStatisticsByError
       summary: Get statistics about active process instances grouped by incident error
       description: |
         Returns statistics for active process instances that currently have active incidents,
