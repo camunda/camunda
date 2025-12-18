@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Comparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,17 +34,20 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   private final BackupCfg backupCfg;
   private final BrokerClient brokerClient;
   private final ActorSchedulingService actorScheduler;
+  private final MeterRegistry meterRegistry;
   private CheckpointScheduler checkpointScheduler;
 
   public CheckpointSchedulingService(
       final ClusterMembershipService membershipService,
       final ActorSchedulingService actorScheduler,
       final BackupCfg backupCfg,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final MeterRegistry meterRegistry) {
     this.membershipService = membershipService;
     this.actorScheduler = actorScheduler;
     this.backupCfg = backupCfg;
     this.brokerClient = brokerClient;
+    this.meterRegistry = meterRegistry;
   }
 
   @Override
@@ -60,7 +64,8 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
       LOG.info("Backup scheduler initialized with interval {}", backupSchedule);
     }
 
-    checkpointScheduler = new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient);
+    checkpointScheduler =
+        new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient, meterRegistry);
   }
 
   @Override

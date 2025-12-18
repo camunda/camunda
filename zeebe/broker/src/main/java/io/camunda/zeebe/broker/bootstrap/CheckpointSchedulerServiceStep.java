@@ -21,6 +21,7 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
 
     final var backupCfg = brokerStartupContext.getBrokerConfiguration().getData().getBackup();
     final var scheduler = brokerStartupContext.getActorSchedulingService();
+    final var meterRegistry = brokerStartupContext.getMeterRegistry();
 
     if (backupCfg.isContinuous()) {
       concurrencyControl.run(
@@ -30,7 +31,8 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
                     brokerStartupContext.getClusterServices().getMembershipService(),
                     scheduler,
                     backupCfg,
-                    brokerStartupContext.getBrokerClient());
+                    brokerStartupContext.getBrokerClient(),
+                    meterRegistry);
 
             concurrencyControl.runOnCompletion(
                 scheduler.submitActor(schedulingService),

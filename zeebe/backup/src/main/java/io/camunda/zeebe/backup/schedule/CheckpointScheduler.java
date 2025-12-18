@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.ExponentialBackoff;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -40,13 +41,16 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final BackupRequestHandler backupRequestHandler;
   private long errorDelayMs;
   private final ExponentialBackoff errorStrategy;
+  private final SchedulerMetrics metrics;
 
   public CheckpointScheduler(
       final Schedule checkpointSchedule,
       final Schedule backupSchedule,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final MeterRegistry meterRegistry) {
     this.checkpointSchedule = checkpointSchedule;
     this.backupSchedule = backupSchedule;
+    metrics = new SchedulerMetrics(meterRegistry);
     backupRequestHandler = new BackupRequestHandler(brokerClient);
     errorStrategy = new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
   }
@@ -70,6 +74,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
               } else {
                 errorDelayMs = 0;
                 delay = calculateDelay(instruction);
+              }
+              if (instruction.checkpointTaken) {
+                metrics.recordLastCheckpointTime(instruction.checkpointTime, instruction.type);
               }
               LOG.debug("Next checkpoint scheduled in {} ms", delay);
               schedule(Duration.ofMillis(delay), this::reschedulingTask);
@@ -188,11 +195,15 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     if (backupSchedule != null && checkpointSchedule != null) {
       final var nextBackup = nextExecution(backupSchedule, state.lastBackup);
       final var nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
+      metrics.recordNextExecution(nextBackup, CheckpointType.SCHEDULED_BACKUP);
+      metrics.recordNextExecution(nextCheckpoint, CheckpointType.MARKER);
       next = nextBackup.isBefore(nextCheckpoint) ? nextBackup : nextCheckpoint;
     } else if (checkpointSchedule != null) {
       next = nextExecution(checkpointSchedule, state.lastCheckpoint);
+      metrics.recordNextExecution(next, CheckpointType.MARKER);
     } else {
       next = nextExecution(backupSchedule, state.lastBackup);
+      metrics.recordNextExecution(next, CheckpointType.MARKER);
     }
     return next.toEpochMilli() - now.toEpochMilli();
   }
