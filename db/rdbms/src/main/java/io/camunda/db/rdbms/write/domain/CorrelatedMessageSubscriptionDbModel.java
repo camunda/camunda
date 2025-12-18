@@ -24,6 +24,7 @@ public record CorrelatedMessageSubscriptionDbModel(
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long subscriptionKey,
     MessageSubscriptionType subscriptionType,
     String tenantId)
@@ -49,6 +50,7 @@ public record CorrelatedMessageSubscriptionDbModel(
                 .processDefinitionId(processDefinitionId)
                 .processDefinitionKey(processDefinitionKey)
                 .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .subscriptionKey(subscriptionKey)
                 .subscriptionType(subscriptionType)
                 .tenantId(tenantId))
@@ -67,6 +69,7 @@ public record CorrelatedMessageSubscriptionDbModel(
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long subscriptionKey;
     private MessageSubscriptionType subscriptionType;
     private String tenantId;
@@ -128,6 +131,11 @@ public record CorrelatedMessageSubscriptionDbModel(
       return this;
     }
 
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public Builder subscriptionKey(final Long subscriptionKey) {
       this.subscriptionKey = subscriptionKey;
       return this;
@@ -157,6 +165,7 @@ public record CorrelatedMessageSubscriptionDbModel(
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           subscriptionKey,
           subscriptionType,
           tenantId);

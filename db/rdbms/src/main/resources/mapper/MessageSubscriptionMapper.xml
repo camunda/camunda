@@ -28,6 +28,7 @@
     PROCESS_DEFINITION_ID,
     PROCESS_DEFINITION_KEY,
     PROCESS_INSTANCE_KEY,
+    ROOT_PROCESS_INSTANCE_KEY,
     FLOW_NODE_ID,
     FLOW_NODE_INSTANCE_KEY,
     MESSAGE_SUBSCRIPTION_STATE,
@@ -143,6 +144,7 @@
     <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
     <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
+    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" javaType="java.lang.Long" />
     <result column="FLOW_NODE_ID" property="flowNodeId" javaType="java.lang.String" />
     <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
     <result column="MESSAGE_SUBSCRIPTION_STATE" property="messageSubscriptionState" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionState" />
@@ -161,6 +163,7 @@
                                                PROCESS_DEFINITION_ID,
                                                PROCESS_DEFINITION_KEY,
                                                PROCESS_INSTANCE_KEY,
+                                               ROOT_PROCESS_INSTANCE_KEY,
                                                FLOW_NODE_ID,
                                                FLOW_NODE_INSTANCE_KEY,
                                                MESSAGE_SUBSCRIPTION_STATE,
@@ -176,6 +179,7 @@
             #{processDefinitionId},
             #{processDefinitionKey},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{flowNodeId},
             #{flowNodeInstanceKey},
             #{messageSubscriptionState},

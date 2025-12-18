@@ -16,6 +16,7 @@ import java.util.function.Function;
 public record FlowNodeInstanceDbModel(
     Long flowNodeInstanceKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long processDefinitionKey,
     String processDefinitionId,
     Long flowNodeScopeKey,
@@ -43,6 +44,7 @@ public record FlowNodeInstanceDbModel(
             new FlowNodeInstanceDbModelBuilder()
                 .flowNodeInstanceKey(flowNodeInstanceKey)
                 .processInstanceKey(processInstanceKey())
+                .rootProcessInstanceKey(rootProcessInstanceKey())
                 .processDefinitionKey(processDefinitionKey)
                 .processDefinitionId(processDefinitionId)
                 .flowNodeScopeKey(flowNodeScopeKey)
@@ -67,6 +69,7 @@ public record FlowNodeInstanceDbModel(
 
     private Long flowNodeInstanceKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long processDefinitionKey;
     private String processDefinitionId;
     private Long flowNodeScopeKey;
@@ -95,6 +98,12 @@ public record FlowNodeInstanceDbModel(
 
     public FlowNodeInstanceDbModelBuilder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public FlowNodeInstanceDbModelBuilder rootProcessInstanceKey(
+        final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
@@ -188,6 +197,7 @@ public record FlowNodeInstanceDbModel(
       return new FlowNodeInstanceDbModel(
           flowNodeInstanceKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionKey,
           processDefinitionId,
           flowNodeScopeKey,

@@ -175,6 +175,7 @@
                           FLOW_NODE_INSTANCE_KEY,
                           FLOW_NODE_ID,
                           PROCESS_INSTANCE_KEY,
+                          ROOT_PROCESS_INSTANCE_KEY,
                           PROCESS_DEFINITION_ID,
                           PROCESS_DEFINITION_KEY,
                           ERROR_MESSAGE,
@@ -187,7 +188,7 @@
                           PARTITION_ID,
                           TREE_PATH,
                           HISTORY_CLEANUP_DATE)
-    VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
+    VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{rootProcessInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorMessageHash}, #{errorType},
             #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId}, #{treePath},
             #{historyCleanupDate, jdbcType=TIMESTAMP})

@@ -14,14 +14,14 @@
     INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, NAME, PROCESS_DEFINITION_ID, CREATION_DATE,
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
-                           PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
+                           PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
                                     PRIORITY, PARTITION_ID, HISTORY_CLEANUP_DATE)
     VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate, jdbcType=TIMESTAMP},
             #{completionDate, jdbcType=TIMESTAMP},
             #{assignee}, #{state}, #{formKey},
-            #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
+            #{processDefinitionKey}, #{processInstanceKey}, #{rootProcessInstanceKey}, #{elementInstanceKey}, #{tenantId},
             #{dueDate, jdbcType=TIMESTAMP}, #{followUpDate, jdbcType=TIMESTAMP},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
             #{priority}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
@@ -68,6 +68,7 @@
     <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY"
       javaType="java.lang.Long"/>
     <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
     <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
     <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
     <result property="dueDate" column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
@@ -114,6 +115,7 @@
     ut.FORM_KEY,
     ut.PROCESS_DEFINITION_KEY,
     ut.PROCESS_INSTANCE_KEY,
+    ut.ROOT_PROCESS_INSTANCE_KEY,
     ut.ELEMENT_INSTANCE_KEY,
     ut.TENANT_ID,
     ut.DUE_DATE,

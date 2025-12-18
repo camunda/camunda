@@ -29,6 +29,7 @@ public record VariableDbModel(
     boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     String processDefinitionId,
     String tenantId,
     int partitionId,
@@ -47,6 +48,7 @@ public record VariableDbModel(
                 .name(name)
                 .scopeKey(scopeKey)
                 .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .processDefinitionId(processDefinitionId)
                 .tenantId(tenantId)
                 .partitionId(partitionId)
@@ -88,6 +90,7 @@ public record VariableDbModel(
         isPreview,
         scopeKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         processDefinitionId,
         tenantId,
         partitionId,
@@ -101,6 +104,7 @@ public record VariableDbModel(
     private String value;
     private Long scopeKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private String processDefinitionId;
     private String tenantId;
     private int partitionId;
@@ -130,6 +134,11 @@ public record VariableDbModel(
 
     public VariableDbModelBuilder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public VariableDbModelBuilder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
@@ -177,6 +186,7 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
           partitionId,
@@ -195,6 +205,7 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
           partitionId,
@@ -213,6 +224,7 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
           partitionId,

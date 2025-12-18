@@ -28,6 +28,7 @@
         JOB_KEY,
         PARTITION_ID,
         PROCESS_INSTANCE_KEY,
+        ROOT_PROCESS_INSTANCE_KEY,
         ELEMENT_INSTANCE_KEY,
         PROCESS_DEFINITION_ID,
         PROCESS_DEFINITION_KEY,
@@ -222,6 +223,7 @@
     </constructor>
     <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
+    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" javaType="java.lang.Long" />
     <result column="ELEMENT_INSTANCE_KEY" property="elementInstanceKey" javaType="java.lang.Long" />
     <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
     <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
@@ -248,10 +250,10 @@
 
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
-    INSERT INTO ${prefix}JOB (JOB_KEY, PARTITION_ID, PROCESS_INSTANCE_KEY, ELEMENT_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY,
+    INSERT INTO ${prefix}JOB (JOB_KEY, PARTITION_ID, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, ELEMENT_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY,
     TENANT_ID, TYPE, WORKER, STATE, RETRIES, ERROR_MESSAGE, ERROR_CODE, END_TIME, CUSTOM_HEADERS, KIND, ELEMENT_ID, IS_DENIED, DENIED_REASON, LISTENER_EVENT_TYPE,
     DEADLINE, HAS_FAILED_WITH_RETRIES_LEFT, HISTORY_CLEANUP_DATE, CREATION_TIME, LAST_UPDATE_TIME)
-    VALUES (#{jobKey}, #{partitionId}, #{processInstanceKey}, #{elementInstanceKey}, #{processDefinitionId},
+    VALUES (#{jobKey}, #{partitionId}, #{processInstanceKey}, #{rootProcessInstanceKey}, #{elementInstanceKey}, #{processDefinitionId},
     #{processDefinitionKey}, #{tenantId}, #{type}, #{worker}, #{state}, #{retries}, #{errorMessage}, #{errorCode}, #{endTime, jdbcType=TIMESTAMP}, #{serializedCustomHeaders}, #{kind}, #{elementId}, #{isDenied},
     #{deniedReason}, #{listenerEventType}, #{deadline, jdbcType=TIMESTAMP}, #{hasFailedWithRetriesLeft}, #{historyCleanupDate, jdbcType=TIMESTAMP}, #{creationTime, jdbcType=TIMESTAMP}, #{lastUpdateTime, jdbcType=TIMESTAMP})
   </insert>
