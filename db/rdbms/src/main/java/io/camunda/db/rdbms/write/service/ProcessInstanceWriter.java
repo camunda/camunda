@@ -21,6 +21,7 @@ import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.function.Function;
 
 public class ProcessInstanceWriter implements RdbmsWriter {
@@ -144,5 +145,9 @@ public class ProcessInstanceWriter implements RdbmsWriter {
             .cleanupDate(cleanupDate)
             .limit(rowsToRemove)
             .build());
+  }
+
+  public void deleteByKeys(final List<Long> processInstanceKeys) {
+    mapper.deleteByKeys(processInstanceKeys);
   }
 }

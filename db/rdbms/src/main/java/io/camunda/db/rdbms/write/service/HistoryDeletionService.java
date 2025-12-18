@@ -67,7 +67,7 @@ public class HistoryDeletionService {
                 });
 
     if (allProcessInstanceDependantDataDeleted) {
-      // TODO delete from PI table
+      rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);
       // TODO delete from HistoryDeletion table
     }
 
