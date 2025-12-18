@@ -115,6 +115,25 @@ public class CallToolResultMapper {
         .join();
   }
 
+  public static <T> Either<ServiceException, T> executeServiceMethod(
+      final CompletableFuture<T> content) {
+    return content
+        .<Either<ServiceException, T>>handleAsync(
+            (resp, error) -> {
+              if (error != null) {
+                return Either.left(ErrorMapper.mapError(error));
+              }
+              return Either.right(resp);
+            })
+        .completeOnTimeout(
+            Either.left(
+                new ServiceException(
+                    "Didn't receive a response within 10 seconds.", Status.DEADLINE_EXCEEDED)),
+            10L,
+            TimeUnit.SECONDS)
+        .join();
+  }
+
   public static CallToolResult mapErrorToResult(final Throwable error) {
     return mapProblemToResult(McpErrorMapper.mapErrorToProblem(error));
   }
