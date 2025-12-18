@@ -100,6 +100,8 @@ public class BatchOperationCreatedExportHandler
           switch (auditLogActor.actorType()) {
             case USER -> BatchOperationActorType.USER;
             case CLIENT -> BatchOperationActorType.CLIENT;
+            case ANONYMOUS -> null;
+            case UNKNOWN -> null;
             case null -> null;
           };
       return new ActorInfo(actorType, auditLogActor.actorId());

@@ -234,15 +234,26 @@ public record AuditLogInfo(
 
     public static AuditLogActor of(final Record<?> record) {
       final Map<String, Object> authorizations = record.getAuthorizations();
+
+      // client
       final var clientId = (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID);
       if (clientId != null) {
         return new AuditLogActor(AuditLogActorType.CLIENT, clientId);
       }
+
+      // user
       final var username = (String) authorizations.get(Authorization.AUTHORIZED_USERNAME);
       if (username != null) {
         return new AuditLogActor(AuditLogActorType.USER, username);
       }
-      return null;
+
+      // anonymouns / internal
+      final var anonymous = (String) authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
+      if (anonymous != null) {
+        return new AuditLogActor(AuditLogActorType.ANONYMOUS, username);
+      }
+
+      return new AuditLogActor(AuditLogActorType.UNKNOWN, null);
     }
   }
 
