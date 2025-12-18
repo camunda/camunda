@@ -36,7 +36,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final ExponentialBackoff errorStrategy;
   private final Function<CheckpointState, ScheduleInstruction> checkpointDecider;
   private final Function<CheckpointState, Long> executorDelayProvider;
-  private boolean isStopped = false;
 
   public CheckpointScheduler(
       final Schedule checkpointSchedule,
@@ -62,20 +61,10 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   @Override
   protected void onActorStarted() {
     LOG.debug("Checkpoint scheduler started");
-    isStopped = false;
     actor.run(this::reschedulingTask);
   }
 
-  @Override
-  protected void onActorCloseRequested() {
-    isStopped = true;
-  }
-
   private void reschedulingTask() {
-    if (isStopped) {
-      LOG.debug("Checkpoint scheduler invoked after being stopped - skipping rescheduling task");
-      return;
-    }
 
     acquireEarliestState()
         .thenApply(checkpointDecider)
