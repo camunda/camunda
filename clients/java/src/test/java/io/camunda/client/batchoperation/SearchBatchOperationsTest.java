@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -163,5 +164,40 @@ class SearchBatchOperationsTest extends ClientRestTest {
     assertThat(mapped.getEndDate()).isEqualTo(dateTime);
     assertThat(mapped.getActorType()).isNull();
     assertThat(mapped.getActorId()).isNull();
+  }
+
+  @Test
+  void shouldMapSearchBatchOperationsResponseWithActorInfo() {
+    // given
+    final OffsetDateTime dateTime = OffsetDateTime.now();
+
+    final BatchOperationSearchQueryResult searchResult =
+        Instancio.create(BatchOperationSearchQueryResult.class)
+            .page(
+                Instancio.create(SearchQueryPageResponse.class)
+                    .totalItems(1L)
+                    .hasMoreTotalItems(false))
+            .items(
+                Collections.singletonList(
+                    Instancio.create(BatchOperationResponse.class)
+                        .batchOperationKey("123")
+                        .startDate(dateTime.toString())
+                        .endDate(dateTime.toString())
+                        .actorType(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER)
+                        .actorId("demo-user")));
+
+    gatewayService.onSearchBatchOperationsRequest(searchResult);
+
+    // when
+    final SearchResponse<BatchOperation> result =
+        client.newBatchOperationSearchRequest().send().join();
+
+    // then
+    assertThat(result.page().totalItems()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+
+    final BatchOperation mapped = result.items().get(0);
+    assertThat(mapped.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(mapped.getActorId()).isEqualTo("demo-user");
   }
 }
