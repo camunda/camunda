@@ -686,7 +686,7 @@ class SegmentedJournalTest {
     final var segmentSize = 4 * 1024 * 1024;
     final var builder =
         SegmentedJournal.builder(meterRegistry)
-            .withPreallocateSegmentFiles(true)
+            .withSegmentAllocator(SegmentAllocator.defaultAllocator())
             .withMaxSegmentSize(segmentSize)
             .withDirectory(tmpDir.toFile())
             .withMetaStore(new MockJournalMetastore());
@@ -709,7 +709,7 @@ class SegmentedJournalTest {
     final var segmentSize = 4 * 1024 * 1024;
     final var builder =
         SegmentedJournal.builder(meterRegistry)
-            .withPreallocateSegmentFiles(false)
+            .withSegmentAllocator(SegmentAllocator.noop())
             .withMaxSegmentSize(segmentSize)
             .withDirectory(tmpDir.toFile())
             .withMetaStore(new MockJournalMetastore());
