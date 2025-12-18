@@ -283,6 +283,14 @@ components:
           description: The state of the batch operation.
           allOf:
             - $ref: '#/components/schemas/BatchOperationStateFilterProperty'
+        actorType:
+          description: The type of the actor who performed the operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationActorTypeEnum'
+        actorId:
+          description: The ID of the actor who performed the operation.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     BatchOperationSearchQueryResult:
       description: The batch operation search query result.
