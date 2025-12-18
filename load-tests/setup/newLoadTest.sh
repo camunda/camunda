@@ -15,7 +15,7 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-
+helm_chart="camunda-platform-8.9"
 namespace=$1
 
 # Create namespace if it doesn't exist
@@ -69,10 +69,6 @@ cp -v ../camunda-platform-values.yaml $namespace/
 
 cd $namespace
 
-# Clone Platform Helm so we can run the latest chart
-
-git clone https://github.com/camunda/camunda-platform-helm.git
-
 # Update Makefile to use the namespace
 sed_inplace "s/default/$namespace/g" Makefile
 
@@ -80,3 +76,12 @@ sed_inplace "s/default/$namespace/g" Makefile
 helm repo add camunda https://helm.camunda.io/ --force-update
 helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
 helm repo update
+
+# Clone Platform Helm so we can run the latest chart
+
+git clone --depth 1 --branch main --single-branch https://github.com/camunda/camunda-platform-helm.git
+
+# Make deps
+
+helm dependency build "camunda-platform-helm/charts/$helm_chart"
+
