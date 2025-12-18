@@ -9,6 +9,7 @@ package io.camunda.tasklist.zeebeimport.os;
 
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.PersistenceException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.ImportBatchProcessor;
@@ -29,6 +30,8 @@ public abstract class AbstractImportBatchProcessorOpenSearch implements ImportBa
 
   @Autowired private Metrics metrics;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   @Override
   public void performImport(ImportBatch importBatch) throws PersistenceException {
     final List<BulkOperation> operations = new ArrayList<BulkOperation>();
@@ -37,7 +40,9 @@ public abstract class AbstractImportBatchProcessorOpenSearch implements ImportBa
       withTimer(
           () -> {
             OpenSearchUtil.processBulkRequest(
-                osClient, new BulkRequest.Builder().operations(operations).build());
+                osClient,
+                new BulkRequest.Builder().operations(operations).build(),
+                tasklistProperties.getOpenSearch().getBulkRequestMaxSizeInBytes());
             return null;
           });
     } catch (Exception e) {
