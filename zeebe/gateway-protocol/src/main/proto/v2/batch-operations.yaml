@@ -243,6 +243,7 @@ components:
             - state
             - startDate
             - endDate
+            - actorId
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:

@@ -51,6 +51,11 @@ public record BatchOperationSort(List<FieldSorting> orderings) implements SortOp
       return this;
     }
 
+    public Builder actorId() {
+      currentOrdering = new FieldSorting("actorId", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;
