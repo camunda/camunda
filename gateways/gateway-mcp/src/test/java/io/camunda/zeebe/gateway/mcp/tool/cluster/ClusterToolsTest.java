@@ -18,6 +18,8 @@ import io.camunda.service.TopologyServices.Health;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Role;
 import io.camunda.service.TopologyServices.Topology;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.mcp.tool.ToolsTest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -29,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -46,11 +50,14 @@ class ClusterToolsTest extends ToolsTest {
   @ParameterizedTest
   @EnumSource(ClusterStatus.class)
   void shouldLoadClusterStatus(final ClusterStatus status) {
+    // given
     when(topologyServices.getStatus()).thenReturn(CompletableFuture.completedFuture(status));
 
+    // when
     final CallToolResult result =
         mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
 
+    // then
     assertThat(result.isError()).isFalse();
     assertThat(result.content())
         .hasSize(1)
@@ -61,7 +68,32 @@ class ClusterToolsTest extends ToolsTest {
   }
 
   @Test
+  void shouldFailLoadingClusterStatusOnException() {
+    // given
+    when(topologyServices.getStatus())
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException("Expected failure", Status.INVALID_STATE)));
+
+    // when
+    final CallToolResult result =
+        mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+
+    // then
+    assertThat(result.isError()).isTrue();
+    assertThat(result.content()).isEmpty();
+    assertThat(result.structuredContent()).isNotNull();
+
+    final var problemDetail =
+        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+  }
+
+  @Test
   void shouldLoadTopology() {
+    // given
     final var version = "8.9.10";
     final var expectedTopology =
         new Topology(
@@ -94,13 +126,39 @@ class ClusterToolsTest extends ToolsTest {
     when(topologyServices.getTopology())
         .thenReturn(CompletableFuture.completedFuture(expectedTopology));
 
+    // when
     final CallToolResult result =
         mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
 
+    // then
     assertThat(result.isError()).isFalse();
     assertThat(result.structuredContent()).isNotNull();
 
     final var topology = objectMapper.convertValue(result.structuredContent(), Topology.class);
     assertThat(topology).usingRecursiveComparison().isEqualTo(expectedTopology);
+  }
+
+  @Test
+  void shouldFailLoadingTopologyOnException() {
+    // given
+    when(topologyServices.getTopology())
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException("Expected failure", Status.INVALID_STATE)));
+
+    // when
+    final CallToolResult result =
+        mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+
+    // then
+    assertThat(result.isError()).isTrue();
+    assertThat(result.content()).isEmpty();
+    assertThat(result.structuredContent()).isNotNull();
+
+    final var problemDetail =
+        objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+    assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
   }
 }
