@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.response;
 
+import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -111,5 +112,15 @@ public class BatchOperationImpl implements BatchOperation {
   @Override
   public List<BatchOperationError> getErrors() {
     return new ArrayList<>(errors);
+  }
+
+  @Override
+  public BatchOperationActorTypeEnum getActorType() {
+    return null;
+  }
+
+  @Override
+  public String getActorId() {
+    return null;
   }
 }
