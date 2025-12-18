@@ -15,11 +15,15 @@
  */
 package io.camunda.client.api.statistics.request;
 
+import io.camunda.client.api.statistics.filter.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
+import io.camunda.client.api.statistics.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import io.camunda.client.api.statistics.sort.IncidentProcessInstanceStatisticsSort;
 import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceStatisticsSort;
 import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceVersionStatisticsSort;
+import io.camunda.client.impl.statistics.filter.IncidentProcessInstanceStatisticsByDefinitionFilterImpl;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilterImpl;
+import io.camunda.client.impl.statistics.sort.IncidentProcessInstanceStatisticsByDefinitionSortImpl;
 import io.camunda.client.impl.statistics.sort.IncidentProcessInstanceStatisticsSortImpl;
 import io.camunda.client.impl.statistics.sort.ProcessDefinitionInstanceStatisticsSortImpl;
 import io.camunda.client.impl.statistics.sort.ProcessDefinitionInstanceVersionStatisticsSortImpl;
@@ -32,6 +36,15 @@ public final class StatisticsRequestBuilders {
           final Consumer<ProcessDefinitionInstanceVersionStatisticsFilter> fn) {
     final ProcessDefinitionInstanceVersionStatisticsFilter filter =
         new ProcessDefinitionInstanceVersionStatisticsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionFilter
+      incidentProcessInstanceStatisticsByDefinitionFilter(
+          final Consumer<IncidentProcessInstanceStatisticsByDefinitionFilter> fn) {
+    final IncidentProcessInstanceStatisticsByDefinitionFilter filter =
+        new IncidentProcessInstanceStatisticsByDefinitionFilterImpl();
     fn.accept(filter);
     return filter;
   }
@@ -57,6 +70,15 @@ public final class StatisticsRequestBuilders {
       final Consumer<IncidentProcessInstanceStatisticsSort> fn) {
     final IncidentProcessInstanceStatisticsSort sort =
         new IncidentProcessInstanceStatisticsSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionSort
+      incidentProcessInstanceStatisticsByDefinitionSort(
+          final Consumer<IncidentProcessInstanceStatisticsByDefinitionSort> fn) {
+    final IncidentProcessInstanceStatisticsByDefinitionSort sort =
+        new IncidentProcessInstanceStatisticsByDefinitionSortImpl();
     fn.accept(sort);
     return sort;
   }

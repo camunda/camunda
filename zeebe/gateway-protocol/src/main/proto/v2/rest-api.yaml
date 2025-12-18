@@ -203,6 +203,8 @@ paths:
     $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}~1resolution'
   /incidents/statistics/process-instances:
     $ref: 'incidents.yaml#/paths/~1incidents~1statistics~1process-instances'
+  /incidents/statistics/process-instances-by-definition:
+    $ref: 'incidents.yaml#/paths/~1incidents~1statistics~1process-instances-by-definition'
 
   # Job endpoints
   /jobs/activation:

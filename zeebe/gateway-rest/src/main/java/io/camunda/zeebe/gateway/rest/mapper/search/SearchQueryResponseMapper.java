@@ -32,6 +32,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
@@ -103,6 +104,8 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
@@ -327,6 +330,32 @@ public final class SearchQueryResponseMapper {
     return new IncidentProcessInstanceStatisticsResult()
         .errorHashCode(result.errorHashCode())
         .errorMessage(result.errorMessage())
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionQueryResult
+      toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
+          final SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentProcessInstanceStatisticsByDefinitionQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(
+                    SearchQueryResponseMapper
+                        ::toIncidentProcessInstanceStatisticsByDefinitionResult)
+                .toList());
+  }
+
+  private static IncidentProcessInstanceStatisticsByDefinitionResult
+      toIncidentProcessInstanceStatisticsByDefinitionResult(
+          final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
+    return new IncidentProcessInstanceStatisticsByDefinitionResult()
+        .processDefinitionId(result.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionName(result.processDefinitionName())
+        .processDefinitionVersion(result.processDefinitionVersion())
+        .tenantId(result.tenantId())
         .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 

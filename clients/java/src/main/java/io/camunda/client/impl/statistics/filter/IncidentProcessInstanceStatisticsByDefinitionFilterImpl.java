@@ -15,36 +15,38 @@
  */
 package io.camunda.client.impl.statistics.filter;
 
-import io.camunda.client.api.statistics.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
+import io.camunda.client.api.statistics.filter.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.util.function.Consumer;
 
-public class ProcessDefinitionInstanceVersionStatisticsFilterImpl
+public class IncidentProcessInstanceStatisticsByDefinitionFilterImpl
     extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsFilter>
-    implements ProcessDefinitionInstanceVersionStatisticsFilter {
+        io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionFilter>
+    implements IncidentProcessInstanceStatisticsByDefinitionFilter {
 
-  private final io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsFilter
+  private final io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionFilter
       filter;
 
-  public ProcessDefinitionInstanceVersionStatisticsFilterImpl() {
-    filter = new io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsFilter();
+  public IncidentProcessInstanceStatisticsByDefinitionFilterImpl() {
+    filter =
+        new io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionFilter();
   }
 
   @Override
-  public ProcessDefinitionInstanceVersionStatisticsFilter tenantId(final String value) {
-    filter.setTenantId(value);
+  public IncidentProcessInstanceStatisticsByDefinitionFilter errorHashCode(final Integer value) {
+    filter.setErrorHashCode(value);
     return this;
   }
 
   @Override
-  public ProcessDefinitionInstanceVersionStatisticsFilter tenantId(final Consumer<String> fn) {
-    fn.accept(filter.getTenantId());
+  public IncidentProcessInstanceStatisticsByDefinitionFilter errorHashCode(
+      final Consumer<Integer> fn) {
+    fn.accept(filter.getErrorHashCode());
     return this;
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsFilter
+  protected io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionFilter
       getSearchRequestProperty() {
     return filter;
   }

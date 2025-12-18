@@ -33,7 +33,7 @@ import java.util.Objects;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
-public class IncidentProcessInstanceStatisticsTest extends ClientRestTest {
+public class IncidentStatisticsTest extends ClientRestTest {
 
   @Test
   void shouldRequestIncidentProcessInstanceStatistics() {

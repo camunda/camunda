@@ -71,6 +71,12 @@ public final class SearchQueryRequestMapper {
       EMPTY_PROCESS_INSTANCE_FILTER =
           new io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter();
 
+  public static final io.camunda.zeebe.gateway.protocol.rest
+          .IncidentProcessInstanceStatisticsByDefinitionFilter
+      EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER =
+          new io.camunda.zeebe.gateway.protocol.rest
+              .IncidentProcessInstanceStatisticsByDefinitionFilter();
+
   private SearchQueryRequestMapper() {}
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
@@ -695,6 +701,30 @@ public final class SearchQueryRequestMapper {
     final var filter = FilterBuilders.incident().build();
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::incidentProcessInstanceStatisticsQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery>
+      toIncidentProcessInstanceStatisticsByDefinitionQuery(
+          final IncidentProcessInstanceStatisticsByDefinitionQuery request) {
+    final var page = toOffsetPagination(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper
+                .fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
+                    request.getSort()),
+            SortOptionBuilders::incidentProcessInstanceStatisticsByDefinition,
+            SearchQuerySortRequestMapper
+                ::applyIncidentProcessInstanceStatisticsByDefinitionSortField);
+
+    final var filter =
+        SearchQueryFilterMapper.toIncidentProcessInstanceStatisticsByDefinitionFilter(
+            request.getFilter());
+    return buildSearchQuery(
+        filter,
+        sort,
+        page,
+        SearchQueryBuilders::incidentProcessInstanceStatisticsByDefinitionQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

@@ -13,7 +13,9 @@ import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTH
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -106,5 +108,17 @@ public class IncidentServices
                     securityContextProvider.provideSecurityContext(
                         authentication, INCIDENT_READ_AUTHORIZATION))
                 .incidentProcessInstanceStatistics(query));
+  }
+
+  public SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>
+      searchIncidentProcessInstanceStatisticsByDefinition(
+          final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
+    return executeSearchRequest(
+        () ->
+            incidentSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, INCIDENT_READ_AUTHORIZATION))
+                .searchIncidentProcessInstanceStatisticsByDefinition(query));
   }
 }
