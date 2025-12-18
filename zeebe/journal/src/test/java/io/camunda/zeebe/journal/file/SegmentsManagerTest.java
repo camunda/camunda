@@ -241,7 +241,7 @@ class SegmentsManagerTest {
                 Long.MIN_VALUE,
                 journalFactory.metrics(),
                 (channel, fd, segmentSize) -> {
-                  SegmentAllocator.posix().allocate(channel, fd, segmentSize);
+                  SegmentAllocator.posixOrFill().allocate(channel, fd, segmentSize);
                   throw expectedRootCause;
                 }))) {
       failingSegments.open();

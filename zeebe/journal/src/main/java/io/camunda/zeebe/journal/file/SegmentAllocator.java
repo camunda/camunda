@@ -30,7 +30,7 @@ public interface SegmentAllocator {
       throws IOException;
 
   static SegmentAllocator defaultAllocator() {
-    return Defaults.POSIX_FILL;
+    return posixOrFill();
   }
 
   /** Returns an allocator which does nothing, i.e. does not allocate disk space. */
@@ -51,14 +51,13 @@ public interface SegmentAllocator {
     return new PosixSegmentAllocator(fallback);
   }
 
-  static SegmentAllocator posix() {
-    return Defaults.POSIX_FILL;
+  static SegmentAllocator posixOrFill() {
+    return new PosixSegmentAllocator(Defaults.FILL);
   }
 
   class Defaults {
     private static final SegmentAllocator NOOP = (c, fd, s) -> {};
     private static final SegmentAllocator FILL =
         (channel, fd, size) -> IoUtil.fill(channel, 0, size, (byte) 0);
-    private static final SegmentAllocator POSIX_FILL = new PosixSegmentAllocator(FILL);
   }
 }
