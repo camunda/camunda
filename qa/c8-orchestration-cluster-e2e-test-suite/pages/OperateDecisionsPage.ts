@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 type OptionalFilter =
   | 'Process Instance Key'
@@ -85,11 +86,31 @@ class OperateDecisionsPage {
       .click();
   }
 
-  async selectVersion(option: string): Promise<void> {
+  async clickDecisionVersionFilter(): Promise<void> {
+    await expect(this.decisionVersionFilter).toBeVisible();
     await this.decisionVersionFilter.click();
-    await this.filterRegion
-      .getByRole('option', {name: option, exact: true})
-      .click();
+  }
+
+  async clickVersionFilter(option: string): Promise<void> {
+    const versionFilter = this.filterRegion.getByRole('option', {
+      name: option,
+      exact: true,
+    });
+    await expect(versionFilter).toBeVisible();
+    await versionFilter.click();
+  }
+
+  async selectVersion(option: string): Promise<void> {
+    await this.clickDecisionVersionFilter();
+    await waitForAssertion({
+      assertion: async () => {
+        await this.clickVersionFilter(option);
+      },
+      onFailure: async () => {
+        await this.page.reload();
+        await this.clickDecisionVersionFilter();
+      },
+    });
   }
 
   async clearComboBox(): Promise<void> {
