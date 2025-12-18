@@ -118,19 +118,20 @@ public class IncidentTools {
           incidentServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .resolveIncident(incidentKey, null),
-          error -> {
-            if (McpErrorMapper.unwrapError(error) instanceof final ServiceException se
-                && Status.INVALID_STATE.equals(se.getStatus())
-                && se.getMessage().contains("no retries left")) {
-              // no retries left for a job incident
-              return resolveJobIncident(incidentKey);
-            }
-            return mapErrorToResult(error);
-          },
-          r -> "RESOLVED");
+          r -> "RESOLVED",
+          error ->
+              isNoJobRetriesLeft(error)
+                  ? resolveJobIncident(incidentKey)
+                  : mapErrorToResult(error));
     } catch (final Exception e) {
       return mapErrorToResult(e);
     }
+  }
+
+  private static boolean isNoJobRetriesLeft(final Throwable error) {
+    return McpErrorMapper.unwrapError(error) instanceof final ServiceException se
+        && Status.INVALID_STATE.equals(se.getStatus())
+        && se.getMessage().contains("no retries left");
   }
 
   private CallToolResult resolveJobIncident(final Long incidentKey) {

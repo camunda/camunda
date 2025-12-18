@@ -20,61 +20,45 @@ public class CallToolResultMapper {
     return CallToolResult.builder().structuredContent(content).build();
   }
 
+  public static <T> CallToolResult from(
+      final CompletableFuture<T> content, final Function<T, Object> resultMapper) {
+    return from(content, resultMapper, CallToolResultMapper::mapErrorToResult);
+  }
+
+  public static <T> CallToolResult from(
+      final CompletableFuture<T> content,
+      final Function<T, Object> resultMapper,
+      final Function<Throwable, CallToolResult> errorMapper) {
+    return fromInternal(content, resp -> from(resultMapper.apply(resp)), errorMapper);
+  }
+
   public static CallToolResult fromPrimitive(final String content) {
     return CallToolResult.builder().addTextContent(content).build();
   }
 
   public static <T> CallToolResult fromPrimitive(
       final CompletableFuture<T> content, final Function<T, String> resultMapper) {
-    return content
-        .handleAsync(
-            (resp, error) -> {
-              if (error != null) {
-                return mapErrorToResult(error);
-              }
-              return fromPrimitive(resultMapper.apply(resp));
-            })
-        .completeOnTimeout(
-            mapProblemToResult(
-                ProblemDetail.forStatusAndDetail(
-                    HttpStatus.GATEWAY_TIMEOUT,
-                    "Didn't receive a response from the engine within 10 seconds.")),
-            10L,
-            TimeUnit.SECONDS)
-        .join();
+    return fromPrimitive(content, resultMapper, CallToolResultMapper::mapErrorToResult);
   }
 
   public static <T> CallToolResult fromPrimitive(
       final CompletableFuture<T> content,
-      final Function<Throwable, CallToolResult> errorMapper,
-      final Function<T, String> resultMapper) {
+      final Function<T, String> resultMapper,
+      final Function<Throwable, CallToolResult> errorMapper) {
+    return fromInternal(content, resp -> fromPrimitive(resultMapper.apply(resp)), errorMapper);
+  }
+
+  private static <T> CallToolResult fromInternal(
+      final CompletableFuture<T> content,
+      final Function<T, CallToolResult> resultMapper,
+      final Function<Throwable, CallToolResult> errorMapper) {
     return content
         .handleAsync(
             (resp, error) -> {
               if (error != null) {
                 return errorMapper.apply(error);
               }
-              return fromPrimitive(resultMapper.apply(resp));
-            })
-        .completeOnTimeout(
-            mapProblemToResult(
-                ProblemDetail.forStatusAndDetail(
-                    HttpStatus.GATEWAY_TIMEOUT,
-                    "Didn't receive a response from the engine within 10 seconds.")),
-            10L,
-            TimeUnit.SECONDS)
-        .join();
-  }
-
-  public static <T> CallToolResult from(
-      final CompletableFuture<T> content, final Function<T, Object> resultMapper) {
-    return content
-        .handleAsync(
-            (resp, error) -> {
-              if (error != null) {
-                return mapErrorToResult(error);
-              }
-              return from(resultMapper.apply(resp));
+              return resultMapper.apply(resp);
             })
         .completeOnTimeout(
             mapProblemToResult(
@@ -89,8 +73,7 @@ public class CallToolResultMapper {
     return mapProblemToResult(McpErrorMapper.mapErrorToProblem(error));
   }
 
-  public static CallToolResult mapProblemToResult(final ProblemDetail problemDetail) {
-    // TODO how widely supported is structured content in MCP clients?
+  private static CallToolResult mapProblemToResult(final ProblemDetail problemDetail) {
     return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
   }
 

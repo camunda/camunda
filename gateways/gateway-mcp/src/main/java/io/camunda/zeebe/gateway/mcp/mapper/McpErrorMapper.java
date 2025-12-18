@@ -11,10 +11,6 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -22,9 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
 
 public class McpErrorMapper {
   public static final Function<String, Exception> RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER =
@@ -34,17 +28,10 @@ public class McpErrorMapper {
 
   public static final Logger LOG = LoggerFactory.getLogger(McpErrorMapper.class);
 
-  public static <T> Optional<ResponseEntity<T>> getResponse(final Throwable error) {
-    return Optional.ofNullable(error)
-        .map(McpErrorMapper::mapErrorToProblem)
-        .map(McpErrorMapper::mapProblemToResponse);
-  }
-
   public static ProblemDetail mapErrorToProblem(final Throwable error) {
     if (error == null) {
       return null;
     }
-    // SeviceExceptions can be wrapped in Java exceptions because they are handled in Java futures
 
     if (unwrapError(error) instanceof final ServiceException se) {
       return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
@@ -58,23 +45,11 @@ public class McpErrorMapper {
   }
 
   public static Throwable unwrapError(final Throwable throwable) {
+    // SeviceExceptions can be wrapped in Java exceptions because they are handled in Java futures
     if (throwable instanceof CompletionException || throwable instanceof ExecutionException) {
       return throwable.getCause();
     }
     return throwable;
-  }
-
-  public static <T> ResponseEntity<T> mapErrorToResponse(@NotNull final Throwable error) {
-    return mapProblemToResponse(mapErrorToProblem(error));
-  }
-
-  public static ProblemDetail createProblemDetail(final List<String> violations) {
-    String problems = String.join(". ", violations);
-    if (!problems.endsWith(".")) {
-      problems = problems + ".";
-    }
-
-    return createProblemDetail(HttpStatus.BAD_REQUEST, problems, INVALID_ARGUMENT.name());
   }
 
   public static ProblemDetail createProblemDetail(
@@ -82,17 +57,6 @@ public class McpErrorMapper {
     final var problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
     problemDetail.setTitle(title);
     return problemDetail;
-  }
-
-  public static <T> ResponseEntity<T> mapProblemToResponse(final ProblemDetail problemDetail) {
-    return ResponseEntity.of(problemDetail)
-        .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .build();
-  }
-
-  public static <T> CompletableFuture<ResponseEntity<T>> mapProblemToCompletedResponse(
-      final ProblemDetail problemDetail) {
-    return CompletableFuture.completedFuture(McpErrorMapper.mapProblemToResponse(problemDetail));
   }
 
   public static HttpStatus mapStatus(final Status status) {
