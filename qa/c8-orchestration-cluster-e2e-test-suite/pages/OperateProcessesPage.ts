@@ -404,8 +404,9 @@ class OperateProcessesPage {
         }
       }
     }
+    const itemText = count === 1 ? 'item' : 'items';
     await expect(
-      this.page.getByText(`${count} items selected`).first(),
+      this.page.getByText(`${count} ${itemText} selected`).first(),
     ).toBeVisible();
   }
 
