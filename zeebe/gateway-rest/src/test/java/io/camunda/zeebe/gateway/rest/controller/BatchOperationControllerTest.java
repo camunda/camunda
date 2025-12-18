@@ -330,6 +330,8 @@ class BatchOperationControllerTest extends RestControllerTest {
     final var entityWithLateStart =
         getBatchOperationEntityWithStartDate(
             "2", OffsetDateTime.parse("2025-03-18T10:57:45+01:00"));
+    final var entityAragorn = getBatchOperationEntityWithActorId("3", "aragorn@fellowship");
+    final var entityFrodo = getBatchOperationEntityWithActorId("4", "frodo@fellowship");
 
     return Stream.of(
         Arguments.of(
@@ -341,7 +343,17 @@ class BatchOperationControllerTest extends RestControllerTest {
             "startDate",
             "DESC",
             List.of(entityWithLateStart, entityWithEarlyStart),
-            List.of("2025-03-18T10:57:45.000+01:00", "2025-03-18T10:57:43.000+01:00")));
+            List.of("2025-03-18T10:57:45.000+01:00", "2025-03-18T10:57:43.000+01:00")),
+        Arguments.of(
+            "actorId",
+            "ASC",
+            List.of(entityAragorn, entityFrodo),
+            List.of("aragorn@fellowship", "frodo@fellowship")),
+        Arguments.of(
+            "actorId",
+            "DESC",
+            List.of(entityFrodo, entityAragorn),
+            List.of("frodo@fellowship", "aragorn@fellowship")));
   }
 
   @ParameterizedTest
@@ -405,6 +417,22 @@ class BatchOperationControllerTest extends RestControllerTest {
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
         BatchOperationActorType.USER,
         "frodo@fellowship",
+        10,
+        0,
+        10,
+        emptyList());
+  }
+
+  private static BatchOperationEntity getBatchOperationEntityWithActorId(
+      final String batchOperationKey, final String actorId) {
+    return new BatchOperationEntity(
+        batchOperationKey,
+        BatchOperationState.COMPLETED,
+        BatchOperationType.CANCEL_PROCESS_INSTANCE,
+        OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
+        OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
+        BatchOperationActorType.USER,
+        actorId,
         10,
         0,
         10,
