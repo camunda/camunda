@@ -7,4 +7,22 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-public interface ProcessInstanceDependant {}
+import io.camunda.db.rdbms.sql.ProcessInstanceDependantMapper;
+import io.camunda.db.rdbms.sql.ProcessInstanceDependantMapper.DeleteProcessInstanceRelatedDataDto;
+import java.util.List;
+
+public abstract class ProcessInstanceDependant {
+
+  private final ProcessInstanceDependantMapper processInstanceDependantMapper;
+
+  public ProcessInstanceDependant(
+      final ProcessInstanceDependantMapper processInstanceDependantMapper) {
+    this.processInstanceDependantMapper = processInstanceDependantMapper;
+  }
+
+  public int deleteProcessInstanceRelatedData(
+      final List<Long> processInstanceKeys, final int limit) {
+    return processInstanceDependantMapper.deleteProcessInstanceRelatedData(
+        new DeleteProcessInstanceRelatedDataDto(processInstanceKeys, limit));
+  }
+}

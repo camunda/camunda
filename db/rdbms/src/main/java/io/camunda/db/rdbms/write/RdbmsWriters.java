@@ -44,6 +44,7 @@ import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
+import io.camunda.db.rdbms.write.service.ProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RdbmsWriter;
@@ -56,6 +57,7 @@ import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RdbmsWriters {
@@ -256,6 +258,13 @@ public class RdbmsWriters {
 
   public HistoryDeletionWriter getHistoryDeletionWriter() {
     return getWriter(HistoryDeletionWriter.class);
+  }
+
+  public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {
+    return writers.values().stream()
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
+        .toList();
   }
 
   private <W> W getWriter(final Class<W> writerClass) {

@@ -13,7 +13,8 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public interface FlowNodeInstanceMapper extends ProcessBasedHistoryCleanupMapper {
+public interface FlowNodeInstanceMapper
+    extends ProcessBasedHistoryCleanupMapper, ProcessInstanceDependantMapper {
 
   void insert(FlowNodeInstanceDbModel flowNode);
 
