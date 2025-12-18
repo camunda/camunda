@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.Set;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +38,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final BackupRequestHandler backupRequestHandler;
   private long errorDelayMs;
   private final ExponentialBackoff errorStrategy;
-  private final Function<CheckpointState, ScheduleInstruction> checkpointDecider;
-  private final Function<CheckpointState, Long> executorDelayProvider;
 
   public CheckpointScheduler(
       final Schedule checkpointSchedule,
@@ -50,9 +47,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     this.backupSchedule = backupSchedule;
     backupRequestHandler = new BackupRequestHandler(brokerClient);
     errorStrategy = new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
-
-    checkpointDecider = determineCheckpointDeciderProvider();
-    executorDelayProvider = determineDelayProvider();
   }
 
   @Override
@@ -64,17 +58,19 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private void reschedulingTask() {
 
     acquireEarliestState()
-        .thenApply(checkpointDecider, this)
+        .thenApply(this::determineCheckpoint, this)
         .andThen(this::checkpointIfNeeded, this)
-        .andThen(this::calculateDelay, this)
-        .thenApply(Duration::ofMillis, this)
         .onComplete(
-            (delay, error) -> {
+            (instruction, error) -> {
+              final long delay;
               if (error != null) {
                 delay = backOffOnError(error);
+              } else {
+                errorDelayMs = 0;
+                delay = calculateDelay(instruction);
               }
-              LOG.debug("Next checkpoint scheduled in {}ms", delay);
-              schedule(delay, this::reschedulingTask);
+              LOG.debug("Next checkpoint scheduled in {} ms", delay);
+              schedule(Duration.ofMillis(delay), this::reschedulingTask);
             },
             this);
   }
@@ -91,7 +87,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
           .thenApply(
               id -> {
                 LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
-                errorDelayMs = 0;
                 return instruction.taken();
               })
           .thenAccept(future::complete);
@@ -101,18 +96,19 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     return future;
   }
 
-  private CompletableActorFuture<Long> calculateDelay(final ScheduleInstruction instruction) {
+  private long calculateDelay(final ScheduleInstruction instruction) {
     final CheckpointState currentState =
         instruction.type == CheckpointType.SCHEDULED_BACKUP
             ? new CheckpointState(instruction.checkpointTime, instruction.checkpointTime)
             : new CheckpointState(instruction.checkpointTime, instruction.state.lastBackup);
 
-    return instruction.checkpointTaken
-        ? CompletableActorFuture.completed(executorDelayProvider.apply(currentState))
-        : CompletableActorFuture.completed(
-            Math.abs(
-                instruction.checkpointTime.toEpochMilli()
-                    - ActorClock.current().instant().toEpochMilli()));
+    final var delay =
+        instruction.checkpointTaken
+            ? determineDelayFromSchedules(currentState)
+            : instruction.checkpointTime.toEpochMilli()
+                - ActorClock.current().instant().toEpochMilli();
+
+    return Math.abs(delay);
   }
 
   /**
@@ -147,95 +143,55 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         .orElseGet(() -> schedule == null ? null : previousExecution(schedule, now));
   }
 
-  private Function<CheckpointState, ScheduleInstruction> determineCheckpointDeciderProvider() {
-    if (checkpointSchedule != null && backupSchedule != null) {
-      return this::decideForCheckpointAndBackup;
+  private ScheduleInstruction determineCheckpoint(final CheckpointState state) {
+    if (backupSchedule != null && checkpointSchedule != null) {
+      final Instant nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
+      final Instant nextBackup = nextExecution(backupSchedule, state.lastBackup);
+      final long executionTimeDiff =
+          Math.abs(nextCheckpoint.toEpochMilli() - nextBackup.toEpochMilli());
+
+      LOG.debug(
+          "Previous checkpoint at {}, previous backup at {}. Next checkpoint at {}, next backup at {}. Time diff {}",
+          state.lastCheckpoint,
+          state.lastBackup,
+          nextCheckpoint,
+          nextBackup,
+          executionTimeDiff);
+
+      return executionTimeDiff <= SKIP_CHECKPOINT_THRESHOLD || nextBackup.isBefore(nextCheckpoint)
+          // checkpoint and backup are close enough, take a full backup
+          ? new ScheduleInstruction(CheckpointType.SCHEDULED_BACKUP, nextBackup, state)
+          : new ScheduleInstruction(CheckpointType.MARKER, nextCheckpoint, state);
     } else if (checkpointSchedule != null) {
-      return this::nextCheckpoint;
-    } else {
-      return this::nextBackup;
-    }
-  }
-
-  private Function<CheckpointState, Long> determineDelayProvider() {
-    if (checkpointSchedule != null && backupSchedule != null) {
-      return this::checkpointAndBackupDelayProvider;
-    } else if (checkpointSchedule != null) {
-      return this::checkpointScheduleDelayProvider;
-    } else {
-      return this::backupScheduleDelayProvider;
-    }
-  }
-
-  private ScheduleInstruction decideForCheckpointAndBackup(final CheckpointState state) {
-
-    final Instant nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
-    final Instant nextBackup = nextExecution(backupSchedule, state.lastBackup);
-    final long executionTimeDiff =
-        Math.abs(nextCheckpoint.toEpochMilli() - nextBackup.toEpochMilli());
-
-    LOG.debug(
-        "Previous checkpoint at {}, previous backup at {}. Next checkpoint at {}, next backup at {}. Time diff {}",
-        state.lastCheckpoint,
-        state.lastBackup,
-        nextCheckpoint,
-        nextBackup,
-        executionTimeDiff);
-
-    if (executionTimeDiff <= SKIP_CHECKPOINT_THRESHOLD || nextBackup.isBefore(nextCheckpoint)) {
-      // checkpoint and backup are close enough, take a full backup
-      return new ScheduleInstruction(CheckpointType.SCHEDULED_BACKUP, nextBackup, state);
-    } else {
-      // checkpoint is earlier than backup, create checkpoint
+      final Instant nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
       return new ScheduleInstruction(CheckpointType.MARKER, nextCheckpoint, state);
+    } else {
+      final Instant nextBackup = nextExecution(backupSchedule, state.lastBackup);
+      return new ScheduleInstruction(CheckpointType.SCHEDULED_BACKUP, nextBackup, state);
     }
   }
 
-  private ScheduleInstruction nextCheckpoint(final CheckpointState state) {
-    final Instant nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
-    return new ScheduleInstruction(CheckpointType.MARKER, nextCheckpoint, state);
-  }
-
-  private ScheduleInstruction nextBackup(final CheckpointState state) {
-    final Instant nextBackup = nextExecution(backupSchedule, state.lastBackup);
-    return new ScheduleInstruction(CheckpointType.SCHEDULED_BACKUP, nextBackup, state);
-  }
-
-  private Long checkpointAndBackupDelayProvider(final CheckpointState state) {
+  private long determineDelayFromSchedules(final CheckpointState state) {
     final var now = ActorClock.current().instant();
-    final var nextBackup = nextExecution(backupSchedule, state.lastBackup);
-    final var nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
-    final var decision =
-        Math.abs(
-            Math.min(nextBackup.toEpochMilli(), nextCheckpoint.toEpochMilli())
-                - now.toEpochMilli());
-    LOG.debug(
-        "Next backup at {}, next checkpoint at {}: decided delay: {}",
-        nextBackup,
-        nextCheckpoint,
-        decision);
-    return decision;
+    final Instant next;
+
+    if (backupSchedule != null && checkpointSchedule != null) {
+      final var nextBackup = nextExecution(backupSchedule, state.lastBackup);
+      final var nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
+      next = nextBackup.isBefore(nextCheckpoint) ? nextBackup : nextCheckpoint;
+    } else if (checkpointSchedule != null) {
+      next = nextExecution(checkpointSchedule, state.lastCheckpoint);
+    } else {
+      next = nextExecution(backupSchedule, state.lastBackup);
+    }
+    return next.toEpochMilli() - now.toEpochMilli();
   }
 
-  private Long checkpointScheduleDelayProvider(final CheckpointState state) {
-    final var now = ActorClock.current().instant();
-    final var nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
-
-    return nextCheckpoint.toEpochMilli() - now.toEpochMilli();
-  }
-
-  private Long backupScheduleDelayProvider(final CheckpointState state) {
-    final var now = ActorClock.current().instant();
-    final var nextBackup = nextExecution(backupSchedule, state.lastBackup);
-
-    return nextBackup.toEpochMilli() - now.toEpochMilli();
-  }
-
-  private Duration backOffOnError(final Throwable error) {
+  private long backOffOnError(final Throwable error) {
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
     LOG.debug(
         "Backing off checkpoint scheduling for {} due to : {}", errorDelayMs, error.getMessage());
-    return Duration.ofMillis(errorDelayMs);
+    return errorDelayMs;
   }
 
   private Instant nextExecution(final Schedule schedule, final Instant from) {
