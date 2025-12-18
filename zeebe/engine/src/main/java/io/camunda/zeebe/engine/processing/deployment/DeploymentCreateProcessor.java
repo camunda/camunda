@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -99,7 +100,8 @@ public final class DeploymentCreateProcessor
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ExpressionLanguageMetrics expressionLanguageMetrics) {
     deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
@@ -122,7 +124,8 @@ public final class DeploymentCreateProcessor
             keyGenerator,
             featureFlags,
             config,
-            clock);
+            clock,
+            expressionLanguageMetrics);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }

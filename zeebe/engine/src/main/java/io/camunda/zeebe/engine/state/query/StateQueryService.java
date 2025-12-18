@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.query;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -86,7 +87,8 @@ public final class StateQueryService implements QueryService {
               new TransientPendingSubscriptionState(),
               new TransientPendingSubscriptionState(),
               new EngineConfiguration(),
-              clock);
+              clock,
+              ExpressionLanguageMetrics.noop());
     }
   }
 }

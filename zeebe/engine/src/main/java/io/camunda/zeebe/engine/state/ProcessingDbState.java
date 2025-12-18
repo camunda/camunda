@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
@@ -151,14 +152,16 @@ public class ProcessingDbState implements MutableProcessingState {
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final ExpressionLanguageMetrics expressionLanguageMetrics) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
-    processState = new DbProcessState(zeebeDb, transactionContext, config, clock);
+    processState =
+        new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
