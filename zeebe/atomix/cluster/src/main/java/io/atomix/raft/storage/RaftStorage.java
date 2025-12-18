@@ -25,6 +25,7 @@ import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.ThreadContextFactory;
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -64,7 +65,7 @@ public final class RaftStorage {
   private final long freeDiskSpace;
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final int journalIndexDensity;
-  private final boolean preallocateSegmentFiles;
+  private final SegmentAllocator segmentAllocator;
   private final MeterRegistry meterRegistry;
   private final RaftLogFlusher.Factory flusherFactory;
 
@@ -77,7 +78,7 @@ public final class RaftStorage {
       final RaftLogFlusher.Factory flusherFactory,
       final ReceivableSnapshotStore persistedSnapshotStore,
       final int journalIndexDensity,
-      final boolean preallocateSegmentFiles,
+      final SegmentAllocator segmentAllocator,
       final MeterRegistry meterRegistry) {
     this.prefix = prefix;
     this.partitionId = partitionId;
@@ -87,7 +88,7 @@ public final class RaftStorage {
     this.flusherFactory = flusherFactory;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexDensity = journalIndexDensity;
-    this.preallocateSegmentFiles = preallocateSegmentFiles;
+    this.segmentAllocator = segmentAllocator;
     this.meterRegistry = meterRegistry;
 
     try {
@@ -196,7 +197,7 @@ public final class RaftStorage {
         .withMaxSegmentSize(maxSegmentSize)
         .withFreeDiskSpace(freeDiskSpace)
         .withJournalIndexDensity(journalIndexDensity)
-        .withPreallocateSegmentFiles(preallocateSegmentFiles)
+        .withSegmentAllocator(segmentAllocator)
         .withMetaStore(metaStore)
         .withFlusher(flusherFactory.createFlusher(threadFactory))
         .build();
@@ -264,7 +265,7 @@ public final class RaftStorage {
     private RaftLogFlusher.Factory flusherFactory = DEFAULT_FLUSHER_FACTORY;
     private ReceivableSnapshotStore persistedSnapshotStore;
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
-    private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+    private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
     private int partitionId = DEFAULT_PARTITION_ID;
     private final MeterRegistry meterRegistry;
 
@@ -364,11 +365,11 @@ public final class RaftStorage {
      * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
      * before any writes happen.
      *
-     * @param preallocateSegmentFiles true to preallocate files, false otherwise
+     * @param segmentAllocator to use to preallocate files
      * @return this builder for chaining
      */
-    public Builder withPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
-      this.preallocateSegmentFiles = preallocateSegmentFiles;
+    public Builder withSegmentAllocator(final SegmentAllocator segmentAllocator) {
+      this.segmentAllocator = segmentAllocator;
       return this;
     }
 
@@ -399,7 +400,7 @@ public final class RaftStorage {
           flusherFactory,
           persistedSnapshotStore,
           journalIndexDensity,
-          preallocateSegmentFiles,
+          segmentAllocator,
           meterRegistry);
     }
   }

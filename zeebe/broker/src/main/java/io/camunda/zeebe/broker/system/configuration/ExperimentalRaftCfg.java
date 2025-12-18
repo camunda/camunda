@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_ELECTION_TIMEOUT;
 
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 import java.time.Duration;
 import org.springframework.util.unit.DataSize;
 
@@ -24,6 +25,8 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final int DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
+  private static final PreAllocateStrategy DEFAULT_PREALLOCATE_SEGMENT_STRATEGY =
+      PreAllocateStrategy.FILL;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
   private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
@@ -31,8 +34,9 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private int preferSnapshotReplicationThreshold = DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD;
-
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+
+  private PreAllocateStrategy segmentPreallocationStrategy = DEFAULT_PREALLOCATE_SEGMENT_STRATEGY;
 
   public Duration getRequestTimeout() {
     return requestTimeout;
@@ -96,5 +100,32 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public void setPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
     this.preallocateSegmentFiles = preallocateSegmentFiles;
+  }
+
+  public PreAllocateStrategy getSegmentPreallocationStrategy() {
+    if (!preallocateSegmentFiles) {
+      return PreAllocateStrategy.NOOP;
+    }
+    return segmentPreallocationStrategy;
+  }
+
+  public void setSegmentPreallocationStrategy(final PreAllocateStrategy preAllocationStrategy) {
+    segmentPreallocationStrategy = preAllocationStrategy;
+  }
+
+  public enum PreAllocateStrategy {
+    NOOP(SegmentAllocator.noop()),
+    FILL(SegmentAllocator.fill()),
+    POSIX(SegmentAllocator.posix());
+
+    private final SegmentAllocator segmentAllocator;
+
+    PreAllocateStrategy(final SegmentAllocator segmentAllocator) {
+      this.segmentAllocator = segmentAllocator;
+    }
+
+    public SegmentAllocator segmentAllocator() {
+      return segmentAllocator;
+    }
   }
 }

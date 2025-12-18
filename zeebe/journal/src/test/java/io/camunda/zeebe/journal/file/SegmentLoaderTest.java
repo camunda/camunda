@@ -31,7 +31,11 @@ final class SegmentLoaderTest {
     final var segmentSize = 4 * 1024 * 1024;
     final var descriptor =
         SegmentDescriptor.builder().withId(1).withIndex(1).withMaxSegmentSize(segmentSize).build();
-    final var segmentLoader = new SegmentLoader(segmentSize * 2, new JournalMetrics(meterRegistry));
+    final var segmentLoader =
+        new SegmentLoader(
+            segmentSize * 2,
+            new JournalMetrics(meterRegistry),
+            SegmentAllocator.defaultAllocator());
     final var segmentFile = tmpDir.resolve("segment.log");
 
     // when - "unused" segment can happen if we crashed in the middle of creating the new segment

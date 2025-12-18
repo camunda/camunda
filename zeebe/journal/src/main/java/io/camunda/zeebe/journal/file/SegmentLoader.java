@@ -35,10 +35,6 @@ final class SegmentLoader {
   private final long minFreeDiskSpace;
   private final JournalMetrics metrics;
 
-  SegmentLoader(final int minFreeDiskSpace, final JournalMetrics metrics) {
-    this(minFreeDiskSpace, metrics, SegmentAllocator.fill());
-  }
-
   SegmentLoader(
       final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator) {
     this.minFreeDiskSpace = minFreeDiskSpace;
