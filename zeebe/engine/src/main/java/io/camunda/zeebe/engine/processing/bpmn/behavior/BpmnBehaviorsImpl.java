@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.conditional.ConditionalBehavior;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
