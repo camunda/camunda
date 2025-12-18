@@ -14,7 +14,6 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.ExponentialBackoff;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -85,7 +84,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         .thenApply(this::peekDelay)
         .thenApply(Duration::ofMillis)
         .exceptionally(this::onError)
-        .thenAccept(delay -> actor.call(() -> actor.schedule(delay, this::reschedulingTask)));
+        .thenAccept(delay -> run(() -> schedule(delay, this::reschedulingTask)));
   }
 
   private CompletableFuture<ScheduleInstruction> checkpointIfNeeded(
@@ -184,10 +183,10 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   /**
-   * Acquires the earliest checkpoint and backup state from all brokers.
+   * Acquires the earliest checkpoint and backup state from all partitions.
    *
-   * @return A tuple {@link Tuple} containing the earliest checkpoint timestamp(left) and earliest
-   *     backup timestamp(right).
+   * @return The current state {@link CheckpointState} containing the earliest checkpoint
+   *     timestamp(left) and earliest backup timestamp(right).
    */
   private CompletableFuture<CheckpointState> acquireEarliestState() {
     return backupRequestHandler

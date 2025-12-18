@@ -239,40 +239,10 @@ public class CheckpointSchedulerAcceptanceIT {
 
   @Test
   void shouldTakeOverSchedulerWhenLowest() {
-    cluster
-        .brokers()
-        .values()
-        .forEach(
-            broker ->
-                configureBroker(
-                    broker, backupCfg -> backupCfg.setCheckpointInterval(Duration.ofSeconds(5))));
+    cluster.brokers().values().forEach(broker -> configureBroker(broker, backupCfg -> {}));
 
     cluster.start().awaitCompleteTopology();
     client = cluster.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(2)).build();
-    final AtomicLong checkpointId = new AtomicLong(-1);
-
-    Awaitility.await("initial checkpoint is created from broker 0")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(
-            () -> {
-              final var actuator = BackupActuator.of(cluster.availableGateway());
-              final var state = actuator.state();
-
-              assertCheckpointsCreated(state, CheckpointType.MARKER);
-
-              final var checkpointIds =
-                  state.getCheckpointStates().stream()
-                      .map(PartitionCheckpointState::checkpointId)
-                      .collect(Collectors.toSet())
-                      .stream()
-                      .toList();
-
-              if (checkpointId.get() != -1) {
-                AssertionsForClassTypes.assertThat(checkpointIds.getFirst())
-                    .isGreaterThan(checkpointId.get());
-              }
-              checkpointId.set(checkpointIds.getFirst());
-            });
 
     cluster.brokers().get(MemberId.from("0")).stop();
     Awaitility.await()
@@ -285,14 +255,18 @@ public class CheckpointSchedulerAcceptanceIT {
                   .doesNotContainBroker(0);
             });
 
-    cluster.brokers().get(MemberId.from("0")).start();
+    // Start broker 0 with checkpoint interval configured
+    final var broker0 = cluster.brokers().get(MemberId.from("0"));
+    configureBroker(broker0, backupCfg -> backupCfg.setCheckpointInterval(Duration.ofSeconds(5)));
+    broker0.start();
+
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
               final var topology = client.newTopologyRequest().send().join();
               TopologyAssert.assertThat(topology)
-                  .describedAs("Broker 0 is removed from topology", PARTITION_COUNT)
+                  .describedAs("Broker 0 is part of the topology", PARTITION_COUNT)
                   .containsBroker(0);
               TopologyAssert.assertThat(topology).hasLeaderForEachPartition(PARTITION_COUNT);
             });
@@ -305,18 +279,52 @@ public class CheckpointSchedulerAcceptanceIT {
               final var state = actuator.state();
 
               assertCheckpointsCreated(state, CheckpointType.MARKER);
+            });
+  }
 
-              final var checkpointIds =
-                  state.getCheckpointStates().stream()
-                      .map(PartitionCheckpointState::checkpointId)
-                      .collect(Collectors.toSet())
-                      .stream()
-                      .toList();
+  @Test
+  void shouldNotStartSchedulingIfNotLowest() {
+    cluster.brokers().values().forEach(broker -> configureBroker(broker, backupCfg -> {}));
 
-              if (checkpointId.get() != -1) {
-                assertThat(checkpointIds.getFirst()).isGreaterThan(checkpointId.get());
-              }
-              checkpointId.set(checkpointIds.getFirst());
+    cluster.start().awaitCompleteTopology();
+    client = cluster.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(2)).build();
+
+    cluster.brokers().get(MemberId.from("1")).stop();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var topology = client.newTopologyRequest().send().join();
+              TopologyAssert.assertThat(topology)
+                  .describedAs("Broker 1 is removed from topology", PARTITION_COUNT)
+                  .doesNotContainBroker(1);
+            });
+
+    // Start broker 1 with checkpoint interval configured
+    final var broker1 = cluster.brokers().get(MemberId.from("1"));
+    configureBroker(broker1, backupCfg -> backupCfg.setCheckpointInterval(Duration.ofSeconds(5)));
+    broker1.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var topology = client.newTopologyRequest().send().join();
+              TopologyAssert.assertThat(topology)
+                  .describedAs("Broker 1 is part of the topology", PARTITION_COUNT)
+                  .containsBroker(1);
+              TopologyAssert.assertThat(topology).hasLeaderForEachPartition(PARTITION_COUNT);
+            });
+
+    Awaitility.await()
+        .during(Duration.ofSeconds(5))
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () -> {
+              final var actuator = BackupActuator.of(cluster.availableGateway());
+              final var state = actuator.state();
+              assertThat(state.getCheckpointStates()).isEmpty();
+              assertThat(state.getBackupStates()).isEmpty();
             });
   }
 
