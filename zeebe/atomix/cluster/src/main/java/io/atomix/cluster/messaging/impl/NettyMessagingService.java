@@ -526,6 +526,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
       } else {
         sslContextBuilder.trustManager(config.getCertificateChain());
       }
+      if (config.isTlsEndpointIdentificationEnabled()) {
+        sslContextBuilder.endpointIdentificationAlgorithm("HTTPS");
+      } else {
+        sslContextBuilder.endpointIdentificationAlgorithm(null);
+      }
+
       clientSslContext =
           sslContextBuilder.sslProvider(SslProvider.OPENSSL_REFCNT).protocols(TLS_PROTOCOL).build();
       return CompletableFuture.completedFuture(null);
@@ -835,7 +841,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.channel(clientChannelClass);
     bootstrap.resolver(dnsResolverGroup);
     bootstrap.remoteAddress(socketAddress);
-    bootstrap.handler(new BasicClientChannelInitializer(future));
+    bootstrap.handler(new BasicClientChannelInitializer(future, address));
 
     final Channel channel =
         bootstrap
@@ -965,15 +971,20 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private class BasicClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final CompletableFuture<Channel> future;
+    private final Address remoteAddress;
 
-    BasicClientChannelInitializer(final CompletableFuture<Channel> future) {
+    BasicClientChannelInitializer(
+        final CompletableFuture<Channel> future, final Address remoteAddress) {
       this.future = future;
+      this.remoteAddress = remoteAddress;
     }
 
     @Override
     protected void initChannel(final SocketChannel channel) {
       if (config.isTlsEnabled()) {
-        final var sslHandler = clientSslContext.newHandler(channel.alloc());
+        final var sslHandler =
+            clientSslContext.newHandler(
+                channel.alloc(), remoteAddress.host(), remoteAddress.port());
         channel.pipeline().addLast("tls", sslHandler);
       }
 
