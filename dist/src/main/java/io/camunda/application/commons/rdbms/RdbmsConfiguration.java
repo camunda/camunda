@@ -292,7 +292,7 @@ public class RdbmsConfiguration {
 
   @Bean
   public HistoryDeletionDbReader historyDeletionDbReader(
-      HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper) {
     return new HistoryDeletionDbReader(historyDeletionMapper);
   }
 
@@ -337,7 +337,8 @@ public class RdbmsConfiguration {
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper) {
+      final ClusterVariableMapper clusterVariableMapper,
+      final HistoryDeletionMapper historyDeletionMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -359,7 +360,8 @@ public class RdbmsConfiguration {
         batchOperationMapper,
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
-        clusterVariableMapper);
+        clusterVariableMapper,
+        historyDeletionMapper);
   }
 
   @Bean

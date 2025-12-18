@@ -36,12 +36,13 @@ public class HistoryDeletionService {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, 100);
     LOG.trace("Deleting historic data for entities: {}", batch);
 
-    deleteProcessInstances(batch);
+    final var deletedProcessInstances = deleteProcessInstances(batch);
+    final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedProcessInstances);
 
     return Duration.ofSeconds(1);
   }
 
-  private int deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
+  private List<Long> deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
     final var processInstanceKeys =
         batch.stream()
             .filter(
@@ -53,7 +54,7 @@ public class HistoryDeletionService {
             .toList();
 
     if (processInstanceKeys.isEmpty()) {
-      return 0;
+      return List.of();
     }
 
     final var allProcessInstanceDependantDataDeleted =
@@ -68,9 +69,17 @@ public class HistoryDeletionService {
 
     if (allProcessInstanceDependantDataDeleted) {
       rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);
-      // TODO delete from HistoryDeletion table
+      return processInstanceKeys;
     }
 
-    return 0; // TODO return amount of fully deleted process instances
+    return List.of();
+  }
+
+  private int deleteFromHistoryDeletionTable(final List<Long> deletedResourceKeys) {
+    if (deletedResourceKeys.isEmpty()) {
+      return 0;
+    }
+
+    return rdbmsWriters.getHistoryDeletionWriter().deleteByResourceKeys(deletedResourceKeys);
   }
 }

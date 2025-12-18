@@ -67,4 +67,12 @@
       AND BATCH_OPERATION_KEY = #{batchOperationKey}
   </delete>
 
+  <delete id="deleteByResourceKeys">
+    DELETE FROM ${prefix}HISTORY_DELETION
+    WHERE RESOURCE_KEY IN
+    <foreach collection="resourceKeys" item="resourceKey" open="(" separator="," close=")">
+      #{resourceKey}
+    </foreach>
+  </delete>
+
 </mapper>

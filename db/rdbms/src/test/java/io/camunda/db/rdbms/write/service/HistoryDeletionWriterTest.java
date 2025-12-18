@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 class HistoryDeletionWriterTest {
 
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
-  private final HistoryDeletionWriter writer = new HistoryDeletionWriter(executionQueue);
+  private final HistoryDeletionWriter writer = new HistoryDeletionWriter(executionQueue, null);
 
   @Test
   void shouldInsertHistoryDeletion() {
