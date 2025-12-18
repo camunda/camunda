@@ -22,6 +22,7 @@ public class OpenSearchProperties {
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
   public static final int DEFAULT_MAX_TERMS_COUNT = 10_000;
+  public static final long BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024L * 1024L * 90L; // 90 MB
 
   private String clusterName = "opensearch-cluster";
 
@@ -35,6 +36,7 @@ public class OpenSearchProperties {
 
   private int batchSize = 200;
   private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
+  private long bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
   private Integer socketTimeout;
   private Integer connectTimeout;
@@ -214,5 +216,13 @@ public class OpenSearchProperties {
 
   public void setUpdateSchemaSettings(final boolean updateSchemaSettings) {
     this.updateSchemaSettings = updateSchemaSettings;
+  }
+
+  public long getBulkRequestMaxSizeInBytes() {
+    return bulkRequestMaxSizeInBytes;
+  }
+
+  public void setBulkRequestMaxSizeInBytes(final long bulkRequestMaxSizeInBytes) {
+    this.bulkRequestMaxSizeInBytes = bulkRequestMaxSizeInBytes;
   }
 }

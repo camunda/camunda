@@ -9,6 +9,7 @@ package io.camunda.tasklist.zeebeimport.es;
 
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.PersistenceException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.ImportBatchProcessor;
@@ -26,6 +27,8 @@ public abstract class AbstractImportBatchProcessorElasticSearch implements Impor
 
   @Autowired private Metrics metrics;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   @Override
   public void performImport(ImportBatch importBatchElasticSearch) throws PersistenceException {
     final BulkRequest bulkRequest = new BulkRequest();
@@ -33,7 +36,10 @@ public abstract class AbstractImportBatchProcessorElasticSearch implements Impor
     try {
       withTimer(
           () -> {
-            ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+            ElasticsearchUtil.processBulkRequest(
+                esClient,
+                bulkRequest,
+                tasklistProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
             return null;
           });
     } catch (Exception e) {
