@@ -86,6 +86,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
         />
         <SortableTable
           state={state}
+          columnsWithNoContentPadding={['operations']}
           selectionType="checkbox"
           onSelectAll={processInstancesSelectionStore.selectAllProcessInstances}
           onSelect={(rowId) => {
@@ -146,7 +147,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               versionTag: versionTag ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
               startDate: formatDate(instance.startDate),
-              endDate: instance.endDate ? formatDate(instance.endDate) : null,
+              endDate: formatDate(instance.endDate ?? null),
               parentInstanceId: (
                 <>
                   {instance.parentProcessInstanceKey ? (
