@@ -65,6 +65,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AuditLogResultEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationActorTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
@@ -709,6 +710,12 @@ public final class SearchQueryResponseMapper {
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
+        .actorType(
+            ofNullable(entity.actorType())
+                .map(Enum::name)
+                .map(BatchOperationActorTypeEnum::fromValue)
+                .orElse(null))
+        .actorId(entity.actorId())
         .operationsTotalCount(entity.operationsTotalCount())
         .operationsFailedCount(entity.operationsFailedCount())
         .operationsCompletedCount(entity.operationsCompletedCount())

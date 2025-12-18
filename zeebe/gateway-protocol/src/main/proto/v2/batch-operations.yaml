@@ -313,6 +313,11 @@ components:
           type: string
           description: The end date of the batch operation.
           format: date-time
+        actorType:
+          $ref: '#/components/schemas/BatchOperationActorTypeEnum'
+        actorId:
+          type: string
+          description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
         operationsTotalCount:
           type: integer
           description: The total number of items contained in this batch operation.
@@ -608,6 +613,13 @@ components:
         - MODIFY_PROCESS_INSTANCE
         - RESOLVE_INCIDENT
         - UPDATE_VARIABLE
+
+    BatchOperationActorTypeEnum:
+      description: The type of the actor. Available for batch operations created since 8.9.
+      type: string
+      enum:
+        - CLIENT
+        - USER
 
     ## Filters
 
