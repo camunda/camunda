@@ -624,6 +624,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           .filter(Objects::nonNull)
           .map(Object::toString)
           .anyMatch(indexName -> indexName.contains("8.8"));
+    } catch (final ElasticsearchStatusException e) {
+      LOGGER.warn(
+          "Elasticsearch error when checking if partition {} completed importing: {}",
+          partitionId,
+          e.getMessage());
+      return false;
     } catch (final IOException e) {
       LOGGER.error(
           "Failed to retrieve import positions so importer completion may not resolve correctly for partition {}",
