@@ -47,12 +47,17 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new AssertProcessInstanceInstructionHandler());
   }
 
-  private final AssertionFacade assertionFacade = new TestScenarioAssertionFacade();
-
   private final CamundaProcessTestContext context;
+  private final AssertionFacade assertionFacade;
 
   public CamundaTestScenarioRunner(final CamundaProcessTestContext context) {
+    this(context, new TestScenarioAssertionFacade());
+  }
+
+  public CamundaTestScenarioRunner(
+      final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
     this.context = context;
+    this.assertionFacade = assertionFacade;
   }
 
   private static void registerHandler(
