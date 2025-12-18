@@ -16,6 +16,7 @@
 package io.camunda.client.impl.statistics.request;
 
 import static io.camunda.client.api.search.request.SearchRequestBuilders.offsetPage;
+import static io.camunda.client.api.statistics.request.StatisticsRequestBuilders.incidentProcessInstanceStatisticsByDefinitionFilter;
 import static io.camunda.client.api.statistics.request.StatisticsRequestBuilders.incidentProcessInstanceStatisticsByDefinitionSort;
 
 import io.camunda.client.api.CamundaFuture;
