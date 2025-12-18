@@ -9,22 +9,22 @@
 import {getAccordionLabel} from './getAccordionLabel';
 
 describe('getAccordionLabel', () => {
-  it('should get accordion label for multiple instances/versions', () => {
+  it('should get accordion label for multiple versions with "2+" label', () => {
     expect(
       getAccordionLabel({
         name: 'myProcessName',
         instancesCount: 123,
-        versionsCount: 5,
+        hasMultipleVersions: true,
       }),
-    ).toBe('myProcessName – 123 Instances in 5 Versions');
+    ).toBe('myProcessName – 123 Instances in 2+ Versions');
     expect(
       getAccordionLabel({
         name: 'myProcessName',
         instancesCount: 123,
-        versionsCount: 5,
+        hasMultipleVersions: true,
         tenant: 'Tenant A',
       }),
-    ).toBe('myProcessName – 123 Instances in 5 Versions – Tenant A');
+    ).toBe('myProcessName – 123 Instances in 2+ Versions – Tenant A');
   });
 
   it('should get accordion label for single instance/version', () => {
@@ -32,34 +32,34 @@ describe('getAccordionLabel', () => {
       getAccordionLabel({
         name: 'myProcessName',
         instancesCount: 1,
-        versionsCount: 1,
+        hasMultipleVersions: false,
       }),
     ).toBe('myProcessName – 1 Instance in 1 Version');
     expect(
       getAccordionLabel({
         name: 'myProcessName',
         instancesCount: 1,
-        versionsCount: 1,
+        hasMultipleVersions: false,
         tenant: 'Tenant A',
       }),
     ).toBe('myProcessName – 1 Instance in 1 Version – Tenant A');
   });
 
-  it('should get accordion label for no instances/versions', () => {
+  it('should get accordion label for no instances', () => {
     expect(
       getAccordionLabel({
         name: 'myProcessName',
         instancesCount: 0,
-        versionsCount: 0,
+        hasMultipleVersions: false,
       }),
-    ).toBe('myProcessName – 0 Instances in 0 Versions');
+    ).toBe('myProcessName – 0 Instances in 1 Version');
     expect(
       getAccordionLabel({
         name: 'myProcessName',
         instancesCount: 0,
-        versionsCount: 0,
+        hasMultipleVersions: false,
         tenant: 'Tenant A',
       }),
-    ).toBe('myProcessName – 0 Instances in 0 Versions – Tenant A');
+    ).toBe('myProcessName – 0 Instances in 1 Version – Tenant A');
   });
 });

@@ -9,23 +9,23 @@
 import {getAccordionTitle} from './getAccordionTitle';
 
 describe('getAccordionTitle', () => {
-  it('should get title for multiple instances/versions', () => {
+  it('should get title for multiple versions with "2+" label', () => {
     expect(
       getAccordionTitle({
         processName: 'myProcessName',
         instancesCount: 100,
-        versionsCount: 3,
+        hasMultipleVersions: true,
       }),
-    ).toBe('View 100 Instances in 3 Versions of Process myProcessName');
+    ).toBe('View 100 Instances in 2+ Versions of Process myProcessName');
     expect(
       getAccordionTitle({
         processName: 'myProcessName',
         instancesCount: 100,
-        versionsCount: 3,
+        hasMultipleVersions: true,
         tenant: 'Tenant A',
       }),
     ).toBe(
-      'View 100 Instances in 3 Versions of Process myProcessName – Tenant A',
+      'View 100 Instances in 2+ Versions of Process myProcessName – Tenant A',
     );
   });
 
@@ -34,36 +34,34 @@ describe('getAccordionTitle', () => {
       getAccordionTitle({
         processName: 'myProcessName',
         instancesCount: 1,
-        versionsCount: 1,
+        hasMultipleVersions: false,
       }),
     ).toBe('View 1 Instance in 1 Version of Process myProcessName');
     expect(
       getAccordionTitle({
         processName: 'myProcessName',
         instancesCount: 1,
-        versionsCount: 1,
+        hasMultipleVersions: false,
         tenant: 'Tenant A',
       }),
     ).toBe('View 1 Instance in 1 Version of Process myProcessName – Tenant A');
   });
 
-  it('should get title for no instances/versions', () => {
+  it('should get title for no instances', () => {
     expect(
       getAccordionTitle({
         processName: 'myProcessName',
         instancesCount: 0,
-        versionsCount: 0,
+        hasMultipleVersions: false,
       }),
-    ).toBe('View 0 Instances in 0 Versions of Process myProcessName');
+    ).toBe('View 0 Instances in 1 Version of Process myProcessName');
     expect(
       getAccordionTitle({
         processName: 'myProcessName',
         instancesCount: 0,
-        versionsCount: 0,
+        hasMultipleVersions: false,
         tenant: 'Tenant A',
       }),
-    ).toBe(
-      'View 0 Instances in 0 Versions of Process myProcessName – Tenant A',
-    );
+    ).toBe('View 0 Instances in 1 Version of Process myProcessName – Tenant A');
   });
 });

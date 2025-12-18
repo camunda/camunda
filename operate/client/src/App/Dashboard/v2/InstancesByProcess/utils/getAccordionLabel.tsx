@@ -11,18 +11,17 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 function getAccordionLabel({
   name,
   instancesCount,
-  versionsCount,
+  hasMultipleVersions,
   tenant,
 }: {
   name: string;
   instancesCount: number;
-  versionsCount: number;
+  hasMultipleVersions: boolean;
   tenant?: string;
 }) {
-  return `${name} – ${pluralSuffix(
-    instancesCount,
-    'Instance',
-  )} in ${pluralSuffix(versionsCount, 'Version')}${
+  const versionsText = hasMultipleVersions ? '2+ Versions' : '1 Version';
+
+  return `${name} – ${pluralSuffix(instancesCount, 'Instance')} in ${versionsText}${
     tenant ? ` – ${tenant}` : ''
   }`;
 }
