@@ -13,6 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAnd
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
@@ -254,18 +255,22 @@ public class DecisionInstanceIT {
   public void shouldSaveAndFindDecisionInstanceWithLargeFailureMessage(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+
+    final var vendorDatabaseProperties = testApplication.bean(VendorDatabaseProperties.class);
+
     final DecisionInstanceDbReader decisionInstanceReader =
         rdbmsService.getDecisionInstanceReader();
 
     final var original =
         DecisionInstanceFixtures.createRandomized(
             b -> b.evaluationFailureMessage("x".repeat(9000)));
-    createAndSaveDecisionInstance(rdbmsWriters, original);
+    createAndSaveDecisionInstance(rdbmsWriter, original);
     final var actual = decisionInstanceReader.findOne(original.decisionInstanceId()).orElseThrow();
 
     assertThat(actual).isNotNull();
-    assertThat(actual.evaluationFailureMessage().length()).isEqualTo(4000);
+    assertThat(actual.evaluationFailureMessage().length())
+        .isEqualTo(vendorDatabaseProperties.varcharSize());
   }
 
   @TestTemplate

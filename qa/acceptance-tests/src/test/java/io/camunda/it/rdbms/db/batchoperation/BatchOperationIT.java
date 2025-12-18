@@ -20,6 +20,7 @@ import static io.camunda.util.FilterUtil.mapDefaultToOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -181,6 +182,7 @@ public class BatchOperationIT {
   public void shouldUpdateCompletedBatchItemWithLargeErrorMessage(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final var vendorDatabaseProperties = testApplication.bean(VendorDatabaseProperties.class);
 
     // given
     final RdbmsWriters writer = rdbmsService.createWriter(0);
@@ -231,7 +233,8 @@ public class BatchOperationIT {
     assertThat(updatedItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(updatedItem.errorMessage()).isNotNull();
-    assertThat(updatedItem.errorMessage().length()).isEqualTo(4000);
+    assertThat(updatedItem.errorMessage().length())
+        .isEqualTo(vendorDatabaseProperties.varcharSize());
   }
 
   @TestTemplate
@@ -586,6 +589,7 @@ public class BatchOperationIT {
   public void shouldFinishBatchOperationWithErrorWithLargeMessage(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final var vendorDatabaseProperties = testApplication.bean(VendorDatabaseProperties.class);
 
     // given
     final RdbmsWriters writer = rdbmsService.createWriter(0);
@@ -620,7 +624,7 @@ public class BatchOperationIT {
             .filter(e -> e.partitionId() == 1)
             .findFirst()
             .orElseThrow();
-    assertThat(error.message().length()).isEqualTo(4000);
+    assertThat(error.message().length()).isEqualTo(vendorDatabaseProperties.varcharSize());
   }
 
   @TestTemplate

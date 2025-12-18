@@ -39,8 +39,8 @@ class JobWriterTest {
       new JobWriter(executionQueue, mapper, vendorDatabaseProperties, config);
 
   @Test
-  void shouldCreateJobWhenNotMerged() {
-    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+  void shouldCreateJob() {
+    when(vendorDatabaseProperties.varcharSize()).thenReturn(5000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
     when(config.insertBatchingConfig()).thenReturn(insertBatchingConfig);
     when(insertBatchingConfig.jobInsertBatchSize()).thenReturn(1);

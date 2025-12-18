@@ -36,7 +36,7 @@ class IncidentWriterTest {
 
   @Test
   void shouldCreateIncident() {
-    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.varcharSize()).thenReturn(5000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
 
     final var model = mock(IncidentDbModel.class);
@@ -59,7 +59,7 @@ class IncidentWriterTest {
 
   @Test
   void shouldUpdateIncident() {
-    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.varcharSize()).thenReturn(5000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(20000);
 
     final var model = mock(IncidentDbModel.class);

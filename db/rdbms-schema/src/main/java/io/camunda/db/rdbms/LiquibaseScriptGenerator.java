@@ -96,7 +96,12 @@ public class LiquibaseScriptGenerator {
     final var properties = VendorDatabasePropertiesLoader.load(databaseType);
 
     final var sqlScript =
-        generateSqlScript(databaseType, changesetFile, prefix, properties.userCharColumnSize());
+        generateSqlScript(
+            databaseType,
+            changesetFile,
+            prefix,
+            properties.varcharSize(),
+            properties.varcharIndexSize());
 
     final String basedir = targetBaseDir + "/" + databaseType;
     Files.createDirectories(Paths.get(basedir));
@@ -111,7 +116,8 @@ public class LiquibaseScriptGenerator {
       final String databaseType,
       final String changesetFile,
       final String prefix,
-      final int userCharColumnSize)
+      final int varcharSize,
+      final int varcharIndexSize)
       throws LiquibaseException {
 
     final var database = DatabaseFactory.getInstance().getDatabase(databaseType);
@@ -119,7 +125,8 @@ public class LiquibaseScriptGenerator {
     final Liquibase liquibase =
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
     liquibase.setChangeLogParameter("prefix", prefix);
-    liquibase.setChangeLogParameter("userCharColumnSize", userCharColumnSize);
+    liquibase.setChangeLogParameter("varcharSize", varcharSize);
+    liquibase.setChangeLogParameter("varcharIndexSize", varcharIndexSize);
 
     final var changelog = liquibase.getDatabaseChangeLog();
 
