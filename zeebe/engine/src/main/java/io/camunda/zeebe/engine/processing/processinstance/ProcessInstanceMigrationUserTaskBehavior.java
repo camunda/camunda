@@ -126,6 +126,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
 
     assignUser(userTaskProperties, userTaskRecord);
 
+    job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
   }
