@@ -17,9 +17,14 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@EnableAutoConfiguration
 public abstract class ToolsTest {
 
   public static final CamundaAuthentication AUTHENTICATION_WITH_DEFAULT_TENANT =

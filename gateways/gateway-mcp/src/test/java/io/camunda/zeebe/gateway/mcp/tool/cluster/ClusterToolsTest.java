@@ -29,15 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    classes = {ClusterTools.class})
-@EnableAutoConfiguration
+@ContextConfiguration(classes = {ClusterTools.class})
 class ClusterToolsTest extends ToolsTest {
 
   @MockitoBean private TopologyServices topologyServices;
