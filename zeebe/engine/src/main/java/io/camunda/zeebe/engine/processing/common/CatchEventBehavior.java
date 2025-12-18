@@ -174,6 +174,7 @@ public final class CatchEventBehavior {
                 ConditionalSubscriptionIntent.DELETED,
                 subscription.getRecord());
           }
+          return true;
         });
   }
 
