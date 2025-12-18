@@ -939,11 +939,11 @@ class SegmentedJournalTest {
    */
   private SegmentAllocator createFailingSegmentAllocator(final int failAtSegmentCount) {
     final AtomicInteger segmentCount = new AtomicInteger(0);
-    return (channel, segmentSize) -> {
+    return (channel, fd, segmentSize) -> {
       if (segmentCount.incrementAndGet() >= failAtSegmentCount) {
         throw new OutOfDiskSpace("Nope, no free space.");
       } else {
-        SegmentAllocator.fill().allocate(channel, segmentSize);
+        SegmentAllocator.posix(SegmentAllocator.noop()).allocate(channel, fd, segmentSize);
       }
     };
   }
