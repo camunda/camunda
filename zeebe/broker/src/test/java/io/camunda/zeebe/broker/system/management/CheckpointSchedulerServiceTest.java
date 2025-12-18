@@ -183,12 +183,14 @@ public class CheckpointSchedulerServiceTest {
   }
 
   @Test
-  void shouldStopListenersOnLowestAdded() throws NoSuchFieldException, IllegalAccessException {
+  void shouldStopSchedulerOnLowestAdded() throws NoSuchFieldException, IllegalAccessException {
     // given
 
     doReturn(member2).when(membershipService).getLocalMember();
+    doReturn(Set.of(member2, member3)).when(membershipService).getMembers();
     schedulingService.onActorStarting();
     schedulingService.onActorStarted();
+    verify(scheduler, times(1)).submitActor(argThat(CheckpointScheduler.class::isInstance));
     final var checkpointCreatorSpy = getCheckpointCreator(schedulingService);
 
     // when
