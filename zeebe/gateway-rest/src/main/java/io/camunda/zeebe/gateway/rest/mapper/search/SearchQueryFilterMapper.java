@@ -347,6 +347,13 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getOperationType())
           .map(mapToOperations(String.class))
           .ifPresent(builder::operationTypeOperations);
+      ofNullable(filter.getActorType())
+          .map(io.camunda.zeebe.gateway.protocol.rest.BatchOperationActorTypeEnum::getValue)
+          .map(String::toUpperCase)
+          .ifPresent(builder::actorTypes);
+      ofNullable(filter.getActorId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::actorIdOperations);
     }
 
     return builder.build();

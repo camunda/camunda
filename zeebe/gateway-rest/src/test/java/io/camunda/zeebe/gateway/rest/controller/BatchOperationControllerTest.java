@@ -222,6 +222,34 @@ class BatchOperationControllerTest extends RestControllerTest {
                     String.valueOf(BatchOperationStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
+    customOperationTestCases(
+        streamBuilder,
+        "actorType",
+        ops ->
+            new io.camunda.search.filter.BatchOperationFilter.Builder()
+                .actorTypeOperations(ops)
+                .build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(BatchOperationActorType.USER))),
+            List.of(Operation.eq(String.valueOf(BatchOperationActorType.CLIENT)))),
+        true);
+
+    customOperationTestCases(
+        streamBuilder,
+        "actorId",
+        ops ->
+            new io.camunda.search.filter.BatchOperationFilter.Builder()
+                .actorIdOperations(ops)
+                .build(),
+        List.of(
+            List.of(Operation.eq("frodo.baggins@fellowship")),
+            List.of(Operation.neq("aragorn@fellowship")),
+            List.of(Operation.in("frodo@fellowship", "aragorn@fellowship")),
+            List.of(Operation.notIn("samwise@fellowship", "gandalf@fellowship")),
+            List.of(Operation.exists(true)),
+            List.of(Operation.exists(false)),
+            List.of(Operation.like("fro*"))),
+        true);
 
     return streamBuilder.build();
   }
