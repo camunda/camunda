@@ -320,6 +320,8 @@ components:
       enum:
         - USER
         - CLIENT
+        - ANONYMOUS
+        - UNKNOWN
 
     AuditLogResultEnum:
       type: string
