@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from '../../utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -157,7 +158,7 @@ test.describe('Process Instance', () => {
     });
   });
 
-  test('Cancel an instance', async ({operateProcessInstancePage}) => {
+  test('Cancel an instance', async ({page, operateProcessInstancePage}) => {
     const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
     await test.step('Navigate to process instance with incident', async () => {
@@ -181,9 +182,17 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Verify instance is canceled', async () => {
-      await expect(
-        operateProcessInstancePage.incidentBannerButton(3),
-      ).not.toBeVisible({timeout: 60000});
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.incidentBannerButton(3),
+          ).not.toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+          await sleep(5000);
+        },
+      });
 
       await expect(operateProcessInstancePage.terminatedIcon).toBeVisible();
 
