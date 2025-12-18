@@ -220,7 +220,7 @@ elasticsearch:
         cpu: 3
         memory: 3Gi
       limits:
-        cpu: 3
+        cpu: 6
         memory: 6Gi
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"
