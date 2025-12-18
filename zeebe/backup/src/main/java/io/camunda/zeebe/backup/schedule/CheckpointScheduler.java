@@ -9,10 +9,12 @@ package io.camunda.zeebe.backup.schedule;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
@@ -78,7 +80,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private CompletableActorFuture<ScheduleInstruction> checkpointIfNeeded(
       final ScheduleInstruction instruction) {
     final var now = ActorClock.current().instant();
-
     final CompletableActorFuture<ScheduleInstruction> future = new CompletableActorFuture<>();
     if (instruction.checkpointTime.isBefore(now) || instruction.checkpointTime.equals(now)) {
       backupRequestHandler
@@ -117,19 +118,24 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
    * @return The current state {@link CheckpointState} containing the earliest checkpoint
    *     timestamp(left) and earliest backup timestamp(right).
    */
-  private CompletableActorFuture<CheckpointState> acquireEarliestState() {
-    final CompletableActorFuture<CheckpointState> future = new CompletableActorFuture<>();
-    backupRequestHandler
-        .getCheckpointState()
-        .thenApply(
-            state -> {
-              final Instant minCheckpointTimestamp =
-                  minFromState(state.getCheckpointStates(), checkpointSchedule);
-              final Instant minBackupTimestamp =
-                  minFromState(state.getBackupStates(), backupSchedule);
-              return new CheckpointState(minCheckpointTimestamp, minBackupTimestamp);
-            })
-        .thenAccept(future::complete);
+  private ActorFuture<CheckpointState> acquireEarliestState() {
+    final ActorFuture<CheckpointState> future = createFuture();
+    final ActorFuture<CheckpointStateResponse> requestFuture = createFuture();
+
+    runOnCompletion(
+        requestFuture,
+        (response, error) -> {
+          if (error != null) {
+            future.completeExceptionally(error);
+          }
+          final Instant minCheckpointTimestamp =
+              minFromState(response.getCheckpointStates(), checkpointSchedule);
+          final Instant minBackupTimestamp =
+              minFromState(response.getBackupStates(), backupSchedule);
+          future.complete(new CheckpointState(minCheckpointTimestamp, minBackupTimestamp));
+        });
+
+    backupRequestHandler.getCheckpointState().thenAccept(requestFuture::complete);
     return future;
   }
 
