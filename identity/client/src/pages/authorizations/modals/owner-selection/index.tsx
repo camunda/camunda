@@ -69,7 +69,7 @@ const Selection: FC<SelectionProps> = ({
                 ? t("usernameRequired")
                 : isInvalidId
                   ? t("pleaseEnterValidUsername", {
-                      pattern: getIdPattern().toString(),
+                      pattern: getIdPattern(),
                     })
                   : ""
             }
@@ -114,7 +114,7 @@ const Selection: FC<SelectionProps> = ({
               ? t("groupIdRequired")
               : isInvalidId
                 ? t("pleaseEnterValidGroupId", {
-                    pattern: getIdPattern().toString(),
+                    pattern: getIdPattern(),
                   })
                 : ""
           }
@@ -160,7 +160,7 @@ const Selection: FC<SelectionProps> = ({
               ? t("ownerRequired")
               : isInvalidId
                 ? t("pleaseEnterValidClientId", {
-                    pattern: getIdPattern().toString(),
+                    pattern: getIdPattern(),
                   })
                 : ""
           }

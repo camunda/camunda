@@ -75,7 +75,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           validate: (value) =>
             isValidId(value) ||
             t("pleaseEnterValidRoleId", {
-              pattern: getIdPattern().toString(),
+              pattern: getIdPattern(),
             }),
         }}
         render={({ field, fieldState }) => (

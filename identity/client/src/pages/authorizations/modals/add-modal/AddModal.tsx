@@ -332,7 +332,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                 validate: (value) =>
                   isValidResourceId(value) ||
                   t("pleaseEnterValidResourceId", {
-                    pattern: getIdPattern().toString(),
+                    pattern: getIdPattern(),
                   }),
               }}
               render={({ field, fieldState }) => (
