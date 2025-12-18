@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
+import {waitForProcessInstances} from 'utils/incidentsHelper';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -23,7 +24,7 @@ let instanceWithIncidentToCancel: ProcessInstance;
 let collapsedSubProcessInstance: ProcessInstance;
 let executionCountProcessInstance: ProcessInstance;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({request}) => {
   await deploy([
     './resources/processWithAnIncident.bpmn',
     './resources/processWithMultiIncidents.bpmn',
@@ -52,7 +53,15 @@ test.beforeAll(async () => {
     1,
   );
 
-  await sleep(2000);
+  // Wait for process instances with incidents to be indexed
+  await waitForProcessInstances(
+    request,
+    [
+      instanceWithIncidentToCancel.processInstanceKey,
+      instanceWithIncidentToResolve.processInstanceKey,
+    ],
+    2,
+  );
 });
 
 test.describe('Process Instance', () => {
@@ -72,10 +81,10 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
       });
-      await sleep(1000);
     });
 
     await test.step('Verify incident banner is visible', async () => {
+      await sleep(500);
       await expect(
         operateProcessInstancePage.incidentBannerButton(2),
       ).toBeVisible();
@@ -161,7 +170,6 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceId,
       });
-      await sleep(1000);
     });
 
     await test.step('Verify incident banner is visible', async () => {
@@ -200,7 +208,6 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: collapsedSubProcessInstance.processInstanceKey,
       });
-      await sleep(1000);
     });
 
     await test.step('Click on startEvent in instance history', async () => {

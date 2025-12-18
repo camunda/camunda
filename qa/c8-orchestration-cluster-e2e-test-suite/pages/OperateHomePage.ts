@@ -22,7 +22,7 @@ class OperateHomePage {
   constructor(page: Page) {
     this.page = page;
     this.operateBanner = page.getByRole('link', {name: 'Camunda logo Operate'});
-    this.processesTab = page.getByRole('link', {name: 'Processes'});
+    this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
     this.informationDialog = page.getByRole('button', {
       name: 'Close this dialog',
