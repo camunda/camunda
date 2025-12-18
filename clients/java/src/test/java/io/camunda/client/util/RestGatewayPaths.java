@@ -22,6 +22,8 @@ public class RestGatewayPaths {
   private static final String URL_AUTHORIZATION = REST_API_PATH + "/authorizations/%s";
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
+  private static final String URL_BATCH_OPERATIONS_SEARCH =
+      REST_API_PATH + "/batch-operations/search";
   private static final String URL_CLUSTER_VARIABLES = REST_API_PATH + "/cluster-variables";
   private static final String URL_CLUSTER_VARIABLES_CREATE_GLOBAL =
       URL_CLUSTER_VARIABLES + "/global";
@@ -329,6 +331,10 @@ public class RestGatewayPaths {
 
   public static String getBatchOperationUrl(final String batchOperationKey) {
     return String.format(URL_BATCH_OPERATION, batchOperationKey);
+  }
+
+  public static String getBatchOperationsSearchUrl() {
+    return URL_BATCH_OPERATIONS_SEARCH;
   }
 
   public static String getVariableUrl(final long variableKey) {
