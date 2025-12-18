@@ -15,11 +15,13 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.BatchOperationStateProperty;
 import io.camunda.client.api.search.filter.builder.BatchOperationTypeProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BatchOperationStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BatchOperationTypePropertyImpl;
@@ -90,6 +92,23 @@ public class BatchOperationFilterImpl
     final BatchOperationStateProperty property = new BatchOperationStatePropertyImpl();
     fn.accept(property);
     filter.setState(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationFilter actorType(
+      final BatchOperationActorTypeEnum actorType) {
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationFilter actorId(final String actorId) {
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationFilter actorId(
+      final Consumer<StringProperty> fn) {
     return this;
   }
 
