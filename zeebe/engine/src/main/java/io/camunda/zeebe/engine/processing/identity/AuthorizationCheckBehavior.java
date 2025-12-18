@@ -77,6 +77,7 @@ public final class AuthorizationCheckBehavior {
 
     authorizationsCache =
         CacheBuilder.newBuilder()
+            .expireAfterAccess(config.getAuthorizationsCacheTtl())
             .maximumSize(config.getAuthorizationsCacheCapacity())
             .build(
                 new CacheLoader<>() {
