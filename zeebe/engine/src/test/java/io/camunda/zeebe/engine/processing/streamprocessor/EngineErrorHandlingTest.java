@@ -124,8 +124,7 @@ public final class EngineErrorHandlingTest {
               keyGenerator = processingContext.getProcessingState().getKeyGenerator();
               failingKey.set(keyGenerator.getCurrentKey());
               secondKey.set(keyGenerator.nextKey());
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.DEPLOYMENT,
                       DeploymentIntent.CREATE,
@@ -208,8 +207,7 @@ public final class EngineErrorHandlingTest {
             (processingContext) -> {
               processingState = processingContext.getProcessingState();
               keyGenerator = processingState.getKeyGenerator();
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
@@ -277,8 +275,7 @@ public final class EngineErrorHandlingTest {
             (processingContext) -> {
               processingState = processingContext.getProcessingState();
               keyGenerator = processingState.getKeyGenerator();
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
@@ -318,8 +315,7 @@ public final class EngineErrorHandlingTest {
             (processingContext) -> {
               processingState = processingContext.getProcessingState();
               keyGenerator = processingState.getKeyGenerator();
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
@@ -366,8 +362,7 @@ public final class EngineErrorHandlingTest {
               dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
               processingState = processingContext.getProcessingState();
               keyGenerator = processingState.getKeyGenerator();
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
                   .onCommand(
@@ -443,8 +438,7 @@ public final class EngineErrorHandlingTest {
             (processingContext) -> {
               processingState = processingContext.getProcessingState();
               keyGenerator = processingState.getKeyGenerator();
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .withListener(
                       new StreamProcessorLifecycleAware() {
                         @Override
@@ -490,8 +484,7 @@ public final class EngineErrorHandlingTest {
               processingState = processingContext.getProcessingState();
               keyGenerator = processingState.getKeyGenerator();
 
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
                   .onCommand(
                       ValueType.JOB,
@@ -583,8 +576,7 @@ public final class EngineErrorHandlingTest {
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
               processingState = processingContext.getProcessingState();
-              return TypedRecordProcessors.processors(
-                      processingState.getKeyGenerator(), processingContext.getWriters())
+              return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.DEPLOYMENT,
                       DeploymentIntent.CREATE,

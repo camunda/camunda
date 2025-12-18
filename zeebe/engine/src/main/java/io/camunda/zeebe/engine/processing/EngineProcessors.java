@@ -110,7 +110,7 @@ public final class EngineProcessors {
     final var scheduledTaskStateFactory =
         typedRecordProcessorContext.getScheduledTaskStateFactory();
     final var writers = typedRecordProcessorContext.getWriters();
-    final var typedRecordProcessors = TypedRecordProcessors.processors(keyGenerator, writers);
+    final var typedRecordProcessors = TypedRecordProcessors.processors();
 
     typedRecordProcessors.withListener(processingState);
 
