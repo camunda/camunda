@@ -46,16 +46,8 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     backupRequestHandler = new BackupRequestHandler(brokerClient);
     errorStrategy = new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
 
-    if (checkpointSchedule != null && backupSchedule != null) {
-      checkpointDecider = this::decideForCheckpointAndBackup;
-      executorDelayProvider = this::checkpointAndBackupDelayProvider;
-    } else if (checkpointSchedule != null) {
-      checkpointDecider = this::nextCheckpoint;
-      executorDelayProvider = this::checkpointScheduleDelayProvider;
-    } else {
-      checkpointDecider = this::nextBackup;
-      executorDelayProvider = this::backupScheduleDelayProvider;
-    }
+    checkpointDecider = determineCheckpointDeciderProvider();
+    executorDelayProvider = determineDelayProvider();
   }
 
   @Override
@@ -105,6 +97,26 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
             Math.abs(
                 instruction.checkpointTime.toEpochMilli()
                     - ActorClock.current().instant().toEpochMilli()));
+  }
+
+  private Function<CheckpointState, ScheduleInstruction> determineCheckpointDeciderProvider() {
+    if (checkpointSchedule != null && backupSchedule != null) {
+      return this::decideForCheckpointAndBackup;
+    } else if (checkpointSchedule != null) {
+      return this::nextCheckpoint;
+    } else {
+      return this::nextBackup;
+    }
+  }
+
+  private Function<CheckpointState, Long> determineDelayProvider() {
+    if (checkpointSchedule != null && backupSchedule != null) {
+      return this::checkpointAndBackupDelayProvider;
+    } else if (checkpointSchedule != null) {
+      return this::checkpointScheduleDelayProvider;
+    } else {
+      return this::backupScheduleDelayProvider;
+    }
   }
 
   private ScheduleInstruction decideForCheckpointAndBackup(final CheckpointState state) {
@@ -224,6 +236,25 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private Long peekDelay(final long delay) {
     LOG.debug("Next checkpoint scheduled in {}ms", delay);
     return delay;
+  }
+
+  private Duration backOffOnError(final Throwable error) {
+    errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
+    LOG.debug(
+        "Backing off checkpoint scheduling for {} due to : {}", errorDelayMs, error.getMessage());
+    return Duration.ofMillis(errorDelayMs);
+  }
+
+  private Instant nextExecution(final Schedule schedule, final Instant from) {
+    return schedule
+        .nextExecution(from)
+        .orElseThrow(() -> new CouldNotDetermineNextExecution(schedule));
+  }
+
+  private Instant previousExecution(final Schedule schedule, final Instant from) {
+    return schedule
+        .previousExecution(from)
+        .orElseThrow(() -> new CouldNotDetermineNextExecution(schedule));
   }
 
   static class CouldNotDetermineNextExecution extends RuntimeException {
