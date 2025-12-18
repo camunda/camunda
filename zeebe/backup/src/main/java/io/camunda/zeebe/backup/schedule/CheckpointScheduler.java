@@ -24,6 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CheckpointScheduler extends Actor implements AutoCloseable {
+
+  // If the time difference between the next checkpoint and backup is less than this threshold, we
+  // skip the checkpoint and instruct only a backup on the backup's defined interval. Since backups
+  // also create a checkpoint, this avoids  redundant checkpoints and the possibility for
+  // checkpointId collisions.
   static final long SKIP_CHECKPOINT_THRESHOLD = Duration.ofSeconds(2).toMillis();
   private static final long BACKOFF_INITIAL_DELAY_MS = 1000;
   private static final long BACKOFF_MAX_DELAY_MS = 10_000;
