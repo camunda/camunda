@@ -116,6 +116,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -777,6 +778,15 @@ public final class RecordingExporter implements Exporter {
       try {
         overrideMaximumWaitTime = true;
         conditionFactory.untilAsserted(throwingRunnable);
+      } finally {
+        overrideMaximumWaitTime = false;
+      }
+    }
+
+    public void until(final Callable<Boolean> callable) {
+      try {
+        overrideMaximumWaitTime = true;
+        conditionFactory.until(callable);
       } finally {
         overrideMaximumWaitTime = false;
       }

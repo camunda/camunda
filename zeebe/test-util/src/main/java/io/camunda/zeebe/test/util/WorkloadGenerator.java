@@ -19,9 +19,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.awaitility.Awaitility;
 
 /**
  * Utility to produce some work for a Zeebe cluster. The intention is to use {@link
@@ -47,8 +45,10 @@ public final class WorkloadGenerator {
   /**
    * Given a client, deploy a process, start instances, work on service tasks, create and resolve
    * incidents and finish the instance.
+   *
+   * @return the position of the final record created during the workload
    */
-  public static void performSampleWorkload(final CamundaClient client) {
+  public static long performSampleWorkload(final CamundaClient client) {
     client
         .newDeployResourceCommand()
         .addProcessModel(SAMPLE_PROCESS, "sample_process.bpmn")
@@ -101,29 +101,26 @@ public final class WorkloadGenerator {
         .join();
 
     // wait for incident and resolve it
+    RecordingExporter.setMaximumWaitTime(Duration.ofMinutes(1).toMillis());
     final Record<IncidentRecordValue> incident =
-        Awaitility.await("the incident was created")
-            .timeout(Duration.ofMinutes(1))
-            .until(
-                () ->
-                    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                        .withProcessInstanceKey(processInstanceKey)
-                        .withElementId("task")
-                        .findFirst(),
-                Optional::isPresent)
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .findFirst()
             .orElseThrow();
 
     client.newUpdateRetriesCommand(incident.getValue().getJobKey()).retries(3).send().join();
     client.newResolveIncidentCommand(incident.getKey()).send().join();
 
     // wrap up
-    Awaitility.await("the process instance was completed")
-        .timeout(Duration.ofMinutes(1))
-        .until(
-            () ->
-                RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                    .filter(r -> r.getKey() == processInstanceKey)
-                    .exists());
+    final var finalRecordPosition =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getPosition();
+    RecordingExporter.setMaximumWaitTime(RecordingExporter.DEFAULT_MAX_WAIT_TIME);
+
     worker.close();
+    return finalRecordPosition;
   }
 }

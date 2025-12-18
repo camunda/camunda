@@ -101,11 +101,14 @@ public class AvailabilityTest {
     }
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceCreationRecords()
-                .withIntent(ProcessInstanceCreationIntent.CREATED)
-                .filter(r -> r.getPartitionId() == failingPartition))
-        .hasSizeGreaterThanOrEqualTo(1);
+    RecordingExporter.await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        RecordingExporter.processInstanceCreationRecords()
+                            .withIntent(ProcessInstanceCreationIntent.CREATED)
+                            .filter(r -> r.getPartitionId() == failingPartition))
+                    .hasSizeGreaterThanOrEqualTo(1));
   }
 
   @Test
