@@ -12,9 +12,9 @@ import {Tooltip} from '@carbon/react';
 import {
   Checkmark,
   CircleDash,
-} from '@carbon/icons-react/lib/generated/bucket-3';
-import {ErrorOutline} from '@carbon/icons-react/lib/generated/bucket-6';
-import {Pending} from '@carbon/icons-react';
+  ErrorOutline,
+  Pending,
+} from '@carbon/react/icons';
 
 const BatchItemsCount: React.FC<{
   operationsCompletedCount: number;

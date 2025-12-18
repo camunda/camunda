@@ -17,7 +17,7 @@ import {
   PauseOutlineFilled,
   UnknownFilled,
   type CarbonIconType,
-} from '@carbon/icons-react';
+} from '@carbon/react/icons';
 import {BatchStateIndicatorContainer} from './styled';
 
 type BatchStateIndicatorProps = {

@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {Button} from '@carbon/react';
-import {ClassicBatch} from '@carbon/icons-react';
+import {ClassicBatch} from '@carbon/react/icons';
 import {useNavigate} from 'react-router-dom';
 import isNil from 'lodash/isNil';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
