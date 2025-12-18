@@ -6,7 +6,9 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Root level="${env:LOG_LEVEL:-info}">
+    <Logger name="io.camunda" level="${env:CAMUNDA_LOG_LEVEL:-INFO}" />
+
+    <Root level="${env:LOG_LEVEL:-WARN}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
