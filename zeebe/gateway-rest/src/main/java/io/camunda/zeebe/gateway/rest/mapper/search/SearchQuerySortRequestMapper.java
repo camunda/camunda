@@ -299,6 +299,8 @@ public class SearchQuerySortRequestMapper {
         case OPERATION_TYPE -> builder.operationType();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
+        case ACTOR_TYPE -> builder.actorType();
+        case ACTOR_ID -> builder.actorId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
