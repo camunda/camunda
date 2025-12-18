@@ -46,7 +46,9 @@ public class QueryBatchOperationTest extends ClientRestTest {
             .state(BatchOperationStateEnum.UNKNOWN_DEFAULT_OPEN_API)
             .batchOperationType(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API)
             .endDate(dateTime.toString())
-            .startDate(dateTime.toString()));
+            .startDate(dateTime.toString())
+            .actorType(null)
+            .actorId(null));
 
     // when
     final BatchOperation result =
