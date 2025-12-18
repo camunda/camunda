@@ -166,7 +166,7 @@ echo ""
 echo "[4/5] Updating key values using cdbg on leader broker ${LEADER_BROKER}..."
 
 # Build the cdbg command
-CDBG_CMD="/usr/local/camunda/bin/cdbg state update-key"
+CDBG_CMD="cdbg state update-key"
 CDBG_CMD="${CDBG_CMD} --root ${LEADER_PATH}"
 CDBG_CMD="${CDBG_CMD} --runtime ${RUNTIME_PATH}"
 CDBG_CMD="${CDBG_CMD} --snapshot ${SELECTED_SNAPSHOT}"
@@ -183,14 +183,6 @@ eval "${CDBG_CMD}"
 
 echo ""
 echo "Key update completed successfully!"
-echo ""
-
-# Delete the original snapshot since cdbg created a new one
-echo "Removing original snapshot: ${SELECTED_SNAPSHOT}"
-rm -rf "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}"
-# Also remove the checksum file if it exists
-[ -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum" ] && rm -f "${LEADER_PATH}/snapshots/${SELECTED_SNAPSHOT}.checksum"
-echo "Original snapshot removed"
 echo ""
 
 echo "Updated snapshot location: ${LEADER_PATH}/snapshots/"
