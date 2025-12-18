@@ -16,8 +16,8 @@
 package io.camunda.client.api.search.enums;
 
 public enum AuditLogCategoryEnum {
-  OPERATOR,
-  USER_TASK,
+  DEPLOYED_RESOURCES,
+  USER_TASKS,
   ADMIN,
   UNKNOWN_DEFAULT_OPEN_API,
   UNKNOWN_ENUM_VALUE

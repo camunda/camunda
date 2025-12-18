@@ -10,6 +10,6 @@ package io.camunda.webapps.schema.entities.auditlog;
 public enum AuditLogOperationCategory {
   UNKNOWN,
   ADMIN,
-  OPERATOR,
-  USER_TASK
+  DEPLOYED_RESOURCES,
+  USER_TASKS
 }

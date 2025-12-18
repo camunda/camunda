@@ -58,7 +58,7 @@ type AuditLogActorType = z.infer<typeof auditLogActorTypeSchema>;
 const auditLogResultSchema = z.enum(['SUCCESS', 'FAIL']);
 type AuditLogResult = z.infer<typeof auditLogResultSchema>;
 
-const auditLogCategorySchema = z.enum(['OPERATOR', 'USER_TASK', 'ADMIN']);
+const auditLogCategorySchema = z.enum(['DEPLOYED_RESOURCES', 'USER_TASKS', 'ADMIN']);
 type AuditLogCategory = z.infer<typeof auditLogCategorySchema>;
 
 const auditLogSchema = z.object({

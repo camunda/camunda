@@ -41,7 +41,7 @@ class AuditLogDbModelTest {
             .tenantScope(AuditLogTenantScope.TENANT)
             .result(AuditLogOperationResult.SUCCESS)
             .annotation("Manual cancellation")
-            .category(AuditLogOperationCategory.OPERATOR)
+            .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
             .processDefinitionId("process-1")
             .decisionDefinitionId("decision-1")
             .decisionRequirementsId("dmn-1")
@@ -72,7 +72,7 @@ class AuditLogDbModelTest {
     assertThat(auditLog.tenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
     assertThat(auditLog.result()).isEqualTo(AuditLogOperationResult.SUCCESS);
     assertThat(auditLog.annotation()).isEqualTo("Manual cancellation");
-    assertThat(auditLog.category()).isEqualTo(AuditLogOperationCategory.OPERATOR);
+    assertThat(auditLog.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
     assertThat(auditLog.processDefinitionId()).isEqualTo("process-1");
     assertThat(auditLog.decisionRequirementsId()).isEqualTo("dmn-1");
     assertThat(auditLog.decisionDefinitionId()).isEqualTo("decision-1");
