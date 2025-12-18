@@ -200,4 +200,41 @@ class SearchBatchOperationsTest extends ClientRestTest {
     assertThat(mapped.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
     assertThat(mapped.getActorId()).isEqualTo("demo-user");
   }
+
+  @Test
+  void shouldSearchBatchOperationWithActorInfoFilter() {
+    // when
+    client
+        .newBatchOperationSearchRequest()
+        .filter(f -> f.actorType(BatchOperationActorTypeEnum.USER).actorId("demo-user"))
+        .send()
+        .join();
+
+    // then
+    final BatchOperationSearchQuery request =
+        gatewayService.getLastRequest(BatchOperationSearchQuery.class);
+
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter().getActorType())
+        .isEqualTo(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER);
+    assertThat(request.getFilter().getActorId().get$Eq()).isEqualTo("demo-user");
+  }
+
+  @Test
+  void shouldSearchBatchOperationWithAdvancedActorIdFilter() {
+    // when
+    client
+        .newBatchOperationSearchRequest()
+        .filter(f -> f.actorId(p -> p.like("demo-%").neq("demo-user")))
+        .send()
+        .join();
+
+    // then
+    final BatchOperationSearchQuery request =
+        gatewayService.getLastRequest(BatchOperationSearchQuery.class);
+
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter().getActorId().get$Like()).isEqualTo("demo-%");
+    assertThat(request.getFilter().getActorId().get$Neq()).isEqualTo("demo-user");
+  }
 }
