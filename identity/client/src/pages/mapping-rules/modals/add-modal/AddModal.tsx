@@ -93,7 +93,7 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
           validate: (value) =>
             isValidId(value) ||
             t("pleaseEnterValidMappingRuleId", {
-              pattern: getIdPattern().toString(),
+              pattern: getIdPattern(),
             }),
         }}
         render={({ field }) => (

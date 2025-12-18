@@ -287,9 +287,9 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               required: t("resourceIdRequired"),
               validate: (value) =>
                 isValidResourceId(value) ||
-                  t("pleaseEnterValidResourceId", {
-                    pattern: getIdPattern().toString(),
-                  }),
+                t("pleaseEnterValidResourceId", {
+                  pattern: getIdPattern(),
+                }),
             }}
             render={({ field, fieldState }) => (
               <TextField
