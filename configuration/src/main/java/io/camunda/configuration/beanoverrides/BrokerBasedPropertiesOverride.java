@@ -483,6 +483,10 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getRaft()
         .setPreallocateSegmentFiles(raft.isPreallocateSegmentFiles());
+    override
+        .getExperimental()
+        .getRaft()
+        .setSegmentPreallocationStrategy(raft.getSegmentPreallocationStrategy());
   }
 
   private void populateFromClusterMetadata(final BrokerBasedProperties override) {
