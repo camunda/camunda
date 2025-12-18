@@ -27,6 +27,8 @@ import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.gateway.mcp.model.IncidentSearchFilter;
 import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
 import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -148,11 +150,15 @@ public class IncidentTools {
             "Cannot retrieve job key for job-based incident.", Status.INVALID_STATE);
       }
       // update retries for the job to 1
-      CallToolResultMapper.from(
-          jobServices
-              .withAuthentication(camundaAuthentication)
-              .updateJob(jobKey, null, new UpdateJobChangeset(1, null)),
-          r -> r);
+      // noinspection unchecked
+      final Either<ServiceException, JobRecord> updateResult =
+          CallToolResultMapper.executeServiceMethod(
+              jobServices
+                  .withAuthentication(camundaAuthentication)
+                  .updateJob(jobKey, null, new UpdateJobChangeset(1, null)));
+      if (updateResult.isLeft()) {
+        throw updateResult.getLeft();
+      }
       // resolve incident again
       return CallToolResultMapper.fromPrimitive(
           incidentServices.resolveIncident(incidentKey, null), r -> "RESOLVED");

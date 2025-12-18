@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.gateway.mcp.mapper;
 
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -64,6 +68,25 @@ public class CallToolResultMapper {
             mapProblemToResult(
                 ProblemDetail.forStatusAndDetail(
                     HttpStatus.GATEWAY_TIMEOUT, "Didn't receive a response within 10 seconds.")),
+            10L,
+            TimeUnit.SECONDS)
+        .join();
+  }
+
+  public static <T> Either<ServiceException, T> executeServiceMethod(
+      final CompletableFuture<T> content) {
+    return content
+        .<Either<ServiceException, T>>handleAsync(
+            (resp, error) -> {
+              if (error != null) {
+                return Either.left(ErrorMapper.mapError(error));
+              }
+              return Either.right(resp);
+            })
+        .completeOnTimeout(
+            Either.left(
+                new ServiceException(
+                    "Didn't receive a response within 10 seconds.", Status.DEADLINE_EXCEEDED)),
             10L,
             TimeUnit.SECONDS)
         .join();
