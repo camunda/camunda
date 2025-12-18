@@ -12,7 +12,7 @@ import {useBatchOperationMutationRequestBody} from './useBatchOperationMutationR
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
-const getWrapper = (initialSearchParams?: {[key: string]: string}) => {
+const getWrapper = (initialSearchParams?: Record<string, string>) => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
     const searchParams = new URLSearchParams(initialSearchParams);
 
