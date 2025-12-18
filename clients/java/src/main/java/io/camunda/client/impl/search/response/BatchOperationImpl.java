@@ -36,6 +36,8 @@ public class BatchOperationImpl implements BatchOperation {
   private final BatchOperationState status;
   private final OffsetDateTime startDate;
   private final OffsetDateTime endDate;
+  private final BatchOperationActorTypeEnum actorType;
+  private final String actorId;
   private final Integer operationsTotalCount;
   private final Integer operationsFailedCount;
   private final Integer operationsCompletedCount;
@@ -48,6 +50,8 @@ public class BatchOperationImpl implements BatchOperation {
     status = null;
     startDate = null;
     endDate = null;
+    actorType = null;
+    actorId = null;
     operationsTotalCount = null;
     operationsFailedCount = null;
     operationsCompletedCount = null;
@@ -59,6 +63,8 @@ public class BatchOperationImpl implements BatchOperation {
     status = EnumUtil.convert(item.getState(), BatchOperationState.class);
     startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
     endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
+    actorType = EnumUtil.convert(item.getActorType(), BatchOperationActorTypeEnum.class);
+    actorId = item.getActorId();
     operationsTotalCount = item.getOperationsTotalCount();
     operationsFailedCount = item.getOperationsFailedCount();
     operationsCompletedCount = item.getOperationsCompletedCount();
@@ -116,11 +122,11 @@ public class BatchOperationImpl implements BatchOperation {
 
   @Override
   public BatchOperationActorTypeEnum getActorType() {
-    return null;
+    return actorType;
   }
 
   @Override
   public String getActorId() {
-    return null;
+    return actorId;
   }
 }
