@@ -3109,7 +3109,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for querying process instance statistics grouped by incident error
    */
-  IncidentProcessInstanceStatisticsByErrorRequest newIncidentProcessInstanceStatisticsByErrorRequest();
+  IncidentProcessInstanceStatisticsByErrorRequest
+      newIncidentProcessInstanceStatisticsByErrorRequest();
 
   /**
    * Command to evaluate an expression.
