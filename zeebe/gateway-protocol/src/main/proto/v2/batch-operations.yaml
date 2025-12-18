@@ -316,7 +316,6 @@ components:
         actorType:
           allOf:
             - $ref: '#/components/schemas/BatchOperationActorTypeEnum'
-          description: The type of the actor. Available for batch operations created since 8.9.
         actorId:
           type: string
           description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
@@ -617,6 +616,7 @@ components:
         - UPDATE_VARIABLE
 
     BatchOperationActorTypeEnum:
+      description: The type of the actor. Available for batch operations created since 8.9.
       type: string
       enum:
         - CLIENT
