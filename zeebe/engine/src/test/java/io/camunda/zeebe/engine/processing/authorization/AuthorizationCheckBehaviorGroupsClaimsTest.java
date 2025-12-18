@@ -245,6 +245,129 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
     assertThat(authorized.isRight()).isTrue();
   }
 
+  @Test
+  void shouldBeAuthorizedByPropertyAuthorizationWhenGroupClaimMatchesCandidateGroups() {
+    // given
+    final var user = createUser();
+    final var groups = List.of("group-a", "group-b", "group-c");
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommand(user.getUsername(), groups);
+
+    // when: user's second group matches one of the candidate groups
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateGroups", List.of("other-group", "group-b"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldNotBeAuthorizedByPropertyAuthorizationWhenGroupClaimNotInCandidateGroups() {
+    // given
+    final var user = createUser();
+    final var groups = List.of("engineering", "platform-team");
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommand(user.getUsername(), groups);
+
+    // when: none of the user's groups match candidate groups
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateGroups", List.of("sales", "marketing"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
+  void shouldBeAuthorizedByPropertyAuthorizationWhenMappingRuleGroupClaimInCandidateGroups() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingRule = createMappingRule(claimName, claimValue);
+    final var groups = List.of("mapping-group-1", "mapping-group-2");
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+    addPermission(
+        mappingRule.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommandWithMappingRule(claimName, claimValue, groups);
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateGroups", List.of("mapping-group-1", "other-group"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldBeAuthorizedByPropertyAuthorizationForUserWithAssignedGroupWithAssignedRole() {
+    // given
+    final var user = createUser();
+    final var groups = List.of("group1", "group2");
+    final var role = createRoleAndAssignEntity(groups.getFirst(), EntityType.GROUP);
+
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+    addPermission(
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, propertyScope);
+    final var command = mockCommand(user.getUsername(), groups);
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateGroups", List.of("group1", "otherGroup"))
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
   private UserRecordValue createUser() {
     final var userKey = random.nextLong();
     final var user =
@@ -317,6 +440,7 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
               .setOwnerType(ownerType)
               .setResourceMatcher(authorizationScope.getMatcher())
               .setResourceId(authorizationScope.getResourceId())
+              .setResourcePropertyName(authorizationScope.getResourcePropertyName())
               .setResourceType(resourceType)
               .setPermissionTypes(Set.of(permissionType));
       authorizationCreatedApplier.applyState(authorizationKey, authorization);

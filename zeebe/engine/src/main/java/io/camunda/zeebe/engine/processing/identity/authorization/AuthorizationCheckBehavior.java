@@ -16,6 +16,8 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.aggregator.RejectionAggregator;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.AuthorizationScopeResolver;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
@@ -27,6 +29,7 @@ import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -50,6 +53,7 @@ public final class AuthorizationCheckBehavior {
   private final ClaimsExtractor claimsExtractor;
   private final TenantResolver tenantResolver;
   private final AuthorizationScopeResolver scopeResolver;
+  private final PropertyAuthorizationEvaluatorRegistry propertyEvaluatorRegistry;
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
@@ -76,6 +80,10 @@ public final class AuthorizationCheckBehavior {
             mappingRuleState,
             claimsExtractor,
             authorizationsEnabled);
+    propertyEvaluatorRegistry =
+        new PropertyAuthorizationEvaluatorRegistry()
+            .register(
+                new UserTaskPropertyAuthorizationEvaluator(claimsExtractor, mappingRuleState));
 
     authorizationsCache =
         CacheBuilder.newBuilder()
@@ -181,25 +189,33 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
-
     if (shouldSkipAuthorization(request)) {
       return AUTHORIZED;
     }
 
     final List<AuthorizationRejection> aggregatedRejections = new ArrayList<>();
 
+    // Step 1: Check primary entity (user/client)
     final AuthorizationResult primaryResult =
         checkPrimaryAuthorization(request, aggregatedRejections);
-
     if (primaryResult.hasBothAccess()) {
       return AUTHORIZED;
     }
 
+    // Step 2: Check mapping rules (can supplement primary entity)
     final AuthorizationResult mappingRuleResult =
         checkMappingRuleAuthorization(request, primaryResult, aggregatedRejections);
-
     if (mappingRuleResult.hasBothAccess()) {
       return AUTHORIZED;
+    }
+
+    // Step 3: Check property-based authorization
+    // Only if we have tenant access (from primary or mapping rules)
+    if (request.hasResourceProperties() && mappingRuleResult.hasTenantAccess()) {
+      final boolean propertyAccess = checkPropertyBasedAuthorization(request, aggregatedRejections);
+      if (propertyAccess) {
+        return AUTHORIZED;
+      }
     }
 
     return Either.left(RejectionAggregator.aggregate(aggregatedRejections));
@@ -262,6 +278,47 @@ public final class AuthorizationCheckBehavior {
               aggregatedRejections);
     }
     return new AuthorizationResult(tenantAccess, resourceAccess);
+  }
+
+  private boolean checkPropertyBasedAuthorization(
+      final AuthorizationRequest request, final List<AuthorizationRejection> aggregatedRejections) {
+
+    final var authorizationRejection =
+        new AuthorizationRejection.Permission(
+            new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
+
+    final var evaluator = propertyEvaluatorRegistry.get(request.resourceType());
+    if (evaluator.isEmpty()) {
+      // No evaluator for this resource type - cannot grant access via properties
+      aggregatedRejections.add(authorizationRejection);
+      return false;
+    }
+
+    // Check which properties the principal matches
+    final Set<String> matchedProperties =
+        evaluator.get().matches(request.claims(), request.resourceProperties());
+    if (matchedProperties.isEmpty()) {
+      aggregatedRejections.add(authorizationRejection);
+      return false;
+    }
+
+    final var authorizedScopes = getPropertyAuthorizedScopes(request);
+    final boolean hasMatchingScope =
+        authorizedScopes.stream()
+            .anyMatch(scope -> matchedProperties.contains(scope.getResourcePropertyName()));
+
+    if (!hasMatchingScope) {
+      aggregatedRejections.add(authorizationRejection);
+      return false;
+    }
+
+    return true;
+  }
+
+  private Set<AuthorizationScope> getPropertyAuthorizedScopes(final AuthorizationRequest request) {
+    return scopeResolver.getAllAuthorizedScopes(request).stream()
+        .filter(scope -> scope.getMatcher() == AuthorizationResourceMatcher.PROPERTY)
+        .collect(Collectors.toSet());
   }
 
   private boolean hasAccess(
@@ -352,6 +409,7 @@ public final class AuthorizationCheckBehavior {
 
     // check if any granted scope matches any requested `resourceId`
     return grantedScopes.stream()
+        .filter(scope -> scope.getMatcher() == AuthorizationResourceMatcher.ID)
         .map(AuthorizationScope::getResourceId)
         .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
         .anyMatch(request.resourceIds()::contains);

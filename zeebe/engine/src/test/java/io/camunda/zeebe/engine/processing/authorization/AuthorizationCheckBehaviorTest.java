@@ -123,6 +123,294 @@ final class AuthorizationCheckBehaviorTest {
   }
 
   @Test
+  void shouldBeAuthorizedByAssigneePropertyAuthorizationWhenUserHasPermission() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("assignee");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("assignee", user.getUsername())
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldBeAuthorizedByCandidateUsersPropertyAuthorizationWhenUserInCandidateUsers() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateUsers");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateUsers", List.of(user.getUsername(), "otherUser"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void shouldBeAuthorizedByCandidateGroupsPropertyAuthorizationWhenUserGroupInCandidateGroups() {
+    // given
+    final var user = createUser();
+    final var group = createGroupAndAssignEntity(user.getUsername(), EntityType.USER);
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateGroups", List.of(group.getGroupId(), "otherGroup"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void
+      shouldBeAuthorizedByCandidateGroupsPropertyAuthorizationWhenMappingRuleGroupInCandidateGroups() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingRule = createMappingRule(claimName, claimValue);
+    final var group =
+        createGroupAndAssignEntity(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+    addPermission(
+        mappingRule.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommandWithMappingRule(claimName, claimValue);
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateGroups", List.of(group.getGroupId(), "otherGroup"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void shouldBeAuthorizedByCandidateGroupsPropertyAuthorizationWhenClientGroupInCandidateGroups() {
+    // given
+    final var clientId = createClientId();
+    final var group = createGroupAndAssignEntity(clientId, EntityType.CLIENT);
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+    addPermission(
+        clientId, AuthorizationOwnerType.CLIENT, resourceType, permissionType, propertyScope);
+    final var command = mockCommandWithClientId(clientId);
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateGroups", List.of(group.getGroupId(), "otherGroup"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void shouldNotBeAuthorizedByCandidateUsersPropertyAuthorizationWhenUserNotInCandidateUsers() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateUsers");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateUsers", List.of("anotherUser", "yetAnotherUser"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    EitherAssert.assertThat(authorized).isLeft();
+  }
+
+  @Test
+  void shouldNotBeAuthorizedByPropertyAuthorizationWhenNoPermissionForMatchedAssigneeProperty() {
+    // given: user matches candidateUsers but has permission only for assignee
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    // grant permission only for candidateGroups
+    final var propertyScope = AuthorizationScope.property("assignee");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+    final var command = mockCommand(user.getUsername());
+
+    // when: request has candidateUsers where user is present
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateUsers", List.of(user.getUsername()))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then: not authorized because permission is for assignee, not candidateUsers
+    EitherAssert.assertThat(authorized).isLeft();
+  }
+
+  @Test
+  void shouldBeAuthorizedWhenPermissionGrantedViaMappingRuleAndUserInCandidateUsers() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingRule = createMappingRule(claimName, claimValue);
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateUsers");
+    addPermission(
+        mappingRule.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
+        resourceType,
+        permissionType,
+        propertyScope);
+
+    // Mock command with mapping rule claims AND username that matches candidateUsers
+    final var username = "test-user";
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations())
+        .thenReturn(
+            Map.of(
+                USER_TOKEN_CLAIMS, Map.of(claimName, claimValue), AUTHORIZED_USERNAME, username));
+    when(command.hasRequestMetadata()).thenReturn(true);
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("candidateUsers", List.of(username, "otherUser"))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void shouldBeAuthorizedByPropertyAuthorizationForMultipleMatchingProperties() {
+    // given: user is both assignee and in candidateUsers
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    // grant permission for assignee and candidateUsers property
+    final var assigneeScope = AuthorizationScope.property("assignee");
+    final var candidateUsersScope = AuthorizationScope.property("candidateUsers");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        assigneeScope,
+        candidateUsersScope);
+    final var command = mockCommand(user.getUsername());
+
+    // when: request has both assignee and candidateUsers where user is present
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceProperty("assignee", user.getUsername())
+            .addResourceProperty("candidateUsers", List.of(user.getUsername()))
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then: authorized because user matches assignee and has permission for assignee
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
   void shouldNotBeAuthorizedWhenUserHasNoPermission() {
     // given
     final var user = createUser();
@@ -1061,16 +1349,20 @@ final class AuthorizationCheckBehaviorTest {
   void isAnyAuthorizedOrInternalCommandShouldBeAuthorizedForInternalCommand() {
     // given
     final var externalCommandRequest =
-        AuthorizationRequest.builder().command(mock(TypedRecord.class))
-            .resourceType(AuthorizationResourceType.RESOURCE).permissionType(PermissionType.CREATE)
+        AuthorizationRequest.builder()
+            .command(mock(TypedRecord.class))
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(PermissionType.CREATE)
             .build();
 
     final var internalCommand = mock(TypedRecord.class);
     when(internalCommand.isInternalCommand()).thenReturn(true);
     final var internalCommandRequest =
-        AuthorizationRequest.builder().command(internalCommand)
+        AuthorizationRequest.builder()
+            .command(internalCommand)
             .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(PermissionType.DELETE_RESOURCE).build();
+            .permissionType(PermissionType.DELETE_RESOURCE)
+            .build();
 
     // when
     final var result =
@@ -1261,6 +1553,7 @@ final class AuthorizationCheckBehaviorTest {
               .setOwnerType(ownerType)
               .setResourceMatcher(authorizationScope.getMatcher())
               .setResourceId(authorizationScope.getResourceId())
+              .setResourcePropertyName(authorizationScope.getResourcePropertyName())
               .setResourceType(resourceType)
               .setPermissionTypes(Set.of(permissionType));
       authorizationCreatedApplier.applyState(authorizationKey, authorization);
