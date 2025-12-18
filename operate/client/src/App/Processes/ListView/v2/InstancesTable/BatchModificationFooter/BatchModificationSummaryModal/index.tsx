@@ -11,10 +11,7 @@ import {observer} from 'mobx-react';
 import {Modal} from '@carbon/react';
 import {useLocation} from 'react-router-dom';
 import {type StateProps} from 'modules/components/ModalStateManager';
-import {
-  getProcessInstanceFilters,
-  getProcessInstancesRequestFilters,
-} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from './styled';
@@ -26,12 +23,13 @@ import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml'
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
-import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
     const location = useLocation();
+    const batchOperationMutationRequestBody =
+      useBatchOperationMutationRequestBody();
 
     const processInstancesFilters = getProcessInstanceFilters(location.search);
     const {flowNodeId: sourceElementId, process: bpmnProcessId} =
@@ -39,16 +37,6 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const process = processesStore.getProcess({bpmnProcessId});
     const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
     const {selectedTargetElementId} = batchModificationStore.state;
-    const {selectedProcessInstanceIds, excludedProcessInstanceIds} =
-      processInstancesSelectionStore;
-
-    const query = getProcessInstancesRequestFilters();
-    const filterIds = query.ids || [];
-
-    const ids: string[] =
-      selectedProcessInstanceIds.length > 0
-        ? selectedProcessInstanceIds
-        : filterIds;
 
     const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processDefinitionData} = useListViewXml({
@@ -125,22 +113,14 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
           setOpen(false);
           batchModificationStore.reset();
 
-          const keyCriterion = buildProcessInstanceKeyCriterion(
-            ids,
-            excludedProcessInstanceIds,
-          );
-
           batchModifyProcessInstances({
+            ...batchOperationMutationRequestBody,
             moveInstructions: [
               {
                 sourceElementId,
                 targetElementId: selectedTargetElementId,
               },
             ],
-            filter: {
-              processDefinitionKey,
-              processInstanceKey: keyCriterion,
-            },
           });
 
           setOpen(false);

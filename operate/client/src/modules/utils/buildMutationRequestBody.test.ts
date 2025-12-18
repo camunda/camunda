@@ -499,4 +499,24 @@ describe('buildMutationRequestBody', () => {
       },
     });
   });
+
+  it('adds processDefinitionKey when present', () => {
+    const searchParams = createSearchParams({
+      active: 'true',
+      flowNodeId: 'taskA',
+    });
+
+    const body: Body = buildMutationRequestBody({
+      searchParams,
+      processDefinitionKey: '2837942984928642',
+    });
+
+    expect(body).toEqual({
+      filter: {
+        state: {$eq: 'ACTIVE'},
+        elementId: {$eq: 'taskA'},
+        processDefinitionKey: '2837942984928642',
+      },
+    });
+  });
 });

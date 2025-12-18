@@ -19,11 +19,9 @@ import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
 import {tracking} from 'modules/tracking';
-import {useSearchParams} from 'react-router-dom';
-import {buildMutationRequestBody} from './buildMutationRequestBody';
 import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {variableFilterStore} from 'modules/stores/variableFilter';
+import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 
 type Props = {
   selectedInstancesCount: number;
@@ -37,14 +35,15 @@ const ACTION_NAMES: Readonly<
 };
 
 const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
-  const variable = variableFilterStore.variable;
-  const [searchParams] = useSearchParams();
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
   const closeModal = () => {
     setModalMode(null);
   };
+
+  const batchOperationMutationRequestBody =
+    useBatchOperationMutationRequestBody();
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
     onSuccess: () => {
@@ -81,28 +80,10 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       return;
     }
 
-    const {
-      selectedProcessInstanceIds,
-      excludedProcessInstanceIds,
-      checkedRunningProcessInstanceIds,
-    } = processInstancesSelectionStore;
-
-    const includeIds =
-      selectedProcessInstanceIds.length > 0
-        ? checkedRunningProcessInstanceIds
-        : [];
-
-    const requestBody = buildMutationRequestBody({
-      searchParams,
-      includeIds,
-      excludeIds: excludedProcessInstanceIds,
-      variableFilter: variable,
-    });
-
     if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
-      cancelMutation.mutate(requestBody);
+      cancelMutation.mutate(batchOperationMutationRequestBody);
     } else {
-      resolveMutation.mutate(requestBody);
+      resolveMutation.mutate(batchOperationMutationRequestBody);
     }
 
     closeModal();
