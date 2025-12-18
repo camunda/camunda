@@ -224,7 +224,7 @@ public class HistoryCleanupService {
     LOG.debug("Deleted {}history records: {}", cleanupType, numDeletedRecords);
     for (final var entry : numDeletedRecords.entrySet()) {
       LOG.debug("    Deleted {}s: {}", entry.getKey(), entry.getValue());
-      metrics.recordHistoryCleanupBulkSize(entry.getValue(), entry.getKey());
+      metrics.recordHistoryCleanupEntities(entry.getValue(), entry.getKey());
     }
 
     LOG.debug(

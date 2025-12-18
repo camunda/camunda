@@ -99,7 +99,7 @@ public class RdbmsWriterMetrics {
         .minimumExpectedValue(Duration.ofMillis(10));
   }
 
-  public void recordHistoryCleanupBulkSize(final int bulkSize, final String entityName) {
+  public void recordHistoryCleanupEntities(final int bulkSize, final String entityName) {
     DistributionSummary.builder(meterName("historyCleanup.bulk.size"))
         .description("Exporter bulk size")
         .tag("entity", entityName)
@@ -108,6 +108,12 @@ public class RdbmsWriterMetrics {
             100_000)
         .register(meterRegistry)
         .record(bulkSize);
+
+    Counter.builder(meterName("historyCleanup.deletedEntities"))
+        .tags("entity", entityName)
+        .description("Number of removed rows of the given entity")
+        .register(meterRegistry)
+        .increment(bulkSize);
   }
 
   public void recordFailedFlush() {
