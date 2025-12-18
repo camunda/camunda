@@ -48,6 +48,11 @@
 /.github/workflows/retry-workflow.yml                    @camunda/monorepo-devops-team
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
+<<<<<<< HEAD
+=======
+/.github/workflows/check-outdated-prs.yml                @camunda/monorepo-devops-team
+/.github/workflows/create-urgent-hotfix-img.yml          @camunda/monorepo-devops-team
+>>>>>>> 249e53bf (feat: Add workflow to auto-merge release branches back to stable)
 /.github/workflows/auto-merge-back-to-stable.yml         @camunda/monorepo-devops-team
 
 ###################
