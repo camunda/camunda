@@ -121,7 +121,6 @@ public record AuditLogInfo(
 
     switch (intent) {
       case BatchOperationIntent.CREATED:
-      case BatchOperationIntent.CREATE:
         return AuditLogOperationType.CREATE;
       case BatchOperationIntent.RESUMED:
       case BatchOperationIntent.RESUME:

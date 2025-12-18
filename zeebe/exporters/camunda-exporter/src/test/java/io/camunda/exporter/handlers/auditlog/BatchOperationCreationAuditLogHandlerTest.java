@@ -32,9 +32,7 @@ class BatchOperationCreationAuditLogHandlerTest {
       new BatchOperationCreationAuditLogTransformer();
 
   public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(BatchOperationIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(BatchOperationIntent.CREATE, AuditLogOperationType.CREATE));
+    return Stream.of(Arguments.of(BatchOperationIntent.CREATED, AuditLogOperationType.CREATE));
   }
 
   @MethodSource("getIntentMappings")
