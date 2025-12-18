@@ -101,7 +101,7 @@ public class BatchOperationWriter implements RdbmsWriter {
             item.batchOperationKey(),
             "io.camunda.db.rdbms.sql.BatchOperationMapper.upsertItem",
             item.truncateErrorMessage(
-                vendorDatabaseProperties.errorMessageSize(),
+                vendorDatabaseProperties.varcharSize(),
                 vendorDatabaseProperties.charColumnMaxBytes())));
 
     if (item.state() == BatchOperationItemState.FAILED) {
@@ -213,7 +213,7 @@ public class BatchOperationWriter implements RdbmsWriter {
                 .map(
                     error ->
                         error.truncateErrorMessage(
-                            vendorDatabaseProperties.errorMessageSize(),
+                            vendorDatabaseProperties.varcharSize(),
                             vendorDatabaseProperties.charColumnMaxBytes()))
                 .collect(Collectors.toList()));
 
