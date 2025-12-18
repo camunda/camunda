@@ -36,11 +36,10 @@ test.beforeAll(async () => {
     './resources/childProcess_v_1.bpmn',
   ]);
 
-  // We know the processes will be version 1 on first deployment
   const parentProcess: ProcessDeployment = {
     bpmnProcessId: 'callActivityParentProcess',
     version: 1,
-    processDefinitionKey: '', // Will be retrieved from API if needed
+    processDefinitionKey: '',
   };
 
   const childProcessV1: ProcessDeployment = {
@@ -49,7 +48,6 @@ test.beforeAll(async () => {
     processDefinitionKey: '',
   };
 
-  // Create 2 instances of parent process
   const parentInstances = await createInstances(
     parentProcess.bpmnProcessId,
     parentProcess.version,
@@ -60,7 +58,6 @@ test.beforeAll(async () => {
     (instance) => instance.processInstanceKey,
   );
 
-  // Deploy child process v2
   await deploy(['./resources/childProcess_v_2.bpmn']);
 
   const childProcessV2: ProcessDeployment = {
@@ -76,7 +73,6 @@ test.beforeAll(async () => {
     parentProcessInstanceKeys,
   };
 
-  // Wait for instances to be indexed in Operate
   await sleep(2000);
 });
 
@@ -167,13 +163,13 @@ test.describe('Child Process Instance Migration', () => {
     });
 
     await test.step('Verify migration operation is created and completes', async () => {
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
 
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
 
-      await operateProcessesPage.waitForOperationToComplete();
+      await operateOperationPanelPage.waitForOperationToComplete();
 
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(1);
@@ -214,7 +210,5 @@ test.describe('Child Process Instance Migration', () => {
         timeout: 30000,
       });
     });
-
-    await operateOperationPanelPage.collapseOperationIdField();
   });
 });

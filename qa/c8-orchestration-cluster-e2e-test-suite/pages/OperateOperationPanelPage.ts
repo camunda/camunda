@@ -6,21 +6,55 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 
 export class OperateOperationPanelPage {
   private page: Page;
-  readonly expandButton: Locator;
   readonly collapseButton: Locator;
   readonly operationList: Locator;
+  readonly operationsPanel: Locator;
+  readonly latestOperationEntry: Locator;
+  readonly latestOperationEntryBeforeCompletion: Locator;
+  readonly latestOperationLink: Locator;
+  readonly latestOperationMigrateHeading: Locator;
+  readonly latestOperationProgressBar: Locator;
+  readonly operationSuccessMessage: Locator;
+  readonly collapsedOperationsPanel: Locator;
+  readonly expandOperationsButton: Locator;
+  readonly inProgressBar: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.expandButton = page.getByRole('button', {name: 'Expand Operations'});
     this.collapseButton = page.getByRole('button', {
       name: 'Collapse Operations',
     });
     this.operationList = page.getByTestId('operations-list');
+    this.operationsPanel = page.getByRole('region', {
+      name: 'Operations',
+    });
+    this.latestOperationEntry = this.operationList
+      .getByRole('listitem')
+      .first();
+    this.latestOperationEntryBeforeCompletion = this.operationList
+      .getByRole('listitem')
+      .last();
+    this.latestOperationLink = page.getByTestId('operation-id').first();
+    this.latestOperationMigrateHeading = this.latestOperationEntry.getByRole(
+      'heading',
+      {name: 'Migrate'},
+    );
+    this.latestOperationProgressBar =
+      this.latestOperationEntry.getByRole('progressbar');
+    this.operationSuccessMessage = page
+      .getByText(/\d+ operations? succeeded/)
+      .first();
+    this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
+    this.expandOperationsButton = page.getByRole('button', {
+      name: 'Expand Operations',
+    });
+    this.inProgressBar = this.operationList.locator(
+      '[role="progressbar"][aria-busy="true"]',
+    );
   }
 
   getAllOperationEntries(): Locator {
@@ -40,7 +74,7 @@ export class OperateOperationPanelPage {
   }
 
   async expandOperationIdField(): Promise<void> {
-    await this.expandButton.click({timeout: 30000});
+    await this.expandOperationsButton.click({timeout: 30000});
   }
 
   async collapseOperationIdField(): Promise<void> {
@@ -83,5 +117,24 @@ export class OperateOperationPanelPage {
     await OperateOperationPanelPage.getOperationID(operationEntry).click({
       timeout: 30000,
     });
+  }
+
+  async expandOperationsPanel(): Promise<void> {
+    const isCollapsed = await this.collapsedOperationsPanel.isVisible();
+    if (isCollapsed) {
+      await this.expandOperationsButton.click();
+      await this.operationList.waitFor({state: 'visible', timeout: 10000});
+    }
+  }
+
+  async waitForOperationToComplete(): Promise<void> {
+    try {
+      await expect(this.inProgressBar).toBeVisible({timeout: 5000});
+      await expect(this.inProgressBar).not.toBeVisible({timeout: 120000});
+    } catch {
+      console.log(
+        'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
+      );
+    }
   }
 }

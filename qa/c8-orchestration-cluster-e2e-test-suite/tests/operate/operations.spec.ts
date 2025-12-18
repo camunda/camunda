@@ -207,12 +207,12 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.applyButton.click();
 
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
       await sleep(500);
 
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
 
       await expect
         .poll(async () => {
@@ -262,12 +262,12 @@ test.describe('Operations', () => {
       await operateProcessesPage.cancelButton.click();
       await operateProcessesPage.applyButton.click();
 
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
       await sleep(500);
 
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
 
       await expect
         .poll(async () => {
