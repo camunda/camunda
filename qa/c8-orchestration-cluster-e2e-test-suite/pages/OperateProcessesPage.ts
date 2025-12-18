@@ -224,7 +224,7 @@ class OperateProcessesPage {
   }
 
   async clickProcessInstanceLink(processName?: string): Promise<void> {
-    const maxRetries = 3;
+    const maxRetries = 5;
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
