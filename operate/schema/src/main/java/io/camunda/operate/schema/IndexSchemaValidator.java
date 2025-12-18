@@ -210,7 +210,6 @@ public class IndexSchemaValidator {
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.getExpectedIndexFields(indexDescriptor);
-
     IndexMappingDifference difference = null;
     // compare every index in group
     for (final Map.Entry<String, IndexMapping> singleIndexMapping : indexMappingsGroup.entrySet()) {
@@ -265,12 +264,13 @@ public class IndexSchemaValidator {
   private void validateFieldsDifferBetweenIndices(
       final IndexMappingDifference difference, final IndexDescriptor indexDescriptor) {
     if (indexIsDynamic(difference.getLeftIndexMapping())) {
-      LOGGER.debug(
+      LOGGER.warn(
           String.format(
               "Left index name: %s is dynamic, ignoring changes found: %s",
               indexDescriptor.getIndexName(), difference.getEntriesDiffering()));
-    } else if (indexIsDynamic(difference.getRightIndexMapping())) {
-      LOGGER.debug(
+    } else if (indexIsDynamic(difference.getRightIndexMapping())
+        && operateProperties.isUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings()) {
+      LOGGER.warn(
           String.format(
               "Right index name: %s is dynamic, ignoring changes found: %s",
               indexDescriptor.getIndexName(), difference.getEntriesDiffering()));
