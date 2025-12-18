@@ -77,14 +77,33 @@ class AuditLogInfoTest {
   }
 
   @Test
-  void shouldReturnNullActorWhenNoAuthorizationProvided() {
+  void shouldMapActorFromAnonymous() {
+    final var record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE_MODIFICATION,
+            r ->
+                r.withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                    .withAuthorizations(
+                        Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, "something")));
+
+    final var info = AuditLogInfo.of(record);
+
+    assertThat(info.actor()).isNotNull();
+    assertThat(info.actor().actorType()).isEqualTo(AuditLogActorType.ANONYMOUS);
+    assertThat(info.actor().actorId()).isEqualTo(null);
+  }
+
+  @Test
+  void shouldReturnUnknownActorWhenNoAuthorizationProvided() {
     final var record =
         factory.generateRecordWithIntent(
             ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationIntent.MODIFIED);
 
     final var info = AuditLogInfo.of(record);
 
-    assertThat(info.actor()).isNull();
+    assertThat(info.actor()).isNotNull();
+    assertThat(info.actor().actorType()).isEqualTo(AuditLogActorType.UNKNOWN);
+    assertThat(info.actor().actorId()).isEqualTo(null);
   }
 
   @Test
