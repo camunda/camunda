@@ -32,7 +32,6 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import java.io.IOException;
@@ -54,7 +53,6 @@ import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
@@ -348,12 +346,6 @@ public class VariableStoreOpenSearch implements VariableStore {
                                         .map(FieldValue::of)
                                         .collect(toList()))))
             .toQuery();
-    final var flowNodeInstanceStateQuery =
-        TermQuery.of(
-                t ->
-                    t.field(FlowNodeInstanceTemplate.STATE)
-                        .value(v -> v.stringValue(FlowNodeState.ACTIVE.toString())))
-            .toQuery();
 
     final var typeQuery =
         new Query.Builder()
@@ -378,10 +370,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     final Query.Builder combinedQuery = new Query.Builder();
     combinedQuery.constantScore(
-        cs ->
-            cs.filter(
-                OpenSearchUtil.joinWithAnd(
-                    processInstanceKeyQuery, flowNodeInstanceStateQuery, typeQuery)));
+        cs -> cs.filter(OpenSearchUtil.joinWithAnd(processInstanceKeyQuery, typeQuery)));
 
     return new SearchRequest.Builder()
         .index(flowNodeInstanceIndex.getFullQualifiedName())

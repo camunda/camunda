@@ -40,7 +40,6 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import java.io.IOException;
@@ -322,8 +321,6 @@ public class VariableStoreElasticSearch implements VariableStore {
       final List<Long> processInstanceKeys) {
     final TermsQueryBuilder processInstanceKeyQuery =
         termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys);
-    final var flowNodeInstanceStateQuery =
-        termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
 
     final TermsQueryBuilder typeQuery =
         QueryBuilders.termsQuery(
@@ -336,9 +333,7 @@ public class VariableStoreElasticSearch implements VariableStore {
             FlowNodeType.MULTI_INSTANCE_BODY.toString(),
             FlowNodeType.PROCESS.toString());
 
-    final var query =
-        ElasticsearchUtil.joinWithAnd(
-            typeQuery, processInstanceKeyQuery, flowNodeInstanceStateQuery);
+    final var query = ElasticsearchUtil.joinWithAnd(typeQuery, processInstanceKeyQuery);
     return new SearchRequest(flowNodeInstanceIndex.getFullQualifiedName())
         .source(
             new SearchSourceBuilder()

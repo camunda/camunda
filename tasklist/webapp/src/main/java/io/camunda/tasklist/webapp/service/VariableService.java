@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.service;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
@@ -46,6 +47,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
@@ -509,24 +511,82 @@ public class VariableService {
 
   public Map<String, List<VariableDTO>> getVariablesPerTaskId(
       final List<GetVariablesRequest> requests) {
+
     final Map<String, List<VariableDTO>> result = new HashMap<>();
-    final Map<TaskState, List<GetVariablesRequest>> groupByStates =
-        requests.stream().collect(groupingBy(GetVariablesRequest::getState));
-    if (groupByStates.containsKey(TaskState.CREATED)) {
-      result.putAll(
-          getRuntimeVariablesPerTaskId(groupByStates.get(TaskState.CREATED)).entrySet().stream()
-              .collect(Collectors.toMap(Entry::getKey, e -> VariableDTO.createFrom(e.getValue()))));
+
+    // It is necessary to query runtime variables for all created tasks (except the ones not
+    // requesting variables)
+    // This list is updated below to also include completed tasks for which some snapshot variables
+    // were not found
+    final List<GetVariablesRequest> requestsNeedingRuntimeVariables =
+        requests.stream()
+            .filter(request -> TaskState.CREATED.equals(request.getState()))
+            .filter(request -> request.getVarNames() != null && !request.getVarNames().isEmpty())
+            .collect(Collectors.toList());
+
+    // For completed tasks, retrieve the snapshot variables
+    final Map<String, GetVariablesRequest> completedTasksRequests =
+        requests.stream()
+            .filter(r -> TaskState.COMPLETED.equals(r.getState()))
+            .collect(toMap(GetVariablesRequest::getTaskId, Function.identity()));
+    if (!completedTasksRequests.isEmpty()) {
+      variableStore
+          .getTaskVariablesPerTaskId(completedTasksRequests.values().stream().toList())
+          .forEach(
+              (key, snapshotVars) -> {
+                if (!snapshotVars.isEmpty()) {
+                  // Keep track of not-found variables, since they will need to be retrieved from
+                  // the runtime variables
+                  final var originalRequest = completedTasksRequests.get(key);
+                  final List<String> missingVariables =
+                      new ArrayList<>(originalRequest.getVarNames());
+
+                  // Convert snapshot result to unified Variable DTO
+                  final var snapshotVariables = VariableDTO.createFromTaskVariables(snapshotVars);
+
+                  // Prepare list to collect variable values
+                  final var taskVariables = result.computeIfAbsent(key, k -> new ArrayList<>());
+
+                  // Add snapshot variables to list
+                  snapshotVariables.forEach(
+                      v -> {
+                        taskVariables.add(v);
+                        // Variables found as snapshot should not be searched again in runtime
+                        // result
+                        missingVariables.remove(v.getName());
+                      });
+
+                  // If some variables were not found, they will be filled in when searching for
+                  // runtime variables
+                  if (!missingVariables.isEmpty()) {
+                    requestsNeedingRuntimeVariables.add(
+                        new GetVariablesRequest()
+                            .setTaskId(originalRequest.getTaskId())
+                            .setState(originalRequest.getState())
+                            .setFlowNodeInstanceId(originalRequest.getFlowNodeInstanceId())
+                            .setProcessInstanceId(originalRequest.getProcessInstanceId())
+                            .setVarNames(missingVariables)
+                            .setFieldNames(originalRequest.getFieldNames()));
+                  }
+                }
+              });
     }
-    if (groupByStates.containsKey(TaskState.COMPLETED)) {
-      result.putAll(
-          variableStore
-              .getTaskVariablesPerTaskId(groupByStates.get(TaskState.COMPLETED))
-              .entrySet()
-              .stream()
-              .collect(
-                  Collectors.toMap(
-                      Entry::getKey, e -> VariableDTO.createFromTaskVariables(e.getValue()))));
+
+    if (!requestsNeedingRuntimeVariables.isEmpty()) {
+      getRuntimeVariablesPerTaskId(requestsNeedingRuntimeVariables)
+          .forEach(
+              (key, runtimeVariables) -> {
+                if (!runtimeVariables.isEmpty()) {
+                  // Prepare list to collect variable values
+                  final var taskVariables = result.computeIfAbsent(key, k -> new ArrayList<>());
+                  // Convert runtime variables to unified Variable DTO and add to list
+                  runtimeVariables.stream()
+                      .map(VariableDTO::createFrom)
+                      .forEach(taskVariables::add);
+                }
+              });
     }
+
     return result;
   }
 
