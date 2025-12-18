@@ -35,8 +35,8 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final BackupRequestHandler backupRequestHandler;
   private long errorDelayMs;
   private final ExponentialBackoff errorStrategy;
-  private final Function<Tuple<Instant, Instant>, Tuple<Instant, CheckpointType>> checkpointDecider;
-  private final Function<Tuple<Instant, Instant>, Long> executorDelayProvider;
+  private final Function<CheckpointState, ScheduleInstruction> checkpointDecider;
+  private final Function<CheckpointState, Long> executorDelayProvider;
   private boolean isStopped = false;
 
   public CheckpointScheduler(
@@ -79,95 +79,84 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     }
 
     acquireEarliestState()
-        .thenCompose(
-            state -> {
-              LOG.debug("Acquired checkpoint state: {}", state);
-              final var next = checkpointDecider.apply(state);
-              final var checkpointTime = next.getLeft();
-              final var checkpointType = next.getRight();
-              return checkpointIfNeeded(checkpointType, checkpointTime)
-                  .thenApply(
-                      checkpointTaken -> {
-                        if (checkpointType == CheckpointType.SCHEDULED_BACKUP) {
-                          state.setRight(checkpointTime);
-                          state.setLeft(checkpointTime);
-                        } else {
-                          state.setLeft(checkpointTime);
-                        }
-                        errorDelayMs = 0;
-                        final var delay =
-                            checkpointTaken
-                                ? executorDelayProvider.apply(state)
-                                : Math.abs(
-                                    checkpointTime.toEpochMilli()
-                                        - ActorClock.current().instant().toEpochMilli());
-                        LOG.debug("Scheduling next checkpoint task in {} ms", delay);
-                        return Duration.ofMillis(delay);
-                      });
-            })
+        .thenApply(checkpointDecider)
+        .thenCompose(this::checkpointIfNeeded)
+        .thenCompose(this::calculateDelay)
+        .thenApply(this::peekDelay)
+        .thenApply(Duration::ofMillis)
         .exceptionally(this::onError)
         .thenAccept(delay -> actor.call(() -> actor.schedule(delay, this::reschedulingTask)));
   }
 
-  private CompletableFuture<Boolean> checkpointIfNeeded(
-      final CheckpointType type, final Instant checkpointTime) {
+  private CompletableFuture<ScheduleInstruction> checkpointIfNeeded(
+      final ScheduleInstruction instruction) {
     final var now = ActorClock.current().instant();
 
-    return checkpointTime.isBefore(now) || checkpointTime.equals(now)
+    return instruction.checkpointTime.isBefore(now) || instruction.checkpointTime.equals(now)
         ? backupRequestHandler
-            .checkpoint(type)
+            .checkpoint(instruction.type)
             .toCompletableFuture()
             .thenApply(
                 id -> {
-                  LOG.debug("Checkpoint {} triggered with id {}", type, id);
-                  return true;
+                  LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
+                  errorDelayMs = 0;
+                  return instruction.taken();
                 })
-        : CompletableFuture.completedFuture(false);
+        : CompletableFuture.completedFuture(instruction);
   }
 
-  private Tuple<Instant, CheckpointType> decideForCheckpointAndBackup(
-      final Tuple<Instant, Instant> state) {
-    final Instant previousCheckpoint = state.getLeft();
-    final Instant previousBackup = state.getRight();
+  private CompletableFuture<Long> calculateDelay(final ScheduleInstruction instruction) {
+    final CheckpointState currentState =
+        instruction.type == CheckpointType.SCHEDULED_BACKUP
+            ? new CheckpointState(instruction.checkpointTime, instruction.checkpointTime)
+            : new CheckpointState(instruction.checkpointTime, instruction.state.lastBackup);
 
-    final Instant nextCheckpoint = nextExecution(checkpointSchedule, previousCheckpoint);
-    final Instant nextBackup = nextExecution(backupSchedule, previousBackup);
+    return instruction.checkpointTaken
+        ? CompletableFuture.completedFuture(executorDelayProvider.apply(currentState))
+        : CompletableFuture.completedFuture(
+            Math.abs(
+                instruction.checkpointTime.toEpochMilli()
+                    - ActorClock.current().instant().toEpochMilli()));
+  }
+
+  private ScheduleInstruction decideForCheckpointAndBackup(final CheckpointState state) {
+
+    final Instant nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
+    final Instant nextBackup = nextExecution(backupSchedule, state.lastBackup);
     final long executionTimeDiff =
         Math.abs(nextCheckpoint.toEpochMilli() - nextBackup.toEpochMilli());
 
     LOG.debug(
         "Previous checkpoint at {}, previous backup at {}. Next checkpoint at {}, next backup at {}. Time diff {}",
-        previousCheckpoint,
-        previousBackup,
+        state.lastCheckpoint,
+        state.lastBackup,
         nextCheckpoint,
         nextBackup,
         executionTimeDiff);
 
     if (executionTimeDiff <= SKIP_CHECKPOINT_THRESHOLD || nextBackup.isBefore(nextCheckpoint)) {
       // checkpoint and backup are close enough, take a full backup
-      return Tuple.of(nextBackup, CheckpointType.SCHEDULED_BACKUP);
+      return new ScheduleInstruction(CheckpointType.SCHEDULED_BACKUP, nextBackup, state);
     } else {
       // checkpoint is earlier than backup, create checkpoint
-      return Tuple.of(nextCheckpoint, CheckpointType.MARKER);
+      return new ScheduleInstruction(CheckpointType.MARKER, nextCheckpoint, state);
     }
   }
 
-  private Tuple<Instant, CheckpointType> nextCheckpoint(final Tuple<Instant, Instant> state) {
-    final Instant previousCheckpoint = state.getLeft();
-    final Instant nextCheckpoint = nextExecution(checkpointSchedule, previousCheckpoint);
-    return Tuple.of(nextCheckpoint, CheckpointType.MARKER);
+  private ScheduleInstruction nextCheckpoint(final CheckpointState state) {
+    final Instant nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
+    return new ScheduleInstruction(CheckpointType.MARKER, nextCheckpoint, state);
   }
 
-  private Tuple<Instant, CheckpointType> nextBackup(final Tuple<Instant, Instant> state) {
-    final Instant previousBackup = state.getRight();
-    final Instant nextBackup = nextExecution(backupSchedule, previousBackup);
-    return Tuple.of(nextBackup, CheckpointType.SCHEDULED_BACKUP);
+  private ScheduleInstruction nextBackup(final CheckpointState state) {
+    final Instant nextBackup = nextExecution(backupSchedule, state.lastBackup);
+    return new ScheduleInstruction(CheckpointType.SCHEDULED_BACKUP, nextBackup, state);
   }
 
-  private Long checkpointAndBackupDelayProvider(final Tuple<Instant, Instant> from) {
+  private Long checkpointAndBackupDelayProvider(final CheckpointState state) {
     final var now = ActorClock.current().instant();
-    final var nextBackup = nextExecution(backupSchedule, from.getRight());
-    final var nextCheckpoint = nextExecution(checkpointSchedule, from.getLeft());
+    final var nextBackup = nextExecution(backupSchedule, state.lastBackup);
+    final var nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
     final var decision =
         Math.abs(
             Math.min(nextBackup.toEpochMilli(), nextCheckpoint.toEpochMilli())
@@ -180,16 +169,16 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     return decision;
   }
 
-  private Long checkpointScheduleDelayProvider(final Tuple<Instant, Instant> from) {
+  private Long checkpointScheduleDelayProvider(final CheckpointState state) {
     final var now = ActorClock.current().instant();
-    final var nextCheckpoint = nextExecution(checkpointSchedule, from.getLeft());
+    final var nextCheckpoint = nextExecution(checkpointSchedule, state.lastCheckpoint);
 
     return nextCheckpoint.toEpochMilli() - now.toEpochMilli();
   }
 
-  private Long backupScheduleDelayProvider(final Tuple<Instant, Instant> from) {
+  private Long backupScheduleDelayProvider(final CheckpointState state) {
     final var now = ActorClock.current().instant();
-    final var nextBackup = nextExecution(backupSchedule, from.getRight());
+    final var nextBackup = nextExecution(backupSchedule, state.lastBackup);
 
     return nextBackup.toEpochMilli() - now.toEpochMilli();
   }
@@ -200,7 +189,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
    * @return A tuple {@link Tuple} containing the earliest checkpoint timestamp(left) and earliest
    *     backup timestamp(right).
    */
-  private CompletableFuture<Tuple<Instant, Instant>> acquireEarliestState() {
+  private CompletableFuture<CheckpointState> acquireEarliestState() {
     return backupRequestHandler
         .getCheckpointState()
         .thenApply(
@@ -210,7 +199,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
               final Instant minBackupTimestamp =
                   minFromState(state.getBackupStates(), backupSchedule);
 
-              return Tuple.of(minCheckpointTimestamp, minBackupTimestamp);
+              return new CheckpointState(minCheckpointTimestamp, minBackupTimestamp);
             })
         .toCompletableFuture();
   }
@@ -222,19 +211,12 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
         .map(PartitionCheckpointState::checkpointTimestamp)
         .map(Instant::ofEpochMilli)
-        .orElseGet(
-            () -> {
-              if (schedule == null) {
-                return null;
-              } else {
-                return previousExecution(schedule, now);
-              }
-            });
+        .orElseGet(() -> schedule == null ? null : previousExecution(schedule, now));
   }
 
   private Duration onError(final Throwable error) {
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
-    LOG.warn(
+    LOG.debug(
         "Backing off checkpoint scheduling for {} due to : {}", errorDelayMs, error.getMessage());
     return Duration.ofMillis(errorDelayMs);
   }
@@ -251,9 +233,30 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         .orElseThrow(() -> new CouldNotDetermineNextExecution(schedule));
   }
 
+  private Long peekDelay(final long delay) {
+    LOG.debug("Next checkpoint scheduled in {}ms", delay);
+    return delay;
+  }
+
   static class CouldNotDetermineNextExecution extends RuntimeException {
     public CouldNotDetermineNextExecution(final Schedule schedule) {
       super("Could not determine next execution time for schedule: %s".formatted(schedule));
     }
   }
+
+  record ScheduleInstruction(
+      CheckpointType type, Instant checkpointTime, CheckpointState state, boolean checkpointTaken) {
+    ScheduleInstruction(
+        final CheckpointType type,
+        final Instant checkpointTime,
+        final CheckpointState currentCheckpointState) {
+      this(type, checkpointTime, currentCheckpointState, false);
+    }
+
+    ScheduleInstruction taken() {
+      return new ScheduleInstruction(type, checkpointTime, state, true);
+    }
+  }
+
+  record CheckpointState(Instant lastCheckpoint, Instant lastBackup) {}
 }
