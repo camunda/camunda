@@ -20,6 +20,7 @@ import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_I
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_KEY;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_NAME;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_VERSION;
+import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_PROCESS_VERSION_TAG;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_STATE;
 import static io.camunda.exporter.notifier.IncidentNotifier.MESSAGE;
 import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
@@ -77,6 +78,7 @@ class IncidentNotifierTest {
   private final String bpmnProcessId = "testProcessId";
   private final String processName = "processName";
   private final String processVersion = "234";
+  private final String processVersionTag = "versionA";
   private final M2mTokenManager m2mTokenManager = mock(M2mTokenManager.class);
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache =
       mock(ExporterEntityCache.class);
@@ -97,7 +99,10 @@ class IncidentNotifierTest {
             null,
             TestObjectMapper.objectMapper());
     when(processCache.get(any()))
-        .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null, null)));
+        .thenReturn(
+            Optional.of(
+                new CachedProcessEntity(
+                    processName, processVersionTag, processVersion, null, null)));
   }
 
   @Test
@@ -269,6 +274,7 @@ class IncidentNotifierTest {
     assertThat(incidentFields.get(FIELD_NAME_BPMN_PROCESS_ID)).isEqualTo(bpmnProcessId);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_NAME)).isEqualTo(processName);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_VERSION)).isEqualTo(processVersion);
+    assertThat(incidentFields.get(FIELD_NAME_PROCESS_VERSION_TAG)).isEqualTo(processVersionTag);
     assertThat(incidentFields.get(FIELD_NAME_FLOW_NODE_INSTANCE_KEY))
         .isEqualTo(flowNodeInstanceId.intValue());
     assertThat(incidentFields.get(FIELD_NAME_CREATION_TIME)).isNotNull();
