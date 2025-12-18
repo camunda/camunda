@@ -239,7 +239,7 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     // when / then
     when(batchOperationServices.search(any(BatchOperationQuery.class)))
-        .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
 
     webClient
         .post()
@@ -323,6 +323,63 @@ class BatchOperationControllerTest extends RestControllerTest {
         .isNoContent();
   }
 
+  private static Stream<Arguments> provideSortParameters() {
+    final var entityWithEarlyStart =
+        getBatchOperationEntityWithStartDate(
+            "1", OffsetDateTime.parse("2025-03-18T10:57:43+01:00"));
+    final var entityWithLateStart =
+        getBatchOperationEntityWithStartDate(
+            "2", OffsetDateTime.parse("2025-03-18T10:57:45+01:00"));
+
+    return Stream.of(
+        Arguments.of(
+            "startDate",
+            "ASC",
+            List.of(entityWithEarlyStart, entityWithLateStart),
+            List.of("2025-03-18T10:57:43.000+01:00", "2025-03-18T10:57:45.000+01:00")),
+        Arguments.of(
+            "startDate",
+            "DESC",
+            List.of(entityWithLateStart, entityWithEarlyStart),
+            List.of("2025-03-18T10:57:45.000+01:00", "2025-03-18T10:57:43.000+01:00")));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideSortParameters")
+  void shouldSearchBatchOperationsSorted(
+      final String sortedByField,
+      final String order,
+      final List<BatchOperationEntity> searchResultItems,
+      final List<String> expectedOrder) {
+    // given
+    final var request =
+        """
+         {
+           "sort": [{"field":"%s","order":"%s"}]
+         }"""
+            .formatted(sortedByField, order);
+
+    when(batchOperationServices.search(any(BatchOperationQuery.class)))
+        .thenReturn(
+            new SearchQueryResult<>(
+                searchResultItems.size(), false, searchResultItems, null, null));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/batch-operations/search")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.items[0].%s".formatted(sortedByField))
+        .isEqualTo(expectedOrder.get(0))
+        .jsonPath("$.items[1].%s".formatted(sortedByField))
+        .isEqualTo(expectedOrder.get(1));
+  }
+
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationKey) {
     return new BatchOperationEntity(
         batchOperationKey,
@@ -332,6 +389,22 @@ class BatchOperationControllerTest extends RestControllerTest {
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
         BatchOperationActorType.USER,
         "frodo.baggins@fellowship",
+        10,
+        0,
+        10,
+        emptyList());
+  }
+
+  private static BatchOperationEntity getBatchOperationEntityWithStartDate(
+      final String batchOperationKey, final OffsetDateTime startDate) {
+    return new BatchOperationEntity(
+        batchOperationKey,
+        BatchOperationState.COMPLETED,
+        BatchOperationType.CANCEL_PROCESS_INSTANCE,
+        startDate,
+        OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
+        BatchOperationActorType.USER,
+        "frodo@fellowship",
         10,
         0,
         10,
