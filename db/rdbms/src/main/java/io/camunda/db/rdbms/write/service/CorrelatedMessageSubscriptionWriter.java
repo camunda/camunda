@@ -18,7 +18,7 @@ import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
-public class CorrelatedMessageSubscriptionWriter implements RdbmsWriter {
+public class CorrelatedMessageSubscriptionWriter implements RdbmsWriter, ProcessInstanceDependant {
 
   private final ExecutionQueue executionQueue;
   private final CorrelatedMessageSubscriptionMapper mapper;

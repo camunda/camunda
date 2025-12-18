@@ -25,7 +25,7 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class IncidentWriter implements RdbmsWriter {
+public class IncidentWriter implements RdbmsWriter, ProcessInstanceDependant {
 
   private static final Logger LOG = LoggerFactory.getLogger(IncidentWriter.class);
 

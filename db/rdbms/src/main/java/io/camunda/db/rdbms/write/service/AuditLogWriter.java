@@ -15,7 +15,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class AuditLogWriter implements RdbmsWriter {
+public class AuditLogWriter implements RdbmsWriter, ProcessInstanceDependant {
 
   private final ExecutionQueue executionQueue;
 
