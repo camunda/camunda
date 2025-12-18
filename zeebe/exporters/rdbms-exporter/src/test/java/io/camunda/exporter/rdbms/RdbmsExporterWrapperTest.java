@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
+import io.camunda.exporter.rdbms.handlers.auditlog.AuthorizationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
@@ -85,6 +86,7 @@ class RdbmsExporterWrapperTest {
 
     final Map<Class<?>, ValueType> expectedTransformers =
         Map.ofEntries(
+            Map.entry(AuthorizationAuditLogTransformer.class, ValueType.AUTHORIZATION),
             Map.entry(
                 BatchOperationCreationAuditLogTransformer.class,
                 ValueType.BATCH_OPERATION_CREATION),

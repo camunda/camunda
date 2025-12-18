@@ -14,6 +14,7 @@ import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.auditlog.AuthorizationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
@@ -170,6 +171,7 @@ public class DefaultExporterResourceProviderTest {
 
     final Map<Class<?>, ValueType> expectedTransformers =
         Map.ofEntries(
+            Map.entry(AuthorizationAuditLogTransformer.class, ValueType.AUTHORIZATION),
             Map.entry(
                 BatchOperationCreationAuditLogTransformer.class,
                 ValueType.BATCH_OPERATION_CREATION),
