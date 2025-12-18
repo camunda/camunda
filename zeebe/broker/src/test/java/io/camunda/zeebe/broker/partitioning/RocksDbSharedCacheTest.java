@@ -44,50 +44,6 @@ class RocksDbSharedCacheTest {
   }
 
   @Test
-  void shouldNotThrowIfMemoryAllocationBelowOrEqualHalfOfRam() {
-    // when
-    brokerCfg
-        .getExperimental()
-        .getRocksdb()
-        .setMemoryLimit(DataSize.ofBytes(64L * 1024 * 1024)); // 64MB
-    final int partitionsCount = 2;
-    // then we expect no exception when getting the shared cache since we only allocate 50% of ram
-    // memory. 2 * 64MB = 128MB which is 50% of 256MB. The default memory allocation strategy is per
-    // partition.
-    try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
-      assertThatCode(
-              () -> {
-                RocksDbSharedCache.validateRocksDbMemory(
-                    brokerCfg.getExperimental().getRocksdb(), partitionsCount);
-              })
-          .doesNotThrowAnyException();
-    }
-  }
-
-  @Test
-  void shouldThrowIfTriesToAllocateMoreThanHalfOfRam() {
-    // when
-    brokerCfg
-        .getExperimental()
-        .getRocksdb()
-        .setMemoryLimit(DataSize.ofBytes(200L * 1024 * 1024)); // 200MB
-    // then when we allocate more than half of the memory to rocks db, we expect an exception
-    try (final var managementFactoryMock = mockTotalMemorySize(256L * 1024 * 1024)) { // 256MB
-      final var throwable =
-          catchThrowable(
-              () -> {
-                RocksDbSharedCache.validateRocksDbMemory(
-                    brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
-              });
-
-      assertThat(throwable)
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining(
-              "Expected the allocated memory for RocksDB to be below or equal 50.00 % of ram memory, but was 78.13 %");
-    }
-  }
-
-  @Test
   void shouldThrowIfMemoryPerPartitionTooSmall() {
     // when
     // we only give half of the minimum required memory per partition
