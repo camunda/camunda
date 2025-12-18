@@ -22,7 +22,8 @@ import org.springframework.core.io.ClassPathResource;
 /** Utility class for loading OpenAPI specifications from YAML files. */
 public final class OpenApiYamlLoader {
 
-  private static final Logger LOG = LoggerFactory.getLogger(OpenApiYamlLoader.class);
+  /** Default OpenAPI specification path on the classpath (used as a development fallback). */
+  public static final String DEFAULT_CLASSPATH_SPEC_PATH = "v2/rest-api.yaml";
 
   /**
    * Default OpenAPI specification path in the distribution.
@@ -32,8 +33,7 @@ public final class OpenApiYamlLoader {
    */
   public static final String DEFAULT_SPEC_PATH = "config/openapi/v2/rest-api.yaml";
 
-  /** Default OpenAPI specification path on the classpath (used as a development fallback). */
-  public static final String DEFAULT_CLASSPATH_SPEC_PATH = "v2/rest-api.yaml";
+  private static final Logger LOG = LoggerFactory.getLogger(OpenApiYamlLoader.class);
 
   // Prevent instantiation
   private OpenApiYamlLoader() {}
