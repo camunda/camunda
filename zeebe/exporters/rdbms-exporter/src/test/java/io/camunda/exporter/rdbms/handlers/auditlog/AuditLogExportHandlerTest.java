@@ -43,7 +43,7 @@ import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AuditLogHandlerTest {
+class AuditLogExportHandlerTest {
 
   private static final String USERNAME = "test-user";
 

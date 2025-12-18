@@ -86,14 +86,6 @@ class AuditLogHandlerTest {
   }
 
   @Test
-  void shouldNotHandleRecordWhenAuthorizationIsMissing() {
-    when(transformer.supports(any())).thenReturn(true);
-    when(config.isEnabled(any())).thenReturn(true);
-
-    assertThat(handler.handlesRecord(unauthorizedRecord)).isFalse();
-  }
-
-  @Test
   void shouldHandleRecord() {
     when(transformer.supports(any())).thenReturn(true);
     when(config.isEnabled(any())).thenReturn(true);

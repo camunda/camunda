@@ -232,6 +232,14 @@ public record AuditLogInfo(
 
   public record AuditLogActor(AuditLogActorType actorType, String actorId) {
 
+    public static AuditLogActor unknown() {
+      return new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+    }
+
+    public static AuditLogActor anonymous() {
+      return new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
+    }
+
     public static AuditLogActor of(final Record<?> record) {
       final Map<String, Object> authorizations = record.getAuthorizations();
 
