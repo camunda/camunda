@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import org.agrona.IoUtil;
 
-/** Defines the strategy when it comes to pre-allocating segment files. */
+/**
+ * Defines the strategy when it comes to pre-allocating segment files.
+ */
 @FunctionalInterface
 public interface SegmentAllocator {
 
@@ -29,6 +31,9 @@ public interface SegmentAllocator {
   void allocate(FileChannel channel, FileDescriptor fileDescriptor, final long segmentSize)
       throws IOException;
 
+  /**
+   * Returns the default allocator
+   */
   static SegmentAllocator defaultAllocator() {
     return posixOrFill();
   }
@@ -45,17 +50,22 @@ public interface SegmentAllocator {
 
   /**
    * Returns an allocator which will try to use the POSIX system call {@code posix_fallocate}, and
-   * fallback to {@link #fill()} if it isn't available.
+   * fallback to {@param fallback} if it isn't available.
    */
   static SegmentAllocator posix(final SegmentAllocator fallback) {
     return new PosixSegmentAllocator(fallback);
   }
 
+
+  /**
+   * Returns an allocator which will try to use the POSIX system call {@code posix_fallocate}, and
+   * fallback to {@link #fill()} if it isn't available.
+   */
   static SegmentAllocator posixOrFill() {
     return new PosixSegmentAllocator(Defaults.FILL);
   }
 
-  class Defaults {
+  private class Defaults {
     private static final SegmentAllocator NOOP = (c, fd, s) -> {};
     private static final SegmentAllocator FILL =
         (channel, fd, size) -> IoUtil.fill(channel, 0, size, (byte) 0);
