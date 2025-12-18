@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.mcp.tool;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +53,6 @@ public abstract class ToolsTest {
   }
 
   protected <T extends ApiServices<?>> void mockApiServiceAuthentication(final T service) {
-    doReturn(service).when(service).withAuthentication(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    doReturn(service).when(service).withAuthentication(any(CamundaAuthentication.class));
   }
 }
