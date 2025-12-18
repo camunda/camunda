@@ -56,4 +56,9 @@ final class PosixSegmentAllocator implements SegmentAllocator {
     }
     return fallback;
   }
+
+  @Override
+  public String toString() {
+    return "PosixSegmentAllocator{fallback=" + fallback + "}";
+  }
 }
