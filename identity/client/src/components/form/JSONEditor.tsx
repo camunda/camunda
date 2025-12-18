@@ -151,11 +151,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
         <Flex spacing="small" style={{ alignSelf: "end" }}>
           {beautify && (
             <Button
-              onClick={() => {
-                if (onChange) {
-                  onChange(beautifyJSON(value));
-                }
-              }}
+              onClick={() => onChange?.(beautifyJSON(value))}
               size="sm"
               kind="ghost"
               renderIcon={Edit}
