@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import java.time.Duration;
 
 public final class CachesCfg implements ConfigurationEntry {
   private int drgCacheCapacity = EngineConfiguration.DEFAULT_DRG_CACHE_CAPACITY;
@@ -17,6 +18,7 @@ public final class CachesCfg implements ConfigurationEntry {
   private int resourceCacheCapacity = EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY;
   private int authorizationsCacheCapacity =
       EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
+  private Duration authorizationsCacheTtl = EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_TTL;
 
   public int getDrgCacheCapacity() {
     return drgCacheCapacity;
@@ -58,6 +60,14 @@ public final class CachesCfg implements ConfigurationEntry {
     this.authorizationsCacheCapacity = authorizationsCacheCapacity;
   }
 
+  public Duration getAuthorizationsCacheTtl() {
+    return authorizationsCacheTtl;
+  }
+
+  public void setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
+    this.authorizationsCacheTtl = authorizationsCacheTtl;
+  }
+
   @Override
   public String toString() {
     return "CachesCfg{"
@@ -71,6 +81,8 @@ public final class CachesCfg implements ConfigurationEntry {
         + resourceCacheCapacity
         + ", authorizationsCacheCapacity="
         + authorizationsCacheCapacity
+        + ", authorizationsCacheTtl="
+        + authorizationsCacheTtl
         + '}';
   }
 }
