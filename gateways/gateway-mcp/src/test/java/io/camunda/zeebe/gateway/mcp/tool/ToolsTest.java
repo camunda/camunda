@@ -13,27 +13,13 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ApiServices;
-import io.camunda.service.IncidentServices;
-import io.camunda.service.JobServices;
-import io.camunda.service.TopologyServices;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@MockitoBean(
-    types = {
-      IncidentServices.class,
-      TopologyServices.class,
-      JobServices.class,
-      CamundaAuthenticationProvider.class
-    })
 public abstract class ToolsTest {
 
   public static final CamundaAuthentication AUTHENTICATION_WITH_DEFAULT_TENANT =
@@ -42,7 +28,7 @@ public abstract class ToolsTest {
   protected McpSyncClient mcpClient;
 
   @LocalServerPort private int serverPort;
-  @Autowired private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setUp() {

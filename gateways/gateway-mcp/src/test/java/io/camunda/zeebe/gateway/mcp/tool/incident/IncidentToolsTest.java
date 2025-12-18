@@ -26,6 +26,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import io.camunda.service.IncidentServices;
+import io.camunda.service.JobServices;
 import io.camunda.zeebe.gateway.mcp.tool.ToolsTest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -38,7 +39,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    classes = {IncidentTools.class})
+@EnableAutoConfiguration
 class IncidentToolsTest extends ToolsTest {
 
   static final IncidentEntity INCIDENT_ENTITY =
@@ -64,7 +73,9 @@ class IncidentToolsTest extends ToolsTest {
           .endCursor("v")
           .build();
 
-  @Autowired private IncidentServices incidentServices;
+  @MockitoBean private IncidentServices incidentServices;
+  @MockitoBean private JobServices jobServices;
+
   @Autowired private ObjectMapper objectMapper;
   @Captor private ArgumentCaptor<IncidentQuery> queryCaptor;
 
