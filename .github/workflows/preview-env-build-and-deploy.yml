@@ -15,8 +15,8 @@ on:
         type: string
       labels:
         description: |
-          Additional ArgoCD app labels (comma-separated key=value pairs)
-          e.g., "preview-env=smoke-test"
+          Additional ArgoCD app labels (comma or newline-separated key=value pairs)
+          e.g., "preview=smoke-test,repo=camunda/camunda"
         required: false
         type: string
         default: ''
@@ -24,12 +24,14 @@ on:
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 concurrency:
   cancel-in-progress: true
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}-${{ inputs.app-name }}
 
 jobs:
   build-camunda:
+    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
+    # For pull_request: check label conditions
     if: >
-      github.event_name == 'workflow_call' || (
+      inputs.app-name != '' || (
         github.event.pull_request.state != 'closed' && (
           contains(github.event.label.name, 'deploy-preview') ||
           contains(github.event.pull_request.labels.*.name, 'deploy-preview')
@@ -78,8 +80,10 @@ jobs:
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-optimize:
+    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
+    # For pull_request: check label conditions
     if: >
-      github.event_name == 'workflow_call' || (
+      inputs.app-name != '' || (
         github.event.pull_request.state != 'closed' && (
           contains(github.event.label.name, 'deploy-preview') ||
           contains(github.event.pull_request.labels.*.name, 'deploy-preview')
@@ -94,8 +98,10 @@ jobs:
       version: pr-${{ github.event.pull_request.head.sha || github.sha }}
 
   deploy-preview:
+    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
+    # For pull_request: check label conditions
     if: >
-      github.event_name == 'workflow_call' || (
+      inputs.app-name != '' || (
         github.event.pull_request.state != 'closed' && (
           contains(github.event.label.name, 'deploy-preview') ||
           contains(github.event.pull_request.labels.*.name, 'deploy-preview')
@@ -115,6 +121,18 @@ jobs:
     timeout-minutes: 40
     steps:
     #########################################################################
+    # Validate app-name length (only for workflow_call input)
+    - name: Validate app-name length
+      if: inputs.app-name != ''
+      env:
+        APP_NAME: ${{ inputs.app-name }}
+      run: |
+        if (( ${#APP_NAME} > 15 )); then
+          echo "::error::app-name '$APP_NAME' exceeds 15 chars (${#APP_NAME})"
+          exit 1
+        fi
+
+    #########################################################################
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
       if: inputs.app-name == ''
@@ -126,14 +144,9 @@ jobs:
     #########################################################################
     # Set the app name to use
     - id: set-app-name
-      shell: bash
       env:
-        APP_NAME: ${{ inputs.app-name || format('camunda-{0}', steps.sanitize.outputs.branch_name) }}
+        APP_NAME: ${{ inputs.app-name || steps.sanitize.outputs.branch_name }}
       run: |
-        if [[ ${#APP_NAME} -gt 15 ]]; then
-          echo "::error::app-name exceeds 15 character limit: ${APP_NAME} (${#APP_NAME} chars)"
-          exit 1
-        fi
         echo "app-name=${APP_NAME}" >> "$GITHUB_OUTPUT"
 
     #########################################################################
@@ -160,6 +173,8 @@ jobs:
     - name: Determine Argocd Arguments for c8sm
       shell: bash
       run: |
+        # Normalize labels: support both newline and comma separation
+        labels_normalized=$(echo "${labels}" | tr '\n' ',' | sed 's/,,*/,/g' | sed 's/^,//;s/,$//')
         echo "argocd_arguments=--dest-namespace ${app_name} \
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
@@ -169,12 +184,12 @@ jobs:
           --name ${app_name} \
           --revision ${revision} \
           --helm-set git.branch=${revision} \
-          --upsert ${labels:+--label ${labels}}" >> "$GITHUB_ENV"
+          --upsert ${labels_normalized:+--label ${labels_normalized}}" >> "$GITHUB_ENV"
       env:
         docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
         labels: ${{ inputs.labels }}
         revision: ${{ github.head_ref || github.ref_name }}
-        app_name: ${{ steps.set-app-name.outputs.app-name }}
+        app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
 
     #########################################################################
     # Create a preview environment
@@ -183,7 +198,7 @@ jobs:
       with:
         revision: ${{ github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: ${{ steps.set-app-name.outputs.app-name }}
+        app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
         app_url: https://${{ steps.set-app-name.outputs.app-name }}.camunda.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
         argocd_server: argocd.int.camunda.com

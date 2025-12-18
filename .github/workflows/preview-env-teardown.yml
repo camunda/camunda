@@ -16,10 +16,11 @@ on:
 
 jobs:
   teardown-preview:
-    # For PR events: check whether the unlabel name was deploy-preview || check whether the PR was closed / merged and whether deploy-preview was part of the array
-    # For workflow_call: always run (inputs are required)
+    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
+    # For PR events: check whether the unlabel name was deploy-preview || 
+    #   check whether the PR was closed/merged with deploy-preview label
     if: >
-      github.event_name == 'workflow_call' || (
+      inputs.app-name != '' || (
         github.event.label.name == 'deploy-preview' || (
           github.event.action == 'closed' &&
           contains(github.event.pull_request.labels.*.name, 'deploy-preview')
@@ -27,7 +28,6 @@ jobs:
       )
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: {}
     steps:
     #########################################################################
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
@@ -79,7 +79,7 @@ jobs:
       with:
         revision: ${{ github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: ${{ inputs.app-name || format('camunda-{0}', steps.sanitize.outputs.branch_name) }}
+        app_name: camunda-${{ inputs.app-name || steps.sanitize.outputs.branch_name }}
         argocd_server: argocd.int.camunda.com
         github_token: ${{ steps.github-token.outputs.token }}
 
@@ -109,11 +109,10 @@ jobs:
     if: >
       always() && 
         needs.teardown-preview.result != 'skipped' && 
-         github.event_name == 'pull_request'
+        github.event_name == 'pull_request'
     name: Remove Deployment Result Summary
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
     needs: [teardown-preview]
     steps:
     - uses: camunda/infra-global-github-actions/preview-env/comment@main
