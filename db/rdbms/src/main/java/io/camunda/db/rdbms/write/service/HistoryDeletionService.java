@@ -9,7 +9,10 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import java.time.Duration;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +35,42 @@ public class HistoryDeletionService {
   public Duration deleteHistory(final int partitionId) {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, 100);
     LOG.trace("Deleting historic data for entities: {}", batch);
+
+    deleteProcessInstances(batch);
+
     return Duration.ofSeconds(1);
+  }
+
+  private int deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
+    final var processInstanceKeys =
+        batch.stream()
+            .filter(
+                deletionModel ->
+                    deletionModel
+                        .resourceType()
+                        .equals(HistoryDeletionTypeDbModel.PROCESS_INSTANCE))
+            .map(HistoryDeletionDbModel::resourceKey)
+            .toList();
+
+    if (processInstanceKeys.isEmpty()) {
+      return 0;
+    }
+
+    final var allProcessInstanceDependantDataDeleted =
+        rdbmsWriters.getProcessInstanceDependantWriters().stream()
+            .allMatch(
+                dependant -> {
+                  final var limit = 10000; // TODO make limit configurable
+                  final var deletedRows =
+                      dependant.deleteProcessInstanceRelatedData(processInstanceKeys, limit);
+                  return deletedRows < limit;
+                });
+
+    if (allProcessInstanceDependantDataDeleted) {
+      // TODO delete from PI table
+      // TODO delete from HistoryDeletion table
+    }
+
+    return 0; // TODO return amount of fully deleted process instances
   }
 }
