@@ -518,11 +518,11 @@ public class VariableService {
     // requesting variables)
     // This list is updated below to also include completed tasks for which some snapshot variables
     // were not found
-    final List<GetVariablesRequest> requestsNeedingRuntimeVariables =
+    final Map<String, GetVariablesRequest> requestsNeedingRuntimeVariables =
         requests.stream()
             .filter(request -> TaskState.CREATED.equals(request.getState()))
             .filter(request -> request.getVarNames() != null && !request.getVarNames().isEmpty())
-            .collect(Collectors.toList());
+            .collect(toMap(GetVariablesRequest::getTaskId, Function.identity()));
 
     // For completed tasks, retrieve the snapshot variables
     final Map<String, GetVariablesRequest> completedTasksRequests =
@@ -559,7 +559,8 @@ public class VariableService {
                   // If some variables were not found, they will be filled in when searching for
                   // runtime variables
                   if (!missingVariables.isEmpty()) {
-                    requestsNeedingRuntimeVariables.add(
+                    requestsNeedingRuntimeVariables.put(
+                        key,
                         new GetVariablesRequest()
                             .setTaskId(originalRequest.getTaskId())
                             .setState(originalRequest.getState())
@@ -573,16 +574,24 @@ public class VariableService {
     }
 
     if (!requestsNeedingRuntimeVariables.isEmpty()) {
-      getRuntimeVariablesPerTaskId(requestsNeedingRuntimeVariables)
+      // Query runtime variables and add them to the result
+      getRuntimeVariablesPerTaskId(requestsNeedingRuntimeVariables.values().stream().toList())
           .forEach(
               (key, runtimeVariables) -> {
-                if (!runtimeVariables.isEmpty()) {
+                // Only consider actually-requested variables (the combined query above searches for
+                // all variables in all tasks, ignoring the variable names list in each individual
+                // request)
+                final List<String> requestedVars =
+                    requestsNeedingRuntimeVariables.get(key).getVarNames();
+                final List<VariableEntity> retrievedVars =
+                    runtimeVariables.stream()
+                        .filter(v -> requestedVars.contains(v.getName()))
+                        .toList();
+                if (!retrievedVars.isEmpty()) {
                   // Prepare list to collect variable values
                   final var taskVariables = result.computeIfAbsent(key, k -> new ArrayList<>());
                   // Convert runtime variables to unified Variable DTO and add to list
-                  runtimeVariables.stream()
-                      .map(VariableDTO::createFrom)
-                      .forEach(taskVariables::add);
+                  retrievedVars.stream().map(VariableDTO::createFrom).forEach(taskVariables::add);
                 }
               });
     }
