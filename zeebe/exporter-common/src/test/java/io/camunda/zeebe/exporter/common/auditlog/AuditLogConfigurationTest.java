@@ -75,7 +75,7 @@ class AuditLogConfigurationTest {
   }
 
   @Test
-  void shouldBeEnabledForAnonymousActors() {
+  void shouldBeDisabledForAnonymousActors() {
     final var config = new AuditLogConfiguration();
 
     final var auditLog =
@@ -101,7 +101,7 @@ class AuditLogConfigurationTest {
             AuditLogActor.unknown(),
             Optional.empty());
 
-    assertThat(config.isEnabled(auditLog)).isFalse();
+    assertThat(config.isEnabled(auditLog)).isTrue();
   }
 
   @Test

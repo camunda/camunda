@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.common.auditlog;
 @FunctionalInterface
 public interface AuditLogCheck {
   AuditLogCheck DISABLED = auditLog -> false;
+  AuditLogCheck ENABLED = auditLog -> true;
 
   boolean isEnabled(AuditLogInfo auditLog);
 }

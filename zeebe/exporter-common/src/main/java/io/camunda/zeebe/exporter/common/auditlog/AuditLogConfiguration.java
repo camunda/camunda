@@ -66,9 +66,9 @@ public final class AuditLogConfiguration implements AuditLogCheck {
           case ANONYMOUS -> AuditLogCheck.DISABLED;
           case UNKNOWN -> {
             // TODO: enable logging after ensuring all expected events are correctly captured
-            //            LOG.warn("{} cannot be audited because actor is unknown.", auditLog);
+            //            LOG.warn("{} has unknown actor.", auditLog);
 
-            yield AuditLogCheck.DISABLED;
+            yield AuditLogCheck.ENABLED;
           }
         };
 
