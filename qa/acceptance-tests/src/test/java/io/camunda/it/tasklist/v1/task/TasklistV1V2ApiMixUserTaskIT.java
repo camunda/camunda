@@ -31,8 +31,13 @@ import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+// Tasklist V1 APIs are not available with RDBMS secondary storage.
+// See the @ConditionalOnRdbmsDisabled annotation on
+// io.camunda.tasklist.webapp.api.rest.v1.controllers.TaskController
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 public class TasklistV1V2ApiMixUserTaskIT {
 
   @MultiDbTestApplication
