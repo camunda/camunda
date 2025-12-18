@@ -20,6 +20,7 @@ import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.sort.BatchOperationSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
@@ -341,31 +342,37 @@ class BatchOperationControllerTest extends RestControllerTest {
         Arguments.of(
             "startDate",
             "ASC",
+            BatchOperationSort.of(s -> s.startDate().asc()),
             List.of(entityWithEarlyStart, entityWithLateStart),
             List.of("2025-03-18T10:57:43.000+01:00", "2025-03-18T10:57:45.000+01:00")),
         Arguments.of(
             "startDate",
             "DESC",
+            BatchOperationSort.of(s -> s.startDate().desc()),
             List.of(entityWithLateStart, entityWithEarlyStart),
             List.of("2025-03-18T10:57:45.000+01:00", "2025-03-18T10:57:43.000+01:00")),
         Arguments.of(
             "actorId",
             "ASC",
+            BatchOperationSort.of(s -> s.actorId().asc()),
             List.of(entityAragorn, entityFrodo),
             List.of("aragorn@fellowship", "frodo@fellowship")),
         Arguments.of(
             "actorId",
             "DESC",
+            BatchOperationSort.of(s -> s.actorId().desc()),
             List.of(entityFrodo, entityAragorn),
             List.of("frodo@fellowship", "aragorn@fellowship")),
         Arguments.of(
             "actorType",
             "ASC",
+            BatchOperationSort.of(s -> s.actorType().asc()),
             List.of(entityActorClient, entityActorUser),
             List.of("CLIENT", "USER")),
         Arguments.of(
             "actorType",
             "DESC",
+            BatchOperationSort.of(s -> s.actorType().desc()),
             List.of(entityActorUser, entityActorClient),
             List.of("USER", "CLIENT")));
   }
@@ -375,6 +382,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   void shouldSearchBatchOperationsSorted(
       final String sortedByField,
       final String order,
+      final BatchOperationSort sort,
       final List<BatchOperationEntity> searchResultItems,
       final List<String> expectedOrder) {
     // given
@@ -390,7 +398,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             new SearchQueryResult<>(
                 searchResultItems.size(), false, searchResultItems, null, null));
 
-    // when / then
+    // when
     webClient
         .post()
         .uri("/v2/batch-operations/search")
@@ -404,6 +412,9 @@ class BatchOperationControllerTest extends RestControllerTest {
         .isEqualTo(expectedOrder.get(0))
         .jsonPath("$.items[1].%s".formatted(sortedByField))
         .isEqualTo(expectedOrder.get(1));
+
+    // then
+    verify(batchOperationServices).search(new BatchOperationQuery.Builder().sort(sort).build());
   }
 
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationKey) {
