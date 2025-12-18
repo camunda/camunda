@@ -158,7 +158,8 @@ public final class PosixFs {
           throw new OutOfDiskSpace("Failed to pre-allocate file: there is not enough space");
       default -> {
         throw new UnsupportedOperationException(
-            "Failed to pre-allocate file: the underlying filesystem does not support this operation");
+            "Failed to pre-allocate file: the underlying filesystem does not support this operation: errorCode="
+                + error);
       }
     }
   }
