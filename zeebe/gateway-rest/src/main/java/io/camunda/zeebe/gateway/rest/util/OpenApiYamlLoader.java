@@ -22,13 +22,18 @@ import org.springframework.core.io.ClassPathResource;
 /** Utility class for loading OpenAPI specifications from YAML files. */
 public final class OpenApiYamlLoader {
 
-  /** Default location of the OpenAPI spec in the distribution. */
+  private static final Logger LOG = LoggerFactory.getLogger(OpenApiYamlLoader.class);
+
+  /**
+   * Default OpenAPI specification path in the distribution.
+   *
+   * <p>The distribution ships the OpenAPI YAMLs as real files under {@code config/openapi/v2} so
+   * that relative {@code $ref} resolution works reliably.
+   */
   public static final String DEFAULT_SPEC_PATH = "config/openapi/v2/rest-api.yaml";
 
-  /** Default classpath location used during local development/testing. */
-  static final String DEFAULT_CLASSPATH_SPEC_PATH = "v2/rest-api.yaml";
-
-  private static final Logger LOG = LoggerFactory.getLogger(OpenApiYamlLoader.class);
+  /** Default OpenAPI specification path on the classpath (used as a development fallback). */
+  public static final String DEFAULT_CLASSPATH_SPEC_PATH = "v2/rest-api.yaml";
 
   // Prevent instantiation
   private OpenApiYamlLoader() {}
@@ -38,7 +43,7 @@ public final class OpenApiYamlLoader {
    *
    * <p>The file can be either on the filesystem (absolute or relative path), or on the classpath.
    *
-   * @param yamlPath the path to the YAML file, either as a filesystem path or classpath resource
+   * @param yamlPath the path to the YAML file
    * @return the parsed OpenAPI specification
    * @throws OpenApiLoadingException if the YAML file cannot be loaded or parsed
    */
