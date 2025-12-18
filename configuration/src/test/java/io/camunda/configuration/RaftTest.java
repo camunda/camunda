@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocateStrategy;
+import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocationStrategy;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,7 +30,7 @@ public class RaftTest {
           .withPropertyValues("spring.profiles.active=broker");
 
   private static Stream<Arguments> segmentPreallocationStrategies() {
-    return Stream.of(PreAllocateStrategy.values()).map(s -> Arguments.of(s.name(), s));
+    return Stream.of(PreAllocationStrategy.values()).map(s -> Arguments.of(s.name(), s));
   }
 
   @Test
@@ -43,7 +43,7 @@ public class RaftTest {
             context -> {
               final var brokerCfg = context.getBean(BrokerBasedProperties.class);
               assertThat(brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy())
-                  .isEqualTo(PreAllocateStrategy.POSIX);
+                  .isEqualTo(PreAllocationStrategy.POSIX);
             });
   }
 
@@ -57,7 +57,7 @@ public class RaftTest {
             context -> {
               final var brokerCfg = context.getBean(BrokerBasedProperties.class);
               assertThat(brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy())
-                  .isEqualTo(PreAllocateStrategy.POSIX);
+                  .isEqualTo(PreAllocationStrategy.POSIX);
             });
   }
 
@@ -75,7 +75,7 @@ public class RaftTest {
             context -> {
               final var brokerCfg = context.getBean(BrokerBasedProperties.class);
               assertThat(brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy())
-                  .isEqualTo(PreAllocateStrategy.FILL);
+                  .isEqualTo(PreAllocationStrategy.FILL);
             });
   }
 
@@ -89,7 +89,7 @@ public class RaftTest {
             context -> {
               final var brokerCfg = context.getBean(BrokerBasedProperties.class);
               assertThat(brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy())
-                  .isEqualTo(PreAllocateStrategy.NOOP);
+                  .isEqualTo(PreAllocationStrategy.NOOP);
             });
   }
 
@@ -99,14 +99,14 @@ public class RaftTest {
         context -> {
           final var brokerCfg = context.getBean(BrokerBasedProperties.class);
           assertThat(brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy())
-              .isEqualTo(PreAllocateStrategy.FILL);
+              .isEqualTo(PreAllocationStrategy.FILL);
         });
   }
 
   @ParameterizedTest(name = "unified strategy '{0}' maps to {1}")
   @MethodSource("segmentPreallocationStrategies")
   void shouldMapUnifiedStrategyStringToEnum(
-      final String strategy, final PreAllocateStrategy expected) {
+      final String strategy, final PreAllocationStrategy expected) {
     brokerRunner
         .withPropertyValues(
             "camunda.cluster.raft.preallocate-segment-files=true",
@@ -122,7 +122,7 @@ public class RaftTest {
   @ParameterizedTest(name = "legacy strategy '{0}' maps to {1}")
   @MethodSource("segmentPreallocationStrategies")
   void shouldMapLegacyStrategyStringToEnum(
-      final String strategy, final PreAllocateStrategy expected) {
+      final String strategy, final PreAllocationStrategy expected) {
     brokerRunner
         .withPropertyValues(
             "zeebe.broker.experimental.raft.preallocateSegmentFiles=true",

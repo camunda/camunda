@@ -14,7 +14,7 @@ import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAU
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_CHUNK_SIZE;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
 
-import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocateStrategy;
+import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocationStrategy;
 import java.time.Duration;
 import java.util.Set;
 import org.springframework.util.unit.DataSize;
@@ -186,7 +186,7 @@ public class Raft {
    *   <li>POSIX_OR_FILL: use POSIX strategy or FILL if it's not possible.
    * </ul>
    */
-  private PreAllocateStrategy segmentPreallocationStrategy = PreAllocateStrategy.FILL;
+  private PreAllocationStrategy segmentPreallocationStrategy = PreAllocationStrategy.FILL;
 
   public Duration getHeartbeatInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -383,20 +383,20 @@ public class Raft {
     this.preallocateSegmentFiles = preallocateSegmentFiles;
   }
 
-  public PreAllocateStrategy getSegmentPreallocationStrategy() {
+  public PreAllocationStrategy getSegmentPreallocationStrategy() {
     if (!isPreallocateSegmentFiles()) {
-      return PreAllocateStrategy.NOOP;
+      return PreAllocationStrategy.NOOP;
     }
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".segment-preallocation-strategy",
         segmentPreallocationStrategy,
-        PreAllocateStrategy.class,
+        PreAllocationStrategy.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
         Set.of(LEGACY_SEGMENT_PREALLOCATION_STRATEGY));
   }
 
   public void setSegmentPreallocationStrategy(
-      final PreAllocateStrategy segmentPreallocationStrategy) {
+      final PreAllocationStrategy segmentPreallocationStrategy) {
     this.segmentPreallocationStrategy = segmentPreallocationStrategy;
   }
 }
