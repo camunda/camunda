@@ -114,30 +114,144 @@ test.describe('Element Instance Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  filterCases(resourceId).forEach(({filterKey, filterValue, expectedTotal}) => {
-    test(`Search Element Instances - Filter by ${filterKey} - Success`, async ({
+  // filterCases(resourceId).forEach(({filterKey, filterValue, expectedTotal}) => {
+  //   test(`Search Element Instances - Filter by ${filterKey} - Success`, async ({
+  //     request,
+  //   }) => {
+  //     await expect(async () => {
+  //       const filter: Record<string, unknown> = {};
+  //       const {key, value} = createFilter(filterKey, filterValue, state);
+  //       filter[key] = value;
+  //       const res = await request.post(buildUrl('/element-instances/search'), {
+  //         headers: jsonHeaders(),
+  //         data: {
+  //           filter: filter,
+  //         },
+  //       });
+  //       await assertStatusCode(res, 200);
+  //       const body = await res.json();
+  //       expect(body.page.totalItems).toBe(expectedTotal);
+  //       expect(body.items.length).toBe(expectedTotal);
+  //       for (const item of body.items) {
+  //         expect(item[key]).toBe(value);
+  //       }
+  //     }).toPass(defaultAssertionOptions);
+  //   });
+  // });
+
+  test(`Search Element Instances - Filter by differetnt filters - Success`, async ({
       request,
     }) => {
-      await expect(async () => {
-        const filter: Record<string, unknown> = {};
-        const {key, value} = createFilter(filterKey, filterValue, state);
-        filter[key] = value;
+      await test.step('Filter By processDefinitionId', async () => {
+        const processDefinitionIdToSearch = resourceId;
+        const expectedTotal = 2;
+        await expect(async () => {
         const res = await request.post(buildUrl('/element-instances/search'), {
           headers: jsonHeaders(),
           data: {
-            filter: filter,
+            filter: {
+              processDefinitionId: processDefinitionIdToSearch,
+            },
           },
         });
         await assertStatusCode(res, 200);
         const body = await res.json();
         expect(body.page.totalItems).toBe(expectedTotal);
         expect(body.items.length).toBe(expectedTotal);
-        for (const item of body.items) {
-          expect(item[key]).toBe(value);
-        }
+        body.items.forEach((item: Record<string, unknown>) => {
+          expect(item.processDefinitionId).toBe(processDefinitionIdToSearch);
+        });
       }).toPass(defaultAssertionOptions);
+      });
+
+      await test.step('Filter By elementName', async () => {
+        const elementNameToSearch = 'Decision If Human Needed';
+        const expectedTotal = 1;
+        await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              elementName: elementNameToSearch,
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.page.totalItems).toBe(expectedTotal);
+        expect(body.items.length).toBe(expectedTotal);
+        body.items.forEach((item: Record<string, unknown>) => {
+          expect(item.elementName).toBe(elementNameToSearch);
+        });
+      }).toPass(defaultAssertionOptions);
+      });
+
+      await test.step('Filter By type', async () => {
+        const typeToSearch = 'EXCLUSIVE_GATEWAY';
+        const expectedTotal = 1;
+        await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              type: typeToSearch,
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.page.totalItems).toBeGreaterThanOrEqual(expectedTotal);
+        expect(body.items.length).toBeGreaterThanOrEqual(expectedTotal);
+        body.items.forEach((item: Record<string, unknown>) => {
+          expect(item.type).toBe(typeToSearch);
+        });
+      }).toPass(defaultAssertionOptions);
+      });
+
+      await test.step('Filter By processDefinitionKey', async () => {
+        const processDefinitionKeyToSearch = state.processDefinitionKey as string;
+        const expectedTotal = 2;
+        await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processDefinitionKey: processDefinitionKeyToSearch,
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.page.totalItems).toBe(expectedTotal);
+        expect(body.items.length).toBe(expectedTotal);
+        body.items.forEach((item: Record<string, unknown>) => {
+          expect(item.processDefinitionKey).toBe(processDefinitionKeyToSearch);
+        });
+      }).toPass(defaultAssertionOptions);
+      });
+
+      await test.step('Filter By processInstanceKey', async () => {
+        const processInstanceKeyToSearch = state.processInstanceKey as string;
+        const expectedTotal = 2;
+        await expect(async () => {
+        const res = await request.post(buildUrl('/element-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: processInstanceKeyToSearch,
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.page.totalItems).toBe(expectedTotal);
+        expect(body.items.length).toBe(expectedTotal);
+        body.items.forEach((item: Record<string, unknown>) => {
+          expect(item.processInstanceKey).toBe(processInstanceKeyToSearch);
+        });
+      }).toPass(defaultAssertionOptions);
+      });
     });
-  });
 
   test(`Search Element Instances - Multiple Filters`, async ({request}) => {
     await expect(async () => {

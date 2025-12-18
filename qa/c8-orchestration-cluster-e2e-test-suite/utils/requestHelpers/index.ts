@@ -52,3 +52,7 @@ export {
   deployMammalDecisionAndStoreResponse,
   deployTwoSimpleDecisionsAndStoreResponse,
 } from './decision-requirement-requestHelper';
+export {
+  createMammalProcessInstanceAndDeployMammalDecision,
+  type DecisionInstance,
+} from './decision-instance-requestHelpers';
