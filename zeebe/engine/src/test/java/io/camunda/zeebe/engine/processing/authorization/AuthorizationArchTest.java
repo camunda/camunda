@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPreconditionChecker;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
@@ -59,9 +58,8 @@ public class AuthorizationArchTest {
       @Override
       public boolean test(final JavaClass javaClass) {
         return Predicates.implement(TypedRecordProcessor.class)
-            // Not all processors use the TypedRecordProcessor interface. We also need to check
-            // the CommandProcessor and the UserTaskCommandProcessor interfaces.
-            .or(Predicates.implement(CommandProcessor.class))
+            // Not all processors use the TypedRecordProcessor interface. We also need to check the
+            // UserTaskCommandProcessor interface.
             .or(Predicates.implement(UserTaskCommandProcessor.class))
             .test(javaClass);
       }
