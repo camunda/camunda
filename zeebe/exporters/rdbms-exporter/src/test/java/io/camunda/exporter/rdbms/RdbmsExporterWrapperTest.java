@@ -27,6 +27,7 @@ import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCancelAuditLog
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.ResourceAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantEntityAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.UserAuditLogTransformer;
@@ -34,6 +35,7 @@ import io.camunda.exporter.rdbms.handlers.auditlog.VariableAddUpdateAuditLogTran
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -108,6 +110,7 @@ class RdbmsExporterWrapperTest {
             Map.entry(
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
+            Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
             Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),
@@ -131,24 +134,18 @@ class RdbmsExporterWrapperTest {
   private void assertAuditLogExportPresent(
       final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers,
       final Map<Class<?>, ValueType> expectedRegisteredTransformers) {
-    expectedRegisteredTransformers.forEach(
-        (auditLogTransformerClass, valueType) -> {
-          // check whether value type exists and contains the expected transformer class
-          assertThat(registeredHandlers)
-              .containsKey(valueType)
-              .extracting(map -> map.get(valueType))
-              .satisfies(
-                  handlerList -> {
-                    assertThat(handlerList)
-                        .filteredOn(AuditLogExportHandler.class::isInstance)
-                        .extracting(
-                            exportHandler ->
-                                (Class)
-                                    ((AuditLogExportHandler<?>) exportHandler)
-                                        .getTransformer()
-                                        .getClass())
-                        .contains(auditLogTransformerClass);
-                  });
+    final Map<Class<?>, ValueType> actualRegisteredHandlers = new HashMap<>();
+    registeredHandlers.forEach(
+        (valueType, handlers) -> {
+          for (final RdbmsExportHandler<?> handler : handlers) {
+            if (handler instanceof AuditLogExportHandler<?>) {
+              actualRegisteredHandlers.put(
+                  ((AuditLogExportHandler<?>) handler).getTransformer().getClass(), valueType);
+            }
+          }
         });
+    assertThat(actualRegisteredHandlers)
+        .as("Audit log handlers should match expected handlers")
+        .containsExactlyInAnyOrderEntriesOf(expectedRegisteredTransformers);
   }
 }

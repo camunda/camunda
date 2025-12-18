@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -93,6 +94,10 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig PROCESS_INSTANCE_MODIFICATION_CONFIG =
       TransformerConfig.with(PROCESS_INSTANCE_MODIFICATION).withIntents(MODIFIED);
+
+  public static final TransformerConfig RESOURCE_CONFIG =
+      TransformerConfig.with(ValueType.RESOURCE)
+          .withIntents(ResourceIntent.CREATED, ResourceIntent.DELETED);
 
   public static final TransformerConfig TENANT_CONFIG =
       TransformerConfig.with(TENANT)
