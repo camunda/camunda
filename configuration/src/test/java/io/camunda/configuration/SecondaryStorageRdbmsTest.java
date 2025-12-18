@@ -39,13 +39,13 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   SearchEngineConnectPropertiesOverride.class,
 })
 public class SecondaryStorageRdbmsTest {
-  public static final String FLUSH_INTERVAL = "PT0.5S";
-  public static final int QUEUE_SIZE = 1000;
-  private static final String INDEX_PREFIX = "sample-index-prefix";
+  public static final String FLUSH_INTERVAL = "PT10S";
+  public static final int QUEUE_SIZE = 2000;
+  public static final int QUEUE_MEMORY_LIMIT = 50;
   private static final String USERNAME = "testUsername";
   private static final String PASSWORD = "testPassword";
 
-  private static final String DEFAULT_HISTORY_TTL = "PT1M";
+  private static final String DEFAULT_HISTORY_TTL = "PT2M";
   private static final String DEFAULT_BATCH_OPERATION_HISTORY_TTL = "PT168H"; // 7 days
   private static final String BATCH_OPERATION_CANCEL_PROCESS_INSTANCE_HISTORY_TTL =
       "PT24H"; // 1 day
@@ -53,11 +53,11 @@ public class SecondaryStorageRdbmsTest {
       "PT240H"; // 10 days
   private static final String BATCH_OPERATION_MODIFY_PROCESS_INSTANCE_HISTORY_TTL =
       "PT168H"; // 7 days
-  private static final String BATCH_OPERATION_RESOLVE_INCIDENT_HISTORY_TTL = "PT120H"; // 5 days
+  private static final String BATCH_OPERATION_RESOLVE_INCIDENT_HISTORY_TTL = "PT144H"; // 6 days
   private static final String MIN_HISTORY_CLEANUP_INTERVAL = "PT1S";
-  private static final String MAX_HISTORY_CLEANUP_INTERVAL = "PT1H";
-  private static final int HISTORY_CLEANUP_BATCH_SIZE = 1000;
-  private static final String HISTORY_USAGE_METRICS_CLEANUP_INTERVAL = "PT24H";
+  private static final String MAX_HISTORY_CLEANUP_INTERVAL = "PT2H";
+  private static final int HISTORY_CLEANUP_BATCH_SIZE = 2000;
+  private static final String HISTORY_USAGE_METRICS_CLEANUP_INTERVAL = "PT48H";
   private static final String HISTORY_USAGE_METRICS_TTL = "PT1H";
 
   private static final int MAX_PROCESS_CACHE_SIZE = 4711;
@@ -72,6 +72,7 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.password=" + PASSWORD,
         "camunda.data.secondary-storage.rdbms.flushInterval=" + FLUSH_INTERVAL,
         "camunda.data.secondary-storage.rdbms.queueSize=" + QUEUE_SIZE,
+        "camunda.data.secondary-storage.rdbms.queueMemoryLimit=" + QUEUE_MEMORY_LIMIT,
         "camunda.data.secondary-storage.rdbms.history.defaultHistoryTTL=" + DEFAULT_HISTORY_TTL,
         "camunda.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL="
             + DEFAULT_BATCH_OPERATION_HISTORY_TTL,
@@ -95,7 +96,7 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.processCache.maxSize=" + MAX_PROCESS_CACHE_SIZE,
         "camunda.data.secondary-storage.rdbms.batchOperationCache.maxSize="
             + MAX_BATCH_OPERATIONS_CACHE_SIZE,
-        "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=true",
+        "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=false",
         "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
       })
   class WithOnlyUnifiedConfigSet {
@@ -129,6 +130,7 @@ public class SecondaryStorageRdbmsTest {
       assertThat(exporterConfiguration.getFlushInterval())
           .isEqualTo(Duration.parse(FLUSH_INTERVAL));
       assertThat(exporterConfiguration.getQueueSize()).isEqualTo(QUEUE_SIZE);
+      assertThat(exporterConfiguration.getQueueMemoryLimit()).isEqualTo(QUEUE_MEMORY_LIMIT);
       assertThat(exporterConfiguration.getHistory().getDefaultHistoryTTL())
           .isEqualTo(Duration.parse(DEFAULT_HISTORY_TTL));
       assertThat(exporterConfiguration.getHistory().getDefaultBatchOperationHistoryTTL())
@@ -167,7 +169,7 @@ public class SecondaryStorageRdbmsTest {
             .isEqualTo(MAX_BATCH_OPERATIONS_CACHE_SIZE);
       }
 
-      assertThat(exporterConfiguration.isExportBatchOperationItemsOnCreation()).isTrue();
+      assertThat(exporterConfiguration.isExportBatchOperationItemsOnCreation()).isFalse();
 
       assertThat(exporterConfiguration.getBatchOperationItemInsertBlockSize()).isEqualTo(1234);
     }
@@ -197,8 +199,9 @@ public class SecondaryStorageRdbmsTest {
       final ExporterCfg exporter = brokerBasedProperties.getRdbmsExporter();
       assertThat(exporter).isNotNull();
       final Map<String, Object> args = exporter.getArgs();
-      assertThat(args.get("queueSize")).isEqualTo(QUEUE_SIZE);
-      assertThat(args.get("flushInterval")).isEqualTo(Duration.parse(FLUSH_INTERVAL));
+      assertThat(args.get("queueSize")).isEqualTo(1000);
+      assertThat(args.get("queueMemoryLimit")).isEqualTo(20);
+      assertThat(args.get("flushInterval")).isEqualTo(Duration.ofMillis(500));
       assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
       assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
     }

@@ -34,12 +34,15 @@ public class Bulk {
   }
 
   public Duration getDelay() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix + ".delay",
-        delay,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of("zeebe.broker.exporters.camundaexporter.args.bulk.delay"));
+    final var delayInt = Math.toIntExact(delay.toSeconds());
+    final var result =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            prefix + ".delay",
+            delayInt,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            Set.of("zeebe.broker.exporters.camundaexporter.args.bulk.delay"));
+    return Duration.ofSeconds(result);
   }
 
   public void setDelay(final Duration delay) {
@@ -60,12 +63,15 @@ public class Bulk {
   }
 
   public DataSize getMemoryLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix + ".memory-limit",
-        memoryLimit,
-        DataSize.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of("zeebe.broker.exporters.camundaexporter.args.bulk.memoryLimit"));
+    final var memoryLimitInt = Math.toIntExact(memoryLimit.toMegabytes());
+    final var result =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            prefix + ".memory-limit",
+            memoryLimitInt,
+            Integer.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            Set.of("zeebe.broker.exporters.camundaexporter.args.bulk.memoryLimit"));
+    return DataSize.ofMegabytes(result);
   }
 
   public void setMemoryLimit(final DataSize memoryLimit) {

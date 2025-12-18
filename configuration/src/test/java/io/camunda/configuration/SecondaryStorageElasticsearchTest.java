@@ -371,14 +371,12 @@ public class SecondaryStorageElasticsearchTest {
         "zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving="
             + EXPECTED_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING,
         "zeebe.broker.exporters.camundaexporter.args.history.delayBetweenRuns="
-            + EXPECTED_HISTORY_DELAY_BETWEEN_RUNS
-            + "ms",
+            + EXPECTED_HISTORY_DELAY_BETWEEN_RUNS,
         "zeebe.broker.exporters.camundaexporter.args.history.maxDelayBetweenRuns="
-            + EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS
-            + "ms",
-        "zeebe.broker.exporters.camundaexporter.args.bulk.delay=10s",
+            + EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS,
+        "zeebe.broker.exporters.camundaexporter.args.bulk.delay=10",
         "zeebe.broker.exporters.camundaexporter.args.bulk.size=" + EXPECTED_BULK_SIZE,
-        "zeebe.broker.exporters.camundaexporter.args.bulk.memoryLimit=50MB"
+        "zeebe.broker.exporters.camundaexporter.args.bulk.memoryLimit=50"
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerBasedProperties;
