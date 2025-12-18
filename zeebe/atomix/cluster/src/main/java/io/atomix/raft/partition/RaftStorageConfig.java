@@ -120,7 +120,8 @@ public class RaftStorageConfig {
         + freeDiskSpace
         + ", journalIndexDensity="
         + journalIndexDensity
-        + ", segmentAllocator ="
+        + ", segmentAllocator="
+        + segmentAllocator
         + '}';
   }
 
