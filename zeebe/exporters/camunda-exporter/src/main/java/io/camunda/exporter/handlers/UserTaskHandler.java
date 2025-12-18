@@ -115,6 +115,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
       case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
         entity.setState(TaskState.CREATED);
+        entity.setCompletionTime(null);
         updateChangedAttributes(record, entity);
       }
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
@@ -189,6 +190,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       updateFields.put(TaskTemplate.STATE, entity.getState());
       // Add update fields for migrated user tasks
       if (entity.getState() == TaskState.CREATED) {
+        updateFields.put(TaskTemplate.KEY, entity.getKey());
         if (entity.getImplementation() != null) {
           updateFields.put(TaskTemplate.IMPLEMENTATION, entity.getImplementation());
         }

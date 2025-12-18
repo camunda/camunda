@@ -854,6 +854,7 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getAssignee()).isEqualTo(taskRecordValue.getAssignee());
@@ -897,6 +898,7 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getAssignee()).isEqualTo(null);
@@ -999,6 +1001,7 @@ public class UserTaskHandlerTest {
         List.of(
             "priority", "dueDate", "followUpDate", "candidateUsersList", "candidateGroupsList"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
@@ -1065,6 +1068,7 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("priority", "assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
@@ -1137,6 +1141,7 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.IMPLEMENTATION, taskEntity.getImplementation());
     expectedUpdates.put(TaskTemplate.FORM_ID, taskEntity.getFormId());
     expectedUpdates.put(TaskTemplate.FORM_KEY, taskEntity.getFormKey());
+    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
