@@ -19,6 +19,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
+import io.camunda.client.protocol.rest.AuditLogEntityTypeEnum;
 import io.camunda.client.protocol.rest.AuditLogResultEnum;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -40,6 +41,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -150,11 +153,13 @@ public class AuditLogIT {
     STARTED_PROCESS_INSTANCES.clear();
   }
 
-  @Test
-  void shouldCreateAuditLogEntryFromPICreation() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldCreateAuditLogEntryFromPICreation(final boolean useRest) {
     // when
     // a process instance is created
-    final var processInstanceEvent = startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    final var processInstanceEvent =
+        startProcessInstance(adminClient, PROCESS_ID, TENANT_A, useRest);
     final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
 
     // then
@@ -165,7 +170,7 @@ public class AuditLogIT {
             .withKey(processInstanceKey)
             .exists();
     if (piCreated) {
-      Awaitility.await("Audit log entry is created for process instance modification")
+      Awaitility.await("Audit log entry is created for process instance creation")
           .ignoreExceptionsInstanceOf(ProblemException.class)
           .untilAsserted(
               () -> {
@@ -183,8 +188,11 @@ public class AuditLogIT {
                 final var auditLog = auditLogItems.items().get(0);
 
                 assertThat(auditLog).isNotNull();
+                assertThat(auditLog.getEntityType())
+                    .isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
                 assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
-                assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.OPERATOR);
+                assertThat(auditLog.getCategory())
+                    .isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
                 assertThat(auditLog.getProcessDefinitionId())
                     .isEqualTo(processInstanceEvent.getBpmnProcessId());
                 assertThat(auditLog.getProcessDefinitionKey())
@@ -196,11 +204,13 @@ public class AuditLogIT {
     }
   }
 
-  @Test
-  void shouldFetchAuditLogEntryById() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldFetchAuditLogEntryById(final boolean useRest) {
     // when
     // a process instance is created
-    final var processInstanceEvent = startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    final var processInstanceEvent =
+        startProcessInstance(adminClient, PROCESS_ID, TENANT_A, useRest);
     final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
 
     // then
@@ -229,9 +239,12 @@ public class AuditLogIT {
                 // Verify the fetched audit log entry matches the searched one
                 assertThat(fetchedAuditLog).isNotNull();
                 assertThat(fetchedAuditLog.getAuditLogKey()).isEqualTo(auditLogKey);
+                assertThat(fetchedAuditLog.getEntityType())
+                    .isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
                 assertThat(fetchedAuditLog.getOperationType())
                     .isEqualTo(AuditLogOperationTypeEnum.CREATE);
-                assertThat(fetchedAuditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.OPERATOR);
+                assertThat(fetchedAuditLog.getCategory())
+                    .isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
                 assertThat(fetchedAuditLog.getProcessDefinitionId())
                     .isEqualTo(processInstanceEvent.getBpmnProcessId());
                 assertThat(fetchedAuditLog.getProcessDefinitionKey())
@@ -369,7 +382,7 @@ public class AuditLogIT {
               // Admin should see the OPERATOR category audit log
               assertThat(adminAuditLogs.items()).isNotEmpty();
               assertThat(adminAuditLogs.items().get(0).getCategory())
-                  .isEqualTo(AuditLogCategoryEnum.OPERATOR);
+                  .isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
             });
   }
 
@@ -383,8 +396,10 @@ public class AuditLogIT {
 
     // when
     // Admin creates process instances for both PROCESS_ID and PROCESS_ID_A
-    final var processInstanceDefault = startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
-    final var processInstanceA = startProcessInstance(adminClient, PROCESS_ID_A, TENANT_A);
+    final var useRest = true;
+    final var processInstanceDefault =
+        startProcessInstance(adminClient, PROCESS_ID, TENANT_A, useRest);
+    final var processInstanceA = startProcessInstance(adminClient, PROCESS_ID_A, TENANT_A, useRest);
 
     // Wait for the audit log entries to be created
     RecordingExporter.processInstanceCreationRecords()
@@ -431,7 +446,7 @@ public class AuditLogIT {
                       .join();
 
               // Admin should see both audit logs
-              assertThat(adminAuditLogs.items()).isNotEmpty();
+              assertThat(adminAuditLogs.items().size()).isGreaterThanOrEqualTo(2);
               assertThat(adminAuditLogs.items().get(0).getProcessDefinitionId())
                   .isEqualTo(PROCESS_ID);
             });
@@ -460,15 +475,19 @@ public class AuditLogIT {
   }
 
   private static ProcessInstanceEvent startProcessInstance(
-      final CamundaClient camundaClient, final String processId, final String tenant) {
+      final CamundaClient camundaClient,
+      final String processId,
+      final String tenant,
+      final boolean useRest) {
+    final var commandStep1 = camundaClient.newCreateInstanceCommand();
+    if (useRest) {
+      commandStep1.useRest();
+    } else {
+      commandStep1.useGrpc();
+    }
+
     final var instanceCreated =
-        camundaClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(tenant)
-            .send()
-            .join();
+        commandStep1.bpmnProcessId(processId).latestVersion().tenantId(tenant).send().join();
     STARTED_PROCESS_INSTANCES.add(instanceCreated.getProcessInstanceKey());
 
     return instanceCreated;
