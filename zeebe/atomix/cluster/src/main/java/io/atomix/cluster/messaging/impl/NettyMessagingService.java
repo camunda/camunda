@@ -149,6 +149,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   // flag for passing heartbeats down the pipeline
   private boolean forwardHeartbeats = false;
+  private boolean sendHeartbeatPayload = true;
   private boolean heartbeatsEnabled = true;
 
   public NettyMessagingService(
@@ -957,6 +958,11 @@ public final class NettyMessagingService implements ManagedMessagingService {
     heartbeatsEnabled = false;
   }
 
+  @VisibleForTesting
+  void noHeartbeatPayload() {
+    sendHeartbeatPayload = false;
+  }
+
   /** Channel initializer for basic connections. */
   private class BasicClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -1154,12 +1160,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 "heartbeat-setup",
                 new HeartbeatSetupHandler.Client(
                     "decoder",
-                    log,
                     messageIdGenerator,
                     advertisedAddress,
                     config.getHeartbeatTimeout(),
                     config.getHeartbeatInterval(),
-                    forwardHeartbeats));
+                    forwardHeartbeats,
+                    sendHeartbeatPayload));
       }
       future.complete(context.channel());
     }
@@ -1208,7 +1214,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
             .addBefore(
                 MESSAGE_DISPATCHER_NAME,
                 "heartbeat-setup",
-                new HeartbeatSetupHandler.Server("decoder", log, forwardHeartbeats));
+                new HeartbeatSetupHandler.Server(
+                    "decoder", forwardHeartbeats, sendHeartbeatPayload));
       }
     }
   }
