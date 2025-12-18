@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -330,7 +331,8 @@ public class CheckpointScheduleTest {
       final Schedule checkpointSchedule, final Schedule backupSchedule) {
     try {
       final var scheduler =
-          new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient);
+          new CheckpointScheduler(
+              checkpointSchedule, backupSchedule, brokerClient, new SimpleMeterRegistry());
       final Field checkpointCreatorField =
           CheckpointScheduler.class.getDeclaredField("backupRequestHandler");
       checkpointCreatorField.setAccessible(true);

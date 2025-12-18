@@ -22455,41 +22455,16 @@
           },
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "fixed"
-              },
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": []
+              },
+              "color": {
+                "mode": "fixed"
               }
             },
             "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 835
-          },
-          "id": 329,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "text": {},
-            "textMode": "value_and_name",
-            "wideLayout": true
           },
           "pluginVersion": "12.1.0",
           "targets": [
@@ -22506,8 +22481,28 @@
               "refId": "A"
             }
           ],
-          "title": "Current In-Progress Backups",
-          "type": "stat"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "auto",
+            "textMode": "value_and_name",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard",
+            "text": {}
+          }
         },
         {
           "datasource": {
@@ -23105,6 +23100,226 @@
           ],
           "title": "Current Checkpoint ID",
           "type": "stat"
+        },
+        {
+          "id": 696,
+          "type": "stat",
+          "title": "Next scheduled checkpoint",
+          "gridPos": {
+            "x": 12,
+            "y": 21,
+            "h": 4,
+            "w": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "dateTimeAsIsoNoDateIfToday"
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "expr": "camunda_checkpoint_scheduler_next_checkpoint_time_millis{type=\"MARKER\"}",
+              "refId": "A"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "horizontal",
+            "textMode": "value",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          }
+        },
+        {
+          "id": 695,
+          "type": "stat",
+          "title": "Last scheduled checkpoint created",
+          "gridPos": {
+            "x": 12,
+            "y": 25,
+            "h": 4,
+            "w": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "dateTimeAsIsoNoDateIfToday"
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "expr": "camunda_checkpoint_scheduler_last_checkpoint_time_millis{type=\"MARKER\"}",
+              "refId": "A"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "horizontal",
+            "textMode": "value",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          }
+        },
+        {
+          "id": 698,
+          "type": "stat",
+          "title": "Next scheduled backup execution",
+          "gridPos": {
+            "x": 18,
+            "y": 25,
+            "h": 4,
+            "w": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "dateTimeAsIsoNoDateIfToday"
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "expr": "camunda_checkpoint_scheduler_next_checkpoint_time_millis{type=\"SCHEDULED_BACKUP\"}",
+              "refId": "A"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "horizontal",
+            "textMode": "value",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          }
+        },
+        {
+          "id": 697,
+          "type": "stat",
+          "title": "Last scheduled backup created",
+          "gridPos": {
+            "x": 18,
+            "y": 25,
+            "h": 4,
+            "w": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "dateTimeAsIsoNoDateIfToday"
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "expr": "camunda_checkpoint_scheduler_last_checkpoint_time_millis{type=\"SCHEDULED_BACKUP\"}",
+              "refId": "A"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "horizontal",
+            "textMode": "value",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          }
         }
       ],
       "title": "Backups",
