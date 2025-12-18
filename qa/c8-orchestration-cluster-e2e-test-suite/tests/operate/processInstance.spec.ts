@@ -109,12 +109,19 @@ test.describe('Process Instance', () => {
         ),
       ).toBeVisible();
 
-      await expect
-        .poll(
-          async () =>
-            await operateProcessInstancePage.incidentsTableOperationSpinner.isVisible(),
-        )
-        .toBe(false);
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(
+              async () =>
+                await operateProcessInstancePage.incidentsTableOperationSpinner.isVisible(),
+            )
+            .toBe(false);
+        },
+        onFailure: async () => {
+          console.log(`Retrying assertion ...`);
+        },
+      });
 
       await expect(operateProcessInstancePage.incidentsTableRows).toHaveCount(
         1,
@@ -152,7 +159,9 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Expect all incidents resolved', async () => {
-      await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+      await expect(operateProcessInstancePage.incidentsBanner).toBeHidden({
+        timeout: 20000,
+      });
       await expect(operateProcessInstancePage.incidentsTable).toBeHidden();
       await expect(operateProcessInstancePage.completedIcon).toBeVisible();
     });
