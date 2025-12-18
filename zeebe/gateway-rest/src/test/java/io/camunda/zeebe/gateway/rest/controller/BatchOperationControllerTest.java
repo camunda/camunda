@@ -227,7 +227,9 @@ class BatchOperationControllerTest extends RestControllerTest {
             new io.camunda.search.filter.BatchOperationFilter.Builder()
                 .actorTypeOperations(ops)
                 .build(),
-        List.of(List.of(Operation.eq("USER")), List.of(Operation.eq("CLIENT"))),
+        List.of(
+            List.of(Operation.eq(String.valueOf(BatchOperationActorType.USER))),
+            List.of(Operation.eq(String.valueOf(BatchOperationActorType.CLIENT)))),
         true);
 
     customOperationTestCases(
