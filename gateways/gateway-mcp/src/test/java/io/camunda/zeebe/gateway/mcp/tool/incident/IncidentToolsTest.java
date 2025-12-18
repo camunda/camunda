@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.mcp.tool.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,9 +19,11 @@ import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.mcp.tool.ToolsTest;
@@ -92,11 +95,11 @@ class IncidentToolsTest extends ToolsTest {
   }
 
   @Test
-  void shouldSearchIncidents_WithCreationTimeDateRangeFilter() {
+  void shouldSearchIncidentsWithCreationTimeDateRangeFilter() {
     when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
 
-    final var creationTimeFrom = OffsetDateTime.of(2024, 5, 23, 0, 0, 0, 0, ZoneOffset.UTC);
-    final var creationTimeTo = OffsetDateTime.of(2024, 5, 24, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var creationTimeFrom = OffsetDateTime.of(2025, 5, 23, 9, 35, 12, 0, ZoneOffset.UTC);
+    final var creationTimeTo = OffsetDateTime.of(2025, 12, 18, 17, 22, 33, 0, ZoneOffset.UTC);
 
     final CallToolResult result =
         mcpClient.callTool(
@@ -107,23 +110,25 @@ class IncidentToolsTest extends ToolsTest {
                         "filter",
                         Map.of(
                             "creationTimeFrom",
-                            "2024-05-23T00:00:00.000Z",
+                            "2025-05-23T09:35:12Z",
                             "creationTimeTo",
-                            "2024-05-24T00:00:00.000Z")))
+                            "2025-12-18T17:22:33Z")))
                 .build());
 
     assertThat(result.isError()).isFalse();
 
     verify(incidentServices).search(queryCaptor.capture());
-    final IncidentFilter filter = queryCaptor.getValue().filter();
-    assertThat(filter.creationTimeOperations()).hasSize(2);
+    final IncidentQuery capturedQuery = queryCaptor.getValue();
 
-    assertThat(filter.creationTimeOperations().stream().map(Operation::value).toList())
-        .containsExactlyInAnyOrder(creationTimeFrom, creationTimeTo);
+    assertThat(capturedQuery.filter().creationTimeOperations())
+        .extracting(Operation::operator, Operation::value)
+        .containsExactly(
+            tuple(Operator.GREATER_THAN_EQUALS, creationTimeFrom),
+            tuple(Operator.LOWER_THAN, creationTimeTo));
   }
 
   @Test
-  void shouldSearchIncidents_WithFilterSortAndPaging() {
+  void shouldSearchIncidentsWithFilterSortAndPaging() {
     when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
 
     final CallToolResult result =
@@ -146,14 +151,17 @@ class IncidentToolsTest extends ToolsTest {
     final IncidentQuery capturedQuery = queryCaptor.getValue();
 
     final IncidentFilter filter = capturedQuery.filter();
-    assertThat(filter.stateOperations()).hasSize(1);
-    assertThat(filter.stateOperations().getFirst().value()).isEqualTo("ACTIVE");
-    assertThat(filter.errorTypeOperations()).hasSize(1);
-    assertThat(filter.errorTypeOperations().getFirst().value()).isEqualTo("JOB_NO_RETRIES");
+    assertThat(filter.stateOperations())
+        .extracting(Operation::operator, Operation::value)
+        .containsExactly(tuple(Operator.EQUALS, "ACTIVE"));
 
-    assertThat(capturedQuery.sort().orderings()).hasSize(1);
-    assertThat(capturedQuery.sort().orderings().getFirst().field()).isEqualTo("incidentKey");
-    assertThat(capturedQuery.sort().orderings().getFirst().order()).isEqualTo(SortOrder.DESC);
+    assertThat(filter.errorTypeOperations())
+        .extracting(Operation::operator, Operation::value)
+        .containsExactly(tuple(Operator.EQUALS, "JOB_NO_RETRIES"));
+
+    assertThat(capturedQuery.sort().orderings())
+        .extracting(FieldSorting::field, FieldSorting::order)
+        .containsExactly(tuple("incidentKey", SortOrder.DESC));
 
     assertThat(capturedQuery.page().size()).isEqualTo(25);
     assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
