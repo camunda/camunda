@@ -25,7 +25,9 @@ import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BatchOperationStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BatchOperationTypePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.BatchOperationFilter;
 import java.util.function.Consumer;
 
@@ -98,17 +100,29 @@ public class BatchOperationFilterImpl
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter actorType(
       final BatchOperationActorTypeEnum actorType) {
+    if (actorType == null) {
+      filter.setActorType(null);
+      return this;
+    }
+
+    filter.setActorType(
+        EnumUtil.convert(
+            actorType, io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.class));
     return this;
   }
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter actorId(final String actorId) {
+    actorId(p -> p.eq(actorId));
     return this;
   }
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter actorId(
       final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setActorId(provideSearchRequestProperty(property));
     return this;
   }
 
