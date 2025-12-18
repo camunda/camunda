@@ -17,6 +17,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private String processDefinitionId;
   private Long processDefinitionKey;
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private String flowNodeId;
   private Long flowNodeInstanceKey;
   private MessageSubscriptionState messageSubscriptionState;
@@ -36,6 +37,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final String processDefinitionId,
       final Long processDefinitionKey,
       final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
       final String flowNodeId,
       final Long flowNodeInstanceKey,
       final MessageSubscriptionState messageSubscriptionState,
@@ -48,6 +50,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.messageSubscriptionKey = messageSubscriptionKey;
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     this.processInstanceKey = processInstanceKey;
     this.flowNodeId = flowNodeId;
     this.flowNodeInstanceKey = flowNodeInstanceKey;
@@ -90,6 +93,14 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
 
   public void processInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+  }
+
+  public Long rootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public void rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
   public String flowNodeId() {
@@ -180,6 +191,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .processDefinitionId(processDefinitionId)
         .processDefinitionKey(processDefinitionKey)
         .processInstanceKey(processInstanceKey)
+        .rootProcessInstanceKey(rootProcessInstanceKey)
         .flowNodeId(flowNodeId)
         .flowNodeInstanceKey(flowNodeInstanceKey)
         .messageSubscriptionState(messageSubscriptionState)
@@ -196,6 +208,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private String flowNodeId;
     private Long flowNodeInstanceKey;
     private MessageSubscriptionState messageSubscriptionState;
@@ -223,6 +236,11 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
 
     public Builder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
@@ -279,6 +297,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           flowNodeId,
           flowNodeInstanceKey,
           messageSubscriptionState,

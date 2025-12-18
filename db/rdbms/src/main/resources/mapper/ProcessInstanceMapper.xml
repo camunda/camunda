@@ -389,13 +389,13 @@
   </select>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
-    INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID,
+    INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID,
                                            PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE,
                                            TENANT_ID, PARENT_PROCESS_INSTANCE_KEY,
                                            PARENT_ELEMENT_INSTANCE_KEY,
                                            NUM_INCIDENTS, VERSION, PARTITION_ID, TREE_PATH,
                                            HISTORY_CLEANUP_DATE)
-    VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state},
+    VALUES (#{processInstanceKey}, #{rootProcessInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
             #{parentProcessInstanceKey},
             #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId}, #{treePath},
