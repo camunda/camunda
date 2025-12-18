@@ -31,6 +31,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -340,38 +341,26 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     return Stream.of(
         Arguments.of(
-            "startDate",
-            "ASC",
             BatchOperationSort.of(s -> s.startDate().asc()),
             List.of(entityWithEarlyStart, entityWithLateStart),
             List.of("2025-03-18T10:57:43.000+01:00", "2025-03-18T10:57:45.000+01:00")),
         Arguments.of(
-            "startDate",
-            "DESC",
             BatchOperationSort.of(s -> s.startDate().desc()),
             List.of(entityWithLateStart, entityWithEarlyStart),
             List.of("2025-03-18T10:57:45.000+01:00", "2025-03-18T10:57:43.000+01:00")),
         Arguments.of(
-            "actorId",
-            "ASC",
             BatchOperationSort.of(s -> s.actorId().asc()),
             List.of(entityAragorn, entityFrodo),
             List.of("aragorn@fellowship", "frodo@fellowship")),
         Arguments.of(
-            "actorId",
-            "DESC",
             BatchOperationSort.of(s -> s.actorId().desc()),
             List.of(entityFrodo, entityAragorn),
             List.of("frodo@fellowship", "aragorn@fellowship")),
         Arguments.of(
-            "actorType",
-            "ASC",
             BatchOperationSort.of(s -> s.actorType().asc()),
             List.of(entityActorClient, entityActorUser),
             List.of("CLIENT", "USER")),
         Arguments.of(
-            "actorType",
-            "DESC",
             BatchOperationSort.of(s -> s.actorType().desc()),
             List.of(entityActorUser, entityActorClient),
             List.of("USER", "CLIENT")));
@@ -380,17 +369,20 @@ class BatchOperationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideSortParameters")
   void shouldSearchBatchOperationsSorted(
-      final String sortedByField,
-      final String order,
       final BatchOperationSort sort,
       final List<BatchOperationEntity> searchResultItems,
       final List<String> expectedOrder) {
     // given
+    final var fieldSortings = sort.getFieldSortings();
+    Assertions.assertThat(fieldSortings).as("Test assumes exactly one sort entry").hasSize(1);
+
+    final var fieldSorting = fieldSortings.getFirst();
+    final var sortedByField = fieldSorting.field();
+    final var order = fieldSorting.order().value();
+
     final var request =
         """
-         {
-           "sort": [{"field":"%s","order":"%s"}]
-         }"""
+        { "sort": [{ "field": "%s", "order": "%s" }] }"""
             .formatted(sortedByField, order);
 
     when(batchOperationServices.search(any(BatchOperationQuery.class)))
