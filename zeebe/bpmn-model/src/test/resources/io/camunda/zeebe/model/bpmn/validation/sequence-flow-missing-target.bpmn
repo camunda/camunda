@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    id="Definitions_1"
+    targetNamespace="http://bpmn.io/schema/bpmn">
+
+  <bpmn:process id="process" isExecutable="true">
+
+    <bpmn:startEvent id="start" />
+
+    <!-- INVALID targetRef:
+         'process' exists as an ID,
+         but it is NOT a FlowNode -->
+    <bpmn:sequenceFlow
+        id="flow1"
+        sourceRef="start"
+        targetRef="no_such_task" />
+
+</bpmn:process>
+
+</bpmn:definitions>

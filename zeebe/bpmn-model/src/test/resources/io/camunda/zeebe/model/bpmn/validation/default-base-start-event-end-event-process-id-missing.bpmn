@@ -10,3 +10,4 @@
     <bpmn:sequenceFlow id="SequenceFlow_1h9x2ze" sourceRef="StartEvent_1" targetRef="EndEvent_0s07gvq" />
   </bpmn:process>
 </bpmn:definitions>
+
