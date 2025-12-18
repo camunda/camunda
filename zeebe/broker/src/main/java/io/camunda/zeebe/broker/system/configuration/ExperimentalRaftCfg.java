@@ -113,6 +113,24 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
     segmentPreallocationStrategy = preAllocationStrategy;
   }
 
+  /**
+   * Defines the strategy to use to preallocate segment files when "preallocateSegmentFiles" is set
+   * to true. Possible options are:
+   *
+   * <ul>
+   *   <li>NOOP: does not preallocate files, same as setting `preallocateSegmentFiles=false`
+   *   <li>FILL: fills the new segments with zeroes to ensure the disk space is reserved and the
+   *       file is initialized with zeroes
+   *   <li>POSIX: reserves the space required on disk using `fallocate` posix system call. Depending
+   *       on the filesystem, this may not ensure that enough disk space is available. This strategy
+   *       reduces the write throughput to disk which can be particularly useful when using network
+   *       file systems. Running `fallocate` requires a POSIX filesystem and JNI calls which might
+   *       not be available. If you want to make sure that `fallocate` is used, configure this
+   *       strategies, otherwise use the below ones.
+   *   <li>POSIX_OR_NOOP: use POSIX strategy or NOOP if it's not possible.
+   *   <li>POSIX_OR_FILL: use POSIX strategy or FILL if it's not possible.
+   * </ul>
+   */
   public enum PreAllocationStrategy {
     NOOP(SegmentAllocator.noop()),
     FILL(SegmentAllocator.fill()),
