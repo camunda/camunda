@@ -11,5 +11,5 @@ import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages({"io.camunda.tasklist.store"})
+@SelectPackages({"io.camunda.tasklist.store", "io.camunda.tasklist.util"})
 public class TasklistDataLayerTestSuite {}
