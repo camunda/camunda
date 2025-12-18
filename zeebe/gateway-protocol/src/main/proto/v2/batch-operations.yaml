@@ -314,8 +314,7 @@ components:
           description: The end date of the batch operation.
           format: date-time
         actorType:
-          allOf:
-            - $ref: '#/components/schemas/BatchOperationActorTypeEnum'
+          $ref: '#/components/schemas/BatchOperationActorTypeEnum'
         actorId:
           type: string
           description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
