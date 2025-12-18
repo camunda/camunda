@@ -107,6 +107,8 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private MultiTenancyProperties multiTenancy = new MultiTenancyProperties();
 
+  private boolean unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -395,5 +397,15 @@ public class OperateProperties {
         return null;
       }
     }
+  }
+
+  public boolean isUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings() {
+    return unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
+  }
+
+  public void setUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings(
+      final boolean unsafeIgnoreSchemaFieldDifferencesForDynamicMappings) {
+    this.unsafeIgnoreSchemaFieldDifferencesForDynamicMappings =
+        unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
   }
 }
