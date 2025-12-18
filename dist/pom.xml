@@ -578,7 +578,14 @@
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
+<<<<<<< HEAD
             -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
+=======
+            -Dfile.encoding=UTF-8 -Xshare:auto
+            --add-opens=java.base/java.io=ALL-UNNAMED</extraJvmArguments>
+          <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
+          <endorsedDir>driver-lib</endorsedDir>
+>>>>>>> 66ac31fa (feat: add a posix SegmentAllocator using fallocate syscall)
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
