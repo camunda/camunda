@@ -125,11 +125,20 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-ffi>2.2.18</version.jnr-ffi>
     <version.jnr-posix>3.1.21</version.jnr-posix>
+<<<<<<< HEAD
     <version.zpt>8.5.25</version.zpt>
     <version.feign>13.5</version.feign>
     <version.google-sdk>26.47.0</version.google-sdk>
     <version.azure-sdk>1.2.38</version.azure-sdk>
     <version.awssdk>2.31.78</version.awssdk>
+=======
+    <version.jnr-constants>0.10.3</version.jnr-constants>
+    <version.zpt>8.7.9</version.zpt>
+    <version.feign>13.6</version.feign>
+    <version.google-sdk>26.64.0</version.google-sdk>
+    <version.azure-sdk>1.2.37</version.azure-sdk>
+    <version.awssdk>2.32.31</version.awssdk>
+>>>>>>> 66ac31fa (feat: add a posix SegmentAllocator using fallocate syscall)
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.8</version.jackson-databind-nullable>
@@ -1666,6 +1675,11 @@
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-posix</artifactId>
         <version>${version.jnr-posix}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-constants</artifactId>
+        <version>${version.jnr-constants}</version>
       </dependency>
 
       <dependency>
