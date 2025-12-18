@@ -92,7 +92,6 @@ test.describe.parallel('Get XML Decision Requirements API Tests', () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          data: {},
         },
       );
 

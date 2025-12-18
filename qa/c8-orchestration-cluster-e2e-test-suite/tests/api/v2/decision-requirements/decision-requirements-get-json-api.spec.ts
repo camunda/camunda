@@ -110,7 +110,6 @@ test.describe.parallel('Get JSON Decision Requirements API Tests', () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          data: {},
         },
       );
 
