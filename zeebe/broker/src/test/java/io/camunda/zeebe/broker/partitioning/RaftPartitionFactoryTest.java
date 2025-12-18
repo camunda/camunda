@@ -15,6 +15,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -222,8 +223,9 @@ public final class RaftPartitionFactoryTest {
     final var partition = buildRaftPartition(brokerCfg);
 
     // then
-    assertThat(partition.getPartitionConfig().getStorageConfig().isPreallocateSegmentFiles())
-        .isEqualTo(value);
+    final var expected = value ? SegmentAllocator.defaultAllocator() : SegmentAllocator.noop();
+    assertThat(partition.getPartitionConfig().getStorageConfig().getSegmentAllocator().getClass())
+        .isEqualTo(expected.getClass());
   }
 
   private RaftPartition buildRaftPartition(final BrokerCfg brokerCfg) {

@@ -14,7 +14,7 @@ import org.agrona.IoUtil;
 
 /** Defines the strategy when it comes to pre-allocating segment files. */
 @FunctionalInterface
-interface SegmentAllocator {
+public interface SegmentAllocator {
 
   /**
    * Pre-allocates {@code segmentSize} disk space for file corresponding to the given descriptor and
@@ -30,17 +30,17 @@ interface SegmentAllocator {
       throws IOException;
 
   static SegmentAllocator defaultAllocator() {
-    return posix();
+    return Defaults.POSIX_FILL;
   }
 
   /** Returns an allocator which does nothing, i.e. does not allocate disk space. */
   static SegmentAllocator noop() {
-    return (c, fd, s) -> {};
+    return Defaults.NOOP;
   }
 
   /** Returns an allocator which fills the file by writing chunks of zeros to disk. */
   static SegmentAllocator fill() {
-    return (channel, fd, size) -> IoUtil.fill(channel, 0, size, (byte) 0);
+    return Defaults.FILL;
   }
 
   /**
@@ -52,6 +52,13 @@ interface SegmentAllocator {
   }
 
   static SegmentAllocator posix() {
-    return new PosixSegmentAllocator(noop());
+    return Defaults.POSIX_FILL;
+  }
+
+  class Defaults {
+    private static final SegmentAllocator NOOP = (c, fd, s) -> {};
+    private static final SegmentAllocator FILL =
+        (channel, fd, size) -> IoUtil.fill(channel, 0, size, (byte) 0);
+    private static final SegmentAllocator POSIX_FILL = new PosixSegmentAllocator(FILL);
   }
 }
