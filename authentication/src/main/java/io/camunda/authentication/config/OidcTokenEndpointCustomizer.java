@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
 
 public class OidcTokenEndpointCustomizer
     implements Customizer<OAuth2LoginConfigurer<HttpSecurity>.TokenEndpointConfig> {
@@ -31,19 +32,23 @@ public class OidcTokenEndpointCustomizer
   private final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository;
   private final AssertionJwkProvider assertionJwkProvider;
   private final Map<String, JWK> resolvedJwks;
+  private final RestClient restClient;
 
   public OidcTokenEndpointCustomizer(
       final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
-      final AssertionJwkProvider assertionJwkProvider) {
+      final AssertionJwkProvider assertionJwkProvider,
+      final RestClient restClient) {
     this.oidcAuthenticationConfigurationRepository = oidcAuthenticationConfigurationRepository;
     this.assertionJwkProvider = assertionJwkProvider;
     resolvedJwks = new ConcurrentHashMap<>();
+    this.restClient = restClient;
   }
 
   @Override
   public void customize(final OAuth2LoginConfigurer<HttpSecurity>.TokenEndpointConfig config) {
     final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient =
         new RestClientAuthorizationCodeTokenResponseClient();
+    tokenResponseClient.setRestClient(restClient);
     final var resourceParameterConverter = createResourceParameterConverter();
     final var jwtClientAuthenticationParametersConverter =
         createJwtClientAuthenticationParametersConverter();
