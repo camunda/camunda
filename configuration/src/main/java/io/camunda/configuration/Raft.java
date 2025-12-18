@@ -179,7 +179,11 @@ public class Raft {
    *   <li>POSIX: reserves the space required on disk using `fallocate` posix system call. Depending
    *       on the filesystem, this may not ensure that enough disk space is available. This strategy
    *       reduces the write throughput to disk which can be particularly useful when using network
-   *       file systems.
+   *       file systems. Running `fallocate` requires a POSIX filesystem and JNI calls which might
+   *       not be available. If you want to make sure that `fallocate` is used, configure this
+   *       strategies, otherwise use the below ones.
+   *   <li>POSIX_OR_NOOP: use POSIX strategy or NOOP if it's not possible.
+   *   <li>POSIX_OR_FILL: use POSIX strategy or FILL if it's not possible.
    * </ul>
    */
   private PreAllocateStrategy segmentPreallocationStrategy = PreAllocateStrategy.FILL;
