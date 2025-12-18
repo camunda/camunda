@@ -53,6 +53,8 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      TEST_OWNER: Engineering Operations
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
