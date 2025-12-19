@@ -16,6 +16,8 @@
 
   <artifactId>camunda-security-validation</artifactId>
 
+  <name>Camunda Security Validation</name>
+
   <dependencies>
 
     <dependency>
