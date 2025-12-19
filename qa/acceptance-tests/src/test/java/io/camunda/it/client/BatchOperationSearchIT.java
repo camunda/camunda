@@ -558,6 +558,13 @@ public class BatchOperationSearchIT {
             new SortTestArguments<>(BatchOperation::getStartDate, BatchOperationSort::startDate)
                 .get()),
         argumentSet(
+            "actorType",
+            new SortTestArguments<>(BatchOperation::getActorType, BatchOperationSort::actorType)
+                .get()),
+        argumentSet(
+            "actorId",
+            new SortTestArguments<>(BatchOperation::getActorId, BatchOperationSort::actorId).get()),
+        argumentSet(
             "state",
             new SortTestArguments<>(BatchOperation::getStatus, BatchOperationSort::state).get()));
   }
