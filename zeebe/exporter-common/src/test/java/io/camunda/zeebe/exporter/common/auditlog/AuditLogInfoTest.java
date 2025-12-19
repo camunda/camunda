@@ -10,13 +10,32 @@ package io.camunda.zeebe.exporter.common.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AuditLogInfoTest {
 
@@ -93,5 +112,55 @@ class AuditLogInfoTest {
     final var info = AuditLogInfo.of(record);
 
     assertThat(info.batchOperation()).isEmpty();
+  }
+
+  public static Stream<Arguments> getIntentMappings() {
+    return Stream.of(
+        Arguments.of(AuthorizationIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(AuthorizationIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(AuthorizationIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(BatchOperationIntent.CANCEL, AuditLogOperationType.CANCEL),
+        Arguments.of(BatchOperationIntent.CANCELED, AuditLogOperationType.CANCEL),
+        Arguments.of(BatchOperationIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(BatchOperationIntent.RESUME, AuditLogOperationType.RESUME),
+        Arguments.of(BatchOperationIntent.RESUMED, AuditLogOperationType.RESUME),
+        Arguments.of(BatchOperationIntent.SUSPEND, AuditLogOperationType.SUSPEND),
+        Arguments.of(BatchOperationIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
+        Arguments.of(DecisionEvaluationIntent.EVALUATED, AuditLogOperationType.EVALUATE),
+        Arguments.of(DecisionEvaluationIntent.FAILED, AuditLogOperationType.EVALUATE),
+        Arguments.of(IncidentIntent.RESOLVED, AuditLogOperationType.RESOLVE),
+        Arguments.of(IncidentIntent.RESOLVE, AuditLogOperationType.RESOLVE),
+        Arguments.of(MappingRuleIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(MappingRuleIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(MappingRuleIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
+        Arguments.of(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL),
+        Arguments.of(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
+        Arguments.of(ProcessInstanceMigrationIntent.MIGRATE, AuditLogOperationType.MIGRATE),
+        Arguments.of(ProcessInstanceModificationIntent.MODIFIED, AuditLogOperationType.MODIFY),
+        Arguments.of(ProcessInstanceModificationIntent.MODIFY, AuditLogOperationType.MODIFY),
+        Arguments.of(ResourceIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(ResourceIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(TenantIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(TenantIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
+        Arguments.of(TenantIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
+        Arguments.of(TenantIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(TenantIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(UserIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(UserIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(UserIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(VariableIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(VariableIntent.UPDATED, AuditLogOperationType.UPDATE));
+  }
+
+  @MethodSource("getIntentMappings")
+  @ParameterizedTest
+  void shouldMapCorrectOperationType(
+      final Intent intent, final AuditLogOperationType operationType) {
+    final Record<?> recordValue = factory.generateRecord(ValueType.JOB, r -> r.withIntent(intent));
+
+    final AuditLogInfo auditLogInfo = AuditLogInfo.of(recordValue);
+    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
   }
 }

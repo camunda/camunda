@@ -53,6 +53,7 @@ import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCancelAuditLog
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.ResourceAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantEntityAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.UserAuditLogTransformer;
@@ -310,6 +311,7 @@ public class RdbmsExporterWrapper implements Exporter {
             new ProcessInstanceCreationAuditLogTransformer(),
             new ProcessInstanceMigrationAuditLogTransformer(),
             new ProcessInstanceModificationAuditLogTransformer(),
+            new ResourceAuditLogTransformer(),
             new TenantAuditLogTransformer(),
             new TenantEntityAuditLogTransformer(),
             new UserAuditLogTransformer(),

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -66,6 +67,7 @@ public record AuditLogInfo(
       case DECISION_EVALUATION:
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
+      case RESOURCE:
         return AuditLogOperationCategory.DEPLOYED_RESOURCES;
       case AUTHORIZATION:
       case USER:
@@ -109,6 +111,8 @@ public record AuditLogInfo(
         return AuditLogEntityType.ROLE;
       case TENANT:
         return AuditLogEntityType.TENANT;
+      case RESOURCE:
+        return AuditLogEntityType.RESOURCE;
       case USER_TASK:
         return AuditLogEntityType.USER_TASK;
       default:
@@ -168,7 +172,13 @@ public record AuditLogInfo(
         return AuditLogOperationType.MIGRATE;
 
       case ProcessInstanceModificationIntent.MODIFIED:
+      case ProcessInstanceModificationIntent.MODIFY:
         return AuditLogOperationType.MODIFY;
+
+      case ResourceIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case ResourceIntent.DELETED:
+        return AuditLogOperationType.DELETE;
 
       case TenantIntent.CREATED:
         return AuditLogOperationType.CREATE;
