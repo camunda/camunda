@@ -45,28 +45,19 @@ class OperateProcessesPage {
   readonly continueButton: Locator;
   readonly processInstancesPanel: Locator;
   readonly migrateButton: Locator;
-  readonly operationsPanel: Locator;
-  readonly operationsList: Locator;
-  readonly latestOperationEntry: Locator;
-  readonly latestOperationLink: Locator;
-  readonly latestOperationMigrateHeading: Locator;
-  readonly latestOperationProgressBar: Locator;
-  readonly latestOperationEntryBeforeCompletion: Locator;
-  readonly operationSuccessMessage: Locator;
-  readonly collapsedOperationsPanel: Locator;
-  readonly expandOperationsButton: Locator;
-  readonly inProgressBar: Locator;
   readonly selectAllRowsCheckbox: Locator;
   readonly retryButton: Locator;
   readonly cancelButton: Locator;
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
-  processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  getProcessInstanceLinkByKey: (processInstanceKey: string) => Locator;
   getOperationAndResultsContainer: (
     operation: string,
     resultCount?: number,
   ) => Locator;
+  getParentInstanceCell: (parentInstanceKey: string) => Locator;
+  getVersionCells: (version: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -155,33 +146,6 @@ class OperateProcessesPage {
     this.migrateButton = this.processInstancesPanel.getByRole('button', {
       name: /^migrate$/i,
     });
-    this.operationsPanel = page.getByRole('region', {
-      name: 'Operations',
-    });
-    this.operationsList = page.getByTestId('operations-list');
-    this.latestOperationEntry = this.operationsList
-      .getByRole('listitem')
-      .first();
-    this.latestOperationEntryBeforeCompletion = this.operationsList
-      .getByRole('listitem')
-      .last();
-    this.latestOperationLink = page.getByTestId('operation-id').first();
-    this.latestOperationMigrateHeading = this.latestOperationEntry.getByRole(
-      'heading',
-      {name: 'Migrate'},
-    );
-    this.latestOperationProgressBar =
-      this.latestOperationEntry.getByRole('progressbar');
-    this.operationSuccessMessage = page
-      .getByText(/\d+ operations? succeeded/)
-      .first();
-    this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
-    this.expandOperationsButton = page.getByRole('button', {
-      name: 'Expand Operations',
-    });
-    this.inProgressBar = this.operationsList.locator(
-      '[role="progressbar"][aria-busy="true"]',
-    );
     this.selectAllRowsCheckbox = page.getByRole('columnheader', {
       name: 'Select all rows',
     });
@@ -192,7 +156,7 @@ class OperateProcessesPage {
     this.scheduledOperationsIcons = page.getByTitle(
       /has scheduled operations/i,
     );
-    this.processInstanceLinkByKey = (processInstanceKey: string) =>
+    this.getProcessInstanceLinkByKey = (processInstanceKey: string) =>
       page.getByRole('link', {
         name: processInstanceKey,
       });
@@ -205,6 +169,10 @@ class OperateProcessesPage {
         : new RegExp(`${operation}.*\\d+ results`);
       return page.locator('div').filter({hasText: pattern});
     };
+    this.getParentInstanceCell = (parentInstanceKey: string) =>
+      this.dataList.getByRole('cell', {name: parentInstanceKey});
+    this.getVersionCells = (version: string) =>
+      this.dataList.getByRole('cell', {name: version, exact: true});
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -404,8 +372,9 @@ class OperateProcessesPage {
         }
       }
     }
+    const itemText = count === 1 ? 'item' : 'items';
     await expect(
-      this.page.getByText(`${count} items selected`).first(),
+      this.page.getByText(`${count} ${itemText} selected`).first(),
     ).toBeVisible();
   }
 
@@ -439,40 +408,6 @@ class OperateProcessesPage {
   async startMigration(): Promise<void> {
     await this.clickMigrateButton();
     await this.clickContinueButton();
-  }
-
-  async clickLatestOperationLink(): Promise<void> {
-    await this.latestOperationLink.click({timeout: 60000});
-  }
-
-  getVersionCells(version: string): Locator {
-    return this.dataList.getByRole('cell', {name: version, exact: true});
-  }
-
-  async expandOperationsPanel(): Promise<void> {
-    const isCollapsed = await this.collapsedOperationsPanel.isVisible();
-    if (isCollapsed) {
-      await this.expandOperationsButton.click();
-      await this.operationsList.waitFor({state: 'visible', timeout: 10000});
-    }
-  }
-
-  async waitForOperationToComplete(): Promise<void> {
-    try {
-      await expect(this.inProgressBar).toBeVisible({timeout: 5000});
-      await expect(this.inProgressBar).not.toBeVisible({timeout: 120000});
-    } catch {
-      console.log(
-        'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
-      );
-    }
-  }
-
-  getMigrationOperationEntry(successCount: number): Locator {
-    return this.page
-      .locator('[data-testid="operations-entry"]')
-      .filter({hasText: 'Migrate'})
-      .filter({hasText: `${successCount} operations succeeded`});
   }
 }
 

@@ -279,14 +279,14 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify migration operation is created and completes', async () => {
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
       await sleep(500);
     });
 
     await test.step('Verify 6 instances migrated to target version', async () => {
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
 
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(6);
@@ -628,7 +628,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify migration operation is created and completes', async () => {
-      await operateProcessesPage.waitForOperationToComplete();
+      await operateOperationPanelPage.waitForOperationToComplete();
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {

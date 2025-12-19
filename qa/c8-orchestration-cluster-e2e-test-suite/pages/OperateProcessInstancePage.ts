@@ -71,6 +71,7 @@ class OperateProcessInstancePage {
   readonly modalDialog: Locator;
   readonly noVariablesText: Locator;
   readonly variableCellByName: (name: string | RegExp) => Locator;
+  readonly viewAllChildProcessesLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -179,6 +180,9 @@ class OperateProcessInstancePage {
 
     this.variableCellByName = (name) =>
       this.variablesList.getByRole('cell', {name});
+    this.viewAllChildProcessesLink = this.instanceHeader.getByRole('link', {
+      name: 'View all',
+    });
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -590,6 +594,10 @@ class OperateProcessInstancePage {
     for (const elementId of elementIds) {
       await expect(this.getDiagramElement(elementId)).toBeVisible();
     }
+  }
+
+  async clickViewAllChildProcesses(): Promise<void> {
+    await this.viewAllChildProcessesLink.click();
   }
 }
 
