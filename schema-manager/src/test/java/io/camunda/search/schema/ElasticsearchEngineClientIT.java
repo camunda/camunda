@@ -140,16 +140,19 @@ public class ElasticsearchEngineClientIT {
 
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
-    final var index = createTestIndexDescriptor("index_name", "/mappings-complex-property.json");
+    final var index1 = createTestIndexDescriptor("index_name", "/mappings-complex-property.json");
+    final var index2 = createTestIndexDescriptor("index_dynamic", "/mappings-dynamic.json");
 
-    elsEngineClient.createIndex(index, new IndexConfiguration());
+    elsEngineClient.createIndex(index1, new IndexConfiguration());
+    elsEngineClient.createIndex(index2, new IndexConfiguration());
 
     final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
 
-    assertThat(mappings.size()).isEqualTo(1);
-    assertThat(mappings.get(index.getFullQualifiedName()).dynamic()).isEqualTo("strict");
+    assertThat(mappings.size()).isEqualTo(2);
+    assertThat(mappings.get(index1.getFullQualifiedName()).dynamic()).isEqualTo("strict");
+    assertThat(mappings.get(index2.getFullQualifiedName()).dynamic()).isEqualTo("true");
 
-    assertThat(mappings.get(index.getFullQualifiedName()).properties())
+    assertThat(mappings.get(index1.getFullQualifiedName()).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
@@ -159,6 +162,12 @@ public class ElasticsearchEngineClientIT {
             new IndexMappingProperty.Builder()
                 .name("world")
                 .typeDefinition(Map.of("type", "keyword"))
+                .build());
+    assertThat(mappings.get(index2.getFullQualifiedName()).properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
                 .build());
   }
 
