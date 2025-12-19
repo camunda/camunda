@@ -17,6 +17,14 @@ fi
 
 helm_chart="camunda-platform-8.9"
 namespace=$1
+secondaryStorage=${2:-elasticsearch}
+
+# Validate secondaryStorage value
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "postgresql" ]]; then
+  echo "Error: Invalid secondary storage type '$secondaryStorage'"
+  echo "Allowed values are: elasticsearch, postgresql"
+  exit 1
+fi
 
 # Create namespace if it doesn't exist
 if ! kubectl get namespace $namespace >/dev/null 2>&1; then
@@ -64,13 +72,14 @@ kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
 # Copy default folder to new namespace folder
 cp -rv default/ $namespace
 
-# Copy camunda-platform-values.yaml to the new folder
-cp -v ../camunda-platform-values.yaml $namespace/
+# Copy camunda-platform-values*.yaml files to the new folder
+cp -v ../camunda-platform-values*.yaml $namespace/
 
 cd $namespace
 
-# Update Makefile to use the namespace
-sed_inplace "s/default/$namespace/g" Makefile
+# Update Makefile to use the namespace and secondary storage
+sed_inplace "s/default/$namespace/" Makefile
+sed_inplace "s/elasticsearch/$secondaryStorage/" Makefile
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
