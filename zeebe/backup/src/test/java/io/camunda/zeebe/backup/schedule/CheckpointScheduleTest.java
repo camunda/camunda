@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -273,6 +274,34 @@ public class CheckpointScheduleTest {
         .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
     verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
     verify(backupRequestHandler, times(1))
+        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
+    verifyNoMoreInteractions(backupRequestHandler);
+  }
+
+  @Test
+  void shouldCorrectScheduleAfterUnexpectedDelay() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
+
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(
+            CompletableFuture.completedStage(
+                checkpointState(0L, now.minus(1, ChronoUnit.DAYS).toEpochMilli())));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupRequestHandler, times(2)).getCheckpointState();
+    // Schedule will be executed twice, once instantly as it's overdue and once at the corrected
+    // schedule time
+    verify(backupRequestHandler, times(2)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, times(2))
         .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
     verifyNoMoreInteractions(backupRequestHandler);
   }

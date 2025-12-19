@@ -238,7 +238,7 @@ public class CheckpointSchedulerAcceptanceIT {
   }
 
   @Test
-  void shouldTakeOverSchedulerWhenLowest() {
+  void checkpointSchedulingShouldBeHandedOver() {
     cluster.brokers().values().forEach(broker -> configureBroker(broker, backupCfg -> {}));
 
     cluster.start().awaitCompleteTopology();

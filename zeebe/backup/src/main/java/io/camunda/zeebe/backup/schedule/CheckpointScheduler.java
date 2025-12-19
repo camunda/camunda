@@ -88,7 +88,11 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
           .thenApply(
               id -> {
                 LOG.debug("Checkpoint {} triggered with id {}", instruction.type, id);
-                return instruction.taken();
+                final var currentClock = ActorClock.current().instant();
+                // The instructions checkpoint timestamp might be in the past leading to an
+                // instant execution of the schedule. However, for the next interval we want to
+                // readjust the schedule to account for that drift.
+                return instruction.taken(currentClock);
               })
           .thenAccept(future::complete);
     } else {
@@ -227,7 +231,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       this(type, checkpointTime, currentCheckpointState, false);
     }
 
-    ScheduleInstruction taken() {
+    ScheduleInstruction taken(final Instant checkpointTime) {
       return new ScheduleInstruction(type, checkpointTime, state, true);
     }
   }
