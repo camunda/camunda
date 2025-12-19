@@ -131,10 +131,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-    return archivingIsBlocked()
+    return withArchivingStatus()
         .thenComposeAsync(
-            isBlocked -> {
-              if (isBlocked) {
+            status -> {
+              if (status == ArchivingStatus.BLOCKED) {
                 logger.debug("Archiving is currently blocked.");
                 return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
               }
@@ -339,7 +339,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
   }
 
-  private CompletableFuture<Boolean> archivingIsBlocked() {
+  private CompletableFuture<ArchivingStatus> withArchivingStatus() {
     return client
         .indices()
         .get(r -> r.index(archiverBlockedMetaIndex))
@@ -349,7 +349,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                     .map(IndexState::mappings)
                     .map(m -> m.meta().get(PI_ARCHIVING_BLOCKED_META_KEY))
                     .map(jd -> jd.to(Boolean.class))
-                    .orElse(false));
+                    .map(blocked -> blocked ? ArchivingStatus.BLOCKED : ArchivingStatus.NOT_BLOCKED)
+                    .orElse(ArchivingStatus.NOT_BLOCKED));
   }
 
   private Query finishedProcessInstancesQuery(

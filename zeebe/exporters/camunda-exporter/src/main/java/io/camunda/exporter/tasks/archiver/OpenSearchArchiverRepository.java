@@ -137,10 +137,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
     try {
-      return archivingIsBlocked()
+      return withArchivingStatus()
           .thenComposeAsync(
-              isBlocked -> {
-                if (isBlocked) {
+              status -> {
+                if (status == ArchivingStatus.BLOCKED) {
                   logger.debug("Archiving is currently blocked.");
                   return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
                 }
@@ -381,7 +381,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return createSearchRequest(indexName, boolBuilder.build().toQuery(), endTimeField);
   }
 
-  private CompletableFuture<Boolean> archivingIsBlocked() throws IOException {
+  private CompletableFuture<ArchivingStatus> withArchivingStatus() throws IOException {
     return client
         .indices()
         .get(r -> r.index(archiverBlockedMetaIndex))
@@ -391,7 +391,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                     .map(IndexState::mappings)
                     .map(m -> m.meta().get(PI_ARCHIVING_BLOCKED_META_KEY))
                     .map(jd -> jd.to(Boolean.class))
-                    .orElse(false));
+                    .map(blocked -> blocked ? ArchivingStatus.BLOCKED : ArchivingStatus.NOT_BLOCKED)
+                    .orElse(ArchivingStatus.NOT_BLOCKED));
   }
 
   private Query finishedProcessInstancesQuery(

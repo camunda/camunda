@@ -142,4 +142,9 @@ public interface ArchiverRepository extends AutoCloseable {
     @Override
     public void close() throws Exception {}
   }
+
+  enum ArchivingStatus {
+    BLOCKED,
+    NOT_BLOCKED
+  }
 }
