@@ -45,6 +45,25 @@ final class ReschedulingTaskTest {
   }
 
   @Test
+  void shouldRescheduleTaskOnException() {
+    // given
+    final BackgroundTask job =
+        () -> {
+          throw new RuntimeException("failure");
+        };
+    final var task = new ReschedulingTask(job, 1, 10, 1000, EXECUTOR, LOGGER);
+
+    // when
+    task.run();
+
+    // then
+    final var inOrder = Mockito.inOrder(EXECUTOR);
+    inOrder
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
+        .schedule(task, 10L, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
   void shouldRescheduleTaskOnErrorWithDelay() {
     // given
     final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, EXECUTOR, LOGGER);

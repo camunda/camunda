@@ -131,20 +131,26 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-    if (archivingIsBlocked()) {
-      logger.debug("Archiving is currently blocked.");
-      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
-    }
-    final var searchRequest = createFinishedInstancesSearchRequest();
-
-    final var timer = Timer.start();
-    return client
-        .search(searchRequest, Object.class)
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+    return withArchivingStatus()
         .thenComposeAsync(
-            (response) ->
-                createArchiveBatch(response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
-            executor);
+            status -> {
+              if (status == ArchivingStatus.BLOCKED) {
+                logger.debug("Archiving is currently blocked.");
+                return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
+              }
+              final var searchRequest = createFinishedInstancesSearchRequest();
+
+              final var timer = Timer.start();
+              return client
+                  .search(searchRequest, Object.class)
+                  .whenCompleteAsync(
+                      (ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+                  .thenComposeAsync(
+                      (response) ->
+                          createArchiveBatch(
+                              response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+                      executor);
+            });
   }
 
   @Override
@@ -333,18 +339,18 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
   }
 
-  private boolean archivingIsBlocked() {
-    return Optional.ofNullable(
-            client
-                .indices()
-                .get(r -> r.index(archiverBlockedMetaIndex))
-                .join()
-                .result()
-                .get(archiverBlockedMetaIndex))
-        .map(IndexState::mappings)
-        .map(m -> m.meta().get(PI_ARCHIVING_BLOCKED_META_KEY))
-        .map(jd -> jd.to(Boolean.class))
-        .orElse(false);
+  private CompletableFuture<ArchivingStatus> withArchivingStatus() {
+    return client
+        .indices()
+        .get(r -> r.index(archiverBlockedMetaIndex))
+        .thenApply(
+            response ->
+                Optional.ofNullable(response.result().get(archiverBlockedMetaIndex))
+                    .map(IndexState::mappings)
+                    .map(m -> m.meta().get(PI_ARCHIVING_BLOCKED_META_KEY))
+                    .map(jd -> jd.to(Boolean.class))
+                    .map(blocked -> blocked ? ArchivingStatus.BLOCKED : ArchivingStatus.NOT_BLOCKED)
+                    .orElse(ArchivingStatus.NOT_BLOCKED));
   }
 
   private Query finishedProcessInstancesQuery(
