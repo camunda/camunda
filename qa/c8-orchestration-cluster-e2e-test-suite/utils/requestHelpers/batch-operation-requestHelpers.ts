@@ -26,6 +26,7 @@ export async function cancelBatchOperation(
 export async function suspendBatchOperation(
   request: APIRequestContext,
   batchOperationKey: string,
+  expectedStatusCode = 204,
 ) {
   const result: Record<string, unknown> = {};
   await expect(async () => {
@@ -36,6 +37,26 @@ export async function suspendBatchOperation(
       },
     );
     result.response = res;
+    await assertStatusCode(res, expectedStatusCode);
+  }).toPass(defaultAssertionOptions);
+  return result.response as APIResponse;
+}
+
+export async function resumeBatchOperation(
+  request: APIRequestContext,
+  batchOperationKey: string,
+  expectedStatusCode = 204,
+) {
+  const result: Record<string, unknown> = {};
+  await expect(async () => {
+    const res = await request.post(
+      buildUrl(`/batch-operations/${batchOperationKey}/resumption`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    result.response = res;
+    await assertStatusCode(res, expectedStatusCode);
   }).toPass(defaultAssertionOptions);
   return result.response as APIResponse;
 }
@@ -75,7 +96,10 @@ export async function expectBatchState(
     await assertStatusCode(statusRes, 200);
     const body = await statusRes.json();
     expect(body.state).toBe(expectedState);
-  }).toPass(defaultAssertionOptions);
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 90_000,
+  });
 }
 
 export const notFoundDetail = (key: string) =>
