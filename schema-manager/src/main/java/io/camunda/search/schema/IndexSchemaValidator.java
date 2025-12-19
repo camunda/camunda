@@ -93,11 +93,12 @@ public class IndexSchemaValidator {
           difference);
 
       if (!difference.entriesDiffering().isEmpty()) {
-        // This call will throw an exception unless the index is dynamic, in which case
-        // field differences will be ignored. In the case of a dynamic index, we still want
-        // to collect any new fields, so we should continue to the next checks instead of making
-        // this part of the if/else block
-        failIfIndexNotDynamic(difference, indexDescriptor);
+        final String errorMsg =
+            String.format(
+                "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
+                indexDescriptor.getFullQualifiedName(), difference.entriesDiffering());
+        LOGGER.error(errorMsg);
+        throw new IndexSchemaValidationException(errorMsg);
       }
 
       if (!difference.entriesOnlyOnRight().isEmpty()) {
@@ -170,23 +171,6 @@ public class IndexSchemaValidator {
       final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
     return Maps.filterKeys(
         indexMappings, k -> k.matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
-  }
-
-  private void failIfIndexNotDynamic(
-      final IndexMappingDifference difference, final IndexDescriptor indexDescriptor) {
-    if (difference.isLeftDynamic() || difference.isRightDynamic()) {
-      LOGGER.debug(
-          "Index '{}' is dynamic, ignoring changes found: {}",
-          indexDescriptor.getFullQualifiedName(),
-          difference.entriesDiffering());
-    } else {
-      final String errorMsg =
-          String.format(
-              "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
-              indexDescriptor.getFullQualifiedName(), difference.entriesDiffering());
-      LOGGER.error(errorMsg);
-      throw new IndexSchemaValidationException(errorMsg);
-    }
   }
 
   private boolean isDynamicProperty(final IndexMappingProperty indexMappingProperty) {
