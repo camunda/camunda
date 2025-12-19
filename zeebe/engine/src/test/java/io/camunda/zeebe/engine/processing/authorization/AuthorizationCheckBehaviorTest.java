@@ -46,6 +46,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -1133,6 +1134,50 @@ final class AuthorizationCheckBehaviorTest {
 
     // then
     assertThat(resourceIdentifiers).isEmpty();
+  }
+
+  @Test
+  void shouldExpireAuthorizationCacheAfterConfiguredTtl() throws InterruptedException {
+    // given: authorizations enabled and a very short cache TTL
+    final var securityConfig = new SecurityConfiguration();
+    final var authConfig = new AuthorizationsConfiguration();
+    authConfig.setEnabled(true);
+    securityConfig.setAuthorizations(authConfig);
+
+    final var config = new EngineConfiguration().setAuthorizationsCacheTtl(Duration.ofMillis(1));
+    authorizationCheckBehavior =
+        new AuthorizationCheckBehavior(processingState, securityConfig, config);
+
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+
+    final var request =
+        AuthorizationRequest.builder()
+            .command(mockCommand(user.getUsername()))
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceId)
+            .build();
+
+    // when
+    // first check (no permission yet) populates cache with a denial
+    assertThat(authorizationCheckBehavior.isAuthorized(request).isRight()).isFalse();
+
+    // grant the required permission in state so a recompute should allow
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        AuthorizationScope.of(resourceId));
+
+    // Guava's expireAfterAccess is based on real time; wait past TTL to force cache reload
+    Thread.sleep(2);
+
+    // then: subsequent check recomputes after TTL and succeeds
+    assertThat(authorizationCheckBehavior.isAuthorized(request).isRight()).isTrue();
   }
 
   private TypedRecord<?> mockCommandWithMappingRule(
