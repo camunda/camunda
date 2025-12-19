@@ -109,7 +109,7 @@ class ProcessCacheImplIT {
     expectedFlowNodesMap.put(startEventId, null);
     final var expectedCachedProcessEntity =
         new CachedProcessEntity(
-            "test", "v1", List.of("Banana", "Cherry", "apple"), expectedFlowNodesMap);
+            "test", 1, "v1", List.of("Banana", "Cherry", "apple"), expectedFlowNodesMap);
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }
 
