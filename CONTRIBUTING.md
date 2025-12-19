@@ -153,6 +153,7 @@ This is a small overview of the contents of this repository:
 > [!NOTE]
 > All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, camunda-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
+> [!NOTE]
 > To avoid concurrent Maven execution issues, ensure the project is only opened in one IDE at a time while running Maven build commands (e.g., `./mvnw clean install`). Opening the same project in multiple IDEs simultaneously can cause build failures due to conflicting Maven tasks.
 
 * **Quick build:** To **quickly** build all components for development, run the command: `./mvnw clean install -Dquickly` in the root folder. This flag is also used to skip Optimize, when building Camunda.
