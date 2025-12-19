@@ -158,7 +158,7 @@ final class BackupServiceImpl {
   private ActorFuture<Void> saveBackup(final InProgressBackup inProgressBackup) {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
     final var backup = inProgressBackup.createBackup();
-    LOG.atDebug().addKeyValue("backup", backup.id()).setMessage("Saving backup").log();
+    LOG.atDebug().addKeyValue("backup", inProgressBackup.id()).setMessage("Saving backup").log();
     backupStore
         .save(backup)
         .whenComplete(
