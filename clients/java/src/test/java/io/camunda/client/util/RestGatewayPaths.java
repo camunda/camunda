@@ -79,6 +79,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
   private static final String URL_VARIABLE = REST_API_PATH + "/variables/%s";
+  private static final String URL_RESOURCE = REST_API_PATH + "/resources/%s";
+  private static final String URL_RESOURCE_CONTENT = URL_RESOURCE + "/content";
 
   /**
    * @return the topology request URL
@@ -307,5 +309,13 @@ public class RestGatewayPaths {
 
   public static String getElementInstanceUrl(final long elementInstanceKey) {
     return String.format(URL_ELEMENT_INSTANCE, elementInstanceKey);
+  }
+
+  public static String getResourceUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE, resourceKey);
+  }
+
+  public static String getResourceContentUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE_CONTENT, resourceKey);
   }
 }

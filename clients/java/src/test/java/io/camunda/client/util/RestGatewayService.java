@@ -44,6 +44,7 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
+import io.camunda.client.protocol.rest.ResourceResult;
 import io.camunda.client.protocol.rest.RoleCreateResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.client.protocol.rest.RoleUpdateResult;
@@ -364,5 +365,13 @@ public class RestGatewayService {
         .register(
             WireMock.get(RestGatewayPaths.getStatusUrl())
                 .willReturn(WireMock.aResponse().withStatus(statusCode)));
+  }
+
+  public void onResourceGetRequest(final long resourceKey, final ResourceResult response) {
+    registerGet(RestGatewayPaths.getResourceUrl(String.valueOf(resourceKey)), response);
+  }
+
+  public void onResourceContentGetRequest(final long resourceKey, final String response) {
+    registerGet(RestGatewayPaths.getResourceContentUrl(String.valueOf(resourceKey)), response);
   }
 }
