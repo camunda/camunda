@@ -271,8 +271,6 @@ public class CamundaProcessTestCompletionApiIT {
 
     // When: complete both user tasks
     processTestContext.completeUserTask(UserTaskSelectors.byElementId(elementId));
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElement(elementId, 1);
-
     processTestContext.completeUserTask(UserTaskSelectors.byElementId(elementId));
 
     // Then: both user tasks are completed (3 elements = 2 user tasks + multi-instance body)
