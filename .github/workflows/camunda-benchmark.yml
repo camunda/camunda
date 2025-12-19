@@ -1,0 +1,175 @@
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Database Benchmarks
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/camunda-benchmark.yml"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
+        default: 'main'
+        type: string
+        required: false
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  calculate-image-tag:
+    name: Calculate Image Tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }
+    outputs:
+      image-tag: ${{steps.image-tag.outputs.image-tag}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Get image tag
+        id: image-tag
+        run: |
+          echo "image-tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+  build-camunda-image:
+    name: Build Camunda
+    needs: calculate-image-tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-zeebe
+        name: Build Camunda Platform
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+      - uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Camunda Docker Image
+        with:
+          repository: 'gcr.io/zeebe-io/zeebe'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-benchmark-images:
+    name: Build Starter and Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: calculate-image-tag
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GAR
+        uses: docker/login-action@v3
+        with:
+          registry: us-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      - name: Build Starter Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+      - name: Build Worker Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+      - name: Build Benchmark Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P benchmark -P\!include-optimize -D image="gcr.io/zeebe-io/benchmark:${{ needs.calculate-image-tag.outputs.image-tag }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  execute-benchmark-scenarios:
+    name: ${{ matrix.scenario-name }} [${{ matrix.secondary-database-type }}]
+    needs: [calculate-image-tag, build-camunda-image, build-benchmark-images]
+    secrets: inherit
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        include:
+#          - name: 'cthiel-maximize-load-rdbms'
+#            scenario-name: 'maximize-load'
+#            load-test-load: '--set starter.rate=0 --set app.brokerManagementUrl=http://camunda-gateway:9600'
+#            secondary-database-type: 'rdbms'
+#          - name: 'cthiel-maximize-load-es'
+#            scenario-name: 'maximize-load'
+#            load-test-load: '--set starter.rate=0 --set app.brokerManagementUrl=http://camunda-gateway:9600'
+#            secondary-database-type: 'elasticsearch'
+          - name: 'cthiel-rdbms-load-test'
+            scenario-name: 'measure-cpu-usage'
+            load-test-load: '--set starter.rate=150'
+            secondary-database-type: 'rdbms'
+ #         - name: 'cthiel-measure-cpu-es'
+ #           scenario-name: 'measure-cpu-usage'
+ #           load-test-load: '--set starter.rate=200'
+ #           secondary-database-type: 'elasticsearch'
+    uses: camunda/camunda/.github/workflows/camunda-benchmark-scenario.yml@feat/camunda-db-benchmarks
+    with:
+      name: ${{ matrix.name }}
+      scenario-name: ${{ matrix.scenario-name }}
+      load-test-load: ${{ matrix.load-test-load }}
+      ref: ${{ inputs.ref }}
+      image-tag: ${{ needs.calculate-image-tag.outputs.image-tag }}
+      secondary-database-type: ${{ matrix.secondary-database-type }}
