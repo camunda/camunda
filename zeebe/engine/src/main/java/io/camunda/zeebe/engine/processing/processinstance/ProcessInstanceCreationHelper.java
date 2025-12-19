@@ -204,16 +204,14 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void setVariablesFromDocument(
-      final DeployedProcess process,
-      final long processInstanceKey,
-      final DirectBuffer variablesBuffer) {
+      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer) {
 
     variableBehavior.mergeLocalDocument(
-        processInstanceKey,
-        process.getKey(),
-        processInstanceKey,
-        process.getBpmnProcessId(),
-        process.getTenantId(),
+        processInstance.getProcessInstanceKey(),
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessInstanceKey(),
+        processInstance.getBpmnProcessIdBuffer(),
+        processInstance.getTenantId(),
         variablesBuffer);
   }
 
