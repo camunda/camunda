@@ -40,6 +40,13 @@ on:
         type: boolean
         required: false
         default: false
+      secondary-storage-type:
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "rdbms"'
+        type: choice
+        options:
+        - elasticsearch
+        - postgresql
+        default: elasticsearch
   workflow_call:
     inputs:
       ref:
@@ -80,6 +87,12 @@ on:
         type: boolean
         required: false
         default: false
+      secondary-storage-type:
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "rdbms"'
+        # type choice is invalid here
+        type: string
+        required: false
+        default: elasticsearch
 
 env:
   HELM_CHART: camunda-platform-8.9
@@ -275,6 +288,20 @@ jobs:
           # Must use minus (-) instead of / to be compatible with kubectl label value restrictions
           deadlineDate=$(date -d "+${{ inputs.ttl }} days" +%Y-%m-%d)
           kubectl label namespace ${{ inputs.name }} deadline-date="$deadlineDate" --overwrite
+      - name: Install Postgres database
+        if: ${{ inputs.secondary-storage-type == 'postgresql' }}
+        run: |
+          helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+            --namespace ${{ inputs.name }} \
+            --wait --timeout 5m0s \
+            --set global.postgresql.auth.database=camunda \
+            --set global.postgresql.auth.username=camunda \
+            --set global.postgresql.auth.password=camunda \
+            --set primary.resources.requests.memory=4Gi \
+            --set primary.resources.requests.cpu=3000m \
+            --set primary.resources.limits.memory=6Gi \
+            --set primary.resources.limits.cpu=6000m \
+            --set primary.persistence.size=10Gi
       - name: Add Camunda Helm repo
         run: |
           helm repo add camunda https://helm.camunda.io/
@@ -296,6 +323,8 @@ jobs:
           --set orchestration.image.repository=zeebe-io/zeebe
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/load-tests/camunda-platform-values.yaml
+          ${{ inputs.secondary-storage-type == 'elasticsearch' && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/camunda-platform-values-elasticsearch.yaml', github.ref) || '' }}
+          ${{ inputs.secondary-storage-type == 'postgresql' && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/camunda-platform-values-rdbms.yaml', github.ref) || '' }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/setup/default/values-stable.yaml', github.ref) || '' }}
       - name: Summarize deployment
