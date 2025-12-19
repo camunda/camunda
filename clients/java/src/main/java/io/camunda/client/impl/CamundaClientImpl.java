@@ -130,6 +130,8 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.client.api.fetch.ResourceContentGetRequest;
+import io.camunda.client.api.fetch.ResourceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
@@ -290,6 +292,8 @@ import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetCallHierarchyRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.ResourceContentGetRequestImpl;
+import io.camunda.client.impl.fetch.ResourceGetRequestImpl;
 import io.camunda.client.impl.fetch.RoleGetRequestImpl;
 import io.camunda.client.impl.fetch.TenantGetRequestImpl;
 import io.camunda.client.impl.fetch.TenantScopedClusterVariableGetRequestImpl;
@@ -1572,6 +1576,16 @@ public final class CamundaClientImpl implements CamundaClient {
       newIncidentProcessInstanceStatisticsByDefinitionRequest(final int errorHashCode) {
     return new IncidentProcessInstanceStatisticsByDefinitionRequestImpl(
         httpClient, jsonMapper, errorHashCode);
+  }
+
+  @Override
+  public ResourceGetRequest newResourceGetRequest(final long resourceKey) {
+    return new ResourceGetRequestImpl(httpClient, resourceKey);
+  }
+
+  @Override
+  public ResourceContentGetRequest newResourceContentGetRequest(final long resourceKey) {
+    return new ResourceContentGetRequestImpl(httpClient, resourceKey);
   }
 
   private JobClient newJobClient() {

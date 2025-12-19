@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.response.Resource;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -52,6 +53,7 @@ import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.response.ResourceImpl;
 import io.camunda.client.impl.search.response.BatchOperationItemsImpl.BatchOperationItemImpl;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.*;
@@ -83,6 +85,15 @@ public final class SearchResponseMapper {
 
   public static ProcessInstance toProcessInstanceGetResponse(final ProcessInstanceResult response) {
     return new ProcessInstanceImpl(response);
+  }
+
+  public static Resource toResourceGetResponse(final ResourceResult response) {
+    return new ResourceImpl(
+        response.getResourceId(),
+        Long.parseLong(response.getResourceKey()),
+        response.getVersion(),
+        response.getResourceName(),
+        response.getTenantId());
   }
 
   public static SearchResponse<ProcessInstance> toProcessInstanceSearchResponse(
