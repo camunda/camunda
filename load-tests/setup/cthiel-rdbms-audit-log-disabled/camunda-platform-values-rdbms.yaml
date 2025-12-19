@@ -23,11 +23,11 @@ orchestration:
         username: camunda
         secret:
           inlineSecret: camunda
-        queueSize: 1001
+        queueSize: 2001
         history:
-          defaultHistoryTTL: PT12H
-          minHistoryCleanupInterval: PT2S
-          maxHistoryCleanupInterval: PT1M
+          defaultHistoryTTL: PT24H
+          minHistoryCleanupInterval: PT1M
+          maxHistoryCleanupInterval: PT1H
           historyCleanupBatchSize: 50000
   # We set extra configuration to configure additional settings for Broker and Gateway, that are part
   # of the orchestration cluster.

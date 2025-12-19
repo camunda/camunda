@@ -59,7 +59,9 @@ orchestration:
       # RocksDB memory limit setting, limits the overall RocksDB memory usage
       # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
       zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
-      camunda.data.audit-log.enabled: "false"
+      # camunda.data.audit-log.enabled: "false"
+      camunda.data.audit-log.user.excludes: ["VARIABLE"]
+      camunda.data.audit-log.client.excludes: ["VARIABLE"]
 
 ########################################################################################
 ################################################### Disable ElasticSearch for RDBMS

@@ -1,0 +1,136 @@
+namespace ?= cthiel-rdbms-audit-log-base
+secondary_storage ?= postgresql
+helm_chart ?= camunda-platform-8.9
+curl_image ?= curlimages/curl:7.87.0
+camunda_management_url ?= http://camunda:9600
+# Optional: additional Helm configuration for the Camunda Platform release.
+# Use this to pass extra `--set`/`-f` flags, for example:
+#   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
+# See the load test README for more examples and details.
+additional_platform_configuration ?=
+# Optional: additional Helm configuration for the load test release.
+# Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
+# See the load test README for example values and guidance.
+additional_load_test_configuration ?=
+
+# Conditional values file based on secondary_storage
+ifeq ($(secondary_storage),postgresql)
+storage_values_file := camunda-platform-values-rdbms.yaml
+else # cthiel-rdbms-audit-log-base is postgresql
+storage_values_file := camunda-platform-values-postgresql.yaml
+endif
+
+.PHONY: all
+all: install
+
+.PHONY: install
+install: install-storage install-platform install-load-test
+
+.PHONY: install-stable
+install-stable: install-storage install-platform-stable install-load-test
+
+# Install PostgreSQL database if secondary_storage is postgresql
+.PHONY: install-storage
+install-storage:
+ifeq ($(secondary_storage),postgresql)
+	@echo "Installing PostgreSQL database for namespace $(namespace)..."
+	# Install Postgres database with
+	# - cthiel-rdbms-audit-log-base user camunda:camunda
+	# - additional extension pg_stat_statements for advanced query performance monitoring (must be activated with postgres user before use)
+	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+		--namespace $(namespace) \
+		--wait --timeout 5m0s \
+		--set global.postgresql.auth.database=camunda \
+		--set global.postgresql.auth.username=camunda \
+		--set global.postgresql.auth.password=camunda \
+		--set global.postgresql.auth.postgresPassword=camunda \
+		--set postgresqlSharedPreloadLibraries=pg_stat_statements \
+		--set primary.resources.requests.memory=4Gi \
+		--set primary.resources.requests.cpu=3000m \
+		--set primary.resources.limits.memory=6Gi \
+		--set primary.resources.limits.cpu=6000m \
+		--set primary.persistence.size=128Gi
+else
+	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
+endif
+
+# Install/upgrade Camunda Platform helm chart
+.PHONY: install-platform
+install-platform: setup-leader-balancer
+	helm upgrade $(namespace) camunda-platform-helm/charts/$(helm_chart) \
+		--install \
+		--namespace $(namespace) \
+		--reset-then-reuse-values \
+		--render-subchart-notes \
+		-f camunda-platform-values.yaml \
+		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(additional_platform_configuration)
+
+# Install/upgrade Camunda Platform on stable VMs
+.PHONY: install-platform-stable
+install-platform-stable: setup-leader-balancer
+	helm upgrade $(namespace) camunda-platform-helm/charts/$(helm_chart) \
+		--install \
+		--namespace $(namespace) \
+		--reset-then-reuse-values \
+		--render-subchart-notes \
+		-f camunda-platform-values.yaml \
+		-f values-stable.yaml \
+		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(additional_platform_configuration)
+
+# Install/upgrade load test helm chart
+.PHONY: install-load-test
+install-load-test:
+	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
+		--install \
+		--namespace $(namespace) \
+		--reuse-values \
+		--render-subchart-notes \
+        --set starter.rate=40 \
+        --set workers.worker.replicas=5 \
+        --set starter.bpmnXmlPath="bpmn/typical_process.bpmn" \
+		$(additional_load_test_configuration)
+
+# Setup leader balancing cronjob
+.PHONY: setup-leader-balancer
+setup-leader-balancer:
+	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) >/dev/null 2>&1; then \
+		kubectl create cronjob leader-balancer \
+			--namespace $(namespace) \
+			--image=$(curl_image) \
+			--schedule="*/10 * * * *" \
+			-- curl -L -v -X POST $(camunda_management_url)/actuator/rebalance; \
+		echo "Leader balancer cronjob created"; \
+	else \
+		echo "Leader balancer cronjob already exists"; \
+	fi
+
+# Generates templates from the Camunda Platform helm chart
+.PHONY: template
+template:
+	helm template $(namespace) camunda/$(helm_chart) \
+		-f camunda-platform-values.yaml \
+		$(if $(storage_values_file),-f $(storage_values_file)) \
+		--output-dir .
+
+.PHONY: template-stable
+template-stable:
+	helm template $(namespace) camunda/$(helm_chart) \
+		-f camunda-platform-values.yaml \
+		-f values-stable.yaml \
+		$(if $(storage_values_file),-f $(storage_values_file)) \
+		--output-dir .
+
+.PHONY: clean
+clean:
+	-helm --namespace $(namespace) uninstall $(namespace)
+	-helm --namespace $(namespace) uninstall $(namespace)-test
+	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
+	-kubectl delete -n $(namespace) pvc -l app=postgresql-master
+	-kubectl delete -n $(namespace) cronjob leader-balancer
+ifeq ($(secondary_storage),postgresql)
+	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."
+	-helm --namespace $(namespace) uninstall postgres
+	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=postgresql
+endif

@@ -192,6 +192,15 @@ public final class RdbmsExporter {
         record.getValueType(),
         record.getIntent());
 
+    if (record.getPosition() <= lastPosition) {
+      LOG.info(
+          "[RDBMS Exporter P{}] Skipping already exported record {} with position {}",
+          partitionId,
+          record.getValue(),
+          record.getPosition());
+      return;
+    }
+
     boolean exported = false;
     if (registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {

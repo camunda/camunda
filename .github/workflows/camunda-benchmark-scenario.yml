@@ -1,0 +1,166 @@
+# description: This workflow deploys a load test with a camunda cluster under test.
+# We use this workflow to start ad-hoc load tests or weekly medic load tests.
+# The health of the cluster and results of the load tests are monitored by Core team's regularly.
+# https://grafana.dev.zeebe.io/login
+# called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
+# type: CI
+# owner: camunda/orchestration-cluster-team
+name: Camunda Benchmark
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
+        default: 'main'
+        type: string
+        required: false
+      name:
+        description: 'Specifies the name of the load test'
+        type: string
+        required: true
+      scenario-name:
+        description: 'Specifies the name of the load test class to execute'
+        type: string
+        required: true
+      image-tag:
+        description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
+      load-test-load:
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
+        type: string
+        required: false
+      publish:
+        description: 'Where to publish the results, can be "slack" or "comment"'
+        default: ""
+        type: string
+        required: false
+      stable-vms:
+        description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
+      realistic:
+        description: 'Should run a realistic load test, with real-world process and load'
+        type: boolean
+        required: false
+        default: false
+      secondary-database-type:
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "rdbms"'
+        type: string
+        required: false
+        default: elasticsearch
+
+env:
+  HELM_CHART: camunda-platform-8.9
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  deploy-benchmark-cluster:
+    name: Deploy load test
+    uses: camunda/camunda/.github/workflows/camunda-load-test.yml@feat/camunda-db-benchmarks
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    secrets: inherit
+    with:
+      ref: ${{ inputs.ref }}
+      name: ${{ inputs.name }}
+      reuse-tag: ${{ inputs.image-tag }}
+      load-test-load: ${{ inputs.load-test-load }}
+      stable-vms: ${{ inputs.stable-vms }}
+      realistic: ${{ inputs.realistic }}
+      secondary-database-type: ${{ inputs.secondary-database-type }}
+
+  execute-benchmark:
+    name: Execute benchmark
+    needs: deploy-benchmark-cluster
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+        service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+    - uses: google-github-actions/get-gke-credentials@v2.3.4
+      with:
+        cluster_name: zeebe-cluster
+        location: europe-west1-b
+    - name: Launch benchmark image
+      run: |
+        cat <<EOF | kubectl -n ${{inputs.name}} apply -f -
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: benchmark
+        spec:
+          template:
+            spec:
+              containers:
+              - name: benchmark
+                image: gcr.io/zeebe-io/benchmark:${{inputs.image-tag}}
+                env:
+                - name: JDK_JAVA_OPTIONS
+                  value: "-Dconfig.override_with_env_vars=true -Dapp.preferRest=true"
+                - name: ZEEBE_GRPC_ADDRESS
+                  value: "http://camunda-gateway:26500"
+                - name: ZEEBE_REST_ADDRESS
+                  value: "http://camunda-gateway:8080"
+                - name: ZEEBE_MANAGEMENT_ADDRESS
+                  value: "http://camunda-gateway:9600"
+                - name: BENCHMARK_NAME
+                  value: "${{ inputs.scenario-name }}"
+              restartPolicy: Never
+        EOF
+    - name: Wait for benchmark job
+      run: kubectl wait --for=condition=complete job/benchmark -n ${{inputs.name}} --timeout=30s
+    - name: Collect Benchmark Output
+      id: collect-output
+      run: |
+        RESULT=$(kubectl logs job/benchmark -n ${{inputs.name}} | tail -n 1)
+        echo "$RESULT"
+        echo "result=$RESULT" >> $GITHUB_OUTPUT
+    - name: Process benchmark result
+      run: |
+        echo "The benchmark result was:"
+        echo "${{ steps.collect-output.outputs.result }}"
+
+  delete-benchmark:
+    name: Delete benchmark
+    runs-on: ubuntu-latest
+    needs: execute-benchmark
+    if: false
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
+      - name: Delete benchmark namespace
+        id: delete-namespaces
+        run: |
+          kubectl delete namespace "${{inputs.name}}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

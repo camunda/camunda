@@ -226,5 +226,28 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>benchmark</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.google.cloud.tools</groupId>
+            <artifactId>jib-maven-plugin</artifactId>
+            <version>${plugin.version.jib}</version>
+            <configuration>
+              <from>
+                <image>eclipse-temurin:21</image>
+              </from>
+              <to>
+                <image>gcr.io/zeebe-io/benchmark:SNAPSHOT</image>
+              </to>
+              <container>
+                <mainClass>io.camunda.zeebe.Benchmark</mainClass>
+              </container>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

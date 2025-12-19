@@ -23,9 +23,9 @@ orchestration:
         username: camunda
         secret:
           inlineSecret: camunda
-        queueSize: 1001
+        queueSize: 750
         history:
-          defaultHistoryTTL: PT12H
+          defaultHistoryTTL: PT1M
           minHistoryCleanupInterval: PT2S
           maxHistoryCleanupInterval: PT1M
           historyCleanupBatchSize: 50000
