@@ -94,7 +94,7 @@
     <version.wiremock>3.13.2</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>2.0.2</version.testcontainers>
+    <version.testcontainers>2.0.3</version.testcontainers>
     <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
     <version.testcontainer-mariadb>2.0.2</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>2.0.2</version.postgressql-testcontainer>
@@ -173,8 +173,8 @@
     <version.node>v24.2.0</version.node>
     <version.yarn>v1.22.22</version.yarn>
 
-    <version.elasticsearch-test-container>2.0.2</version.elasticsearch-test-container>
-    <version.postgres-test-container>2.0.2</version.postgres-test-container>
+    <version.elasticsearch-test-container>2.0.3</version.elasticsearch-test-container>
+    <version.postgres-test-container>2.0.3</version.postgres-test-container>
     <version.elasticsearch7>7.17.29</version.elasticsearch7>
     <version.lz4>1.10.1</version.lz4>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
