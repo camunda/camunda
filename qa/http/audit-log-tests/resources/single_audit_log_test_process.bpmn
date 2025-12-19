@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_audit_log_v3" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="audit_log_test_process" name="Audit Log Test Process V3" isExecutable="true">
+    <bpmn:startEvent id="StartEvent" name="Start">
+      <bpmn:outgoing>Flow_to_gateway</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_to_gateway" sourceRef="StartEvent" targetRef="Gateway_split" />
+    <bpmn:parallelGateway id="Gateway_split" name="Split">
+      <bpmn:incoming>Flow_to_gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_task1</bpmn:outgoing>
+      <bpmn:outgoing>Flow_to_task2</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_to_task1" sourceRef="Gateway_split" targetRef="ServiceTask1" />
+    <bpmn:sequenceFlow id="Flow_to_task2" sourceRef="Gateway_split" targetRef="ServiceTask2" />
+    <bpmn:serviceTask id="ServiceTask1" name="Parallel Task 1">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="parallel-task-1" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_task1</bpmn:incoming>
+      <bpmn:outgoing>Flow_from_task1</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="ServiceTask2" name="Parallel Task 2 - User Review">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition assignee="demo" candidateGroups="audit-testers" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_task2</bpmn:incoming>
+      <bpmn:outgoing>Flow_from_task2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_from_task1" sourceRef="ServiceTask1" targetRef="Gateway_join" />
+    <bpmn:sequenceFlow id="Flow_from_task2" sourceRef="ServiceTask2" targetRef="Gateway_join" />
+    <bpmn:parallelGateway id="Gateway_join" name="Join">
+      <bpmn:incoming>Flow_from_task1</bpmn:incoming>
+      <bpmn:incoming>Flow_from_task2</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_end</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="EndEvent" name="End">
+      <bpmn:incoming>Flow_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_to_end" sourceRef="Gateway_join" targetRef="EndEvent" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="audit_log_test_process">
+      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
+        <dc:Bounds x="182" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="189" y="195" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_split_di" bpmnElement="Gateway_split">
+        <dc:Bounds x="275" y="145" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="289" y="202" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask1_di" bpmnElement="ServiceTask1">
+        <dc:Bounds x="390" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask2_di" bpmnElement="ServiceTask2">
+        <dc:Bounds x="390" y="200" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_join_di" bpmnElement="Gateway_join">
+        <dc:Bounds x="555" y="145" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="571" y="202" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_di" bpmnElement="EndEvent">
+        <dc:Bounds x="672" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="681" y="195" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_to_gateway_di" bpmnElement="Flow_to_gateway">
+        <di:waypoint x="218" y="170" />
+        <di:waypoint x="275" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_task1_di" bpmnElement="Flow_to_task1">
+        <di:waypoint x="300" y="145" />
+        <di:waypoint x="300" y="120" />
+        <di:waypoint x="390" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_task2_di" bpmnElement="Flow_to_task2">
+        <di:waypoint x="300" y="195" />
+        <di:waypoint x="300" y="240" />
+        <di:waypoint x="390" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_from_task1_di" bpmnElement="Flow_from_task1">
+        <di:waypoint x="490" y="120" />
+        <di:waypoint x="580" y="120" />
+        <di:waypoint x="580" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_from_task2_di" bpmnElement="Flow_from_task2">
+        <di:waypoint x="490" y="240" />
+        <di:waypoint x="580" y="240" />
+        <di:waypoint x="580" y="195" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_end_di" bpmnElement="Flow_to_end">
+        <di:waypoint x="605" y="170" />
+        <di:waypoint x="672" y="170" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
