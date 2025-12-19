@@ -25,8 +25,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
-import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
-import io.camunda.search.entities.IncidentStatisticsEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -197,8 +196,9 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<IncidentStatisticsEntity> incidentProcessInstanceStatisticsByError(
-      final IncidentProcessInstanceStatisticsByErrorQuery query) {
+  public SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
+      incidentProcessInstanceStatisticsByError(
+          final IncidentProcessInstanceStatisticsByErrorQuery query) {
     return SearchQueryResult.empty();
   }
 

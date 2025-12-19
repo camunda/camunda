@@ -33,7 +33,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
-import io.camunda.search.entities.IncidentStatisticsEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -315,7 +315,7 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentProcessInstanceStatisticsByErrorQueryResult
       toIncidentProcessInstanceStatisticsByErrorResult(
-          final SearchQueryResult<IncidentStatisticsEntity> result) {
+          final SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new IncidentProcessInstanceStatisticsByErrorQueryResult()
         .page(page)
@@ -326,7 +326,8 @@ public final class SearchQueryResponseMapper {
   }
 
   private static IncidentProcessInstanceStatisticsByErrorResult
-      toIncidentProcessInstanceStatisticsByErrorResult(final IncidentStatisticsEntity result) {
+      toIncidentProcessInstanceStatisticsByErrorResult(
+          final IncidentProcessInstanceStatisticsByErrorEntity result) {
     return new IncidentProcessInstanceStatisticsByErrorResult()
         .errorHashCode(result.errorHashCode())
         .errorMessage(result.errorMessage())

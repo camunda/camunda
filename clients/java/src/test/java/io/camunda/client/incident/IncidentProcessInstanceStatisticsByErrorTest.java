@@ -36,7 +36,7 @@ import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class IncidentStatisticsTest extends ClientRestTest {
+public class IncidentProcessInstanceStatisticsByErrorTest extends ClientRestTest {
 
   @BeforeEach
   void setup() {
@@ -52,9 +52,14 @@ public class IncidentStatisticsTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
+    final IncidentProcessInstanceStatisticsByErrorQuery queryRequest =
+        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsByErrorQuery.class);
     assertThat(request.getUrl()).isEqualTo("/v2/incidents/statistics/process-instances-by-error");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
-    assertThat(request.getBodyAsString()).isEqualTo("{\"sort\":[]}");
+
+    assertThat(queryRequest.getPage()).isNull();
+    assertThat(queryRequest.getSort()).isNotNull();
+    assertThat(queryRequest.getSort()).isEmpty();
   }
 
   @Test

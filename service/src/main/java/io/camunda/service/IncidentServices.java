@@ -14,8 +14,8 @@ import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTH
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.search.entities.IncidentStatisticsEntity;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -99,8 +99,9 @@ public class IncidentServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public SearchQueryResult<IncidentStatisticsEntity> incidentProcessInstanceStatisticsByError(
-      final IncidentProcessInstanceStatisticsByErrorQuery query) {
+  public SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
+      incidentProcessInstanceStatisticsByError(
+          final IncidentProcessInstanceStatisticsByErrorQuery query) {
     return executeSearchRequest(
         () ->
             incidentSearchClient
