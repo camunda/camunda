@@ -22,7 +22,17 @@ install: install-storage install-platform install-load-test
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	./installPostgres.sh $(namespace)
+  helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+    --namespace $(namespace) \
+    --wait --timeout 5m0s \
+    --set global.postgresql.auth.database=camunda \
+    --set global.postgresql.auth.username=camunda \
+    --set global.postgresql.auth.password=camunda \
+    --set primary.resources.requests.memory=4Gi \
+    --set primary.resources.requests.cpu=3000m \
+    --set primary.resources.limits.memory=6Gi \
+    --set primary.resources.limits.cpu=6000m \
+    --set primary.persistence.size=10Gi
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
