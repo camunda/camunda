@@ -8,9 +8,6 @@
 
 import {observer} from 'mobx-react';
 import isNil from 'lodash/isNil';
-import {useNavigate} from 'react-router-dom';
-import {Button} from '@carbon/react';
-import {BatchJob} from '@carbon/icons-react';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {Restricted} from 'modules/components/Restricted';
@@ -22,7 +19,6 @@ import {
   DescriptionData,
 } from './styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {Paths} from 'modules/Routes';
 
 type ProcessDetails = {
   bpmnProcessId?: string;
@@ -47,7 +43,6 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
     isVersionSelected,
     panelHeaderRef,
   }) => {
-    const navigate = useNavigate();
     const {processName, bpmnProcessId, version, versionTag} = processDetails;
     const hasVersionTag = !isNil(versionTag);
     const hasSelectedProcess = bpmnProcessId !== undefined;
@@ -90,18 +85,6 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
         )}
 
         <div style={{marginLeft: 'auto', marginRight: 'var(--cds-spacing-04)', display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-04)'}}>
-          <Button
-            kind="tertiary"
-            onClick={() => navigate(Paths.batchOperations())}
-            iconDescription="View batch operations"
-            renderIcon={BatchJob}
-            title="View batch operations"
-            aria-label="View batch operations"
-            size="sm"
-          >
-            View batch operations
-          </Button>
-
           {isVersionSelected && processDefinitionId !== undefined && (
             <Restricted
               resourceBasedRestrictions={{

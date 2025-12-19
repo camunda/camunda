@@ -8,7 +8,7 @@
 
 import {useState, useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Link, Pagination} from '@carbon/react';
+import {Link, Pagination, Button} from '@carbon/react';
 import {AuditLogFilters} from './Filters';
 import {
   type AuditLogSearchFilters,
@@ -340,22 +340,19 @@ const AuditLog: React.FC = () => {
           processes: processesDisplay,
           user: formatUsername(entry.user),
           startTimestamp: formatDate(entry.startTimestamp),
-          actions: (
-            <button
-              type="button"
-              onClick={() => openDetailsModal(mockEntry)}
-              title="View details"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                color: 'var(--cds-text-primary)',
-              }}
-            >
-              <Information size={16} />
-            </button>
-          ),
+          actions:
+            entry.operationState === 'fail' ||
+            entry.operationType === 'ADD_VARIABLE' ||
+            entry.operationType === 'UPDATE_VARIABLE' ? (
+              <Button
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={Information}
+                onClick={() => openDetailsModal(mockEntry)}
+                iconDescription="View details"
+              />
+            ) : null,
           entry: mockEntry,
         };
       }) || [],

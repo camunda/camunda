@@ -17,6 +17,7 @@ const useCurrentPage = () => {
     | 'processes'
     | 'decisions'
     | 'audit-log'
+    | 'batch-operations'
     | 'process-details'
     | 'decision-details'
     | 'login'
@@ -35,6 +36,10 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.auditLog(), location.pathname) !== null) {
       return 'audit-log';
+    }
+
+    if (matchPath(Paths.batchOperations(), location.pathname) !== null) {
+      return 'batch-operations';
     }
 
     if (matchPath(Paths.processInstance(), location.pathname) !== null) {

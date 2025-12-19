@@ -199,14 +199,12 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             headers={[
               {header: 'Variable name', key: 'name'},
               {header: 'New value', key: 'newValue'},
-              {header: 'Element scope', key: 'scope'},
             ]}
             rows={([
               {
                 id: variable.name,
                 name: variable.name,
                 newValue: JSON.stringify(variable.newValue),
-                scope: variable.scope?.name ?? '',
               },
             ] as any)}
           />

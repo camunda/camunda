@@ -189,19 +189,43 @@ const AppHeader: React.FC = observer(() => {
               ...(IS_AUDIT_LOG_ENABLED
                 ? [
                     {
-                      key: 'audit-log',
-                      label: 'Operations Log',
-                      isCurrentPage: currentPage === 'audit-log',
-                      routeProps: {
-                        to: Locations.auditLog(),
-                        onClick: () => {
-                          tracking.track({
-                            eventName: 'navigation',
-                            link: 'header-audit-log',
-                            currentPage,
-                          });
+                      key: 'operations',
+                      label: 'Operations',
+                      isCurrentPage:
+                        currentPage === 'audit-log' ||
+                        currentPage === 'batch-operations',
+                      items: [
+                        {
+                          key: 'batch-operations',
+                          label: 'Batch Operations',
+                          isCurrentPage: currentPage === 'batch-operations',
+                          routeProps: {
+                            to: Locations.batchOperations(),
+                            onClick: () => {
+                              tracking.track({
+                                eventName: 'navigation',
+                                link: 'header-batch-operations',
+                                currentPage,
+                              });
+                            },
+                          },
                         },
-                      },
+                        {
+                          key: 'audit-log',
+                          label: 'Operations Log',
+                          isCurrentPage: currentPage === 'audit-log',
+                          routeProps: {
+                            to: Locations.auditLog(),
+                            onClick: () => {
+                              tracking.track({
+                                eventName: 'navigation',
+                                link: 'header-audit-log',
+                                currentPage,
+                              });
+                            },
+                          },
+                        },
+                      ],
                     },
                   ]
                 : []),

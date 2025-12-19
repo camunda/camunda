@@ -8,8 +8,8 @@
 
 import {useState, useMemo, useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Link, Breadcrumb, BreadcrumbItem, Tooltip, Pagination} from '@carbon/react';
-import {Checkmark, Error, CircleDash, ErrorOutline} from '@carbon/icons-react';
+import {Link, Tooltip, Pagination, Button} from '@carbon/react';
+import {Checkmark, Error, CircleDash, ErrorOutline, Pause, Play, Close} from '@carbon/icons-react';
 import {
   BatchOperationsFilters,
   type BatchOperationsFilters as BatchOperationsFiltersType,
@@ -203,6 +203,7 @@ const BatchOperations: React.FC = () => {
     {key: 'items', header: 'Items'},
     {key: 'appliedBy', header: 'Actor', sortKey: 'appliedBy'},
     {key: 'startTime', header: 'Start time', sortKey: 'startTime'},
+    {key: 'operations', header: ''},
   ];
 
   const rows = useMemo(
@@ -258,6 +259,53 @@ const BatchOperations: React.FC = () => {
           );
         }
 
+        // Build operations cell based on state
+        const operationsCell = (
+          <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-02)'}}>
+            {operation.state === 'ACTIVE' && (
+              <Button
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={Pause}
+                onClick={() => {
+                  // TODO: Implement suspend functionality
+                  console.log('Suspend operation:', operation.id);
+                }}
+                iconDescription="Suspend"
+              />
+            )}
+            {operation.state === 'SUSPENDED' && (
+              <Button
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={Play}
+                onClick={() => {
+                  // TODO: Implement resume functionality
+                  console.log('Resume operation:', operation.id);
+                }}
+                iconDescription="Resume"
+              />
+            )}
+            {(operation.state === 'CREATED' ||
+              operation.state === 'ACTIVE' ||
+              operation.state === 'SUSPENDED') && (
+              <Button
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={Close}
+                onClick={() => {
+                  // TODO: Implement cancel functionality
+                  console.log('Cancel operation:', operation.id);
+                }}
+                iconDescription="Cancel"
+              />
+            )}
+          </div>
+        );
+
         return {
           id: operation.id,
           operationType: (
@@ -275,6 +323,7 @@ const BatchOperations: React.FC = () => {
           items: itemsDisplay,
           startTime: formatDate(operation.startTime),
           appliedBy: operation.appliedBy,
+          operations: operationsCell,
         };
       }),
     [paginatedData, navigate],
@@ -283,34 +332,10 @@ const BatchOperations: React.FC = () => {
   return (
     <>
       <VisuallyHiddenH1>Batch Operations</VisuallyHiddenH1>
-      {/* Breadcrumb - Full Width */}
-      <div
-        style={{
-          width: '100%',
-          backgroundColor: 'var(--cds-layer-01)',
-          borderBottom: '1px solid var(--cds-border-subtle-01)',
-          padding: 'var(--cds-spacing-04) var(--cds-spacing-05)',
-        }}
-      >
-        <Breadcrumb noTrailingSlash>
-          <BreadcrumbItem>
-            <Link
-              href="#"
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                navigate(Paths.processes());
-              }}
-            >
-              Processes
-            </Link>
-          </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>Batch Operations</BreadcrumbItem>
-        </Breadcrumb>
-      </div>
       <div
         style={{
           display: 'flex',
-          height: 'calc(100% - 40px)',
+          height: '100%',
           overflow: 'hidden',
         }}
       >
@@ -370,6 +395,18 @@ const BatchOperations: React.FC = () => {
                 font-size: var(--cds-body-compact-01-font-size);
                 max-width: 150px;
               }
+              .batch-operations-table-container td[data-testid="cell-operations"] {
+                width: 96px;
+                min-width: 96px;
+                max-width: 96px;
+                padding: 0 var(--cds-spacing-03) !important;
+              }
+              .batch-operations-table-container th:has([data-testid*="operations"]),
+              .batch-operations-table-container th:last-child {
+                width: 96px;
+                min-width: 96px;
+                max-width: 96px;
+              }
             `}</style>
             <SortableTable
               state={rows.length === 0 ? 'empty' : 'content'}
@@ -402,16 +439,18 @@ const BatchOperations: React.FC = () => {
               }}
             />
           </div>
-          <Pagination
-            page={currentPage}
-            pageSize={pageSize}
-            pageSizes={[50, 100, 200]}
-            totalItems={filteredData.length}
-            onChange={({page, pageSize: newPageSize}) => {
-              setCurrentPage(page);
-              setPageSize(newPageSize);
-            }}
-          />
+          <div style={{paddingTop: 'var(--cds-spacing-03)'}}>
+            <Pagination
+              page={currentPage}
+              pageSize={pageSize}
+              pageSizes={[50, 100, 200]}
+              totalItems={filteredData.length}
+              onChange={({page, pageSize: newPageSize}) => {
+                setCurrentPage(page);
+                setPageSize(newPageSize);
+              }}
+            />
+          </div>
         </div>
       </div>
     </>
