@@ -99,7 +99,7 @@ public class RaftTest {
         context -> {
           final var brokerCfg = context.getBean(BrokerBasedProperties.class);
           assertThat(brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy())
-              .isEqualTo(PreAllocationStrategy.FILL);
+              .isEqualTo(PreAllocationStrategy.POSIX_OR_FILL);
         });
   }
 
