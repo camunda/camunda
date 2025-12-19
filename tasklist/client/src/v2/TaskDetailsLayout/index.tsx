@@ -118,6 +118,15 @@ const TaskDetailsLayout: React.FC = () => {
       },
       visible: !isTaskCompleted && processXml !== undefined,
     },
+    {
+      key: 'history',
+      title: 'History',
+      label: 'Show task history',
+      selected: useMatch(pages.taskDetailsHistory()) !== null,
+      to: {
+        pathname: pages.taskDetailsHistory(id),
+      },
+    },
   ];
 
   if (task === undefined || currentUser === undefined || processLoading) {

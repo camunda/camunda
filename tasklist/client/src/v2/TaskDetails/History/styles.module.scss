@@ -1,0 +1,77 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.container {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: calc(-1 * var(--cds-spacing-03));
+
+  :global(.cds--data-table-container) {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  :global(.cds--data-table-content) {
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  :global(.cds--data-table) {
+    width: 100%;
+    table-layout: fixed;
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cds-spacing-09);
+  text-align: center;
+  color: var(--cds-text-secondary);
+}
+
+.loadingSkeleton {
+  padding: var(--cds-spacing-05);
+}
+
+.operationCell {
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+}
+
+.expandedContent {
+  padding: var(--cds-spacing-05);
+  background-color: var(--cds-layer-01);
+}
+
+.expandedLabel {
+  font-weight: 500;
+  color: var(--cds-text-secondary);
+  min-width: 150px;
+}
+
+.errorMessage {
+  padding: var(--cds-spacing-03);
+  background-color: var(--cds-notification-background-error);
+  color: var(--cds-text-error);
+  font-style: italic;
+}
+
+.nonExpandableRow {
+  :global(.cds--table-expand__button) {
+    display: none;
+  }
+}
+

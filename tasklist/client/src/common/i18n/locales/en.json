@@ -252,7 +252,7 @@
     "taskFiltersSortPriority": "Priority",
     "taskFiltersSortButton": "Sort tasks",
     "taskOptionsSectionAria": "Options",
-    "taskOptionsAutoSelectLabel": "Auto-select first available task",
+    "taskOptionsAutoSelectLabel": "Auto-select",
     "taskOptionsAutoSelectOffAria": "Off",
     "taskOptionsAutoSelectOnAria": "On",
     "taskPriorityCriticalShort": "Critical",
