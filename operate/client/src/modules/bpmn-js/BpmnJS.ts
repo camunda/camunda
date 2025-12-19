@@ -14,6 +14,8 @@ import NavigatedViewer, {
 import OutlineModule from 'bpmn-js/lib/features/outline';
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
+// @ts-expect-error Could not find a declaration file for module 'diagram-js-minimap'
+import minimapModule from 'diagram-js-minimap';
 import isEqual from 'lodash/isEqual';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {isNonSelectableFlowNode} from './utils/isNonSelectableFlowNode';
@@ -83,6 +85,7 @@ class BpmnJS {
 
     // Initialize after importing
     this.zoomReset();
+    // Minimap is closed by default - user can toggle it via the button
     this.#navigatedViewer!.on('element.click', this.#handleElementClick);
     this.#navigatedViewer!.on('canvas.viewbox.changing', () => {
       this.onViewboxChange?.(true);
@@ -286,7 +289,11 @@ class BpmnJS {
       container,
       bpmnRenderer: bpmnRendererColors,
       canvas: {deferUpdate: true},
-      additionalModules: [ElementTemplatesIconsRenderer, OutlineModule],
+      additionalModules: [
+        ElementTemplatesIconsRenderer,
+        OutlineModule,
+        minimapModule,
+      ],
     });
   };
 
@@ -452,6 +459,48 @@ class BpmnJS {
   findRootId = (selectedFlowNodeId: string) => {
     return this.#navigatedViewer?.get('canvas')?.findRoot(selectedFlowNodeId)
       ?.businessObject.id;
+  };
+
+  /**
+   * Notify the canvas that it has been resized
+   */
+  notifyResize = () => {
+    const canvas = this.#navigatedViewer?.get('canvas');
+    if (canvas) {
+      canvas.resized();
+    }
+  };
+
+  /**
+   * Toggle minimap visibility
+   */
+  toggleMinimap = () => {
+    // @ts-expect-error minimap service is dynamically added by the minimap module
+    const minimap = this.#navigatedViewer?.get('minimap');
+    if (minimap) {
+      // @ts-expect-error minimap service methods are dynamically added
+      const isOpen = minimap.isOpen();
+      if (isOpen) {
+        // @ts-expect-error minimap service methods are dynamically added
+        minimap.close();
+      } else {
+        // @ts-expect-error minimap service methods are dynamically added
+        minimap.open();
+      }
+    }
+  };
+
+  /**
+   * Check if minimap is open
+   */
+  isMinimapOpen = (): boolean => {
+    // @ts-expect-error minimap service is dynamically added by the minimap module
+    const minimap = this.#navigatedViewer?.get('minimap');
+    if (minimap) {
+      // @ts-expect-error minimap service methods are dynamically added
+      return minimap.isOpen() ?? false;
+    }
+    return false;
   };
 }
 

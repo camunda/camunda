@@ -18,7 +18,6 @@ import {useElementInstancesSearch} from 'modules/queries/elementInstances/useEle
 import {useElementInstance} from 'modules/queries/elementInstances/useElementInstance';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useMemo} from 'react';
-import {Details} from './Details';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
@@ -143,20 +142,12 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
           </>
         )}
 
-        {elementInstanceMetadata && (
-          <>
-            <Details
-              elementInstance={elementInstanceMetadata}
-              businessObject={businessObject}
-            />
-            {elementInstanceMetadata.hasIncident && (
-              <Incidents
-                elementInstanceKey={elementInstanceMetadata.elementInstanceKey}
-                elementName={elementInstanceMetadata.elementName}
-                elementId={elementId}
-              />
-            )}
-          </>
+        {elementInstanceMetadata && elementInstanceMetadata.hasIncident && (
+          <Incidents
+            elementInstanceKey={elementInstanceMetadata.elementInstanceKey}
+            elementName={elementInstanceMetadata.elementName}
+            elementId={elementId}
+          />
         )}
 
         {!elementInstanceMetadata && incidentCount > 0 && (

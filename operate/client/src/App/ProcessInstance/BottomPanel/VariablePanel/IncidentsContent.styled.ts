@@ -7,17 +7,18 @@
  */
 
 import styled from 'styled-components';
-import {MultiSelect as BaseMultiSelect} from '@carbon/react';
 
-const Container = styled.div`
+const Content = styled.div`
   display: flex;
-  width: 100%;
-  justify-content: flex-start;
-  padding: var(--cds-spacing-01) var(--cds-spacing-05);
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 `;
 
-const StyledMultiSelect = styled(BaseMultiSelect)`
-  width: 300px;
+const FilterContainer = styled.div`
+  padding: var(--cds-spacing-03) var(--cds-spacing-05) var(--cds-spacing-03) 0;
+  border-bottom: 1px solid var(--cds-border-subtle-01);
 `;
 
-export {Container, StyledMultiSelect};
+export {Content, FilterContainer};
+
