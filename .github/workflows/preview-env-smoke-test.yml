@@ -24,6 +24,10 @@ jobs:
     with:
       app-name: smoke-${{ github.run_number }}
       labels: preview-env=smoke-test
+      # Enable LDAP Basic Auth with service account for smoke tests
+      extra-helm-set-parameters: |
+        global.preview.ingress.ldapAuth.enabled=true
+        global.preview.ingress.ldapAuth.baseDn=ou=machine-accounts,ou=applications,o=camunda,c=com
 
   teardown-smoke-test:
     name: Teardown Smoke Test Preview Environment

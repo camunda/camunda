@@ -32,6 +32,16 @@ global:
     ingress:
       # The domain name under which to expose the preview environment
       domain: camunda.camunda.cloud
+      # LDAP Basic Auth configuration (optional)
+      # When enabled, bypasses Vouch Proxy and uses LDAP-based Basic Authentication.
+      # This is useful for automated/programmatic access using service accounts.
+      # Requires LDAP credentials to be provided via HTTP Basic Auth header.
+      ldapAuth:
+        # Set to true to use LDAP Basic Auth instead of Vouch Proxy
+        enabled: false
+        # LDAP base DN for authentication (required when enabled)
+        # Use "ou=machine-accounts,ou=applications,o=camunda,c=com" for service accounts
+        # baseDn: "ou=machine-accounts,ou=applications,o=camunda,c=com"
 
   # Camunda 8 Self-Managed global configurations
   elasticsearch:
@@ -380,11 +390,11 @@ camunda-platform:
       #   repository: camunda/web-modeler-webapp
       resources:
         limits:
-          cpu: 100m
-          memory: 256Mi
+          cpu: '1'
+          memory: 1Gi
         requests:
-          cpu: 40m
-          memory: 256Mi
+          cpu: 100m
+          memory: 512Mi
       nodeSelector:
         cloud.google.com/gke-nodepool: previews
       tolerations:

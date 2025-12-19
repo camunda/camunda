@@ -1,6 +1,11 @@
 # We cannot use .Values.global.ingress.annotations to include "infrapreviewenvironmentsingress.annotations" due
 # to the "toYaml" function used before "tpl". A similar custom ingress must be used instead.
 # https://github.com/camunda/camunda-platform-helm/blob/1814ba5e3ad4c012288dcaf7b0f8a3ceff860b4e/charts/camunda-platform/templates/camunda/ingress.yaml#L9
+#
+# Authentication modes:
+# - Vouch Proxy (default): OAuth2-based authentication via Vouch Proxy
+# - LDAP Basic Auth: When .Values.global.preview.ingress.ldapAuth.enabled=true, uses LDAP-based Basic Auth
+#   which bypasses Vouch Proxy. Useful for automated/programmatic access with service accounts.
 ---
 {{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
 {{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
@@ -12,7 +17,7 @@ metadata:
     {{- include "commonLabels" $ | nindent 4 }}
   annotations: 
     {{- include "commonAnnotations" $ | nindent 4 }}
-    {{- include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 -}}
+    {{- include "c8sm.authAnnotations" $ | nindent 4 -}}
     ingress.kubernetes.io/rewrite-target: "/"
     nginx.ingress.kubernetes.io/app-root: {{ .Values.camundaPlatform.console.contextPath }}
     nginx.ingress.kubernetes.io/proxy-buffer-size: 16k

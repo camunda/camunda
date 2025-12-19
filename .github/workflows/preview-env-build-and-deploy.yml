@@ -20,6 +20,13 @@ on:
         required: false
         type: string
         default: ''
+      extra-helm-set-parameters:
+        description: |
+          Additional Helm parameters (newline-separated key=value pairs)
+          e.g., "global.preview.ingress.ldapAuth.enabled=true"
+        required: false
+        type: string
+        default: ''
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 concurrency:
@@ -172,7 +179,16 @@ jobs:
     # Determine the argocd arguments that need to be passed to the create app command
     - name: Determine Argocd Arguments for c8sm
       shell: bash
+      env:
+        docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
+        extra_helm_set_params: ${{ inputs.extra-helm-set-parameters }}
+        labels: ${{ inputs.labels && format('--label {0}', inputs.labels) || '' }}
+        revision: ${{ github.head_ref || github.ref_name }}
+        app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
       run: |
+        # Convert newline-separated params to --helm-set args
+        extra_helm_args=$(echo "${extra_helm_set_params}" | awk 'NF{printf "--helm-set %s ", $0}')
+
         echo "argocd_arguments=--dest-namespace ${app_name} \
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
@@ -182,12 +198,7 @@ jobs:
           --name ${app_name} \
           --revision ${revision} \
           --helm-set git.branch=${revision} \
-          --upsert ${labels:+--label ${labels}}" >> "$GITHUB_ENV"
-      env:
-        docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
-        labels: ${{ inputs.labels }}
-        revision: ${{ github.head_ref || github.ref_name }}
-        app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
+          --upsert ${labels} ${extra_helm_args}" >> "$GITHUB_ENV"
 
     #########################################################################
     # Create a preview environment
