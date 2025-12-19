@@ -114,7 +114,7 @@ final class BackupServiceImpl {
         backupSaved.complete(null);
       }
       case FAILED, IN_PROGRESS -> {
-        LOG.atError()
+        LOG.atWarn()
             .addKeyValue("backup", inProgressBackup.id())
             .addArgument(existingBackupStatus)
             .setMessage("Backup already exists with status {}, will not take a new one")
