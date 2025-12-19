@@ -365,9 +365,9 @@ const History: React.FC = () => {
                   {headers.map((header: any) => {
                     const headerProps = getHeaderProps({header});
                     return (
-                      <TableHeader
+                    <TableHeader
                         {...headerProps}
-                        key={header.key}
+                      key={header.key}
                         isSortable={header.key !== 'details'}
                         isSortHeader={sortBy === header.key}
                         sortDirection={
@@ -378,9 +378,9 @@ const History: React.FC = () => {
                             : 'NONE'
                         }
                         onClick={() => header.key !== 'details' && handleSort(header.key)}
-                      >
-                        {header.header}
-                      </TableHeader>
+                    >
+                      {header.header}
+                    </TableHeader>
                     );
                   })}
                 </TableRow>

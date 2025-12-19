@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useMemo} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {
   Stack,
   TextInput,
@@ -15,26 +15,38 @@ import {
   Layer,
   DatePicker,
   DatePickerInput,
+  Modal,
 } from '@carbon/react';
+import {Calendar} from '@carbon/react/icons';
+import {createPortal} from 'react-dom';
+import {format} from 'date-fns';
 import type {
   OperationType,
   OperationState,
+  OperationEntity,
   AuditLogSearchFilters,
 } from 'modules/api/v2/auditLog/searchAuditLog';
 import {observer} from 'mobx-react';
 import { Title } from 'modules/components/FiltersPanel/styled';
+import {IconTextInput} from 'modules/components/IconInput';
 
 const OPERATION_TYPES: {id: OperationType; label: string}[] = [
-  {id: 'CREATE_PROCESS_INSTANCE', label: 'Create process instance'},
-  {id: 'CANCEL_PROCESS_INSTANCE', label: 'Cancel process instance'},
-  {id: 'MODIFY_PROCESS_INSTANCE', label: 'Modify process instance'},
-  {id: 'MIGRATE_PROCESS_INSTANCE', label: 'Migrate process instance'},
+  {id: 'CREATE_PROCESS_INSTANCE', label: 'Create'},
+  {id: 'CANCEL_PROCESS_INSTANCE', label: 'Cancel'},
+  {id: 'MODIFY_PROCESS_INSTANCE', label: 'Modify'},
+  {id: 'MIGRATE_PROCESS_INSTANCE', label: 'Migrate'},
   {id: 'RESOLVE_INCIDENT', label: 'Resolve incident'},
   {id: 'ADD_VARIABLE', label: 'Add variable'},
   {id: 'UPDATE_VARIABLE', label: 'Update variable'},
   {id: 'EVALUATE_DECISION', label: 'Evaluate decision'},
-  {id: 'DEPLOY_RESOURCE', label: 'Deploy resource'},
-  {id: 'DELETE_RESOURCE', label: 'Delete resource'},
+  {id: 'DELETE_RESOURCE', label: 'Delete'},
+];
+
+const OPERATION_ENTITIES: {id: OperationEntity; label: string}[] = [
+  {id: 'PROCESS_INSTANCE', label: 'Process instance'},
+  {id: 'BATCH', label: 'Batch'},
+  {id: 'DECISION_INSTANCE', label: 'Decision instance'},
+  {id: 'RESOURCE', label: 'Resource'},
 ];
 
 const OPERATION_STATES: {id: OperationState; label: string}[] = [
@@ -61,6 +73,241 @@ const PROCESS_DEFINITIONS_WITH_VERSIONS: Record<string, number[]> = {
 };
 
 const PROCESS_DEFINITIONS = Object.keys(PROCESS_DEFINITIONS_WITH_VERSIONS);
+
+const DEFAULT_FROM_TIME = '00:00:00';
+const DEFAULT_TO_TIME = '23:59:59';
+
+const formatDateForDisplay = (date: Date) => format(date, 'yyyy-MM-dd');
+const formatTimeForDisplay = (date: Date) => format(date, 'HH:mm:ss');
+
+// Validate time input format (hh:mm:ss)
+const isValidTimeFormat = (time: string) => {
+  if (!time) return false;
+  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+  return timeRegex.test(time);
+};
+
+// Component for displaying the date-time range input with modal
+type DateTimeRangeFieldProps = {
+  id: string;
+  label: string;
+  modalTitle: string;
+  fromDateTime?: string;
+  toDateTime?: string;
+  onChange: (fromDateTime: string | undefined, toDateTime: string | undefined) => void;
+};
+
+const DateTimeRangeField: React.FC<DateTimeRangeFieldProps> = ({
+  id,
+  label,
+  modalTitle,
+  fromDateTime,
+  toDateTime,
+  onChange,
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [fromTime, setFromTime] = useState('');
+  const [toTime, setToTime] = useState('');
+  const [fromTimeError, setFromTimeError] = useState<string | undefined>();
+  const [toTimeError, setToTimeError] = useState<string | undefined>();
+
+  const getInputDisplayValue = () => {
+    if (isModalOpen) return 'Custom';
+    if (fromDateTime && toDateTime) {
+      const fromDt = new Date(fromDateTime);
+      const toDt = new Date(toDateTime);
+      return `${formatDateForDisplay(fromDt)} ${formatTimeForDisplay(fromDt)} - ${formatDateForDisplay(toDt)} ${formatTimeForDisplay(toDt)}`;
+    }
+    return '';
+  };
+
+  const handleOpenModal = () => {
+    // Initialize modal fields from current values
+    if (fromDateTime) {
+      const date = new Date(fromDateTime);
+      setFromDate(formatDateForDisplay(date));
+      setFromTime(formatTimeForDisplay(date));
+    } else {
+      setFromDate('');
+      setFromTime('');
+    }
+    if (toDateTime) {
+      const date = new Date(toDateTime);
+      setToDate(formatDateForDisplay(date));
+      setToTime(formatTimeForDisplay(date));
+    } else {
+      setToDate('');
+      setToTime('');
+    }
+    setFromTimeError(undefined);
+    setToTimeError(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleReset = () => {
+    setFromDate('');
+    setToDate('');
+    setFromTime('');
+    setToTime('');
+    setFromTimeError(undefined);
+    setToTimeError(undefined);
+    onChange(undefined, undefined);
+    setIsModalOpen(false);
+  };
+
+  const validateTime = (time: string, type: 'from' | 'to') => {
+    if (!time) {
+      return undefined;
+    }
+    if (!isValidTimeFormat(time)) {
+      return 'Please enter a valid time (hh:mm:ss)';
+    }
+    return undefined;
+  };
+
+  const handleFromTimeChange = (value: string) => {
+    setFromTime(value);
+    setFromTimeError(validateTime(value, 'from'));
+  };
+
+  const handleToTimeChange = (value: string) => {
+    setToTime(value);
+    setToTimeError(validateTime(value, 'to'));
+  };
+
+  const handleApply = () => {
+    if (fromDate && fromTime && toDate && toTime) {
+      const fromDt = new Date(`${fromDate} ${fromTime}`);
+      const toDt = new Date(`${toDate} ${toTime}`);
+      onChange(fromDt.toISOString(), toDt.toISOString());
+      setIsModalOpen(false);
+    }
+  };
+
+  const isApplyDisabled = 
+    !fromDate || !toDate || !fromTime || !toTime || 
+    !!fromTimeError || !!toTimeError;
+
+  return (
+    <>
+      <IconTextInput
+        Icon={Calendar}
+        id={id}
+        labelText={label}
+        value={getInputDisplayValue()}
+        title={getInputDisplayValue()}
+        placeholder="Enter date range"
+        size="sm"
+        light={true}
+        buttonLabel="Open date range modal"
+        onIconClick={handleOpenModal}
+        onClick={handleOpenModal}
+      />
+
+      {isModalOpen && createPortal(
+        <Layer level={0}>
+          <Modal
+            data-testid={`${id}-modal`}
+            open={isModalOpen}
+            size="sm"
+            modalHeading={modalTitle}
+            primaryButtonText="Apply"
+            secondaryButtons={[
+              {
+                buttonText: 'Reset',
+                onClick: handleReset,
+              },
+              {
+                buttonText: 'Cancel',
+                onClick: handleCancel,
+              },
+            ]}
+            onRequestClose={handleCancel}
+            onRequestSubmit={handleApply}
+            primaryButtonDisabled={isApplyDisabled}
+          >
+            <Stack gap={6}>
+              <div>
+                <DatePicker
+                  datePickerType="range"
+                  onChange={(dates) => {
+                    const [from, to] = dates;
+                    if (from) {
+                      setFromDate(formatDateForDisplay(from));
+                      if (!fromTime) setFromTime(DEFAULT_FROM_TIME);
+                    }
+                    if (to) {
+                      setToDate(formatDateForDisplay(to));
+                      if (!toTime) setToTime(DEFAULT_TO_TIME);
+                    }
+                  }}
+                  dateFormat="Y-m-d"
+                  short
+                >
+                  <DatePickerInput
+                    id={`${id}-from-date`}
+                    labelText="From date"
+                    placeholder="YYYY-MM-DD"
+                    size="sm"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    maxLength={10}
+                    autoComplete="off"
+                  />
+                  <DatePickerInput
+                    id={`${id}-to-date`}
+                    labelText="To date"
+                    placeholder="YYYY-MM-DD"
+                    size="sm"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    maxLength={10}
+                    autoComplete="off"
+                  />
+                </DatePicker>
+              </div>
+              <div style={{display: 'flex', gap: '1px', width: '289px'}}>
+                <TextInput
+                  id={`${id}-from-time`}
+                  labelText="From time"
+                  placeholder="hh:mm:ss"
+                  size="sm"
+                  value={fromTime}
+                  onChange={(e) => handleFromTimeChange(e.target.value)}
+                  data-testid={`${id}-fromTime`}
+                  maxLength={8}
+                  autoComplete="off"
+                  invalid={!!fromTimeError}
+                  invalidText={fromTimeError}
+                />
+                <TextInput
+                  id={`${id}-to-time`}
+                  labelText="To time"
+                  placeholder="hh:mm:ss"
+                  size="sm"
+                  value={toTime}
+                  onChange={(e) => handleToTimeChange(e.target.value)}
+                  data-testid={`${id}-toTime`}
+                  maxLength={8}
+                  autoComplete="off"
+                  invalid={!!toTimeError}
+                  invalidText={toTimeError}
+                />
+              </div>
+            </Stack>
+          </Modal>
+        </Layer>,
+        document.body
+      )}
+    </>
+  );
+};
 
 type AuditLogFiltersProps = {
   filters: AuditLogSearchFilters;
@@ -124,6 +371,14 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
           ? OPERATION_STATES.filter((s) => s.id === filters.operationState)
           : [],
       [filters.operationState],
+    );
+
+    const selectedOperationEntities = useMemo(
+      () =>
+        filters.operationEntity
+          ? OPERATION_ENTITIES.filter((e) => e.id === filters.operationEntity)
+          : [],
+      [filters.operationEntity],
     );
 
     return (
@@ -200,6 +455,24 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
             </div>
             <div style={{width: '100%'}}>
               <FilterableMultiSelect
+                id="operation-entity"
+                titleText="Operation entity"
+                placeholder="Choose option(s)"
+                items={OPERATION_ENTITIES}
+                itemToString={(item) => item?.label ?? ''}
+                selectedItems={selectedOperationEntities}
+                light={true}
+                onChange={({selectedItems}) =>
+                  handleFilterChange(
+                    'operationEntity',
+                    selectedItems[0]?.id ?? undefined,
+                  )
+                }
+                size="sm"
+              />
+            </div>
+            <div style={{width: '100%'}}>
+              <FilterableMultiSelect
                 id="operation-state"
                 titleText="Operation status"
                 placeholder="Choose option(s)"
@@ -226,30 +499,34 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               size="sm"
               style={{width: '100%'}}
             />
-            <DatePicker
-              datePickerType="range"
-              value={[filters.startDateFrom || '', filters.startDateTo || '']}
-              onChange={(dates) => {
-                const [startDate, endDate] = dates;
-                handleFilterChange('startDateFrom', startDate?.toISOString() || '');
-                handleFilterChange('startDateTo', endDate?.toISOString() || '');
+            <DateTimeRangeField
+              id="start-date-range"
+              label="Start date range"
+              modalTitle="Filter operations by start date"
+              fromDateTime={filters.startDateFrom}
+              toDateTime={filters.startDateTo}
+              onChange={(from, to) => {
+                onFiltersChange({
+                  ...filters,
+                  startDateFrom: from,
+                  startDateTo: to,
+                });
               }}
-              light={true}
-              style={{width: '100%'}}
-            >
-              <DatePickerInput
-                id="start-date"
-                labelText="Start date"
-                placeholder="mm/dd/yyyy"
-                size="sm"
-              />
-              <DatePickerInput
-                id="end-date"
-                labelText="End date"
-                placeholder="mm/dd/yyyy"
-                size="sm"
-              />
-            </DatePicker>
+            />
+            <DateTimeRangeField
+              id="end-date-range"
+              label="End date range"
+              modalTitle="Filter operations by end date"
+              fromDateTime={filters.endDateFrom}
+              toDateTime={filters.endDateTo}
+              onChange={(from, to) => {
+                onFiltersChange({
+                  ...filters,
+                  endDateFrom: from,
+                  endDateTo: to,
+                });
+              }}
+            />
           </Stack>
         </Stack>
         </div>

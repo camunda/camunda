@@ -20,7 +20,9 @@ import {
   StructuredListBody,
   CodeSnippet,
   InlineNotification,
+  Link,
 } from '@carbon/react';
+import styled from 'styled-components';
 import {DataTable} from 'modules/components/DataTable';
 import {formatDate} from 'modules/utils/date';
 import type {MockAuditLogEntry} from 'modules/mocks/auditLog';
@@ -29,7 +31,9 @@ import {
   EventSchedule,
   UserAvatar,
   ArrowRight,
-  ClassicBatch,
+  BatchJob,
+  SoftwareResource,
+  Launch,
 } from '@carbon/icons-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {StatusIndicator} from './StatusIndicator';
@@ -47,6 +51,24 @@ const JSONEditor = lazy(async () => {
 });
 
 // Styled components
+const StyledModalBody = styled(ModalBody)`
+  .cds--layer-two.cds--modal-content.cds--modal-scroll-content--no-fade {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+`;
+
+const StyledStructuredListWrapper = styled(StructuredListWrapper)`
+  .cds--structured-list-td {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    vertical-align: middle !important;
+  }
+  .cds--structured-list-th {
+    vertical-align: middle !important;
+  }
+`;
+
 const VerticallyAlignedRow: any = ({children, head, ...props}: any) => (
   <tr
     {...props}
@@ -68,6 +90,7 @@ const FirstColumn: any = ({children, noWrap, ...props}: any) => (
       fontWeight: 400,
       whiteSpace: noWrap ? 'nowrap' : 'normal',
       width: '180px',
+      verticalAlign: 'middle',
     }}
   >
     {children}
@@ -97,8 +120,54 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
     return null;
   }
 
+  const operationTypeDisplayMap: Record<string, string> = {
+    CREATE_PROCESS_INSTANCE: 'Create',
+    CANCEL_PROCESS_INSTANCE: 'Cancel',
+    MODIFY_PROCESS_INSTANCE: 'Modify',
+    MIGRATE_PROCESS_INSTANCE: 'Migrate',
+    DEPLOY_RESOURCE: 'Delete',
+    DELETE_RESOURCE: 'Delete',
+  };
+
   const formatOperationType = (type: string) => {
+    if (operationTypeDisplayMap[type]) {
+      return operationTypeDisplayMap[type];
+    }
+
     return type
+      .split('_')
+      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const resolveOperationEntity = (entry: MockAuditLogEntry) => {
+    if (entry.operationEntity) {
+      return entry.operationEntity;
+    }
+
+    if (entry.isMultiInstanceOperation) {
+      return 'BATCH';
+    }
+
+    if (entry.operationType === 'EVALUATE_DECISION') {
+      return 'DECISION_INSTANCE';
+    }
+
+    if (entry.operationType.includes('RESOURCE')) {
+      return 'RESOURCE';
+    }
+
+    return 'PROCESS_INSTANCE';
+  };
+
+  const formatOperationEntity = (
+    entity: MockAuditLogEntry['operationEntity'],
+  ) => {
+    if (!entity) {
+      return '-';
+    }
+
+    return entity
       .split('_')
       .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
       .join(' ');
@@ -167,43 +236,30 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
             gap: 'var(--cds-spacing-03)',
+            alignItems: 'center',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-03)',
-            }}
+          <span>Multiple process instances</span>
+          <CodeSnippet
+            type="inline"
+            title={"Batch operation key / Click to copy"}
+            aria-label={"Batch operation key / Click to copy"}
+            feedback="Copied to clipboard"
           >
-            <ClassicBatch size={16} />
-            <div style={{display: 'flex', gap: 'var(--cds-spacing-03)'}}>
-              <span>Multiple process instances</span>
-              <CodeSnippet
-                type="inline"
-                title={"Batch operation key / Click to copy"}
-                aria-label={"Batch operation key / Click to copy"}
-                feedback="Copied to clipboard"
-              >
-                {entry.batchOperationId}
-              </CodeSnippet>
-            </div>
-          </div>
+            {entry.batchOperationId}
+          </CodeSnippet>
           <Button
             kind="ghost"
             size="sm"
-            renderIcon={ArrowRight}
-            iconDescription="View batch operation details"
+            hasIconOnly
+            renderIcon={Launch}
+            iconDescription="Open batch operation"
             onClick={() => {
               onClose();
               navigate(Paths.batchOperationDetails(entry.batchOperationId!));
             }}
-          >
-            View batch operation details
-          </Button>
+          />
         </div>
       );
     }
@@ -244,23 +300,25 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                 >
                   {resourceKey}
                 </CodeSnippet>
+                {!isDelete && !isForm && (
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    hasIconOnly
+                    renderIcon={Launch}
+                    iconDescription="Open process definition"
+                    onClick={() => {
+                      // TODO: Navigate to process definition
+                      console.log(
+                        'Navigate to process definition:',
+                        entry.processDefinitionName,
+                      );
+                    }}
+                  />
+                )}
               </>
             )}
           </div>
-          {!isDelete && !isForm && (
-            <Button
-              kind="ghost"
-              size="sm"
-              renderIcon={ArrowRight}
-              iconDescription="View process definition"
-              onClick={() => {
-                // TODO: Navigate to process instance
-                console.log('Navigate to process:', entry.processInstanceKey);
-              }}
-            >
-              View process definition
-            </Button>
-          )}
         </div>
       );
     }
@@ -276,7 +334,13 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
             gap: 'var(--cds-spacing-03)',
           }}
         >
-          <div style={{display: 'flex', gap: 'var(--cds-spacing-03)'}}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 'var(--cds-spacing-03)',
+              alignItems: 'center',
+            }}
+          >
             <span>{entry.processDefinitionName}</span>
             {entry.processInstanceKey && (
               <CodeSnippet
@@ -288,21 +352,20 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                 {entry.processInstanceKey}
               </CodeSnippet>
             )}
+            {entry.processInstanceKey && (
+              <Button
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={Launch}
+                iconDescription="Open process instance"
+                onClick={() => {
+                  // TODO: Navigate to process instance
+                  console.log('Navigate to process:', entry.processInstanceKey);
+                }}
+              />
+            )}
           </div>
-          {entry.processInstanceKey && (
-            <Button
-              kind="ghost"
-              size="sm"
-              renderIcon={ArrowRight}
-              iconDescription="View process instance"
-              onClick={() => {
-                // TODO: Navigate to process instance
-                console.log('Navigate to process:', entry.processInstanceKey);
-              }}
-            >
-              View process instance
-            </Button>
-          )}
         </div>
       );
     }
@@ -310,17 +373,53 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
     return null;
   };
 
+  const referenceContent = renderReference();
+
   return (
     <ComposedModal size="md" open={open} onClose={onClose}>
       <ModalHeader
         title={formatOperationType(entry.operationType)}
         closeModal={onClose}
       />
-      <ModalBody>
+      <StyledModalBody>
         <Stack gap={6}>
           <Stack gap={4}>
-            <StructuredListWrapper isCondensed isFlush>
+            <StyledStructuredListWrapper isCondensed isFlush>
               <StructuredListBody>
+                <VerticallyAlignedRow>
+                  <FirstColumn noWrap>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--cds-spacing-03)',
+                      }}
+                    >
+                      <SoftwareResource />
+                      Entity
+                    </div>
+                  </FirstColumn>
+                  <StructuredListCell>
+                    {formatOperationEntity(resolveOperationEntity(entry))}
+                  </StructuredListCell>
+                </VerticallyAlignedRow>
+                {referenceContent && (
+                  <VerticallyAlignedRow style={{verticalAlign: 'middle'}}>
+                    <FirstColumn noWrap>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--cds-spacing-03)',
+                        }}
+                      >
+                        <ArrowRight />
+                        Reference
+                      </div>
+                    </FirstColumn>
+                    <StructuredListCell>{referenceContent}</StructuredListCell>
+                  </VerticallyAlignedRow>
+                )}
                 <VerticallyAlignedRow>
                   <FirstColumn noWrap>
                     <div
@@ -371,39 +470,20 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                   </StructuredListCell>
                 </VerticallyAlignedRow>
               </StructuredListBody>
-            </StructuredListWrapper>
+            </StyledStructuredListWrapper>
             {entry.operationState === 'fail' && entry.errorMessage && (
               <InlineNotification
                 kind="error"
-                title="Failure reason:"
+                title="Error message:"
                 subtitle={entry.errorMessage}
                 hideCloseButton
                 lowContrast
               />
             )}
           </Stack>
-          {renderReference() && (
-            <Stack gap={1}>
-              <Subtitle>Applied to:</Subtitle>
-              <div
-                style={{
-                  borderTop: '1px solid var(--cds-border-subtle)',
-                  borderBottom: '1px solid var(--cds-border-subtle)',
-                  padding: 'var(--cds-spacing-03)',
-                }}
-              >
-                {renderReference()}
-              </div>
-            </Stack>
-          )}
           {renderDetails()}
         </Stack>
-      </ModalBody>
-      <ModalFooter>
-        <Button kind="secondary" onClick={onClose}>
-          Close
-        </Button>
-      </ModalFooter>
+      </StyledModalBody>
     </ComposedModal>
   );
 };

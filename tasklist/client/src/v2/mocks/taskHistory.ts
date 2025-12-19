@@ -56,8 +56,8 @@ export const taskHistory: TaskHistoryOperation[] = [
           newValue: '75',
         },
         {
-          property: 'Due Date',
-          oldValue: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(),
+      property: 'Due Date',
+      oldValue: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(),
           newValue: undefined, // Unset (no value)
         },
       ],

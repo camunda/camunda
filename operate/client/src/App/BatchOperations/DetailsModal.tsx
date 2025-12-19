@@ -38,11 +38,30 @@ import {
   UserAvatar,
   Close,
 } from '@carbon/icons-react';
+import styled from 'styled-components';
 import {formatDate} from 'modules/utils/date';
 import type {BatchOperation} from 'modules/mocks/batchOperations';
 import {BatchOperationStatusTag} from './BatchOperationStatusTag';
 
 // Styled components
+const StyledModalBody = styled(ModalBody)`
+  .cds--layer-two.cds--modal-content.cds--modal-scroll-content--no-fade {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+`;
+
+const StyledStructuredListWrapper = styled(StructuredListWrapper)`
+  .cds--structured-list-td {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    vertical-align: middle !important;
+  }
+  .cds--structured-list-th {
+    vertical-align: middle !important;
+  }
+`;
+
 const VerticallyAlignedRow: React.FC<{
   children: React.ReactNode;
   head?: boolean;
@@ -70,6 +89,7 @@ const FirstColumn: React.FC<{
       fontWeight: 400,
       whiteSpace: noWrap ? 'nowrap' : 'normal',
       width: '180px',
+      verticalAlign: 'middle',
     }}
   >
     {children}
@@ -154,11 +174,11 @@ const DetailsModal: React.FC<Props> = ({open, onClose, operation}) => {
           />
         </div>
       </ModalHeader>
-      <ModalBody>
+      <StyledModalBody>
         <Stack gap={6}>
           {/* Summary Section */}
           <Stack gap={4}>
-            <StructuredListWrapper isCondensed isFlush>
+            <StyledStructuredListWrapper isCondensed isFlush>
               <StructuredListBody>
                 <VerticallyAlignedRow>
                   <FirstColumn noWrap>
@@ -229,13 +249,13 @@ const DetailsModal: React.FC<Props> = ({open, onClose, operation}) => {
                   <StructuredListCell>{operation.appliedBy}</StructuredListCell>
                 </VerticallyAlignedRow>
               </StructuredListBody>
-            </StructuredListWrapper>
+            </StyledStructuredListWrapper>
 
             {/* Error message for failed operations */}
             {operation.state === 'FAILED' && operation.errorMessage && (
               <InlineNotification
                 kind="error"
-                title="Failure reason:"
+                title="Error message:"
                 subtitle={operation.errorMessage}
                 hideCloseButton
                 lowContrast
@@ -346,7 +366,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, operation}) => {
             />
           </Stack>
         </Stack>
-      </ModalBody>
+      </StyledModalBody>
       <ModalFooter>
         <Button kind="secondary" onClick={onClose}>
           Close

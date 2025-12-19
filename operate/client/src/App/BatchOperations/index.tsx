@@ -405,7 +405,7 @@ const BatchOperations: React.FC = () => {
           <Pagination
             page={currentPage}
             pageSize={pageSize}
-            pageSizes={[20, 50, 100]}
+            pageSizes={[50, 100, 200]}
             totalItems={filteredData.length}
             onChange={({page, pageSize: newPageSize}) => {
               setCurrentPage(page);

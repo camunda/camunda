@@ -112,7 +112,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           {entry.operationState === 'fail' && entry.errorMessage && (
             <InlineNotification
               kind="error"
-              title="Failure reason:"
+              title="Error message:"
               subtitle={entry.errorMessage}
               hideCloseButton
               lowContrast

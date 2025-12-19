@@ -32,7 +32,7 @@ import {
 } from './styled';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {CheckmarkOutline} from '@carbon/react/icons';
-import {EventSchedule, UserAvatar, ClassicBatch} from '@carbon/icons-react';
+import {EventSchedule, UserAvatar, BatchJob} from '@carbon/icons-react';
 import {StatusIndicator} from 'App/AuditLog/StatusIndicator';
 import {Paths} from 'modules/Routes';
 
@@ -202,7 +202,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                 lineHeight: 'var(--cds-body-compact-01-line-height)',
               }}
             >
-              <ClassicBatch size={16} />
+              <BatchJob size={16} />
               <span>This operation is part of a batch.</span>
               <Link
                 href="#"
@@ -275,7 +275,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           {entry.operationState === 'fail' && entry.errorMessage && (
             <InlineNotification
               kind="error"
-              title="Failure reason:"
+              title="Error message:"
               subtitle={entry.errorMessage}
               hideCloseButton
               lowContrast
@@ -285,11 +285,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           {renderUserTaskDetails(entry)}
         </Stack>
       </ModalBody>
-      <ModalFooter>
-        <Button kind="secondary" onClick={onClose}>
-          Close
-        </Button>
-      </ModalFooter>
     </ComposedModal>
   );
 };

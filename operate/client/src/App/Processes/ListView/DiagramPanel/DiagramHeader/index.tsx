@@ -10,7 +10,7 @@ import {observer} from 'mobx-react';
 import isNil from 'lodash/isNil';
 import {useNavigate} from 'react-router-dom';
 import {Button} from '@carbon/react';
-import {ClassicBatch} from '@carbon/icons-react';
+import {BatchJob} from '@carbon/icons-react';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {Restricted} from 'modules/components/Restricted';
@@ -94,7 +94,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
             kind="tertiary"
             onClick={() => navigate(Paths.batchOperations())}
             iconDescription="View batch operations"
-            renderIcon={ClassicBatch}
+            renderIcon={BatchJob}
             title="View batch operations"
             aria-label="View batch operations"
             size="sm"

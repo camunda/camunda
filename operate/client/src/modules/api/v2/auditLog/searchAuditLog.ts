@@ -28,6 +28,12 @@ export type OperationType =
   | 'DEPLOY_RESOURCE'
   | 'DELETE_RESOURCE';
 
+export type OperationEntity =
+  | 'PROCESS_INSTANCE'
+  | 'BATCH'
+  | 'DECISION_INSTANCE'
+  | 'RESOURCE';
+
 // Operation States
 export type OperationState =
   | 'CREATED'
@@ -58,6 +64,7 @@ export type AuditLogEntry = {
   processInstanceState?: ProcessInstanceState;
   tenantId: string;
   operationType: OperationType;
+  operationEntity?: OperationEntity;
   operationState: OperationState;
   startTimestamp: string;
   endTimestamp?: string;
@@ -73,6 +80,7 @@ export type AuditLogSearchFilters = {
   processInstanceState?: ProcessInstanceState;
   tenantId?: string;
   operationType?: OperationType;
+  operationEntity?: OperationEntity;
   operationState?: OperationState;
   startDateFrom?: string;
   startDateTo?: string;
@@ -87,6 +95,7 @@ export type AuditLogSearchFilters = {
 export type SortField =
   | 'processDefinitionName'
   | 'operationType'
+  | 'operationEntity'
   | 'operationState'
   | 'startTimestamp'
   | 'user';

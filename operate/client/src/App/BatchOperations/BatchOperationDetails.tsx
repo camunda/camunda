@@ -1053,7 +1053,7 @@ const BatchOperationDetails: React.FC = () => {
                                 </TableExpandRow>
                                 <TableExpandedRow colSpan={headers.length + 1}>
                                   <div>
-                                    <strong>Failure reason: </strong>
+                                    <strong>Error message: </strong>
                                     {rowData?.errorMessage || 'Operation failed'}
                                   </div>
                                 </TableExpandedRow>

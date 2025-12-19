@@ -23,7 +23,6 @@ import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {PAGE_TITLE} from 'modules/constants';
 import {Information} from '@carbon/react/icons';
-import {ClassicBatch} from '@carbon/icons-react';
 import {DetailsModal} from './DetailsModal';
 import {StatusIndicator} from './StatusIndicator';
 import type {MockAuditLogEntry} from 'modules/mocks/auditLog';
@@ -69,6 +68,10 @@ const AuditLog: React.FC = () => {
         (params.get('operationType') as
           | AuditLogSearchFilters['operationType']
           | null) || undefined,
+      operationEntity:
+        (params.get('operationEntity') as
+          | AuditLogSearchFilters['operationEntity']
+          | null) || undefined,
       operationState:
         (params.get('operationState') as
           | AuditLogSearchFilters['operationState']
@@ -92,6 +95,7 @@ const AuditLog: React.FC = () => {
       'processDefinitionVersion',
       'processInstanceKey',
       'operationType',
+      'operationEntity',
       'operationState',
       'startDateFrom',
       'startDateTo',
@@ -149,18 +153,86 @@ const AuditLog: React.FC = () => {
     setDetailsModal({open: false, entry: null});
   };
 
+  const operationTypeDisplayMap: Record<string, string> = {
+    CREATE_PROCESS_INSTANCE: 'Create',
+    CANCEL_PROCESS_INSTANCE: 'Cancel',
+    MODIFY_PROCESS_INSTANCE: 'Modify',
+    MIGRATE_PROCESS_INSTANCE: 'Migrate',
+    DEPLOY_RESOURCE: 'Delete',
+    DELETE_RESOURCE: 'Delete',
+  };
+
   const formatOperationType = (type: string) => {
+    if (operationTypeDisplayMap[type]) {
+      return operationTypeDisplayMap[type];
+    }
+
     return type
       .split('_')
       .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
       .join(' ');
   };
 
+  const formatOperationEntity = (
+    entity: MockAuditLogEntry['operationEntity'],
+  ) => {
+    if (!entity) {
+      return '-';
+    }
+
+    return entity
+      .split('_')
+      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const resolveOperationEntity = (entry: MockAuditLogEntry) => {
+    if (entry.operationEntity) {
+      return entry.operationEntity;
+    }
+
+    if (entry.isMultiInstanceOperation) {
+      return 'BATCH';
+    }
+
+    if (entry.operationType === 'EVALUATE_DECISION') {
+      return 'DECISION_INSTANCE';
+    }
+
+    if (entry.operationType.includes('RESOURCE')) {
+      return 'RESOURCE';
+    }
+
+    return 'PROCESS_INSTANCE';
+  };
+
+  // Convert display name to username format (e.g., "Michael Scott" -> "michael-scott")
+  // If already in username format (no spaces, lowercase), return as is
+  const formatUsername = (user: string): string => {
+    if (!user) {
+      return user;
+    }
+    
+    // If it contains spaces or capital letters, it's likely a display name
+    // Convert to username format: lowercase and replace spaces with hyphens
+    if (/\s/.test(user) || /[A-Z]/.test(user)) {
+      return user
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, ''); // Remove special characters except hyphens
+    }
+    
+    // Already in username format, return as is
+    return user;
+  };
+
 
   const headers = [
-    {key: 'operationType', header: 'Operation'},
+    {key: 'operationType', header: 'Operation type'},
+    {key: 'operationEntity', header: 'Entity'},
+    {key: 'processes', header: 'Reference'},
     {key: 'operationState', header: 'Status'},
-    {key: 'processes', header: 'Applied to'},
     {key: 'user', header: 'Actor'},
     {key: 'startTimestamp', header: 'Time'},
     {key: 'actions', header: ' '},
@@ -258,20 +330,15 @@ const AuditLog: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 'var(--cds-spacing-03)',
               }}
             >
-              {mockEntry.isMultiInstanceOperation && (
-                <span title="Batch operation">
-                  <ClassicBatch size={16} />
-                </span>
-              )}
               <span>{formatOperationType(entry.operationType)}</span>
             </div>
           ),
+          operationEntity: formatOperationEntity(resolveOperationEntity(mockEntry)),
           operationState: <StatusIndicator status={entry.operationState} />,
           processes: processesDisplay,
-          user: entry.user,
+          user: formatUsername(entry.user),
           startTimestamp: formatDate(entry.startTimestamp),
           actions: (
             <button
@@ -323,6 +390,10 @@ const AuditLog: React.FC = () => {
         case 'operationType':
           aValue = aEntry?.operationType || '';
           bValue = bEntry?.operationType || '';
+          break;
+        case 'operationEntity':
+          aValue = resolveOperationEntity(aEntry as MockAuditLogEntry);
+          bValue = resolveOperationEntity(bEntry as MockAuditLogEntry);
           break;
         case 'operationState':
           aValue = aEntry?.operationState || '';
@@ -441,7 +512,7 @@ const AuditLog: React.FC = () => {
           <Pagination
             page={currentPage}
             pageSize={pageSize}
-            pageSizes={[20, 50, 100]}
+            pageSizes={[50, 100, 200]}
             totalItems={data?.totalCount || 0}
             onChange={({page, pageSize: newPageSize}) => {
               setCurrentPage(page);
