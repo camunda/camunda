@@ -26,7 +26,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private static final int DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
   private static final PreAllocationStrategy DEFAULT_PREALLOCATE_SEGMENT_STRATEGY =
-      PreAllocationStrategy.FILL;
+      PreAllocationStrategy.POSIX_OR_FILL;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
   private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
