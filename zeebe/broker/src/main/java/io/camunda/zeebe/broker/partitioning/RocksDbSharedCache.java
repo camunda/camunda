@@ -70,6 +70,27 @@ public class RocksDbSharedCache {
     }
 
     final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsCount);
+    final long totalMemorySize =
+        ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
+
+    if (rocksdbCfg.getMaxMemoryFraction() > 0 && rocksdbCfg.getMaxMemoryFraction() <= 1.0) {
+      final double maxMemoryFraction = rocksdbCfg.getMaxMemoryFraction();
+      final long maxRocksDbMem = (long) (totalMemorySize * maxMemoryFraction);
+
+      if (blockCacheBytes > maxRocksDbMem
+          && rocksdbCfg.getMemoryAllocationStrategy() != MemoryAllocationStrategy.AUTO) {
+        // this check does not apply for AUTO strategy as it is calculated
+        // based on available memory
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected the allocated memory for RocksDB to be below or "
+                    + "equal %.2f %% of ram memory, but was %.2f %%.",
+                maxMemoryFraction * 100, ((double) blockCacheBytes / totalMemorySize * 100)));
+      }
+    } else {
+      LOGGER.debug(
+          "Max Memory check for RocksDB is disabled. This can be configured setting ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MAXMEMORYFRACTION with a value between 0 and 1 to set the max fraction that RocksDB can take of total RAM memory.");
+    }
 
     if (blockCacheBytes / partitionsCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
       throw new IllegalArgumentException(
