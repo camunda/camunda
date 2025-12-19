@@ -100,10 +100,10 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
     final var commandKey = command.getKey();
     final var record = command.getValue();
 
-    helper.setVariablesFromDocument(process, processInstanceKey, record.getVariablesBuffer());
-
     final var processInstance =
         helper.initProcessInstanceRecord(process, processInstanceKey, record.getTags());
+
+    helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
 
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
