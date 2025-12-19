@@ -48,10 +48,10 @@
       "description": "An instruction to define an action or an assertion to be performed in a test case.",
       "oneOf": [
         {
-          "$ref": "#/definitions/CreateProcessInstanceInstruction"
+          "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
-          "$ref": "#/definitions/AssertProcessInstanceInstruction"
+          "$ref": "#/definitions/CreateProcessInstanceInstruction"
         }
       ]
     },
@@ -161,8 +161,8 @@
           "enum": [
             "IS_ACTIVE",
             "IS_COMPLETED",
-            "IS_TERMINATED",
-            "IS_CREATED"
+            "IS_CREATED",
+            "IS_TERMINATED"
           ]
         },
         "hasActiveIncidents": {

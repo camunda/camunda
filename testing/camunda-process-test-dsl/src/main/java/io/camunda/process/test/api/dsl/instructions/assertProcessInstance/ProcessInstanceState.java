@@ -19,6 +19,6 @@ package io.camunda.process.test.api.dsl.instructions.assertProcessInstance;
 public enum ProcessInstanceState {
   IS_ACTIVE,
   IS_COMPLETED,
-  IS_TERMINATED,
-  IS_CREATED
+  IS_CREATED,
+  IS_TERMINATED
 }

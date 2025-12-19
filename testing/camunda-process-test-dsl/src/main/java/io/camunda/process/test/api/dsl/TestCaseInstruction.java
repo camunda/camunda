@@ -29,11 +29,11 @@ import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruc
     visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(
-      value = CreateProcessInstanceInstruction.class,
-      name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE),
-  @JsonSubTypes.Type(
       value = AssertProcessInstanceInstruction.class,
-      name = TestCaseInstructionType.ASSERT_PROCESS_INSTANCE)
+      name = TestCaseInstructionType.ASSERT_PROCESS_INSTANCE),
+  @JsonSubTypes.Type(
+      value = CreateProcessInstanceInstruction.class,
+      name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
 })
 public interface TestCaseInstruction {
 

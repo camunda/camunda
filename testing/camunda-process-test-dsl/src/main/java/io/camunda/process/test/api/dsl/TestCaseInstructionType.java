@@ -18,6 +18,6 @@ package io.camunda.process.test.api.dsl;
 /** A collection of supported test case instruction types. */
 public class TestCaseInstructionType {
 
-  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
   public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
+  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
 }

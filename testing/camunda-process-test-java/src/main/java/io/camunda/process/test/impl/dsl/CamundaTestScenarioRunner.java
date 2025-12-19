@@ -43,8 +43,8 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
 
   static {
     // register instruction handlers here
-    registerHandler(new CreateProcessInstanceInstructionHandler());
     registerHandler(new AssertProcessInstanceInstructionHandler());
+    registerHandler(new CreateProcessInstanceInstructionHandler());
   }
 
   private final CamundaProcessTestContext context;
