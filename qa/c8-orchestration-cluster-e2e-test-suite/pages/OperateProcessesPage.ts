@@ -52,9 +52,9 @@ class OperateProcessesPage {
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
-  readonly processInstanceLinkByName: (name: string) => Locator;
+  readonly viewParentInstanceLinkInList: Locator;
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
-  getOperationAndResultsContainer: (
+  readonly operationAndResultsContainer: (
     operation: string,
     resultCount?: number,
   ) => Locator;
@@ -164,13 +164,7 @@ class OperateProcessesPage {
       page.getByRole('link', {
         name: processInstanceKey,
       });
-    this.processInstanceLinkByName = (name: string) =>
-      page
-        .getByRole('row')
-        .filter({hasText: name})
-        .first()
-        .getByRole('link', {name: /^View instance \d+/});
-    this.getOperationAndResultsContainer = (
+    this.operationAndResultsContainer = (
       operation: string,
       resultCount?: number,
     ) => {
@@ -179,9 +173,9 @@ class OperateProcessesPage {
         : new RegExp(`${operation}.*\\d+ results`);
       return page.locator('div').filter({hasText: pattern});
     };
-    this.getParentInstanceCell = (parentInstanceKey: string) =>
+    this.parentInstanceCell = (parentInstanceKey: string) =>
       this.dataList.getByRole('cell', {name: parentInstanceKey});
-    this.getVersionCells = (version: string) =>
+    this.versionCells = (version: string) =>
       this.dataList.getByRole('cell', {name: version, exact: true});
     this.viewParentInstanceLinkInList = this.dataList.getByRole('link', {
       name: /view parent instance/i,
