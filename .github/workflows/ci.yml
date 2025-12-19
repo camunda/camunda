@@ -392,15 +392,18 @@ jobs:
         id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
+        continue-on-error: true
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        continue-on-error: true
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suite}}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
+        continue-on-error: true
         id: matrix-write
         with:
           matrix-step-name: ${{ github.job }}
@@ -709,17 +712,20 @@ jobs:
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/analyze-test-runs
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        continue-on-error: true
         with:
           name: "[IT] ${{ matrix.name }}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
         id: matrix-write
+        continue-on-error: true
         with:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }}
