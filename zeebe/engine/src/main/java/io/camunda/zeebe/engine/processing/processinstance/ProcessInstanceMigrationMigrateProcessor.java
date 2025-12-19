@@ -506,6 +506,9 @@ public class ProcessInstanceMigrationMigrateProcessor
    */
   private void migrateCalledSubProcessElements(final long calledChildInstanceKey) {
     final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
+    if (calledInstance == null) {
+      return;
+    }
     final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
     while (!elementInstances.isEmpty()) {
       final var instance = elementInstances.poll();
@@ -545,11 +548,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         instance.getKey(), ProcessInstanceIntent.ANCESTOR_MIGRATED, elementInstanceRecord);
 
     if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
-      // found more call activities? add the called child instance to the queue to continue going
-      // deeper the tree
+      // found more call activities? add the called child instance to the queue if present
+      // to continue going deeper the tree
       final ElementInstance calledInstance =
           elementInstanceState.getInstance(instance.getCalledChildInstanceKey());
-      elementInstances.add(calledInstance);
+      if (calledInstance != null) {
+        elementInstances.add(calledInstance);
+      }
     }
   }
 
