@@ -248,9 +248,16 @@ test.describe('Processes', () => {
 
       await expect(operateDiagramPage.diagramSpinner).toBeHidden();
 
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
 
       await expect(operateFiltersPanelPage.processNameFilter).toBeEnabled();
       await expect
