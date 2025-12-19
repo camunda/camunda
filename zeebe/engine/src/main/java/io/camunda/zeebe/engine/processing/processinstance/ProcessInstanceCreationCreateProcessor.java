@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationCreateProcessor
     implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
@@ -96,9 +95,11 @@ public final class ProcessInstanceCreationCreateProcessor
     final var commandKey = command.getKey();
     final var record = command.getValue();
 
-    helper.setVariablesFromDocument(process, processInstanceKey, record.getVariablesBuffer());
+    final var processInstance =
+        helper.initProcessInstanceRecord(process, processInstanceKey);
 
-    final var processInstance = helper.initProcessInstanceRecord(process, processInstanceKey);
+    helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
+
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
