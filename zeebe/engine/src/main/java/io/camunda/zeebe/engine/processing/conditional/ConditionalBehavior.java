@@ -61,12 +61,11 @@ public class ConditionalBehavior {
    *
    * <ul>
    *   <li>An interrupting subscription is triggered.
-   *   <li>Subscription already triggered.
    *   <li>No more child scopes exist.
    * </ul>
    *
-   * <p>Before evaluating a scope's conditional subscriptions, apply the {@code variableNames} and
-   * {@code variableEvents} filters. Only if there is a match, evaluate the condition.
+   * <p>Before evaluating a scope's conditional subscriptions, apply the {@code variableNamesFilter}
+   * and {@code variableEventsFilter} filters. Only if there is a match, evaluate the condition.
    *
    * <p>Note: These filters are optional. If they are not set, apply the filter as passed.
    *
@@ -112,6 +111,14 @@ public class ConditionalBehavior {
     }
   }
 
+  /**
+   * This method has a side effect. It updates triggeredSubscriptionKeys and interruptedScopes sets.
+   *
+   * @param variableEvent the variable event
+   * @param currentScopeKey the current scope key
+   * @param triggeredSubscriptionKeys triggered subscription keys
+   * @param interruptedScopes interrupted scopes
+   */
   private void visitSubscriptions(
       final VariableEvent variableEvent,
       final long currentScopeKey,
@@ -174,22 +181,23 @@ public class ConditionalBehavior {
             VariableIntent.CREATED, "create",
             VariableIntent.UPDATED, "update");
 
-    boolean matchesFilters(final List<String> variableNames, final List<String> variableEvents) {
-      return matchesNameFilter(variableNames) && matchesEventFilter(variableEvents);
+    boolean matchesFilters(
+        final List<String> variableNamesFilter, final List<String> variableEventsFilter) {
+      return matchesNameFilter(variableNamesFilter) && matchesEventFilter(variableEventsFilter);
     }
 
-    boolean matchesEventFilter(final List<String> variableEvents) {
-      if (variableEvents.isEmpty()) {
+    boolean matchesEventFilter(final List<String> variableEventsFilter) {
+      if (variableEventsFilter.isEmpty()) {
         return true;
       }
-      return variableEvents.contains(intentToEventMap.get(intent));
+      return variableEventsFilter.contains(intentToEventMap.get(intent));
     }
 
-    boolean matchesNameFilter(final List<String> variableNames) {
-      if (variableNames.isEmpty()) {
+    boolean matchesNameFilter(final List<String> variableNamesFilter) {
+      if (variableNamesFilter.isEmpty()) {
         return true;
       }
-      return variableNames.contains(record.getName());
+      return variableNamesFilter.contains(record.getName());
     }
   }
 }
