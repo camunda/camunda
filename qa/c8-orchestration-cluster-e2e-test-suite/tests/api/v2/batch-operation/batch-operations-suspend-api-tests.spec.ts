@@ -22,13 +22,14 @@ import {
   createCompletedBatchOperation,
   expectBatchState,
   notFoundDetail,
+  resumeBatchOperation,
   suspendBatchOperation,
 } from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
-test.describe.parallel('Suspend Batch Operation Tests', () => {
+test.describe('Suspend Batch Operation Tests', () => {
   test.beforeAll(async () => {
-    await deploy(['./resources/batch_cancellation_process.bpmn']);
+    await deploy(['./resources/batch_suspension_process.bpmn']);
   });
 
   test('Suspend active batch operation returns 204 and status becomes SUSPENDED', async ({
@@ -36,7 +37,7 @@ test.describe.parallel('Suspend Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request);
+        return createCancellationBatch(request, 3, 'batch_suspension_process');
       });
 
     await test.step('Send suspend request', async () => {
@@ -47,6 +48,11 @@ test.describe.parallel('Suspend Batch Operation Tests', () => {
     await test.step('Poll until batch operation is suspended', async () => {
       await expectBatchState(request, key, 'SUSPENDED');
     });
+
+    await test.step('resume batch operation', async () => {
+      const res = await resumeBatchOperation(request, key);
+      await assertStatusCode(res, 204);
+    });
   });
 
   test('Suspend batch operation twice fails on second request', async ({
@@ -54,7 +60,7 @@ test.describe.parallel('Suspend Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request);
+        return createCancellationBatch(request, 3, 'batch_suspension_process');
       });
 
     await test.step('Suspend batch operation once', async () => {
@@ -67,8 +73,13 @@ test.describe.parallel('Suspend Batch Operation Tests', () => {
     });
 
     await test.step('Suspend already suspended batch operation', async () => {
-      const doubleRes = await suspendBatchOperation(request, key);
+      const doubleRes = await suspendBatchOperation(request, key, 409);
       await assertConflictRequest(doubleRes, 'INVALID_STATE');
+    });
+
+    await test.step('resume batch operation', async () => {
+      const res = await resumeBatchOperation(request, key);
+      await assertStatusCode(res, 204);
     });
   });
 
@@ -77,7 +88,7 @@ test.describe.parallel('Suspend Batch Operation Tests', () => {
       await test.step('Create completed batch operation', async () => {
         return createCompletedBatchOperation(request);
       });
-    const res = await suspendBatchOperation(request, key);
+    const res = await suspendBatchOperation(request, key, 404);
     await assertNotFoundRequest(res, notFoundDetail(key));
   });
 
@@ -85,7 +96,7 @@ test.describe.parallel('Suspend Batch Operation Tests', () => {
     request,
   }) => {
     const unknownKey = '2251799813999999';
-    const res = await suspendBatchOperation(request, unknownKey);
+    const res = await suspendBatchOperation(request, unknownKey, 404);
     await assertNotFoundRequest(res, notFoundDetail(unknownKey));
   });
 
@@ -109,7 +120,7 @@ test.describe.parallel('Suspend Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create batch operation for auth test', async () => {
-        return createCancellationBatch(request);
+        return createCancellationBatch(request, 3, 'batch_suspension_process');
       });
     const res = await request.post(
       buildUrl(`/batch-operations/${key}/suspension`),
