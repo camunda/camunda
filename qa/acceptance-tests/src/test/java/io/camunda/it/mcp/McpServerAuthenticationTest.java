@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.service.TopologyServices.Topology;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -23,22 +21,25 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@MultiDbTest
-public class McpServerIT {
+abstract class McpServerAuthenticationTest {
 
-  @MultiDbTestApplication
-  static final TestCamundaApplication TEST_INSTANCE =
-      new TestCamundaApplication().withAdditionalProfile("mcp");
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
+  protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
   private McpSyncClient mcpClient;
 
   @BeforeEach
   void setUp() {
-    mcpClient = createMcpClient(emptyMcpClientRequestCustomizer());
+    mcpClient = createMcpClient(createMcpClientRequestCustomizer());
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (mcpClient != null) {
+      mcpClient.close();
+    }
   }
 
   @Test
@@ -75,13 +76,15 @@ public class McpServerIT {
     assertThat(topology.clusterSize()).isEqualTo(1);
     assertThat(topology.brokers()).hasSize(1);
     assertThat(topology.brokers().getFirst().nodeId().toString())
-        .isEqualTo(TEST_INSTANCE.nodeId().id());
+        .isEqualTo(testInstance().nodeId().id());
   }
 
-  private McpSyncClient createMcpClient(
+  protected abstract TestCamundaApplication testInstance();
+
+  protected McpSyncClient createMcpClient(
       final McpSyncHttpClientRequestCustomizer httpClientRequestCustomizer) {
     final HttpClientStreamableHttpTransport.Builder transportBuilder =
-        HttpClientStreamableHttpTransport.builder("%s/mcp".formatted(TEST_INSTANCE.restAddress()))
+        HttpClientStreamableHttpTransport.builder("%s/mcp".formatted(testInstance().restAddress()))
             .openConnectionOnStartup(false);
 
     if (httpClientRequestCustomizer != null) {
@@ -91,7 +94,7 @@ public class McpServerIT {
     return McpClient.sync(transportBuilder.build()).build();
   }
 
-  private McpSyncHttpClientRequestCustomizer emptyMcpClientRequestCustomizer() {
+  protected McpSyncHttpClientRequestCustomizer createMcpClientRequestCustomizer() {
     return (builder, method, endpoint, body, context) -> {};
   }
 }
