@@ -139,7 +139,8 @@ final class BackupServiceImpl {
                   } else {
                     saveBackup(inProgressBackup, backupSaved);
                   }
-                });
+                },
+                concurrencyControl);
       }
       default -> LOG.warn("Invalid case on BackupStatus {}", existingBackupStatus);
     }
