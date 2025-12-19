@@ -30,6 +30,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private boolean disableWal = RocksDbConfiguration.DEFAULT_WAL_DISABLED;
   private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
   private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.AUTO;
+  private double maxMemoryFraction = -1;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -81,6 +82,14 @@ public final class RocksdbCfg implements ConfigurationEntry {
 
   public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {
     this.memoryAllocationStrategy = memoryAllocationStrategy;
+  }
+
+  public double getMaxMemoryFraction() {
+    return maxMemoryFraction;
+  }
+
+  public void setMaxMemoryFraction(final double maxMemoryFraction) {
+    this.maxMemoryFraction = maxMemoryFraction;
   }
 
   public int getMaxOpenFiles() {
