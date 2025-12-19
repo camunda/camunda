@@ -27,12 +27,12 @@ import {
 } from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
-test.describe('Suspend Batch Operation Tests', () => {
+test.describe('Suspend & Resume Batch Operation Tests', () => {
   test.beforeAll(async () => {
     await deploy(['./resources/batch_suspension_process.bpmn']);
   });
 
-  test('Suspend active batch operation returns 204 and status becomes SUSPENDED', async ({
+  test('Suspend active batch operation returns 204 and status becomes SUSPENDED, finally resumes', async ({
     request,
   }) => {
     const key =
@@ -55,7 +55,7 @@ test.describe('Suspend Batch Operation Tests', () => {
     });
   });
 
-  test('Suspend batch operation twice fails on second request', async ({
+  test('Suspend batch operation twice fails on second request, finally resumes', async ({
     request,
   }) => {
     const key =
