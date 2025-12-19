@@ -22,7 +22,7 @@ import {
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
-import {findUserTask} from '@requestHelpers';
+import {expectBatchState, findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
@@ -164,8 +164,17 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         );
         await assertStatusCode(res, 200);
         const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
       }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Wait for migration to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
     });
 
     await test.step('Verify both instances migrated to target task', async () => {
@@ -216,8 +225,17 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         );
         await assertStatusCode(res, 200);
         const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
       }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Wait for migration to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
     });
 
     await test.step('Verify only second instance migrated', async () => {
@@ -280,8 +298,17 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         );
         await assertStatusCode(res, 200);
         const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
       }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Wait for migration to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
     });
 
     await test.step('Verify both instances migrated', async () => {
