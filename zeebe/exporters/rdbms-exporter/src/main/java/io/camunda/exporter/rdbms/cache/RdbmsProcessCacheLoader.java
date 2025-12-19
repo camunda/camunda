@@ -39,6 +39,7 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
           ProcessCacheUtil.extractProcessDiagramData(processDefinitionEntity);
       return new CachedProcessEntity(
           processDefinitionEntity.name(),
+          processDefinitionEntity.version(),
           processDefinitionEntity.versionTag(),
           processDiagramData.callActivityIds(),
           processDiagramData.flowNodesMap());
@@ -60,6 +61,7 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
                   final var processDiagramData = ProcessCacheUtil.extractProcessDiagramData(pde);
                   return new CachedProcessEntity(
                       pde.name(),
+                      pde.version(),
                       pde.versionTag(),
                       processDiagramData.callActivityIds(),
                       processDiagramData.flowNodesMap());
