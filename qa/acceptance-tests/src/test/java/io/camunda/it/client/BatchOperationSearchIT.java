@@ -23,6 +23,7 @@ import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
@@ -33,7 +34,11 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -56,7 +61,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationSearchIT {
 
-  private static CamundaClient camundaClient;
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
   private static String testScopeId;
 
@@ -67,8 +74,8 @@ public class BatchOperationSearchIT {
   private static final List<Long> ACTIVE_PROCESS_INSTANCES_2 = new ArrayList<>();
 
   @BeforeAll
-  public static void beforeAll(final TestInfo testInfo) {
-    Objects.requireNonNull(camundaClient);
+  public static void beforeAll(
+      final TestInfo testInfo, @Authenticated final CamundaClient camundaClient) {
     testScopeId =
         testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
 
@@ -93,7 +100,7 @@ public class BatchOperationSearchIT {
     waitForScopedActiveProcessInstances(
         camundaClient, testScopeId, ACTIVE_PROCESS_INSTANCES_1.size());
 
-    batchOperationKey1 = startBatchOperationCancelProcesses(testScopeId);
+    batchOperationKey1 = startBatchOperationCancelProcesses(camundaClient, testScopeId);
 
     waitForBatchOperationWithCorrectTotalCount(
         camundaClient, batchOperationKey1, ACTIVE_PROCESS_INSTANCES_1.size());
@@ -122,7 +129,7 @@ public class BatchOperationSearchIT {
 
     batchOperationKey2 =
         startBatchOperationMigrateProcesses(
-            testScopeId, sourceProcessDefinitionKey, targetProcessDefinitionKey);
+            camundaClient, testScopeId, sourceProcessDefinitionKey, targetProcessDefinitionKey);
 
     waitForBatchOperationWithCorrectTotalCount(
         camundaClient, batchOperationKey2, ACTIVE_PROCESS_INSTANCES_2.size());
@@ -132,7 +139,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldGetBatchOperation() {
+  void shouldGetBatchOperation(@Authenticated final CamundaClient camundaClient) {
     // when
     final var batch = camundaClient.newBatchOperationGetRequest(batchOperationKey1).send().join();
     final var batch2 = camundaClient.newBatchOperationGetRequest(batchOperationKey2).send().join();
@@ -161,7 +168,8 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldReturnNotFoundOnGetWhenIdDoesNotExist() {
+  void shouldReturnNotFoundOnGetWhenIdDoesNotExist(
+      @Authenticated final CamundaClient camundaClient) {
     // when / then
     assertThatThrownBy(
             () -> camundaClient.newBatchOperationGetRequest("someBatchOperation").send().join())
@@ -172,7 +180,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchBatchOperationWithIn() {
+  void shouldSearchBatchOperationWithIn(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -198,7 +206,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchBatchOperationItemsWithIn() {
+  void shouldSearchBatchOperationItemsWithIn(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -218,7 +226,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchCompletedBatchOperation() {
+  void shouldSearchCompletedBatchOperation(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -243,7 +251,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchNotCompletedBatchOperation() {
+  void shouldSearchNotCompletedBatchOperation(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -260,7 +268,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchCancelProcessesBatchOperation() {
+  void shouldSearchCancelProcessesBatchOperation(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -278,7 +286,8 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchMigrateProcessesBatchOperationWithNeq() {
+  void shouldSearchMigrateProcessesBatchOperationWithNeq(
+      @Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -296,7 +305,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchBatchOperationItemsWithNeq() {
+  void shouldSearchBatchOperationItemsWithNeq(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -314,7 +323,7 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchBatchOperationItemsWithNotIn() {
+  void shouldSearchBatchOperationItemsWithNotIn(@Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -333,7 +342,8 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchBatchOperationItemsByOperationType() {
+  void shouldSearchBatchOperationItemsByOperationType(
+      @Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -348,7 +358,8 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchBatchOperationItemsByOperationTypeWithNeq() {
+  void shouldSearchBatchOperationItemsByOperationTypeWithNeq(
+      @Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -363,7 +374,8 @@ public class BatchOperationSearchIT {
   }
 
   @Test
-  void shouldSearchProcessInstanceByBatchOperationKey() {
+  void shouldSearchProcessInstanceByBatchOperationKey(
+      @Authenticated final CamundaClient camundaClient) {
     // when
     final var page =
         camundaClient
@@ -383,7 +395,8 @@ public class BatchOperationSearchIT {
   @MethodSource("sortOptions")
   <T extends Comparable<? super T>> void shouldSortBatchOperationByAttribute(
       final Function<BatchOperation, T> attributeExtractor,
-      final Function<BatchOperationSort, BatchOperationSort> sortOption) {
+      final Function<BatchOperationSort, BatchOperationSort> sortOption,
+      @Authenticated final CamundaClient camundaClient) {
     // given
     final var all =
         camundaClient.newBatchOperationSearchRequest().execute().items().stream()
@@ -414,7 +427,8 @@ public class BatchOperationSearchIT {
   @MethodSource("sortItemOptions")
   <T extends Comparable<? super T>> void shouldSortBatchOperationItemsByAttribute(
       final Function<BatchOperationItem, T> attributeExtractor,
-      final Function<BatchOperationItemSort, BatchOperationItemSort> sortOption) {
+      final Function<BatchOperationItemSort, BatchOperationItemSort> sortOption,
+      @Authenticated final CamundaClient camundaClient) {
     // given
     final var all =
         camundaClient.newBatchOperationItemsSearchRequest().execute().items().stream()
@@ -478,7 +492,8 @@ public class BatchOperationSearchIT {
     }
   }
 
-  private static String startBatchOperationCancelProcesses(final String testScopeId) {
+  private static String startBatchOperationCancelProcesses(
+      final CamundaClient camundaClient, final String testScopeId) {
     final var result =
         camundaClient
             .newCreateBatchOperationCommand()
@@ -493,6 +508,7 @@ public class BatchOperationSearchIT {
   }
 
   private static String startBatchOperationMigrateProcesses(
+      final CamundaClient camundaClient,
       final String testScopeId,
       final long sourceProcessDefinitionKey,
       final long targetProcessDefinitionKey) {
