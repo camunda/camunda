@@ -81,7 +81,7 @@ services:
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx2048m"
       - path.repo=/usr/local/els-snapshots
       - action.destructive_requires_name=false
         # We need to configure ILM to run more often, to make sure data is cleaned up earlier
@@ -110,7 +110,7 @@ services:
       - discovery.type=single-node
       - plugins.security.disabled=true
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
-      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx2048m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
       - action.destructive_requires_name=false
         # Disabling the security to make sure we can access without tls in our tests
