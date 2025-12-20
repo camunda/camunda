@@ -157,10 +157,10 @@ jobs:
 #            scenario-name: 'maximize-load'
 #            load-test-load: '--set starter.rate=0 --set app.brokerManagementUrl=http://camunda-gateway:9600'
 #            secondary-database-type: 'elasticsearch'
-          - name: 'cthiel-rdbms-load-test'
+          - name: 'cthiel-rdbms-benchmark'
             scenario-name: 'measure-cpu-usage'
             load-test-load: '--set starter.rate=150'
-            secondary-database-type: 'rdbms'
+            secondary-storage-type: 'postgresql'
  #         - name: 'cthiel-measure-cpu-es'
  #           scenario-name: 'measure-cpu-usage'
  #           load-test-load: '--set starter.rate=200'
@@ -172,4 +172,4 @@ jobs:
       load-test-load: ${{ matrix.load-test-load }}
       ref: ${{ inputs.ref }}
       image-tag: ${{ needs.calculate-image-tag.outputs.image-tag }}
-      secondary-database-type: ${{ matrix.secondary-database-type }}
+      secondary-storage-type: ${{ matrix.secondary-storage-type }}
