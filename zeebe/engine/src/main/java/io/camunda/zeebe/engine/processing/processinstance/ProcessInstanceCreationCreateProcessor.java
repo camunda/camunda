@@ -7,120 +7,62 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.TagUtil;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationCreateProcessor
-    implements CommandProcessor<ProcessInstanceCreationRecord> {
-
-  private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
-      "Expected at least a bpmnProcessId or a key greater than -1, but none given";
-  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
-      "Expected to find process definition with process ID '%s', but none found";
-  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
-      "Expected to find process definition with process ID '%s' and version '%d', but none found";
-  private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
-      "Expected to find process definition with key '%d', but none found";
-  private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
-      "Expected to create instance of process with none start event, but there is no such event";
-
-  private static final Either<Rejection, Object> VALID = Either.right(null);
-
-  private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
-      Set.of(
-          BpmnElementType.START_EVENT,
-          BpmnElementType.SEQUENCE_FLOW,
-          BpmnElementType.BOUNDARY_EVENT,
-          BpmnElementType.UNSPECIFIED);
-
-  private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
-
-  private final ProcessState processState;
-  private final VariableBehavior variableBehavior;
+    implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
 
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final StateWriter stateWriter;
 
   private final ProcessEngineMetrics metrics;
 
-  private final ElementActivationBehavior elementActivationBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final ProcessInstanceCreationHelper helper;
 
   public ProcessInstanceCreationCreateProcessor(
-      final ProcessState processState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final BpmnBehaviors bpmnBehaviors,
       final ProcessEngineMetrics metrics,
-      final AuthorizationCheckBehavior authCheckBehavior) {
-    this.processState = processState;
-    variableBehavior = bpmnBehaviors.variableBehavior();
+      final ProcessInstanceCreationHelper processInstanceCreationHelper) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    stateWriter = writers.state();
     this.metrics = metrics;
-    elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
-    this.authCheckBehavior = authCheckBehavior;
+    helper = processInstanceCreationHelper;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-
+  public void processRecord(final TypedRecord<ProcessInstanceCreationRecord> command) {
     final ProcessInstanceCreationRecord record = command.getValue();
 
-    getProcess(record)
-        .flatMap(process -> isAuthorized(command, process))
-        .flatMap(process -> validateCommand(command.getValue(), process))
+    final Either<Rejection, DeployedProcess> persistedProcess = helper.findRelevantProcess(record);
+    persistedProcess
+        .flatMap(process -> helper.isAuthorized(command, process))
+        .flatMap(process -> helper.validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(controller, record, process),
-            rejection -> controller.reject(rejection.type(), rejection.reason()));
-
-    return true;
+            process -> createProcessInstance(command, process),
+            rejection -> reject(command, rejection.type(), rejection.reason()));
   }
 
   @Override
@@ -137,376 +79,46 @@ public final class ProcessInstanceCreationCreateProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
-  private Either<Rejection, DeployedProcess> isAuthorized(
+  private void reject(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final DeployedProcess deployedProcess) {
-    final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
-    final var request =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.CREATE_PROCESS_INSTANCE,
-                command.getValue().getTenantId())
-            .addResourceId(processId);
-
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
-    if (isAuthorized.isRight()) {
-      return Either.right(deployedProcess);
+      final RejectionType type,
+      final String reason) {
+    rejectionWriter.appendRejection(command, type, reason);
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeRejectionOnCommand(command, type, reason);
     }
-
-    final var rejection = isAuthorized.getLeft();
-    final String errorMessage =
-        RejectionType.NOT_FOUND.equals(rejection.type())
-            ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                "create an instance of process",
-                command.getValue().getProcessDefinitionKey(),
-                "such process")
-            : rejection.reason();
-    return Either.left(new Rejection(rejection.type(), errorMessage));
   }
 
   private void createProcessInstance(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
-      final ProcessInstanceCreationRecord record,
-      final DeployedProcess process) {
-    final long processInstanceKey = keyGenerator.nextKey();
+      final TypedRecord<ProcessInstanceCreationRecord> command, final DeployedProcess process) {
 
-    setVariablesFromDocument(
-        record,
-        process.getKey(),
-        processInstanceKey,
-        process.getBpmnProcessId(),
-        process.getTenantId());
+    final long processInstanceKey = keyGenerator.nextKey();
+    final var commandKey = command.getKey();
+    final var record = command.getValue();
 
     final var processInstance =
-        initProcessInstanceRecord(process, processInstanceKey, record.getTags());
+        helper.initProcessInstanceRecord(process, processInstanceKey, record.getTags());
+
+    helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
 
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
     } else {
-      activateElementsForStartInstructions(record.startInstructions(), process, processInstance);
+      helper.activateElementsForStartInstructions(
+          record.startInstructions(), process, processInstance);
     }
 
-    record
-        .setProcessInstanceKey(processInstanceKey)
-        .setBpmnProcessId(process.getBpmnProcessId())
-        .setVersion(process.getVersion())
-        .setProcessDefinitionKey(process.getKey());
-    controller.accept(ProcessInstanceCreationIntent.CREATED, record);
+    helper.updateCreationRecord(record, processInstance);
+
+    final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
+
+    stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeEventOnCommand(
+          entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
+    }
 
     metrics.processInstanceCreated(record);
   }
-
-  private Either<Rejection, DeployedProcess> validateCommand(
-      final ProcessInstanceCreationRecord command, final DeployedProcess deployedProcess) {
-    final var process = deployedProcess.getProcess();
-    final var startInstructions = command.startInstructions();
-    final var tags = command.getTags();
-
-    return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
-        .flatMap(valid -> validateElementsExist(process, startInstructions))
-        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
-        .flatMap(valid -> validateElementsNotInsideAdHocSubProcess(process, startInstructions))
-        .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
-        .flatMap(
-            valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
-        .flatMap(valid -> validateTags(tags))
-        .map(valid -> deployedProcess);
-  }
-
-  private Either<Rejection, ?> validateHasNoneStartEventOrStartInstructions(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    if (process.getNoneStartEvent() != null || !startInstructions.isEmpty()) {
-      return VALID;
-    } else {
-      return Either.left(
-          new Rejection(RejectionType.INVALID_STATE, ERROR_MESSAGE_NO_NONE_START_EVENT));
-    }
-  }
-
-  private Either<Rejection, ?> validateElementsExist(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    return startInstructions.stream()
-        .map(ProcessInstanceCreationStartInstruction::getElementId)
-        .filter(elementId -> !isElementOfProcess(process, elementId))
-        .findAny()
-        .map(
-            elementId ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with start instructions but no element found with id '%s'."
-                            .formatted(elementId))))
-        .orElse(VALID);
-  }
-
-  private boolean isElementOfProcess(final ExecutableProcess process, final String elementId) {
-    return process.getElementById(wrapString(elementId)) != null;
-  }
-
-  private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    return startInstructions.stream()
-        .map(ProcessInstanceCreationStartInstruction::getElementId)
-        .filter(elementId -> isElementInsideMultiInstance(process, elementId))
-        .findAny()
-        .map(
-            elementId ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with start instructions but the element with id '%s' is inside a multi-instance subprocess. The creation of elements inside a multi-instance subprocess is not supported."
-                            .formatted(elementId))))
-        .orElse(VALID);
-  }
-
-  private boolean isElementInsideMultiInstance(
-      final ExecutableProcess process, final String elementId) {
-    final var element = process.getElementById(wrapString(elementId));
-    return element != null && hasMultiInstanceScope(element);
-  }
-
-  private boolean hasMultiInstanceScope(final ExecutableFlowElement flowElement) {
-    final var flowScope = flowElement.getFlowScope();
-    if (flowScope == null) {
-      return false;
-    }
-
-    if (flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-      return true;
-    } else {
-      return hasMultiInstanceScope(flowScope);
-    }
-  }
-
-  private Either<Rejection, ?> validateElementsNotInsideAdHocSubProcess(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    return startInstructions.stream()
-        .map(ProcessInstanceCreationStartInstruction::getElementId)
-        .filter(elementId -> isElementInsideAdHocSubProcess(process, elementId))
-        .findAny()
-        .map(
-            elementId ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with start instructions but the element with id '%s' is inside an ad-hoc subprocess. The creation of elements inside an ad-hoc subprocess is not supported."
-                            .formatted(elementId))))
-        .orElse(VALID);
-  }
-
-  private boolean isElementInsideAdHocSubProcess(
-      final ExecutableProcess process, final String elementId) {
-    final var element = process.getElementById(wrapString(elementId));
-    return element != null && hasAdHocSubProcessScope(element);
-  }
-
-  private boolean hasAdHocSubProcessScope(final ExecutableFlowElement flowElement) {
-    final var flowScope = flowElement.getFlowScope();
-    if (flowScope == null) {
-      return false;
-    }
-
-    if (flowScope.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
-      return true;
-    } else {
-      return hasAdHocSubProcessScope(flowScope);
-    }
-  }
-
-  private Either<Rejection, ?> validateTargetsSupportedElementType(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    return startInstructions.stream()
-        .map(
-            instruction ->
-                new ElementIdAndType(
-                    instruction.getElementId(),
-                    process.getElementById(instruction.getElementIdBuffer()).getElementType()))
-        .filter(
-            elementIdAndType -> UNSUPPORTED_ELEMENT_TYPES.contains(elementIdAndType.elementType))
-        .findAny()
-        .map(
-            elementIdAndType ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        ("Expected to create instance of process with start instructions but the element with id '%s' targets unsupported element type '%s'. "
-                                + "Supported element types are: %s")
-                            .formatted(
-                                elementIdAndType.elementId,
-                                elementIdAndType.elementType,
-                                Arrays.stream(BpmnElementType.values())
-                                    .filter(
-                                        elementType ->
-                                            !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
-                                    .collect(Collectors.toSet())))))
-        .orElse(VALID);
-  }
-
-  private Either<Rejection, ?> validateElementNotBelongingToEventBasedGateway(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    return startInstructions.stream()
-        .map(ProcessInstanceCreationStartInstruction::getElementId)
-        .filter(elementId -> doesElementBelongToAnEventBasedGateway(process, elementId))
-        .findAny()
-        .map(
-            elementId ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with start instructions but the element with id '%s' belongs to an event-based gateway. The creation of elements belonging to an event-based gateway is not supported."
-                            .formatted(elementId))))
-        .orElse(VALID);
-  }
-
-  private Either<Rejection, ?> validateTags(final Set<String> tags) {
-    if (tags.size() > TagUtil.MAX_NUMBER_OF_TAGS) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              String.format(
-                  "Expected to create instance of process with tags, but the number of tags exceeds the limit of %s.",
-                  TagUtil.MAX_NUMBER_OF_TAGS)));
-    }
-
-    final List<String> invalidTags = tags.stream().filter(tag -> !TagUtil.isValidTag(tag)).toList();
-    if (!invalidTags.isEmpty()) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              "Expected to create instance of process with tags, but the tags '%s' are invalid. %s"
-                  .formatted(
-                      invalidTags.stream().collect(Collectors.joining("', '")),
-                      TagUtil.TAG_FORMAT_DESCRIPTION)));
-    }
-
-    return VALID;
-  }
-
-  private boolean doesElementBelongToAnEventBasedGateway(
-      final ExecutableProcess process, final String elementId) {
-    final ExecutableFlowNode element = process.getElementById(elementId, ExecutableFlowNode.class);
-    return element.getIncoming().stream()
-        .map(ExecutableSequenceFlow::getSource)
-        .anyMatch(
-            flowNode -> flowNode.getElementType().equals(BpmnElementType.EVENT_BASED_GATEWAY));
-  }
-
-  private void setVariablesFromDocument(
-      final ProcessInstanceCreationRecord record,
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer bpmnProcessId,
-      final String tenantId) {
-
-    variableBehavior.mergeLocalDocument(
-        processInstanceKey,
-        processDefinitionKey,
-        processInstanceKey,
-        bpmnProcessId,
-        tenantId,
-        record.getVariablesBuffer());
-  }
-
-  private ProcessInstanceRecord initProcessInstanceRecord(
-      final DeployedProcess process, final long processInstanceKey, final Set<String> tags) {
-    newProcessInstance.reset();
-    newProcessInstance.setBpmnProcessId(process.getBpmnProcessId());
-    newProcessInstance.setVersion(process.getVersion());
-    newProcessInstance.setProcessDefinitionKey(process.getKey());
-    newProcessInstance.setProcessInstanceKey(processInstanceKey);
-    newProcessInstance.setBpmnElementType(BpmnElementType.PROCESS);
-    newProcessInstance.setElementId(process.getProcess().getId());
-    newProcessInstance.setFlowScopeKey(-1);
-    newProcessInstance.setTenantId(process.getTenantId());
-    newProcessInstance.setTags(tags);
-    return newProcessInstance;
-  }
-
-  private Either<Rejection, DeployedProcess> getProcess(
-      final ProcessInstanceCreationRecord record) {
-    final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
-
-    if (bpmnProcessId.capacity() > 0) {
-      if (record.getVersion() >= 0) {
-        return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
-      } else {
-        return getProcess(bpmnProcessId, record.getTenantId());
-      }
-    } else if (record.getProcessDefinitionKey() >= 0) {
-      return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
-    } else {
-      return Either.left(
-          new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
-    }
-  }
-
-  private Either<Rejection, DeployedProcess> getProcess(
-      final DirectBuffer bpmnProcessId, final String tenantId) {
-    final DeployedProcess process =
-        processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
-    if (process != null) {
-      return Either.right(process);
-    } else {
-      return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              String.format(ERROR_MESSAGE_NOT_FOUND_BY_PROCESS, bufferAsString(bpmnProcessId))));
-    }
-  }
-
-  private Either<Rejection, DeployedProcess> getProcess(
-      final DirectBuffer bpmnProcessId, final int version, final String tenantId) {
-    final DeployedProcess process =
-        processState.getProcessByProcessIdAndVersion(bpmnProcessId, version, tenantId);
-    if (process != null) {
-      return Either.right(process);
-    } else {
-      return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              String.format(
-                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
-                  bufferAsString(bpmnProcessId),
-                  version)));
-    }
-  }
-
-  private Either<Rejection, DeployedProcess> getProcess(final long key, final String tenantId) {
-    final DeployedProcess process = processState.getProcessByKeyAndTenant(key, tenantId);
-    if (process != null) {
-      return Either.right(process);
-    } else {
-      return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND, String.format(ERROR_MESSAGE_NOT_FOUND_BY_KEY, key)));
-    }
-  }
-
-  private void activateElementsForStartInstructions(
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
-      final DeployedProcess process,
-      final ProcessInstanceRecord processInstance) {
-
-    startInstructions.forEach(
-        instruction -> {
-          final var element = process.getProcess().getElementById(instruction.getElementId());
-          elementActivationBehavior.activateElement(processInstance, element);
-        });
-  }
-
-  private record ElementIdAndType(String elementId, BpmnElementType elementType) {}
 }

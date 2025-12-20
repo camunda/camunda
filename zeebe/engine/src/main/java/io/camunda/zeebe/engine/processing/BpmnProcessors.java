@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTe
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -255,14 +256,12 @@ public final class BpmnProcessors {
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
+    final var processInstanceCreationHelper =
+        new ProcessInstanceCreationHelper(
+            processingState.getProcessState(), authCheckBehavior, bpmnBehaviors);
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            processingState.getProcessState(),
-            keyGenerator,
-            writers,
-            bpmnBehaviors,
-            metrics,
-            authCheckBehavior);
+            keyGenerator, writers, metrics, processInstanceCreationHelper);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
@@ -270,7 +269,7 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new ProcessInstanceCreationCreateWithResultProcessor(
-            createProcessor, elementInstanceState));
+            keyGenerator, writers, metrics, processInstanceCreationHelper, elementInstanceState));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(
