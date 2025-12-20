@@ -79,8 +79,8 @@
     <version.opensearch>2.9.0</version.opensearch>
     <version.opensearch.testcontainers>4.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.25.8</version.protobuf>
-    <version.protobuf-common>2.44.0</version.protobuf-common>
+    <version.protobuf>4.31.1</version.protobuf>
+    <version.protobuf-common>2.59.2</version.protobuf-common>
     <version.micrometer>1.15.7</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.33.2</version.sbe>
