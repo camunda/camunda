@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.RestTemplateNoRedirectFollowConfiguration;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
@@ -93,6 +94,7 @@ import org.springframework.web.client.RestTemplate;
       OperateProfileService.class,
       OperateIndexController.class,
       WebappsModuleConfiguration.class,
+      RestTemplateNoRedirectFollowConfiguration.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,

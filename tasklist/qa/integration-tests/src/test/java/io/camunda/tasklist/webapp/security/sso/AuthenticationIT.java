@@ -40,6 +40,7 @@ import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.RestTemplateNoRedirectFollowConfiguration;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
@@ -79,7 +80,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
 @SpringBootTest(
-    classes = {AuthSSOApplication.class},
+    classes = {
+      AuthSSOApplication.class,
+      RestTemplateNoRedirectFollowConfiguration.class,
+    },
     properties = {
       "camunda.tasklist.auth0.clientId=1",
       "camunda.tasklist.auth0.clientSecret=2",

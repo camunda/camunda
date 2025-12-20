@@ -26,6 +26,7 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.Tokens;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.RestTemplateNoRedirectFollowConfiguration;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
@@ -90,7 +91,8 @@ import org.springframework.web.client.RestTemplate;
       OperateProperties.class,
       OperateProfileService.class,
       ProcessRestService.class,
-      ProcessDefinitionController.class
+      ProcessDefinitionController.class,
+      RestTemplateNoRedirectFollowConfiguration.class,
     },
     properties = {
       "server.servlet.context-path=" + CsrfTokenIT.CONTEXT_PATH,
