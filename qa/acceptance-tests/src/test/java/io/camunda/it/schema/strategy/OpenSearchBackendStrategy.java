@@ -300,7 +300,7 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         """
         {
           "password": "%s",
-          "backend_roles": [
+          "opendistro_security_roles": [
             "camunda_app_role"
           ]
         }"""
@@ -320,48 +320,11 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         """
         {
           "password": "%s",
-          "backend_roles": [
-            "camunda_admin_role"
+          "opendistro_security_roles": [
+            "all_access"
           ]
         }"""
             .formatted(ADMIN_PASSWORD));
-
-    // Map all_access role
-    container.execInContainer(
-        "curl",
-        "-X",
-        "PUT",
-        "-u",
-        "admin:" + INITIAL_ADMIN_PASSWORD,
-        "-H",
-        "Content-Type: application/json",
-        "http://localhost:9200/_plugins/_security/api/rolesmapping/all_access",
-        "-d",
-        """
-        {
-          "backend_roles": [
-            "admin",
-            "camunda_admin_role"
-          ]
-        }""");
-
-    // Map camunda_app_role
-    container.execInContainer(
-        "curl",
-        "-X",
-        "PUT",
-        "-u",
-        "admin:" + INITIAL_ADMIN_PASSWORD,
-        "-H",
-        "Content-Type: application/json",
-        "http://localhost:9200/_plugins/_security/api/rolesmapping/camunda_app_role",
-        "-d",
-        """
-        {
-          "backend_roles": [
-            "camunda_app_role"
-          ]
-        }""");
   }
 
   private OpensearchExporterConfiguration exporterAdminConfig() {
