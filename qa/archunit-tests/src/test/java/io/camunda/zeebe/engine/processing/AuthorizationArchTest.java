@@ -88,8 +88,18 @@ public class AuthorizationArchTest {
             .or(
                 ArchConditions.callMethod(
                     AuthorizationCheckBehavior.class,
+                    "isAnyAuthorized",
+                    AuthorizationRequest[].class))
+            .or(
+                ArchConditions.callMethod(
+                    AuthorizationCheckBehavior.class,
                     "isAuthorizedOrInternalCommand",
                     AuthorizationRequest.class))
+            .or(
+                ArchConditions.callMethod(
+                    AuthorizationCheckBehavior.class,
+                    "isAnyAuthorizedOrInternalCommand",
+                    AuthorizationRequest[].class))
             // Or the processor should have delegated authorization to the JobUpdateBehaviour
             .or(
                 ArchConditions.callMethod(
