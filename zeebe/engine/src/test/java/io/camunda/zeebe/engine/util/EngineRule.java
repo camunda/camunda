@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.ExpressionClient;
 import io.camunda.zeebe.engine.util.client.GlobalListenerBatchClient;
+import io.camunda.zeebe.engine.util.client.GlobalListenerClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
 import io.camunda.zeebe.engine.util.client.HistoryDeletionClient;
 import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
@@ -753,6 +754,10 @@ public final class EngineRule extends ExternalResource {
 
   public GlobalListenerBatchClient globalListenerBatch() {
     return new GlobalListenerBatchClient(environmentRule);
+  }
+
+  public GlobalListenerClient globalListener() {
+    return new GlobalListenerClient(environmentRule);
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {
