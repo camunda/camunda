@@ -16,6 +16,7 @@ public class SchedulerMetrics {
   private static final String NAMESPACE = "camunda.checkpoint.scheduler";
   private static final String LAST_CHECKPOINT_GAUGE_NAME =
       NAMESPACE + ".last.checkpoint.time.millis";
+  private static final String LAST_CHECKPOINT_ID_GAUGE_NAME = NAMESPACE + ".last.checkpoint.id";
   private static final String NEXT_CHECKPOINT_GAUGE_NAME =
       NAMESPACE + ".next.checkpoint.time.millis";
 
@@ -23,6 +24,8 @@ public class SchedulerMetrics {
   private long nextBackupTimestamp = 0L;
   private long lastBackupTimestamp = 0L;
   private long lastCheckpointTimestamp = 0L;
+  private long lastCheckpointId = 0L;
+  private long lastBackupId = 0L;
 
   public SchedulerMetrics(final MeterRegistry meterRegistry) {
 
@@ -49,6 +52,18 @@ public class SchedulerMetrics {
         .tag("type", CheckpointType.SCHEDULED_BACKUP.name())
         .strongReference(true)
         .register(meterRegistry);
+
+    Gauge.builder(LAST_CHECKPOINT_ID_GAUGE_NAME, () -> lastCheckpointId)
+        .description("ID of the last checkpoint created")
+        .tag("type", CheckpointType.MARKER.name())
+        .strongReference(true)
+        .register(meterRegistry);
+
+    Gauge.builder(LAST_CHECKPOINT_ID_GAUGE_NAME, () -> lastBackupId)
+        .description("ID of the last backup created")
+        .tag("type", CheckpointType.SCHEDULED_BACKUP.name())
+        .strongReference(true)
+        .register(meterRegistry);
   }
 
   public void recordLastCheckpointTime(final Instant timestamp, final CheckpointType type) {
@@ -65,5 +80,13 @@ public class SchedulerMetrics {
     } else {
       nextCheckpointTimestamp = timestamp.toEpochMilli();
     }
+  }
+
+  public void recordLastCheckpointId(final long checkpointId, final CheckpointType type) {
+    if (type == CheckpointType.SCHEDULED_BACKUP) {
+      lastBackupId = checkpointId;
+    }
+    // since backups lead to checkpoints as well, we always update the last checkpoint id
+    lastCheckpointId = checkpointId;
   }
 }

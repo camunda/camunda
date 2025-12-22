@@ -22449,9 +22449,14 @@
       "id": 315,
       "panels": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+          "id": 701,
+          "type": "stat",
+          "title": "Current In-Progress Backups",
+          "gridPos": {
+            "x": 0,
+            "y": 21,
+            "h": 3,
+            "w": 12
           },
           "fieldConfig": {
             "defaults": {
@@ -23214,7 +23219,7 @@
         {
           "id": 698,
           "type": "stat",
-          "title": "Next scheduled backup execution",
+          "title": "Next scheduled backup",
           "gridPos": {
             "x": 18,
             "y": 25,
@@ -23319,6 +23324,122 @@
             "justifyMode": "center",
             "showPercentChange": false,
             "percentChangeColorMode": "standard"
+          }
+        },
+        {
+          "id": 699,
+          "type": "stat",
+          "title": "Last scheduled checkpoint id",
+          "gridPos": {
+            "x": 12,
+            "y": 29,
+            "h": 4,
+            "w": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "expr": "camunda_checkpoint_scheduler_last_checkpoint_id{type=\"MARKER\"}",
+              "refId": "A"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "horizontal",
+            "textMode": "value",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard",
+            "text": {
+              "valueSize": 50
+            }
+          }
+        },
+        {
+          "id": 700,
+          "type": "stat",
+          "title": "Last scheduled backup id",
+          "gridPos": {
+            "x": 18,
+            "y": 29,
+            "h": 4,
+            "w": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "expr": "camunda_checkpoint_scheduler_last_checkpoint_id{type=\"SCHEDULED_BACKUP\"}",
+              "refId": "A"
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": ""
+            },
+            "orientation": "horizontal",
+            "textMode": "value",
+            "wideLayout": true,
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard",
+            "text": {
+              "valueSize": 50
+            }
           }
         }
       ],
