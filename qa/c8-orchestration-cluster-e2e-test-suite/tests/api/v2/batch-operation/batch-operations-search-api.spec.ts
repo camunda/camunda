@@ -182,7 +182,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
 
     await assertBadRequest(
       res,
-      "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [batchOperationKey, operationType, state, startDate, endDate]",
+      "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [batchOperationKey, operationType, state, startDate, endDate, actorType, actorId]",
     );
   });
 });
