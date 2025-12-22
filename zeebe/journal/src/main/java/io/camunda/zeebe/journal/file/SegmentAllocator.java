@@ -79,6 +79,7 @@ public interface SegmentAllocator {
         final FileChannel channel, final FileDescriptor fileDescriptor, final long segmentSize)
         throws IOException {
       IoUtil.fill(channel, 0, segmentSize, (byte) 0);
+      channel.force(true);
     }
   }
 }
