@@ -11,11 +11,13 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,20 +27,38 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
     implements GlobalListenerRecordValue {
 
   public static final int DEFAULT_RETRIES = 3;
+  public static final int DEFAULT_PRIORITY = 50;
   private static final String EMPTY_STRING = "";
 
+  private final StringProperty idProp = new StringProperty("id", EMPTY_STRING);
   private final StringProperty typeProp = new StringProperty("type", EMPTY_STRING);
   private final IntegerProperty retriesProp = new IntegerProperty("retries", DEFAULT_RETRIES);
   private final ArrayProperty<StringValue> eventTypesProp =
       new ArrayProperty<>("eventTypes", StringValue::new);
   private final BooleanProperty afterNonGlobalProp = new BooleanProperty("afterNonGlobal", false);
+  private final IntegerProperty priorityProp = new IntegerProperty("priority", DEFAULT_PRIORITY);
+  private final EnumProperty<GlobalListenerSource> sourceProp =
+      new EnumProperty<>("source", GlobalListenerSource.class, GlobalListenerSource.CONFIGURATION);
 
   public GlobalListenerRecord() {
-    super(4);
-    declareProperty(typeProp)
+    super(7);
+    declareProperty(idProp)
+        .declareProperty(typeProp)
         .declareProperty(retriesProp)
         .declareProperty(eventTypesProp)
-        .declareProperty(afterNonGlobalProp);
+        .declareProperty(afterNonGlobalProp)
+        .declareProperty(priorityProp)
+        .declareProperty(sourceProp);
+  }
+
+  @Override
+  public String getId() {
+    return bufferAsString(idProp.getValue());
+  }
+
+  public GlobalListenerRecord setId(final String id) {
+    idProp.setValue(id);
+    return this;
   }
 
   @Override
@@ -82,6 +102,26 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord setAfterNonGlobal(final boolean afterNonGlobal) {
     afterNonGlobalProp.setValue(afterNonGlobal);
+    return this;
+  }
+
+  @Override
+  public int getPriority() {
+    return priorityProp.getValue();
+  }
+
+  public GlobalListenerRecord setPriority(final int priority) {
+    priorityProp.setValue(priority);
+    return this;
+  }
+
+  @Override
+  public GlobalListenerSource getSource() {
+    return sourceProp.getValue();
+  }
+
+  public GlobalListenerRecord setSource(final GlobalListenerSource source) {
+    sourceProp.setValue(source);
     return this;
   }
 
