@@ -54,18 +54,6 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   public boolean canExport(final Record<R> record) {
     final var info = AuditLogInfo.of(record);
 
-    if (info.actor() == null) {
-      // TODO: enable logging after ensuring all expected events are correctly captured
-      //      LOG.warn(
-      //          "Record {}/{} at position {} cannot be audited because actor information is
-      // missing.",
-      //          record.getValueType(),
-      //          record.getIntent(),
-      //          record.getPosition());
-
-      return false;
-    }
-
     return transformer.supports(record) && configuration.isEnabled(info);
   }
 

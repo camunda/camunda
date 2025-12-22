@@ -75,6 +75,36 @@ class AuditLogConfigurationTest {
   }
 
   @Test
+  void shouldBeDisabledForAnonymousActors() {
+    final var config = new AuditLogConfiguration();
+
+    final var auditLog =
+        new AuditLogInfo(
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogEntityType.PROCESS_INSTANCE,
+            AuditLogOperationType.MODIFY,
+            AuditLogActor.anonymous(),
+            Optional.empty());
+
+    assertThat(config.isEnabled(auditLog)).isFalse();
+  }
+
+  @Test
+  void shouldBeEnabledForUnknownActors() {
+    final var config = new AuditLogConfiguration();
+
+    final var auditLog =
+        new AuditLogInfo(
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogEntityType.PROCESS_INSTANCE,
+            AuditLogOperationType.MODIFY,
+            AuditLogActor.unknown(),
+            Optional.empty());
+
+    assertThat(config.isEnabled(auditLog)).isTrue();
+  }
+
+  @Test
   void shouldBeEnabledForUserWhenCategoryMatches() {
     final var config = new AuditLogConfiguration();
     config

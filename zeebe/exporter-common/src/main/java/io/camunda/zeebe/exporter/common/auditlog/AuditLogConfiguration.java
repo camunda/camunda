@@ -11,7 +11,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import java.util.Set;
 
-public final class AuditLogConfiguration {
+public final class AuditLogConfiguration implements AuditLogCheck {
 
   private boolean enabled = true;
 
@@ -57,24 +57,38 @@ public final class AuditLogConfiguration {
     this.enabled = enabled;
   }
 
+  @Override
   public boolean isEnabled(final AuditLogInfo auditLog) {
-    final var config =
+    final AuditLogCheck check =
         switch (auditLog.actor().actorType()) {
           case USER -> getUser();
           case CLIENT -> getClient();
+          case ANONYMOUS -> AuditLogCheck.DISABLED;
+          case UNKNOWN -> {
+            // TODO: enable logging after ensuring all expected events are correctly captured
+            //            LOG.warn("{} has unknown actor.", auditLog);
+
+            yield AuditLogCheck.ENABLED;
+          }
         };
 
-    return config.getCategories().contains(auditLog.category())
-        && !config.getExcludes().contains(auditLog.entityType());
+    return isEnabled() && check.isEnabled(auditLog);
   }
 
-  public static final class ActorAuditLogConfiguration {
+  public static final class ActorAuditLogConfiguration implements AuditLogCheck {
+
     private Set<AuditLogOperationCategory> categories =
         Set.of(
             AuditLogOperationCategory.ADMIN,
             AuditLogOperationCategory.DEPLOYED_RESOURCES,
             AuditLogOperationCategory.USER_TASKS);
     private Set<AuditLogEntityType> excludes = Set.of();
+
+    @Override
+    public boolean isEnabled(final AuditLogInfo auditLog) {
+      return getCategories().contains(auditLog.category())
+          && !getExcludes().contains(auditLog.entityType());
+    }
 
     public Set<AuditLogEntityType> getExcludes() {
       return excludes;

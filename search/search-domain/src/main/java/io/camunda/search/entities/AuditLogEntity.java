@@ -249,7 +249,9 @@ public record AuditLogEntity(
 
   public enum AuditLogActorType {
     USER,
-    CLIENT
+    CLIENT,
+    ANONYMOUS,
+    UNKNOWN
   }
 
   public enum AuditLogTenantScope {

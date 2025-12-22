@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.auditlog;
+package io.camunda.zeebe.exporter.common.auditlog;
 
-public enum AuditLogActorType {
-  USER,
-  CLIENT,
-  ANONYMOUS,
-  UNKNOWN
+@FunctionalInterface
+public interface AuditLogCheck {
+  AuditLogCheck DISABLED = auditLog -> false;
+  AuditLogCheck ENABLED = auditLog -> true;
+
+  boolean isEnabled(AuditLogInfo auditLog);
 }

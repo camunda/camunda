@@ -244,17 +244,45 @@ public record AuditLogInfo(
 
   public record AuditLogActor(AuditLogActorType actorType, String actorId) {
 
+    public static AuditLogActor unknown() {
+      return new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+    }
+
+    public static AuditLogActor anonymous() {
+      return new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
+    }
+
     public static AuditLogActor of(final Record<?> record) {
       final Map<String, Object> authorizations = record.getAuthorizations();
-      final var clientId = (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID);
+
+      // client
+      final String clientId =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_CLIENT_ID))
+              .map(Object::toString)
+              .orElse(null);
       if (clientId != null) {
         return new AuditLogActor(AuditLogActorType.CLIENT, clientId);
       }
-      final var username = (String) authorizations.get(Authorization.AUTHORIZED_USERNAME);
+
+      // user
+      final String username =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_USERNAME))
+              .map(Object::toString)
+              .orElse(null);
       if (username != null) {
         return new AuditLogActor(AuditLogActorType.USER, username);
       }
-      return null;
+
+      // anonymous / internal
+      final boolean isAnonymous =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))
+              .map(Boolean.class::cast)
+              .orElse(false);
+      if (isAnonymous) {
+        return new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
+      }
+
+      return new AuditLogActor(AuditLogActorType.UNKNOWN, null);
     }
   }
 
