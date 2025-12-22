@@ -26,6 +26,9 @@
               "type": "nested",
               "dynamic": "strict",
               "properties": {
+                "id": {
+                  "type": "keyword"
+                },
                 "type": {
                   "type": "keyword"
                 },
@@ -37,6 +40,12 @@
                 },
                 "afterNonGlobal": {
                   "type": "boolean"
+                },
+                "priority": {
+                  "type": "integer"
+                },
+                "source": {
+                  "type": "keyword"
                 }
               }
             }
