@@ -28,6 +28,9 @@ import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateP
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerBatchConfigureProcessor;
+import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerCreateProcessor;
+import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerDeleteProcessor;
+import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationUpdateProcessor;
@@ -74,6 +77,7 @@ import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -745,6 +749,59 @@ public class CommandDistributionIdempotencyTest {
                             new GlobalListenerRecord().setType("global1").addEventType("all"))
                         .configure()),
             GlobalListenerBatchConfigureProcessor.class
+          },
+          {
+            "GlobalListener.CREATE is idempotent",
+            new Scenario(
+                ValueType.GLOBAL_LISTENER,
+                GlobalListenerIntent.CREATE,
+                () ->
+                    ENGINE
+                        .globalListener()
+                        .withId("my-listener")
+                        .withType("job1")
+                        .withEventType("all")
+                        .create()),
+            GlobalListenerCreateProcessor.class
+          },
+          {
+            "GlobalListener.UPDATE is idempotent",
+            new Scenario(
+                ValueType.GLOBAL_LISTENER,
+                GlobalListenerIntent.UPDATE,
+                () -> {
+                  ENGINE
+                      .globalListener()
+                      .withId("my-listener")
+                      .withType("job1")
+                      .withEventType("all")
+                      .create();
+
+                  return ENGINE
+                      .globalListener()
+                      .withId("my-listener")
+                      .withType("job2")
+                      .withEventType("creating")
+                      .withEventType("updating")
+                      .update();
+                }),
+            GlobalListenerUpdateProcessor.class
+          },
+          {
+            "GlobalListener.DELETE is idempotent",
+            new Scenario(
+                ValueType.GLOBAL_LISTENER,
+                GlobalListenerIntent.DELETE,
+                () -> {
+                  ENGINE
+                      .globalListener()
+                      .withId("my-listener")
+                      .withType("job1")
+                      .withEventType("all")
+                      .create();
+                  return ENGINE.globalListener().withId("my-listener").delete();
+                }),
+            GlobalListenerDeleteProcessor.class
           },
           {
             "Scale.SCALE_UP is idempotent",
