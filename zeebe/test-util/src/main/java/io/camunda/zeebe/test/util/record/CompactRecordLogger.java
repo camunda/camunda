@@ -22,7 +22,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
 import static io.camunda.zeebe.protocol.record.ValueType.EXPRESSION;
-import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENER_BATCH;
+import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENER;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.IDENTITY_SETUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
@@ -226,7 +226,7 @@ public class CompactRecordLogger {
           entry(EXPRESSION.name(), "EXPR"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"),
-          entry(GLOBAL_LISTENER_BATCH.name(), "GL_BATCH"));
+          entry(GLOBAL_LISTENER.name(), "GL"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -321,6 +321,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.HISTORY_DELETION, this::summarizeHistoryDeletion);
     valueLoggers.put(ValueType.GLOBAL_LISTENER_BATCH, this::summarizeGlobalListenerBatch);
     valueLoggers.put(ValueType.JOB_METRICS_BATCH, this::summarizeJobMetricsBatch);
+    valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1810,6 +1811,11 @@ public class CompactRecordLogger {
         + shortenKey(value.getResourceKey())
         + ", Resource type: "
         + value.getResourceType();
+  }
+
+  private String summarizeGlobalListener(final Record<?> record) {
+    final var value = (GlobalListenerRecordValue) record.getValue();
+    return summarizeGlobalListener(value);
   }
 
   private String summarizeGlobalListener(final GlobalListenerRecordValue value) {
