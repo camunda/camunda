@@ -51,11 +51,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     this.asyncRequestBehavior = asyncRequestBehavior;
     commandChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED),
-            "claim",
-            UserTaskClaimProcessor::checkClaim,
-            state.getUserTaskState(),
-            authCheckBehavior);
+            List.of(LifecycleState.CREATED), "claim", state.getUserTaskState(), authCheckBehavior);
   }
 
   @Override
@@ -65,7 +61,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
         .checkUserTaskExists(command)
         .flatMap(userTask -> checkAuthorization(command, userTask))
         .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask))
-        .flatMap(userTask -> commandChecker.applyAdditionalChecksIfPresent(command, userTask));
+        .flatMap(userTask -> checkClaim(command, userTask));
   }
 
   @Override

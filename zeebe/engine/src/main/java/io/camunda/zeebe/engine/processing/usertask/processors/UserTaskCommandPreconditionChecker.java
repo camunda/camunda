@@ -19,8 +19,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.BiFunction;
 
 public class UserTaskCommandPreconditionChecker {
 
@@ -32,9 +30,6 @@ public class UserTaskCommandPreconditionChecker {
   private final List<LifecycleState> validLifecycleStates;
   private final String intent;
   private final AuthorizationCheckBehavior authCheckBehavior;
-  private final BiFunction<
-          TypedRecord<UserTaskRecord>, UserTaskRecord, Either<Rejection, UserTaskRecord>>
-      additionalChecks;
   private final UserTaskState userTaskState;
 
   public UserTaskCommandPreconditionChecker(
@@ -42,21 +37,9 @@ public class UserTaskCommandPreconditionChecker {
       final String intent,
       final UserTaskState userTaskState,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    this(validLifecycleStates, intent, null, userTaskState, authCheckBehavior);
-  }
-
-  public UserTaskCommandPreconditionChecker(
-      final List<LifecycleState> validLifecycleStates,
-      final String intent,
-      final BiFunction<
-              TypedRecord<UserTaskRecord>, UserTaskRecord, Either<Rejection, UserTaskRecord>>
-          additionalChecks,
-      final UserTaskState userTaskState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
     this.validLifecycleStates = validLifecycleStates;
     this.intent = intent;
     this.authCheckBehavior = authCheckBehavior;
-    this.additionalChecks = additionalChecks;
     this.userTaskState = userTaskState;
   }
 
@@ -106,16 +89,5 @@ public class UserTaskCommandPreconditionChecker {
     }
 
     return Either.right(persistedUserTask);
-  }
-
-  // Hook for additional checks in subclasses, currently used only by UserTaskClaimProcessor, it
-  // will be removed once in the next commit, so the UserTaskClaimProcessor will perform custom
-  // checks on its own
-  protected Either<Rejection, UserTaskRecord> applyAdditionalChecksIfPresent(
-      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    return Optional.ofNullable(additionalChecks)
-        .map(checks -> checks.apply(command, persistedUserTask))
-        .filter(Either::isLeft)
-        .orElse(Either.right(persistedUserTask));
   }
 }
