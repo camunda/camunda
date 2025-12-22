@@ -115,12 +115,14 @@ public final class DecisionDefinitionServices
   public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(
       final String definitionId,
       final Long definitionKey,
+      final Integer decisionVersion,
       final Map<String, Object> variables,
       final String tenantId) {
     return sendBrokerRequestWithFullResponse(
         new BrokerEvaluateDecisionRequest()
             .setDecisionId(definitionId)
             .setDecisionKey(definitionKey)
+            .setDecisionVersion(decisionVersion == null ? -1 : decisionVersion)
             .setVariables(getDocumentOrEmpty(variables))
             .setTenantId(tenantId));
   }

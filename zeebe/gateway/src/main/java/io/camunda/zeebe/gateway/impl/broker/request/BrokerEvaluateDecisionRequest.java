@@ -36,6 +36,11 @@ public class BrokerEvaluateDecisionRequest extends BrokerExecuteCommand<Decision
     return this;
   }
 
+  public BrokerEvaluateDecisionRequest setDecisionVersion(final int decisionVersion) {
+    requestDto.setDecisionVersion(decisionVersion);
+    return this;
+  }
+
   public BrokerEvaluateDecisionRequest setTenantId(final String tenantId) {
     requestDto.setTenantId(tenantId);
     return this;

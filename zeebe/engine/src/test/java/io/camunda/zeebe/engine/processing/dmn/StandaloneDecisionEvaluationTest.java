@@ -232,4 +232,122 @@ public class StandaloneDecisionEvaluationTest {
                   .isEqualTo("ZB_SYNTH_RULE_ID_shippingDecision_v1_r2");
             });
   }
+
+  @Test
+  public void shouldEvaluateDecisionByIdAndVersion() {
+    // given - deploy two versions
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deploymentEvent =
+        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    final int version1 = 1;
+    final int version2 =
+        deploymentEvent.getValue().getDecisionsMetadata().stream()
+            .filter(decisionRecordValue -> decisionRecordValue.getDecisionId().equals(DECISION_ID))
+            .findFirst()
+            .get()
+            .getVersion();
+
+    // when - evaluate version 1 explicitly
+    final Record<DecisionEvaluationRecordValue> record =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVersion(version1)
+            .withVariable("lightsaberColor", "blue")
+            .evaluate();
+
+    // then - version 1 is used
+    assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
+    assertThat(record.getValue())
+        .hasDecisionOutput(EXPECTED_DECISION_OUTPUT)
+        .hasDecisionVersion(version1)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldEvaluateSpecificVersionWhenMultipleDeployed() {
+    // given - deploy two versions
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deploymentEvent =
+        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    final int version2 =
+        deploymentEvent.getValue().getDecisionsMetadata().stream()
+            .filter(decisionRecordValue -> decisionRecordValue.getDecisionId().equals(DECISION_ID))
+            .findFirst()
+            .get()
+            .getVersion();
+
+    // when - evaluate version 2 explicitly
+    final Record<DecisionEvaluationRecordValue> record =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVersion(version2)
+            .withVariable("lightsaberColor", "blue")
+            .evaluate();
+
+    // then - version 2 is used
+    assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
+    assertThat(record.getValue())
+        .hasDecisionOutput(EXPECTED_DECISION_OUTPUT)
+        .hasDecisionVersion(version2)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldRejectDecisionEvaluationWithNonExistentVersion() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final int nonExistentVersion = 999;
+
+    // when
+    final Record<DecisionEvaluationRecordValue> record =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVersion(nonExistentVersion)
+            .expectRejection()
+            .evaluate();
+
+    // then
+    assertThat(record.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
+    assertThat(record.getRejectionReason())
+        .contains("Expected to evaluate decision with id '" + DECISION_ID + "'")
+        .contains("and version '" + nonExistentVersion + "'")
+        .contains("but no such decision found");
+    assertThat(record.getValue()).hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldEvaluateLatestVersionWhenVersionNotSpecified() {
+    // given - deploy two versions
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deploymentEvent =
+        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    final int latestVersion =
+        deploymentEvent.getValue().getDecisionsMetadata().stream()
+            .filter(decisionRecordValue -> decisionRecordValue.getDecisionId().equals(DECISION_ID))
+            .findFirst()
+            .get()
+            .getVersion();
+
+    // when - evaluate without specifying version
+    final Record<DecisionEvaluationRecordValue> record =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVariable("lightsaberColor", "blue")
+            .evaluate();
+
+    // then - latest version is used
+    assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
+    assertThat(record.getValue())
+        .hasDecisionOutput(EXPECTED_DECISION_OUTPUT)
+        .hasDecisionVersion(latestVersion)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
 }

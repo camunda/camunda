@@ -362,6 +362,48 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
         .isEqualTo(evaluatedOutput.getOutputValue());
   }
 
+  @Test
+  public void shouldEvaluateDecisionWithVersion() {
+    // given
+    gatewayService.onEvaluateDecisionRequest(evaluateDecisionResponse);
+
+    // when
+    client.newEvaluateDecisionCommand().decisionId("my-decision").version(2).send().join();
+
+    // then
+    final EvaluateDecisionRequest request = gatewayService.getLastRequest();
+    assertThat(request.getDecisionId()).isEqualTo("my-decision");
+    assertThat(request.getDecisionVersion()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldEvaluateDecisionWithLatestVersion() {
+    // given
+    gatewayService.onEvaluateDecisionRequest(evaluateDecisionResponse);
+
+    // when
+    client.newEvaluateDecisionCommand().decisionId("my-decision").latestVersion().send().join();
+
+    // then
+    final EvaluateDecisionRequest request = gatewayService.getLastRequest();
+    assertThat(request.getDecisionId()).isEqualTo("my-decision");
+    assertThat(request.getDecisionVersion()).isEqualTo(-1);
+  }
+
+  @Test
+  public void shouldEvaluateDecisionWithoutVersionDefaultsToLatest() {
+    // given
+    gatewayService.onEvaluateDecisionRequest(evaluateDecisionResponse);
+
+    // when
+    client.newEvaluateDecisionCommand().decisionId("my-decision").send().join();
+
+    // then
+    final EvaluateDecisionRequest request = gatewayService.getLastRequest();
+    assertThat(request.getDecisionId()).isEqualTo("my-decision");
+    assertThat(request.getDecisionVersion()).isEqualTo(0);
+  }
+
   public static class VariableDocument {
 
     VariableDocument() {}

@@ -287,6 +287,19 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
+  public Optional<PersistedDecision> findDecisionByIdAndVersion(
+      final String tenantId, final DirectBuffer decisionId, final int version) {
+    tenantIdKey.wrapString(tenantId);
+    dbDecisionId.wrapBuffer(decisionId);
+    dbDecisionVersion.wrapInt(version);
+    return Optional.ofNullable(
+            decisionKeyByDecisionIdAndVersion.get(tenantAwareDecisionIdAndVersion))
+        .flatMap(
+            decisionKey ->
+                findDecisionByTenantAndKey(tenantId, decisionKey.inner().wrappedKey().getValue()));
+  }
+
+  @Override
   public Optional<DeployedDrg> findLatestDecisionRequirementsByTenantAndId(
       final String tenantId, final DirectBuffer decisionRequirementsId) {
     tenantIdKey.wrapString(tenantId);

@@ -144,4 +144,56 @@ public class EvaluateDecisionTest extends GatewayTest {
     assertThat(evaluatedOutputResponse.getOutputValue())
         .isEqualTo(expectedEvaluatedDecisionOutput.getOutputValue());
   }
+
+  @Test
+  public void shouldMapDecisionVersionToBrokerRequest() {
+    // given
+    final DecisionEvaluationRecord evaluationRecord = EvaluateDecisionStub.createDecisionRecord();
+    final EvaluateDecisionStub stub = new EvaluateDecisionStub();
+    stub.registerWith(brokerClient);
+
+    final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
+    final int decisionVersion = 2;
+
+    final EvaluateDecisionRequest request =
+        EvaluateDecisionRequest.newBuilder()
+            .setDecisionId(evaluationRecord.getDecisionId())
+            .setDecisionVersion(decisionVersion)
+            .setVariables(variables)
+            .build();
+
+    // when
+    client.evaluateDecision(request);
+
+    // then
+    final BrokerEvaluateDecisionRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final DecisionEvaluationRecord record = brokerRequest.getRequestWriter();
+    assertThat(record.getDecisionId()).isEqualTo(evaluationRecord.getDecisionId());
+    assertThat(record.getDecisionVersion()).isEqualTo(decisionVersion);
+    MsgPackUtil.assertEqualityExcluding(record.getVariablesBuffer(), variables);
+  }
+
+  @Test
+  public void shouldMapDefaultDecisionVersionToBrokerRequest() {
+    // given
+    final DecisionEvaluationRecord evaluationRecord = EvaluateDecisionStub.createDecisionRecord();
+    final EvaluateDecisionStub stub = new EvaluateDecisionStub();
+    stub.registerWith(brokerClient);
+
+    final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
+
+    final EvaluateDecisionRequest request =
+        EvaluateDecisionRequest.newBuilder()
+            .setDecisionId(evaluationRecord.getDecisionId())
+            .setVariables(variables)
+            .build();
+
+    // when
+    client.evaluateDecision(request);
+
+    // then
+    final BrokerEvaluateDecisionRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final DecisionEvaluationRecord record = brokerRequest.getRequestWriter();
+    assertThat(record.getDecisionVersion()).isEqualTo(-1);
+  }
 }

@@ -136,6 +136,18 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   }
 
   @Override
+  public EvaluateDecisionCommandStep2 version(final int version) {
+    grpcRequestObjectBuilder.setDecisionVersion(version);
+    httpRequestObject.setDecisionDefinitionVersion(version);
+    return this;
+  }
+
+  @Override
+  public EvaluateDecisionCommandStep2 latestVersion() {
+    return version(-1);
+  }
+
+  @Override
   public FinalCommandStep<EvaluateDecisionResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
