@@ -93,10 +93,10 @@ import FlowNodeEventCompensationEnd from 'modules/components/Icon/flow-node-comp
 import FlowNodeEventCompensationIntermediateThrow from 'modules/components/Icon/flow-node-compensation-intermediate-event-throw.svg?react';
 import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node-compensation-boundary-event.svg?react';
 
-import FlowNodeEventConditionStart from 'modules/components/Icon/flow-node-event-condition-start-event.svg?react';
-import FlowNodeEventConditionIntermediateCatch from 'modules/components/Icon/flow-node-event-condition-intermediate-catch-event.svg?react';
-import FlowNodeEventConditionNonInterrupting from 'modules/components/Icon/flow-node-event-condition-intermediate-catch-non-interrupting-event.svg?react';
-import FlowNodeEventConditionNonInterruptingStart from 'modules/components/Icon/flow-node-event-condition-intermediate-catch-non-interrupting-start-event.svg?react';
+import FlowNodeEventConditionStart from 'modules/components/Icon/flow-node-condition-start-event.svg?react';
+import FlowNodeEventConditionIntermediateCatch from 'modules/components/Icon/flow-node-condition-intermediate-catch-event.svg?react';
+import FlowNodeEventConditionNonInterrupting from 'modules/components/Icon/flow-node-condition-intermediate-catch-non-interrupting-event.svg?react';
+import FlowNodeEventConditionNonInterruptingStart from 'modules/components/Icon/flow-node-condition-intermediate-catch-non-interrupting-start-event.svg?react';
 
 type Props = {
   diagramBusinessObject: BusinessObject | undefined;
