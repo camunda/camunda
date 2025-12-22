@@ -106,7 +106,7 @@ public final class RdbmsExporter {
         // This is needed since the brokers last exported position is from its last snapshot and can
         // be different from ours.
         LOG.info(
-            "[RDBMS Exporter {}] Updating broker position {} to last exported position in rdbms {}",
+            "[RDBMS Exporter P{}] Updating broker position {} to last exported position in rdbms {}",
             partitionId,
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition());
@@ -114,7 +114,7 @@ public final class RdbmsExporter {
         updatePositionInBroker();
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
         LOG.info(
-            "[RDBMS Exporter {}] Position in Broker {} is more advanced than in rdbms {}",
+            "[RDBMS Exporter P{}] Position in Broker {} is more advanced than in rdbms {}",
             partitionId,
             exporterRdbmsPosition.lastExportedPosition(),
             lastPosition);
@@ -135,7 +135,7 @@ public final class RdbmsExporter {
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::deleteHistory);
 
     LOG.info(
-        "[RDBMS Exporter {}] Exporter opened with last exported position {}",
+        "[RDBMS Exporter P{}] Exporter opened with last exported position {}",
         partitionId,
         lastPosition);
   }
@@ -200,14 +200,14 @@ public final class RdbmsExporter {
               record.getValueType());
         }
       }
-      // Update lastPosition once per record, after all handlers have processed it
-      lastPosition = record.getPosition();
     } else {
       LOG.trace(
           "[RDBMS Exporter P{}] No registered handler found for {}",
           partitionId,
           record.getValueType());
     }
+    // Update lastPosition once per record, after all handlers have processed it
+    lastPosition = record.getPosition();
 
     if (exported) {
       // Track the oldest record timestamp in the current batch
