@@ -375,7 +375,8 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         config,
-        processingState);
+        processingState,
+        authCheckBehavior);
 
     ExpressionProcessors.addProcessors(
         keyGenerator,
