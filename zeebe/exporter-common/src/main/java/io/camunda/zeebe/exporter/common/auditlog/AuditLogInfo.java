@@ -244,21 +244,30 @@ public record AuditLogInfo(
       final Map<String, Object> authorizations = record.getAuthorizations();
 
       // client
-      final var clientId = (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID);
+      final String clientId =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_CLIENT_ID))
+              .map(Object::toString)
+              .orElse(null);
       if (clientId != null) {
         return new AuditLogActor(AuditLogActorType.CLIENT, clientId);
       }
 
       // user
-      final var username = (String) authorizations.get(Authorization.AUTHORIZED_USERNAME);
+      final String username =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_USERNAME))
+              .map(Object::toString)
+              .orElse(null);
       if (username != null) {
         return new AuditLogActor(AuditLogActorType.USER, username);
       }
 
-      // anonymouns / internal
-      final var anonymous = (String) authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
-      if (anonymous != null) {
-        return new AuditLogActor(AuditLogActorType.ANONYMOUS, username);
+      // anonymous / internal
+      final boolean isAnonymous =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))
+              .map(Boolean.class::cast)
+              .orElse(false);
+      if (isAnonymous) {
+        return new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
       }
 
       return new AuditLogActor(AuditLogActorType.UNKNOWN, null);

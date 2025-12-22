@@ -83,8 +83,7 @@ class AuditLogInfoTest {
             ValueType.PROCESS_INSTANCE_MODIFICATION,
             r ->
                 r.withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                    .withAuthorizations(
-                        Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, "something")));
+                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
 
     final var info = AuditLogInfo.of(record);
 
