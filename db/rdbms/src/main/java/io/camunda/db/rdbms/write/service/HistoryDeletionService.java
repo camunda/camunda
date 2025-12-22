@@ -25,6 +25,9 @@ public class HistoryDeletionService {
 
   private final RdbmsWriters rdbmsWriters;
   private final HistoryDeletionDbReader historyDeletionDbReader;
+  private final Duration minimumDeletionInterval = Duration.ofSeconds(1);
+  private final Duration maximumDeletionInterval = Duration.ofMinutes(5);
+  private Duration currentDeletionInterval = minimumDeletionInterval;
 
   public HistoryDeletionService(
       final RdbmsWriters rdbmsWriters, final HistoryDeletionDbReader historyDeletionDbReader) {
@@ -39,7 +42,14 @@ public class HistoryDeletionService {
     final var deletedProcessInstances = deleteProcessInstances(batch);
     final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedProcessInstances);
 
-    return Duration.ofSeconds(1);
+    if (deletedResourceCount > 0) {
+      return minimumDeletionInterval;
+    } else if (currentDeletionInterval.compareTo(maximumDeletionInterval) >= 0) {
+      return maximumDeletionInterval;
+    } else {
+      currentDeletionInterval = currentDeletionInterval.multipliedBy(2);
+      return currentDeletionInterval;
+    }
   }
 
   private List<Long> deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
