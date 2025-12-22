@@ -17,6 +17,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -90,18 +91,19 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
             .getValue()
             .getBatchOperationKey();
 
-    // then we have completed event
+    // then we have failed event
     assertThat(
-            RecordingExporter.batchOperationPartitionLifecycleRecords()
+            RecordingExporter.batchOperationPartitionLifecycleRecords(
+                    BatchOperationIntent.FAIL_PARTITION)
                 .withBatchOperationKey(batchOperationKey)
-                .limit(r -> r.getIntent() == BatchOperationIntent.PARTITION_FAILED))
-        .isNotEmpty();
+                .exists())
+        .isTrue();
 
     assertThat(
-            RecordingExporter.batchOperationLifecycleRecords()
+            RecordingExporter.batchOperationLifecycleRecords(BatchOperationIntent.FAILED)
                 .withBatchOperationKey(batchOperationKey)
-                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
-        .isNotEmpty();
+                .exists())
+        .isTrue();
 
     verify(searchClientsProxy, times(3)).searchProcessInstances(any());
   }
@@ -116,13 +118,18 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
         .batchOperation()
         .newExecution()
         .withBatchOperationKey(batchOperationKey)
-        .executeWithoutExpectation();
+        .expectRejection()
+        .execute();
 
     // then
     assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
-                .withBatchOperationKey(batchOperationKey))
-        .extracting(Record::getIntent)
-        .doesNotContain(BatchOperationExecutionIntent.EXECUTED);
+            RecordingExporter.batchOperationExecutionRecords(BatchOperationExecutionIntent.EXECUTE)
+                .withBatchOperationKey(batchOperationKey)
+                .onlyCommandRejections()
+                .getFirst())
+        .extracting(Record::getRejectionType, Record::getRejectionReason)
+        .containsOnly(
+            RejectionType.NOT_FOUND,
+            "No batch operation found for key '%d'.".formatted(batchOperationKey));
   }
 }

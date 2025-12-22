@@ -87,7 +87,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .batchOperation()
         .newExecution()
         .withBatchOperationKey(batchOperationKey)
-        .executeWithoutExpectation();
+        .expectRejection()
+        .execute();
 
     // then we have a suspended event
     assertThat(
