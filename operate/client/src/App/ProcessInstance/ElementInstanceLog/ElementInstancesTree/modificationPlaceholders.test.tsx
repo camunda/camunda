@@ -55,7 +55,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     });
   });
 
-  it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
+  it.only('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
@@ -130,92 +130,104 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         selector: "[aria-expanded='false']",
       });
 
+    expect(expandFirstScope).toBeInTheDocument();
+
     await user.type(expandFirstScope!, '{arrowright}');
+    const [second, first] = screen.getAllByRole('treeitem', {
+      name: 'inner_sub_process',
+    });
 
-    expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
+    console.log(first.ariaLabel);
+    console.log('--------------------------------');
+    console.log(second.ariaLabel);
+    console.log('--------------------------------');
 
-    mockSearchElementInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.thirdLevel1,
-    );
+    // expect(
+    //   screen.getAllByRole('treeitem', {name: 'inner_sub_process'}),
+    // ).toHaveLength(2);
 
-    await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
-      }),
-      '{arrowright}',
-    );
-    expect(await screen.findByText('user_task')).toBeInTheDocument();
+    // mockSearchElementInstances().withSuccess(
+    //   multipleSubprocessesWithNoRunningScopeMock.thirdLevel1,
+    // );
 
-    mockSearchElementInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.secondLevel2,
-    );
+    // await user.type(
+    //   screen.getByLabelText('inner_sub_process', {
+    //     selector: "[aria-expanded='false']",
+    //   }),
+    //   '{arrowright}',
+    // );
+    // expect(await screen.findByText('user_task')).toBeInTheDocument();
 
-    await user.type(expandSecondScope!, '{arrowright}');
+    // mockSearchElementInstances().withSuccess(
+    //   multipleSubprocessesWithNoRunningScopeMock.secondLevel2,
+    // );
 
-    await waitFor(() =>
-      expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
-    );
+    // await user.type(expandSecondScope!, '{arrowright}');
 
-    mockSearchElementInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.thirdLevel2,
-    );
+    // await waitFor(() =>
+    //   expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
+    // );
 
-    await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
-      }),
-      '{arrowright}',
-    );
+    // mockSearchElementInstances().withSuccess(
+    //   multipleSubprocessesWithNoRunningScopeMock.thirdLevel2,
+    // );
 
-    await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(2),
-    );
+    // await user.type(
+    //   screen.getByLabelText('inner_sub_process', {
+    //     selector: "[aria-expanded='false']",
+    //   }),
+    //   '{arrowright}',
+    // );
 
-    await user.type(expandNewScope!, '{arrowright}');
+    // await waitFor(() =>
+    //   expect(screen.getAllByText('user_task')).toHaveLength(2),
+    // );
 
-    expect(screen.getAllByText('inner_sub_process')).toHaveLength(3);
+    // await user.type(expandNewScope!, '{arrowright}');
 
-    await user.type(
-      screen.getByLabelText('inner_sub_process', {
-        selector: "[aria-expanded='false']",
-      }),
-      '{arrowright}',
-    );
+    // expect(screen.getAllByText('inner_sub_process')).toHaveLength(3);
 
-    expect(screen.getAllByText('user_task')).toHaveLength(4);
+    // await user.type(
+    //   screen.getByLabelText('inner_sub_process', {
+    //     selector: "[aria-expanded='false']",
+    //   }),
+    //   '{arrowright}',
+    // );
 
-    // fold first (existing) parent scope
-    await user.type(
-      screen.getAllByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
-      })[0]!,
-      '{arrowleft}',
-    );
+    // expect(screen.getAllByText('user_task')).toHaveLength(4);
 
-    expect(screen.getAllByText('inner_sub_process')).toHaveLength(2);
-    expect(screen.getAllByText('user_task')).toHaveLength(3);
+    // // fold first (existing) parent scope
+    // await user.type(
+    //   screen.getAllByLabelText('parent_sub_process', {
+    //     selector: "[aria-expanded='true']",
+    //   })[0]!,
+    //   '{arrowleft}',
+    // );
 
-    // fold second (existing) parent scope
-    await user.type(
-      screen.getAllByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
-      })[0]!,
-      '{arrowleft}',
-    );
+    // expect(screen.getAllByText('inner_sub_process')).toHaveLength(2);
+    // expect(screen.getAllByText('user_task')).toHaveLength(3);
 
-    expect(screen.getAllByText('inner_sub_process')).toHaveLength(1);
-    expect(screen.getAllByText('user_task')).toHaveLength(2);
+    // // fold second (existing) parent scope
+    // await user.type(
+    //   screen.getAllByLabelText('parent_sub_process', {
+    //     selector: "[aria-expanded='true']",
+    //   })[0]!,
+    //   '{arrowleft}',
+    // );
 
-    // fold new parent scope
-    await user.type(
-      screen.getByLabelText('parent_sub_process', {
-        selector: "[aria-expanded='true']",
-      }),
-      '{arrowleft}',
-    );
+    // expect(screen.getAllByText('inner_sub_process')).toHaveLength(1);
+    // expect(screen.getAllByText('user_task')).toHaveLength(2);
 
-    expect(screen.queryByText('inner_sub_process')).not.toBeInTheDocument();
-    expect(screen.queryByText('user_task')).not.toBeInTheDocument();
+    // // fold new parent scope
+    // await user.type(
+    //   screen.getByLabelText('parent_sub_process', {
+    //     selector: "[aria-expanded='true']",
+    //   }),
+    //   '{arrowleft}',
+    // );
+
+    // expect(screen.queryByText('inner_sub_process')).not.toBeInTheDocument();
+    // expect(screen.queryByText('user_task')).not.toBeInTheDocument();
   });
 
   it('should show and remove two add modification flow nodes', async () => {

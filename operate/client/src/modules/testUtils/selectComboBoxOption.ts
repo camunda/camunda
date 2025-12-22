@@ -62,12 +62,7 @@ const selectDecision = ({user, option}: SelectProps) => {
 
 const selectDecisionVersion = async ({user, option}: SelectProps) => {
   await user.click(screen.getByLabelText('Version', {selector: 'button'}));
-  await user.selectOptions(
-    within(screen.getByLabelText('Select a Decision Version')).getByRole(
-      'listbox',
-    ),
-    [screen.getByRole('option', {name: option})],
-  );
+  await user.click(screen.getByRole('option', {name: option}));
 };
 
 const clearComboBox = async ({
@@ -77,7 +72,9 @@ const clearComboBox = async ({
   user: UserEvent;
   fieldName: string;
 }) => {
-  const parentElement = screen.getByLabelText(fieldName).parentElement;
+  const parentElement = screen.getByRole('combobox', {
+    name: fieldName,
+  }).parentElement;
 
   await waitFor(() => expect(parentElement).toBeInTheDocument());
 

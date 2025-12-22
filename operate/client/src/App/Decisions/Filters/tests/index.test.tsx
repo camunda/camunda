@@ -79,7 +79,7 @@ describe('<Filters />', () => {
     });
 
     expect(screen.getByText(/^decision$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText('Name')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeInTheDocument();
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeInTheDocument();
@@ -114,7 +114,9 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(''),
+    );
     await selectDecision({user, option: 'Assign Approver Group'});
     await selectDecisionVersion({user, option: '2'});
 
@@ -211,7 +213,7 @@ describe('<Filters />', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByLabelText('Name')).toHaveValue(
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
         'Assign Approver Group',
       ),
     );
@@ -348,7 +350,9 @@ describe('<Filters />', () => {
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeDisabled();
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(''),
+    );
     await selectDecision({user, option: 'Assign Approver Group'});
     await waitFor(() => expectVersion('2'));
     expect(
