@@ -260,7 +260,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [DEPLOYED_RESOURCES, USER_TASKS, ADMIN]",
+                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [ADMIN, DEPLOYED_RESOURCES, USER_TASKS]",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);
