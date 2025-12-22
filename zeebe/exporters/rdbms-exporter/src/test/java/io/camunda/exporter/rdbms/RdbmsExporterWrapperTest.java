@@ -21,6 +21,8 @@ import io.camunda.exporter.rdbms.handlers.auditlog.AuthorizationAuditLogTransfor
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.GroupAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.GroupEntityAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.IncidentResolutionAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.MappingRuleAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
@@ -99,6 +101,8 @@ class RdbmsExporterWrapperTest {
                 BatchOperationLifecycleManagementAuditLogTransformer.class,
                 ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
             Map.entry(DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
+            Map.entry(GroupAuditLogTransformer.class, ValueType.GROUP),
+            Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),
             Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
             Map.entry(MappingRuleAuditLogTransformer.class, ValueType.MAPPING_RULE),
             Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
