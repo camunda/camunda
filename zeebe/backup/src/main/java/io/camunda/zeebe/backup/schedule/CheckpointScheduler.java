@@ -76,6 +76,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
                 delay = calculateDelay(instruction);
               }
               if (instruction.checkpointTaken) {
+                metrics.recordLastCheckpointId(instruction.checkpointId, instruction.type);
                 metrics.recordLastCheckpointTime(instruction.checkpointTime, instruction.type);
               }
               LOG.debug("Next checkpoint scheduled in {} ms", delay);
@@ -99,7 +100,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
                 // The instructions checkpoint timestamp might be in the past leading to an
                 // instant execution of the schedule. However, for the next interval we want to
                 // readjust the schedule to account for that drift.
-                return instruction.taken(currentClock);
+                return instruction.taken(id, currentClock);
               })
           .thenAccept(future::complete);
     } else {
@@ -234,16 +235,20 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   record ScheduleInstruction(
-      CheckpointType type, Instant checkpointTime, CheckpointState state, boolean checkpointTaken) {
+      long checkpointId,
+      CheckpointType type,
+      Instant checkpointTime,
+      CheckpointState state,
+      boolean checkpointTaken) {
     ScheduleInstruction(
         final CheckpointType type,
         final Instant checkpointTime,
         final CheckpointState currentCheckpointState) {
-      this(type, checkpointTime, currentCheckpointState, false);
+      this(0L, type, checkpointTime, currentCheckpointState, false);
     }
 
-    ScheduleInstruction taken(final Instant checkpointTime) {
-      return new ScheduleInstruction(type, checkpointTime, state, true);
+    ScheduleInstruction taken(final long checkpointId, final Instant checkpointTime) {
+      return new ScheduleInstruction(checkpointId, type, checkpointTime, state, true);
     }
   }
 
