@@ -35,7 +35,8 @@ public class ProbesTestIT extends TasklistIntegrationTest {
   @BeforeAll
   public static void init() {
     final String dbType =
-        (Optional.ofNullable("camunda.data.secondary-storage.type").orElse("elasticsearch"))
+        (Optional.ofNullable(System.getProperty("camunda.data.secondary-storage.type"))
+                .orElse("elasticsearch"))
             .toLowerCase();
     indexPrefixConfig = "camunda.data.secondary-storage." + dbType + ".index-prefix";
   }
