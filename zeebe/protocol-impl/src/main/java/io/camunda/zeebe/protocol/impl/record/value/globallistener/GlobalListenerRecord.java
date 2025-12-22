@@ -25,8 +25,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
     implements GlobalListenerRecordValue {
 
   public static final int DEFAULT_RETRIES = 3;
+  private static final String EMPTY_STRING = "";
 
-  private final StringProperty typeProp = new StringProperty("type");
+  private final StringProperty typeProp = new StringProperty("type", EMPTY_STRING);
   private final IntegerProperty retriesProp = new IntegerProperty("retries", DEFAULT_RETRIES);
   private final ArrayProperty<StringValue> eventTypesProp =
       new ArrayProperty<>("eventTypes", StringValue::new);
