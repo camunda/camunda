@@ -9,22 +9,20 @@
 import {Button, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {Container} from './styled.tsx';
+import {Container} from './styled';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
+import {MigrationConfirmationModal} from '../MigrationConfirmationModal';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 
 const Footer: React.FC = observer(() => {
-  const baseFilter = useProcessInstanceFilters().filter;
-
   const navigate = useNavigate();
 
   const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
@@ -151,16 +149,31 @@ const Footer: React.FC = observer(() => {
                     'excludeIds' in batchOperationQuery
                       ? batchOperationQuery.excludeIds
                       : [];
+                  const variable =
+                    'variable' in batchOperationQuery
+                      ? batchOperationQuery.variable
+                      : undefined;
 
-                  const filter = buildMigrationBatchOperationFilter({
+                  const variableFilter =
+                    variable !== undefined
+                      ? {
+                          name: variable.name,
+                          values: variable.values.join(','),
+                        }
+                      : undefined;
+                  const baseFilter =
+                    getProcessInstancesRequestFilters(variableFilter);
+
+                  const requestBody = buildMutationRequestBody({
                     baseFilter,
                     includeIds,
                     excludeIds,
-                    processDefinitionKey: sourceProcessDefinitionKey,
+                    processDefinitionKey:
+                      sourceProcessDefinitionKey ?? undefined,
                   });
 
                   migrateProcess({
-                    filter,
+                    filter: requestBody.filter,
                     migrationPlan: {
                       targetProcessDefinitionKey,
                       mappingInstructions: Object.entries(elementMapping).map(
