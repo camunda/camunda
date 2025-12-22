@@ -19,6 +19,7 @@ package io.atomix.raft.partition;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 
 /** Raft storage configuration. */
 public class RaftStorageConfig {
@@ -35,7 +36,7 @@ public class RaftStorageConfig {
   private RaftLogFlusher.Factory flusherFactory = DEFAULT_FLUSHER_FACTORY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
-  private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+  private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
 
   /**
    * Returns the Raft log segment size.
@@ -108,23 +109,6 @@ public class RaftStorageConfig {
     return this;
   }
 
-  /**
-   * @return true to preallocate segment files, false otherwise
-   */
-  public boolean isPreallocateSegmentFiles() {
-    return preallocateSegmentFiles;
-  }
-
-  /**
-   * Sets whether segment files are pre-allocated at creation. If true, segment files are
-   * pre-allocated to {@link #segmentSize} at creation before any writes happen.
-   *
-   * @param preallocateSegmentFiles true to preallocate files, false otherwise
-   */
-  public void setPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
-    this.preallocateSegmentFiles = preallocateSegmentFiles;
-  }
-
   @Override
   public String toString() {
     return "RaftStorageConfig{"
@@ -136,8 +120,22 @@ public class RaftStorageConfig {
         + freeDiskSpace
         + ", journalIndexDensity="
         + journalIndexDensity
-        + ", preallocateSegmentFiles="
-        + preallocateSegmentFiles
+        + ", segmentAllocator="
+        + segmentAllocator
         + '}';
+  }
+
+  public SegmentAllocator getSegmentAllocator() {
+    return segmentAllocator;
+  }
+
+  /**
+   * Sets whether segment files are pre-allocated at creation. If true, segment files are
+   * pre-allocated to {@link #segmentSize} at creation before any writes happen.
+   *
+   * @param segmentAllocator to use to preallocate files
+   */
+  public void setSegmentAllocator(final SegmentAllocator segmentAllocator) {
+    this.segmentAllocator = segmentAllocator;
   }
 }
