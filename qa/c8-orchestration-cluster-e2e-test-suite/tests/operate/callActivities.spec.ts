@@ -66,8 +66,8 @@ test.describe('Call Activities', () => {
       ).toBeHidden();
       await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
       await expect(
-        operateProcessInstancePage.instanceHeader.getByText(processInstanceKey),
-      ).toBeVisible();
+        operateProcessInstancePage.processInstanceKeyCell,
+      ).toHaveText(processInstanceKey);
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(
           'Call Activity Process',
@@ -96,8 +96,8 @@ test.describe('Call Activities', () => {
       await operateProcessesPage.clickViewParentInstanceFromList();
 
       await expect(
-        operateProcessInstancePage.instanceHeader.getByText(processInstanceKey),
-      ).toBeVisible();
+        operateProcessInstancePage.processInstanceKeyCell,
+      ).toHaveText(processInstanceKey);
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(
           'Call Activity Process',
@@ -177,8 +177,8 @@ test.describe('Call Activities', () => {
       await operateProcessInstancePage.clickViewParentInstance();
 
       await expect(
-        operateProcessInstancePage.instanceHeader.getByText(processInstanceKey),
-      ).toBeVisible();
+        operateProcessInstancePage.processInstanceKeyCell,
+      ).toHaveText(processInstanceKey);
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(
           'Call Activity Process',
