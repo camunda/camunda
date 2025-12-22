@@ -9,6 +9,8 @@ package io.camunda.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_USER_TASK_AUTHORIZATION;
 
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
@@ -16,6 +18,7 @@ import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -49,8 +52,10 @@ public class AuditLogServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
-                            AUDIT_LOG_READ_AUTHORIZATION, al -> al.category().name())))
+                        AuthorizationConditions.anyOf(
+                            AUDIT_LOG_READ_AUTHORIZATION,
+                            AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION,
+                            AUDIT_LOG_READ_USER_TASK_AUTHORIZATION)))
                 .searchAuditLogs(query));
   }
 
@@ -72,8 +77,15 @@ public class AuditLogServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
-                            AUDIT_LOG_READ_AUTHORIZATION, al -> al.category().name())))
+                        AuthorizationConditions.anyOf(
+                            withAuthorization(
+                                AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION,
+                                AuditLogEntity::processDefinitionId),
+                            withAuthorization(
+                                AUDIT_LOG_READ_AUTHORIZATION, al -> al.category().name()),
+                            withAuthorization(
+                                AUDIT_LOG_READ_USER_TASK_AUTHORIZATION,
+                                AuditLogEntity::processDefinitionId))))
                 .getAuditLog(auditLogKey));
   }
 }
