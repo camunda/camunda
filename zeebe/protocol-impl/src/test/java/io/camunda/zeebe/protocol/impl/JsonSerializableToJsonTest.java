@@ -4351,6 +4351,38 @@ final class JsonSerializableToJsonTest {
         "taskListeners": []
       }
       """
+      },
+      //////////////////////////////////// GlobalListenerRecord ///////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "GlobalListenerRecord",
+        (Supplier<GlobalListenerRecord>)
+            () ->
+                new GlobalListenerRecord()
+                    .setType("global1")
+                    .setEventTypes(List.of("creating", "assigning"))
+                    .setRetries(5)
+                    .setAfterNonGlobal(true),
+        """
+    {
+        "type": "global1",
+        "retries": 5,
+        "eventTypes": ["creating", "assigning"],
+        "afterNonGlobal": true
+    }
+    """
+      },
+      {
+        "Empty GlobalListenerRecord",
+        (Supplier<GlobalListenerRecord>) () -> new GlobalListenerRecord(),
+        """
+    {
+        "type": "",
+        "retries": 3,
+        "eventTypes": [],
+        "afterNonGlobal": false
+    }
+    """
       }
     };
   }
