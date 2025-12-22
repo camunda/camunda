@@ -91,7 +91,6 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGra
 import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
@@ -784,16 +783,6 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public OidcUserService oidcUserService() {
-      final var userService = new OidcUserService();
-      // We need to consume the userinfo endpoint to support retrieving additional information about
-      // the principal (e.g., email, groups, etc.) in case the access token does not contain them
-      // Remove when https://github.com/camunda/camunda/issues/42751 is completed
-      userService.setRetrieveUserInfo(ignored -> true);
-      return userService;
-    }
-
-    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -865,8 +854,7 @@ public class WebSecurityConfig {
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
-        final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
-        final OidcUserService oidcUserService)
+        final OidcTokenEndpointCustomizer tokenEndpointCustomizer)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -911,7 +899,6 @@ public class WebSecurityConfig {
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, oidcProviderRepository)))
                         .tokenEndpoint(tokenEndpointCustomizer)
-                        .userInfoEndpoint(c -> c.oidcUserService(oidcUserService))
                         .failureHandler(new OAuth2AuthenticationExceptionHandler());
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
