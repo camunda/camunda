@@ -69,8 +69,8 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
     });
     await assertUnauthorizedRequest(res);
   });
-  // // Skipped due to bug 42045: https://github.com/camunda/camunda/issues/42045
-  test.skip('Create Global Cluster Variable Missing Name Invalid Body 400', async ({
+
+  test('Create Global Cluster Variable Missing Name Invalid Body 400', async ({
     request,
   }) => {
     const body = {value: {testKey: 'testValue'}};
@@ -80,8 +80,8 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
     });
     await assertBadRequest(res, /name/i, 'INVALID_ARGUMENT');
   });
-  // // Skipped due to bug 42047: https://github.com/camunda/camunda/issues/42047
-  test.skip('Create Global Cluster Variable Missing Value Invalid Body 400', async ({
+
+  test('Create Global Cluster Variable Missing Value Invalid Body 400', async ({
     request,
   }) => {
     const body = {name: 'test-var'};

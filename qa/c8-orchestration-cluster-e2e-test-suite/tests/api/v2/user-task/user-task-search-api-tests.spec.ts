@@ -48,8 +48,7 @@ test.describe.parallel('Search User Task Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
-  test.skip('Search user tasks - bad request - invalid payload', async ({
+  test('Search user tasks - bad request - invalid payload', async ({
     request,
   }) => {
     const res = await request.post(buildUrl('/user-tasks/search'), {

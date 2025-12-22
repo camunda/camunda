@@ -205,8 +205,7 @@ test.describe.parallel('Process instance Tests', () => {
     await cancelProcessInstance(json.processInstanceKey);
   });
 
-  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
-  test.skip('Create Process Instance - Failure - Missing process definition id and key', async ({
+  test('Create Process Instance - Failure - Missing process definition id and key', async ({
     request,
   }) => {
     const res = await request.post(buildUrl(PROCESS_INSTANCE_ENDPOINT), {
