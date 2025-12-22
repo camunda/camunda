@@ -204,7 +204,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       metrics.recordNextExecution(next, CheckpointType.MARKER);
     } else {
       next = nextExecution(backupSchedule, state.lastBackup);
-      metrics.recordNextExecution(next, CheckpointType.MARKER);
+      metrics.recordNextExecution(next, CheckpointType.SCHEDULED_BACKUP);
     }
     return next.toEpochMilli() - now.toEpochMilli();
   }
