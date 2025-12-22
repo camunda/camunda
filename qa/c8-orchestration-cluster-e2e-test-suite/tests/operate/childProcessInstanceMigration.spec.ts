@@ -114,12 +114,19 @@ test.describe('Child Process Instance Migration', () => {
         testProcesses.parentProcess.version.toString(),
       );
 
-      await expect(page.getByText('2 results')).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
 
       await operateProcessesPage
-        .getProcessInstanceLinkByKey(parentInstanceKey)
+        .processInstanceLinkByKey(parentInstanceKey)
         .click();
 
       await operateProcessInstancePage.clickViewAllChildProcesses();
@@ -129,14 +136,21 @@ test.describe('Child Process Instance Migration', () => {
         .innerText();
 
       await expect(
-        operateProcessesPage.getParentInstanceCell(parentInstanceKey),
+        operateProcessesPage.parentInstanceCell(parentInstanceKey),
       ).toBeVisible();
 
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(childVersion);
 
-      await expect(page.getByText('1 result')).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
     });
 
@@ -192,11 +206,11 @@ test.describe('Child Process Instance Migration', () => {
       });
 
       await expect(
-        operateProcessesPage.getVersionCells(targetVersion),
+        operateProcessesPage.versionCells(targetVersion),
       ).toHaveCount(1, {timeout: 30000});
 
       await expect(
-        operateProcessesPage.getParentInstanceCell(parentInstanceKey),
+        operateProcessesPage.parentInstanceCell(parentInstanceKey),
       ).toBeVisible();
     });
 
@@ -206,8 +220,15 @@ test.describe('Child Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
-      await expect(page.getByText('1 result')).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
     });
   });

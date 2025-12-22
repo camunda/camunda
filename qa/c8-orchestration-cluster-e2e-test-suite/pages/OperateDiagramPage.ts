@@ -22,11 +22,14 @@ export class OperateDiagramPage {
   readonly showIncidentButton: Locator;
   readonly showMetadataButton: Locator;
   readonly viewRootCauseDecisionLink: Locator;
+  readonly popoverLink: (name: string | RegExp) => Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.diagram = this.page.getByTestId('diagram');
     this.popover = this.page.getByTestId('popover');
+    this.popoverLink = (name: string | RegExp) =>
+      this.popover.getByRole('link', {name});
     this.resetDiagramZoomButton = this.page.getByRole('button', {
       name: 'Reset diagram zoom',
     });
@@ -227,5 +230,9 @@ export class OperateDiagramPage {
       timeout: 30000,
     });
     await this.viewRootCauseDecisionLink.click();
+  }
+
+  async clickPopoverLink(name: string | RegExp): Promise<void> {
+    await this.popoverLink(name).click();
   }
 }
