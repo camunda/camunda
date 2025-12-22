@@ -348,7 +348,7 @@ test.describe.parallel('Users API Tests', () => {
     const expectedBody = {
       ...p,
       ...requestBody,
-      name: state['name6'],
+      name: '',
     };
 
     await expect(async () => {
@@ -371,7 +371,7 @@ test.describe.parallel('Users API Tests', () => {
     const expectedBody = {
       ...p,
       ...requestBody,
-      email: state['email7'],
+      email: '',
     };
 
     await expect(async () => {

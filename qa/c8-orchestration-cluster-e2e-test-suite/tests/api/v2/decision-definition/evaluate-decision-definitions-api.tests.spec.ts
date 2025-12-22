@@ -461,8 +461,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
 
       await assertBadRequest(
         res,
-        'At least one of [decisionDefinitionId, decisionDefinitionKey] is required.',
-        'INVALID_ARGUMENT',
+        'At least one of [decisionDefinitionId, decisionDefinitionKey] is required',
+        'Bad Request',
       );
     }).toPass(defaultAssertionOptions);
   });

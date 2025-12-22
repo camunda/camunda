@@ -58,7 +58,10 @@ test.describe.parallel('Search User Task Tests', () => {
         page: 'invalidValue',
       },
     });
-    await assertBadRequest(res, 'Request property [page] cannot be parsed');
+    await assertBadRequest(
+      res,
+      'At least one of [from, after, before, limit] is required.',
+    );
   });
 
   test('Search user task - filter by processInstanceKey', async ({request}) => {

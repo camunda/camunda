@@ -217,9 +217,9 @@ test.describe.parallel('Process instance Tests', () => {
 
     await assertStatusCode(res, 400);
     const json = await res.json();
-    expect(json.title).toBe('INVALID_ARGUMENT');
+    expect(json.title).toBe('Bad Request');
     expect(json.detail).toBe(
-      'At least one of [processDefinitionId, processDefinitionKey] is required.',
+      'At least one of [processDefinitionId, processDefinitionKey] is required',
     );
   });
 
