@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
@@ -83,6 +84,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
   private SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private CheckpointSchedulingService checkpointSchedulingService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -413,5 +415,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
     return brokerRequestAuthorizationConverter;
+  }
+
+  @Override
+  public CheckpointSchedulingService getCheckpointSchedulingService() {
+    return checkpointSchedulingService;
+  }
+
+  @Override
+  public void setCheckpointSchedulingService(
+      final CheckpointSchedulingService checkpointSchedulingService) {
+    this.checkpointSchedulingService = checkpointSchedulingService;
   }
 }
