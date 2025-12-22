@@ -28,7 +28,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -114,6 +117,59 @@ class AuditLogInfoTest {
     assertThat(info.batchOperation()).isEmpty();
   }
 
+  @Test
+  public void shouldReturnAssignForAssignedUserTaskIntentWithAssignee() {
+    // when
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.ASSIGNED));
+
+    final UserTaskRecordValue value = (UserTaskRecordValue) record.getValue();
+
+    // then
+    final var info = AuditLogInfo.of(record);
+    assertThat(info.operationType()).isEqualTo(AuditLogOperationType.ASSIGN);
+  }
+
+  @Test
+  public void shouldReturnUnassignForAssignedUserTaskIntentWithNullAssignee() {
+    // when
+    final UserTaskRecordValue recordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withAssignee(null)
+            .build();
+
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(
+            ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.ASSIGNED).withValue(recordValue));
+
+    final UserTaskRecordValue value = (UserTaskRecordValue) record.getValue();
+
+    // then
+    final var info = AuditLogInfo.of(record);
+    assertThat(info.operationType()).isEqualTo(AuditLogOperationType.UNASSIGN);
+  }
+
+  @Test
+  public void shouldReturnUnassignForAssignedUserTaskIntentWithBlankAssignee() {
+    // when
+    final UserTaskRecordValue recordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withAssignee("")
+            .build();
+
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(
+            ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.ASSIGNED).withValue(recordValue));
+
+    final UserTaskRecordValue value = (UserTaskRecordValue) record.getValue();
+
+    // then
+    final var info = AuditLogInfo.of(record);
+    assertThat(info.operationType()).isEqualTo(AuditLogOperationType.UNASSIGN);
+  }
+
   public static Stream<Arguments> getIntentMappings() {
     return Stream.of(
         Arguments.of(AuthorizationIntent.CREATED, AuditLogOperationType.CREATE),
@@ -150,6 +206,13 @@ class AuditLogInfoTest {
         Arguments.of(UserIntent.CREATED, AuditLogOperationType.CREATE),
         Arguments.of(UserIntent.UPDATED, AuditLogOperationType.UPDATE),
         Arguments.of(UserIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(UserTaskIntent.UPDATED, AuditLogOperationType.UPDATE),
+        // type is different for ASSIGNED intent, validating that it returns UNKNOWN here
+        Arguments.of(UserTaskIntent.ASSIGNED, AuditLogOperationType.UNKNOWN),
+        Arguments.of(UserTaskIntent.COMPLETED, AuditLogOperationType.COMPLETE),
+        Arguments.of(UserTaskIntent.UPDATE, AuditLogOperationType.UPDATE),
+        Arguments.of(UserTaskIntent.ASSIGN, AuditLogOperationType.ASSIGN),
+        Arguments.of(UserTaskIntent.COMPLETE, AuditLogOperationType.COMPLETE),
         Arguments.of(VariableIntent.CREATED, AuditLogOperationType.CREATE),
         Arguments.of(VariableIntent.UPDATED, AuditLogOperationType.UPDATE));
   }

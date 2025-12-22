@@ -57,6 +57,7 @@ import io.camunda.exporter.rdbms.handlers.auditlog.ResourceAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.TenantEntityAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.UserAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.auditlog.UserTaskAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
@@ -315,6 +316,7 @@ public class RdbmsExporterWrapper implements Exporter {
             new TenantAuditLogTransformer(),
             new TenantEntityAuditLogTransformer(),
             new UserAuditLogTransformer(),
+            new UserTaskAuditLogTransformer(),
             new VariableAddUpdateAuditLogTransformer())
         .forEach(
             transformer ->

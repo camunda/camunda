@@ -28,7 +28,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.util.Map;
 import java.util.Optional;
 
@@ -43,7 +45,7 @@ public record AuditLogInfo(
     return new AuditLogInfo(
         getOperationCategory(record.getValueType()),
         getEntityType(record.getValueType()),
-        getOperationType(record.getIntent()),
+        getOperationType(record),
         AuditLogActor.of(record),
         getBatchOperation(record));
   }
@@ -120,7 +122,8 @@ public record AuditLogInfo(
     }
   }
 
-  private static AuditLogOperationType getOperationType(final Intent intent) {
+  private static AuditLogOperationType getOperationType(final Record<?> record) {
+    final Intent intent = record.getIntent();
     if (intent == null) {
       return AuditLogOperationType.UNKNOWN;
     }
@@ -197,6 +200,24 @@ public record AuditLogInfo(
         return AuditLogOperationType.UPDATE;
       case UserIntent.DELETED:
         return AuditLogOperationType.DELETE;
+
+      case UserTaskIntent.ASSIGNED:
+        // Operation type is UNASSIGN if assignee is not provided
+        if (!(record.getValue() instanceof UserTaskRecordValue)) {
+          return AuditLogOperationType.UNKNOWN;
+        }
+        final String assignee = ((UserTaskRecordValue) record.getValue()).getAssignee();
+        return (assignee == null || assignee.isBlank())
+            ? AuditLogOperationType.UNASSIGN
+            : AuditLogOperationType.ASSIGN;
+      case UserTaskIntent.ASSIGN:
+        return AuditLogOperationType.ASSIGN;
+      case UserTaskIntent.UPDATED:
+      case UserTaskIntent.UPDATE:
+        return AuditLogOperationType.UPDATE;
+      case UserTaskIntent.COMPLETED:
+      case UserTaskIntent.COMPLETE:
+        return AuditLogOperationType.COMPLETE;
 
       case VariableIntent.CREATED:
         return AuditLogOperationType.CREATE;
