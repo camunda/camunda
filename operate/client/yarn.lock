@@ -1239,9 +1239,7 @@
     react-markdown "8.0.7"
 
 "@camunda8/sdk@^8.6.8":
-  version "8.7.8"
-  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.7.8.tgz#680c4c672d13ff83c16ab1fadba87a3d2aa30765"
-  integrity sha512-pMPIGqYCY8UxFe1MP60txFDb1gmWVIJkW+TWUwiEEuyxFQjfVkKDs82mCJuXK+6lCI6+N2YcQon53zD6wsIPtA==
+  version "8.7.33"
   dependencies:
     "@grpc/grpc-js" "1.12.5"
     "@grpc/proto-loader" "0.7.13"
@@ -9336,9 +9334,7 @@ moddle@^7.0.0:
     min-dash "^4.2.1"
 
 monaco-editor-webpack-plugin@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/monaco-editor-webpack-plugin/-/monaco-editor-webpack-plugin-7.1.0.tgz#16f265c2b5dbb5fe08681b6b3b7d00d3c5b2ee97"
-  integrity sha512-ZjnGINHN963JQkFqjjcBtn1XBtUATDZBMgNQhDQwd78w2ukRhFXAPNgWuacaQiDZsUr4h1rWv5Mv6eriKuOSzA==
+  version "7.1.1"
   dependencies:
     loader-utils "^2.0.2"
 
