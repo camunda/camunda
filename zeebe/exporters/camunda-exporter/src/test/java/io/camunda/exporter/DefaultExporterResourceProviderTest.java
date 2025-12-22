@@ -27,6 +27,8 @@ import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTran
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ResourceAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.RoleAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.RoleEntityAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.TenantAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.TenantEntityAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.UserAuditLogTransformer;
@@ -200,6 +202,8 @@ public class DefaultExporterResourceProviderTest {
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
             Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
+            Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
+            Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
             Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),

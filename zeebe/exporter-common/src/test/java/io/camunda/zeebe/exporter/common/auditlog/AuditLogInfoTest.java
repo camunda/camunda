@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -222,6 +223,11 @@ class AuditLogInfoTest {
         Arguments.of(ProcessInstanceModificationIntent.MODIFY, AuditLogOperationType.MODIFY),
         Arguments.of(ResourceIntent.CREATED, AuditLogOperationType.CREATE),
         Arguments.of(ResourceIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(RoleIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(RoleIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(RoleIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(RoleIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
+        Arguments.of(RoleIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
         Arguments.of(TenantIntent.CREATED, AuditLogOperationType.CREATE),
         Arguments.of(TenantIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
         Arguments.of(TenantIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),

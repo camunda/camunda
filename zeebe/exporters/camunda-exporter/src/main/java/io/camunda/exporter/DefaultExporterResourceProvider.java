@@ -80,6 +80,8 @@ import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTran
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.ResourceAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.RoleAuditLogTransformer;
+import io.camunda.exporter.handlers.auditlog.RoleEntityAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.TenantAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.TenantEntityAuditLogTransformer;
 import io.camunda.exporter.handlers.auditlog.UserAuditLogTransformer;
@@ -482,6 +484,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
           .addHandler(new ProcessInstanceModificationAuditLogTransformer())
           .addHandler(new ResourceAuditLogTransformer())
+          .addHandler(new RoleAuditLogTransformer())
+          .addHandler(new RoleEntityAuditLogTransformer())
           .addHandler(new TenantAuditLogTransformer())
           .addHandler(new TenantEntityAuditLogTransformer())
           .addHandler(new UserAuditLogTransformer())
