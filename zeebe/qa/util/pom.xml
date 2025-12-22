@@ -250,5 +250,10 @@
       <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+
   </dependencies>
 </project>
