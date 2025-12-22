@@ -11,6 +11,8 @@ import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -25,6 +27,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -41,6 +45,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker commandChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public UserTaskCompleteProcessor(
       final ProcessingState state,
@@ -61,6 +66,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
             state.getUserTaskState(),
             authCheckBehavior);
     this.asyncRequestBehavior = asyncRequestBehavior;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -116,7 +122,46 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    return commandChecker.checkProcessDefinitionUpdateUserTaskAuth(command, persistedUserTask);
+    final var processDefinitionUpdateUserTaskRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_USER_TASK)
+            .tenantId(persistedUserTask.getTenantId())
+            .addResourceId(persistedUserTask.getBpmnProcessId())
+            .build();
+
+    final var userTaskKey = String.valueOf(persistedUserTask.getUserTaskKey());
+    final var userTaskProperties =
+        UserTaskAuthorizationProperties.builder()
+            .assignee(persistedUserTask.getAssignee())
+            .candidateUsers(persistedUserTask.getCandidateUsersList())
+            .candidateGroups(persistedUserTask.getCandidateGroupsList())
+            .build();
+
+    final var userTaskUpdateRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.USER_TASK)
+            .permissionType(PermissionType.UPDATE)
+            .tenantId(persistedUserTask.getTenantId())
+            .addResourceId(userTaskKey)
+            .resourceProperties(userTaskProperties)
+            .build();
+    final var userTaskCompleteRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.USER_TASK)
+            .permissionType(PermissionType.COMPLETE)
+            .tenantId(persistedUserTask.getTenantId())
+            .addResourceId(userTaskKey)
+            .resourceProperties(userTaskProperties)
+            .build();
+
+    return authCheckBehavior
+        .isAnyAuthorizedOrInternalCommand(
+            processDefinitionUpdateUserTaskRequest, userTaskUpdateRequest, userTaskCompleteRequest)
+        .map(ignored -> persistedUserTask);
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {
