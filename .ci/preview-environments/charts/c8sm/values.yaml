@@ -47,6 +47,9 @@ global:
       publicIssuerUrl: https://{{ include "ingress.domain" . }}/auth/realms/camunda-platform
       admin:
         enabled: true
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-admin-client-token
       console:
         redirectUrl: https://{{ include "ingress.domain" . }}/console
         secret:
