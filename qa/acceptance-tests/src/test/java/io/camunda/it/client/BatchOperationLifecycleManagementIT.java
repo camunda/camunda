@@ -48,10 +48,12 @@ public class BatchOperationLifecycleManagementIT {
   private static final TestStandaloneApplication<?> APPLICATION =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          // set schedulerInterval via properties because it is not yet supported in unified config
-          .withProperty(
-              "zeebe.broker.experimental.engine.batchOperations.schedulerInterval",
-              Duration.ofDays(1));
+          .withUnifiedConfig(
+              cfg ->
+                  cfg.getProcessing()
+                      .getEngine()
+                      .getBatchOperations()
+                      .setSchedulerInterval(Duration.ofDays(1)));
 
   String testScopeId;
 

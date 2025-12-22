@@ -199,6 +199,7 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateFromEngine(final BrokerBasedProperties override) {
     populateFromDistribution(override);
+    populateFromBatchOperations(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -208,6 +209,16 @@ public class BrokerBasedPropertiesOverride {
     final var distributionCfg = override.getExperimental().getEngine().getDistribution();
     distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
     distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
+  }
+
+  private void populateFromBatchOperations(final BrokerBasedProperties override) {
+    final var engineBatchOperation =
+        unifiedConfiguration.getCamunda().getProcessing().getEngine().getBatchOperations();
+    override
+        .getExperimental()
+        .getEngine()
+        .getBatchOperations()
+        .setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
   }
 
   private void populateFromFlowControl(final BrokerBasedProperties override) {
@@ -370,6 +381,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());
     override.getCluster().setClusterName(cluster.getName());
+    override.getCluster().setClusterId(cluster.getClusterId());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
