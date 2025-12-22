@@ -60,33 +60,44 @@ public class UserTaskCommandPreconditionChecker {
     this.userTaskState = userTaskState;
   }
 
-  protected Either<Rejection, UserTaskRecord> check(final TypedRecord<UserTaskRecord> command) {
+  protected Either<Rejection, UserTaskRecord> checkUserTaskExists(
+      final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
-    final var persistedRecord =
+    final var persistedUserTask =
         userTaskState.getUserTask(userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command));
 
-    if (persistedRecord == null) {
+    if (persistedUserTask == null) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
               String.format(NO_USER_TASK_FOUND_MESSAGE, intent, userTaskKey)));
     }
 
+    return Either.right(persistedUserTask);
+  }
+
+  // Temporary method to be used until all `UserTaskCommandProcessors` are migrated to provide
+  // their own authorization checks
+  protected Either<Rejection, UserTaskRecord> checkProcessDefinitionUpdateUserTaskAuth(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
     final var authRequest =
         AuthorizationRequest.builder()
             .command(command)
             .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .permissionType(PermissionType.UPDATE_USER_TASK)
-            .tenantId(persistedRecord.getTenantId())
-            .addResourceId(persistedRecord.getBpmnProcessId())
+            .tenantId(persistedUserTask.getTenantId())
+            .addResourceId(persistedUserTask.getBpmnProcessId())
             .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (isAuthorized.isLeft()) {
-      return Either.left(isAuthorized.getLeft());
-    }
 
+    return authCheckBehavior
+        .isAuthorizedOrInternalCommand(authRequest)
+        .map(ignored -> persistedUserTask);
+  }
+
+  protected Either<Rejection, UserTaskRecord> checkLifecycleState(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
+    final long userTaskKey = command.getKey();
     final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
-
     if (!validLifecycleStates.contains(lifecycleState)) {
       return Either.left(
           new Rejection(
@@ -94,9 +105,17 @@ public class UserTaskCommandPreconditionChecker {
               String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
 
+    return Either.right(persistedUserTask);
+  }
+
+  // Hook for additional checks in subclasses, currently used only by UserTaskClaimProcessor, it
+  // will be removed once in the next commit, so the UserTaskClaimProcessor will perform custom
+  // checks on its own
+  protected Either<Rejection, UserTaskRecord> applyAdditionalChecksIfPresent(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
     return Optional.ofNullable(additionalChecks)
-        .map(checks -> checks.apply(command, persistedRecord))
+        .map(checks -> checks.apply(command, persistedUserTask))
         .filter(Either::isLeft)
-        .orElse(Either.right(persistedRecord));
+        .orElse(Either.right(persistedUserTask));
   }
 }

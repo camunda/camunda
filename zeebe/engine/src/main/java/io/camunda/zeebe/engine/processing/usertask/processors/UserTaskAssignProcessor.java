@@ -32,7 +32,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final UserTaskCommandPreconditionChecker commandChecker;
 
   public UserTaskAssignProcessor(
       final ProcessingState state,
@@ -43,7 +43,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     responseWriter = writers.response();
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    preconditionChecker =
+    commandChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "assign", state.getUserTaskState(), authCheckBehavior);
   }
@@ -51,7 +51,10 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   @Override
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
-    return preconditionChecker.check(command);
+    return commandChecker
+        .checkUserTaskExists(command)
+        .flatMap(userTask -> checkAuthorization(command, userTask))
+        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask));
   }
 
   @Override
@@ -97,5 +100,10 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
         request.requestId(),
         request.requestStreamId());
     stateWriter.appendFollowUpEvent(request.key(), AsyncRequestIntent.PROCESSED, request.record());
+  }
+
+  private Either<Rejection, UserTaskRecord> checkAuthorization(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
+    return commandChecker.checkProcessDefinitionUpdateUserTaskAuth(command, persistedUserTask);
   }
 }

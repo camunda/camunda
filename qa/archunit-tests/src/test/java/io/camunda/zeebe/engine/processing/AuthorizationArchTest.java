@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPre
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
@@ -97,7 +98,10 @@ public class AuthorizationArchTest {
             // UserTaskCommandPreconditionChecker
             .or(
                 ArchConditions.callMethod(
-                    UserTaskCommandPreconditionChecker.class, "check", TypedRecord.class))
+                    UserTaskCommandPreconditionChecker.class,
+                    "checkProcessDefinitionUpdateUserTaskAuth",
+                    TypedRecord.class,
+                    UserTaskRecord.class))
             // Or the processor should have delegate authorization to the PermissionsBehavior
             .or(
                 ArchConditions.callMethod(
