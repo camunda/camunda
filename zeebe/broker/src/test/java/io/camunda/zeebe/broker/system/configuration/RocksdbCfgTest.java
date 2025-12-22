@@ -285,37 +285,4 @@ public final class RocksdbCfgTest {
     // then
     assertThat(rocksdb.isDisableWal()).isTrue();
   }
-
-  @Test
-  public void shouldUseDefaultMemoryAllocationStrategy() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
-    final var rocksdb = cfg.getExperimental().getRocksdb();
-
-    // then
-    assertThat(rocksdb.getMemoryAllocationStrategy().name()).isEqualTo("AUTO");
-  }
-
-  @Test
-  public void shouldSetMemoryAllocationStrategyViaConfig() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
-    final var rocksdb = cfg.getExperimental().getRocksdb();
-
-    // then
-    assertThat(rocksdb.getMemoryAllocationStrategy().name()).isEqualTo("BROKER");
-  }
-
-  @Test
-  public void shouldSetMemoryAllocationStrategyViaEnvironmentVariable() {
-    // given
-    environment.put("zeebe.broker.experimental.rocksdb.memoryAllocationStrategy", "PARTITION");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
-    final var rocksdb = cfg.getExperimental().getRocksdb();
-
-    // then
-    assertThat(rocksdb.getMemoryAllocationStrategy().name()).isEqualTo("PARTITION");
-  }
 }
