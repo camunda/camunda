@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
-import io.camunda.zeebe.engine.processing.conditional.ConditionalBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
