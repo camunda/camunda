@@ -21,11 +21,14 @@ let callActivityProcessInstance: ProcessDeployment;
 
 test.beforeAll(async () => {
   await deploy([
-    './resources/callActivityProcess.bpmn',
+    './resources/callActivityNavigationProcess.bpmn',
     './resources/calledProcess.bpmn',
   ]);
 
-  const instance = await createSingleInstance('CallActivityProcess', 1);
+  const instance = await createSingleInstance(
+    'CallActivityNavigationProcess',
+    1,
+  );
   callActivityProcessInstance = {
     processInstanceKey: instance.processInstanceKey,
   };
@@ -70,7 +73,7 @@ test.describe('Call Activities', () => {
       ).toHaveText(processInstanceKey);
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(
-          'Call Activity Process',
+          'Call Activity Navigation Process',
         ),
       ).toBeVisible();
     });
@@ -100,7 +103,7 @@ test.describe('Call Activities', () => {
       ).toHaveText(processInstanceKey);
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(
-          'Call Activity Process',
+          'Call Activity Navigation Process',
         ),
       ).toBeVisible();
     });
@@ -108,7 +111,7 @@ test.describe('Call Activities', () => {
     await test.step('Verify instance history on parent process', async () => {
       await expect(
         operateProcessInstancePage.instanceHistory.getByText(
-          'Call Activity Process',
+          'Call Activity Navigation Process',
         ),
       ).toBeVisible();
       await expect(
@@ -181,7 +184,7 @@ test.describe('Call Activities', () => {
       ).toHaveText(processInstanceKey);
       await expect(
         operateProcessInstancePage.instanceHeader.getByText(
-          'Call Activity Process',
+          'Call Activity Navigation Process',
         ),
       ).toBeVisible();
     });
@@ -189,7 +192,7 @@ test.describe('Call Activities', () => {
     await test.step('Verify parent process instance history and diagram again', async () => {
       await expect(
         operateProcessInstancePage.instanceHistory.getByText(
-          'Call Activity Process',
+          'Call Activity Navigation Process',
         ),
       ).toBeVisible();
       await expect(
