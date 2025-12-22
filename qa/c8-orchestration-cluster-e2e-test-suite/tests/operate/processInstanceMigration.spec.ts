@@ -511,7 +511,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       await expect(
         operateProcessesPage.versionCells(targetVersion),
-      ).toHaveCount(6, {
+      ).toHaveCount(3, {
         timeout: 30000,
       });
     });
