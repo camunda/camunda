@@ -112,6 +112,7 @@ public class ElasticsearchExporterConfiguration {
       case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
       case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
       case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
+      case GLOBAL_LISTENER -> index.globalListener;
       default -> false;
     };
   }
@@ -234,6 +235,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean conditionalEvaluation = false;
 
     public boolean globalListenerBatch = false;
+    public boolean globalListener = false;
 
     // index settings
     private Integer numberOfShards = null;
