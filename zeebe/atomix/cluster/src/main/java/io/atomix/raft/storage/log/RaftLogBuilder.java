@@ -19,6 +19,7 @@ import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -121,11 +122,11 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
    * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
    * before any writes happen.
    *
-   * @param preallocateSegmentFiles true to preallocate files, false otherwise
+   * @param segmentAllocator to use
    * @return this builder for chaining
    */
-  public RaftLogBuilder withPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
-    journalBuilder.withPreallocateSegmentFiles(preallocateSegmentFiles);
+  public RaftLogBuilder withSegmentAllocator(final SegmentAllocator segmentAllocator) {
+    journalBuilder.withSegmentAllocator(segmentAllocator);
     return this;
   }
 
