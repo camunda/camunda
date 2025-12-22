@@ -25,7 +25,7 @@ jobs:
       app-name: smoke-${{ github.run_number }}
       labels: |
         preview=smoke-test
-        repo=camunda/camunda
+        repo=camunda_camunda
 
   teardown-smoke-test:
     name: Teardown Smoke Test Preview Environment
