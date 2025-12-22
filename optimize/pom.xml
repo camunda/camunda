@@ -50,7 +50,7 @@
 
     <zeebe.version>8.8.8</zeebe.version>
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <identity.version>8.8.3</identity.version>
+    <identity.version>8.8.5</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 
