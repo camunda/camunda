@@ -7,7 +7,8 @@
     <bpmn:sequenceFlow id="Flow_to_task_a" sourceRef="StartEvent_Batch" targetRef="TaskA" />
     <bpmn:userTask id="TaskA" name="Task A - Review">
       <bpmn:extensionElements>
-        <zeebe:assignmentDefinition assignee="demo" candidateGroups="reviewers" />
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_00xfy2q" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_to_task_a</bpmn:incoming>
       <bpmn:outgoing>Flow_to_task_b</bpmn:outgoing>
@@ -23,7 +24,8 @@
     <bpmn:sequenceFlow id="Flow_to_task_c" sourceRef="TaskB" targetRef="TaskC" />
     <bpmn:userTask id="TaskC" name="Task C - Approval">
       <bpmn:extensionElements>
-        <zeebe:assignmentDefinition assignee="demo" candidateGroups="approvers" />
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="Form_00xfy2q" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_to_task_c</bpmn:incoming>
       <bpmn:outgoing>Flow_to_end_batch</bpmn:outgoing>
