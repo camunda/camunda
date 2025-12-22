@@ -11,6 +11,8 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.BiFunction;
 
@@ -41,6 +43,11 @@ public final class GlobalListenerClient {
     this.writer = writer;
   }
 
+  public GlobalListenerClient withId(final String id) {
+    globalListenerRecord.setId(id);
+    return this;
+  }
+
   public GlobalListenerClient withType(final String type) {
     globalListenerRecord.setType(type);
     return this;
@@ -67,6 +74,21 @@ public final class GlobalListenerClient {
 
   public GlobalListenerClient beforeNonGlobal() {
     return withAfterNonGlobal(false);
+  }
+
+  public GlobalListenerClient withPriority(final int priority) {
+    globalListenerRecord.setPriority(priority);
+    return this;
+  }
+
+  public GlobalListenerClient withSource(final GlobalListenerSource source) {
+    globalListenerRecord.setSource(source);
+    return this;
+  }
+
+  public GlobalListenerClient withListenerType(final GlobalListenerType listenerType) {
+    globalListenerRecord.setListenerType(listenerType);
+    return this;
   }
 
   public GlobalListenerClient expectRejection() {
