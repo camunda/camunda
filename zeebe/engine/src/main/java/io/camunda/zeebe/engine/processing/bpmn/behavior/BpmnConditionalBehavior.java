@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
