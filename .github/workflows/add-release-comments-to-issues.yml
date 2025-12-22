@@ -26,6 +26,9 @@
 name: Add Release Comments to Issues
 
 on:
+  schedule:
+    # Run every Wednesday at 9:00 AM UTC
+    - cron: '0 9 * * 3'
   workflow_dispatch:
     inputs:
       days_back:
