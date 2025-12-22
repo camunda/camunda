@@ -38,9 +38,9 @@ export class OperateProcessModificationModePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.modifyModeHeader = page.getByText(
-      'Process Instance Modification Mode',
-    );
+    this.modifyModeHeader = page
+      .getByText('Process Instance Modification Mode')
+      .first();
     this.flowNodeModificationsPopup = page.getByText('Flow Node Modifications');
     this.addModificationButtononPopup = page.getByTitle(
       'Add single flow node instance',

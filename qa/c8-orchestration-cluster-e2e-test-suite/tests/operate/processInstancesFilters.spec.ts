@@ -167,14 +167,13 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
+    const day = new Date().getDate();
+
     await test.step('Filter by End Date Range and assert results', async () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
       let currentRowCount =
         await operateProcessesPage.processInstancesTable.count();
-      const endDate = await operateProcessesPage.endDateCell.innerText();
-      const day =
-        endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
 
       await operateFiltersPanelPage.displayOptionalFilter('End Date Range');
       await operateFiltersPanelPage.pickDateTimeRange({
@@ -362,6 +361,8 @@ test.describe('Process Instances Filters', () => {
       operateOperationPanelPage.beforeOperationOperationPanelEntries =
         await operateOperationPanelPage.operationIdsEntries();
 
+      await operateOperationPanelPage.collapseOperationIdField();
+
       await expect(operateProcessesPage.tableLoadingSpinner).toBeHidden({
         timeout: 30000,
       });
@@ -406,7 +407,7 @@ test.describe('Process Instances Filters', () => {
           expect(newIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
-          await page.waitForTimeout(1000);
+          await sleep(1_000);
           operateOperationPanelPage.afterOperationOperationPanelEntries =
             await operateOperationPanelPage.operationIdsEntries();
           newIds = getNewOperationIds(
