@@ -42,6 +42,7 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
               processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
       return new CachedProcessEntity(
           processEntity.getName(),
+          processEntity.getVersion(),
           processEntity.getVersionTag(),
           processDiagramData.callActivityIds(),
           processDiagramData.flowNodesMap());
