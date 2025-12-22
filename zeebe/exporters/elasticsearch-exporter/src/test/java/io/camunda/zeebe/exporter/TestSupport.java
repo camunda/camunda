@@ -79,6 +79,7 @@ final class TestSupport {
       case CONDITIONAL_SUBSCRIPTION -> config.conditionalSubscription = value;
       case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
       case GLOBAL_LISTENER_BATCH -> config.globalListenerBatch = value;
+      case GLOBAL_LISTENER -> config.globalListener = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
