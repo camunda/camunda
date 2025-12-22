@@ -28,6 +28,7 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.RestTemplateNoRedirectFollowConfiguration;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
@@ -98,6 +99,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       DatabaseInfo.class,
       OperateIndexController.class,
       WebappsModuleConfiguration.class,
+      RestTemplateNoRedirectFollowConfiguration.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
