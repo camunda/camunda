@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -74,6 +76,7 @@ public final class BatchOperationExecuteProcessor
 
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final BatchOperationState batchOperationState;
   private final KeyGenerator keyGenerator;
@@ -90,6 +93,7 @@ public final class BatchOperationExecuteProcessor
       final BatchOperationMetrics metrics) {
     commandWriter = writers.command();
     stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
@@ -113,13 +117,17 @@ public final class BatchOperationExecuteProcessor
 
     final var batchOperation = getBatchOperation(batchKey);
     if (batchOperation == null) {
-      LOGGER.debug("No batch operation found for key '{}'.", batchKey);
+      final var message = "No batch operation found for key '%d'.".formatted(batchKey);
+      LOGGER.debug(message);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
       return;
     }
 
     // if suspended, skip execution and stop the EXECUTE-loop
     if (batchOperation.isSuspended()) {
-      LOGGER.info("Batch operation {} is suspended.", batchOperation.getKey());
+      final var message = "Batch operation `%d` is suspended.".formatted(batchKey);
+      LOGGER.info(message);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, message);
       return;
     }
 
