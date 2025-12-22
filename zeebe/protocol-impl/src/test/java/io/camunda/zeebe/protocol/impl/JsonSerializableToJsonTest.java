@@ -102,6 +102,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -4313,30 +4314,39 @@ final class JsonSerializableToJsonTest {
                     .setGlobalListenerBatchKey(1)
                     .addTaskListener(
                         new GlobalListenerRecord()
+                            .setId("listener1")
                             .setType("global1")
                             .setEventTypes(List.of("creating", "assigning"))
                             .setRetries(5))
                     .addTaskListener(
                         new GlobalListenerRecord()
+                            .setId("listener2")
                             .setType("global2")
                             .setEventTypes(List.of("all"))
                             .setRetries(3)
-                            .setAfterNonGlobal(false)),
+                            .setAfterNonGlobal(true)
+                            .setPriority(10)),
         """
       {
         "globalListenerBatchKey": 1,
         "taskListeners": [
           {
+            "id": "listener1",
             "type": "global1",
             "retries": 5,
             "eventTypes": ["creating", "assigning"],
-            "afterNonGlobal": false
+            "afterNonGlobal": false,
+            "priority": 50,
+            "source": "CONFIGURATION"
           },
           {
+            "id": "listener2",
             "type": "global2",
             "retries": 3,
             "eventTypes": ["all"],
-            "afterNonGlobal": false
+            "afterNonGlobal": true,
+            "priority": 10,
+            "source": "CONFIGURATION"
           }
         ]
       }
@@ -4359,16 +4369,22 @@ final class JsonSerializableToJsonTest {
         (Supplier<GlobalListenerRecord>)
             () ->
                 new GlobalListenerRecord()
+                    .setId("my-listener")
                     .setType("global1")
                     .setEventTypes(List.of("creating", "assigning"))
                     .setRetries(5)
-                    .setAfterNonGlobal(true),
+                    .setAfterNonGlobal(true)
+                    .setPriority(10)
+                    .setSource(GlobalListenerSource.API),
         """
     {
-        "type": "global1",
-        "retries": 5,
-        "eventTypes": ["creating", "assigning"],
-        "afterNonGlobal": true
+      "id": "my-listener",
+      "type": "global1",
+      "retries": 5,
+      "eventTypes": ["creating", "assigning"],
+      "afterNonGlobal": true,
+      "priority": 10,
+      "source": "API"
     }
     """
       },
@@ -4377,10 +4393,13 @@ final class JsonSerializableToJsonTest {
         (Supplier<GlobalListenerRecord>) () -> new GlobalListenerRecord(),
         """
     {
-        "type": "",
-        "retries": 3,
-        "eventTypes": [],
-        "afterNonGlobal": false
+      "id": "",
+      "type": "",
+      "retries": 3,
+      "eventTypes": [],
+      "afterNonGlobal": false,
+      "priority": 50,
+      "source": "CONFIGURATION"
     }
     """
       }
