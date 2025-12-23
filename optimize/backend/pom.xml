@@ -342,7 +342,7 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${version.optimize-opensearch-java}</version>
+      <version>${version.opensearch-java}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
