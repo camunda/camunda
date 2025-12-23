@@ -44,7 +44,7 @@ public record AuditLogEntity(
     implements TenantOwnedEntity {
 
   @Override
-  public boolean isInTenantScope() {
+  public boolean hasTenantScope() {
     return AuditLogTenantScope.TENANT.equals(tenantScope);
   }
 

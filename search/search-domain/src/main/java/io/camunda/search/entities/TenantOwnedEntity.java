@@ -11,7 +11,7 @@ public interface TenantOwnedEntity {
 
   String tenantId();
 
-  default boolean isInTenantScope() {
+  default boolean hasTenantScope() {
     return true;
   }
 }
