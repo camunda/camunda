@@ -11,6 +11,7 @@ import {Page, Locator} from '@playwright/test';
 class OperateHomePage {
   private page: Page;
   readonly operateBanner: Locator;
+  readonly dashboardLink: Locator;
   readonly processesTab: Locator;
   readonly decisionsTab: Locator;
   readonly informationDialog: Locator;
@@ -22,6 +23,7 @@ class OperateHomePage {
   constructor(page: Page) {
     this.page = page;
     this.operateBanner = page.getByRole('link', {name: 'Camunda logo Operate'});
+    this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
     this.informationDialog = page.getByRole('button', {
@@ -38,6 +40,10 @@ class OperateHomePage {
 
   async clickProcessesTab(): Promise<void> {
     await this.processesTab.click();
+  }
+
+  async clickDashboardLink(): Promise<void> {
+    await this.dashboardLink.click();
   }
 
   async clickDecisionsTab(): Promise<void> {
