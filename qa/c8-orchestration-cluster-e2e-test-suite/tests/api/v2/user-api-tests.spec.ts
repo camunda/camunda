@@ -171,8 +171,7 @@ test.describe.parallel('Users API Tests', () => {
     await assertBadRequest(res, 'No password provided', 'INVALID_ARGUMENT');
   });
 
-  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
-  test.skip('Create User Missing Email Success', async ({request}) => {
+  test('Create User Missing Email Success', async ({request}) => {
     const body = {
       username: `username-${generateUniqueId()}`,
       name: 'user',
@@ -196,8 +195,7 @@ test.describe.parallel('Users API Tests', () => {
     createdUserIds.push(json.username);
   });
 
-  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
-  test.skip('Create User Missing Name Success', async ({request}) => {
+  test('Create User Missing Name Success', async ({request}) => {
     const body = {
       username: `username-${generateUniqueId()}`,
       email: 'user@example.com',
@@ -342,8 +340,7 @@ test.describe.parallel('Users API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
-  test.skip('Update User Missing Name Success', async ({request}) => {
+  test('Update User Missing Name Success', async ({request}) => {
     const p = {username: state['username6'] as string};
     const requestBody = {
       email: `updated-${generateUniqueId()}-email@example.com`,
@@ -351,7 +348,7 @@ test.describe.parallel('Users API Tests', () => {
     const expectedBody = {
       ...p,
       ...requestBody,
-      name: state['name6'],
+      name: '',
     };
 
     await expect(async () => {
@@ -366,8 +363,7 @@ test.describe.parallel('Users API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
-  test.skip('Update User Missing Email Success', async ({request}) => {
+  test('Update User Missing Email Success', async ({request}) => {
     const p = {username: state['username7'] as string};
     const requestBody = {
       name: `updated-${generateUniqueId()}-name`,
@@ -375,7 +371,7 @@ test.describe.parallel('Users API Tests', () => {
     const expectedBody = {
       ...p,
       ...requestBody,
-      email: state['email7'],
+      email: '',
     };
 
     await expect(async () => {
