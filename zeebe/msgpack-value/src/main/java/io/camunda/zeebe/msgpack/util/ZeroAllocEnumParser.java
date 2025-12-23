@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Zero-allocation enum parser using a DirectBufferView as the map key.

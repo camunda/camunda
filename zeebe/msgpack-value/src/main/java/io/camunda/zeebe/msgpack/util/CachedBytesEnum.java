@@ -22,11 +22,15 @@ public final class CachedBytesEnum<E extends Enum<E>> {
       new ConcurrentHashMap<>();
 
   private final DirectBuffer[] valuesAsBuffers;
-  private final AsciiTrieEnumParser<E> parser;
+  private final EnumParser<E> parser;
 
   private CachedBytesEnum(final Class<E> clazz) {
     valuesAsBuffers = byteRepresentations(clazz);
-    parser = new AsciiTrieEnumParser<E>(clazz);
+    parser = new ZeroAllocEnumParser<>(clazz);
+  }
+
+  EnumParser<E> parser() {
+    return parser;
   }
 
   public static <E extends Enum<E>> CachedBytesEnum<E> get(final Class<E> clazz) {

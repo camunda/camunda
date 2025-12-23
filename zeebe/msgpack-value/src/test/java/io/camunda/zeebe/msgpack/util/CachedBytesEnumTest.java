@@ -10,6 +10,7 @@ package io.camunda.zeebe.msgpack.util;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -34,6 +35,12 @@ public class CachedBytesEnumTest {
   @ParameterizedTest
   public void shouldReturnAlwaysTheSameBuffer(final TestEnum testEnum) {
     assertThat(cachedEnum.byteRepr(testEnum)).isSameAs(cachedEnum.byteRepr(testEnum));
+  }
+
+  @Test
+  public void shouldUseZeroAllocEnumParserForDeserializationLookup() {
+    assertThat(cachedEnum.parser()).isInstanceOf(ZeroAllocEnumParser.class);
+    assertThat(cachedEnum.parser()).isNotInstanceOf(SimpleEnumParser.class);
   }
 
   private enum TestEnum {
