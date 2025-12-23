@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
+import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.util.List;
 import org.slf4j.Logger;
@@ -27,7 +28,8 @@ public class HistoryDeletionService {
   private final RdbmsWriters rdbmsWriters;
   private final HistoryDeletionDbReader historyDeletionDbReader;
   private final HistoryDeletionConfig config;
-  private Duration currentDeletionInterval;
+  private final ExponentialBackoff exponentialBackoff;
+  private Duration currentDelayBetweenRuns;
 
   public HistoryDeletionService(
       final RdbmsWriters rdbmsWriters,
@@ -36,7 +38,14 @@ public class HistoryDeletionService {
     this.rdbmsWriters = rdbmsWriters;
     this.historyDeletionDbReader = historyDeletionDbReader;
     this.config = config;
-    this.currentDeletionInterval = config.delayBetweenRuns();
+    this.exponentialBackoff =
+        new ExponentialBackoff(
+            config.maxDelayBetweenRuns().toMillis(),
+            config.delayBetweenRuns().toMillis(),
+            2,
+            0.0); // Use 0.0 jitter for deterministic backoff and clamp to min delay to avoid
+    // sub-min values
+    this.currentDelayBetweenRuns = config.delayBetweenRuns();
   }
 
   public Duration deleteHistory(final int partitionId) {
@@ -46,14 +55,7 @@ public class HistoryDeletionService {
     final var deletedProcessInstances = deleteProcessInstances(batch);
     final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedProcessInstances);
 
-    if (deletedResourceCount > 0) {
-      return config.delayBetweenRuns();
-    } else if (currentDeletionInterval.compareTo(config.maxDelayBetweenRuns()) >= 0) {
-      return config.maxDelayBetweenRuns();
-    } else {
-      currentDeletionInterval = currentDeletionInterval.multipliedBy(2);
-      return currentDeletionInterval;
-    }
+    return nextDelay(deletedResourceCount);
   }
 
   private List<Long> deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
@@ -95,5 +97,15 @@ public class HistoryDeletionService {
     }
 
     return rdbmsWriters.getHistoryDeletionWriter().deleteByResourceKeys(deletedResourceKeys);
+  }
+
+  private Duration nextDelay(final int deletedResourceCount) {
+    if (deletedResourceCount > 0) {
+      currentDelayBetweenRuns = config.delayBetweenRuns();
+    } else {
+      final long nextMs = exponentialBackoff.supplyRetryDelay(currentDelayBetweenRuns.toMillis());
+      currentDelayBetweenRuns = Duration.ofMillis(nextMs);
+    }
+    return currentDelayBetweenRuns;
   }
 }
