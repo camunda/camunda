@@ -145,16 +145,8 @@ test.describe('Child Process Instance Migration', () => {
       await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
         parentInstanceKey,
       );
-
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(page.getByText('1 result')).toBeVisible({
-            timeout: 30000,
-          });
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
+      await expect(page.getByText('1 result')).toBeVisible({
+        timeout: 30000,
       });
     });
 
