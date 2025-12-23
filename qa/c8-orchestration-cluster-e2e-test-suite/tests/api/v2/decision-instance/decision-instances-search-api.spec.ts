@@ -33,21 +33,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
     decisionInstances = result.decisions;
   });
 
-
-  test.afterAll(async ({request}) => {
-    // Cleanup all created decision instances
-    for (const decisionInstance of decisionInstances) {
-      try {
-        await request.delete(buildUrl(`/decisions/${decisionInstance.decisionEvaluationInstanceKey}`));
-        console.log(`Cleaned up decision instance: ${decisionInstance.decisionEvaluationInstanceKey}`);
-      } catch (error) {
-        console.warn(
-          `Failed to cleanup decision instance ${decisionInstance.decisionEvaluationInstanceKey}:`,
-          error,
-        );
-      }
-    }
-  });
   test('Search decision instances - multiple results - success', async ({
     request,
   }) => {
@@ -335,7 +320,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search decision requirements - unauthorized request', async ({
+  test('Search decision instances - unauthorized request', async ({
     request,
   }) => {
     await expect(async () => {

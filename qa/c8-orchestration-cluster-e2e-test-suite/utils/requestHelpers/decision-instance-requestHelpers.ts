@@ -103,7 +103,7 @@ export async function createMammalProcessInstanceAndDeployMammalDecision(
   });
   const decisions: DecisionInstance[] =
     await searchDecisionInstancesByProcessInstanceKey(
-      instance.processInstanceKey.toString(),
+      instance.processInstanceKey,
       request,
     );
   return {
