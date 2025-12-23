@@ -68,7 +68,16 @@ const normalProjects = [
   {
     name: 'api-tests',
     testMatch: ['tests/api/**/*.spec.ts'],
+    testIgnore: ['tests/api/v2/clock/*.spec.ts'],
     use: devices['Desktop Chrome'],
+    teardown: 'clock-api-tests'
+  },
+  {
+    name: 'clock-api-tests',
+    testMatch: ['tests/api/v2/clock/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
   },
   {
     name: 'chromium',
