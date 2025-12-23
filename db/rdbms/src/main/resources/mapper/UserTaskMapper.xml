@@ -399,4 +399,9 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'USER_TASK'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
+  </delete>
+
 </mapper>

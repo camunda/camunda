@@ -24,13 +24,14 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
-public class FlowNodeInstanceWriter implements RdbmsWriter {
+public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final FlowNodeInstanceMapper mapper;
 
   public FlowNodeInstanceWriter(
       final ExecutionQueue executionQueue, final FlowNodeInstanceMapper mapper) {
+    super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
   }

@@ -9,7 +9,10 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import java.time.Duration;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +25,9 @@ public class HistoryDeletionService {
 
   private final RdbmsWriters rdbmsWriters;
   private final HistoryDeletionDbReader historyDeletionDbReader;
+  private final Duration minimumDeletionInterval = Duration.ofSeconds(1);
+  private final Duration maximumDeletionInterval = Duration.ofMinutes(5);
+  private Duration currentDeletionInterval = minimumDeletionInterval;
 
   public HistoryDeletionService(
       final RdbmsWriters rdbmsWriters, final HistoryDeletionDbReader historyDeletionDbReader) {
@@ -32,6 +38,58 @@ public class HistoryDeletionService {
   public Duration deleteHistory(final int partitionId) {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, 100);
     LOG.trace("Deleting historic data for entities: {}", batch);
-    return Duration.ofSeconds(1);
+
+    final var deletedProcessInstances = deleteProcessInstances(batch);
+    final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedProcessInstances);
+
+    if (deletedResourceCount > 0) {
+      return minimumDeletionInterval;
+    } else if (currentDeletionInterval.compareTo(maximumDeletionInterval) >= 0) {
+      return maximumDeletionInterval;
+    } else {
+      currentDeletionInterval = currentDeletionInterval.multipliedBy(2);
+      return currentDeletionInterval;
+    }
+  }
+
+  private List<Long> deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
+    final var processInstanceKeys =
+        batch.stream()
+            .filter(
+                deletionModel ->
+                    deletionModel
+                        .resourceType()
+                        .equals(HistoryDeletionTypeDbModel.PROCESS_INSTANCE))
+            .map(HistoryDeletionDbModel::resourceKey)
+            .toList();
+
+    if (processInstanceKeys.isEmpty()) {
+      return List.of();
+    }
+
+    final var allProcessInstanceDependantDataDeleted =
+        rdbmsWriters.getProcessInstanceDependantWriters().stream()
+            .allMatch(
+                dependant -> {
+                  final var limit = 10000; // TODO make limit configurable
+                  final var deletedRows =
+                      dependant.deleteProcessInstanceRelatedData(processInstanceKeys, limit);
+                  return deletedRows < limit;
+                });
+
+    if (allProcessInstanceDependantDataDeleted) {
+      rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);
+      return processInstanceKeys;
+    }
+
+    return List.of();
+  }
+
+  private int deleteFromHistoryDeletionTable(final List<Long> deletedResourceKeys) {
+    if (deletedResourceKeys.isEmpty()) {
+      return 0;
+    }
+
+    return rdbmsWriters.getHistoryDeletionWriter().deleteByResourceKeys(deletedResourceKeys);
   }
 }

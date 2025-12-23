@@ -11,7 +11,7 @@ import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import java.util.List;
 
-public interface AuditLogMapper {
+public interface AuditLogMapper extends ProcessInstanceDependantMapper {
 
   void insert(AuditLogDbModel auditLog);
 

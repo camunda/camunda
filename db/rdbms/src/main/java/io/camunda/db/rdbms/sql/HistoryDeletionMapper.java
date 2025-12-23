@@ -20,4 +20,6 @@ public interface HistoryDeletionMapper {
 
   int delete(
       @Param("resourceKey") long resourceKey, @Param("batchOperationKey") long batchOperationKey);
+
+  int deleteByResourceKeys(final List<Long> resourceKeys);
 }
