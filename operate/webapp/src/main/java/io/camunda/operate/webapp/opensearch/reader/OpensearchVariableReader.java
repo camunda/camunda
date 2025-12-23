@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.opensearch.reader;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.operate.util.CollectionUtil.toSafeListOfStrings;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.FULL_VALUE;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
 
@@ -17,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
@@ -225,19 +225,22 @@ public class OpensearchVariableReader implements VariableReader {
     if (directSorting) { // this sorting is also the default one for 1st page
       searchRequest.sort(sortOptions(NAME, SortOrder.Asc));
       if (request.getSearchAfter() != null) {
-        searchRequest.searchAfter(toSafeListOfStrings(request.getSearchAfter(objectMapper)));
+        searchRequest.searchAfter(
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchAfter(objectMapper)));
       } else if (request.getSearchAfterOrEqual() != null) {
-        searchRequest.searchAfter(toSafeListOfStrings(request.getSearchAfterOrEqual(objectMapper)));
+        searchRequest.searchAfter(
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchAfterOrEqual(objectMapper)));
       }
       searchRequest.size(request.getPageSize());
     } else { // searchBefore != null
       // reverse sorting
       searchRequest.sort(sortOptions(NAME, SortOrder.Desc));
       if (request.getSearchBefore() != null) {
-        searchRequest.searchAfter(toSafeListOfStrings(request.getSearchBefore(objectMapper)));
+        searchRequest.searchAfter(
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchBefore(objectMapper)));
       } else if (request.getSearchBeforeOrEqual() != null) {
         searchRequest.searchAfter(
-            toSafeListOfStrings(request.getSearchBeforeOrEqual(objectMapper)));
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchBeforeOrEqual(objectMapper)));
       }
       searchRequest.size(request.getPageSize() + 1);
     }

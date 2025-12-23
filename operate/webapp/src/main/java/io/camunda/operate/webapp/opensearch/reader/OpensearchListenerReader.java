@@ -132,7 +132,7 @@ public class OpensearchListenerReader extends OpensearchAbstractReader implement
     }
 
     if (querySearchAfter != null) {
-      searchSourceBuilder.searchAfter(CollectionUtil.toSafeListOfStrings(querySearchAfter));
+      searchSourceBuilder.searchAfter(CollectionUtil.toSafeListOfOSFieldValues(querySearchAfter));
     }
 
     searchSourceBuilder

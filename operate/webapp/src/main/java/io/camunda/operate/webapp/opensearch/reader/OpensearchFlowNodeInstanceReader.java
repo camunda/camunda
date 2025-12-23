@@ -41,6 +41,7 @@ import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
@@ -68,7 +69,6 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,7 +76,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.aggregations.*;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -148,20 +147,19 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                         latestFlowNodeAggName,
                         topHitsAggregation(
                                 List.of(STATE, TREE_PATH), 1, sortOptions(START_DATE, Desc))
-                            ._toAggregation()))));
+                            .toAggregation()))));
 
     final Aggregation finishedFlowNodesAggs =
         withSubaggregations(
             term(STATE, COMPLETED.name()),
             Map.of(
                 FINISHED_FLOW_NODES_BUCKETS_AGG_NAME,
-                termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE)._toAggregation()));
+                termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE).toAggregation()));
 
     final Aggregation incidentsAggs =
         withSubaggregations(
             term(INCIDENT, true),
-            Map.of(
-                AGG_INCIDENT_PATHS, termAggregation(TREE_PATH, TERMS_AGG_SIZE)._toAggregation()));
+            Map.of(AGG_INCIDENT_PATHS, termAggregation(TREE_PATH, TERMS_AGG_SIZE).toAggregation()));
 
     final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
@@ -257,23 +255,23 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                 withSubaggregations(
                     termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
                     Map.of(
-                        COUNT_INCIDENT, term(INCIDENT, true)._toAggregation(),
+                        COUNT_INCIDENT, term(INCIDENT, true).toAggregation(),
                         COUNT_CANCELED,
                             and(
                                     not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
                                     term(STATE, TERMINATED.name()))
-                                ._toAggregation(),
+                                .toAggregation(),
                         COUNT_COMPLETED,
                             and(
                                     not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
                                     term(STATE, COMPLETED.name()))
-                                ._toAggregation(),
+                                .toAggregation(),
                         COUNT_ACTIVE,
                             and(
                                     not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
                                     term(STATE, ACTIVE.name()),
                                     term(INCIDENT, false))
-                                ._toAggregation())))
+                                .toAggregation())))
             .size(0);
     return richOpenSearchClient
         .doc()
@@ -374,7 +372,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
     final Aggregation runningParentsAgg =
         and(not(exists(END_DATE)), prefix(TREE_PATH, parentTreePath), term(LEVEL, level - 1))
-            ._toAggregation();
+            .toAggregation();
 
     final Query postFilter = and(term(LEVEL, level), prefix(TREE_PATH, parentTreePath), idsQuery);
 
@@ -444,25 +442,24 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             || request.getSearchAfterOrEqual() != null
             || (request.getSearchBefore() == null && request.getSearchBeforeOrEqual() == null);
 
-    final Function<Object[], List<String>> toStrings =
-        objects -> Arrays.stream(objects).map(Object::toString).toList();
-
     if (directSorting) { // this sorting is also the default one for 1st page
       searchRequestBuilder.sort(sortOptions(START_DATE, Asc), sortOptions(ID, Asc));
       if (request.getSearchAfter() != null) {
-        searchRequestBuilder.searchAfter(toStrings.apply(request.getSearchAfter(objectMapper)));
+        searchRequestBuilder.searchAfter(
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchAfter(objectMapper)));
       } else if (request.getSearchAfterOrEqual() != null) {
         searchRequestBuilder.searchAfter(
-            toStrings.apply(request.getSearchAfterOrEqual(objectMapper)));
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchAfterOrEqual(objectMapper)));
       }
     } else { // searchBefore != null
       // reverse sorting
       searchRequestBuilder.sort(sortOptions(START_DATE, Desc), sortOptions(ID, Desc));
       if (request.getSearchBefore() != null) {
-        searchRequestBuilder.searchAfter(toStrings.apply(request.getSearchBefore(objectMapper)));
+        searchRequestBuilder.searchAfter(
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchBefore(objectMapper)));
       } else if (request.getSearchBeforeOrEqual() != null) {
         searchRequestBuilder.searchAfter(
-            toStrings.apply(request.getSearchBeforeOrEqual(objectMapper)));
+            CollectionUtil.toSafeListOfOSFieldValues(request.getSearchBeforeOrEqual(objectMapper)));
       }
     }
   }
@@ -511,7 +508,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             .query(withTenantCheck(term(PROCESS_INSTANCE_KEY, processInstanceId)))
             .size(0)
             .aggregations(
-                NUMBER_OF_INCIDENTS_FOR_TREE_PATH, filtersAggregation(filters)._toAggregation());
+                NUMBER_OF_INCIDENTS_FOR_TREE_PATH, filtersAggregation(filters).toAggregation());
 
     final Map<String, Long> flowNodeIdIncidents =
         richOpenSearchClient
@@ -686,7 +683,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   private LongTermsBucket getBucketFromLevel(
       final Buckets<LongTermsBucket> buckets, final int level) {
     return buckets.array().stream()
-        .filter(b -> Integer.valueOf(b.key()).intValue() == level)
+        .filter(d -> d.key().signed().intValue() == level)
         .findFirst()
         .get();
   }
@@ -866,7 +863,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
         termAggregation(LEVEL, TERMS_AGG_SIZE, Map.of("_key", Asc)), // upper level first
         Map.of(
             LEVELS_TOP_HITS_AGG_NAME,
-            topHitsAggregation(1)._toAggregation()) // select one instance per each level
+            topHitsAggregation(1).toAggregation()) // select one instance per each level
         );
   }
 

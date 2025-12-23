@@ -375,7 +375,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                     s -> s.field(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc))))
             .size(1)
             .build()
-            ._toAggregation();
+            .toAggregation();
 
     final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder().index(processIndex.getAlias()).query(query).size(0);

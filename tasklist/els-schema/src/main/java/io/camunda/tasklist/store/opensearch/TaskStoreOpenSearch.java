@@ -29,6 +29,7 @@ import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.util.OpenSearchUtil.QueryType;
 import io.camunda.tasklist.views.TaskSearchView;
@@ -827,7 +828,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       searchRequestBuilder.size(query.getPageSize());
     }
     if (querySearchAfter != null) {
-      searchRequestBuilder.searchAfter(Arrays.stream(querySearchAfter).toList());
+      searchRequestBuilder.searchAfter(CollectionUtil.toSafeListOfOSFieldValues(querySearchAfter));
     }
   }
 

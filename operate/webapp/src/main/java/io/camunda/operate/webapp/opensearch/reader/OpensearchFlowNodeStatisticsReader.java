@@ -125,7 +125,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
         AGG_UNIQUE_ACTIVITIES,
         withSubaggregations(
             termAggregation(ACTIVITY_ID, TERMS_AGG_SIZE),
-            Map.of(AGG_ACTIVITY_TO_PROCESS, parent(ACTIVITIES_JOIN_RELATION)._toAggregation())));
+            Map.of(AGG_ACTIVITY_TO_PROCESS, parent(ACTIVITIES_JOIN_RELATION).toAggregation())));
   }
 
   private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(

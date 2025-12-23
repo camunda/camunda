@@ -17,6 +17,7 @@ import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -96,7 +97,7 @@ public abstract class OpensearchSearchableDao<T, R> {
   protected void buildPaging(final Query<T> query, final SearchRequest.Builder request) {
     final Object[] searchAfter = query.getSearchAfter();
     if (searchAfter != null) {
-      request.searchAfter(CollectionUtil.toSafeListOfStrings(searchAfter));
+      request.searchAfter(CollectionUtil.toSafeListOfOSFieldValues(searchAfter));
     }
     request.size(query.getSize());
   }
@@ -114,7 +115,8 @@ public abstract class OpensearchSearchableDao<T, R> {
               .filter(Objects::nonNull)
               .toList();
 
-      final List<String> sortValues = hits.get(hits.size() - 1).sort();
+      final List<String> sortValues =
+          hits.getLast().sort().stream().map(FieldValue::stringValue).toList();
 
       return new Results<T>()
           .setTotal(results.total().value())

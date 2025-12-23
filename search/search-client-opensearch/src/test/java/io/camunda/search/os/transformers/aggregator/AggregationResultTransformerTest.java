@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.json.jackson.JacksonJsonpParser;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -191,7 +191,7 @@ public class AggregationResultTransformerTest {
         .map(
             processId ->
                 CompositeBucket.of(
-                    cb -> cb.key(Map.of("bpmnProcessId", JsonData.of(processId))).docCount(90)))
+                    cb -> cb.key(Map.of("bpmnProcessId", FieldValue.of(processId))).docCount(90)))
         .collect(Collectors.toList());
   }
 }

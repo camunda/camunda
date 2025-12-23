@@ -249,7 +249,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
                             BatchOperationTemplate.FAILED_OPERATIONS_COUNT, failedOperationQuery,
                             BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
                                 completedOperationQuery))
-                    ._toAggregation());
+                    .toAggregation());
     return searchRequestBuilder;
   }
 }

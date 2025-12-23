@@ -129,7 +129,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
       }
 
       final List<LongTermsBucket> buckets = aggregate.lterms().buckets().array();
-      return buckets.stream().map(l -> Long.valueOf(l.key())).collect(Collectors.toSet());
+      return buckets.stream().map(l -> l.key().signed()).collect(Collectors.toSet());
     } catch (final IOException | OpenSearchException e) {
       LOGGER.error(
           "Error while retrieving assigned users between dates from index: " + template, e);

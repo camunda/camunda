@@ -30,8 +30,6 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -44,8 +42,8 @@ public class OpensearchIncidentStore implements IncidentStore {
       TermQuery.of(
               q ->
                   q.field(IncidentTemplate.STATE).value(FieldValue.of(IncidentState.ACTIVE.name())))
-          ._toQuery();
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchIncidentStore.class);
+          .toQuery();
+
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired private IncidentTemplate incidentTemplate;
@@ -82,7 +80,7 @@ public class OpensearchIncidentStore implements IncidentStore {
                             IncidentTemplate.ERROR_TYPE,
                             ErrorType.values().length,
                             Map.of("_key", SortOrder.Asc))
-                        ._toAggregation()));
+                        .toAggregation()));
 
     final OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result =
         richOpenSearchClient.doc().scrollValuesAndAggregations(request, IncidentEntity.class);

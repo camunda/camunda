@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -149,7 +150,7 @@ public class OpensearchSearchableDaoTest {
     final Hit<Object> validHit = Mockito.mock(Hit.class);
 
     when(validHit.source()).thenReturn(new Object());
-    when(validHit.sort()).thenReturn(Collections.singletonList("sortVal"));
+    when(validHit.sort()).thenReturn(Collections.singletonList(FieldValue.of("sortVal")));
     when(mockHitsMetadata.hits()).thenReturn(Collections.singletonList(validHit));
     when(mockHitsMetadata.total()).thenReturn(mockTotalHits);
     when(mockTotalHits.value()).thenReturn(1L);

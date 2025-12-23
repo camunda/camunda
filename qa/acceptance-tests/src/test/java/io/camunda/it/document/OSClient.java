@@ -25,6 +25,8 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
+import org.opensearch.client.opensearch.snapshot.Repository;
+import org.opensearch.client.opensearch.snapshot.RestoreSnapshotRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 
 public class OSClient implements DocumentClient {
@@ -45,7 +47,7 @@ public class OSClient implements DocumentClient {
       throws IOException {
     for (final var snapshot : snapshots) {
       final var request =
-          org.opensearch.client.opensearch.snapshot.RestoreRequest.of(
+          RestoreSnapshotRequest.of(
               rb ->
                   rb.repository(repositoryName)
                       .snapshot(snapshot)
@@ -60,8 +62,7 @@ public class OSClient implements DocumentClient {
   @Override
   public void createRepository(final String repositoryName) throws IOException {
     final var repository =
-        org.opensearch.client.opensearch.snapshot.Repository.of(
-            r -> r.type("fs").settings(s -> s.location(repositoryName)));
+        Repository.of(r -> r.type("fs").settings(s -> s.location(repositoryName)));
     final var response =
         opensearchClient
             .snapshot()
@@ -95,7 +96,8 @@ public class OSClient implements DocumentClient {
   }
 
   @Override
-  public void index(String indexName, String documentId, Object document) throws IOException {
+  public void index(final String indexName, final String documentId, final Object document)
+      throws IOException {
     final var indexRequest =
         IndexRequest.of(i -> i.index(indexName).id(documentId).document(document));
 
@@ -109,12 +111,12 @@ public class OSClient implements DocumentClient {
   }
 
   @Override
-  public void refresh(String indexName) throws IOException {
+  public void refresh(final String indexName) throws IOException {
     final var refreshRequest = RefreshRequest.of(r -> r.index(indexName));
     final var response = opensearchClient.indices().refresh(refreshRequest);
 
     // Check if refresh was successful
-    if (response.shards() != null && response.shards().failed().intValue() > 0) {
+    if (response.shards() != null && response.shards().failed() > 0) {
       throw new IOException(
           "Refresh failed for index: "
               + indexName
@@ -124,7 +126,8 @@ public class OSClient implements DocumentClient {
   }
 
   @Override
-  public void bulkIndex(String indexName, Collection<DocumentWithId> documents) throws IOException {
+  public void bulkIndex(final String indexName, final Collection<DocumentWithId> documents)
+      throws IOException {
     if (documents.isEmpty()) {
       return; // Nothing to index
     }
@@ -149,6 +152,6 @@ public class OSClient implements DocumentClient {
 
   @Override
   public void close() throws Exception {
-    osRestClient.close();
+    transport.close();
   }
 }

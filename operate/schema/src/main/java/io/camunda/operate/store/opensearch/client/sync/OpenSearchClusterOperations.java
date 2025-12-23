@@ -13,11 +13,11 @@ import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
-import org.opensearch.client.opensearch.nodes.Stats;
+import org.opensearch.client.opensearch.nodes.stats.Stats;
 import org.slf4j.Logger;
 
 public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
-  public OpenSearchClusterOperations(Logger logger, OpenSearchClient openSearchClient) {
+  public OpenSearchClusterOperations(final Logger logger, final OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
   }
 
@@ -27,7 +27,7 @@ public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
           openSearchClient.cluster().health(h -> h.timeout(t -> t.time("5s")));
       final HealthStatus status = response.status();
       return !response.timedOut() && !status.equals(HealthStatus.Red);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       logger.error(
           String.format(
               "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
@@ -101,8 +102,8 @@ public final class SearchRequestTransformer
     return values.stream().map(sortTransformer::apply).collect(Collectors.toList());
   }
 
-  private List<String> of(final Object[] values) {
-    return Arrays.asList(values).stream().map(Object::toString).collect(Collectors.toList());
+  private List<FieldValue> of(final Object[] values) {
+    return Arrays.stream(values).map(Object::toString).map(FieldValue::of).toList();
   }
 
   private SourceConfig of(final SearchSourceConfig value) {

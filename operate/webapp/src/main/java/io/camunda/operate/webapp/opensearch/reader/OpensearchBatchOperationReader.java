@@ -13,19 +13,18 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.reversedView;
-import static io.camunda.operate.util.ConversionUtils.toStringArray;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.ID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.Arrays;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -100,7 +99,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
             .size(batchOperationRequestDto.getPageSize());
 
     if (querySearchAfter != null) {
-      searchRequestBuilder.searchAfter(Arrays.asList(toStringArray(querySearchAfter)));
+      searchRequestBuilder.searchAfter(CollectionUtil.toSafeListOfOSFieldValues(querySearchAfter));
     }
 
     return searchRequestBuilder;

@@ -11,18 +11,19 @@ import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.util.List;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.search.Hit;
 
 public final class SearchQueryHitTransformer<T>
     extends OpensearchTransformer<Hit<T>, SearchQueryHit<T>> {
 
-  public SearchQueryHitTransformer(OpensearchTransformers transformers) {
+  public SearchQueryHitTransformer(final OpensearchTransformers transformers) {
     super(transformers);
   }
 
   @Override
-  public SearchQueryHit<T> apply(Hit<T> value) {
-    final var sortValues = toArray(value.sort());
+  public SearchQueryHit<T> apply(final Hit<T> value) {
+    final var sortValues = value.sort().stream().map(FieldValue::stringValue).toArray();
     return new SearchQueryHit.Builder<T>()
         .id(value.id())
         .index(value.index())

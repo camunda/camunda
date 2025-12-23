@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.opensearch.reader;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.operate.util.CollectionUtil.toSafeListOfStrings;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.*;
 import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED;
@@ -268,7 +267,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
                 q.format(operateProperties.getOpensearch().getDateFormat());
                 return q;
               });
-      return query._toQuery();
+      return query.toQuery();
     }
     return null;
   }
@@ -343,7 +342,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
 
     searchRequest.sort(sort2).sort(sort3).size(request.getPageSize());
     if (querySearchAfter != null) {
-      searchRequest.searchAfter(toSafeListOfStrings(querySearchAfter));
+      searchRequest.searchAfter(CollectionUtil.toSafeListOfOSFieldValues(querySearchAfter));
     }
   }
 

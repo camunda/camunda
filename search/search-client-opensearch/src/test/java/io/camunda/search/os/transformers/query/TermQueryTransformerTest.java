@@ -75,7 +75,7 @@ public class TermQueryTransformerTest {
                 .caseInsensitive(false)
                 .build()
                 .toSearchQuery(),
-            "{'term':{'foo':{'value':'string','case_insensitive':false}}}"),
+            "{'term':{'foo':{'case_insensitive':false,'value':'string'}}}"),
         Arguments.arguments(
             SearchQueryBuilders.term()
                 .field("foo")

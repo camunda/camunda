@@ -12,8 +12,11 @@ import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.ScriptLanguage;
+import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery.Builder;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,12 +54,17 @@ public class BackupRestoreDataGeneratorOpenSearch extends AbstractBackupRestoreD
       openSearchClient.updateByQuery(
           qr ->
               qr.index(getMainIndexNameFor(TaskTemplate.INDEX_NAME))
-                  .query(new MatchAllQuery.Builder().build()._toQuery())
+                  .query(new Builder().build().toQuery())
                   .script(
                       s ->
                           s.inline(
-                              is -> is.lang("painless").source("ctx._source.assignee = 'demo'")))
-                  .refresh(true));
+                              is ->
+                                  is.lang(
+                                          ScriptLanguage.builder()
+                                              .builtin(BuiltinScriptLanguage.Painless)
+                                              .build())
+                                      .source("ctx._source.assignee = 'demo'")))
+                  .refresh(Refresh.True));
     } catch (final OpenSearchException | IOException e) {
       throw new RuntimeException(e);
     }

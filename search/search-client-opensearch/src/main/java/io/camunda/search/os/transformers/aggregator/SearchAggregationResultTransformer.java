@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
@@ -70,7 +71,10 @@ public class SearchAggregationResultTransformer<T>
 
   private AggregationResult transformSingleMetricAggregate(
       final SingleMetricAggregateBase aggregate) {
-    return new Builder().docCount((long) aggregate.value()).build();
+    if (aggregate.value() == null) {
+      return new Builder().docCount(0L).build();
+    }
+    return new Builder().docCount(Math.round(aggregate.value())).build();
   }
 
   private SearchTopHitsAggregator findTopHitsAggregatorRecursively(
@@ -141,7 +145,7 @@ public class SearchAggregationResultTransformer<T>
                   case final LongTermsBucket b -> b.keyAsString();
                   case final CompositeBucket b ->
                       b.key().values().stream()
-                          .map(SearchAggregationResultTransformer::fieldValueToString)
+                          .map(FieldValue::stringValue)
                           .collect(Collectors.joining(COMPOSITE_KEY_DELIMITER));
                   default ->
                       throw new IllegalStateException(
@@ -163,18 +167,12 @@ public class SearchAggregationResultTransformer<T>
     if (aggregate instanceof final CompositeAggregate compositeAggregate) {
       return compositeAggregate.afterKey() != null
           ? compositeAggregate.afterKey().entrySet().stream()
-              .collect(
-                  Collectors.toMap(
-                      Map.Entry::getKey, entry -> fieldValueToString(entry.getValue())))
+              .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stringValue()))
               .entrySet()
               .toArray()
           : null;
     }
     return null;
-  }
-
-  private static String fieldValueToString(final JsonData fieldValue) {
-    return fieldValue.to(String.class);
   }
 
   private Map<String, AggregationResult> transformAggregation(

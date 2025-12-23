@@ -102,7 +102,7 @@ public class OpensearchDecisionReader implements DecisionReader {
                                         sourceFields,
                                         TOPHITS_AGG_SIZE,
                                         sortOptions(DecisionIndex.VERSION, SortOrder.Desc))
-                                    ._toAggregation())))));
+                                    .toAggregation())))));
 
     final Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
     final var response = richOpenSearchClient.doc().search(aggregationsRequest, Object.class);

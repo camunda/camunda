@@ -39,6 +39,8 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Slices;
+import org.opensearch.client.opensearch._types.SlicesCalculation;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
@@ -60,7 +62,8 @@ import org.slf4j.Logger;
 public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
-  private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
+  private static final Slices AUTO_SLICES =
+      Slices.builder().calculation(SlicesCalculation.Auto).build();
 
   private final int partitionId;
   private final HistoryConfiguration config;
