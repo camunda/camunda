@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -75,7 +77,10 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  */
 public final class S3BackupStore implements BackupStore {
   static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
+      new ObjectMapper()
+          .registerModule(new Jdk8Module())
+          .registerModule(new JavaTimeModule())
+          .disable(WRITE_DATES_AS_TIMESTAMPS);
   static final String SNAPSHOT_PREFIX = "snapshot/";
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
