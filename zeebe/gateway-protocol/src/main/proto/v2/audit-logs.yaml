@@ -262,6 +262,10 @@ components:
           description: The actor type search filter.
           allOf:
             - $ref: '#/components/schemas/AuditLogActorTypeFilterProperty'
+        entityKey:
+          description: The entity key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AuditLogEntityKeyFilterProperty'
         entityType:
           description: The entity type search filter.
           allOf:

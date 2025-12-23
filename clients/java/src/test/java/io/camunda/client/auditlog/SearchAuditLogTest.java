@@ -79,6 +79,7 @@ public class SearchAuditLogTest extends ClientRestTest {
         .filter(
             fn ->
                 fn.auditLogKey("auditLogKey")
+                    .entityKey("entityKey")
                     .processInstanceKey("processInstanceKey")
                     .processDefinitionKey("processDefinitionKey")
                     .elementInstanceKey("elementInstanceKey")
@@ -102,6 +103,7 @@ public class SearchAuditLogTest extends ClientRestTest {
     final AuditLogFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getAuditLogKey().get$Eq()).isEqualTo("auditLogKey");
+    assertThat(filter.getEntityKey().get$Eq()).isEqualTo("entityKey");
     assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo("processInstanceKey");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("processDefinitionKey");
     assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("elementInstanceKey");
