@@ -1,0 +1,79 @@
+# type: Project Management
+# owner: @camunda/monorepo-devops-team
+---
+name: Check for Inactive Projects
+
+on:
+  schedule:
+    # Run on the first Friday of every month at 9:00 AM UTC
+    - cron: '0 9 1-7 * 5'
+  workflow_dispatch:
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  check-inactive-projects:
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+
+      - name: Check for inactive projects
+        id: check-projects
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          .github/scripts/check-inactive-projects.sh
+
+      - name: Send Slack notification
+        if: steps.check-projects.outputs.inactive-projects-found != '0'
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":sleeping: Potentially Inactive Projects Found"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ steps.check-projects.outputs.inactive-projects-found }}* open project(s) have either no open issues, or no detected issues with status changes in the last 30 days:\n\n${{ steps.check-projects.outputs.inactive-projects-list }}\n\nEMs working in `camunda/camunda`: Please review these projects and archive any that are complete or no longer active."
+                  }
+                }
+              ]
+            }
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

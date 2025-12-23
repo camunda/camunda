@@ -1,0 +1,79 @@
+# type: Project Management
+# owner: @camunda/monorepo-devops-team
+---
+name: Check for Orphaned Issues
+
+on:
+  schedule:
+    # Run every Friday at 9:00 AM UTC
+    - cron: '0 9 * * 5'
+  workflow_dispatch:
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  check-orphaned-issues:
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+
+      - name: Check for orphaned issues
+        id: check-issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          .github/scripts/check-orphaned-issues.sh
+
+      - name: Send Slack notification
+        if: steps.check-issues.outputs.orphaned-issues-found != '0'
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":warning: Orphaned Issues Found"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ steps.check-issues.outputs.orphaned-issues-found }}* open issue(s) are not assigned to any active project board:\n\n${{ steps.check-issues.outputs.orphaned-issues-message }}\n\nPlease review these issues and add them to the relevant project boards for triage and prioritization."
+                  }
+                }
+              ]
+            }
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
