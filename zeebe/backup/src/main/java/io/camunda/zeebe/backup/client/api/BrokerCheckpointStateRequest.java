@@ -5,34 +5,36 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.backup;
+package io.camunda.zeebe.backup.client.api;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
-import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
-import io.camunda.zeebe.protocol.management.BackupStatusResponseDecoder;
+import io.camunda.zeebe.protocol.management.CheckpointStateResponseDecoder;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class BackupDeleteRequest extends BrokerRequest<BackupStatusResponse> {
-  protected final BackupRequest request = new BackupRequest();
-  protected final BackupStatusResponse response = new BackupStatusResponse();
+public class BrokerCheckpointStateRequest extends BrokerRequest<CheckpointStateResponse> {
 
-  public BackupDeleteRequest() {
-    super(BackupStatusResponseDecoder.SCHEMA_ID, BackupStatusResponseDecoder.TEMPLATE_ID);
-    request.setType(BackupRequestType.DELETE);
+  private final BackupRequest request = new BackupRequest();
+  private final CheckpointStateResponse response = new CheckpointStateResponse();
+
+  public BrokerCheckpointStateRequest() {
+    super(CheckpointStateResponseDecoder.SCHEMA_ID, CheckpointStateResponseDecoder.TEMPLATE_ID);
+    request.setType(BackupRequestType.QUERY_STATE);
   }
 
-  public long getBackupId() {
-    return request.getBackupId();
+  public CheckpointType getCheckpointType() {
+    return request.getCheckpointType();
   }
 
-  public void setBackupId(final long backupId) {
-    request.setBackupId(backupId);
+  public void setCheckpointType(final CheckpointType checkpointType) {
+    request.setCheckpointType(checkpointType);
   }
 
   @Override
@@ -71,18 +73,18 @@ public class BackupDeleteRequest extends BrokerRequest<BackupStatusResponse> {
   }
 
   @Override
-  protected BrokerResponse<BackupStatusResponse> readResponse() {
-    return new BrokerResponse<>(response, response.getPartitionId(), -1);
+  protected BrokerResponse<CheckpointStateResponse> readResponse() {
+    return new BrokerResponse<>(response);
   }
 
   @Override
-  protected BackupStatusResponse toResponseDto(final DirectBuffer buffer) {
+  protected CheckpointStateResponse toResponseDto(final DirectBuffer buffer) {
     return response;
   }
 
   @Override
   public String getType() {
-    return "Backup#delete";
+    return "Backup#state";
   }
 
   @Override

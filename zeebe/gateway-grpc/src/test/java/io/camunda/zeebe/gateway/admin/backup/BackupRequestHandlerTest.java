@@ -9,6 +9,13 @@ package io.camunda.zeebe.gateway.admin.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.backup.client.api.BackupAlreadyExistException;
+import io.camunda.zeebe.backup.client.api.BackupDeleteRequest;
+import io.camunda.zeebe.backup.client.api.BackupListRequest;
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.backup.client.api.BackupResponse;
+import io.camunda.zeebe.backup.client.api.BackupStatus;
+import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;

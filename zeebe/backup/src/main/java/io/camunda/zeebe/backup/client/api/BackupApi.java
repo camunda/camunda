@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.backup;
+package io.camunda.zeebe.backup.client.api;
 
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import java.util.List;

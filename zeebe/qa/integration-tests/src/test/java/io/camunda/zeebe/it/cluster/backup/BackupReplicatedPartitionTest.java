@@ -9,13 +9,13 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.backup.client.api.BackupStatus;
+import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
-import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
-import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
-import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.test.testcontainers.MinioContainer;

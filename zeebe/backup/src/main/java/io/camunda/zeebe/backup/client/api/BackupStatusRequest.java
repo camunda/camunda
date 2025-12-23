@@ -5,27 +5,27 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.backup;
+package io.camunda.zeebe.backup.client.api;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
-import io.camunda.zeebe.protocol.management.BackupListResponseDecoder;
+import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
+import io.camunda.zeebe.protocol.management.BackupStatusResponseDecoder;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class BackupListRequest extends BrokerRequest<BackupListResponse> {
+public class BackupStatusRequest extends BrokerRequest<BackupStatusResponse> {
 
   protected final BackupRequest request = new BackupRequest();
-  protected final BackupListResponse response = new BackupListResponse();
+  protected final BackupStatusResponse response = new BackupStatusResponse();
 
-  public BackupListRequest() {
-    super(BackupListResponseDecoder.SCHEMA_ID, BackupListResponseDecoder.TEMPLATE_ID);
-    request.setType(BackupRequestType.LIST);
+  public BackupStatusRequest() {
+    super(BackupStatusResponseDecoder.SCHEMA_ID, BackupStatusResponseDecoder.TEMPLATE_ID);
+    request.setType(BackupRequestType.QUERY_STATUS);
   }
 
   public long getBackupId() {
@@ -34,14 +34,6 @@ public class BackupListRequest extends BrokerRequest<BackupListResponse> {
 
   public void setBackupId(final long backupId) {
     request.setBackupId(backupId);
-  }
-
-  public String getPattern() {
-    return request.getPattern();
-  }
-
-  public void setPattern(final String pattern) {
-    request.setPattern(pattern);
   }
 
   @Override
@@ -80,18 +72,18 @@ public class BackupListRequest extends BrokerRequest<BackupListResponse> {
   }
 
   @Override
-  protected BrokerResponse<BackupListResponse> readResponse() {
-    return new BrokerResponse<>(response, getPartitionId(), -1);
+  protected BrokerResponse<BackupStatusResponse> readResponse() {
+    return new BrokerResponse<>(response, response.getPartitionId(), -1);
   }
 
   @Override
-  protected BackupListResponse toResponseDto(final DirectBuffer buffer) {
+  protected BackupStatusResponse toResponseDto(final DirectBuffer buffer) {
     return response;
   }
 
   @Override
   public String getType() {
-    return "Backup#list";
+    return "Backup#status";
   }
 
   @Override
