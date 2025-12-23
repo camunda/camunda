@@ -170,6 +170,7 @@ export class OperateFiltersPanelPage {
       assertion: async () => {
         await expect(this.processNameFilter).toBeVisible();
         await this.processNameFilter.click();
+        await this.processNameFilter.clear();
         await this.getOptionByName(option).click();
       },
       onFailure: async () => {
@@ -179,8 +180,15 @@ export class OperateFiltersPanelPage {
   }
 
   async selectVersion(option: string) {
-    await this.processVersionFilter.click();
-    await this.getOptionByName(option).click();
+    await waitForAssertion({
+      assertion: async () => {
+        await this.processVersionFilter.click();
+        await this.getOptionByName(option).click();
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async selectFlowNode(option: string) {

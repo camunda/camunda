@@ -72,6 +72,8 @@ export class OperateProcessMigrationModePage {
   }
 
   async clickMigrationConfirmationButton(): Promise<void> {
+    await expect(this.migrationConfirmationButton).toBeVisible();
+    await expect(this.migrationConfirmationButton).toBeEnabled();
     await this.migrationConfirmationButton.click();
   }
 

@@ -118,8 +118,8 @@ test.describe('Child Process Instance Migration', () => {
     const targetVersion = testProcesses.childProcessV2.version.toString();
     const targetBpmnProcessId = testProcesses.childProcessV2.bpmnProcessId;
     const parentInstanceKey = testProcesses.parentProcessInstanceKeys[0]!;
-    console.log('Source Version:', sourceVersion);
-    console.log('Target Version:', targetVersion);
+    console.log('Child source Version:', sourceVersion);
+    console.log('Child target Version:', targetVersion);
 
     await test.step('Navigate to parent process instance and view called child processes', async () => {
       await operateFiltersPanelPage.selectProcess(
@@ -128,34 +128,23 @@ test.describe('Child Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(
         testProcesses.parentProcess.version.toString(),
       );
-
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('2 results')).toBeVisible({
-            timeout: 30000,
-          });
+          await expect(page.getByText('2 results')).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
         },
       });
 
-      await operateProcessesPage
-        .processInstanceLinkByKey(parentInstanceKey)
-        .click();
-
-      await operateProcessInstancePage.clickViewAllChildProcesses();
-
-      const childVersion = await operateProcessesPage.versionCell
-        .first()
-        .innerText();
-
-      await expect(
-        operateProcessesPage.getParentInstanceCell(parentInstanceKey),
-      ).toBeVisible();
-
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(childVersion);
+      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Parent Process Instance Key',
+      );
+      await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+        parentInstanceKey,
+      );
 
       await waitForAssertion({
         assertion: async () => {
@@ -199,14 +188,11 @@ test.describe('Child Process Instance Migration', () => {
       await operateOperationPanelPage.expandOperationsPanel();
 
       await operateOperationPanelPage.waitForOperationToComplete();
-
-      await sleep(500);
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(1);
-
       await expect(operationEntry.last()).toBeVisible({timeout: 120000});
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
+      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+      await operateFiltersPanelPage.selectVersion(targetVersion);
     });
 
     await test.step('Verify 1 instance migrated to target version', async () => {
@@ -224,7 +210,7 @@ test.describe('Child Process Instance Migration', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.getVersionCells(targetVersion),
-          ).toHaveCount(1, {timeout: 30000});
+          ).toHaveCount(1);
         },
         onFailure: async () => {
           await page.reload();
@@ -237,7 +223,9 @@ test.describe('Child Process Instance Migration', () => {
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
-      await operateFiltersPanelPage.removeOptionalFilter('Operation Id');
+      await operateFiltersPanelPage.removeOptionalFilter(
+        'Parent Process Instance Key',
+      );
 
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
