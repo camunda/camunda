@@ -81,7 +81,18 @@ public interface Context {
      * @param valueType the type of the record value.
      * @return {@code true} if records with this type of value should be exported.
      */
-    boolean acceptValue(ValueType valueType);
+    boolean acceptValueType(ValueType valueType);
+
+    /**
+     * Should export records with the given value?
+     *
+     * @param value the value of the record.
+     * @return {@code true} if records with this value should be exported.
+     */
+    default boolean acceptValue(final RecordValue value) {
+      // default implementation accepts all values
+      return true;
+    }
 
     /**
      * Should export records with the given value?

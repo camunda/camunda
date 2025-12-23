@@ -270,7 +270,7 @@ public class OpensearchExporter implements Exporter {
     }
 
     @Override
-    public boolean acceptValue(final ValueType valueType) {
+    public boolean acceptValueType(final ValueType valueType) {
       return configuration.shouldIndexValueType(valueType);
     }
   }
