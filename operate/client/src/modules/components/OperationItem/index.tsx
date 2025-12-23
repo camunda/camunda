@@ -7,7 +7,6 @@
  */
 
 import {Error, Tools, RetryFailed} from '@carbon/react/icons';
-import {Icon} from 'carbon-components-react';
 import {Button, ButtonSize} from '@carbon/react';
 
 type ItemProps = {
@@ -24,7 +23,12 @@ type ItemProps = {
 const TYPE_DETAILS: Readonly<
   Record<
     ItemProps['type'],
-    {icon?: typeof Icon; testId: string; isDangerous?: boolean; label?: string}
+    {
+      icon?: React.ElementType;
+      testId: string;
+      isDangerous?: boolean;
+      label?: string;
+    }
   >
 > = {
   RESOLVE_INCIDENT: {icon: RetryFailed, testId: 'retry-operation'},

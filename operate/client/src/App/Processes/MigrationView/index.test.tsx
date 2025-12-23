@@ -12,6 +12,7 @@ import {
   Routes,
 } from 'react-router-dom';
 import {createMemoryHistory} from 'history';
+import type {History} from '@remix-run/router';
 import {render, screen, within} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -40,9 +41,11 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
 
     return (
       <HistoryRouter
-        history={createMemoryHistory({
-          initialEntries: [initialPath],
-        })}
+        history={
+          createMemoryHistory({
+            initialEntries: [initialPath],
+          }) as unknown as History
+        }
         basename={contextPath ?? ''}
       >
         <Routes>

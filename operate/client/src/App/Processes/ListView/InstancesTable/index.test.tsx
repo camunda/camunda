@@ -13,6 +13,7 @@ import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
 import {createMemoryHistory} from 'history';
+import type {History} from '@remix-run/router';
 
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -22,9 +23,11 @@ function getWrapper(initialPath: string = Paths.processes()) {
 
     return (
       <HistoryRouter
-        history={createMemoryHistory({
-          initialEntries: [initialPath],
-        })}
+        history={
+          createMemoryHistory({
+            initialEntries: [initialPath],
+          }) as unknown as History
+        }
       >
         {children}
         <button onClick={batchModificationStore.enable}>
