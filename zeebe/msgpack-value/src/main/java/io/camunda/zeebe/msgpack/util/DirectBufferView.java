@@ -34,10 +34,6 @@ final class DirectBufferView implements Comparable<DirectBufferView> {
       final long l = buffer.getLong(i);
       h = 31 * h + Long.hashCode(l);
     }
-    // Vectorized: process 4 bytes at a time
-    for (; i < (length & ~3); i += 4) {
-      h = 31 * h + buffer.getInt(i);
-    }
     // Process remaining bytes
     for (; i < length; i++) {
       h = 31 * h + buffer.getByte(i);
