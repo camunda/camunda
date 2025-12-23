@@ -41,7 +41,7 @@ import io.camunda.client.protocol.rest.GroupCreateResult;
 import io.camunda.client.protocol.rest.GroupResult;
 import io.camunda.client.protocol.rest.GroupUpdateResult;
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
-import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsQueryResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.IncidentResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.MappingRuleCreateResult;
@@ -431,9 +431,9 @@ public class RestGatewayService {
         response);
   }
 
-  public void onIncidentProcessInstanceStatisticsRequest(
-      final IncidentProcessInstanceStatisticsQueryResult response) {
-    registerPost(RestGatewayPaths.getIncidentProcessInstanceStatisticsUrl(), response);
+  public void onIncidentProcessInstanceStatisticsByErrorRequest(
+      final IncidentProcessInstanceStatisticsByErrorQueryResult response) {
+    registerPost(RestGatewayPaths.getIncidentProcessInstanceStatisticsByErrorUrl(), response);
   }
 
   public void onIncidentProcessInstanceStatisticsByDefinitionRequest(

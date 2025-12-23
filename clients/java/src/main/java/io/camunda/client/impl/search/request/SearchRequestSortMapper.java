@@ -622,8 +622,9 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<SearchRequestSort> fromIncidentProcessInstanceStatisticsQuerySortRequest(
-      final List<IncidentProcessInstanceStatisticsQuerySortRequest> requests) {
+  public static List<SearchRequestSort>
+      fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(
+          final List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest> requests) {
     return requests.stream()
         .map(r -> createFrom(r.getField(), r.getOrder()))
         .collect(Collectors.toList());

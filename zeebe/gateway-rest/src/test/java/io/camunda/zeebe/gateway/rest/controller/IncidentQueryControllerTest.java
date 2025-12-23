@@ -15,11 +15,11 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
-import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -47,7 +47,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   static final String INCIDENT_SEARCH_URL = INCIDENT_URL + "search";
 
   static final String INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL =
-      INCIDENT_URL + "statistics/process-instances";
+      INCIDENT_URL + "statistics/process-instances-by-error";
   static final String INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_URL =
       INCIDENT_URL + "statistics/process-instances-by-definition";
   static final Integer ERROR_HASH_CODE = 123456;
@@ -186,12 +186,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           }
           """;
 
-  private static final SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
+  private static final SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
       INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT =
-          new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsEntity>()
+          new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsByErrorEntity>()
               .items(
                   List.of(
-                      new IncidentProcessInstanceStatisticsEntity(
+                      new IncidentProcessInstanceStatisticsByErrorEntity(
                           123456, "This is an error message", 10L)))
               .total(1L)
               .startCursor(null)
@@ -398,8 +398,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldReturnIncidentProcessInstanceStatisticsByError() {
-    when(incidentServices.incidentProcessInstanceStatistics(
-            any(IncidentProcessInstanceStatisticsQuery.class)))
+    when(incidentServices.incidentProcessInstanceStatisticsByError(
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     webClient
@@ -417,8 +417,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(incidentServices)
-        .incidentProcessInstanceStatistics(
-            new IncidentProcessInstanceStatisticsQuery.Builder().build());
+        .incidentProcessInstanceStatisticsByError(
+            new IncidentProcessInstanceStatisticsByErrorQuery.Builder().build());
   }
 
   @Test
