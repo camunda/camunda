@@ -79,6 +79,7 @@ on:
         description: 'Specifies which platform test components to deploy. For example, `resources` can be modify as per the requirement. Allows arbitrary helm arguments, like --set console.resources.memory=2Gi'
         type: string
         required: false
+        default: ""
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
         default: ""
