@@ -21,8 +21,6 @@ import {
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {createFilter} from '@requestHelpers';
-import {filterCases} from '../../../../utils/beans/element-instance-requestBeans';
 
 /*
  * Test Suite for Element Instance Search API
@@ -114,32 +112,7 @@ test.describe('Element Instance Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // filterCases(resourceId).forEach(({filterKey, filterValue, expectedTotal}) => {
-  //   test(`Search Element Instances - Filter by ${filterKey} - Success`, async ({
-  //     request,
-  //   }) => {
-  //     await expect(async () => {
-  //       const filter: Record<string, unknown> = {};
-  //       const {key, value} = createFilter(filterKey, filterValue, state);
-  //       filter[key] = value;
-  //       const res = await request.post(buildUrl('/element-instances/search'), {
-  //         headers: jsonHeaders(),
-  //         data: {
-  //           filter: filter,
-  //         },
-  //       });
-  //       await assertStatusCode(res, 200);
-  //       const body = await res.json();
-  //       expect(body.page.totalItems).toBe(expectedTotal);
-  //       expect(body.items.length).toBe(expectedTotal);
-  //       for (const item of body.items) {
-  //         expect(item[key]).toBe(value);
-  //       }
-  //     }).toPass(defaultAssertionOptions);
-  //   });
-  // });
-
-  test(`Search Element Instances - Filter by differetnt filters - Success`, async ({
+  test(`Search Element Instances - Filter by different filters - Success`, async ({
       request,
     }) => {
       await test.step('Filter By processDefinitionId', async () => {
