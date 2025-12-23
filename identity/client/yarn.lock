@@ -1383,13 +1383,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:18.3.21":
-  version: 18.3.21
-  resolution: "@types/react@npm:18.3.21"
+"@types/react@npm:18.3.27":
+  version: 18.3.27
+  resolution: "@types/react@npm:18.3.27"
   dependencies:
     "@types/prop-types": "npm:*"
-    csstype: "npm:^3.0.2"
-  checksum: 10c0/b33424c62f01ab2404c60abef995e05aa1a696a636bdd77a34ef6c942d171c673b1e451d9dba7f9a169a83c9eef0ddfaf1ba08f6cef542df9404290199a73967
+    csstype: "npm:^3.2.2"
+  checksum: 10c0/a761d2f58de03d0714806cc65d32bb3d73fb33a08dd030d255b47a295e5fff2a775cf1c20b786824d8deb6454eaccce9bc6998d9899c14fc04bbd1b0b0b72897
   languageName: node
   linkType: hard
 
@@ -2081,6 +2081,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"csstype@npm:^3.2.2":
+  version: 3.2.3
+  resolution: "csstype@npm:3.2.3"
+  checksum: 10c0/cd29c51e70fa822f1cecd8641a1445bed7063697469d35633b516e60fe8c1bde04b08f6c5b6022136bb669b64c63d4173af54864510fbb4ee23281801841a3ce
+  languageName: node
+  linkType: hard
+
 "debug@npm:4, debug@npm:^4.0.0, debug@npm:^4.1.0, debug@npm:^4.3.1, debug@npm:^4.3.2, debug@npm:^4.3.4":
   version: 4.3.5
   resolution: "debug@npm:4.3.5"
@@ -2380,12 +2387,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-refresh@npm:0.4.20":
-  version: 0.4.20
-  resolution: "eslint-plugin-react-refresh@npm:0.4.20"
+"eslint-plugin-react-refresh@npm:0.4.26":
+  version: 0.4.26
+  resolution: "eslint-plugin-react-refresh@npm:0.4.26"
   peerDependencies:
     eslint: ">=8.40"
-  checksum: 10c0/2ccf4ba28f1dcbcb9e773e46eae1e61e568bba69281a700eb26fd762152e4e90a78c991f9c8173342a7cd2a82f3f52fedb40a1e81360cef9c40ea5b814fa3613
+  checksum: 10c0/11c2b25b7a7025e621b02970c4cf3815b0b77486027df9f8bb731cc52972156804fd163b0f99404b33e36a3c60cd1a1be8199ba64c66b5276da3173bbb5ab6e7
   languageName: node
   linkType: hard
 
@@ -2949,7 +2956,7 @@ __metadata:
     "@carbon/react": "npm:1.66.0"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.16.15"
-    "@types/react": "npm:18.3.21"
+    "@types/react": "npm:18.3.27"
     "@types/react-dom": "npm:18.3.7"
     "@types/react-transition-group": "npm:4.4.12"
     "@typescript-eslint/eslint-plugin": "npm:8.6.0"
@@ -2958,7 +2965,7 @@ __metadata:
     "@vzeta/rollup-plugin-sbom": "npm:2.0.0"
     eslint: "npm:8.57.1"
     eslint-plugin-react-hooks: "npm:4.6.2"
-    eslint-plugin-react-refresh: "npm:0.4.20"
+    eslint-plugin-react-refresh: "npm:0.4.26"
     event-source-polyfill: "npm:1.0.31"
     i18next: "npm:23.15.2"
     license-checker: "npm:25.0.1"
@@ -2972,9 +2979,9 @@ __metadata:
     react-transition-group: "npm:4.4.5"
     rollup-plugin-license: "npm:3.5.3"
     sass: "npm:1.79.6"
-    styled-components: "npm:6.1.18"
+    styled-components: "npm:6.1.19"
     typescript: "npm:5.6.3"
-    vite: "npm:7.0.7"
+    vite: "npm:7.0.8"
   languageName: unknown
   linkType: soft
 
@@ -5234,9 +5241,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"styled-components@npm:6.1.18":
-  version: 6.1.18
-  resolution: "styled-components@npm:6.1.18"
+"styled-components@npm:6.1.19":
+  version: 6.1.19
+  resolution: "styled-components@npm:6.1.19"
   dependencies:
     "@emotion/is-prop-valid": "npm:1.2.2"
     "@emotion/unitless": "npm:0.8.1"
@@ -5250,7 +5257,7 @@ __metadata:
   peerDependencies:
     react: ">= 16.8.0"
     react-dom: ">= 16.8.0"
-  checksum: 10c0/067778b8cf9aa24b23590d23210b0e7964c6469630e5ab821c68dac64af6e0c0270c972a836f60a8bbd9753770f0475f911fcd34eeba6bd003c233a79a391e6b
+  checksum: 10c0/8d20427a5debe54bfa3b55f79af2a3577551ed7f1d1cd34df986b73fd01ac519f9081b7737cc1f76e12fbc483fa50551e55be0bc984296e623cc6a2364697cd8
   languageName: node
   linkType: hard
 
@@ -5631,9 +5638,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:7.0.7":
-  version: 7.0.7
-  resolution: "vite@npm:7.0.7"
+"vite@npm:7.0.8":
+  version: 7.0.8
+  resolution: "vite@npm:7.0.8"
   dependencies:
     esbuild: "npm:^0.25.0"
     fdir: "npm:^6.4.6"
@@ -5682,7 +5689,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/ccede60fced8a738f10c804a47d82b551a4250114ceb3026dc65a7ef8ba4700154ad59a85674862271a53eecc3c300bfe4d41672ae26212d9f0a99fb995344fc
+  checksum: 10c0/733fc790c537af0d420d4002cb622ec228defcec7ef31e77d02fd9d4af4cb42e34da1dcbdb4c2175b3076edfb35860b56fbd7deda8676bf31e48fe830e1e0e61
   languageName: node
   linkType: hard
 
