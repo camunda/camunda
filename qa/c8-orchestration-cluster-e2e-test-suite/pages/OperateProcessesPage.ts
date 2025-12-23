@@ -427,6 +427,14 @@ class OperateProcessesPage {
   async clickViewParentInstanceFromList(): Promise<void> {
     await this.viewParentInstanceLinkInList.click();
   }
+
+  getNthProcessInstanceCheckbox(index: number): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .nth(index + 1) // +1 to skip header row
+      .getByRole('checkbox');
+  }
 }
 
 export {OperateProcessesPage};
