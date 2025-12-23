@@ -9,7 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.gateway.admin.backup.BackupApi;
+import io.camunda.zeebe.backup.client.api.BackupApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
