@@ -53,7 +53,6 @@ test.describe('Reset Clock API Tests', () => {
       const serverTimeMs = new Date(res.startDate).getTime();
       const nowMs = Date.now();
       const diff = Math.abs(serverTimeMs - nowMs);
-      console.log('Diff: ', diff);
       expect(diff).toBeLessThanOrEqual(MAX_DRIFT);
     });
   });
