@@ -10,7 +10,7 @@ package io.camunda.zeebe.dynamic.nodeid;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Initialized;
-import io.camunda.zeebe.util.ExponentialBackoff;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Objects;
@@ -33,8 +33,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final String taskId;
   private final Runnable onLeaseFailure;
   private final ScheduledExecutorService executor;
-  private final ExponentialBackoff backoff;
-  private long currentDelay;
+  private final ExponentialBackoffRetryDelay backoff;
   private final Duration renewalDelay;
   private ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
@@ -52,9 +51,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
-    backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseAcquireMaxDelay);
+    backoff = new ExponentialBackoffRetryDelay(Duration.ofSeconds(1), leaseAcquireMaxDelay);
     renewalDelay = leaseDuration.dividedBy(3);
-    currentDelay = 0L;
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
   }
 
@@ -133,7 +131,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         // wait a bit before retrying on all leases again.
         if (retryRound > 1) {
           try {
-            currentDelay = backoff.supplyRetryDelay(currentDelay);
+            final var currentDelay = backoff.nextDelay();
             LOG.debug(
                 "Attempt to acquire the lease failed for all nodeIds, sleeping {} and retrying again",
                 currentDelay);
@@ -150,6 +148,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     if (currentLease != null) {
       LOG.info(
           "Acquired lease w/ nodeId={}.  {}", currentLease.lease().nodeInstance(), currentLease);
+      backoff.reset();
     } else {
       throw new IllegalStateException("Failed to acquire a lease");
     }
