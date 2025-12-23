@@ -64,161 +64,163 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search decision instances different filters - success', async ({
+  test('Search decision instances - filter by state', async ({request}) => {
+    const stateToSearch = 'EVALUATED';
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: stateToSearch,
+            },
+          },
+        },
+      );
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
+      const body = await res.json();
+      for (const element of body.items) {
+        assertRequiredFields(element, decisionInstanceRequiredFields);
+      }
+      body.items.forEach((item: Record<string, unknown>) => {
+        expect(item.state).toBe('EVALUATED');
+      });
+      expect(body.items.length).toBeGreaterThanOrEqual(3);
+      expect(Array.isArray(body.items)).toBe(true);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search decision instances - filter by decisionEvaluationInstanceKey', async ({
     request,
   }) => {
-    await test.step('Filter By state', async () => {
-      const stateToSearch = 'EVALUATED';
-      await expect(async () => {
-        const res = await request.post(
-          buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                state: stateToSearch,
-              },
+    const decisionEvaluationInstanceKeyToSearch =
+      decisionInstances[1].decisionEvaluationInstanceKey;
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              decisionEvaluationInstanceKey:
+                decisionEvaluationInstanceKeyToSearch,
             },
           },
+        },
+      );
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
+      const body = await res.json();
+      for (const element of body.items) {
+        assertRequiredFields(element, decisionInstanceRequiredFields);
+      }
+      body.items.forEach((item: Record<string, unknown>) => {
+        expect(item.decisionEvaluationInstanceKey).toBe(
+          decisionEvaluationInstanceKeyToSearch,
         );
+      });
+      expect(body.items.length).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(body.items)).toBe(true);
+    }).toPass(defaultAssertionOptions);
+  });
 
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-            method: 'POST',
-            status: '200',
-          },
-          res,
-        );
-
-        const body = await res.json();
-        for (const element of body.items) {
-          assertRequiredFields(element, decisionInstanceRequiredFields);
-        }
-        body.items.forEach((item: Record<string, unknown>) => {
-          expect(item.state).toBe('EVALUATED');
-        });
-        expect(body.items.length).toBeGreaterThanOrEqual(3);
-        expect(Array.isArray(body.items)).toBe(true);
-      }).toPass(defaultAssertionOptions);
-    });
-
-    await test.step('Filter By decisionEvaluationInstanceKey', async () => {
-      const decisionEvaluationInstanceKeyToSearch =
-        decisionInstances[1].decisionEvaluationInstanceKey;
-      await expect(async () => {
-        const res = await request.post(
-          buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                decisionEvaluationInstanceKey:
-                  decisionEvaluationInstanceKeyToSearch,
-              },
+  test('Search decision instances - filter by processInstanceKey', async ({
+    request,
+  }) => {
+    const processInstanceKeyToSearch = processInstanceKey;
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: processInstanceKeyToSearch,
             },
           },
-        );
+        },
+      );
 
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-            method: 'POST',
-            status: '200',
-          },
-          res,
-        );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
-        const body = await res.json();
-        for (const element of body.items) {
-          assertRequiredFields(element, decisionInstanceRequiredFields);
-        }
-        body.items.forEach((item: Record<string, unknown>) => {
-          expect(item.decisionEvaluationInstanceKey).toBe(
-            decisionEvaluationInstanceKeyToSearch,
-          );
-        });
-        expect(body.items.length).toBeGreaterThanOrEqual(1);
-        expect(Array.isArray(body.items)).toBe(true);
-      }).toPass(defaultAssertionOptions);
-    });
+      const body = await res.json();
+      expect(body.items.length).toEqual(3);
+      for (const element of body.items) {
+        assertRequiredFields(element, decisionInstanceRequiredFields);
+      }
+      body.items.forEach((item: Record<string, unknown>) => {
+        expect(item.processInstanceKey).toBe(processInstanceKey);
+      });
+      expect(Array.isArray(body.items)).toBe(true);
+    }).toPass(defaultAssertionOptions);
+  });
 
-    await test.step('Filter By processInstanceKey', async () => {
-      const processInstanceKeyToSearch = processInstanceKey;
-      await expect(async () => {
-        const res = await request.post(
-          buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                processInstanceKey: processInstanceKeyToSearch,
-              },
+  test('Search decision instances - filter by decisionDefinitionId', async ({
+    request,
+  }) => {
+    const decisionDefinitionIdToSearch =
+      decisionInstances[1].decisionDefinitionId;
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              decisionDefinitionId: decisionDefinitionIdToSearch,
             },
           },
-        );
+        },
+      );
 
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-            method: 'POST',
-            status: '200',
-          },
-          res,
-        );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
-        const body = await res.json();
-        expect(body.items.length).toEqual(3);
-        for (const element of body.items) {
-          assertRequiredFields(element, decisionInstanceRequiredFields);
-        }
-        body.items.forEach((item: Record<string, unknown>) => {
-          expect(item.processInstanceKey).toBe(processInstanceKey);
-        });
-        expect(Array.isArray(body.items)).toBe(true);
-      }).toPass(defaultAssertionOptions);
-    });
-
-    await test.step('Filter By decisionDefinitionID', async () => {
-      const decisionDefinitionIdToSearch =
-        decisionInstances[1].decisionDefinitionId;
-      await expect(async () => {
-        const res = await request.post(
-          buildUrl(DECISION_INSTANCES_SEARCH_ENDPOINT, {}),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                decisionDefinitionId: decisionDefinitionIdToSearch,
-              },
-            },
-          },
-        );
-
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-            method: 'POST',
-            status: '200',
-          },
-          res,
-        );
-
-        const body = await res.json();
-        expect(body.items.length).toBeGreaterThanOrEqual(1);
-        for (const element of body.items) {
-          assertRequiredFields(element, decisionInstanceRequiredFields);
-        }
-        body.items.forEach((item: Record<string, unknown>) => {
-          expect(item.decisionDefinitionId).toBe(decisionDefinitionIdToSearch);
-        });
-        expect(Array.isArray(body.items)).toBe(true);
-      }).toPass(defaultAssertionOptions);
-    });
+      const body = await res.json();
+      expect(body.items.length).toBeGreaterThanOrEqual(1);
+      for (const element of body.items) {
+        assertRequiredFields(element, decisionInstanceRequiredFields);
+      }
+      body.items.forEach((item: Record<string, unknown>) => {
+        expect(item.decisionDefinitionId).toBe(decisionDefinitionIdToSearch);
+      });
+      expect(Array.isArray(body.items)).toBe(true);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Search decision by multiple filters: processInstanceKey and decisionDefinitionId', async ({
