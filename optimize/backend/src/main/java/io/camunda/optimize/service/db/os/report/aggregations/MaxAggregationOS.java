@@ -40,6 +40,6 @@ public class MaxAggregationOS extends AggregationStrategyOS {
     final MaxAggregation.Builder builder = new MaxAggregation.Builder().script(script);
     AggregationResultMappingUtil.firstField(fields).ifPresent(builder::field);
     return Pair.of(
-        createAggregationName(customIdentifier, MAX_AGGREGATION), builder.build()._toAggregation());
+        createAggregationName(customIdentifier, MAX_AGGREGATION), builder.build().toAggregation());
   }
 }
