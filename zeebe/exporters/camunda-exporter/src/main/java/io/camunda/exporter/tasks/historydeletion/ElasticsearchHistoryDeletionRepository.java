@@ -19,6 +19,7 @@ import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -34,13 +35,15 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
 
   private final IndexDescriptor indexDescriptor;
   private final int partitionId;
+  private final HistoryDeletionConfiguration config;
 
   public ElasticsearchHistoryDeletionRepository(
       final ExporterResourceProvider resourceProvider,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger,
-      final int partitionId) {
+      final int partitionId,
+      final HistoryDeletionConfiguration config) {
     super(client, executor, logger);
     indexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
@@ -49,6 +52,7 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
             .orElseThrow(
                 () -> new IllegalStateException("No HistoryDeletionIndex descriptor found"));
     this.partitionId = partitionId;
+    this.config = config;
   }
 
   @Override
@@ -139,7 +143,7 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
     return new SearchRequest.Builder()
         .index(indexName)
         .requestCache(false)
-        .size(100) // TODO add configurable values
+        .size(config.getQueueBatchSize())
         .sort(s -> s.field(f -> f.field("id").order(SortOrder.Asc)))
         .query(q -> q.term(t -> t.field(HistoryDeletionIndex.PARTITION_ID).value(partitionId)))
         .build();
