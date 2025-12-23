@@ -30,7 +30,7 @@ on:
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
-      platform-test-load:
+      platform-test-value:
         description: 'Specifies which platform test components to deploy. For example, `resources` can be modify as per the requirement. Allows arbitrary helm arguments, like --set console.resources.memory=2Gi'
         required: false
       stable-vms:
@@ -75,7 +75,7 @@ on:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         type: string
         required: false
-      platform-test-load:
+      platform-test-value:
         description: 'Specifies which platform test components to deploy. For example, `resources` can be modify as per the requirement. Allows arbitrary helm arguments, like --set console.resources.memory=2Gi'
         type: string
         required: false
