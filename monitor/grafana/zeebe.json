@@ -16926,7 +16926,7 @@
               "editorMode": "code",
               "expr": "max(\n  zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}\n) by (pod)",
               "interval": "",
-              "legendFormat": "{{pod}} Block cache {{partition}}",
+              "legendFormat": "{{pod}} Block cache",
               "range": true,
               "refId": "A"
             }
@@ -17028,7 +17028,7 @@
               "editorMode": "code",
               "expr": "max(zeebe_rocksdb_memory_block_cache_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
               "interval": "",
-              "legendFormat": "{{pod}} Block cache usage {{partition}}",
+              "legendFormat": "{{pod}} Block cache usage",
               "range": true,
               "refId": "A"
             }
@@ -17129,7 +17129,7 @@
               "editorMode": "code",
               "expr": "max(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
               "interval": "",
-              "legendFormat": "{{pod}} pinned cache {{partition}}",
+              "legendFormat": "{{pod}} pinned cache",
               "range": true,
               "refId": "A"
             }
