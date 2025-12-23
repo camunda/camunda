@@ -68,12 +68,12 @@ const getWrapper = (initialSearchParams?: {[key: string]: string}) => {
 
 describe('useProcessInstanceElementSelection', () => {
   describe('Initial state', () => {
-    it('should return null for selectedElementInstance when no selection', () => {
+    it('should return null for resolvedElementInstance when no selection', () => {
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
         wrapper: getWrapper(),
       });
 
-      expect(result.current.selectedElementInstance).toBeNull();
+      expect(result.current.resolvedElementInstance).toBeNull();
       expect(result.current.selectedElementId).toBeNull();
       expect(result.current.isFetchingElement).toBe(false);
     });
@@ -225,7 +225,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       await waitFor(() =>
-        expect(result.current.selectedElementInstance).toEqual(
+        expect(result.current.resolvedElementInstance).toEqual(
           mockElementInstance,
         ),
       );
@@ -245,7 +245,7 @@ describe('useProcessInstanceElementSelection', () => {
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
 
-      expect(result.current.selectedElementInstance).toBeNull();
+      expect(result.current.resolvedElementInstance).toBeNull();
     });
 
     it('should return null when search returns no element instances', async () => {
@@ -260,7 +260,7 @@ describe('useProcessInstanceElementSelection', () => {
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
 
-      expect(result.current.selectedElementInstance).toBeNull();
+      expect(result.current.resolvedElementInstance).toBeNull();
     });
 
     it('should handle network error when searching element instances', async () => {
@@ -272,7 +272,7 @@ describe('useProcessInstanceElementSelection', () => {
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
 
-      expect(result.current.selectedElementInstance).toBeNull();
+      expect(result.current.resolvedElementInstance).toBeNull();
     });
   });
 
@@ -358,7 +358,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       await waitFor(() =>
-        expect(result.current.selectedElementInstance).toEqual(
+        expect(result.current.resolvedElementInstance).toEqual(
           mockElementInstance,
         ),
       );
@@ -378,7 +378,7 @@ describe('useProcessInstanceElementSelection', () => {
 
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
 
-      expect(result.current.selectedElementInstance).toBeNull();
+      expect(result.current.resolvedElementInstance).toBeNull();
     });
 
     it('should prefer elementInstanceKey over elementId search', async () => {
@@ -394,7 +394,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       await waitFor(() =>
-        expect(result.current.selectedElementInstance).toEqual(
+        expect(result.current.resolvedElementInstance).toEqual(
           mockElementInstance,
         ),
       );
@@ -432,7 +432,7 @@ describe('useProcessInstanceElementSelection', () => {
       );
     });
 
-    it('should clear selectedElementInstance when clearing selection', async () => {
+    it('should clear resolvedElementInstance when clearing selection', async () => {
       mockFetchElementInstance('2251799813699889').withSuccess(
         mockElementInstance,
       );
@@ -445,7 +445,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       await waitFor(() =>
-        expect(result.current.selectedElementInstance).toEqual(
+        expect(result.current.resolvedElementInstance).toEqual(
           mockElementInstance,
         ),
       );
@@ -455,7 +455,7 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       await waitFor(() =>
-        expect(result.current.selectedElementInstance).toBeNull(),
+        expect(result.current.resolvedElementInstance).toBeNull(),
       );
     });
   });
