@@ -13,11 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.dsl;
+package io.camunda.process.test.impl.dsl;
 
-/** A collection of supported test case instruction types. */
-public class TestCaseInstructionType {
+import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 
-  public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
-  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
+/** Facade to provide assertions for different entities. */
+public interface AssertionFacade {
+
+  /**
+   * Returns the assertion object for the given process instance selector.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @return the assertion object
+   */
+  ProcessInstanceAssert assertThatProcessInstance(
+      final ProcessInstanceSelector processInstanceSelector);
 }

@@ -21,6 +21,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
+import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
 
 public class CreateProcessInstanceInstructionHandler
@@ -30,7 +31,8 @@ public class CreateProcessInstanceInstructionHandler
   public void execute(
       final CreateProcessInstanceInstruction instruction,
       final CamundaProcessTestContext context,
-      final CamundaClient camundaClient) {
+      final CamundaClient camundaClient,
+      final AssertionFacade assertionFacade) {
 
     final String processDefinitionId =
         instruction
