@@ -16,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
+import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -118,6 +120,13 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig TENANT_ENTITY_CONFIG =
       TransformerConfig.with(TENANT)
           .withIntents(TenantIntent.ENTITY_ADDED, TenantIntent.ENTITY_REMOVED);
+
+  public static final TransformerConfig ROLE_CONFIG =
+      TransformerConfig.with(ROLE)
+          .withIntents(RoleIntent.CREATED, RoleIntent.UPDATED, RoleIntent.DELETED);
+
+  public static final TransformerConfig ROLE_ENTITY_CONFIG =
+      TransformerConfig.with(ROLE).withIntents(RoleIntent.ENTITY_ADDED, RoleIntent.ENTITY_REMOVED);
 
   public static final TransformerConfig USER_CONFIG =
       TransformerConfig.with(USER)
