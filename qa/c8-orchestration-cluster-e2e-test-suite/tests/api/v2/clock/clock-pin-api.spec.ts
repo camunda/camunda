@@ -13,9 +13,8 @@ import {
   jsonHeaders,
   assertBadRequest,
 } from '../../../../utils/http';
-import {validateResponse} from '../../../../json-body-assertions';
-import {createSingleInstance, deploy} from '../../../../utils/zeebeClient';
-import {defaultAssertionOptions} from 'utils/constants';
+import {deploy} from '../../../../utils/zeebeClient';
+import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
 test.describe('Pin Clock API Tests', () => {
   test.beforeAll(async ({request}) => {
@@ -46,36 +45,10 @@ test.describe('Pin Clock API Tests', () => {
       await assertStatusCode(pin, 204);
     });
 
-    await test.step('Create process instances and verify start and end dates', async () => {
-      const instance = await createSingleInstance('clockApiTestProcess', 1);
-      const processInstanceKeyToGet = instance.processInstanceKey;
-
-      await expect(async () => {
-        const res = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToGet}`),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: '/process-instances/{processInstanceKey}',
-            method: 'GET',
-            status: '200',
-          },
-          res,
-        );
-
-        const body = await res.json();
-        expect(body.processInstanceKey).toBe(processInstanceKeyToGet);
-        expect(body.state).toBe('COMPLETED');
-        const startDate = body.startDate;
-        const endDate = body.endDate;
-        expect(new Date(startDate).getTime()).toBe(timestamp);
-        expect(new Date(endDate).getTime()).toBe(timestamp);
-      }).toPass(defaultAssertionOptions);
+    await test.step('Create process instances and verify pinned start and end dates', async () => {
+      const res = await createProcessInstanceAndRetrieveTimeStamp(request);
+      expect(new Date(res.startDate).getTime()).toBe(timestamp);
+      expect(new Date(res.endDate).getTime()).toBe(timestamp);
     });
 
     await test.step('Reset clock', async () => {

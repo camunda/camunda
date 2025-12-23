@@ -8,9 +8,8 @@
 
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
-import {validateResponse} from '../../../../json-body-assertions';
-import {createSingleInstance, deploy} from '../../../../utils/zeebeClient';
-import {defaultAssertionOptions} from 'utils/constants';
+import {deploy} from '../../../../utils/zeebeClient';
+import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
 test.describe('Reset Clock API Tests', () => {
   const timestamp = Date.parse('2025-01-01T00:00:00Z');
@@ -36,35 +35,9 @@ test.describe('Reset Clock API Tests', () => {
 
   test('Reset clock', async ({request}) => {
     await test.step('Create process instances and verify pinned start and end dates', async () => {
-      const instance = await createSingleInstance('clockApiTestProcess', 1);
-      const processInstanceKeyToGet = instance.processInstanceKey;
-
-      await expect(async () => {
-        const res = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToGet}`),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: '/process-instances/{processInstanceKey}',
-            method: 'GET',
-            status: '200',
-          },
-          res,
-        );
-
-        const body = await res.json();
-        expect(body.processInstanceKey).toBe(processInstanceKeyToGet);
-        expect(body.state).toBe('COMPLETED');
-        const startDate = body.startDate;
-        const endDate = body.endDate;
-        expect(new Date(startDate).getTime()).toBe(timestamp);
-        expect(new Date(endDate).getTime()).toBe(timestamp);
-      }).toPass(defaultAssertionOptions);
+      const res = await createProcessInstanceAndRetrieveTimeStamp(request);
+      expect(new Date(res.startDate).getTime()).toBe(timestamp);
+      expect(new Date(res.endDate).getTime()).toBe(timestamp);
     });
 
     await test.step('Reset clock', async () => {
@@ -75,38 +48,13 @@ test.describe('Reset Clock API Tests', () => {
     });
 
     await test.step('Create process instances and verify updated start and end dates', async () => {
-      const instance = await createSingleInstance('clockApiTestProcess', 1);
-      const processInstanceKeyToGet = instance.processInstanceKey;
-
-      await expect(async () => {
-        const res = await request.get(
-          buildUrl(`/process-instances/${processInstanceKeyToGet}`),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: '/process-instances/{processInstanceKey}',
-            method: 'GET',
-            status: '200',
-          },
-          res,
-        );
-
-        const body = await res.json();
-        expect(body.processInstanceKey).toBe(processInstanceKeyToGet);
-        expect(body.state).toBe('COMPLETED');
-
-        const MAX_DRIFT = 60_000;
-        const serverTimeMs = new Date(body.startDate).getTime();
-        const nowMs = Date.now();
-        const diff = Math.abs(serverTimeMs - nowMs);
-        console.log('Diff: ', diff);
-        expect(diff).toBeLessThanOrEqual(MAX_DRIFT);
-      }).toPass(defaultAssertionOptions);
+      const res = await createProcessInstanceAndRetrieveTimeStamp(request);
+      const MAX_DRIFT = 30_000; // the time that can pass because of eventual consistency
+      const serverTimeMs = new Date(res.startDate).getTime();
+      const nowMs = Date.now();
+      const diff = Math.abs(serverTimeMs - nowMs);
+      console.log('Diff: ', diff);
+      expect(diff).toBeLessThanOrEqual(MAX_DRIFT);
     });
   });
 });
