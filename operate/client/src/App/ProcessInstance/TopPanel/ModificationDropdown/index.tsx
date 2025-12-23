@@ -60,7 +60,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       clearSelection,
     } = useProcessInstanceElementSelection();
     const {data: businessObjects} = useBusinessObjects();
-    const {data: selectedElementRunningInstanceCount} =
+    const {data: selectedElementRunningInstancesCount} =
       useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
     const {data: totalRunningInstancesVisible} =
       useTotalRunningInstancesVisibleForFlowNode(
@@ -70,7 +70,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       useTotalRunningInstancesByFlowNode();
 
     const availableModifications = useAvailableModifications({
-      runningElementInstanceCount: selectedElementRunningInstanceCount ?? 0,
+      runningElementInstanceCount: selectedElementRunningInstancesCount ?? 0,
       elementId: selectedElementId ?? undefined,
       elementInstanceKey: selectedElementInstanceKey ?? undefined,
       isMultiInstanceBody: isSelectedInstanceMultiInstanceBody,
@@ -121,9 +121,9 @@ const ModificationDropdown: React.FC<Props> = observer(
 
               return (
                 <>
-                  {(selectedElementRunningInstanceCount ?? 0) > 0 && (
+                  {(selectedElementRunningInstancesCount ?? 0) > 0 && (
                     <SelectedInstanceCount>
-                      {`Selected running instances: ${selectedElementRunningInstanceCount ?? 0}`}
+                      {`Selected running instances: ${selectedElementRunningInstancesCount ?? 0}`}
                     </SelectedInstanceCount>
                   )}
                   <Stack gap={2}>
@@ -225,7 +225,7 @@ const ModificationDropdown: React.FC<Props> = observer(
 
                             cancelAllTokens(
                               selectedElementId,
-                              selectedElementRunningInstanceCount ?? 0,
+                              selectedElementRunningInstancesCount ?? 0,
                               totalRunningInstancesVisible ?? 0,
                               businessObjects,
                             );
