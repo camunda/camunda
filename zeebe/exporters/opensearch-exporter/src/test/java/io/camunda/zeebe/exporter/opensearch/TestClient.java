@@ -34,18 +34,21 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
+import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.Request;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.GetResponse;
-import org.opensearch.client.transport.rest_client.RestClientTransport;
+import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 
 /**
  * A thin client to verify properties from Opensearch. Wraps both the low and high level clients
@@ -61,13 +64,7 @@ final class TestClient implements CloseableSilently {
   private final RecordIndexRouter indexRouter;
 
   TestClient(final OpensearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
-    this.config = config;
-    this.indexRouter = indexRouter;
-
-    restClient = RestClientFactory.of(config, true);
-
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
-    osClient = new OpenSearchClient(transport);
+    this(config, indexRouter, RestClientFactory.of(config, true));
   }
 
   TestClient(
@@ -76,11 +73,8 @@ final class TestClient implements CloseableSilently {
       final RestClient restClient) {
     this.config = config;
     this.indexRouter = indexRouter;
-
     this.restClient = restClient;
-
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
-    osClient = new OpenSearchClient(transport);
+    osClient = new OpenSearchClient(createTransport(config));
   }
 
   @SuppressWarnings("rawtypes")
@@ -130,7 +124,7 @@ final class TestClient implements CloseableSilently {
   GetIndexStateManagementPolicyResponse getIndexStateManagementPolicy() {
     try {
       final var request =
-          new Request("GET", "_plugins/_ism/policies/" + config.retention.getPolicyName());
+          new Request("GET", "/_plugins/_ism/policies/" + config.retention.getPolicyName());
       final var response = restClient.performRequest(request);
       return MAPPER.readValue(
           response.getEntity().getContent(), GetIndexStateManagementPolicyResponse.class);
@@ -142,7 +136,7 @@ final class TestClient implements CloseableSilently {
   void putIndexStateManagementPolicy(final String minimumAge) {
     try {
       final var request =
-          new Request("PUT", "_plugins/_ism/policies/" + config.retention.getPolicyName());
+          new Request("PUT", "/_plugins/_ism/policies/" + config.retention.getPolicyName());
       decoratePolicyVersionSeq(request);
       final var requestEntity = createPutIndexManagementPolicyRequest(minimumAge);
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
@@ -268,6 +262,16 @@ final class TestClient implements CloseableSilently {
       restClient.performRequest(request);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  private OpenSearchTransport createTransport(final OpensearchExporterConfiguration config) {
+    try {
+      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(config.url))
+          .setMapper(new JacksonJsonpMapper(MAPPER))
+          .build();
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
     }
   }
 

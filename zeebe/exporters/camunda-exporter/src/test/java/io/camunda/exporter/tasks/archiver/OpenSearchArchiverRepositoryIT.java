@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -63,7 +63,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -73,9 +72,10 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
-import org.opensearch.client.transport.rest_client.RestClientTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
@@ -88,7 +88,7 @@ final class OpenSearchArchiverRepositoryIT {
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = create();
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
-  @AutoClose private final RestClientTransport transport = createRestClient();
+  @AutoClose private final OpenSearchTransport transport = createTransport();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
@@ -1153,12 +1153,10 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private String fetchPolicyForIndex(final String indexName) {
-    final var genericClient =
-        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
     final var request =
-        Requests.builder().method("get").endpoint("_plugins/_ism/explain/" + indexName).build();
+        Requests.builder().method("GET").endpoint("/_plugins/_ism/explain/" + indexName).build();
     try {
-      final var response = genericClient.execute(request);
+      final var response = testClient.generic().execute(request);
       final var jsonString = response.getBody().orElseThrow().bodyAsString();
       final var json = MAPPER.readTree(jsonString);
       final var index = json.get(indexName);
@@ -1249,9 +1247,14 @@ final class OpenSearchArchiverRepositoryIT {
                     .aliases(processInstanceIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
-  private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.osUrl())).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  private OpenSearchTransport createTransport() {
+    try {
+      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+          .setMapper(new JacksonJsonpMapper())
+          .build();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private OpenSearchClient createOpenSearchClient() {

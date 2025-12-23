@@ -71,7 +71,7 @@ public class OpensearchProcessStore implements ProcessStore {
         searchRequestBuilder(processIndex.getAlias())
             .query(matchAll())
             .aggregations(
-                DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation())
+                DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000).toAggregation())
             .size(0);
 
     try {
@@ -228,7 +228,7 @@ public class OpensearchProcessStore implements ProcessStore {
                         Map.of(
                             "incidents", incidentsQuery,
                             "running", runningQuery))
-                    ._toAggregation());
+                    .toAggregation());
 
     final Map<String, FiltersBucket> buckets =
         richOpenSearchClient
