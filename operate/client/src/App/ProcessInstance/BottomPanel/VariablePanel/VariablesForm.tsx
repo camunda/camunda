@@ -81,11 +81,13 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
       );
     });
 
+    const isModificationAllowed = IS_ELEMENT_SELECTION_V2
+      ? isVariableModificationAllowed.get()
+      : isVariableModificationAllowedV1.get();
+
     return (
       <Form onSubmit={handleSubmit}>
-        {(IS_ELEMENT_SELECTION_V2
-          ? isVariableModificationAllowed.get()
-          : isVariableModificationAllowedV1.get()) && (
+        {isModificationAllowed && (
           <AddVariableButton
             onClick={() => {
               form.mutators.push?.('newVariables', {
@@ -101,13 +103,7 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
           />
         )}
         <VariablesContainer>
-          <Variables
-            isVariableModificationAllowed={
-              IS_ELEMENT_SELECTION_V2
-                ? isVariableModificationAllowed.get()
-                : isVariableModificationAllowedV1.get()
-            }
-          />
+          <Variables isVariableModificationAllowed={isModificationAllowed} />
         </VariablesContainer>
       </Form>
     );
