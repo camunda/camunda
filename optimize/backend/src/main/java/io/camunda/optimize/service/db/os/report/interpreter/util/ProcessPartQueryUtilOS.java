@@ -89,7 +89,7 @@ public final class ProcessPartQueryUtilOS extends AbstractProcessPartQueryUtil {
               .reduceScript(getReduceScript())
               .params(params)
               .build()
-              ._toAggregation();
+              .toAggregation();
         };
 
     final Map<String, Aggregation> aggregations =
