@@ -52,9 +52,6 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
       // Create parent directories if they don't exist
       Files.createDirectories(dataDirectory.getParent());
 
-      // TODO: Mark the previousDataDirectory as read-only to prevent writes during copying incase
-      // the old broker is still running.
-
       makeDirectoryReadonly(previousDataDirectory);
       // Copy the previous directory to the current one
       copyDirectory(previousDataDirectory, dataDirectory);

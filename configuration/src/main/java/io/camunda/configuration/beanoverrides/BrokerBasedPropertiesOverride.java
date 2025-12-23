@@ -44,6 +44,7 @@ import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataDirectoryInitializationMode;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
@@ -647,9 +648,17 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromPrimaryStorage(final BrokerBasedProperties override) {
     final var primaryStorage = unifiedConfiguration.getCamunda().getData().getPrimaryStorage();
     final var data = override.getData();
-    data.setDirectory(primaryStorage.getDirectory());
+    data.setRootDirectory(primaryStorage.getDirectory());
     data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
     data.setInitializationMode(primaryStorage.getInitializationMode());
+
+    if (primaryStorage.getInitializationMode()
+        == DataDirectoryInitializationMode.USE_PRECONFIGURED_DIRECTORY) {
+      data.setDirectory(primaryStorage.getDirectory());
+    } else {
+      // Intentionally left blank; expected to be derived based on nodeId/nodeVersion.
+      data.setDirectory("");
+    }
     data.setLogIndexDensity(primaryStorage.getLogStream().getLogIndexDensity());
     data.setLogSegmentSize(primaryStorage.getLogStream().getLogSegmentSize());
 

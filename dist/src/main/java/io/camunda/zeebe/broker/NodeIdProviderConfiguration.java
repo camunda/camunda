@@ -123,15 +123,18 @@ public class NodeIdProviderConfiguration {
   public DataDirectoryProvider dataDirectoryProvider(
       final NodeIdProvider nodeIdProvider,
       final BrokerBasedConfiguration brokerBasedConfiguration) {
+    final DataCfg data = brokerBasedConfiguration.config().getData();
     final var initializer =
-        switch (cluster.getNodeIdProvider().getType()) {
-          case FIXED -> new ConfiguredDataDirectoryProvider();
-          case S3 -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+        switch (data.getInitializationMode()) {
+          case USE_PRECONFIGURED_DIRECTORY -> new ConfiguredDataDirectoryProvider();
+          case SHARED_ROOT_VERSIONED_NODE -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
         };
 
-    final DataCfg data = brokerBasedConfiguration.config().getData();
-    final var directory = Path.of(data.getDirectory());
-    final var configuredDirectory = initializer.initialize(directory).join();
+    // Use the configured data root directory as the root input; for versioned layouts this is
+    // expected to be a shared root which we then derive a nodeId/version-specific effective
+    // directory from.
+    final Path configuredRootDirectory = Path.of(data.getRootDirectory());
+    final var configuredDirectory = initializer.initialize(configuredRootDirectory).join();
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;

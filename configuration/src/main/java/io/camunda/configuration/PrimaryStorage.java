@@ -34,8 +34,10 @@ public class PrimaryStorage {
    * disk i/o or performance during snapshotting.
    */
   private String runtimeDirectory;
+
   // TODO Javadoc
-  private DataDirectoryInitializationMode initializationMode = DataDirectoryInitializationMode.USE_PRECONFIGURED_DIRECTORY;
+  private DataDirectoryInitializationMode initializationMode =
+      DataDirectoryInitializationMode.USE_PRECONFIGURED_DIRECTORY;
   @NestedConfigurationProperty private Disk disk = new Disk();
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();

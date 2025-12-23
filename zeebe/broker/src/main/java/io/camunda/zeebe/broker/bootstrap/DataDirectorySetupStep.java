@@ -9,8 +9,6 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +39,7 @@ public class DataDirectorySetupStep extends AbstractBrokerStartupStep {
 
       // Initialize the data directory using the selected strategy
       final long currentNodeVersion =
-          brokerStartupContext.getBrokerConfiguration().getCluster().getNodeIdVersion();
+          brokerStartupContext.getBrokerConfiguration().getCluster().getNodeVersion();
 
       final var initializedDataDirectory =
           strategy.initializeDataDirectory(
@@ -51,7 +49,7 @@ public class DataDirectorySetupStep extends AbstractBrokerStartupStep {
       brokerStartupContext
           .getBrokerConfiguration()
           .getData()
-          .setBrokerDataDirectory(initializedDataDirectory);
+          .setDirectory(initializedDataDirectory.toString());
 
       startupFuture.complete(brokerStartupContext);
     } catch (final Exception e) {
@@ -67,38 +65,5 @@ public class DataDirectorySetupStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
     // No cleanup needed for data directory setup
     shutdownFuture.complete(brokerShutdownContext);
-  }
-
-  private Path getDataDirectoryPrefix(final BrokerStartupContext brokerStartupContext) {
-    final var dataCfg = brokerStartupContext.getBrokerConfiguration().getData();
-
-    // For USE_PRECONFIGURED_DIRECTORY mode, return the configured directory directly
-    if (dataCfg.getInitializationMode()
-        == io.camunda.zeebe.broker.system.configuration.DataDirectoryInitializationMode
-            .USE_PRECONFIGURED_DIRECTORY) {
-      return Paths.get(dataCfg.getRootDirectory());
-    }
-
-    // For COPY_FROM_PREVIOUS_VERSION mode, return the versioned directory structure
-    return Paths.get(
-        dataCfg.getRootDirectory(),
-        String.valueOf(brokerStartupContext.getBrokerConfiguration().getCluster().getNodeId()));
-  }
-
-  private Path getDataDirectory(
-      final BrokerStartupContext brokerStartupContext, final Path dataDirectoryPrefix) {
-    final var dataCfg = brokerStartupContext.getBrokerConfiguration().getData();
-
-    // For USE_PRECONFIGURED_DIRECTORY mode, use the prefix as the actual directory
-    if (dataCfg.getInitializationMode()
-        == io.camunda.zeebe.broker.system.configuration.DataDirectoryInitializationMode
-            .USE_PRECONFIGURED_DIRECTORY) {
-      return dataDirectoryPrefix;
-    }
-
-    // For COPY_FROM_PREVIOUS_VERSION mode, append the version number
-    final long currentNodeVersion =
-        brokerStartupContext.getBrokerConfiguration().getCluster().getNodeIdVersion();
-    return dataDirectoryPrefix.resolve(String.valueOf(currentNodeVersion));
   }
 }

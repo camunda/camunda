@@ -21,7 +21,21 @@ public final class DataCfg implements ConfigurationEntry {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
 
-  private String directory = DEFAULT_DIRECTORY;
+  /**
+   * Root (shared) data directory.
+   *
+   * <p>This is the base directory configured by users. The broker's effective {@link #directory}
+   * may be derived from this root (e.g. by appending node ID/version subdirectories).
+   */
+  private String rootDirectory = DEFAULT_DIRECTORY;
+
+  /**
+   * Effective broker data directory.
+   *
+   * <p>By default this is unset, and {@link #getDirectory()} falls back to {@link #rootDirectory}
+   * when using {@link DataDirectoryInitializationMode#USE_PRECONFIGURED_DIRECTORY}.
+   */
+  private String directory;
 
   private String runtimeDirectory = null;
 
@@ -44,7 +58,10 @@ public final class DataCfg implements ConfigurationEntry {
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
-    directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
+    rootDirectory = ConfigurationUtil.toAbsolutePath(rootDirectory, brokerBase);
+    if (directory != null && !directory.isBlank()) {
+      directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
+    }
     if (runtimeDirectory != null) {
       runtimeDirectory = ConfigurationUtil.toAbsolutePath(runtimeDirectory, brokerBase);
     }
@@ -83,11 +100,28 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   private DataSize convertWatermarkToFreeSpace(final Double watermark) {
-    final var directoryFile = new File(getDirectory());
+    final String directoryForDiskCalculation =
+        directory == null || directory.isBlank() ? rootDirectory : directory;
+    final var directoryFile = new File(directoryForDiskCalculation);
     return DataSize.ofBytes(Math.round(directoryFile.getTotalSpace() * (1 - watermark)));
   }
 
+  public String getRootDirectory() {
+    return rootDirectory;
+  }
+
+  public void setRootDirectory(final String rootDirectory) {
+    this.rootDirectory = rootDirectory;
+  }
+
   public String getDirectory() {
+    if (directory == null || directory.isBlank()) {
+      if (initializationMode == DataDirectoryInitializationMode.SHARED_ROOT_VERSIONED_NODE) {
+        throw new IllegalStateException(
+            "Data directory is not initialized; expected a versioned directory to be derived from rootDirectory");
+      }
+      return rootDirectory;
+    }
     return directory;
   }
 
@@ -178,7 +212,10 @@ public final class DataCfg implements ConfigurationEntry {
   @Override
   public String toString() {
     return "DataCfg{"
-        + "directory='"
+        + "rootDirectory='"
+        + rootDirectory
+        + '\''
+        + ", directory='"
         + directory
         + '\''
         + ", stateDirectory='"

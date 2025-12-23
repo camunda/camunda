@@ -46,7 +46,6 @@ public final class BrokerStartupProcess {
   private List<StartupStep<BrokerStartupContext>> buildStartupSteps(final BrokerCfg config) {
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
-    result.add(new DataDirectorySetupStep());
     result.add(new ClusterServicesStep());
     result.add(new ClusterConfigurationManagerStep());
 
