@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -124,14 +123,6 @@ public final class BrokerBackupRequest extends BrokerRequest<BackupResponse> {
 
   public void setPattern(final String pattern) {
     request.setPattern(pattern);
-  }
-
-  public CheckpointType getCheckpointType() {
-    return request.getCheckpointType();
-  }
-
-  public void setCheckpointType(final CheckpointType checkpointType) {
-    request.setCheckpointType(checkpointType);
   }
 
   @Override
