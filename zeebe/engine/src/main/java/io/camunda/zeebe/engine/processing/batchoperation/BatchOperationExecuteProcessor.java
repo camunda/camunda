@@ -125,7 +125,7 @@ public final class BatchOperationExecuteProcessor
 
     // if suspended, skip execution and stop the EXECUTE-loop
     if (batchOperation.isSuspended()) {
-      final var message = "Batch operation `%d` is suspended.".formatted(batchKey);
+      final var message = "Batch operation '%d' is suspended.".formatted(batchKey);
       LOGGER.info(message);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, message);
       return;
