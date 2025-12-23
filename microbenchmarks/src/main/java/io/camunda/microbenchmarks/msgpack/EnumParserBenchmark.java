@@ -7,8 +7,8 @@
  */
 package io.camunda.microbenchmarks.msgpack;
 
+import io.camunda.microbenchmarks.msgpack.enumparser.TrieEnumParser;
 import io.camunda.zeebe.msgpack.util.EnumParser;
-import io.camunda.zeebe.msgpack.util.TrieEnumParser;
 import io.camunda.zeebe.msgpack.util.ZeroAllocEnumParser;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
