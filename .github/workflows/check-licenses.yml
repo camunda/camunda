@@ -85,7 +85,7 @@ jobs:
 
     - name: Get JVM Heap size
       run: |
-        MAVEN_OPTS="-XX:+PrintFlagsFinal" mvn -v
+        MAVEN_OPTS="-XX:+PrintFlagsFinal" ./mvnw --version
 
     - name: Setup fossa-cli
       uses: camunda/infra-global-github-actions/fossa/setup@1f5a9aec53f142d600b6d0bfea8533b860a65367
