@@ -30,6 +30,10 @@ on:
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
+      platform-helm-values:
+        description: 'Additional Camunda Platform Helm values file URL to use for deployment'
+        type: string
+        required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
