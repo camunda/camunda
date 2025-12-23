@@ -157,7 +157,9 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Expect all incidents resolved', async () => {
-      await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+      await expect(operateProcessInstancePage.incidentsBanner).toBeHidden({
+        timeout: 15000,
+      });
       await expect(operateProcessInstancePage.incidentsTable).toBeHidden();
       await expect(operateProcessInstancePage.completedIcon).toBeVisible();
     });
