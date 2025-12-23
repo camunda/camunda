@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.msgpack.util;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +29,7 @@ public class ZeroAllocEnumParser<E extends Enum<E>> implements EnumParser<E> {
     final int constantsCount = (int) Arrays.stream(enumClass.getEnumConstants()).count();
     lookup = constantsCount > 16 ? new HashMap<>() : new TreeMap<>();
     for (final E e : enumClass.getEnumConstants()) {
-      final byte[] bytes = e.name().getBytes(StandardCharsets.US_ASCII);
+      final byte[] bytes = e.name().getBytes();
       final DirectBufferView key = new DirectBufferView();
       key.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
       lookup.put(key, e);

@@ -35,7 +35,7 @@ public abstract class AbstractEnumParserPropertyTest {
   @Property
   void shouldParseAllValidEnumValues(@ForAll("validEnumValue") final TestEnum enumValue) {
     final String enumName = enumValue.name();
-    final byte[] bytes = enumName.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = enumName.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, 0, bytes.length);
     Assertions.assertThat(result).isEqualTo(enumValue);
@@ -50,7 +50,7 @@ public abstract class AbstractEnumParserPropertyTest {
     final String prefix = "x".repeat(prefixLength);
     final String suffix = "y".repeat(suffixLength);
     final String fullString = prefix + enumName + suffix;
-    final byte[] bytes = fullString.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = fullString.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, prefixLength, enumName.length());
     Assertions.assertThat(result).isEqualTo(enumValue);
@@ -65,7 +65,7 @@ public abstract class AbstractEnumParserPropertyTest {
     final String prefix = "x".repeat(prefixLength);
     final String suffix = "y".repeat(suffixLength);
     final String fullString = prefix + enumName + suffix;
-    final byte[] bytes = fullString.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = fullString.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, prefixLength, enumName.length() - 1);
     Assertions.assertThat(result).isNull();
@@ -73,7 +73,7 @@ public abstract class AbstractEnumParserPropertyTest {
 
   @Property
   void shouldReturnNullForInvalidEnumNames(@ForAll("invalidEnumString") final String invalidName) {
-    final byte[] bytes = invalidName.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = invalidName.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, 0, bytes.length);
     Assertions.assertThat(result).isNull();
@@ -88,7 +88,7 @@ public abstract class AbstractEnumParserPropertyTest {
       return;
     }
     final String truncated = enumName.substring(0, enumName.length() - truncateBy);
-    final byte[] bytes = truncated.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = truncated.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, 0, bytes.length);
     if (result != null) {
@@ -102,7 +102,7 @@ public abstract class AbstractEnumParserPropertyTest {
       @ForAll("asciiString") @StringLength(min = 1, max = 5) final String suffix) {
     final String enumName = enumValue.name();
     final String extended = enumName + suffix;
-    final byte[] bytes = extended.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = extended.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, 0, bytes.length);
     if (result != null) {
@@ -121,7 +121,7 @@ public abstract class AbstractEnumParserPropertyTest {
   void shouldReturnDefaultValueWhenSpecified(
       @ForAll("validEnumValue") final TestEnum defaultValue,
       @ForAll("invalidEnumString") final String invalidName) {
-    final byte[] bytes = invalidName.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = invalidName.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, 0, bytes.length, defaultValue);
     Assertions.assertThat(result).isEqualTo(defaultValue);
@@ -132,7 +132,7 @@ public abstract class AbstractEnumParserPropertyTest {
       @ForAll("validEnumValue") final TestEnum enumValue,
       @ForAll("validEnumValue") final TestEnum defaultValue) {
     final String enumName = enumValue.name();
-    final byte[] bytes = enumName.getBytes(StandardCharsets.US_ASCII);
+    final byte[] bytes = enumName.getBytes();
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     final TestEnum result = parser.parse(buffer, 0, bytes.length, defaultValue);
     Assertions.assertThat(result).isEqualTo(enumValue);
