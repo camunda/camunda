@@ -16,7 +16,9 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -276,6 +278,7 @@ public class ElasticsearchExporter implements Exporter {
         || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
       return true;
     }
+
     return configuration.shouldIndexRequiredValueType(record.getValueType());
   }
 
@@ -292,9 +295,11 @@ public class ElasticsearchExporter implements Exporter {
   private static class ElasticsearchRecordFilter implements Context.RecordFilter {
 
     private final ElasticsearchExporterConfiguration configuration;
+    private final String[] variableNameInclusionList;
 
     ElasticsearchRecordFilter(final ElasticsearchExporterConfiguration configuration) {
       this.configuration = configuration;
+      variableNameInclusionList = configuration.index.variableNameInclusion.trim().split(",");
     }
 
     @Override
@@ -303,8 +308,27 @@ public class ElasticsearchExporter implements Exporter {
     }
 
     @Override
-    public boolean acceptValue(final ValueType valueType) {
+    public boolean acceptValueType(final ValueType valueType) {
       return configuration.shouldIndexValueType(valueType);
+    }
+
+    @Override
+    public boolean acceptValue(final RecordValue value) {
+      if (value instanceof final VariableRecordValue variableRecordValue) {
+        return acceptVariableName(variableRecordValue);
+      }
+
+      return true;
+    }
+
+    private boolean acceptVariableName(final VariableRecordValue variableRecordValue) {
+      final String variableName = variableRecordValue.getName();
+      for (final String variableNameExclusion : variableNameInclusionList) {
+        if (variableName.trim().startsWith(variableNameExclusion.trim())) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }

@@ -201,6 +201,9 @@ public class ElasticsearchExporterConfiguration {
     public boolean variableDocument = true;
     public boolean adHocSubProcessInstruction = true;
 
+    // variable name filtering
+    public String variableNameInclusion = "";
+
     public boolean checkpoint = false;
     public boolean timer = true;
     public boolean messageStartEventSubscription = true;

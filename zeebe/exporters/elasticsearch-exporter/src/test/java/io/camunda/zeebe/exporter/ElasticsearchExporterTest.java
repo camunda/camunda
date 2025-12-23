@@ -108,6 +108,40 @@ final class ElasticsearchExporterTest {
     verify(client).close();
   }
 
+  @Test
+  void shouldAcceptVariableWhenNameMatchesInclusionList() {
+    // given
+    config.index.variableNameInclusion = " foo,bar ";
+    exporter.configure(context);
+
+    final RecordFilter filter = context.getRecordFilter();
+    final var variableValue =
+        mock(io.camunda.zeebe.protocol.record.value.VariableRecordValue.class);
+    when(variableValue.getName()).thenReturn("fooVariable");
+
+    // when - then
+    assertThat(filter.acceptValue(variableValue))
+        .as("record filter should accept variable when its name starts with an included prefix")
+        .isTrue();
+  }
+
+  @Test
+  void shouldRejectVariableWhenNameDoesNotMatchInclusionList() {
+    // given
+    config.index.variableNameInclusion = "foo,bar";
+    exporter.configure(context);
+
+    final RecordFilter filter = context.getRecordFilter();
+    final var variableValue =
+        mock(io.camunda.zeebe.protocol.record.value.VariableRecordValue.class);
+    when(variableValue.getName()).thenReturn("otherVariable");
+
+    // when - then
+    assertThat(filter.acceptValue(variableValue))
+        .as("record filter should reject variable when its name does not start with any included prefix")
+        .isFalse();
+  }
+
   @Nested
   final class RecordFilterTest {
 
@@ -123,7 +157,7 @@ final class ElasticsearchExporterTest {
       // then
       final RecordFilter filter = context.getRecordFilter();
       assertThat(filter).isNotNull();
-      assertThat(filter.acceptValue(valueType))
+      assertThat(filter.acceptValueType(valueType))
           .as("record filter should reject value type based on configuration")
           .isFalse();
     }
@@ -140,7 +174,7 @@ final class ElasticsearchExporterTest {
       // then
       final RecordFilter filter = context.getRecordFilter();
       assertThat(filter).isNotNull();
-      assertThat(filter.acceptValue(valueType))
+      assertThat(filter.acceptValueType(valueType))
           .as("record filter should accept value type based on configuration")
           .isTrue();
     }

@@ -856,7 +856,7 @@ public final class ExporterDirectorTest {
               }
 
               @Override
-              public boolean acceptValue(final ValueType valueType) {
+              public boolean acceptValueType(final ValueType valueType) {
                 return valueTypes.contains(valueType);
               }
             });
@@ -875,7 +875,7 @@ public final class ExporterDirectorTest {
               }
 
               @Override
-              public boolean acceptValue(final ValueType valueType) {
+              public boolean acceptValueType(final ValueType valueType) {
                 return valueTypes.contains(valueType);
               }
 

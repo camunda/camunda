@@ -336,7 +336,7 @@ public class SingleBrokerDataDeletionTest {
             }
 
             @Override
-            public boolean acceptValue(final ValueType valueType) {
+            public boolean acceptValueType(final ValueType valueType) {
               return VALUE_TYPE_FILTER.get().test(valueType);
             }
           });

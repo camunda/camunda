@@ -79,7 +79,7 @@ public class MetricsExporter implements Exporter {
           }
 
           @Override
-          public boolean acceptValue(final ValueType valueType) {
+          public boolean acceptValueType(final ValueType valueType) {
             return ACCEPTED_VALUE_TYPES.contains(valueType);
           }
         });

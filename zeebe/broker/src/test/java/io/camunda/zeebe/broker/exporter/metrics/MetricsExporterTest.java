@@ -208,7 +208,7 @@ class MetricsExporterTest {
 
       // then
       final var recordFilter = context.getRecordFilter();
-      assertThat(recordFilter.acceptType(recordType) && recordFilter.acceptValue(valueType))
+      assertThat(recordFilter.acceptType(recordType) && recordFilter.acceptValueType(valueType))
           .describedAs(
               "Expect RecordFilter to accept record of RecordType %s and ValueType %s",
               recordType, valueType)
@@ -229,7 +229,7 @@ class MetricsExporterTest {
 
       // then
       final var recordFilter = context.getRecordFilter();
-      assertThat(recordFilter.acceptType(recordType) && recordFilter.acceptValue(valueType))
+      assertThat(recordFilter.acceptType(recordType) && recordFilter.acceptValueType(valueType))
           .describedAs(
               "Expect RecordFilter to reject record of RecordType %s and ValueType %s",
               recordType, valueType)
