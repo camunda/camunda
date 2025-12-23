@@ -10,16 +10,18 @@ package io.camunda.zeebe.msgpack.util;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-@SuppressWarnings("unchecked")
 public final class CachedBytesEnum<E extends Enum<E>> {
 
-  private static final ConcurrentMap<Class<?>, CachedBytesEnum<?>> GLOBAL_CACHE =
-      new ConcurrentHashMap<>();
+  private static final ClassValue<CachedBytesEnum<?>> GLOBAL_CACHE =
+      new ClassValue<>() {
+        @Override
+        protected CachedBytesEnum<?> computeValue(final Class<?> type) {
+          return create(type);
+        }
+      };
 
   private final DirectBuffer[] valuesAsBuffers;
   private final EnumParser<E> parser;
@@ -29,13 +31,18 @@ public final class CachedBytesEnum<E extends Enum<E>> {
     parser = new ZeroAllocEnumParser<>(clazz);
   }
 
+  @SuppressWarnings("unchecked")
+  public static <E extends Enum<E>> CachedBytesEnum<E> get(final Class<E> clazz) {
+    return (CachedBytesEnum<E>) GLOBAL_CACHE.get(clazz);
+  }
+
   EnumParser<E> parser() {
     return parser;
   }
 
-  public static <E extends Enum<E>> CachedBytesEnum<E> get(final Class<E> clazz) {
-    return (CachedBytesEnum<E>)
-        GLOBAL_CACHE.computeIfAbsent(clazz, c -> new CachedBytesEnum<>((Class<E>) c));
+  @SuppressWarnings("unchecked")
+  private static <E extends Enum<E>> CachedBytesEnum<E> create(final Class<?> type) {
+    return new CachedBytesEnum<>((Class<E>) type.asSubclass(Enum.class));
   }
 
   public DirectBuffer byteRepr(final E value) {
