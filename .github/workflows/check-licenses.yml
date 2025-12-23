@@ -84,6 +84,7 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Get JVM Heap size
+      if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
       run: |
         MAVEN_OPTS="-XX:+PrintFlagsFinal" ./mvnw --version
 
