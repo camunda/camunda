@@ -18,6 +18,7 @@ package io.camunda.process.test.api.dsl;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import io.camunda.process.test.api.dsl.instructions.AssertElementInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.AssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
 
@@ -28,6 +29,9 @@ import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruc
     property = "type",
     visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(
+      value = AssertElementInstanceInstruction.class,
+      name = TestCaseInstructionType.ASSERT_ELEMENT_INSTANCE),
   @JsonSubTypes.Type(
       value = AssertProcessInstanceInstruction.class,
       name = TestCaseInstructionType.ASSERT_PROCESS_INSTANCE),

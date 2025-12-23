@@ -19,7 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
-import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.dsl.instructions.AssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
@@ -36,13 +35,8 @@ public class AssertProcessInstanceInstructionHandler
       final AssertionFacade assertionFacade) {
 
     final ProcessInstanceSelector processInstanceSelector =
-        instruction
-            .getProcessInstanceSelector()
-            .getProcessDefinitionId()
-            .map(ProcessInstanceSelectors::byProcessId)
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException("Missing required property: processDefinitionId"));
+        InstructionSelectorFactory.buildProcessInstanceSelector(
+            instruction.getProcessInstanceSelector());
 
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(processInstanceSelector);

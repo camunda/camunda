@@ -48,6 +48,9 @@
       "description": "An instruction to define an action or an assertion to be performed in a test case.",
       "oneOf": [
         {
+          "$ref": "#/definitions/AssertElementInstanceInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
@@ -189,6 +192,74 @@
         {
           "required": [
             "processDefinitionId"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "AssertElementInstanceInstruction": {
+      "description": "An instruction to assert the state of an element instance.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_ELEMENT_INSTANCE"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "state": {
+          "description": "The expected state of the element instance.",
+          "type": "string",
+          "enum": [
+            "IS_ACTIVE",
+            "IS_COMPLETED",
+            "IS_TERMINATED"
+          ]
+        },
+        "amount": {
+          "description": "The expected amount of element instances in the given state.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "elementSelector",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "ElementSelector": {
+      "description": "A selector to identify a BPMN element.",
+      "type": "object",
+      "properties": {
+        "elementId": {
+          "description": "The ID of the BPMN element.",
+          "type": "string"
+        },
+        "elementName": {
+          "description": "The name of the BPMN element.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "elementId"
+          ]
+        },
+        {
+          "required": [
+            "elementName"
           ]
         }
       ],
