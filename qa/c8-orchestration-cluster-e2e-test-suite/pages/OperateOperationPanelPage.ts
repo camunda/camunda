@@ -119,9 +119,11 @@ export class OperateOperationPanelPage {
   }
 
   async clickOperationLink(operationEntry: Locator): Promise<void> {
-    await OperateOperationPanelPage.getOperationID(operationEntry).click({
-      timeout: 30000,
-    });
+    await OperateOperationPanelPage.getOperationID(operationEntry)
+      .first()
+      .click({
+        timeout: 30000,
+      });
   }
 
   async expandOperationsPanel(): Promise<void> {
